@@ -247,6 +247,11 @@ const INDUSTRY_FEATURE_PRESETS: Record<string, Partial<IndustryFeatures>> = {
   clinic_store: { imei: false, warranty: false, tradein: false, compare: false, booking: true },
   pharmacy_store: { imei: false, warranty: false, tradein: false, compare: false },
   company_site: { imei: false, warranty: false, tradein: false, compare: false },
+  // New templates
+  bakery_store: { imei: false, warranty: false, tradein: false, compare: false, combo: true, flashSale: true, booking: true },
+  vehicle_repair: { imei: false, warranty: true, repair: true, booking: true, tradein: false, compare: false },
+  hvac_repair: { imei: false, warranty: true, repair: true, booking: true, tradein: false, compare: false },
+  audio_store: { imei: true, warranty: true, installment: true, compare: true, tradein: true },
   // Specialty
   baby_store: { imei: false, warranty: false, tradein: false, compare: false, combo: true },
   sports_store: { imei: false, warranty: false, tradein: false, compare: false, sizeChart: true, flashSale: true },
@@ -272,6 +277,7 @@ const INDUSTRY_LAYOUT_STYLES: Record<string, LayoutStyle> = {
   pharmacy_store: 'minimal', company_site: 'minimal',
   baby_store: 'shopee', sports_store: 'nike', pet_store: 'organic', farm_store: 'organic',
   landing_page: 'shopee',
+  bakery_store: 'organic', vehicle_repair: 'minimal', hvac_repair: 'minimal', audio_store: 'apple',
 };
 
 // Per-industry home sections order
@@ -299,6 +305,10 @@ const INDUSTRY_BRAND_INSPIRATION: Record<string, string> = {
   jewelry_store: 'PNJ / Cartier',
   restaurant_store: 'Premium Restaurant',
   hotel_store: 'Luxury Hotel & Resort',
+  bakery_store: 'Tiệm bánh nghệ thuật',
+  vehicle_repair: 'Garage chuyên nghiệp',
+  hvac_repair: 'Điện lạnh uy tín',
+  audio_store: 'Audio Pro Shop',
 };
 
 export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
@@ -1021,6 +1031,88 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     navLabels: { home: 'Trang chủ', products: 'Sản phẩm', news: 'Tin tức', warranty: 'Liên hệ' },
     stickyBarLabels: { chat: 'Mua ngay', call: 'Gọi ngay' },
     fontFamily: '"Inter", system-ui, sans-serif',
+  },
+
+  // === NEW TEMPLATES ===
+  bakery_store: {
+    id: 'bakery_store',
+    heroTitle: 'Tiệm bánh nghệ thuật',
+    heroSubtitle: 'Bánh kem 12 con giáp – Đặt bánh theo tuổi, giao tận nơi.',
+    heroCta: 'Đặt bánh ngay',
+    heroGradient: 'linear-gradient(135deg, #f8b500 0%, #fceabb 100%)',
+    accentColor: '#e67e22',
+    trustBadges: [
+      { icon: 'Award', title: 'Bánh tươi mỗi ngày', desc: 'Làm trong ngày' },
+      { icon: 'Shield', title: 'Nguyên liệu sạch', desc: 'An toàn VSATTP' },
+      { icon: 'Truck', title: 'Giao hàng cẩn thận', desc: 'Hộp bảo quản lạnh' },
+      { icon: 'Star', title: 'Thiết kế theo yêu cầu', desc: '12 con giáp, hình thú' },
+    ],
+    productSectionTitle: 'Bánh kem nổi bật',
+    productSectionSubtitle: 'Đặt bánh sinh nhật – Giao tận nơi',
+    emptyProductText: 'Chưa có sản phẩm nào',
+    navLabels: { home: 'Trang chủ', products: 'Bánh kem', news: 'Tin tức', warranty: 'Liên hệ' },
+    stickyBarLabels: { chat: 'Đặt bánh', call: 'Gọi ngay' },
+    fontFamily: '"Nunito Sans", system-ui, sans-serif',
+  },
+  vehicle_repair: {
+    id: 'vehicle_repair',
+    heroTitle: 'Sửa xe uy tín',
+    heroSubtitle: 'Thợ giỏi – Giá rõ – Bảo hành dài hạn.',
+    heroCta: 'Đặt lịch sửa xe',
+    heroGradient: 'linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%)',
+    accentColor: '#2980b9',
+    trustBadges: [
+      { icon: 'Shield', title: 'Bảo hành 6 tháng', desc: 'Mọi dịch vụ sửa chữa' },
+      { icon: 'Award', title: 'Thợ chuyên nghiệp', desc: '10+ năm kinh nghiệm' },
+      { icon: 'Clock', title: 'Sửa nhanh', desc: 'Lấy trong ngày' },
+      { icon: 'Star', title: 'Phụ tùng chính hãng', desc: 'Giá gốc nhà phân phối' },
+    ],
+    productSectionTitle: 'Dịch vụ sửa chữa',
+    productSectionSubtitle: 'Bảng giá dịch vụ',
+    emptyProductText: 'Chưa có dịch vụ nào',
+    navLabels: { home: 'Trang chủ', products: 'Dịch vụ', news: 'Kiến thức xe', warranty: 'Bảo hành' },
+    stickyBarLabels: { chat: 'Tư vấn', call: 'Gọi cứu hộ' },
+    fontFamily: '"Inter", system-ui, sans-serif',
+  },
+  hvac_repair: {
+    id: 'hvac_repair',
+    heroTitle: 'Sửa điện lạnh',
+    heroSubtitle: 'Máy lạnh – Tủ lạnh – Máy giặt. Sửa tại nhà, bảo hành dài.',
+    heroCta: 'Gọi thợ ngay',
+    heroGradient: 'linear-gradient(135deg, #00b4db 0%, #0083b0 100%)',
+    accentColor: '#0083b0',
+    trustBadges: [
+      { icon: 'Shield', title: 'Bảo hành 12 tháng', desc: 'Cam kết bằng văn bản' },
+      { icon: 'Award', title: 'Kỹ thuật viên giỏi', desc: 'Được đào tạo bài bản' },
+      { icon: 'Truck', title: 'Sửa tại nhà', desc: 'Có mặt trong 30 phút' },
+      { icon: 'Star', title: 'Báo giá trước', desc: 'Không phát sinh chi phí' },
+    ],
+    productSectionTitle: 'Dịch vụ điện lạnh',
+    productSectionSubtitle: 'Bảng giá dịch vụ',
+    emptyProductText: 'Chưa có dịch vụ nào',
+    navLabels: { home: 'Trang chủ', products: 'Dịch vụ', news: 'Mẹo hay', warranty: 'Bảo hành' },
+    stickyBarLabels: { chat: 'Tư vấn', call: 'Gọi thợ' },
+    fontFamily: '"Inter", system-ui, sans-serif',
+  },
+  audio_store: {
+    id: 'audio_store',
+    heroTitle: 'Thiết bị âm thanh',
+    heroSubtitle: 'Loa – Dàn karaoke – Micro chuyên nghiệp.',
+    heroCta: 'Xem sản phẩm',
+    heroGradient: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+    accentColor: '#e94560',
+    trustBadges: [
+      { icon: 'Shield', title: 'Bảo hành 24 tháng', desc: 'Chính hãng 100%' },
+      { icon: 'Award', title: 'Hàng nhập khẩu', desc: 'JBL, Bose, Harman...' },
+      { icon: 'Truck', title: 'Lắp đặt tận nơi', desc: 'Kỹ thuật viên setup' },
+      { icon: 'CreditCard', title: 'Trả góp 0%', desc: 'Duyệt nhanh 15 phút' },
+    ],
+    productSectionTitle: 'Sản phẩm nổi bật',
+    productSectionSubtitle: 'Âm thanh chuyên nghiệp',
+    emptyProductText: 'Chưa có sản phẩm nào',
+    navLabels: { home: 'Trang chủ', products: 'Sản phẩm', news: 'Tin tức', warranty: 'Bảo hành' },
+    stickyBarLabels: { chat: 'Tư vấn', call: 'Gọi ngay' },
+    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
   },
 };
 
