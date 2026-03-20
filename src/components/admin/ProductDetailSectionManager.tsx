@@ -277,6 +277,54 @@ export function getDefaultCTAButtons(templateId?: string): CTAButtonItem[] {
       { id: 'cta_coupon', label: 'Nhận mã giảm giá', icon: '🎫', action: 'get_coupon', enabled: true },
       { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
     ],
+
+    // ===== TIỆM BÁNH =====
+    bakery_store: [
+      { id: 'cta_cart', label: 'Đặt bánh ngay', icon: '🎂', action: 'add_to_cart', enabled: true },
+      { id: 'cta_booking', label: 'Đặt trước', icon: '📅', action: 'booking', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn mẫu bánh', icon: '💬', action: 'consult_now', enabled: true },
+      { id: 'cta_delivery', label: 'Giao tận nơi', icon: '🚚', action: 'delivery', enabled: true },
+    ],
+
+    // ===== SỬA XE =====
+    vehicle_repair: [
+      { id: 'cta_booking', label: 'Đặt lịch sửa xe', icon: '🔧', action: 'booking_repair', enabled: true },
+      { id: 'cta_quote', label: 'Nhận báo giá', icon: '📄', action: 'get_quote', enabled: true },
+      { id: 'cta_track', label: 'Tra cứu đơn', icon: '📦', action: 'track_order', enabled: true },
+      { id: 'cta_warranty', label: 'Kiểm tra bảo hành', icon: '🛡️', action: 'check_warranty', enabled: true },
+    ],
+
+    // ===== SỬA ĐIỆN LẠNH =====
+    hvac_repair: [
+      { id: 'cta_booking', label: 'Đặt lịch sửa chữa', icon: '❄️', action: 'booking_repair', enabled: true },
+      { id: 'cta_quote', label: 'Nhận báo giá', icon: '📄', action: 'get_quote', enabled: true },
+      { id: 'cta_call', label: 'Gọi thợ ngay', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_warranty', label: 'Kiểm tra bảo hành', icon: '🛡️', action: 'check_warranty', enabled: true },
+    ],
+
+    // ===== THIẾT BỊ ÂM THANH =====
+    audio_store: [
+      { id: 'cta_cart', label: 'Thêm vào giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
+      { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
+      { id: 'cta_compare', label: 'So sánh sản phẩm', icon: '⚖️', action: 'compare', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
+    ],
+
+    // ===== KARAOKE =====
+    karaoke_store: [
+      { id: 'cta_booking', label: 'Đặt phòng', icon: '🎤', action: 'booking', enabled: true },
+      { id: 'cta_combo', label: 'Xem combo', icon: '🎁', action: 'get_offer', enabled: true },
+      { id: 'cta_call', label: 'Gọi đặt ngay', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
+    ],
+
+    // ===== MASSAGE =====
+    massage_store: [
+      { id: 'cta_booking', label: 'Đặt lịch', icon: '💆', action: 'booking', enabled: true },
+      { id: 'cta_combo', label: 'Xem combo', icon: '🎁', action: 'get_offer', enabled: true },
+      { id: 'cta_call', label: 'Gọi ngay', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_member', label: 'Thành viên VIP', icon: '👤', action: 'join_member', enabled: true },
+    ],
   };
 
   if (templateId && INDUSTRY_CTA[templateId]) {
