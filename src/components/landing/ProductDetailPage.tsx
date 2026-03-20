@@ -519,12 +519,12 @@ export function ProductDetailPage({
           {!uses2LevelVariants && legacyVariants.length > 0 && (
             <div>
               <Label className="text-sm font-medium mb-2 block">Chọn phiên bản <span className="text-red-500">*</span></Label>
-              <div className={`flex flex-wrap gap-2 ${attempted && selectedVariantIndex === null ? 'p-2 rounded-md border-2 border-red-400' : ''}`}>
+              <div className={`flex flex-wrap gap-2 ${(attempted || variantAttempted) && selectedVariantIndex === null ? 'p-2 rounded-md border-2 border-red-400' : ''}`}>
                 {legacyVariants.map((v, i) => (
                   <Badge key={i} variant={selectedVariantIndex === i ? 'default' : 'outline'}
                     className="cursor-pointer text-sm px-3 py-2 flex items-center gap-1.5 active:scale-95 transition-transform"
                     style={selectedVariantIndex === i ? { backgroundColor: primaryColor } : {}}
-                    onClick={() => handleSelectLegacyVariant(i)}>
+                    onClick={() => { handleSelectLegacyVariant(i); setVariantAttempted(false); }}>
                     {v.image_url && <img src={v.image_url} alt="" className="h-6 w-6 rounded object-cover" />}
                     <div className="flex flex-col items-start gap-0.5">
                       <span>{v.name}</span>
@@ -533,6 +533,9 @@ export function ProductDetailPage({
                   </Badge>
                 ))}
               </div>
+              {(attempted || variantAttempted) && selectedVariantIndex === null && (
+                <p className="text-xs text-red-500 font-medium mt-1">⚠ Vui lòng chọn phiên bản sản phẩm</p>
+              )}
             </div>
           )}
 
