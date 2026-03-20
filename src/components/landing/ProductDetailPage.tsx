@@ -878,6 +878,23 @@ export function ProductDetailPage({
               return (
                 <Button key={btn.id} className="shrink-0 gap-2 h-11 text-sm font-semibold px-4" style={{ backgroundColor: primaryColor }}
                   onClick={() => {
+                    const hasVariants = uses2LevelVariants
+                      ? variantOptions1.length > 0
+                      : legacyVariants.length > 0;
+                    if (hasVariants) {
+                      const missing: string[] = [];
+                      if (uses2LevelVariants) {
+                        if (variantOptions1.length > 0 && !selectedOption1) missing.push(product.variant_group_1_name || 'Biến thể 1');
+                        if (variantOptions2.length > 0 && !selectedOption2) missing.push(product.variant_group_2_name || 'Biến thể 2');
+                      } else if (legacyVariants.length > 0 && selectedVariantIndex === null) {
+                        missing.push('phiên bản');
+                      }
+                      if (missing.length > 0) {
+                        setVariantAttempted(true);
+                        toast.error(`Vui lòng chọn: ${missing.join(', ')}`, { position: 'top-center' });
+                        return;
+                      }
+                    }
                     cart.addItem({
                       productId: product.id,
                       productName: product.name,
@@ -885,6 +902,7 @@ export function ProductDetailPage({
                       price: displayPrice,
                       variant: getVariantLabel(),
                     });
+                    setVariantAttempted(false);
                     toast.success('Đã thêm vào giỏ hàng', { position: 'top-center' });
                   }}>
                   {btn.icon} {btn.label}
