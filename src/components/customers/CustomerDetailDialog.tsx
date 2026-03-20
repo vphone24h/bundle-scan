@@ -640,7 +640,7 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
                     </Card>
                     <Card>
                       <CardContent className="pt-4 text-center">
-                        <p className="text-xl font-bold text-green-600">{formatNumber(paidDebt)}</p>
+                        <p className="text-xl font-bold text-green-600">{formatNumber(debtPaid)}</p>
                         <p className="text-xs text-muted-foreground">Đã trả</p>
                       </CardContent>
                     </Card>
