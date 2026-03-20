@@ -132,7 +132,7 @@ export function AdvertisementFormDialog({
 
   const resetForm = () => {
     setTitle('');
-    setDescription('');
+    setDescription('Nhân viên tươi xinh nhiệt tình');
     setLinkUrl('');
     setImageUrl('');
     setVideoUrl('');

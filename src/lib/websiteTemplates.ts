@@ -68,6 +68,7 @@ export const WEBSITE_TEMPLATES: WebsiteTemplate[] = [
   { id: 'vehicle_repair', name: 'Sửa xe', category: 'Dịch vụ', description: 'Sửa xe máy, ô tô, báo giá nhanh', icon: '🏍️', tier: 'basic', available: true, brandInspiration: 'Garage chuyên nghiệp' },
   { id: 'hvac_repair', name: 'Sửa điện lạnh', category: 'Dịch vụ', description: 'Sửa máy lạnh, tủ lạnh, máy giặt', icon: '❄️', tier: 'basic', available: true },
   { id: 'audio_store', name: 'Thiết bị âm thanh', category: 'Công nghệ', description: 'Loa, dàn karaoke, âm thanh chuyên nghiệp', icon: '🔊', tier: 'premium', available: true, brandInspiration: 'Audio Pro Shop' },
+  { id: 'karaoke_store', name: 'Karaoke / Phòng hát', category: 'Dịch vụ', description: 'Phòng hát, dàn karaoke, đặt phòng online', icon: '🎤', tier: 'premium', available: true, brandInspiration: 'Karaoke Box' },
 
   // Apple Style Landing (cuối cùng)
   { id: 'apple_landing', name: 'Apple Style Landing', category: 'Công nghệ', description: 'Phong cách Apple.com – full-screen banners, tối giản, cao cấp', icon: '🍎', tier: 'pro', available: true, brandInspiration: 'Apple.com' },

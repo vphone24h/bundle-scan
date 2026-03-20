@@ -252,6 +252,7 @@ const INDUSTRY_FEATURE_PRESETS: Record<string, Partial<IndustryFeatures>> = {
   vehicle_repair: { imei: false, warranty: true, repair: true, booking: true, tradein: false, compare: false },
   hvac_repair: { imei: false, warranty: true, repair: true, booking: true, tradein: false, compare: false },
   audio_store: { imei: true, warranty: true, installment: true, compare: true, tradein: true },
+  karaoke_store: { imei: false, warranty: false, tradein: false, compare: false, booking: true, combo: true, flashSale: true },
   // Specialty
   baby_store: { imei: false, warranty: false, tradein: false, compare: false, combo: true },
   sports_store: { imei: false, warranty: false, tradein: false, compare: false, sizeChart: true, flashSale: true },
@@ -277,7 +278,7 @@ const INDUSTRY_LAYOUT_STYLES: Record<string, LayoutStyle> = {
   pharmacy_store: 'minimal', company_site: 'minimal',
   baby_store: 'shopee', sports_store: 'nike', pet_store: 'organic', farm_store: 'organic',
   landing_page: 'shopee',
-  bakery_store: 'organic', vehicle_repair: 'minimal', hvac_repair: 'minimal', audio_store: 'apple',
+  bakery_store: 'organic', vehicle_repair: 'minimal', hvac_repair: 'minimal', audio_store: 'apple', karaoke_store: 'luxury',
 };
 
 // Per-industry home sections order
@@ -1113,6 +1114,26 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     navLabels: { home: 'Trang chủ', products: 'Sản phẩm', news: 'Tin tức', warranty: 'Bảo hành' },
     stickyBarLabels: { chat: 'Tư vấn', call: 'Gọi ngay' },
     fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
+  },
+  karaoke_store: {
+    id: 'karaoke_store',
+    heroTitle: 'Karaoke & Phòng hát',
+    heroSubtitle: 'Phòng hát hiện đại – Âm thanh đỉnh cao – Đặt phòng online.',
+    heroCta: 'Đặt phòng ngay',
+    heroGradient: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
+    accentColor: '#8b5cf6',
+    trustBadges: [
+      { icon: 'Award', title: 'Âm thanh đỉnh cao', desc: 'Dàn karaoke cao cấp' },
+      { icon: 'Shield', title: 'Phòng VIP', desc: 'Cách âm hoàn hảo' },
+      { icon: 'Star', title: 'Nhân viên tươi xinh', desc: 'Phục vụ nhiệt tình' },
+      { icon: 'CreditCard', title: 'Giá cả hợp lý', desc: 'Combo ưu đãi hấp dẫn' },
+    ],
+    productSectionTitle: 'Bảng giá phòng',
+    productSectionSubtitle: 'Chọn phòng phù hợp',
+    emptyProductText: 'Chưa có phòng nào',
+    navLabels: { home: 'Trang chủ', products: 'Phòng hát', news: 'Tin tức', warranty: 'Chính sách' },
+    stickyBarLabels: { chat: 'Đặt phòng', call: 'Gọi ngay' },
+    fontFamily: '"Inter", system-ui, sans-serif',
   },
 };
 
