@@ -420,6 +420,17 @@ export function PaymentFlowDialog({
                 </div>
               )}
 
+              <div>
+                <Label className="text-sm">Ghi chú</Label>
+                <Textarea
+                  value={note}
+                  onChange={e => setNote(e.target.value)}
+                  placeholder="Ghi chú thêm (không bắt buộc)"
+                  rows={2}
+                  className="text-base"
+                />
+              </div>
+
               {/* Voucher & Points */}
               {debouncedPhone && (
                 <div className="space-y-2 border rounded-lg p-3 bg-gray-50">
@@ -485,17 +496,6 @@ export function PaymentFlowDialog({
                   </div>
                 </div>
               )}
-
-              <div>
-                <Label className="text-sm">Ghi chú</Label>
-                <Textarea
-                  value={note}
-                  onChange={e => setNote(e.target.value)}
-                  placeholder="Ghi chú thêm (không bắt buộc)"
-                  rows={2}
-                  className="text-base"
-                />
-              </div>
 
               <Button
                 className="w-full h-12 text-base font-semibold gap-2"

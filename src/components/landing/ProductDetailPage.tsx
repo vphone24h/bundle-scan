@@ -712,6 +712,16 @@ export function ProductDetailPage({
                 </div>
               </div>
 
+              <div>
+                <Label className="text-sm">Địa chỉ</Label>
+                <Input value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} placeholder="Nhập địa chỉ (không bắt buộc)" className="h-11 text-base" />
+              </div>
+
+              <div>
+                <Label className="text-sm">Ghi chú</Label>
+                <Textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Ghi chú thêm..." rows={2} className="text-base" />
+              </div>
+
               {/* Voucher & Points */}
               {debouncedPhone && (
                 <div className="space-y-2 border rounded-lg p-3 bg-gray-50">
@@ -759,16 +769,6 @@ export function ProductDetailPage({
                   )}
                 </div>
               )}
-
-              <div>
-                <Label className="text-sm">Địa chỉ</Label>
-                <Input value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} placeholder="Nhập địa chỉ (không bắt buộc)" className="h-11 text-base" />
-              </div>
-
-              <div>
-                <Label className="text-sm">Ghi chú</Label>
-                <Textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Ghi chú thêm..." rows={2} className="text-base" />
-              </div>
 
               {/* Order summary */}
               <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1.5">
