@@ -905,7 +905,18 @@ export default function ExportNewPage() {
         }
       }
 
-      // Send auto email if enabled
+      // Mark applied vouchers as used
+      if (appliedVoucherIds && appliedVoucherIds.length > 0) {
+        for (const vId of appliedVoucherIds) {
+          try {
+            await markVoucherUsed.mutateAsync(vId);
+          } catch {
+            // Non-critical
+          }
+        }
+        successMessage += `. Đã sử dụng ${appliedVoucherIds.length} voucher`;
+      }
+
       if (autoEmailEnabled && savedCustomerEmail) {
         supabase.functions.invoke('send-export-email', {
           body: {
