@@ -675,7 +675,7 @@ export function ProductDetailPage({
               <div>
                 <Label className="text-sm">Số điện thoại <span className="text-red-500">*</span></Label>
                 <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Nhập số điện thoại" inputMode="tel" className={`h-11 text-base ${attempted && !customerPhone.trim() ? 'border-red-400 ring-red-400' : ''}`} />
-                <p className="text-xs text-muted-foreground mt-1">Nhập SĐT đã từng mua hàng để được ưu đãi</p>
+                <p className="text-xs font-medium mt-1" style={{ color: primaryColor }}>Nhập SĐT đã từng mua hàng để được ưu đãi</p>
               </div>
 
               <div>
