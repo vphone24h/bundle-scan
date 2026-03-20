@@ -313,6 +313,24 @@ export function InvoicePrintDialog({
                   receipt.items?.reduce((s: number, i: any) => s + i.sale_price, 0).toLocaleString('vi-VN')}đ</span>
               </div>
             )}
+            {(receipt.points_discount > 0) && (
+              <div className="flex justify-between text-sm" style={{ color: '#16a34a' }}>
+                <span>Giảm điểm ({receipt.points_redeemed} điểm):</span>
+                <span>-{receipt.points_discount?.toLocaleString('vi-VN')}đ</span>
+              </div>
+            )}
+            {(receipt.voucher_discount > 0) && (
+              <div className="flex justify-between text-sm" style={{ color: '#16a34a' }}>
+                <span>Giảm voucher:</span>
+                <span>-{receipt.voucher_discount?.toLocaleString('vi-VN')}đ</span>
+              </div>
+            )}
+            {(receipt.points_discount > 0 || receipt.voucher_discount > 0) && (
+              <div className="flex justify-between font-bold">
+                <span>Còn lại:</span>
+                <span>{((receipt.total_amount || 0) - (receipt.points_discount || 0) - (receipt.voucher_discount || 0)).toLocaleString('vi-VN')}đ</span>
+              </div>
+            )}
             {settings.show_paid_amount && (
               <div className="flex justify-between">
                 <span>Đã thanh toán:</span>
