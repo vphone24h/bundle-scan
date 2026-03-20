@@ -87,6 +87,7 @@ export function ProductDetailPage({
   const [note, setNote] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('');
   const [selectedVariantIndex, setSelectedVariantIndex] = useState<number | null>(null);
+  const [variantAttempted, setVariantAttempted] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(null);
