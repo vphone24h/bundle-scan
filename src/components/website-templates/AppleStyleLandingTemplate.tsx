@@ -15,6 +15,7 @@ import { LandingProduct, LandingProductCategory } from '@/hooks/useLandingProduc
 import { LandingArticle, LandingArticleCategory } from '@/hooks/useLandingArticles';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import { ProductDetailPage } from '@/components/landing/ProductDetailPage';
+import { FloatingCartButton } from '@/components/landing/FloatingCartButton';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 import { VoucherClaimForm } from '@/components/landing/VoucherClaimForm';
