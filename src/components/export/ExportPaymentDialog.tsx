@@ -13,10 +13,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Banknote, CreditCard, Wallet, FileText, Star, Gift, Ticket } from 'lucide-react';
+import { Banknote, CreditCard, Wallet, FileText, Star, Gift, Ticket, Tag } from 'lucide-react';
 import { formatNumber, formatInputNumber, parseFormattedNumber } from '@/lib/formatNumber';
 import type { ExportPayment } from '@/hooks/useExportReceipts';
-import { useVoucherTemplates, VoucherTemplate } from '@/hooks/useVouchers';
+import { useVoucherTemplates, VoucherTemplate, CustomerVoucher } from '@/hooks/useVouchers';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 
 interface CustomerPointInfo {
@@ -39,11 +39,12 @@ interface ExportPaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   totalAmount: number;
-  onConfirm: (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number, giftVoucherTemplateId?: string, skipCashBook?: boolean) => void;
+  onConfirm: (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number, giftVoucherTemplateId?: string, skipCashBook?: boolean, appliedVoucherIds?: string[], voucherDiscount?: number) => void;
   isLoading?: boolean;
   customerPoints?: CustomerPointInfo | null;
   pointSettings?: PointSettings | null;
   hasCustomer?: boolean;
+  customerVouchers?: CustomerVoucher[];
 }
 
 const builtInPaymentTypes = [
