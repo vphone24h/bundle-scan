@@ -155,6 +155,8 @@ export default function ExportNewPage() {
   const upsertCustomer = useUpsertCustomer();
   const createReceipt = useCreateExportReceipt();
   const issueVoucher = useIssueVoucher();
+  const markVoucherUsed = useMarkVoucherUsed();
+  const { data: customerVouchers = [] } = useCustomerVouchersById(selectedCustomer?.id || null);
   const { data: pointSettings } = usePointSettings();
   const { data: branches } = useBranches();
   const { data: permissions } = usePermissions();
