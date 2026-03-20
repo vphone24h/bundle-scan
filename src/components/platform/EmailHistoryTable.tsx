@@ -236,7 +236,7 @@ export function EmailHistoryTable() {
                 {email.success_count > 0 && <span className="flex items-center gap-1 text-green-600"><CheckCircle className="h-3 w-3" /> {email.success_count}</span>}
                 {email.fail_count > 0 && <span className="flex items-center gap-1 text-destructive"><XCircle className="h-3 w-3" /> {email.fail_count}</span>}
               </div>
-              {email.failed_emails && email.failed_emails.length > 0 && (
+              {(email.fail_count > 0 || (email.failed_emails && email.failed_emails.length > 0)) && (
                 <Button variant="outline" size="sm" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); resendMutation.mutate(email); }} disabled={resendingId === email.id}>
                   <RefreshCw className={`h-3 w-3 mr-1 ${resendingId === email.id ? 'animate-spin' : ''}`} />Gửi lại
                 </Button>
