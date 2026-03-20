@@ -91,8 +91,10 @@ export default function WebsiteEditorPage() {
   const handleChange = useCallback((field: string, value: unknown) => {
     setFormData(prev => {
       const updated = { ...prev, [field]: value };
-      // Save immediately for template changes
+      // When template changes, auto-sync CTA buttons & nav to new template defaults
       if (field === 'website_template') {
+        (updated as any).custom_cta_buttons = null;
+        (updated as any).custom_nav_items = null;
         if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
         updateSettings.mutateAsync(updated).then(() => {
           setHasChanges(false);
