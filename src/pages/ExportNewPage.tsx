@@ -1563,6 +1563,7 @@ export default function ExportNewPage() {
           max_redeem_percentage: pointSettings.max_redeem_percentage,
         } : null}
         hasCustomer={!!customerPhone}
+        customerVouchers={customerVouchers}
       />
 
       {/* Invoice Print Dialog */}
