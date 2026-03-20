@@ -105,28 +105,32 @@ function TopNavBar({ navItems, onNavClick, isNavActive, accentColor, activeClass
   };
 
   return (
-    <div
-      ref={scrollRef}
-      className="overflow-x-auto scrollbar-hide border-t border-black/5"
-      style={{ WebkitOverflowScrolling: 'touch', willChange: 'scroll-position', touchAction: 'pan-x' }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      <div className="flex items-center gap-1.5 px-3 py-2 min-w-max will-change-transform">
-        {navItems.map(item => (
-          <button
-            key={item.id}
-            onClick={(e) => handleButtonClick(item, e)}
-            className={`shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium rounded-full transition-all flex items-center gap-1.5 select-none ${
-              isNavActive(item) ? (activeClass || 'text-white') : (inactiveClass || 'hover:bg-black/5 text-foreground/70')
-            }`}
-            style={isNavActive(item) && accentColor ? { backgroundColor: accentColor } : {}}
-          >
-            {item.icon && <span className="text-base">{item.icon}</span>}
-            {item.label}
-          </button>
-        ))}
+    <div className="border-t border-black/5">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
+        <div
+          ref={scrollRef}
+          className="overflow-x-auto scrollbar-hide"
+          style={{ WebkitOverflowScrolling: 'touch', willChange: 'scroll-position', touchAction: 'pan-x' }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div className="flex items-center gap-1.5 py-2 min-w-max will-change-transform">
+            {navItems.map(item => (
+              <button
+                key={item.id}
+                onClick={(e) => handleButtonClick(item, e)}
+                className={`shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium rounded-full transition-all flex items-center gap-1.5 select-none ${
+                  isNavActive(item) ? (activeClass || 'text-white') : (inactiveClass || 'hover:bg-black/5 text-foreground/70')
+                }`}
+                style={isNavActive(item) && accentColor ? { backgroundColor: accentColor } : {}}
+              >
+                {item.icon && <span className="text-base">{item.icon}</span>}
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
