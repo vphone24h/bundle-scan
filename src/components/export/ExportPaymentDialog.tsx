@@ -171,10 +171,9 @@ export function ExportPaymentDialog({
     }
   }, [open, totalAmount]);
 
-  // Update cash amount when points are used
+  // Update cash amount when points/voucher discount changes
   useEffect(() => {
-    if (usePoints && actualPointsDiscount > 0) {
-      // Recalculate cash amount
+    if ((usePoints && actualPointsDiscount > 0) || voucherDiscount > 0) {
       const otherPayments = selectedTypes
         .filter(t => t !== 'cash' && t !== 'debt')
         .reduce((sum, t) => sum + (parseFloat(amounts[t]) || 0), 0);
@@ -182,10 +181,18 @@ export function ExportPaymentDialog({
       const remaining = adjustedTotal - otherPayments - debtAmt;
       
       if (remaining >= 0 && selectedTypes.includes('cash')) {
-        setAmounts(prev => ({ ...prev, cash: remaining.toString() }));
+        setAmounts(prev => ({ ...prev, cash: remaining > 0 ? remaining.toString() : '' }));
       }
     }
-  }, [actualPointsDiscount, usePoints]);
+  }, [actualPointsDiscount, usePoints, voucherDiscount]);
+
+  const toggleVoucherApply = (voucherId: string) => {
+    setAppliedVoucherIds(prev =>
+      prev.includes(voucherId)
+        ? prev.filter(id => id !== voucherId)
+        : [...prev, voucherId]
+    );
+  };
 
   const togglePaymentType = (type: string) => {
     if (selectedTypes.includes(type)) {
