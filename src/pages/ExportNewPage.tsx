@@ -861,6 +861,7 @@ export default function ExportNewPage() {
         payments,
         pointsRedeemed,
         pointsDiscount,
+        voucherDiscount: voucherDiscount || 0,
         branchId,
         vatRate: savedEffectiveTaxRate,
         vatAmount: savedTaxAmount,
