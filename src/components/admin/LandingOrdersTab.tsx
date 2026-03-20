@@ -955,24 +955,59 @@ export function LandingOrdersTab() {
                 </div>
               )}
 
-              {/* Product info */}
-              <div className="flex gap-3">
-                {detailOrder.product_image_url ? (
-                  <img src={detailOrder.product_image_url} alt="" className="h-16 w-16 rounded-lg object-cover" />
-                ) : (
-                  <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center">
-                    <Package className="h-6 w-6 text-muted-foreground" />
+              {/* Product info - check for grouped orders */}
+              {(() => {
+                // Find related orders (same customer, same time - within 5 seconds)
+                const isGroupOrder = detailOrder.note?.includes('[Đơn nhóm:');
+                const relatedOrders = isGroupOrder ? orders.filter(o =>
+                  o.id !== detailOrder.id &&
+                  o.customer_phone === detailOrder.customer_phone &&
+                  o.note?.includes('[Đơn nhóm:') &&
+                  Math.abs(new Date(o.created_at).getTime() - new Date(detailOrder.created_at).getTime()) < 60000
+                ) : [];
+                const allGroupOrders = isGroupOrder ? [detailOrder, ...relatedOrders] : [detailOrder];
+                const groupTotal = allGroupOrders.reduce((sum, o) => sum + o.quantity * o.product_price, 0);
+
+                return (
+                  <div className="space-y-2">
+                    {isGroupOrder && allGroupOrders.length > 1 && (
+                      <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
+                        🛒 Đơn nhóm ({allGroupOrders.length} sản phẩm)
+                      </Badge>
+                    )}
+                    {allGroupOrders.map((order, idx) => (
+                      <div key={order.id} className="flex gap-3 p-2 bg-muted/30 rounded-lg">
+                        {order.product_image_url ? (
+                          <img src={order.product_image_url} alt="" className="h-14 w-14 rounded-lg object-cover" />
+                        ) : (
+                          <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center">
+                            <Package className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm line-clamp-1">{order.product_name}</p>
+                          {order.variant && <Badge variant="outline" className="mt-0.5 text-[10px]">{order.variant}</Badge>}
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            SL: {order.quantity} × {formatNumber(order.product_price)}đ
+                          </p>
+                        </div>
+                        <p className="font-bold text-sm text-primary shrink-0">
+                          {formatNumber(order.quantity * order.product_price)}đ
+                        </p>
+                      </div>
+                    ))}
+                    {allGroupOrders.length > 1 && (
+                      <div className="flex justify-between font-bold text-sm pt-1 border-t">
+                        <span>Tổng cộng:</span>
+                        <span className="text-primary">{formatNumber(groupTotal)}đ</span>
+                      </div>
+                    )}
+                    {allGroupOrders.length === 1 && (
+                      <p className="font-bold text-primary">{formatNumber(detailOrder.quantity * detailOrder.product_price)}đ</p>
+                    )}
                   </div>
-                )}
-                <div>
-                  <p className="font-semibold">{detailOrder.product_name}</p>
-                  {detailOrder.variant && <Badge variant="outline" className="mt-1">{detailOrder.variant}</Badge>}
-                  <p className="text-sm text-muted-foreground mt-1">
-                    SL: {detailOrder.quantity} × {formatNumber(detailOrder.product_price)}đ
-                  </p>
-                  <p className="font-bold text-primary mt-0.5">{formatNumber(detailOrder.quantity * detailOrder.product_price)}đ</p>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Customer info */}
               <div className="space-y-2 text-sm">
