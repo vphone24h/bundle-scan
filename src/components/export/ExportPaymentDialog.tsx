@@ -149,8 +149,8 @@ export function ExportPaymentDialog({
   const actualPointsUsed = pointSettings && actualPointsDiscount > 0 ? 
     Math.ceil(actualPointsDiscount / pointSettings.redeem_value * pointSettings.redeem_points) : 0;
 
-  // Adjusted total after points discount
-  const adjustedTotal = totalAmount - actualPointsDiscount;
+  // Adjusted total after points + voucher discount
+  const adjustedTotal = totalAmount - actualPointsDiscount - voucherDiscount;
 
   // Reset when dialog opens
   useEffect(() => {
