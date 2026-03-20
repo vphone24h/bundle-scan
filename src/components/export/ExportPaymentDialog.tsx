@@ -227,7 +227,15 @@ export function ExportPaymentDialog({
       .filter((p) => p.amount > 0);
 
     onOpenChange(false);
-    onConfirm(payments, usePoints ? actualPointsUsed : 0, usePoints ? actualPointsDiscount : 0, giftVoucher && selectedVoucherTemplateId ? selectedVoucherTemplateId : undefined, !addToCashBook);
+    onConfirm(
+      payments,
+      usePoints ? actualPointsUsed : 0,
+      usePoints ? actualPointsDiscount : 0,
+      giftVoucher && selectedVoucherTemplateId ? selectedVoucherTemplateId : undefined,
+      !addToCashBook,
+      appliedVoucherIds.length > 0 ? appliedVoucherIds : undefined,
+      voucherDiscount > 0 ? voucherDiscount : undefined,
+    );
   };
 
   const canUsePoints = pointSettings?.is_enabled && (customerPoints?.current_points || 0) > 0;
