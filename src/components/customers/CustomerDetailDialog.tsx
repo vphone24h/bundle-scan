@@ -791,6 +791,14 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
             customerName={customer.name}
             currentPoints={customer.current_points}
           />
+          <IssueVoucherDialog
+            open={showVoucherDialog}
+            onOpenChange={setShowVoucherDialog}
+            customerId={customer.id}
+            customerName={customer.name}
+            customerPhone={customer.phone}
+            customerEmail={customer.email}
+          />
         </>
       )}
 
