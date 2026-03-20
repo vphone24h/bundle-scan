@@ -551,6 +551,12 @@ export default function UniversalStoreTemplate({
           onNavigateOrderLookup={() => { setSelectedProduct(null); navigateTo('order-lookup' as PageView); }}
         />
         <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
+        <FloatingCartButton
+          tenantId={tenantId}
+          primaryColor={accentColor}
+          branches={branches.map(b => ({ id: b.id, name: b.name }))}
+          onNavigateOrderLookup={() => { setSelectedProduct(null); navigateTo('order-lookup' as PageView); }}
+        />
       </>
     );
   }
