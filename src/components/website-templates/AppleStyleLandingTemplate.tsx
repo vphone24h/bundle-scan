@@ -15,6 +15,7 @@ import { LandingProduct, LandingProductCategory } from '@/hooks/useLandingProduc
 import { LandingArticle, LandingArticleCategory } from '@/hooks/useLandingArticles';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import { ProductDetailPage } from '@/components/landing/ProductDetailPage';
+import { FloatingCartButton } from '@/components/landing/FloatingCartButton';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 import { VoucherClaimForm } from '@/components/landing/VoucherClaimForm';
@@ -654,6 +655,11 @@ export default function AppleStyleLandingTemplate({
           }}
         />
         <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
+        <FloatingCartButton
+          tenantId={tenantId}
+          primaryColor={accentColor}
+          branches={branches.map(b => ({ id: b.id, name: b.name }))}
+        />
       </>
     );
   }
@@ -1321,6 +1327,11 @@ export default function AppleStyleLandingTemplate({
       <AppleStickyBar accentColor={accentColor} zaloUrl={zaloUrl} warrantyHotline={warrantyHotline} />
 
       <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
+      <FloatingCartButton
+        tenantId={tenantId}
+        primaryColor={accentColor}
+        branches={branches.map(b => ({ id: b.id, name: b.name }))}
+      />
     </div>
   );
 }

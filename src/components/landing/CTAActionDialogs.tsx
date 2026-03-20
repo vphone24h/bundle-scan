@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -846,8 +846,9 @@ interface CartDialogProps extends CTADialogProps {
   onCheckout: () => void;
 }
 
-export function CartDialog({ open, onClose, primaryColor, onCheckout }: CartDialogProps) {
+export function CartDialog({ open, onClose, primaryColor, tenantId, branches, onCheckout }: CartDialogProps) {
   const cart = useLandingCart();
+  const [showCartCheckout, setShowCartCheckout] = useState(false);
 
   if (cart.items.length === 0) {
     return (
@@ -866,42 +867,66 @@ export function CartDialog({ open, onClose, primaryColor, onCheckout }: CartDial
   }
 
   return (
-    <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-md mx-auto max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-base">🛒 Giỏ hàng ({cart.totalItems})</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          {cart.items.map((item, i) => (
-            <div key={`${item.productId}-${item.variant || ''}-${i}`} className="flex gap-3 border rounded-lg p-2.5">
-              {item.productImageUrl && <img src={item.productImageUrl} alt="" className="h-16 w-16 rounded-md object-cover shrink-0" />}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium line-clamp-2">{item.productName}</p>
-                {item.variant && <p className="text-xs text-muted-foreground">{item.variant}</p>}
-                <p className="text-sm font-bold mt-1" style={{ color: primaryColor }}>{formatNumber(item.price)}đ</p>
-                <div className="flex items-center gap-2 mt-1.5">
+    <>
+      <Dialog open={open && !showCartCheckout} onOpenChange={v => !v && onClose()}>
+        <DialogContent className="max-w-md mx-auto max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-base">🛒 Giỏ hàng ({cart.totalItems})</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {cart.items.map((item, i) => (
+              <div key={`${item.productId}-${item.variant || ''}-${i}`} className="border rounded-lg p-2.5">
+                <div className="flex gap-3">
+                  {item.productImageUrl && <img src={item.productImageUrl} alt="" className="h-16 w-16 rounded-md object-cover shrink-0" />}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium line-clamp-2">{item.productName}</p>
+                    {item.variant && <p className="text-xs text-muted-foreground">{item.variant}</p>}
+                    <p className="text-sm font-bold mt-1" style={{ color: primaryColor }}>{formatNumber(item.price)}đ</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
                   <button onClick={() => cart.updateQuantity(item.productId, item.variant, item.quantity - 1)} className="h-7 w-7 rounded-md border flex items-center justify-center"><Minus className="h-3 w-3" /></button>
                   <span className="text-sm font-medium w-6 text-center">{item.quantity}</span>
                   <button onClick={() => cart.updateQuantity(item.productId, item.variant, item.quantity + 1)} className="h-7 w-7 rounded-md border flex items-center justify-center"><Plus className="h-3 w-3" /></button>
                   <button onClick={() => cart.removeItem(item.productId, item.variant)} className="ml-auto h-7 w-7 rounded-md text-destructive flex items-center justify-center"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               </div>
+            ))}
+            <div className="border-t pt-3 flex justify-between items-center">
+              <span className="font-semibold">Tổng cộng:</span>
+              <span className="text-lg font-bold" style={{ color: primaryColor }}>{formatNumber(cart.totalPrice)}đ</span>
             </div>
-          ))}
-          <div className="border-t pt-3 flex justify-between items-center">
-            <span className="font-semibold">Tổng cộng:</span>
-            <span className="text-lg font-bold" style={{ color: primaryColor }}>{formatNumber(cart.totalPrice)}đ</span>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1 h-11" onClick={() => cart.clearCart()}>Xóa tất cả</Button>
+              <Button className="flex-1 h-11 font-semibold" style={{ backgroundColor: primaryColor }}
+                onClick={() => { onClose(); setShowCartCheckout(true); }}>
+                Thanh toán ({cart.totalItems})
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" className="flex-1 h-11" onClick={() => cart.clearCart()}>Xóa tất cả</Button>
-            <Button className="flex-1 h-11 font-semibold" style={{ backgroundColor: primaryColor }} onClick={() => { onClose(); onCheckout(); }}>
-              Thanh toán ({cart.totalItems})
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+      <CartCheckoutDialogLazy
+        open={showCartCheckout}
+        onClose={() => setShowCartCheckout(false)}
+        tenantId={tenantId}
+        primaryColor={primaryColor}
+        branches={branches}
+      />
+    </>
   );
+}
+
+// Lazy wrapper to avoid circular imports
+function CartCheckoutDialogLazy(props: { open: boolean; onClose: () => void; tenantId: string; primaryColor: string; branches: { id: string; name: string }[] }) {
+  const [Comp, setComp] = useState<any>(null);
+  useEffect(() => {
+    if (props.open && !Comp) {
+      import('./CartCheckoutDialog').then(m => setComp(() => m.CartCheckoutDialog));
+    }
+  }, [props.open]);
+  if (!Comp || !props.open) return null;
+  return <Comp {...props} />;
 }
 
 // ===== PROMOTION INFO DIALOG (for today_offer, today_gift, hot_deal) =====
