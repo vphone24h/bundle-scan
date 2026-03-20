@@ -656,26 +656,28 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
       })}
 
       {/* Bottom CTA bar */}
-      <div className="sticky bottom-0 bg-white/95 backdrop-blur border-t px-4 py-2.5">
-        <div className="flex items-center gap-2">
-          {((formData as any)?.custom_cta_buttons as CTAButtonItem[] || getDefaultCTAButtons(templateId))
-            .filter(b => b.enabled)
-            .map(btn => {
-              const isPrimary = ['order', 'booking', 'add_to_cart', 'order_food', 'pre_order', 'booking_consult', 'booking_repair', 'booking_beauty', 'booking_clinic', 'booking_store', 'book_table', 'book_party'].includes(btn.action);
-              return (
-                <button
-                  key={btn.id}
-                  className={`flex items-center justify-center gap-1.5 rounded-full py-2.5 text-xs font-medium ${
-                    isPrimary ? 'flex-1 text-white' : 'px-3 border border-black/10'
-                  }`}
-                  style={isPrimary ? { backgroundColor: accentColor } : undefined}
-                >
-                  {btn.icon} {btn.label}
-                </button>
-              );
-            })}
+      <SectionOverlay sectionId="cta-buttons" label="Nút thao tác" onEdit={onEditSection}>
+        <div className="sticky bottom-0 bg-white/95 backdrop-blur border-t px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            {((formData as any)?.custom_cta_buttons as CTAButtonItem[] || getDefaultCTAButtons(templateId))
+              .filter(b => b.enabled)
+              .map(btn => {
+                const isPrimary = ['order', 'booking', 'add_to_cart', 'order_food', 'pre_order', 'booking_consult', 'booking_repair', 'booking_beauty', 'booking_clinic', 'booking_store', 'book_table', 'book_party'].includes(btn.action);
+                return (
+                  <button
+                    key={btn.id}
+                    className={`flex items-center justify-center gap-1.5 rounded-full py-2.5 text-xs font-medium ${
+                      isPrimary ? 'flex-1 text-white' : 'px-3 border border-black/10'
+                    }`}
+                    style={isPrimary ? { backgroundColor: accentColor } : undefined}
+                  >
+                    {btn.icon} {btn.label}
+                  </button>
+                );
+              })}
+          </div>
         </div>
-      </div>
+      </SectionOverlay>
     </>
   );
 
