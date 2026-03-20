@@ -527,7 +527,107 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
                   </Card>
                 </TabsContent>
 
-                {/* Tab 3: Debt */}
+                {/* Tab 3: Vouchers */}
+                <TabsContent value="vouchers" className="mt-3 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm text-muted-foreground">
+                      {customerVouchers?.length || 0} voucher
+                      {customerVouchers?.filter(v => v.status === 'unused').length 
+                        ? ` (${customerVouchers.filter(v => v.status === 'unused').length} chưa dùng)` 
+                        : ''}
+                    </p>
+                    {canEdit && (
+                      <Button variant="outline" size="sm" onClick={() => setShowVoucherDialog(true)}>
+                        <Gift className="h-4 w-4 mr-1" />
+                        Cấp voucher
+                      </Button>
+                    )}
+                  </div>
+
+                  <Card>
+                    <CardContent className="p-0">
+                      {/* Mobile */}
+                      <div className="sm:hidden divide-y">
+                        {!customerVouchers?.length ? (
+                          <p className="text-center py-8 text-muted-foreground text-sm">
+                            Chưa có voucher
+                          </p>
+                        ) : (
+                          customerVouchers.map((v) => (
+                            <div key={v.id} className="p-3">
+                              <div className="flex justify-between items-start mb-1">
+                                <div>
+                                  <p className="font-medium text-sm">{v.voucher_name}</p>
+                                  <p className="font-mono text-xs text-muted-foreground">{v.code}</p>
+                                </div>
+                                <Badge variant={v.status === 'unused' ? 'default' : 'secondary'} className="text-xs">
+                                  {v.status === 'unused' ? 'Chưa dùng' : 'Đã dùng'}
+                                </Badge>
+                              </div>
+                              <div className="flex justify-between items-end text-xs">
+                                <span className="font-semibold text-primary">
+                                  {v.discount_type === 'amount' 
+                                    ? `${formatNumber(v.discount_value)}đ` 
+                                    : `${v.discount_value}%`}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {format(new Date(v.created_at), 'dd/MM/yyyy', { locale: vi })}
+                                </span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      {/* Desktop */}
+                      <Table className="hidden sm:table">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Mã</TableHead>
+                            <TableHead>Tên voucher</TableHead>
+                            <TableHead className="text-right">Giảm giá</TableHead>
+                            <TableHead>Nguồn</TableHead>
+                            <TableHead>Ngày cấp</TableHead>
+                            <TableHead>Trạng thái</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {!customerVouchers?.length ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                Chưa có voucher
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            customerVouchers.map((v) => (
+                              <TableRow key={v.id}>
+                                <TableCell className="font-mono text-sm">{v.code}</TableCell>
+                                <TableCell>{v.voucher_name}</TableCell>
+                                <TableCell className="text-right font-medium">
+                                  {v.discount_type === 'amount' 
+                                    ? `${formatNumber(v.discount_value)}đ` 
+                                    : `${v.discount_value}%`}
+                                </TableCell>
+                                <TableCell className="text-xs">
+                                  {v.source === 'manual' ? 'Thủ công' : v.source === 'export' ? 'Bán hàng' : v.source}
+                                </TableCell>
+                                <TableCell>
+                                  {format(new Date(v.created_at), 'dd/MM/yyyy', { locale: vi })}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={v.status === 'unused' ? 'default' : 'secondary'}>
+                                    {v.status === 'unused' ? 'Chưa dùng' : 'Đã dùng'}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Tab 4: Debt */}
                 <TabsContent value="debt" className="mt-4 space-y-4">
                   {/* Debt Summary */}
                   <div className="grid grid-cols-3 gap-4">
