@@ -96,8 +96,9 @@ export function TenantsManagement() {
       t.subdomain.toLowerCase().includes(search.toLowerCase()) ||
       t.email?.toLowerCase().includes(search.toLowerCase());
     
-    // Status filter
-    const matchStatus = statusFilter === '_all_' || t.status === statusFilter;
+    // Status filter - "expired" also matches tenants with 0 remaining days regardless of DB status
+    const matchStatus = statusFilter === '_all_' || 
+      (statusFilter === 'expired' ? (t.status === 'expired' || calculateRemainingDays(t) <= 0) : t.status === statusFilter);
     
     // Usage filter (đã mua / chưa mua = has import/export receipts)
     const enrichment = enrichmentMap?.get(t.id);
