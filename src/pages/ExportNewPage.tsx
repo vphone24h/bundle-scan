@@ -783,7 +783,7 @@ export default function ExportNewPage() {
   };
 
   // Handle payment completion
-  const handlePaymentComplete = async (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number, giftVoucherTemplateId?: string, skipCashBook?: boolean) => {
+  const handlePaymentComplete = async (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number, giftVoucherTemplateId?: string, skipCashBook?: boolean, appliedVoucherIds?: string[], voucherDiscount?: number) => {
     if (isSubmitting) return; // Chống double-submit
     setIsSubmitting(true);
 
