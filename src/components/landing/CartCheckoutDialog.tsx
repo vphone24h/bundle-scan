@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ShoppingCart, CheckCircle2, ArrowLeft, Mail, Gift, Ticket, Star, Search } from 'lucide-react';
+import { Loader2, ShoppingCart, CheckCircle2, ArrowLeft, Mail, Gift, Ticket, Star, Search, X } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { toast } from 'sonner';
 import { useLandingCart, CartItem } from '@/hooks/useLandingCart';
@@ -177,6 +177,9 @@ export function CartCheckoutDialog({
         <div className="sticky top-0 z-10 bg-white border-b px-4 py-3 flex items-center gap-3">
           <ShoppingCart className="h-5 w-5" style={{ color: primaryColor }} />
           <h2 className="font-semibold text-base flex-1">Đặt hàng ({cart.items.length} sản phẩm)</h2>
+          <button onClick={handleClose} className="p-1 rounded-full hover:bg-muted transition-colors">
+            <X className="h-5 w-5 text-muted-foreground" />
+          </button>
         </div>
 
         <div className="p-4 space-y-3">
