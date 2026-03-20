@@ -374,7 +374,7 @@ export function PaymentFlowDialog({
                   inputMode="tel"
                   className={`h-11 text-base ${attempted && !customerPhone.trim() ? 'border-red-400' : ''}`}
                 />
-                <p className="text-xs text-muted-foreground mt-1">Nhập SĐT đã từng mua hàng để được ưu đãi</p>
+                <p className="text-xs font-medium mt-1" style={{ color: primaryColor }}>Nhập SĐT đã từng mua hàng để được ưu đãi</p>
               </div>
 
               <div>
