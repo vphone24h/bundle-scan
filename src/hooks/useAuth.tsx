@@ -103,8 +103,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               localStorage.removeItem('ctv_just_logged_out');
             }
           }
-          setSession(newSession);
-          setUser(newSession?.user ?? null);
+          if (newSession) {
+            setSession(newSession);
+            setUser(newSession.user ?? null);
+          } else {
+            // Safety: avoid clearing valid in-memory state on transient null session
+            debouncedSessionCheck();
+          }
           setLoading(false);
         } else if (event === 'SIGNED_OUT') {
           // ONLY log out if user explicitly clicked the logout button.
@@ -147,8 +152,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } else {
           // INITIAL_SESSION, USER_UPDATED, etc.
-          setSession(newSession);
-          setUser(newSession?.user ?? null);
+          if (newSession) {
+            setSession(newSession);
+            setUser(newSession.user ?? null);
+          } else if (userInitiatedSignOut) {
+            userInitiatedSignOut = false;
+            setSession(null);
+            setUser(null);
+          } else {
+            // Do not clear the current user on transient null sessions
+            debouncedSessionCheck();
+          }
           setLoading(false);
         }
       }
@@ -156,8 +170,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      setSession(existingSession);
-      setUser(existingSession?.user ?? null);
+      if (existingSession) {
+        setSession(existingSession);
+        setUser(existingSession.user ?? null);
+      } else if (userInitiatedSignOut) {
+        userInitiatedSignOut = false;
+        setSession(null);
+        setUser(null);
+      } else {
+        // Keep current state and attempt silent recovery instead of forcing logout
+        debouncedSessionCheck();
+      }
       setLoading(false);
     });
 
@@ -252,7 +275,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.clear();
     localStorage.removeItem(CURRENT_STORE_ID_KEY);
     localStorage.removeItem('ctv_store_mode');
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
   };
 
   return (
