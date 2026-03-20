@@ -112,10 +112,11 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
 
   if (!customer && !isLoading) return null;
 
-  // Calculate debt from export receipts
-  const totalDebt = purchaseHistory?.reduce((sum, r) => sum + (r.debt_amount || 0), 0) || 0;
-  const paidDebt = debtPayments?.reduce((sum, p) => sum + p.amount, 0) || 0;
-  const remainingDebt = totalDebt - paidDebt;
+  // Calculate debt accurately from debtDetail (receipts) + debtPayments (additions & payments)
+  const receiptDebt = debtDetail?.reduce((sum: number, r: any) => sum + (r.debt_amount || 0), 0) || 0;
+  const debtAdditions = debtPayments?.filter((p: any) => p.payment_type === 'addition').reduce((sum: number, p: any) => sum + p.amount, 0) || 0;
+  const debtPaid = debtPayments?.filter((p: any) => p.payment_type === 'payment').reduce((sum: number, p: any) => sum + p.amount, 0) || 0;
+  const remainingDebt = receiptDebt + debtAdditions - debtPaid;
 
   return (
     <>
@@ -633,13 +634,13 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
                   <div className="grid grid-cols-3 gap-4">
                     <Card>
                       <CardContent className="pt-4 text-center">
-                        <p className="text-xl font-bold">{formatNumber(totalDebt)}</p>
+                        <p className="text-xl font-bold">{formatNumber(receiptDebt + debtAdditions)}</p>
                         <p className="text-xs text-muted-foreground">Tổng nợ</p>
                       </CardContent>
                     </Card>
                     <Card>
                       <CardContent className="pt-4 text-center">
-                        <p className="text-xl font-bold text-green-600">{formatNumber(paidDebt)}</p>
+                        <p className="text-xl font-bold text-green-600">{formatNumber(debtPaid)}</p>
                         <p className="text-xs text-muted-foreground">Đã trả</p>
                       </CardContent>
                     </Card>
