@@ -98,8 +98,10 @@ export function EmailHistoryTable() {
   const resendMutation = useMutation({
     mutationFn: async (record: EmailRecord) => {
       setResendingId(record.id);
-      const failedList = record.failed_emails && record.failed_emails.length > 0 ? record.failed_emails : null;
-      if (!failedList || failedList.length === 0) throw new Error('Không có danh sách email thất bại để gửi lại.');
+      const failedList = record.failed_emails && record.failed_emails.length > 0
+        ? record.failed_emails
+        : (record.recipients as string[] || []);
+      if (!failedList || failedList.length === 0) throw new Error('Không có danh sách email để gửi lại.');
       const { data, error } = await supabase.functions.invoke('send-bulk-email', {
         body: { emails: failedList, subject: record.subject, htmlContent: record.html_content || '' },
       });
@@ -196,7 +198,7 @@ export function EmailHistoryTable() {
                       <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleView(email); }}>
                         <Eye className="h-4 w-4" />
                       </Button>
-                      {email.failed_emails && email.failed_emails.length > 0 && (
+                      {(email.fail_count > 0 || (email.failed_emails && email.failed_emails.length > 0)) && (
                         <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); resendMutation.mutate(email); }} disabled={resendingId === email.id} title="Gửi lại email thất bại">
                           <RefreshCw className={`h-4 w-4 ${resendingId === email.id ? 'animate-spin' : ''}`} />
                         </Button>
@@ -236,7 +238,7 @@ export function EmailHistoryTable() {
                 {email.success_count > 0 && <span className="flex items-center gap-1 text-green-600"><CheckCircle className="h-3 w-3" /> {email.success_count}</span>}
                 {email.fail_count > 0 && <span className="flex items-center gap-1 text-destructive"><XCircle className="h-3 w-3" /> {email.fail_count}</span>}
               </div>
-              {email.failed_emails && email.failed_emails.length > 0 && (
+              {(email.fail_count > 0 || (email.failed_emails && email.failed_emails.length > 0)) && (
                 <Button variant="outline" size="sm" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); resendMutation.mutate(email); }} disabled={resendingId === email.id}>
                   <RefreshCw className={`h-3 w-3 mr-1 ${resendingId === email.id ? 'animate-spin' : ''}`} />Gửi lại
                 </Button>
