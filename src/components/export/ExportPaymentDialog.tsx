@@ -103,6 +103,22 @@ export function ExportPaymentDialog({
   const [giftVoucher, setGiftVoucher] = useState(false);
   const [selectedVoucherTemplateId, setSelectedVoucherTemplateId] = useState('');
 
+  // Voucher application (use existing vouchers for discount)
+  const availableVouchers = customerVouchers.filter(v => v.status === 'unused');
+  const [appliedVoucherIds, setAppliedVoucherIds] = useState<string[]>([]);
+
+  // Calculate voucher discount
+  const voucherDiscount = useMemo(() => {
+    return appliedVoucherIds.reduce((sum, id) => {
+      const v = availableVouchers.find(v => v.id === id);
+      if (!v) return sum;
+      if (v.discount_type === 'percentage') {
+        return sum + Math.floor(totalAmount * v.discount_value / 100);
+      }
+      return sum + v.discount_value;
+    }, 0);
+  }, [appliedVoucherIds, availableVouchers, totalAmount]);
+
   // Calculate max points that can be redeemed
   // First, calculate max discount by percentage
   const maxDiscountByPercentage = (pointSettings?.use_percentage_limit && pointSettings?.max_redeem_percentage)
