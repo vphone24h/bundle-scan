@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Phone, MapPin, Mail, Calendar, Edit2, ShoppingCart, Wallet, Star, Eye } from 'lucide-react';
+import { Phone, MapPin, Mail, Calendar, Edit2, ShoppingCart, Wallet, Star, Eye, Ticket, Gift } from 'lucide-react';
 import { UserCircle } from 'lucide-react';
 import {
   useCustomerDetail,
@@ -29,11 +29,13 @@ import {
   POINT_TRANSACTION_TYPE_NAMES,
 } from '@/hooks/useCustomerPoints';
 import { useDebtDetail, useDebtPaymentHistory } from '@/hooks/useDebt';
+import { useCustomerVouchersById } from '@/hooks/useVouchers';
 import { formatNumber } from '@/lib/formatNumber';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { CustomerFormDialog } from './CustomerFormDialog';
 import { PointAdjustDialog } from './PointAdjustDialog';
+import { IssueVoucherDialog } from './IssueVoucherDialog';
 import { CustomerPurchaseDetailDialog } from './CustomerPurchaseDetailDialog';
 import { StaffAssignSelect } from '@/components/crm/StaffAssignSelect';
 import { useAssignStaffToCustomer, useStaffList, CRM_STATUS_LABELS, CRM_STATUS_COLORS, CRMStatus, useUpdateCustomerCRMStatus } from '@/hooks/useCRM';
@@ -57,6 +59,7 @@ interface CustomerDetailDialogProps {
 export function CustomerDetailDialog({ customerId, open, onOpenChange }: CustomerDetailDialogProps) {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showAdjustDialog, setShowAdjustDialog] = useState(false);
+  const [showVoucherDialog, setShowVoucherDialog] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
   const [showPurchaseDetail, setShowPurchaseDetail] = useState(false);
   const { mutate: assignStaff, isPending: isAssigning } = useAssignStaffToCustomer();
@@ -69,6 +72,7 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
   const { data: customer, isLoading } = useCustomerDetail(customerId);
   const { data: pointTransactions } = usePointTransactions(customerId);
   const { data: purchaseHistory } = useCustomerPurchaseHistory(customerId);
+  const { data: customerVouchers } = useCustomerVouchersById(customerId);
   const { data: debtDetail } = useDebtDetail('customer', customerId);
   const { data: debtPayments } = useDebtPaymentHistory('customer', customerId);
 
@@ -272,7 +276,7 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
 
               {/* Tabs */}
               <Tabs defaultValue="purchases" className="w-full">
-                <TabsList className="grid w-full grid-cols-4 h-auto">
+                <TabsList className="grid w-full grid-cols-5 h-auto">
                   <TabsTrigger value="purchases" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
                     <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Mua hàng</span>
@@ -280,6 +284,10 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
                   <TabsTrigger value="points" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
                     <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Điểm</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="vouchers" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
+                    <Ticket className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Voucher</span>
                   </TabsTrigger>
                   <TabsTrigger value="debt" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
                     <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
@@ -519,7 +527,107 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
                   </Card>
                 </TabsContent>
 
-                {/* Tab 3: Debt */}
+                {/* Tab 3: Vouchers */}
+                <TabsContent value="vouchers" className="mt-3 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm text-muted-foreground">
+                      {customerVouchers?.length || 0} voucher
+                      {customerVouchers?.filter(v => v.status === 'unused').length 
+                        ? ` (${customerVouchers.filter(v => v.status === 'unused').length} chưa dùng)` 
+                        : ''}
+                    </p>
+                    {canEdit && (
+                      <Button variant="outline" size="sm" onClick={() => setShowVoucherDialog(true)}>
+                        <Gift className="h-4 w-4 mr-1" />
+                        Cấp voucher
+                      </Button>
+                    )}
+                  </div>
+
+                  <Card>
+                    <CardContent className="p-0">
+                      {/* Mobile */}
+                      <div className="sm:hidden divide-y">
+                        {!customerVouchers?.length ? (
+                          <p className="text-center py-8 text-muted-foreground text-sm">
+                            Chưa có voucher
+                          </p>
+                        ) : (
+                          customerVouchers.map((v) => (
+                            <div key={v.id} className="p-3">
+                              <div className="flex justify-between items-start mb-1">
+                                <div>
+                                  <p className="font-medium text-sm">{v.voucher_name}</p>
+                                  <p className="font-mono text-xs text-muted-foreground">{v.code}</p>
+                                </div>
+                                <Badge variant={v.status === 'unused' ? 'default' : 'secondary'} className="text-xs">
+                                  {v.status === 'unused' ? 'Chưa dùng' : 'Đã dùng'}
+                                </Badge>
+                              </div>
+                              <div className="flex justify-between items-end text-xs">
+                                <span className="font-semibold text-primary">
+                                  {v.discount_type === 'amount' 
+                                    ? `${formatNumber(v.discount_value)}đ` 
+                                    : `${v.discount_value}%`}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {format(new Date(v.created_at), 'dd/MM/yyyy', { locale: vi })}
+                                </span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      {/* Desktop */}
+                      <Table className="hidden sm:table">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Mã</TableHead>
+                            <TableHead>Tên voucher</TableHead>
+                            <TableHead className="text-right">Giảm giá</TableHead>
+                            <TableHead>Nguồn</TableHead>
+                            <TableHead>Ngày cấp</TableHead>
+                            <TableHead>Trạng thái</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {!customerVouchers?.length ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                Chưa có voucher
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            customerVouchers.map((v) => (
+                              <TableRow key={v.id}>
+                                <TableCell className="font-mono text-sm">{v.code}</TableCell>
+                                <TableCell>{v.voucher_name}</TableCell>
+                                <TableCell className="text-right font-medium">
+                                  {v.discount_type === 'amount' 
+                                    ? `${formatNumber(v.discount_value)}đ` 
+                                    : `${v.discount_value}%`}
+                                </TableCell>
+                                <TableCell className="text-xs">
+                                  {v.source === 'manual' ? 'Thủ công' : v.source === 'export' ? 'Bán hàng' : v.source}
+                                </TableCell>
+                                <TableCell>
+                                  {format(new Date(v.created_at), 'dd/MM/yyyy', { locale: vi })}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={v.status === 'unused' ? 'default' : 'secondary'}>
+                                    {v.status === 'unused' ? 'Chưa dùng' : 'Đã dùng'}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Tab 4: Debt */}
                 <TabsContent value="debt" className="mt-4 space-y-4">
                   {/* Debt Summary */}
                   <div className="grid grid-cols-3 gap-4">
@@ -682,6 +790,14 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
             customerId={customer.id}
             customerName={customer.name}
             currentPoints={customer.current_points}
+          />
+          <IssueVoucherDialog
+            open={showVoucherDialog}
+            onOpenChange={setShowVoucherDialog}
+            customerId={customer.id}
+            customerName={customer.name}
+            customerPhone={customer.phone}
+            customerEmail={customer.email}
           />
         </>
       )}

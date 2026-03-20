@@ -192,7 +192,10 @@ export function useIssueVoucher() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['customer-vouchers'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customer-vouchers'] });
+      qc.invalidateQueries({ queryKey: ['customer-vouchers-by-id'] });
+    },
   });
 }
 
@@ -246,5 +249,24 @@ export function usePublicCustomerVouchers(phone: string, tenantId: string | null
       return (data || []) as { id: string; code: string; voucher_name: string; discount_type: string; discount_value: number; status: string; source: string; created_at: string }[];
     },
     enabled: !!tenantId && isPhoneNumber,
+  });
+}
+
+// Hook: Fetch vouchers for a specific customer by ID (admin)
+export function useCustomerVouchersById(customerId: string | null) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['customer-vouchers-by-id', customerId],
+    queryFn: async () => {
+      if (!customerId) return [];
+      const { data, error } = await supabase
+        .from('customer_vouchers' as any)
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as unknown as CustomerVoucher[];
+    },
+    enabled: !!user?.id && !!customerId,
   });
 }
