@@ -1831,6 +1831,12 @@ export default function UniversalStoreTemplate({
       />
 
       <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
+      <FloatingCartButton
+        tenantId={tenantId}
+        primaryColor={accentColor}
+        branches={branches.map(b => ({ id: b.id, name: b.name }))}
+        onNavigateOrderLookup={() => navigateTo('order-lookup' as PageView)}
+      />
     </div>
     </PullToRefresh>
   );
