@@ -1977,22 +1977,59 @@ export function LandingPageSettings() {
               />
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label className="flex items-center gap-2">
                 <svg className="h-4 w-4 text-blue-500" viewBox="0 0 48 48" fill="currentColor">
                   <path d="M24 4C12.954 4 4 12.954 4 24s8.954 20 20 20 20-8.954 20-20S35.046 4 24 4zm9.375 28.125c-.833.833-2.5 1.667-4.167 1.667h-5.416c-1.667 0-3.334-.834-4.167-1.667l-5-5c-.833-.833-.833-2.5 0-3.333l7.5-7.5c.833-.834 2.5-.834 3.333 0l.834.833.833-.833c.834-.834 2.5-.834 3.334 0l7.5 7.5c.833.833.833 2.5 0 3.333l-4.584 5z"/>
                 </svg>
-                Zalo (SĐT)
+                Zalo
               </Label>
-              <Input
-                value={formData.zalo_url || ''}
-                onChange={(e) => handleChange('zalo_url', e.target.value)}
-                placeholder="VD: 0971838929"
-                inputMode="tel"
-              />
-              <p className="text-xs text-muted-foreground">
-                Chỉ cần nhập SĐT Zalo, khách nhấn vào sẽ tự mở Zalo chat
-              </p>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="zalo_type"
+                    checked={!(formData.zalo_url || '').startsWith('http')}
+                    onChange={() => handleChange('zalo_url', '')}
+                    className="accent-primary"
+                  />
+                  <span className="text-sm">Cá nhân</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="zalo_type"
+                    checked={(formData.zalo_url || '').startsWith('http')}
+                    onChange={() => handleChange('zalo_url', 'https://oa.zalo.me/')}
+                    className="accent-primary"
+                  />
+                  <span className="text-sm">Zalo OA</span>
+                </label>
+              </div>
+              {!(formData.zalo_url || '').startsWith('http') ? (
+                <>
+                  <Input
+                    value={formData.zalo_url || ''}
+                    onChange={(e) => handleChange('zalo_url', e.target.value)}
+                    placeholder="VD: 0971838929"
+                    inputMode="tel"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Chỉ cần nhập SĐT Zalo, khách nhấn vào sẽ tự mở Zalo chat
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Input
+                    value={formData.zalo_url || ''}
+                    onChange={(e) => handleChange('zalo_url', e.target.value)}
+                    placeholder="VD: https://oa.zalo.me/1234567890"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Nhập link Zalo OA của shop, khách nhấn vào sẽ mở trang Zalo OA
+                  </p>
+                </>
+              )}
             </div>
             
             <div className="space-y-2">
