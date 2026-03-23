@@ -384,6 +384,21 @@ export function LandingArticlesTab() {
               <Plus className="h-4 w-4" /> Thêm danh mục
             </Button>
           </div>
+          {/* Custom article section title */}
+          <div className="mt-2">
+            <Label className="text-xs text-muted-foreground">Tiêu đề hiển thị trên website</Label>
+            <Input
+              value={artSectionTitle || (landingSettings as any)?.article_section_title || ''}
+              onChange={e => setArtSectionTitle(e.target.value)}
+              onBlur={() => {
+                if (artSectionTitle !== '' && artSectionTitle !== ((landingSettings as any)?.article_section_title || '')) {
+                  updateSettings.mutate({ article_section_title: artSectionTitle } as any);
+                }
+              }}
+              placeholder={getIndustryConfig((landingSettings as any)?.website_template || 'phone_store').articleSectionTitle}
+              className="h-8 text-sm mt-1"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {catLoading ? (
