@@ -19,6 +19,7 @@ export function buildMetaShareUrl({ tenantId, type, id, redirectUrl }: BuildMeta
     metaUrl.searchParams.set('id', id);
     metaUrl.searchParams.set('tenant_id', tenantId);
     metaUrl.searchParams.set('url', redirectUrl);
+    metaUrl.searchParams.set('v', Date.now().toString());
     return metaUrl.toString();
   } catch {
     return redirectUrl;
