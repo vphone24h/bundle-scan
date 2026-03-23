@@ -175,6 +175,7 @@ export interface IndustryConfig {
   heroGradient: string;
   accentColor: string;
   trustBadges: IndustryTrustBadge[];
+  categorySectionTitle: string;
   productSectionTitle: string;
   productSectionSubtitle: string;
   emptyProductText: string;

@@ -657,7 +657,7 @@ export default function UniversalStoreTemplate({
                       <section key="categories" className="py-8 bg-[#f5f5f7]">
                         <div className="max-w-[1200px] mx-auto px-4">
                           <ScrollReveal animation="fade-up">
-                            <h2 className="text-lg font-bold tracking-tight mb-4">Danh mục sản phẩm</h2>
+                            <h2 className="text-lg font-bold tracking-tight mb-4">{config.categorySectionTitle}</h2>
                           </ScrollReveal>
                         </div>
                         <div className="flex flex-col gap-0">
