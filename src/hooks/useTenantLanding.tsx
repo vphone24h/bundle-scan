@@ -51,7 +51,7 @@ export interface TenantLandingSettings {
   website_template: string;
   ai_description_enabled: boolean;
   auto_image_enabled: boolean;
-  custom_trust_badges: { icon: string; title: string; desc: string }[] | null;
+  custom_trust_badges: { icon: string; title: string; desc: string; link?: string }[] | null;
   custom_nav_items: NavItemConfig[] | null;
   // Phase 3: Customization
   hero_title: string | null;
