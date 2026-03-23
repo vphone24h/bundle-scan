@@ -8,7 +8,8 @@
  * - localhost:5173 → null (dev mode)
  */
 
-const PRIMARY_DOMAIN = 'vkho.vn';
+const PRIMARY_DOMAINS = ['vkho.vn', 'nguyenkieuanh.net'];
+const PRIMARY_DOMAIN = PRIMARY_DOMAINS[0]; // default for URL building
 const RESERVED_SUBDOMAINS = ['www', 'api', 'admin', 'app', 'dashboard'];
 
 export interface TenantInfo {
@@ -56,8 +57,11 @@ export function detectTenantFromHostname(): TenantInfo {
     };
   }
   
-  // Check if it's the primary domain FIRST (before subdomain check)
-  if (hostname === PRIMARY_DOMAIN || hostname === `www.${PRIMARY_DOMAIN}`) {
+  // Check if it's any primary domain
+  const matchedPrimary = PRIMARY_DOMAINS.find(
+    d => hostname === d || hostname === `www.${d}`
+  );
+  if (matchedPrimary) {
     return {
       subdomain: null,
       isMainDomain: true,
@@ -65,33 +69,26 @@ export function detectTenantFromHostname(): TenantInfo {
     };
   }
   
-  // Check if it's the primary domain
-  if (hostname === PRIMARY_DOMAIN || hostname === `www.${PRIMARY_DOMAIN}`) {
-    return {
-      subdomain: null,
-      isMainDomain: true,
-      hostname,
-    };
-  }
-  
-  // Check if it's a subdomain of primary domain
-  if (hostname.endsWith(`.${PRIMARY_DOMAIN}`)) {
-    const subdomain = hostname.replace(`.${PRIMARY_DOMAIN}`, '');
-    
-    // Check reserved subdomains
-    if (RESERVED_SUBDOMAINS.includes(subdomain.toLowerCase())) {
+  // Check if it's a subdomain of any primary domain
+  for (const domain of PRIMARY_DOMAINS) {
+    if (hostname.endsWith(`.${domain}`)) {
+      const subdomain = hostname.replace(`.${domain}`, '');
+      
+      // Check reserved subdomains
+      if (RESERVED_SUBDOMAINS.includes(subdomain.toLowerCase())) {
+        return {
+          subdomain: null,
+          isMainDomain: true,
+          hostname,
+        };
+      }
+      
       return {
-        subdomain: null,
-        isMainDomain: true,
+        subdomain: subdomain.toLowerCase(),
+        isMainDomain: false,
         hostname,
       };
     }
-    
-    return {
-      subdomain: subdomain.toLowerCase(),
-      isMainDomain: false,
-      hostname,
-    };
   }
   
   // Custom domain - need to resolve via API
