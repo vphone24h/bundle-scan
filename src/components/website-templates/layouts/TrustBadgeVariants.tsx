@@ -173,7 +173,7 @@ function OrganicBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutSty
       <div className="max-w-[1200px] mx-auto px-4 py-4">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {badges.map((badge, i) => (
-            <div key={i} className="flex items-center gap-2.5 p-3 bg-white/80 rounded-xl border border-green-100">
+            <BadgeWrapper key={i} link={badge.link} className="flex items-center gap-2.5 p-3 bg-white/80 rounded-xl border border-green-100">
               <div className="text-green-600">{ICON_MAP[badge.icon] || <Shield className="h-5 w-5" />}</div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-green-900 leading-tight">{badge.title}</p>
