@@ -36,13 +36,13 @@ function AppleBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutStyle
         <div className="max-w-[1200px] mx-auto px-4 py-5">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {badges.map((badge, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-xl">
+              <BadgeWrapper key={i} link={badge.link} className="flex items-center gap-3 p-3 rounded-xl">
                 <div className="shrink-0" style={{ color: accentColor }}>{ICON_MAP[badge.icon] || <Shield className="h-5 w-5" />}</div>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold leading-tight">{badge.title}</p>
                   <p className="text-[10px] text-[#86868b] leading-tight">{badge.desc}</p>
                 </div>
-              </div>
+              </BadgeWrapper>
             ))}
           </div>
         </div>
