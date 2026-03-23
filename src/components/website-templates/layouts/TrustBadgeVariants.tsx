@@ -97,10 +97,10 @@ function NikeBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutStyle'
       <div className="max-w-[1200px] mx-auto px-4 py-4">
         <div className="flex overflow-x-auto gap-6 scrollbar-hide justify-center">
           {badges.map((badge, i) => (
-            <div key={i} className="flex items-center gap-2 shrink-0">
+            <BadgeWrapper key={i} link={badge.link} className="flex items-center gap-2 shrink-0">
               <div className="text-black">{ICON_MAP[badge.icon] || <Shield className="h-4 w-4" />}</div>
               <p className="text-[11px] font-semibold text-black uppercase tracking-wide whitespace-nowrap">{badge.title}</p>
-            </div>
+            </BadgeWrapper>
           ))}
         </div>
       </div>
