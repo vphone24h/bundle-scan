@@ -14,20 +14,25 @@ export function FloatingCartButton({ tenantId, primaryColor, branches, onNavigat
   const cart = useLandingCart();
   const [showCheckout, setShowCheckout] = useState(false);
 
-  if (cart.totalItems === 0) return null;
+  // Don't hide when dialog is open (so success popup can render after cart is cleared)
+  const showButton = cart.totalItems > 0 || showCheckout;
+
+  if (!showButton) return null;
 
   return (
     <>
-      <button
-        onClick={() => setShowCheckout(true)}
-        className="fixed bottom-6 right-4 z-50 h-14 w-14 rounded-full bg-destructive text-destructive-foreground shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
-        aria-label="Giỏ hàng"
-      >
-        <ShoppingCart className="h-6 w-6" />
-        <span className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center rounded-full bg-white text-destructive text-xs font-bold shadow border border-destructive/20">
-          {cart.totalItems}
-        </span>
-      </button>
+      {cart.totalItems > 0 && (
+        <button
+          onClick={() => setShowCheckout(true)}
+          className="fixed bottom-6 right-4 z-50 h-14 w-14 rounded-full bg-destructive text-destructive-foreground shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+          aria-label="Giỏ hàng"
+        >
+          <ShoppingCart className="h-6 w-6" />
+          <span className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center rounded-full bg-white text-destructive text-xs font-bold shadow border border-destructive/20">
+            {cart.totalItems}
+          </span>
+        </button>
+      )}
 
       <CartCheckoutDialog
         open={showCheckout}
