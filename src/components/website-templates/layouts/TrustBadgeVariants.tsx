@@ -11,6 +11,18 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   Star: <Star className="h-5 w-5" />,
 };
 
+function BadgeWrapper({ link, children, className }: { link?: string; children: React.ReactNode; className?: string }) {
+  if (link) {
+    const isExternal = link.startsWith('http');
+    return (
+      <a href={link} target={isExternal ? '_blank' : undefined} rel={isExternal ? 'noopener noreferrer' : undefined} className={`cursor-pointer hover:opacity-80 transition-opacity ${className || ''}`}>
+        {children}
+      </a>
+    );
+  }
+  return <div className={className}>{children}</div>;
+}
+
 interface TrustBadgeProps {
   badges: IndustryTrustBadge[];
   accentColor: string;
