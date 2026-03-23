@@ -134,6 +134,9 @@ function CategoryNode({
 export function LandingArticlesTab() {
   const { data: tenant } = useCurrentTenant();
   const tenantId = tenant?.id;
+  const { data: landingSettings } = useTenantLandingSettings();
+  const updateSettings = useUpdateTenantLandingSettings();
+  const [artSectionTitle, setArtSectionTitle] = useState('');
   const { data: categories = [], isLoading: catLoading } = useLandingArticleCategories(tenantId);
   const createCat = useCreateLandingArticleCategory();
   const updateCat = useUpdateLandingArticleCategory();
