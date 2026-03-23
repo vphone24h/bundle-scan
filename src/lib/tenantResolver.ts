@@ -8,7 +8,8 @@
  * - localhost:5173 → null (dev mode)
  */
 
-const PRIMARY_DOMAIN = 'vkho.vn';
+const PRIMARY_DOMAINS = ['vkho.vn', 'nguyenkieuanh.net'];
+const PRIMARY_DOMAIN = PRIMARY_DOMAINS[0]; // default for URL building
 const RESERVED_SUBDOMAINS = ['www', 'api', 'admin', 'app', 'dashboard'];
 
 export interface TenantInfo {
