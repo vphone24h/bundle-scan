@@ -400,7 +400,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
 
   // OG meta
   const ogTitle = storeName ? `${storeName}` : undefined;
-  const ogDesc = settings?.meta_description || settings?.store_description || undefined;
+  const ogDesc = settings?.store_description || settings?.meta_description || undefined;
   const ogImage = settings?.store_logo_url || undefined;
   useDynamicOGMeta(ogTitle, ogDesc, ogImage);
 
