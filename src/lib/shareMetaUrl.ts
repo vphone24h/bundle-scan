@@ -11,13 +11,15 @@ export function buildMetaShareUrl({ tenantId, type, id, redirectUrl }: BuildMeta
   if (!redirectUrl) return redirectUrl;
 
   const backendUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-  if (!backendUrl || !tenantId) return redirectUrl;
+  if (!backendUrl) return redirectUrl;
 
   try {
     const metaUrl = new URL(`${backendUrl}/functions/v1/og-meta`);
     metaUrl.searchParams.set('type', type);
     metaUrl.searchParams.set('id', id);
-    metaUrl.searchParams.set('tenant_id', tenantId);
+    if (tenantId) {
+      metaUrl.searchParams.set('tenant_id', tenantId);
+    }
     metaUrl.searchParams.set('url', redirectUrl);
     metaUrl.searchParams.set('v', Date.now().toString());
     return metaUrl.toString();
