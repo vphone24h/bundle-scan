@@ -1,0 +1,1 @@
+ALTER TABLE public.tenant_landing_settings ADD COLUMN IF NOT EXISTS article_section_title TEXT DEFAULT NULL;

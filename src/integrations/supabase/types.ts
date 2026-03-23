@@ -6573,6 +6573,7 @@ export type Database = {
         Row: {
           additional_addresses: string[] | null
           ai_description_enabled: boolean
+          article_section_title: string | null
           auto_image_enabled: boolean
           banner_image_url: string | null
           banner_link_url: string | null
@@ -6657,6 +6658,7 @@ export type Database = {
         Insert: {
           additional_addresses?: string[] | null
           ai_description_enabled?: boolean
+          article_section_title?: string | null
           auto_image_enabled?: boolean
           banner_image_url?: string | null
           banner_link_url?: string | null
@@ -6741,6 +6743,7 @@ export type Database = {
         Update: {
           additional_addresses?: string[] | null
           ai_description_enabled?: boolean
+          article_section_title?: string | null
           auto_image_enabled?: boolean
           banner_image_url?: string | null
           banner_link_url?: string | null

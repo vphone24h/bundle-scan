@@ -16,6 +16,8 @@ import {
   LandingArticleCategory,
 } from '@/hooks/useLandingArticles';
 import { useCurrentTenant } from '@/hooks/useTenant';
+import { useTenantLandingSettings, useUpdateTenantLandingSettings } from '@/hooks/useTenantLanding';
+import { getIndustryConfig } from '@/lib/industryConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -132,6 +134,9 @@ function CategoryNode({
 export function LandingArticlesTab() {
   const { data: tenant } = useCurrentTenant();
   const tenantId = tenant?.id;
+  const { data: landingSettings } = useTenantLandingSettings();
+  const updateSettings = useUpdateTenantLandingSettings();
+  const [artSectionTitle, setArtSectionTitle] = useState('');
   const { data: categories = [], isLoading: catLoading } = useLandingArticleCategories(tenantId);
   const createCat = useCreateLandingArticleCategory();
   const updateCat = useUpdateLandingArticleCategory();
@@ -378,6 +383,21 @@ export function LandingArticlesTab() {
             <Button onClick={() => openAddCategory()} size="sm" className="gap-1">
               <Plus className="h-4 w-4" /> Thêm danh mục
             </Button>
+          </div>
+          {/* Custom article section title */}
+          <div className="mt-2">
+            <Label className="text-xs text-muted-foreground">Tiêu đề hiển thị trên website</Label>
+            <Input
+              value={artSectionTitle || (landingSettings as any)?.article_section_title || ''}
+              onChange={e => setArtSectionTitle(e.target.value)}
+              onBlur={() => {
+                if (artSectionTitle !== '' && artSectionTitle !== ((landingSettings as any)?.article_section_title || '')) {
+                  updateSettings.mutate({ article_section_title: artSectionTitle } as any);
+                }
+              }}
+              placeholder={getIndustryConfig((landingSettings as any)?.website_template || 'phone_store').articleSectionTitle}
+              className="h-8 text-sm mt-1"
+            />
           </div>
         </CardHeader>
         <CardContent>

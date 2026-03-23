@@ -96,6 +96,7 @@ export default function UniversalStoreTemplate({
     if ((settings as any)?.hero_subtitle) c.heroSubtitle = (settings as any).hero_subtitle;
     if ((settings as any)?.hero_cta) c.heroCta = (settings as any).hero_cta;
     if ((settings as any)?.category_section_title) c.categorySectionTitle = (settings as any).category_section_title;
+    if ((settings as any)?.article_section_title) c.articleSectionTitle = (settings as any).article_section_title;
     if ((settings as any)?.custom_home_sections) {
       const customSections = (settings as any).custom_home_sections as HomeSectionItem[];
       c.homeSections = customSections.filter((s: HomeSectionItem) => s.enabled).map((s: HomeSectionItem) => s.id) as HomeSection[];
@@ -1370,7 +1371,7 @@ export default function UniversalStoreTemplate({
                           // Vertical: stacked cards with cover images (same as product categories)
                           return (
                             <div key="categoryFilter" className="mb-6">
-                              <h3 className="text-lg font-bold tracking-tight mb-4">Danh mục bài viết</h3>
+                              <h3 className="text-lg font-bold tracking-tight mb-4">{config.articleSectionTitle}</h3>
                               <div className="flex flex-col gap-0">
                                 {/* "All" button */}
                                 <button
