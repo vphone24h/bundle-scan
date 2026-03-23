@@ -58,6 +58,7 @@ export interface TenantLandingSettings {
   hero_subtitle: string | null;
   hero_cta: string | null;
   custom_home_sections: HomeSectionItem[] | null;
+  category_section_title: string | null;
   custom_product_tabs: { id: string; name: string; displayStyle: string; enabled: boolean; icon?: string }[] | null;
   custom_font_family: string | null;
   custom_layout_style: string | null;
