@@ -19,7 +19,8 @@ import {
   VariantPriceEntry,
 } from '@/hooks/useLandingProducts';
 import { useCurrentTenant } from '@/hooks/useTenant';
-import { useTenantLandingSettings } from '@/hooks/useTenantLanding';
+import { useTenantLandingSettings, useUpdateTenantLandingSettings } from '@/hooks/useTenantLanding';
+import { getIndustryConfig } from '@/lib/industryConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
