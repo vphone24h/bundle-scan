@@ -114,12 +114,12 @@ function LuxuryBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutStyl
       <div className="max-w-[1200px] mx-auto px-4 py-4">
         <div className="flex overflow-x-auto gap-6 scrollbar-hide justify-center">
           {badges.map((badge, i) => (
-            <div key={i} className="flex items-center gap-2 shrink-0">
+            <BadgeWrapper key={i} link={badge.link} className="flex items-center gap-2 shrink-0">
               <div className="text-amber-500">{ICON_MAP[badge.icon] || <Shield className="h-4 w-4" />}</div>
               <div>
                 <p className="text-[11px] font-medium text-amber-100/80 whitespace-nowrap">{badge.title}</p>
               </div>
-            </div>
+            </BadgeWrapper>
           ))}
         </div>
       </div>
