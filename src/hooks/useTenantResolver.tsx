@@ -150,7 +150,7 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
       }
     }
 
-    // Has subdomain - resolve tenant
+    // Has subdomain - resolve tenant by subdomain first, then fallback to custom_domains
     if (hostInfo.subdomain) {
       try {
         const { data, error } = await supabase
@@ -158,39 +158,62 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
 
         const tenant = Array.isArray(data) ? data[0] : data;
 
-        if (error || !tenant) {
-          const isNetworkError = isNetworkLikeError(error);
-          if (isNetworkError) {
-            const fallback = readPersistedTenant(hostname);
-            if (fallback) {
-              cachedResult = fallback;
-              cacheHostname = hostname;
-              return fallback;
-            }
-          }
-
+        if (!error && tenant) {
           const result: ResolvedTenant = {
-            tenantId: null,
-            subdomain: hostInfo.subdomain,
-            tenantName: tenant?.name || null,
-            status: 'not_found',
+            tenantId: tenant.id,
+            subdomain: tenant.subdomain,
+            tenantName: tenant.name,
+            status: 'resolved',
             isMainDomain: false,
           };
-
+          cachedResult = result;
+          cacheHostname = hostname;
+          persistResolvedTenant(hostname, result);
           return result;
         }
 
-        const result: ResolvedTenant = {
-          tenantId: tenant.id,
-          subdomain: tenant.subdomain,
-          tenantName: tenant.name,
-          status: 'resolved',
+        // Subdomain not found as tenant subdomain — fallback to custom_domains lookup
+        // e.g. osaca.vkho.vn is mapped in custom_domains to tenant "vphone"
+        if (!isNetworkLikeError(error)) {
+          try {
+            const { data: tenantId, error: domainError } = await supabase
+              .rpc('resolve_tenant_by_domain', { _domain: hostInfo.hostname });
+
+            if (!domainError && tenantId) {
+              const result: ResolvedTenant = {
+                tenantId,
+                subdomain: hostInfo.subdomain,
+                tenantName: null,
+                status: 'resolved',
+                isMainDomain: false,
+              };
+              cachedResult = result;
+              cacheHostname = hostname;
+              persistResolvedTenant(hostname, result);
+              return result;
+            }
+          } catch {
+            // Ignore custom domain lookup failure, fall through to not_found
+          }
+        }
+
+        // Network error — use persisted cache
+        if (isNetworkLikeError(error)) {
+          const fallback = readPersistedTenant(hostname);
+          if (fallback) {
+            cachedResult = fallback;
+            cacheHostname = hostname;
+            return fallback;
+          }
+        }
+
+        return {
+          tenantId: null,
+          subdomain: hostInfo.subdomain,
+          tenantName: null,
+          status: 'not_found',
           isMainDomain: false,
         };
-        cachedResult = result;
-        cacheHostname = hostname;
-        persistResolvedTenant(hostname, result);
-        return result;
       } catch (err) {
         console.error('Error resolving tenant:', err);
 
@@ -201,7 +224,6 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
           return fallback;
         }
 
-        // Don't cache network errors - allow retry
         return {
           tenantId: null,
           subdomain: hostInfo.subdomain,
