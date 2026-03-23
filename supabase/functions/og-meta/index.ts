@@ -172,14 +172,14 @@ Deno.serve(async (req) => {
   if (tenantId) {
     const { data: settings } = await supabase
       .from("tenant_landing_settings")
-      .select("store_name, store_logo_url, store_description")
+      .select("store_name, store_logo_url, store_description, meta_description")
       .eq("tenant_id", tenantId)
       .eq("is_enabled", true)
       .maybeSingle();
 
     if (settings) {
       storeName = settings.store_name || "";
-      storeDescription = settings.store_description || "";
+      storeDescription = settings.meta_description || settings.store_description || "";
       storeLogoUrl = settings.store_logo_url || "";
     }
   }
