@@ -179,7 +179,7 @@ function OrganicBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutSty
                 <p className="text-xs font-semibold text-green-900 leading-tight">{badge.title}</p>
                 <p className="text-[10px] text-green-600/70 leading-tight">{badge.desc}</p>
               </div>
-            </div>
+            </BadgeWrapper>
           ))}
         </div>
       </div>
