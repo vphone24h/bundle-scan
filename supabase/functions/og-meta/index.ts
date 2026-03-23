@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
 
     if (settings) {
       storeName = settings.store_name || "";
-      storeDescription = settings.meta_description || settings.store_description || "";
+      storeDescription = settings.store_description || settings.meta_description || "";
       storeLogoUrl = settings.store_logo_url || "";
     }
   }
