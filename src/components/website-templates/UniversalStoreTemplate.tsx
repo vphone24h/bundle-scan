@@ -95,6 +95,7 @@ export default function UniversalStoreTemplate({
     if ((settings as any)?.hero_title) c.heroTitle = (settings as any).hero_title;
     if ((settings as any)?.hero_subtitle) c.heroSubtitle = (settings as any).hero_subtitle;
     if ((settings as any)?.hero_cta) c.heroCta = (settings as any).hero_cta;
+    if ((settings as any)?.category_section_title) c.categorySectionTitle = (settings as any).category_section_title;
     if ((settings as any)?.custom_home_sections) {
       const customSections = (settings as any).custom_home_sections as HomeSectionItem[];
       c.homeSections = customSections.filter((s: HomeSectionItem) => s.enabled).map((s: HomeSectionItem) => s.id) as HomeSection[];
@@ -657,7 +658,7 @@ export default function UniversalStoreTemplate({
                       <section key="categories" className="py-8 bg-[#f5f5f7]">
                         <div className="max-w-[1200px] mx-auto px-4">
                           <ScrollReveal animation="fade-up">
-                            <h2 className="text-lg font-bold tracking-tight mb-4">Danh mục sản phẩm</h2>
+                            <h2 className="text-lg font-bold tracking-tight mb-4">{config.categorySectionTitle}</h2>
                           </ScrollReveal>
                         </div>
                         <div className="flex flex-col gap-0">

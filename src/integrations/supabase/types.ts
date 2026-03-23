@@ -6576,6 +6576,7 @@ export type Database = {
           auto_image_enabled: boolean
           banner_image_url: string | null
           banner_link_url: string | null
+          category_section_title: string | null
           created_at: string
           custom_cta_buttons: Json | null
           custom_domain_article: string | null
@@ -6659,6 +6660,7 @@ export type Database = {
           auto_image_enabled?: boolean
           banner_image_url?: string | null
           banner_link_url?: string | null
+          category_section_title?: string | null
           created_at?: string
           custom_cta_buttons?: Json | null
           custom_domain_article?: string | null
@@ -6742,6 +6744,7 @@ export type Database = {
           auto_image_enabled?: boolean
           banner_image_url?: string | null
           banner_link_url?: string | null
+          category_section_title?: string | null
           created_at?: string
           custom_cta_buttons?: Json | null
           custom_domain_article?: string | null

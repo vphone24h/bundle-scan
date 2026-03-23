@@ -19,7 +19,8 @@ import {
   VariantPriceEntry,
 } from '@/hooks/useLandingProducts';
 import { useCurrentTenant } from '@/hooks/useTenant';
-import { useTenantLandingSettings } from '@/hooks/useTenantLanding';
+import { useTenantLandingSettings, useUpdateTenantLandingSettings } from '@/hooks/useTenantLanding';
+import { getIndustryConfig } from '@/lib/industryConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -178,6 +179,8 @@ export function LandingProductsTab() {
   const { data: tenant } = useCurrentTenant();
   const tenantId = tenant?.id;
   const { data: landingSettings } = useTenantLandingSettings();
+  const updateSettings = useUpdateTenantLandingSettings();
+  const [catSectionTitle, setCatSectionTitle] = useState('');
   const { data: categories, isLoading: catLoading } = useLandingProductCategories(tenantId);
   const createCat = useCreateLandingProductCategory();
   const deleteCat = useDeleteLandingProductCategory();
@@ -557,6 +560,21 @@ export function LandingProductsTab() {
             <Button size="sm" variant="outline" onClick={() => { setEditingCat(null); setCatEditName(''); setCatParentId('_none_'); setCatDialog(true); }}>
               <Plus className="h-4 w-4 mr-1" /> Thêm
             </Button>
+          </div>
+          {/* Custom category section title */}
+          <div className="mt-2">
+            <Label className="text-xs text-muted-foreground">Tiêu đề hiển thị trên website</Label>
+            <Input
+              value={catSectionTitle || (landingSettings as any)?.category_section_title || ''}
+              onChange={e => setCatSectionTitle(e.target.value)}
+              onBlur={() => {
+                if (catSectionTitle !== '' && catSectionTitle !== ((landingSettings as any)?.category_section_title || '')) {
+                  updateSettings.mutate({ category_section_title: catSectionTitle } as any);
+                }
+              }}
+              placeholder={getIndustryConfig((landingSettings as any)?.website_template || 'phone_store').categorySectionTitle}
+              className="h-8 text-sm mt-1"
+            />
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
