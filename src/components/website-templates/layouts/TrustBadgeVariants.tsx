@@ -153,13 +153,13 @@ function ShopeeBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutStyl
       <div className="max-w-[1200px] mx-auto px-4 py-3">
         <div className="flex overflow-x-auto gap-3 scrollbar-hide">
           {badges.map((badge, i) => (
-            <div key={i} className="flex items-center gap-2 shrink-0 bg-white rounded-lg px-3 py-2 shadow-sm border border-orange-100">
+            <BadgeWrapper key={i} link={badge.link} className="flex items-center gap-2 shrink-0 bg-white rounded-lg px-3 py-2 shadow-sm border border-orange-100">
               <div className="text-orange-500">{ICON_MAP[badge.icon] || <Shield className="h-4 w-4" />}</div>
               <div>
                 <p className="text-[11px] font-bold text-gray-800 whitespace-nowrap">{badge.title}</p>
                 <p className="text-[9px] text-orange-500 whitespace-nowrap">{badge.desc}</p>
               </div>
-            </div>
+            </BadgeWrapper>
           ))}
         </div>
       </div>
