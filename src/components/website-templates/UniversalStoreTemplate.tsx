@@ -96,6 +96,7 @@ export default function UniversalStoreTemplate({
     if ((settings as any)?.hero_subtitle) c.heroSubtitle = (settings as any).hero_subtitle;
     if ((settings as any)?.hero_cta) c.heroCta = (settings as any).hero_cta;
     if ((settings as any)?.category_section_title) c.categorySectionTitle = (settings as any).category_section_title;
+    if ((settings as any)?.article_section_title) c.articleSectionTitle = (settings as any).article_section_title;
     if ((settings as any)?.custom_home_sections) {
       const customSections = (settings as any).custom_home_sections as HomeSectionItem[];
       c.homeSections = customSections.filter((s: HomeSectionItem) => s.enabled).map((s: HomeSectionItem) => s.id) as HomeSection[];
