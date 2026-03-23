@@ -17,6 +17,7 @@ import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import { ProductDetailPage } from '@/components/landing/ProductDetailPage';
 import { FloatingCartButton } from '@/components/landing/FloatingCartButton';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
+import { OrderLookupPage } from '@/components/landing/OrderLookupPage';
 import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 import { VoucherClaimForm } from '@/components/landing/VoucherClaimForm';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
@@ -59,7 +60,7 @@ export interface AppleStyleLandingProps {
   onRequireCatalogData?: () => void;
 }
 
-type PageView = 'home' | 'products' | 'news' | 'warranty' | 'article-detail' | 'repair' | 'tradein' | 'installment' | 'accessories' | 'compare' | 'pricelist' | 'booking' | 'branches' | 'contact' | 'services' | 'rooms' | 'courses' | 'doctors' | 'collection' | 'promotion' | 'reviews' | 'system-page';
+type PageView = 'home' | 'products' | 'news' | 'warranty' | 'article-detail' | 'repair' | 'tradein' | 'installment' | 'accessories' | 'compare' | 'pricelist' | 'booking' | 'branches' | 'contact' | 'services' | 'rooms' | 'courses' | 'doctors' | 'collection' | 'promotion' | 'reviews' | 'system-page' | 'order-lookup';
 
 // ============================
 // Scroll Fade-In Hook (standalone)
@@ -656,12 +657,14 @@ export default function AppleStyleLandingTemplate({
             confirmZaloUrl: (settings as any)?.payment_confirm_zalo_url || null,
             confirmMessengerUrl: (settings as any)?.payment_confirm_messenger_url || null,
           }}
+          onNavigateOrderLookup={() => { setSelectedProduct(null); navigateTo('order-lookup' as PageView); }}
         />
         <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
         <FloatingCartButton
           tenantId={tenantId}
           primaryColor={accentColor}
           branches={branches.map(b => ({ id: b.id, name: b.name }))}
+          onNavigateOrderLookup={() => { setSelectedProduct(null); navigateTo('order-lookup' as PageView); }}
         />
       </>
     );
@@ -1328,6 +1331,17 @@ export default function AppleStyleLandingTemplate({
             case 'compare': return <ComparePage {...sp} />;
             case 'services': case 'rooms': case 'courses': case 'doctors': case 'collection': case 'promotion': case 'reviews':
               return <GenericSystemPage {...sp} pageId={pageView} pageLabel={activeNav?.label || pageView} />;
+            case 'order-lookup':
+              return (
+                <OrderLookupPage
+                  tenantId={tenantId!}
+                  accentColor={accentColor}
+                  storePhone={settings?.store_phone || warrantyHotline}
+                  zaloUrl={zaloUrl}
+                  facebookUrl={facebookUrl}
+                  onBack={() => navigateTo('home')}
+                />
+              );
             default: return null;
           }
         })()}
@@ -1341,6 +1355,7 @@ export default function AppleStyleLandingTemplate({
         tenantId={tenantId}
         primaryColor={accentColor}
         branches={branches.map(b => ({ id: b.id, name: b.name }))}
+        onNavigateOrderLookup={() => navigateTo('order-lookup' as PageView)}
       />
     </div>
   );
