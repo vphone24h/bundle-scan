@@ -498,7 +498,7 @@ export function ProductDetailDialog({
           {orderSuccess ? (
             <div className="text-center py-6 space-y-3">
               <CheckCircle2 className="h-12 w-12 mx-auto text-green-500" />
-              <p className="font-semibold text-lg">Đặt hàng thành công!</p>
+              <p className="font-semibold text-lg">Chúc mừng bạn đã đặt hàng thành công!</p>
               <p className="text-sm text-muted-foreground">Cửa hàng sẽ liên hệ bạn trong thời gian sớm nhất.</p>
               {warrantyHotline && (
                 <a href={`tel:${warrantyHotline}`} className="inline-flex items-center gap-2 text-sm font-medium" style={{ color: primaryColor }}>
@@ -507,14 +507,17 @@ export function ProductDetailDialog({
                 </a>
               )}
               {onNavigateOrderLookup && (
-                <Button
-                  variant="outline"
-                  className="w-full h-11 mt-1"
-                  onClick={() => { handleClose(false); onNavigateOrderLookup(); }}
-                  style={{ borderColor: primaryColor, color: primaryColor }}
-                >
-                  <Search className="h-4 w-4 mr-1.5" /> Kiểm tra đơn hàng
-                </Button>
+                <>
+                  <p className="text-xs text-muted-foreground">Nhấn vào link tra cứu đơn đặt hàng để kiểm tra trạng thái.</p>
+                  <Button
+                    variant="outline"
+                    className="w-full h-11 mt-1"
+                    onClick={() => { handleClose(false); onNavigateOrderLookup(); }}
+                    style={{ borderColor: primaryColor, color: primaryColor }}
+                  >
+                    <Search className="h-4 w-4 mr-1.5" /> Kiểm tra trạng thái đặt hàng
+                  </Button>
+                </>
               )}
               <Button variant="outline" className="w-full mt-2" onClick={() => handleClose(false)}>Đóng</Button>
             </div>

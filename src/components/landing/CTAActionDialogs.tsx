@@ -99,7 +99,7 @@ export function ContactFormDialog({
                 onClick={() => { handleClose(); onNavigateOrderLookup(); }}
                 style={{ borderColor: primaryColor, color: primaryColor }}
               >
-                <Search className="h-4 w-4 mr-1.5" /> Kiểm tra đơn hàng
+                <Search className="h-4 w-4 mr-1.5" /> Kiểm tra trạng thái đặt hàng
               </Button>
             )}
             <Button variant="outline" onClick={handleClose} className="h-11">Đóng</Button>
@@ -152,12 +152,13 @@ export function ContactFormDialog({
 interface BookingDialogProps extends CTADialogProps {
   title: string;
   requireTime?: boolean;
+  onNavigateOrderLookup?: () => void;
 }
 
 export function BookingDialog({
   open, onClose, tenantId, primaryColor, branches,
   productName, productId, productImageUrl, productPrice,
-  title, requireTime = true,
+  title, requireTime = true, onNavigateOrderLookup,
 }: BookingDialogProps) {
   const [mode, setMode] = useState<'single' | 'range'>('single');
   const [name, setName] = useState('');
@@ -243,8 +244,21 @@ export function BookingDialog({
         {submitted ? (
           <div className="text-center py-6 space-y-3">
             <CheckCircle2 className="h-12 w-12 mx-auto text-green-500" />
-            <p className="font-semibold">Đặt lịch thành công!</p>
+            <p className="font-semibold">Chúc mừng bạn đã đặt lịch thành công!</p>
             <p className="text-sm text-muted-foreground">Chúng tôi sẽ xác nhận với bạn sớm nhất.</p>
+            {onNavigateOrderLookup && (
+              <>
+                <p className="text-xs text-muted-foreground">Nhấn vào link tra cứu đơn đặt hàng để kiểm tra trạng thái.</p>
+                <Button
+                  variant="outline"
+                  className="w-full h-11"
+                  onClick={() => { handleClose(); onNavigateOrderLookup(); }}
+                  style={{ borderColor: primaryColor, color: primaryColor }}
+                >
+                  <Search className="h-4 w-4 mr-1.5" /> Kiểm tra trạng thái đặt hàng
+                </Button>
+              </>
+            )}
             <Button variant="outline" onClick={handleClose} className="h-11">Đóng</Button>
           </div>
         ) : (
@@ -375,12 +389,13 @@ export function BookingDialog({
 // ===== HOTEL BOOKING DIALOG (date range + check-in/out times) =====
 interface HotelBookingDialogProps extends CTADialogProps {
   title?: string;
+  onNavigateOrderLookup?: () => void;
 }
 
 export function HotelBookingDialog({
   open, onClose, tenantId, primaryColor, branches,
   productName, productId, productImageUrl, productPrice,
-  title = '🏨 Đặt phòng',
+  title = '🏨 Đặt phòng', onNavigateOrderLookup,
 }: HotelBookingDialogProps) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -494,8 +509,21 @@ export function HotelBookingDialog({
         {submitted ? (
           <div className="text-center py-6 space-y-3">
             <CheckCircle2 className="h-12 w-12 mx-auto text-green-500" />
-            <p className="font-semibold">Đặt phòng thành công!</p>
+            <p className="font-semibold">Chúc mừng bạn đã đặt lịch thành công!</p>
             <p className="text-sm text-muted-foreground">Chúng tôi sẽ xác nhận với bạn sớm nhất.</p>
+            {onNavigateOrderLookup && (
+              <>
+                <p className="text-xs text-muted-foreground">Nhấn vào link tra cứu đơn đặt hàng để kiểm tra trạng thái.</p>
+                <Button
+                  variant="outline"
+                  className="w-full h-11"
+                  onClick={() => { handleClose(); onNavigateOrderLookup(); }}
+                  style={{ borderColor: primaryColor, color: primaryColor }}
+                >
+                  <Search className="h-4 w-4 mr-1.5" /> Kiểm tra trạng thái đặt hàng
+                </Button>
+              </>
+            )}
             <Button variant="outline" onClick={handleClose} className="h-11">Đóng</Button>
           </div>
         ) : (

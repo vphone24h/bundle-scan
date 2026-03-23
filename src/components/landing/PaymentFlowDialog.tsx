@@ -598,7 +598,7 @@ export function PaymentFlowDialog({
             <div className="text-center py-6 space-y-4">
               <CheckCircle2 className="h-16 w-16 mx-auto text-green-500" />
               <div>
-                <p className="font-bold text-lg">Đặt hàng thành công!</p>
+                <p className="font-bold text-lg">Chúc mừng bạn đã đặt hàng thành công!</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {paymentMethod === 'transfer'
                     ? 'Shop sẽ xác nhận sau khi kiểm tra chuyển khoản.'
@@ -621,14 +621,17 @@ export function PaymentFlowDialog({
               })()}
 
               {onNavigateOrderLookup && (
-                <Button
-                  variant="outline"
-                  className="w-full h-11"
-                  onClick={() => { handleClose(); onNavigateOrderLookup(); }}
-                  style={{ borderColor: primaryColor, color: primaryColor }}
-                >
-                  <Search className="h-4 w-4 mr-1.5" /> Kiểm tra đơn hàng
-                </Button>
+                <>
+                  <p className="text-xs text-muted-foreground">Nhấn vào link tra cứu đơn đặt hàng để kiểm tra trạng thái.</p>
+                  <Button
+                    variant="outline"
+                    className="w-full h-11"
+                    onClick={() => { handleClose(); onNavigateOrderLookup(); }}
+                    style={{ borderColor: primaryColor, color: primaryColor }}
+                  >
+                    <Search className="h-4 w-4 mr-1.5" /> Kiểm tra trạng thái đặt hàng
+                  </Button>
+                </>
               )}
 
               <Button variant="outline" className="w-full h-11" onClick={handleClose}>
