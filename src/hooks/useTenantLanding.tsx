@@ -354,8 +354,8 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
     placeholderData: cachedPlaceholder ?? undefined,
     retry: (failureCount, error) => isRetryableLandingError(error) && failureCount < 5,
     retryDelay: (attempt) => Math.min(800 * 2 ** attempt, 6000),
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 15,
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 10,
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
   });
