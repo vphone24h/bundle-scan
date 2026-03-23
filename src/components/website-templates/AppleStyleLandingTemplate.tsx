@@ -874,15 +874,22 @@ export default function AppleStyleLandingTemplate({
               <section className="py-16 bg-white">
                 <div className="max-w-[1024px] mx-auto px-6">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
-                    {((settings as any)?.custom_trust_badges || config.trustBadges).map((b: any, i: number) => (
-                      <div key={i} className="space-y-2">
-                        <div className="h-10 w-10 mx-auto rounded-full bg-[#f5f5f7] flex items-center justify-center">
-                          <Shield className="h-5 w-5" style={{ color: accentColor }} />
+                    {((settings as any)?.custom_trust_badges || config.trustBadges).map((b: any, i: number) => {
+                      const content = (
+                        <div key={i} className={`space-y-2 ${b.link ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}>
+                          <div className="h-10 w-10 mx-auto rounded-full bg-[#f5f5f7] flex items-center justify-center">
+                            <Shield className="h-5 w-5" style={{ color: accentColor }} />
+                          </div>
+                          <p className="text-xs font-semibold text-[#1d1d1f]">{b.title}</p>
+                          <p className="text-[11px] text-[#86868b]">{b.desc}</p>
                         </div>
-                        <p className="text-xs font-semibold text-[#1d1d1f]">{b.title}</p>
-                        <p className="text-[11px] text-[#86868b]">{b.desc}</p>
-                      </div>
-                    ))}
+                      );
+                      if (b.link) {
+                        const isExternal = b.link.startsWith('http');
+                        return <a key={i} href={b.link} target={isExternal ? '_blank' : undefined} rel={isExternal ? 'noopener noreferrer' : undefined}>{content}</a>;
+                      }
+                      return content;
+                    })}
                   </div>
                 </div>
               </section>

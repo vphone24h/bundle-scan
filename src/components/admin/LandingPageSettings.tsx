@@ -389,6 +389,12 @@ function TrustBadgeEditor({
                 placeholder="Mô tả ngắn"
                 className="h-9 text-sm"
               />
+              <Input
+                value={badge.link || ''}
+                onChange={(e) => handleBadgeChange(i, 'link', e.target.value)}
+                placeholder="Link (VD: /tra-cuu-bao-hanh, /tra-gop, https://...)"
+                className="h-8 text-xs text-muted-foreground"
+              />
             </div>
           </div>
         ))}

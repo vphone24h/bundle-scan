@@ -567,6 +567,15 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
                     }}
                     placeholder="Mô tả" className="h-8 text-xs"
                   />
+                  <Input
+                    value={badge.link || ''}
+                    onChange={e => {
+                      const current = [...((formData as any)?.custom_trust_badges || config.trustBadges)];
+                      current[i] = { ...current[i], link: e.target.value };
+                      onChange('custom_trust_badges', current);
+                    }}
+                    placeholder="Link (tuỳ chọn)" className="h-7 text-[10px] text-muted-foreground"
+                  />
                 </div>
               </div>
             ));

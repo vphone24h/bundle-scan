@@ -5,6 +5,7 @@ export interface IndustryTrustBadge {
   icon: string; // lucide icon name
   title: string;
   desc: string;
+  link?: string; // optional URL to navigate when clicked
 }
 
 export interface PageItemConfig {

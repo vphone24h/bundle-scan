@@ -11,6 +11,18 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   Star: <Star className="h-5 w-5" />,
 };
 
+function BadgeWrapper({ link, children, className }: { link?: string; children: React.ReactNode; className?: string }) {
+  if (link) {
+    const isExternal = link.startsWith('http');
+    return (
+      <a href={link} target={isExternal ? '_blank' : undefined} rel={isExternal ? 'noopener noreferrer' : undefined} className={`cursor-pointer hover:opacity-80 transition-opacity ${className || ''}`}>
+        {children}
+      </a>
+    );
+  }
+  return <div className={className}>{children}</div>;
+}
+
 interface TrustBadgeProps {
   badges: IndustryTrustBadge[];
   accentColor: string;
@@ -24,13 +36,13 @@ function AppleBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutStyle
         <div className="max-w-[1200px] mx-auto px-4 py-5">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {badges.map((badge, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-xl">
+              <BadgeWrapper key={i} link={badge.link} className="flex items-center gap-3 p-3 rounded-xl">
                 <div className="shrink-0" style={{ color: accentColor }}>{ICON_MAP[badge.icon] || <Shield className="h-5 w-5" />}</div>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold leading-tight">{badge.title}</p>
                   <p className="text-[10px] text-[#86868b] leading-tight">{badge.desc}</p>
                 </div>
-              </div>
+              </BadgeWrapper>
             ))}
           </div>
         </div>
@@ -45,13 +57,13 @@ function TGDDBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutStyle'
       <div className="max-w-[1200px] mx-auto px-4 py-3">
         <div className="flex overflow-x-auto gap-4 scrollbar-hide">
           {badges.map((badge, i) => (
-            <div key={i} className="flex items-center gap-2 shrink-0 bg-white rounded-lg px-3 py-2 shadow-sm border border-blue-100">
+            <BadgeWrapper key={i} link={badge.link} className="flex items-center gap-2 shrink-0 bg-white rounded-lg px-3 py-2 shadow-sm border border-blue-100">
               <div className="text-blue-600">{ICON_MAP[badge.icon] || <Shield className="h-4 w-4" />}</div>
               <div>
                 <p className="text-[11px] font-bold text-blue-900 whitespace-nowrap">{badge.title}</p>
                 <p className="text-[9px] text-blue-600 whitespace-nowrap">{badge.desc}</p>
               </div>
-            </div>
+            </BadgeWrapper>
           ))}
         </div>
       </div>
@@ -65,13 +77,13 @@ function HasakiBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutStyl
       <div className="max-w-[1200px] mx-auto px-4 py-3">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {badges.map((badge, i) => (
-            <div key={i} className="flex items-center gap-2 bg-white/80 backdrop-blur rounded-xl px-3 py-2.5">
+            <BadgeWrapper key={i} link={badge.link} className="flex items-center gap-2 bg-white/80 backdrop-blur rounded-xl px-3 py-2.5">
               <div className="text-pink-600">{ICON_MAP[badge.icon] || <Shield className="h-4 w-4" />}</div>
               <div>
                 <p className="text-[11px] font-bold text-gray-800">{badge.title}</p>
                 <p className="text-[9px] text-gray-500">{badge.desc}</p>
               </div>
-            </div>
+            </BadgeWrapper>
           ))}
         </div>
       </div>
@@ -85,10 +97,10 @@ function NikeBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutStyle'
       <div className="max-w-[1200px] mx-auto px-4 py-4">
         <div className="flex overflow-x-auto gap-6 scrollbar-hide justify-center">
           {badges.map((badge, i) => (
-            <div key={i} className="flex items-center gap-2 shrink-0">
+            <BadgeWrapper key={i} link={badge.link} className="flex items-center gap-2 shrink-0">
               <div className="text-black">{ICON_MAP[badge.icon] || <Shield className="h-4 w-4" />}</div>
               <p className="text-[11px] font-semibold text-black uppercase tracking-wide whitespace-nowrap">{badge.title}</p>
-            </div>
+            </BadgeWrapper>
           ))}
         </div>
       </div>
@@ -102,12 +114,12 @@ function LuxuryBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutStyl
       <div className="max-w-[1200px] mx-auto px-4 py-4">
         <div className="flex overflow-x-auto gap-6 scrollbar-hide justify-center">
           {badges.map((badge, i) => (
-            <div key={i} className="flex items-center gap-2 shrink-0">
+            <BadgeWrapper key={i} link={badge.link} className="flex items-center gap-2 shrink-0">
               <div className="text-amber-500">{ICON_MAP[badge.icon] || <Shield className="h-4 w-4" />}</div>
               <div>
                 <p className="text-[11px] font-medium text-amber-100/80 whitespace-nowrap">{badge.title}</p>
               </div>
-            </div>
+            </BadgeWrapper>
           ))}
         </div>
       </div>
@@ -121,13 +133,13 @@ function MinimalBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutSty
       <div className="max-w-[1200px] mx-auto px-4 py-4">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {badges.map((badge, i) => (
-            <div key={i} className="flex items-center gap-2.5 p-3 rounded-xl">
+            <BadgeWrapper key={i} link={badge.link} className="flex items-center gap-2.5 p-3 rounded-xl">
               <div className="shrink-0" style={{ color: accentColor }}>{ICON_MAP[badge.icon] || <Shield className="h-5 w-5" />}</div>
               <div className="min-w-0">
                 <p className="text-xs font-medium text-stone-700 leading-tight">{badge.title}</p>
                 <p className="text-[10px] text-stone-400 leading-tight">{badge.desc}</p>
               </div>
-            </div>
+            </BadgeWrapper>
           ))}
         </div>
       </div>
@@ -141,13 +153,13 @@ function ShopeeBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutStyl
       <div className="max-w-[1200px] mx-auto px-4 py-3">
         <div className="flex overflow-x-auto gap-3 scrollbar-hide">
           {badges.map((badge, i) => (
-            <div key={i} className="flex items-center gap-2 shrink-0 bg-white rounded-lg px-3 py-2 shadow-sm border border-orange-100">
+            <BadgeWrapper key={i} link={badge.link} className="flex items-center gap-2 shrink-0 bg-white rounded-lg px-3 py-2 shadow-sm border border-orange-100">
               <div className="text-orange-500">{ICON_MAP[badge.icon] || <Shield className="h-4 w-4" />}</div>
               <div>
                 <p className="text-[11px] font-bold text-gray-800 whitespace-nowrap">{badge.title}</p>
                 <p className="text-[9px] text-orange-500 whitespace-nowrap">{badge.desc}</p>
               </div>
-            </div>
+            </BadgeWrapper>
           ))}
         </div>
       </div>
@@ -161,13 +173,13 @@ function OrganicBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutSty
       <div className="max-w-[1200px] mx-auto px-4 py-4">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {badges.map((badge, i) => (
-            <div key={i} className="flex items-center gap-2.5 p-3 bg-white/80 rounded-xl border border-green-100">
+            <BadgeWrapper key={i} link={badge.link} className="flex items-center gap-2.5 p-3 bg-white/80 rounded-xl border border-green-100">
               <div className="text-green-600">{ICON_MAP[badge.icon] || <Shield className="h-5 w-5" />}</div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-green-900 leading-tight">{badge.title}</p>
                 <p className="text-[10px] text-green-600/70 leading-tight">{badge.desc}</p>
               </div>
-            </div>
+            </BadgeWrapper>
           ))}
         </div>
       </div>
