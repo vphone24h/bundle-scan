@@ -84,7 +84,13 @@ export function SupplierMergeDialog({
         successCount++;
       } catch (err: any) {
         errorCount++;
-        console.error('Merge error for group:', group.key, err);
+        const errorMsg = err?.message || err?.error_description || JSON.stringify(err);
+        console.error('Merge error for group:', group.key, errorMsg, err);
+        toast({
+          title: `Lỗi gộp nhóm "${group.name}"`,
+          description: errorMsg,
+          variant: 'destructive',
+        });
       }
     }
 
