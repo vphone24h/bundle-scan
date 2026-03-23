@@ -57,13 +57,13 @@ function TGDDBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutStyle'
       <div className="max-w-[1200px] mx-auto px-4 py-3">
         <div className="flex overflow-x-auto gap-4 scrollbar-hide">
           {badges.map((badge, i) => (
-            <div key={i} className="flex items-center gap-2 shrink-0 bg-white rounded-lg px-3 py-2 shadow-sm border border-blue-100">
+            <BadgeWrapper key={i} link={badge.link} className="flex items-center gap-2 shrink-0 bg-white rounded-lg px-3 py-2 shadow-sm border border-blue-100">
               <div className="text-blue-600">{ICON_MAP[badge.icon] || <Shield className="h-4 w-4" />}</div>
               <div>
                 <p className="text-[11px] font-bold text-blue-900 whitespace-nowrap">{badge.title}</p>
                 <p className="text-[9px] text-blue-600 whitespace-nowrap">{badge.desc}</p>
               </div>
-            </div>
+            </BadgeWrapper>
           ))}
         </div>
       </div>
