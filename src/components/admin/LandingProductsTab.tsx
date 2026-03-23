@@ -565,14 +565,11 @@ export function LandingProductsTab() {
           <div className="mt-2">
             <Label className="text-xs text-muted-foreground">Tiêu đề hiển thị trên website</Label>
             <Input
-              value={(landingSettings as any)?.category_section_title || ''}
-              onChange={e => {
-                if (landingSettings && tenantId) {
-                  const newTitle = e.target.value;
-                  supabase.from('tenant_landing_settings')
-                    .update({ category_section_title: newTitle } as any)
-                    .eq('tenant_id', tenantId)
-                    .then();
+              value={catSectionTitle || (landingSettings as any)?.category_section_title || ''}
+              onChange={e => setCatSectionTitle(e.target.value)}
+              onBlur={() => {
+                if (catSectionTitle !== '' && catSectionTitle !== ((landingSettings as any)?.category_section_title || '')) {
+                  updateSettings.mutate({ category_section_title: catSectionTitle } as any);
                 }
               }}
               placeholder={getIndustryConfig((landingSettings as any)?.website_template || 'phone_store').categorySectionTitle}
