@@ -418,8 +418,8 @@ export default function UniversalStoreTemplate({
     onRequireCatalogData?.();
     setSelectedArticle(article); setPageView('article-detail');
     const articlePath = buildArticlePath(article.title, article.id);
-    window.history.replaceState(null, '', articlePath);
     setSearchParams(new URLSearchParams(), { replace: true });
+    window.history.replaceState(null, '', articlePath);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -430,8 +430,8 @@ export default function UniversalStoreTemplate({
     const category = categories.find(c => c.id === p.category_id);
     const parentCategory = category?.parent_id ? categories.find(c => c.id === category.parent_id) : null;
     const productPath = buildProductDetailPath(p.name, p.id, category?.name, parentCategory?.name);
-    window.history.replaceState(null, '', productPath);
     setSearchParams(new URLSearchParams(), { replace: true });
+    window.history.replaceState(null, '', productPath);
   };
 
   const copyShareLink = (type: 'product' | 'article' | 'page', id: string) => {
@@ -526,8 +526,8 @@ export default function UniversalStoreTemplate({
           product={selectedProduct}
           onBack={() => {
             setSelectedProduct(null);
-            window.history.replaceState(null, '', buildPagePath('products'));
             setSearchParams(new URLSearchParams(), { replace: true });
+            window.history.replaceState(null, '', buildPagePath('products'));
           }}
           tenantId={tenantId}
           branches={branches.map(b => ({ id: b.id, name: b.name }))}
