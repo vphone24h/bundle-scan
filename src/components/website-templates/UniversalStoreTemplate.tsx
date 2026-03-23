@@ -1370,7 +1370,7 @@ export default function UniversalStoreTemplate({
                           // Vertical: stacked cards with cover images (same as product categories)
                           return (
                             <div key="categoryFilter" className="mb-6">
-                              <h3 className="text-lg font-bold tracking-tight mb-4">Danh mục bài viết</h3>
+                              <h3 className="text-lg font-bold tracking-tight mb-4">{config.articleSectionTitle}</h3>
                               <div className="flex flex-col gap-0">
                                 {/* "All" button */}
                                 <button
