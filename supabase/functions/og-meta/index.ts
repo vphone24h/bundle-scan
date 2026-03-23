@@ -233,7 +233,7 @@ Deno.serve(async (req) => {
     description =
       storeDescription ||
       (storeName
-        ? `Chào mừng đến với ${storeName}`
+        ? `Truy cập ${storeName} để trải nghiệm ngay`
         : "Truy cập website để trải nghiệm ngay.");
     imageUrl = storeLogoUrl || "";
   }
