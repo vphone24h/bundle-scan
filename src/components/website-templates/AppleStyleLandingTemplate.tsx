@@ -566,14 +566,17 @@ export default function AppleStyleLandingTemplate({
     }
 
     const redirectUrl = baseUrl.toString();
-    const shareUrl = buildMetaShareUrl({
-      tenantId,
-      type: type === 'page' ? 'store' : type,
-      id: type === 'page' ? 'store' : id,
-      redirectUrl,
-    });
+    const copiedUrl =
+      type === 'page'
+        ? buildMetaShareUrl({
+            tenantId,
+            type: 'store',
+            id: 'store',
+            redirectUrl,
+          })
+        : redirectUrl;
 
-    navigator.clipboard.writeText(shareUrl).then(() => { import('sonner').then(({ toast }) => toast.success('Đã sao chép link')); }).catch(() => {});
+    navigator.clipboard.writeText(copiedUrl).then(() => { import('sonner').then(({ toast }) => toast.success('Đã sao chép link')); }).catch(() => {});
   };
 
   // Nav items
@@ -640,7 +643,7 @@ export default function AppleStyleLandingTemplate({
           ctaButtons={(settings as any)?.custom_cta_buttons || null}
           websiteTemplate={settings?.website_template}
           relatedProducts={(productsData?.products || []).filter(p => p.category_id === selectedProduct.category_id && p.id !== selectedProduct.id).slice(0, 10)}
-          onProductClick={(p) => { setSelectedProduct(p); window.scrollTo(0, 0); }}
+          onProductClick={openProduct}
           storeInfo={{ name: settings?.store_name || tenant.name, phone: settings?.store_phone || '', address: settings?.store_address || '' }}
           zaloUrl={settings?.zalo_url}
           facebookUrl={settings?.facebook_url}

@@ -461,14 +461,17 @@ export default function UniversalStoreTemplate({
     }
 
     const redirectUrl = baseUrl.toString();
-    const shareUrl = buildMetaShareUrl({
-      tenantId,
-      type: type === 'page' ? 'store' : type,
-      id: type === 'page' ? 'store' : id,
-      redirectUrl,
-    });
+    const copiedUrl =
+      type === 'page'
+        ? buildMetaShareUrl({
+            tenantId,
+            type: 'store',
+            id: 'store',
+            redirectUrl,
+          })
+        : redirectUrl;
 
-    navigator.clipboard.writeText(shareUrl).then(() => {
+    navigator.clipboard.writeText(copiedUrl).then(() => {
       import('sonner').then(({ toast }) => toast.success('Đã sao chép link chia sẻ'));
     }).catch(() => {});
   };
