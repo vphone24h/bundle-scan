@@ -179,6 +179,8 @@ export function LandingProductsTab() {
   const { data: tenant } = useCurrentTenant();
   const tenantId = tenant?.id;
   const { data: landingSettings } = useTenantLandingSettings();
+  const updateSettings = useUpdateTenantLandingSettings();
+  const [catSectionTitle, setCatSectionTitle] = useState('');
   const { data: categories, isLoading: catLoading } = useLandingProductCategories(tenantId);
   const createCat = useCreateLandingProductCategory();
   const deleteCat = useDeleteLandingProductCategory();
