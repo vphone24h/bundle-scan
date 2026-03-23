@@ -578,7 +578,70 @@ export default function AppleStyleLandingTemplate({
 
     navigator.clipboard.writeText(copiedUrl).then(() => { import('sonner').then(({ toast }) => toast.success('Đã sao chép link')); }).catch(() => {});
   };
-...
+
+  // Nav items
+  const customNavItems = (settings as any)?.custom_nav_items as NavItemConfig[] | null;
+  const navItems = useMemo(() => {
+    if (customNavItems && customNavItems.length > 0) return customNavItems.filter(i => i.enabled);
+    return getDefaultNavItems(config);
+  }, [customNavItems, config]);
+
+  const handleNavClick = (item: NavItemConfig) => {
+    if (item.type === 'page' && item.pageView) navigateTo(item.pageView as PageView);
+    else if (item.type === 'link' && item.url) window.open(item.url, '_blank', 'noopener,noreferrer');
+    else navigateTo('home');
+  };
+  const isNavActive = (item: NavItemConfig) => {
+    if (item.type === 'page' && item.pageView) {
+      if (item.pageView === 'news' && pageView === 'article-detail') return true;
+      return pageView === item.pageView;
+    }
+    return false;
+  };
+
+  // Categories for section banners (filter hidden ones on homepage)
+  const allCategories = productsData?.categories || [];
+  const hiddenHomeCatIds: string[] = (() => {
+    const customSections = (settings as any)?.custom_home_sections as HomeSectionItem[] | undefined;
+    const catSection = customSections?.find(s => s.id === 'categories');
+    return catSection?.hiddenCategoryIds || [];
+  })();
+  const categories = hiddenHomeCatIds.length > 0
+    ? allCategories.filter(c => !hiddenHomeCatIds.includes(c.id))
+    : allCategories;
+
+  // Alternating background palettes for category banners (Apple-style)
+  const categoryPalettes = [
+    { bg: 'bg-[#fbfbfd]', text: 'text-[#1d1d1f]', sub: 'text-[#6e6e73]', btnBg: accentColor, btnText: 'text-white' },
+    { bg: 'bg-[#1d1d1f]', text: 'text-white', sub: 'text-[#86868b]', btnBg: accentColor, btnText: 'text-white' },
+    { bg: 'bg-[#f5f5f7]', text: 'text-[#1d1d1f]', sub: 'text-[#6e6e73]', btnBg: accentColor, btnText: 'text-white' },
+    { bg: 'bg-black', text: 'text-white', sub: 'text-[#a1a1a6]', btnBg: '#fff', btnText: 'text-[#1d1d1f]' },
+  ];
+
+  // Get products for a category
+  const getProductsForCategory = (catId: string) => allProducts.filter(p => p.category_id === catId);
+
+  // If a product is selected, show full page
+  if (selectedProduct) {
+    return (
+      <>
+        <ProductDetailPage
+          product={selectedProduct}
+          onBack={() => {
+            setSelectedProduct(null);
+            window.history.replaceState(null, '', buildPagePath('products'));
+            setSearchParams(new URLSearchParams(), { replace: true });
+          }}
+          tenantId={tenantId}
+          branches={branches.map(b => ({ id: b.id, name: b.name }))}
+          primaryColor={accentColor}
+          warrantyHotline={warrantyHotline}
+          onShare={() => copyShareLink('product', selectedProduct.id)}
+          onInstallment={() => setShowInstallmentCalc(true)}
+          showInstallmentButton={true}
+          detailSections={(settings as any)?.custom_product_detail_sections || null}
+          ctaButtons={(settings as any)?.custom_cta_buttons || null}
+          websiteTemplate={settings?.website_template}
           relatedProducts={(productsData?.products || []).filter(p => p.category_id === selectedProduct.category_id && p.id !== selectedProduct.id).slice(0, 10)}
           onProductClick={openProduct}
           storeInfo={{ name: settings?.store_name || tenant.name, phone: settings?.store_phone || '', address: settings?.store_address || '' }}
