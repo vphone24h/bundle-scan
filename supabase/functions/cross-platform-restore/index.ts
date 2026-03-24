@@ -76,6 +76,17 @@ const summarize = (stats: RestoreStats) => ({
   total_failed: Object.values(stats).reduce((a, s) => a + s.error, 0),
 })
 
+const processInBatches = async <T>(
+  items: T[],
+  batchSize: number,
+  worker: (item: T, index: number) => Promise<void>,
+) => {
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize)
+    await Promise.all(batch.map((item, batchIndex) => worker(item, i + batchIndex)))
+  }
+}
+
 async function clearTenantData(adminClient: any, tenantId: string, errors: string[]) {
   const [exportRowsRes, importRowsRes, productRowsRes] = await Promise.all([
     adminClient.from('export_receipts').select('id').eq('tenant_id', tenantId),
@@ -467,22 +478,22 @@ Deno.serve(async (req) => {
       if (Array.isArray(importData.customers) && importData.customers.length > 0) {
         stats.customers.total = importData.customers.length
 
-        for (const c of importData.customers) {
-          const extId = typeof c.external_id === 'string' && c.external_id ? c.external_id : `cus_${stats.customers.total}`
+        await processInBatches(importData.customers, 30, async (c, index) => {
+          const extId = typeof c.external_id === 'string' && c.external_id ? c.external_id : `cus_${index + 1}`
           const name = typeof c.name === 'string' ? c.name.trim() : ''
           const phone = typeof c.phone === 'string' ? c.phone.trim() : ''
 
           if (!name || !phone) {
             stats.customers.error++
             errors.push(`KH thiếu thông tin bắt buộc: tên/số điện thoại`)
-            continue
+            return
           }
 
           const existingId = customerByPhone.get(normalizeText(phone))
           if (existingId) {
             customerMap[extId] = existingId
             stats.customers.skipped++
-            continue
+            return
           }
 
           const crmStatus = CRM_STATUS.has(c.crm_status) ? c.crm_status : null
@@ -524,7 +535,7 @@ Deno.serve(async (req) => {
             customerByPhone.set(normalizeText(phone), data.id)
             stats.customers.success++
           }
-        }
+        })
 
         console.log('Customers:', JSON.stringify(stats.customers))
       }
@@ -533,8 +544,8 @@ Deno.serve(async (req) => {
       if (Array.isArray(importData.products) && importData.products.length > 0) {
         stats.products.total = importData.products.length
 
-        for (const p of importData.products) {
-          const extId = typeof p.external_id === 'string' && p.external_id ? p.external_id : `prod_${stats.products.total}`
+        await processInBatches(importData.products, 25, async (p, index) => {
+          const extId = typeof p.external_id === 'string' && p.external_id ? p.external_id : `prod_${index + 1}`
           const name = typeof p.name === 'string' ? p.name.trim() : ''
           const sku = typeof p.sku === 'string' && p.sku.trim() ? p.sku.trim() : `AUTO-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
           const imei = typeof p.imei === 'string' && p.imei.trim() ? p.imei.trim() : null
@@ -542,7 +553,7 @@ Deno.serve(async (req) => {
           if (!name) {
             stats.products.error++
             errors.push('Sản phẩm thiếu tên')
-            continue
+            return
           }
 
           const existingId = productBySku.get(normalizeText(sku)) || (imei ? productByImei.get(normalizeText(imei)) : null)
@@ -554,7 +565,7 @@ Deno.serve(async (req) => {
               categoryId: mapRef(p.category_external_id, categoryMap),
             })
             stats.products.skipped++
-            continue
+            return
           }
 
           const quantity = Math.max(1, toNumber(p.quantity, 1))
@@ -602,7 +613,7 @@ Deno.serve(async (req) => {
             })
             stats.products.success++
           }
-        }
+        })
 
         console.log('Products:', JSON.stringify(stats.products))
       }
@@ -611,21 +622,21 @@ Deno.serve(async (req) => {
       if (Array.isArray(importData.import_receipts) && importData.import_receipts.length > 0) {
         stats.import_receipts.total = importData.import_receipts.length
 
-        for (const r of importData.import_receipts) {
-          const extId = typeof r.external_id === 'string' && r.external_id ? r.external_id : `imp_${stats.import_receipts.total}`
+        await processInBatches(importData.import_receipts, 30, async (r, index) => {
+          const extId = typeof r.external_id === 'string' && r.external_id ? r.external_id : `imp_${index + 1}`
           const code = typeof r.code === 'string' ? r.code.trim() : ''
 
           if (!code) {
             stats.import_receipts.error++
             errors.push('Phiếu nhập thiếu mã')
-            continue
+            return
           }
 
           const existingId = importReceiptByCode.get(normalizeText(code))
           if (existingId) {
             importReceiptMap[extId] = existingId
             stats.import_receipts.skipped++
-            continue
+            return
           }
 
           const totalAmount = toNumber(r.total_amount, 0)
@@ -659,7 +670,7 @@ Deno.serve(async (req) => {
             importReceiptByCode.set(normalizeText(code), data.id)
             stats.import_receipts.success++
           }
-        }
+        })
 
         console.log('Import receipts:', JSON.stringify(stats.import_receipts))
       }
@@ -668,21 +679,21 @@ Deno.serve(async (req) => {
       if (Array.isArray(importData.export_receipts) && importData.export_receipts.length > 0) {
         stats.export_receipts.total = importData.export_receipts.length
 
-        for (const r of importData.export_receipts) {
-          const extId = typeof r.external_id === 'string' && r.external_id ? r.external_id : `exp_${stats.export_receipts.total}`
+        await processInBatches(importData.export_receipts, 30, async (r, index) => {
+          const extId = typeof r.external_id === 'string' && r.external_id ? r.external_id : `exp_${index + 1}`
           const code = typeof r.code === 'string' ? r.code.trim() : ''
 
           if (!code) {
             stats.export_receipts.error++
             errors.push('Phiếu xuất thiếu mã')
-            continue
+            return
           }
 
           const existingId = exportReceiptByCode.get(normalizeText(code))
           if (existingId) {
             exportReceiptMap[extId] = existingId
             stats.export_receipts.skipped++
-            continue
+            return
           }
 
           const totalAmount = toNumber(r.total_amount, 0)
@@ -717,7 +728,7 @@ Deno.serve(async (req) => {
             exportReceiptByCode.set(normalizeText(code), data.id)
             stats.export_receipts.success++
           }
-        }
+        })
 
         console.log('Export receipts:', JSON.stringify(stats.export_receipts))
       }
@@ -726,11 +737,11 @@ Deno.serve(async (req) => {
       if (Array.isArray(importData.export_receipt_items) && importData.export_receipt_items.length > 0) {
         stats.export_receipt_items.total = importData.export_receipt_items.length
 
-        for (const item of importData.export_receipt_items) {
+        await processInBatches(importData.export_receipt_items, 50, async (item) => {
           const receiptId = mapRef(item.receipt_external_id, exportReceiptMap)
           if (!receiptId) {
             stats.export_receipt_items.skipped++
-            continue
+            return
           }
 
           const productId = mapRef(item.product_external_id, productMap)
@@ -766,7 +777,7 @@ Deno.serve(async (req) => {
           } else {
             stats.export_receipt_items.success++
           }
-        }
+        })
 
         console.log('Export receipt items:', JSON.stringify(stats.export_receipt_items))
       }
@@ -775,11 +786,11 @@ Deno.serve(async (req) => {
       if (Array.isArray(importData.export_receipt_payments) && importData.export_receipt_payments.length > 0) {
         stats.export_receipt_payments.total = importData.export_receipt_payments.length
 
-        for (const p of importData.export_receipt_payments) {
+        await processInBatches(importData.export_receipt_payments, 50, async (p) => {
           const receiptId = mapRef(p.receipt_external_id, exportReceiptMap)
           if (!receiptId) {
             stats.export_receipt_payments.skipped++
-            continue
+            return
           }
 
           const paymentType = typeof p.payment_type === 'string' && p.payment_type
@@ -800,7 +811,7 @@ Deno.serve(async (req) => {
           } else {
             stats.export_receipt_payments.success++
           }
-        }
+        })
 
         console.log('Export receipt payments:', JSON.stringify(stats.export_receipt_payments))
       }
@@ -809,7 +820,7 @@ Deno.serve(async (req) => {
       if (Array.isArray(importData.cash_book) && importData.cash_book.length > 0) {
         stats.cash_book.total = importData.cash_book.length
 
-        for (const cb of importData.cash_book) {
+        await processInBatches(importData.cash_book, 50, async (cb) => {
           const { error } = await adminClient
             .from('cash_book')
             .insert({
@@ -835,7 +846,7 @@ Deno.serve(async (req) => {
           } else {
             stats.cash_book.success++
           }
-        }
+        })
 
         console.log('Cash book:', JSON.stringify(stats.cash_book))
       }
@@ -844,7 +855,7 @@ Deno.serve(async (req) => {
       if (Array.isArray(importData.debt_payments) && importData.debt_payments.length > 0) {
         stats.debt_payments.total = importData.debt_payments.length
 
-        for (const dp of importData.debt_payments) {
+        await processInBatches(importData.debt_payments, 50, async (dp) => {
           const entityType = typeof dp.entity_type === 'string' && dp.entity_type ? dp.entity_type : 'customer'
           let entityId: string | null = null
 
@@ -858,7 +869,7 @@ Deno.serve(async (req) => {
           if (!entityId) {
             stats.debt_payments.skipped++
             errors.push(`Thanh toán nợ bỏ qua: không map được entity_id (${dp.entity_id || 'N/A'})`)
-            continue
+            return
           }
 
           const { error } = await adminClient
@@ -882,7 +893,7 @@ Deno.serve(async (req) => {
           } else {
             stats.debt_payments.success++
           }
-        }
+        })
 
         console.log('Debt payments:', JSON.stringify(stats.debt_payments))
       }
