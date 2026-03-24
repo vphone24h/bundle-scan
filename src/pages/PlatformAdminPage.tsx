@@ -21,7 +21,7 @@ import { WelcomeEmailConfig } from '@/components/platform/WelcomeEmailConfig';
 import { PlatformAISettings } from '@/components/platform/PlatformAISettings';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Navigate } from 'react-router-dom';
-import { Loader2, Users, Megaphone, FileText, Mail, Globe, MailPlus, Bell, Zap, Database } from 'lucide-react';
+import { Loader2, Users, Megaphone, FileText, Mail, Globe, MailPlus, Bell, Zap, Database, RefreshCw, ArrowDownToLine } from 'lucide-react';
 import { SystemNotificationsManagement } from '@/components/platform/SystemNotificationsManagement';
 import { AutomationNotificationsManagement } from '@/components/platform/AutomationNotificationsManagement';
 import { ManualNotificationHistoryTable, AutomationHistoryTable } from '@/components/platform/NotificationSendHistory';
