@@ -547,7 +547,7 @@ export function useCustomerPointsPublic(phone: string, tenantId: string | null) 
 export async function uploadLandingAsset(
   file: File, 
   tenantId: string, 
-  type: 'logo' | 'banner'
+  type: 'logo' | 'banner' | 'gov-badge'
 ): Promise<string> {
   const ext = file.name.split('.').pop() || 'png';
   const fileName = `${tenantId}/${type}-${Date.now()}.${ext}`;
