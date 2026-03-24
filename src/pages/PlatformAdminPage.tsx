@@ -69,6 +69,34 @@ export default function PlatformAdminPage() {
     }
   };
 
+  const handleCrossPlatformExport = async () => {
+    setIsExportingCross(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('platform-cross-backup');
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const jsonStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      a.href = url;
+      a.download = `VKHO_all_shops_backup_${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Đã xuất dữ liệu ${data.total_shops || 0} shop thành công (Cross-platform JSON v1.0)`);
+    } catch (error) {
+      console.error('Cross-platform export error:', error);
+      toast.error('Lỗi xuất dữ liệu: ' + (error as Error).message);
+    } finally {
+      setIsExportingCross(false);
+    }
+  };
+
   if (!isLoading && (!platformUser || platformUser.platform_role !== 'platform_admin')) {
     return <Navigate to="/" replace />;
   }
