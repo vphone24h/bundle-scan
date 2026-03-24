@@ -233,13 +233,45 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
     );
   };
 
-  const renderFooter = () => (
-    <SectionOverlay sectionId="footer" label="Footer" onEdit={onEditSection}>
-      <footer className="py-4 border-t text-center">
-        <p className="text-[10px] text-[#86868b]">© 2025 {storeName}</p>
-      </footer>
-    </SectionOverlay>
-  );
+  const renderFooter = () => {
+    const hasWhyChoose = !!(formData as any).footer_why_choose_content;
+    const hasContact = formData.store_phone || formData.store_email;
+    const hasGov = (formData as any).gov_registration_url && (formData as any).gov_registration_image_url;
+
+    return (
+      <SectionOverlay sectionId="footer-why-choose" label="Chân trang" onEdit={onEditSection}>
+        <footer className="border-t bg-[#f5f5f7]">
+          <div className="px-4 pt-6 pb-4">
+            {(hasWhyChoose || hasContact) && (
+              <div className="grid grid-cols-1 gap-4 mb-4 pb-4 border-b border-black/5">
+                {hasWhyChoose && (
+                  <div>
+                    <p className="text-[10px] font-bold text-[#1d1d1f] mb-1.5">Tại sao chọn mua hàng tại {storeName}?</p>
+                    <p className="text-[8px] text-[#86868b] leading-relaxed whitespace-pre-line line-clamp-4">{(formData as any).footer_why_choose_content}</p>
+                  </div>
+                )}
+                {hasContact && (
+                  <div>
+                    <p className="text-[10px] font-bold text-[#1d1d1f] mb-1.5">Liên hệ</p>
+                    <div className="space-y-0.5">
+                      {formData.store_phone && <p className="text-[8px] text-[#86868b]">📞 {formData.store_phone}</p>}
+                      {formData.store_email && <p className="text-[8px] text-[#86868b]">📧 {formData.store_email}</p>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            {hasGov && (
+              <div className="flex justify-center mb-3">
+                <img src={(formData as any).gov_registration_image_url} alt="BCT" className="h-8 object-contain opacity-70" />
+              </div>
+            )}
+            <p className="text-[8px] text-[#86868b] text-center">© {new Date().getFullYear()} {storeName}. Tất cả quyền được bảo lưu.</p>
+          </div>
+        </footer>
+      </SectionOverlay>
+    );
+  };
 
   const renderStickyBar = () => (
     <SectionOverlay sectionId="sticky-bar" label="Nút liên hệ" onEdit={onEditSection}>
