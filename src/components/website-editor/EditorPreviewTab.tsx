@@ -234,19 +234,20 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
   };
 
   const renderFooter = () => {
-    const hasWhyChoose = !!(formData as any).footer_why_choose_content;
-    const hasContact = formData.store_phone || formData.store_email;
+    const hasWhyChoose = (formData as any).footer_content_enabled !== false && !!(formData as any).footer_why_choose_content;
+    const hasContact = (formData as any).footer_content_enabled !== false && (formData.store_phone || formData.store_email);
     const hasGov = (formData as any).gov_registration_url && (formData as any).gov_registration_image_url;
+    const hasAddresses = (formData as any).footer_content_enabled !== false && (formData.store_address || ((formData as any).additional_addresses || []).length > 0);
 
     return (
       <SectionOverlay sectionId="footer-why-choose" label="Chân trang" onEdit={onEditSection}>
         <footer className="border-t bg-[#f5f5f7]">
           <div className="px-4 pt-6 pb-4">
-            {(hasWhyChoose || hasContact) && (
+            {(hasWhyChoose || hasContact || hasAddresses) && (
               <div className="grid grid-cols-1 gap-4 mb-4 pb-4 border-b border-black/5">
                 {hasWhyChoose && (
                   <div>
-                    <p className="text-[10px] font-bold text-[#1d1d1f] mb-1.5">Tại sao chọn mua hàng tại {storeName}?</p>
+                    <p className="text-[10px] font-bold text-[#1d1d1f] mb-1.5">{getFooterWhyChooseTitle(storeName, formData.website_template)}</p>
                     <p className="text-[8px] text-[#86868b] leading-relaxed whitespace-pre-line line-clamp-4">{(formData as any).footer_why_choose_content}</p>
                   </div>
                 )}
@@ -256,6 +257,17 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
                     <div className="space-y-0.5">
                       {formData.store_phone && <p className="text-[8px] text-[#86868b]">📞 {formData.store_phone}</p>}
                       {formData.store_email && <p className="text-[8px] text-[#86868b]">📧 {formData.store_email}</p>}
+                    </div>
+                  </div>
+                )}
+                {hasAddresses && (
+                  <div>
+                    <p className="text-[10px] font-bold text-[#1d1d1f] mb-1.5">Địa chỉ</p>
+                    <div className="space-y-0.5">
+                      {formData.store_address && <p className="text-[8px] text-[#86868b]">📍 {formData.store_address}</p>}
+                      {((formData as any).additional_addresses || []).map((addr: string, i: number) => addr && (
+                        <p key={i} className="text-[8px] text-[#86868b]">📍 {addr}</p>
+                      ))}
                     </div>
                   </div>
                 )}
