@@ -1446,7 +1446,29 @@ export default function ImportNewPage() {
         }}
       />
 
-      {/* Add Supplier Dialog */}
+      {/* KiotViet Import Dialog */}
+      <KiotVietImportDialog
+        open={kiotVietImportOpen}
+        onOpenChange={setKiotVietImportOpen}
+        categories={categories?.map(c => ({ id: c.id, name: c.name })) || []}
+        suppliers={suppliers?.map(s => ({ id: s.id, name: s.name })) || []}
+        branches={branches?.map(b => ({ id: b.id, name: b.name })) || []}
+        onImportMultiple={handleExcelImportMultiple}
+        checkIMEI={async (imei: string) => {
+          try {
+            return await checkIMEI.mutateAsync(imei);
+          } catch {
+            return null;
+          }
+        }}
+        batchCheckIMEI={async (imeis: string[]) => {
+          try {
+            return await batchCheckIMEI.mutateAsync(imeis);
+          } catch {
+            return new Set();
+          }
+        }}
+      />
       <Dialog open={supplierDialogOpen} onOpenChange={setSupplierDialogOpen}>
         <DialogContent>
           <DialogHeader>
