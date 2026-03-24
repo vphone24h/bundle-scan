@@ -1110,13 +1110,7 @@ export function LandingPageSettings() {
 
   const handleCopyLink = () => {
     if (fullLandingUrl) {
-      const shareLink = buildMetaShareUrl({
-        tenantId: tenant?.id,
-        type: 'store',
-        id: 'store',
-        redirectUrl: fullLandingUrl,
-      });
-      navigator.clipboard.writeText(shareLink);
+      navigator.clipboard.writeText(fullLandingUrl);
       toast({ title: 'Đã sao chép link!' });
     }
   };
