@@ -875,7 +875,34 @@ export default function CashBookPage() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleToggleAccounting = async (entry: CashBookEntry) => {
+    try {
+      await updateEntry.mutateAsync({
+        id: entry.id,
+        oldData: entry,
+        category: entry.category,
+        description: entry.description,
+        amount: entry.amount,
+        payment_source: entry.payment_source,
+        is_business_accounting: !entry.is_business_accounting,
+        branch_id: entry.branch_id || null,
+        note: entry.note || undefined,
+        recipient_name: entry.recipient_name || null,
+        recipient_phone: entry.recipient_phone || null,
+      });
+      toast({
+        title: entry.is_business_accounting ? 'Đã bỏ hạch toán' : 'Đã bật hạch toán',
+        description: entry.description,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Lỗi',
+        description: error.message || 'Không thể cập nhật',
+        variant: 'destructive',
+      });
+    }
+  };
+
     if (!editingEntry || !deleteReason.trim()) return;
 
     try {
