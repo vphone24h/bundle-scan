@@ -223,14 +223,12 @@ function AppleFooter({ storeName, accentColor, templateId, footerContentEnabled,
       <div className="max-w-[1024px] mx-auto px-4 py-8">
         {/* Main footer grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Why Choose */}
           {hasWhyChoose && (
             <div>
-              <p className="font-semibold text-[#1d1d1f] text-sm mb-3">Tại sao chọn mua hàng tại {storeName}?</p>
+              <p className="font-semibold text-[#1d1d1f] text-sm mb-3">{getFooterWhyChooseTitle(storeName, templateId)}</p>
               <div className="text-xs text-[#6e6e73] leading-relaxed whitespace-pre-line">{whyChooseContent}</div>
             </div>
           )}
-          {/* Contact */}
           {hasContact && (
             <div>
               <p className="font-semibold text-[#1d1d1f] text-sm mb-3">Liên hệ</p>
@@ -243,12 +241,17 @@ function AppleFooter({ storeName, accentColor, templateId, footerContentEnabled,
               </div>
             </div>
           )}
-          {/* Branches */}
-          {hasBranches && (
+          {hasAddresses && (
             <div>
-              <p className="font-semibold text-[#1d1d1f] text-sm mb-3">Hệ thống chi nhánh</p>
-              <div className="space-y-3 text-xs text-[#6e6e73]">
-                {branches!.map(b => (
+              <p className="font-semibold text-[#1d1d1f] text-sm mb-3">Địa chỉ</p>
+              <div className="space-y-2 text-xs text-[#6e6e73]">
+                {settingsAddresses.map((addr, i) => (
+                  <a key={`addr-${i}`} href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`}
+                    target="_blank" rel="noopener noreferrer" className="block hover:text-[#1d1d1f]">
+                    📍 {addr}
+                  </a>
+                ))}
+                {hasBranches && branches!.map(b => (
                   <div key={b.id} className="space-y-0.5">
                     <p className="font-medium text-[#1d1d1f]">{b.name}</p>
                     {b.address && (
