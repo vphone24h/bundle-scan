@@ -903,6 +903,7 @@ export default function CashBookPage() {
     }
   };
 
+  const handleDelete = async () => {
     if (!editingEntry || !deleteReason.trim()) return;
 
     try {
