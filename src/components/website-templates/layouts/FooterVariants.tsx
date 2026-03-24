@@ -35,16 +35,6 @@ function GovBadge({ url, imageUrl }: { url?: string | null; imageUrl?: string | 
   );
 }
 
-function AppleFooter({ storeName, facebookUrl, zaloUrl, tiktokUrl }: FooterProps) {
-  return (
-    <footer className="py-8 border-t border-black/5 bg-[#f5f5f7]">
-      <div className="max-w-[1200px] mx-auto px-4 text-center space-y-3">
-        <SocialLinks facebookUrl={facebookUrl} zaloUrl={zaloUrl} tiktokUrl={tiktokUrl} linkClass="text-[#86868b] hover:text-[#1d1d1f] transition-colors" />
-        <p className="text-xs text-[#86868b]">© {new Date().getFullYear()} {storeName}</p>
-      </div>
-    </footer>
-  );
-}
 
 function CommonFooter({ storeName, govRegistrationUrl, govRegistrationImageUrl, facebookUrl, zaloUrl, tiktokUrl, linkClass, textClass, wrapperClass }: FooterProps & { linkClass: string; textClass: string; wrapperClass: string }) {
   return (
