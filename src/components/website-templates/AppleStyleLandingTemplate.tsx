@@ -21,7 +21,7 @@ import { OrderLookupPage } from '@/components/landing/OrderLookupPage';
 import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 import { VoucherClaimForm } from '@/components/landing/VoucherClaimForm';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
-import { getIndustryConfig, NavItemConfig, getDefaultNavItems, HomeSection, GOOGLE_FONTS } from '@/lib/industryConfig';
+import { getIndustryConfig, NavItemConfig, getDefaultNavItems, HomeSection, GOOGLE_FONTS, getFooterWhyChooseTitle } from '@/lib/industryConfig';
 import {
   RepairPage, TradeInPage, InstallmentPage, PriceListPage,
   BookingPage, BranchesPage as SystemBranchesPage, ContactPage, AccessoriesPage,
