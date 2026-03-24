@@ -1,6 +1,6 @@
 import { LayoutStyle, getFooterWhyChooseTitle } from '@/lib/industryConfig';
 import { BranchInfo } from '@/hooks/useTenantLanding';
-import { Phone, Mail, MapPin, Building2, MessageCircle, ExternalLink } from 'lucide-react';
+import { Phone, Mail, MapPin, MessageCircle, ExternalLink } from 'lucide-react';
 
 interface FooterProps {
   storeName: string;
