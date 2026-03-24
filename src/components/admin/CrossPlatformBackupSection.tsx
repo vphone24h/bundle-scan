@@ -103,9 +103,12 @@ export function CrossPlatformBackupSection() {
     setIsImporting(true);
     
     try {
+      console.log('Sending import request, mode:', importMode);
       const { data, error } = await supabase.functions.invoke('cross-platform-restore', {
         body: { importData: importFile, mode: importMode },
       });
+      
+      console.log('Import response:', { data, error });
       
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -114,7 +117,12 @@ export function CrossPlatformBackupSection() {
       setShowResultDialog(true);
       setImportFile(null);
       setImportPreview(null);
-      toast.success('Import dữ liệu hoàn tất!');
+      
+      if (data?.total_errors > 0) {
+        toast.warning(`Import hoàn tất với ${data.total_errors} lỗi`);
+      } else {
+        toast.success('Import dữ liệu hoàn tất!');
+      }
     } catch (error) {
       console.error('Import error:', error);
       toast.error('Lỗi import: ' + (error as Error).message);
