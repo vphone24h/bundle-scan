@@ -448,109 +448,111 @@ export function KiotVietImportDialog({
                 />
               </div>
 
-          {isLoading && (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span className="ml-2">Đang đọc file KiotViet...</span>
-            </div>
-          )}
-
-          {isValidating && (
-            <div className="flex flex-col items-center justify-center py-4 text-muted-foreground gap-2">
-              <div className="flex items-center">
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Đang kiểm tra IMEI trùng... {validationProgress > 0 && `(${validationProgress}%)`}
-              </div>
-              {validationProgress > 0 && (
-                <div className="w-full max-w-xs bg-muted rounded-full h-2">
-                  <div className="bg-primary h-2 rounded-full transition-all duration-300" style={{ width: `${validationProgress}%` }} />
-                </div>
-              )}
-            </div>
-          )}
-
-          {parsedRows.length > 0 && !isLoading && (
-            <>
-              <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-1 text-green-600">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>Hợp lệ: {validCount}</span>
-                </div>
-                {invalidCount > 0 && (
-                  <div className="flex items-center gap-1 text-destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <span>Lỗi: {invalidCount}</span>
-                  </div>
-                )}
-                {branchGroups.length > 1 && (
-                  <div className="flex items-center gap-1 text-primary font-medium">
-                    <FileSpreadsheet className="h-4 w-4" />
-                    <span>Sẽ tạo {branchGroups.length} phiếu (theo vị trí)</span>
-                  </div>
-                )}
-              </div>
-
-              {newCategories.length > 0 && (
-                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-2 text-xs">
-                  <span className="font-medium text-blue-700 dark:text-blue-400">Danh mục mới sẽ cần tạo: </span>
-                  <span className="text-muted-foreground">{newCategories.join(', ')}</span>
+              {isLoading && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <span className="ml-2">Đang đọc file KiotViet...</span>
                 </div>
               )}
 
-              {branchGroups.length > 1 && (
-                <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                  <p className="text-sm font-medium">Phân nhóm theo vị trí:</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {branchGroups.map((group, idx) => (
-                      <div key={idx} className="bg-card border rounded p-2 text-sm">
-                        <div className="font-medium">{group.branchName}</div>
-                        <div className="text-muted-foreground text-xs">
-                          {group.validCount} SP • {formatCurrencyWithSpaces(group.totalAmount)}
-                        </div>
+              {isValidating && (
+                <div className="flex flex-col items-center justify-center py-4 text-muted-foreground gap-2">
+                  <div className="flex items-center">
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Đang kiểm tra IMEI trùng... {validationProgress > 0 && `(${validationProgress}%)`}
+                  </div>
+                  {validationProgress > 0 && (
+                    <div className="w-full max-w-xs bg-muted rounded-full h-2">
+                      <div className="bg-primary h-2 rounded-full transition-all duration-300" style={{ width: `${validationProgress}%` }} />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {parsedRows.length > 0 && !isLoading && (
+                <>
+                  <div className="flex flex-wrap gap-4 text-sm">
+                    <div className="flex items-center gap-1 text-green-600">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>Hợp lệ: {validCount}</span>
+                    </div>
+                    {invalidCount > 0 && (
+                      <div className="flex items-center gap-1 text-destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>Lỗi: {invalidCount}</span>
                       </div>
-                    ))}
+                    )}
+                    {branchGroups.length > 1 && (
+                      <div className="flex items-center gap-1 text-primary font-medium">
+                        <FileSpreadsheet className="h-4 w-4" />
+                        <span>Sẽ tạo {branchGroups.length} phiếu (theo vị trí)</span>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
 
-              <ScrollArea className="h-[250px] border rounded-lg">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted sticky top-0">
-                    <tr>
-                      <th className="p-2 text-left">STT</th>
-                      <th className="p-2 text-left">Tên hàng</th>
-                      <th className="p-2 text-left">SKU</th>
-                      <th className="p-2 text-left">IMEI</th>
-                      <th className="p-2 text-right">Giá vốn</th>
-                      <th className="p-2 text-center">SL</th>
-                      <th className="p-2 text-left">Danh mục</th>
-                      <th className="p-2 text-left">Vị trí</th>
-                      <th className="p-2 text-center">TT</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {parsedRows.map((row, index) => (
-                      <tr key={index} className={row.isValid ? '' : 'bg-destructive/10'}>
-                        <td className="p-2">{index + 1}</td>
-                        <td className="p-2 max-w-[150px] truncate">{row.productName}</td>
-                        <td className="p-2 text-xs">{row.sku}</td>
-                        <td className="p-2 font-mono text-xs">{row.imei || '-'}</td>
-                        <td className="p-2 text-right">{formatCurrencyWithSpaces(row.importPrice)}</td>
-                        <td className="p-2 text-center">{row.quantity}</td>
-                        <td className="p-2 text-xs">{row.categoryName}</td>
-                        <td className="p-2 text-xs">{row.branchName || '-'}</td>
-                        <td className="p-2 text-center">
-                          {row.isValid ? (
-                            <CheckCircle2 className="h-3.5 w-3.5 text-green-600 mx-auto" />
-                          ) : (
-                            <span className="text-destructive text-xs">{row.errors.join(', ')}</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </ScrollArea>
+                  {newCategories.length > 0 && (
+                    <div className="bg-accent/50 border border-border rounded-lg p-2 text-xs">
+                      <span className="font-medium">Danh mục mới sẽ cần tạo: </span>
+                      <span className="text-muted-foreground">{newCategories.join(', ')}</span>
+                    </div>
+                  )}
+
+                  {branchGroups.length > 1 && (
+                    <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                      <p className="text-sm font-medium">Phân nhóm theo vị trí:</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {branchGroups.map((group, idx) => (
+                          <div key={idx} className="bg-card border rounded p-2 text-sm">
+                            <div className="font-medium">{group.branchName}</div>
+                            <div className="text-muted-foreground text-xs">
+                              {group.validCount} SP • {formatCurrencyWithSpaces(group.totalAmount)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <ScrollArea className="h-[250px] border rounded-lg">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted sticky top-0">
+                        <tr>
+                          <th className="p-2 text-left">STT</th>
+                          <th className="p-2 text-left">Tên hàng</th>
+                          <th className="p-2 text-left">SKU</th>
+                          <th className="p-2 text-left">IMEI</th>
+                          <th className="p-2 text-right">Giá vốn</th>
+                          <th className="p-2 text-center">SL</th>
+                          <th className="p-2 text-left">Danh mục</th>
+                          <th className="p-2 text-left">Vị trí</th>
+                          <th className="p-2 text-center">TT</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {parsedRows.map((row, index) => (
+                          <tr key={index} className={row.isValid ? '' : 'bg-destructive/10'}>
+                            <td className="p-2">{index + 1}</td>
+                            <td className="p-2 max-w-[150px] truncate">{row.productName}</td>
+                            <td className="p-2 text-xs">{row.sku}</td>
+                            <td className="p-2 font-mono text-xs">{row.imei || '-'}</td>
+                            <td className="p-2 text-right">{formatCurrencyWithSpaces(row.importPrice)}</td>
+                            <td className="p-2 text-center">{row.quantity}</td>
+                            <td className="p-2 text-xs">{row.categoryName}</td>
+                            <td className="p-2 text-xs">{row.branchName || '-'}</td>
+                            <td className="p-2 text-center">
+                              {row.isValid ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-green-600 mx-auto" />
+                              ) : (
+                                <span className="text-destructive text-xs">{row.errors.join(', ')}</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </ScrollArea>
+                </>
+              )}
             </>
           )}
         </div>
