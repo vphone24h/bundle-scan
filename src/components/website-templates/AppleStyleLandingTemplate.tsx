@@ -233,6 +233,13 @@ function AppleFooter({ storeName, accentColor, facebookUrl, zaloUrl, tiktokUrl, 
             {tiktokUrl && <a href={tiktokUrl} target="_blank" rel="noopener noreferrer" className="block hover:text-[#1d1d1f]">TikTok</a>}
           </div>
         </div>
+        {govRegistrationUrl && govRegistrationImageUrl && (
+          <div className="mt-4 flex justify-center">
+            <a href={govRegistrationUrl} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+              <img src={govRegistrationImageUrl} alt="Đã thông báo Bộ Công Thương" className="h-12 sm:h-14 object-contain" />
+            </a>
+          </div>
+        )}
         <div className="mt-6 pt-4 border-t border-[#d2d2d7] text-[11px] text-[#86868b]">
           © {new Date().getFullYear()} {storeName}. All rights reserved.
         </div>
