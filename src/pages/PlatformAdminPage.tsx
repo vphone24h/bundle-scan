@@ -37,6 +37,7 @@ export default function PlatformAdminPage() {
   const { data: platformUser, isLoading } = usePlatformUser();
   const [activeTab, setActiveTab] = useState('overview');
   const [isExportingAll, setIsExportingAll] = useState(false);
+  const [isExportingCross, setIsExportingCross] = useState(false);
 
   const handleExportAllData = async () => {
     setIsExportingAll(true);
