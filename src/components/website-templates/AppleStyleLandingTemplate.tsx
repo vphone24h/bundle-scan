@@ -204,10 +204,11 @@ function AppleHeader({
 // ============================
 // Apple Footer (standalone)
 // ============================
-function AppleFooter({ storeName, accentColor, facebookUrl, zaloUrl, tiktokUrl, govRegistrationUrl, govRegistrationImageUrl, storePhone, storeEmail, branches, whyChooseContent }: {
-  storeName: string; accentColor: string; facebookUrl?: string | null; zaloUrl?: string | null; tiktokUrl?: string | null;
+function AppleFooter({ storeName, accentColor, templateId, footerContentEnabled, facebookUrl, zaloUrl, tiktokUrl, govRegistrationUrl, govRegistrationImageUrl, storePhone, storeEmail, storeAddress, additionalAddresses, branches, whyChooseContent }: {
+  storeName: string; accentColor: string; templateId?: string; footerContentEnabled?: boolean;
+  facebookUrl?: string | null; zaloUrl?: string | null; tiktokUrl?: string | null;
   govRegistrationUrl?: string | null; govRegistrationImageUrl?: string | null;
-  storePhone?: string | null; storeEmail?: string | null; branches?: BranchInfo[];
+  storePhone?: string | null; storeEmail?: string | null; storeAddress?: string | null; additionalAddresses?: string[] | null; branches?: BranchInfo[];
   whyChooseContent?: string | null;
 }) {
   const hasWhyChoose = !!whyChooseContent;
