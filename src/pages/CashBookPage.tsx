@@ -89,6 +89,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useProfile } from '@/hooks/useProfile';
 import { useCustomPaymentSources, useAddCustomPaymentSource, useDeleteCustomPaymentSource, useUpdateCustomPaymentSource } from '@/hooks/useCustomPaymentSources';
 import { useTranslation } from 'react-i18next';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 
 // Normalize legacy payment_source values (old data stored i18n keys)
 const LEGACY_SOURCE_MAP: Record<string, string> = {
