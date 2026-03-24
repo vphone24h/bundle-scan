@@ -234,6 +234,30 @@ export default function CashBookPage() {
   const [deleteSourceTarget, setDeleteSourceTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleteSourceConfirmText, setDeleteSourceConfirmText] = useState('');
   
+  // Security password protection
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked: cashBookUnlocked, unlock: unlockCashBook } = useSecurityUnlock('cashbook_edit');
+  const [showSecurityDialog, setShowSecurityDialog] = useState(false);
+  const [pendingSecurityAction, setPendingSecurityAction] = useState<(() => void) | null>(null);
+
+  const requireSecurityPassword = (action: () => void) => {
+    if (!hasSecurityPassword || cashBookUnlocked) {
+      action();
+      return;
+    }
+    setPendingSecurityAction(() => action);
+    setShowSecurityDialog(true);
+  };
+
+  const handleSecuritySuccess = () => {
+    unlockCashBook();
+    setShowSecurityDialog(false);
+    if (pendingSecurityAction) {
+      pendingSecurityAction();
+      setPendingSecurityAction(null);
+    }
+  };
+  
   // All payment sources (built-in + custom)
   const allPaymentSources = useMemo(() => {
     return [...builtInPaymentSources, ...customPaymentSources.map(s => ({ ...s, icon: 'wallet', color: 'gray' }))];
