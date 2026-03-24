@@ -5,6 +5,7 @@ import { ImportCart } from '@/components/import/ImportCart';
 import { SupplierSearchCombobox } from '@/components/import/SupplierSearchCombobox';
 import { PaymentDialog } from '@/components/import/PaymentDialog';
 import { ExcelImportDialog } from '@/components/import/ExcelImportDialog';
+import { KiotVietImportDialog } from '@/components/import/KiotVietImportDialog';
 import { ProductNamingTip } from '@/components/import/ProductNamingTip';
 import { VariantConfigPanel, VariantConfig, VariantLevel } from '@/components/import/VariantConfig';
 import { VariantSelector, SelectedVariants, buildVariantProductName } from '@/components/import/VariantSelector';
@@ -122,6 +123,7 @@ export default function ImportNewPage() {
   const [cart, setCart] = useState<ImportReceiptItem[]>([]);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [excelImportOpen, setExcelImportOpen] = useState(false);
+  const [kiotVietImportOpen, setKiotVietImportOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [printQRPromptOpen, setPrintQRPromptOpen] = useState(false);
   const [printQRProducts, setPrintQRProducts] = useState<{ id: string; name: string; sku: string; imei?: string; importPrice: number; salePrice?: number }[]>([]);
@@ -976,6 +978,11 @@ export default function ImportNewPage() {
               <span className="hidden sm:inline">{t('tours.importNew.importFromExcel')}</span>
               <span className="sm:hidden">{t('tours.importNew.importFromExcelShort')}</span>
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setKiotVietImportOpen(true)} className="border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-950/30">
+              <FileSpreadsheet className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">Nhập từ KiotViet</span>
+              <span className="sm:hidden">KiotViet</span>
+            </Button>
           </div>
         }
       />
@@ -1439,7 +1446,29 @@ export default function ImportNewPage() {
         }}
       />
 
-      {/* Add Supplier Dialog */}
+      {/* KiotViet Import Dialog */}
+      <KiotVietImportDialog
+        open={kiotVietImportOpen}
+        onOpenChange={setKiotVietImportOpen}
+        categories={categories?.map(c => ({ id: c.id, name: c.name })) || []}
+        suppliers={suppliers?.map(s => ({ id: s.id, name: s.name })) || []}
+        branches={branches?.map(b => ({ id: b.id, name: b.name })) || []}
+        onImportMultiple={handleExcelImportMultiple}
+        checkIMEI={async (imei: string) => {
+          try {
+            return await checkIMEI.mutateAsync(imei);
+          } catch {
+            return null;
+          }
+        }}
+        batchCheckIMEI={async (imeis: string[]) => {
+          try {
+            return await batchCheckIMEI.mutateAsync(imeis);
+          } catch {
+            return new Set();
+          }
+        }}
+      />
       <Dialog open={supplierDialogOpen} onOpenChange={setSupplierDialogOpen}>
         <DialogContent>
           <DialogHeader>
