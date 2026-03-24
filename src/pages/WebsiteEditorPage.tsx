@@ -82,6 +82,10 @@ export default function WebsiteEditorPage() {
         order_email_on_shipping: (settings as any).order_email_on_shipping ?? false,
         order_email_on_warranty: (settings as any).order_email_on_warranty ?? false,
         menu_position: (settings as any).menu_position || 'left',
+        footer_why_choose_content: (settings as any).footer_why_choose_content || '',
+        footer_content_enabled: (settings as any).footer_content_enabled !== false,
+        gov_registration_url: (settings as any).gov_registration_url || '',
+        gov_registration_image_url: (settings as any).gov_registration_image_url || '',
       } as any);
     } else if (tenant) {
       setFormData(prev => ({ ...prev, store_name: tenant.name || '' }));
