@@ -33,6 +33,64 @@ const LABEL_MAP: Record<string, string> = {
   web_config: 'Cấu hình web',
 };
 
+type ImportStat = { total: number; success: number; skipped: number; error: number };
+type ImportStats = Record<string, ImportStat>;
+
+const toNumber = (value: unknown, fallback = 0) => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  }
+  return fallback;
+};
+
+const normalizeStats = (stats: any): ImportStats => {
+  if (!stats || typeof stats !== 'object') return {};
+  const result: ImportStats = {};
+  for (const [key, value] of Object.entries(stats)) {
+    const s = value as any;
+    result[key] = {
+      total: toNumber(s?.total),
+      success: toNumber(s?.success),
+      skipped: toNumber(s?.skipped),
+      error: toNumber(s?.error),
+    };
+  }
+  return result;
+};
+
+const buildSummaryFromStats = (stats: ImportStats) => ({
+  total_records: Object.values(stats).reduce((a, s) => a + s.total, 0),
+  total_success: Object.values(stats).reduce((a, s) => a + s.success, 0),
+  total_skipped: Object.values(stats).reduce((a, s) => a + s.skipped, 0),
+  total_failed: Object.values(stats).reduce((a, s) => a + s.error, 0),
+});
+
+const normalizeImportResponse = (raw: any) => {
+  const stats = normalizeStats(raw?.stats);
+  const summary = raw?.summary
+    ? {
+        total_records: toNumber(raw.summary.total_records),
+        total_success: toNumber(raw.summary.total_success),
+        total_skipped: toNumber(raw.summary.total_skipped),
+        total_failed: toNumber(raw.summary.total_failed),
+      }
+    : buildSummaryFromStats(stats);
+
+  const normalizedErrors = Array.isArray(raw?.errors)
+    ? raw.errors.filter((x: unknown) => typeof x === 'string')
+    : [];
+
+  return {
+    ...raw,
+    stats,
+    summary,
+    errors: normalizedErrors,
+    total_errors: toNumber(raw?.total_errors, normalizedErrors.length),
+  };
+};
+
 export function CrossPlatformBackupSection() {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -109,22 +167,43 @@ export function CrossPlatformBackupSection() {
       });
       
       if (error) throw error;
+      if (!data) throw new Error('Không nhận được phản hồi từ hệ thống');
       if (data?.error) throw new Error(data.error);
 
-      setImportResult(data);
+      const normalized = normalizeImportResponse(data);
+      setImportResult(normalized);
       setShowResultDialog(true);
       setImportFile(null);
       setImportPreview(null);
       
-      const s = data?.summary;
+      const s = normalized.summary;
       if (s) {
-        const msg = `Import xong: ${s.total_success} thành công, ${s.total_skipped} bỏ qua (trùng), ${s.total_failed} lỗi`;
+        const suppliers = normalized.stats?.suppliers || { total: 0, success: 0 };
+        const customers = normalized.stats?.customers || { total: 0, success: 0 };
+        const importOrders = normalized.stats?.import_receipts || { total: 0, success: 0 };
+        const exportOrders = normalized.stats?.export_receipts || { total: 0, success: 0 };
+        const totalOrders = importOrders.total + exportOrders.total;
+        const successOrders = importOrders.success + exportOrders.success;
+        const msg = `Import: ${s.total_success} OK, ${s.total_skipped} bỏ qua, ${s.total_failed} lỗi • NCC ${suppliers.success}/${suppliers.total}, KH ${customers.success}/${customers.total}, Đơn ${successOrders}/${totalOrders}`;
         if (s.total_failed > 0) toast.warning(msg);
         else toast.success(msg);
       }
     } catch (error) {
       console.error('Import error:', error);
-      toast.error('Lỗi import: ' + (error as Error).message);
+      const message = (error as Error).message || 'Lỗi không xác định';
+      setImportResult({
+        stats: {},
+        errors: [message],
+        total_errors: 1,
+        summary: {
+          total_records: 0,
+          total_success: 0,
+          total_skipped: 0,
+          total_failed: 1,
+        },
+      });
+      setShowResultDialog(true);
+      toast.error('Lỗi import: ' + message);
     } finally {
       setIsImporting(false);
     }
