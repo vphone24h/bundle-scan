@@ -164,6 +164,11 @@ export function KiotVietImportDialog({
           salePrice = imei ? importPrice + 2000000 : importPrice * 2;
         }
 
+        // Skip products with 0 stock (unless has IMEI)
+        if (!imei && stockQty <= 0) {
+          return null; // Will be filtered out
+        }
+
         // Quantity: for IMEI products always 1, otherwise use stock qty (min 1)
         const quantity = imei ? 1 : Math.max(stockQty, 1);
 
