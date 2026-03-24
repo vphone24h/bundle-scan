@@ -1141,7 +1141,7 @@ export default function CashBookPage() {
                         variant="ghost" 
                         size="icon" 
                         className="h-8 w-8"
-                        onClick={() => handleOpenAdjustBalance(source.id)}
+                        onClick={() => requireSecurityPassword(() => handleOpenAdjustBalance(source.id))}
                       >
                         <Settings className="h-4 w-4" />
                       </Button>
