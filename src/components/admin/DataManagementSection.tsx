@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import { RestoreSupplierNoteSection } from './RestoreSupplierNoteSection';
 import { UpdateImportDatesSection } from './UpdateImportDatesSection';
 import { DataBackupSection } from './DataBackupSection';
+import { CrossPlatformBackupSection } from './CrossPlatformBackupSection';
 
 export function DataManagementSection() {
   const { data: tenant, refetch: refetchTenant } = useCurrentTenant();
@@ -182,6 +183,9 @@ export function DataManagementSection() {
     <div className="space-y-6">
       {/* Data Backup Section */}
       <DataBackupSection />
+
+      {/* Cross-platform Backup/Restore */}
+      <CrossPlatformBackupSection />
 
       {/* Test Mode Section */}
       <Card className="border-orange-200 bg-orange-50/50">
