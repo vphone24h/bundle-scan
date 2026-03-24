@@ -557,20 +557,24 @@ export function KiotVietImportDialog({
           )}
         </div>
 
-        <DialogFooter className="flex-shrink-0 border-t pt-4 mt-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Huỷ</Button>
-          <Button
-            onClick={handleImport}
-            disabled={validCount === 0 || isLoading || isValidating}
-            className="bg-orange-600 hover:bg-orange-700"
-          >
-            <Upload className="mr-2 h-4 w-4" />
-            {branchGroups.length > 1
-              ? `Tạo ${branchGroups.length} phiếu (${validCount} SP)`
-              : `Nhập ${validCount} sản phẩm`
-            }
-          </Button>
-        </DialogFooter>
+        {guideStep < 0 && (
+          <DialogFooter className="flex-shrink-0 border-t pt-4 mt-2">
+            <Button variant="ghost" size="sm" onClick={() => setGuideStep(0)}>
+              ← Xem hướng dẫn
+            </Button>
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>Huỷ</Button>
+            <Button
+              onClick={handleImport}
+              disabled={validCount === 0 || isLoading || isValidating}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              {branchGroups.length > 1
+                ? `Tạo ${branchGroups.length} phiếu (${validCount} SP)`
+                : `Nhập ${validCount} sản phẩm`
+              }
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );
