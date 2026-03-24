@@ -297,6 +297,30 @@ const INDUSTRY_HOME_SECTIONS: Record<string, HomeSection[]> = {
   hotel_store: ['hero', 'trustBadges', 'featuredProducts', 'articles', 'reviews', 'branches', 'storeInfo'],
 };
 
+// Default "why choose" footer content per industry
+export const INDUSTRY_WHY_CHOOSE_CONTENT: Record<string, string> = {
+  phone_store: '✅ Cam kết 100% hàng chính hãng, nguyên seal\n✅ Bảo hành dài hạn, hỗ trợ 1 đổi 1\n✅ Trả góp 0% lãi suất, duyệt nhanh 15 phút\n✅ Giao hàng nhanh 2h nội thành\n✅ Đội ngũ tư vấn chuyên nghiệp, tận tâm',
+  laptop_store: '✅ Laptop chính hãng, full box, bảo hành toàn quốc\n✅ Hỗ trợ cài đặt phần mềm miễn phí\n✅ Trả góp 0%, thủ tục nhanh gọn\n✅ Giao hàng tận nơi, miễn phí nội thành\n✅ Tư vấn cấu hình phù hợp nhu cầu',
+  accessories_store: '✅ Phụ kiện chính hãng, giá tốt nhất\n✅ Đổi trả 30 ngày không lý do\n✅ Giao hàng nhanh toàn quốc\n✅ Tư vấn chọn phụ kiện phù hợp',
+  electronics_store: '✅ Điện máy chính hãng, hóa đơn đầy đủ\n✅ Bảo hành 24 tháng tại nhà\n✅ Lắp đặt miễn phí nội thành\n✅ Trả góp 0% qua thẻ tín dụng',
+  fashion_store: '✅ Cam kết hàng chính hãng 100%\n✅ Đổi trả miễn phí trong 7 ngày\n✅ Miễn phí ship đơn từ 500K\n✅ Cập nhật xu hướng mới nhất',
+  shoes_store: '✅ Giày dép Auth 100%, cam kết chính hãng\n✅ Đổi size miễn phí trong 7 ngày\n✅ Ship COD toàn quốc\n✅ Giá tốt nhất thị trường',
+  cosmetics_store: '✅ Mỹ phẩm nhập khẩu chính hãng\n✅ Tem nhãn phụ đầy đủ, FDA approved\n✅ Giao hàng nhanh 2h\n✅ Tư vấn da miễn phí',
+  spa_store: '✅ Chuyên gia hàng đầu, tay nghề cao\n✅ Thiết bị nhập khẩu hiện đại\n✅ Không gian sang trọng, riêng tư\n✅ Đặt lịch linh hoạt, mở cửa 8h–21h',
+  salon_store: '✅ Stylist chuyên nghiệp 10+ năm kinh nghiệm\n✅ Sản phẩm cao cấp nhập khẩu\n✅ Cam kết đẹp hoặc làm lại miễn phí\n✅ Đặt lịch trước, không phải chờ đợi',
+  watch_store: '✅ Đồng hồ Auth 100%, full box + thẻ bảo hành\n✅ Bảo hành quốc tế 2–5 năm\n✅ Ship bảo hiểm, an toàn tuyệt đối\n✅ Trả góp 0%, 6–12 tháng',
+  jewelry_store: '✅ Kim cương thiên nhiên, chứng nhận GIA\n✅ Bảo hành trọn đời, đánh bóng miễn phí\n✅ Giao hàng bảo mật, bảo hiểm 100%\n✅ Trả góp 0% không lãi suất',
+  restaurant_store: '✅ Nguyên liệu tươi ngon, nhập hàng ngày\n✅ Bếp trưởng dày dặn kinh nghiệm\n✅ Không gian ấm cúng, phục vụ tận tâm\n✅ Đặt bàn online tiện lợi',
+  cafe_store: '✅ Cà phê rang xay nguyên chất\n✅ Không gian đẹp, wifi mạnh\n✅ Menu đa dạng, cập nhật theo mùa\n✅ Phục vụ nhanh, thân thiện',
+  hotel_store: '✅ Vị trí đắc địa, view đẹp\n✅ Phòng sạch sẽ, tiện nghi hiện đại\n✅ Dịch vụ 5 sao, nhân viên chuyên nghiệp\n✅ Đặt phòng online, xác nhận ngay',
+  bakery_store: '✅ Nguyên liệu nhập khẩu cao cấp\n✅ Bánh làm fresh mỗi ngày\n✅ Giao hàng đúng giờ, đúng cam kết\n✅ Nhận đặt bánh theo yêu cầu',
+  karaoke_store: '✅ Âm thanh đỉnh cao, phòng rộng rãi\n✅ Nhân viên tươi xinh nhiệt tình\n✅ Menu đa dạng, giá hợp lý\n✅ Đặt phòng online nhanh chóng',
+  massage_store: '✅ Kỹ thuật viên chuyên nghiệp, tay nghề cao\n✅ Nhân viên tươi xinh nhiệt tình\n✅ Không gian thư giãn, riêng tư\n✅ Sản phẩm chăm sóc cao cấp',
+  vehicle_repair: '✅ Thợ giỏi, kinh nghiệm lâu năm\n✅ Phụ tùng chính hãng, bảo hành rõ ràng\n✅ Báo giá trước khi sửa, không phát sinh\n✅ Hỗ trợ cứu hộ 24/7',
+  pet_store: '✅ Sản phẩm an toàn cho thú cưng\n✅ Nguồn gốc rõ ràng, nhập khẩu chính hãng\n✅ Tư vấn chăm sóc miễn phí\n✅ Giao hàng nhanh, đóng gói cẩn thận',
+  pharmacy_store: '✅ Thuốc chính hãng, nguồn gốc rõ ràng\n✅ Dược sĩ tư vấn miễn phí\n✅ Giao hàng nhanh, bảo mật thông tin\n✅ Giá niêm yết, không chênh lệch',
+};
+
 // Brand inspiration descriptions
 const INDUSTRY_BRAND_INSPIRATION: Record<string, string> = {
   apple_landing: 'Apple.com',

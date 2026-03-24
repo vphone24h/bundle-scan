@@ -1865,6 +1865,11 @@ export default function UniversalStoreTemplate({
         tiktokUrl={tiktokUrl}
         govRegistrationUrl={(settings as any)?.gov_registration_url}
         govRegistrationImageUrl={(settings as any)?.gov_registration_image_url}
+        storePhone={settings?.store_phone}
+        storeEmail={settings?.store_email}
+        storeAddress={settings?.store_address}
+        branches={branches}
+        whyChooseContent={(settings as any)?.footer_why_choose_content}
       />
 
       {/* === STICKY BUY BAR (Mobile) === */}
