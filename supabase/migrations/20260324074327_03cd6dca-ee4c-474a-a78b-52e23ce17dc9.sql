@@ -1,0 +1,1 @@
+ALTER TABLE public.tenant_landing_settings ADD COLUMN IF NOT EXISTS footer_content_enabled boolean NOT NULL DEFAULT true;

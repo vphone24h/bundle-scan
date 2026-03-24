@@ -6593,6 +6593,7 @@ export type Database = {
           custom_products_page_tabs: Json | null
           custom_trust_badges: Json | null
           facebook_url: string | null
+          footer_content_enabled: boolean
           footer_why_choose_content: string | null
           gov_registration_image_url: string | null
           gov_registration_url: string | null
@@ -6681,6 +6682,7 @@ export type Database = {
           custom_products_page_tabs?: Json | null
           custom_trust_badges?: Json | null
           facebook_url?: string | null
+          footer_content_enabled?: boolean
           footer_why_choose_content?: string | null
           gov_registration_image_url?: string | null
           gov_registration_url?: string | null
@@ -6769,6 +6771,7 @@ export type Database = {
           custom_products_page_tabs?: Json | null
           custom_trust_badges?: Json | null
           facebook_url?: string | null
+          footer_content_enabled?: boolean
           footer_why_choose_content?: string | null
           gov_registration_image_url?: string | null
           gov_registration_url?: string | null
