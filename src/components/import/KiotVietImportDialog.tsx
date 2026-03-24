@@ -195,7 +195,7 @@ export function KiotVietImportDialog({
           isValid: errors.length === 0,
           errors,
         };
-      });
+      })).filter((row): row is KVParsedRow => row !== null);
 
       setParsedRows(parsed);
 
