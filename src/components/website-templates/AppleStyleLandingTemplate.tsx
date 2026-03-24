@@ -1393,6 +1393,8 @@ export default function AppleStyleLandingTemplate({
       <AppleFooter
         storeName={displayStoreName}
         accentColor={accentColor}
+        templateId={settings?.website_template}
+        footerContentEnabled={(settings as any)?.footer_content_enabled}
         facebookUrl={facebookUrl}
         zaloUrl={zaloUrl}
         tiktokUrl={tiktokUrl}
@@ -1400,6 +1402,8 @@ export default function AppleStyleLandingTemplate({
         govRegistrationImageUrl={(settings as any)?.gov_registration_image_url}
         storePhone={settings?.store_phone}
         storeEmail={settings?.store_email}
+        storeAddress={settings?.store_address}
+        additionalAddresses={settings?.additional_addresses}
         branches={branches}
         whyChooseContent={(settings as any)?.footer_why_choose_content}
       />
