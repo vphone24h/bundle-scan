@@ -779,6 +779,65 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
 
       {/* Email tự động đơn hàng - đã chuyển ra LandingPageSettings */}
 
+      {/* Bộ Công Thương */}
+      <SettingsBlock
+        id="gov-registration"
+        icon="🏛️"
+        title="Đăng ký Bộ Công Thương"
+        description="Logo & link đã thông báo Bộ Công Thương"
+        isExpanded={expandedBlocks.has('gov-registration')}
+        onToggle={() => toggleBlock('gov-registration')}
+      >
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Link trang Bộ Công Thương</Label>
+            <Input
+              value={(formData as any).gov_registration_url || ''}
+              onChange={e => onChange('gov_registration_url', e.target.value)}
+              placeholder="http://online.gov.vn/Home/WebDetails/..."
+            />
+            <p className="text-[10px] text-muted-foreground">💡 Dán link xác nhận từ trang online.gov.vn</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Logo Bộ Công Thương</Label>
+            {(formData as any).gov_registration_image_url ? (
+              <div className="relative inline-block">
+                <img src={(formData as any).gov_registration_image_url} alt="Logo BCT" className="h-16 rounded border" />
+                <button
+                  type="button"
+                  onClick={() => onChange('gov_registration_image_url', null)}
+                  className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-primary hover:underline">
+                  <Upload className="h-4 w-4" />
+                  Tải logo lên
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const url = await uploadLandingAsset(file, tenantId || '', 'gov-badge');
+                        onChange('gov_registration_image_url', url);
+                      } catch {
+                        toast({ title: 'Lỗi tải ảnh', variant: 'destructive' });
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+        </div>
+      </SettingsBlock>
+
       <SettingsBlock
         id="seo"
         icon="🔍"

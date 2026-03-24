@@ -87,6 +87,8 @@ export interface TenantLandingSettings {
   payment_account_holder: string | null;
   payment_confirm_zalo_url: string | null;
   payment_confirm_messenger_url: string | null;
+  gov_registration_url: string | null;
+  gov_registration_image_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -545,7 +547,7 @@ export function useCustomerPointsPublic(phone: string, tenantId: string | null) 
 export async function uploadLandingAsset(
   file: File, 
   tenantId: string, 
-  type: 'logo' | 'banner'
+  type: 'logo' | 'banner' | 'gov-badge'
 ): Promise<string> {
   const ext = file.name.split('.').pop() || 'png';
   const fileName = `${tenantId}/${type}-${Date.now()}.${ext}`;

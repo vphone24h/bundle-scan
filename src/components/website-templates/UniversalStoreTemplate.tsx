@@ -1863,6 +1863,8 @@ export default function UniversalStoreTemplate({
         facebookUrl={facebookUrl}
         zaloUrl={zaloUrl}
         tiktokUrl={tiktokUrl}
+        govRegistrationUrl={(settings as any)?.gov_registration_url}
+        govRegistrationImageUrl={(settings as any)?.gov_registration_image_url}
       />
 
       {/* === STICKY BUY BAR (Mobile) === */}

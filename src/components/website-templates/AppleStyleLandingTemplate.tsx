@@ -204,8 +204,8 @@ function AppleHeader({
 // ============================
 // Apple Footer (standalone)
 // ============================
-function AppleFooter({ storeName, accentColor, facebookUrl, zaloUrl, tiktokUrl }: {
-  storeName: string; accentColor: string; facebookUrl?: string | null; zaloUrl?: string | null; tiktokUrl?: string | null;
+function AppleFooter({ storeName, accentColor, facebookUrl, zaloUrl, tiktokUrl, govRegistrationUrl, govRegistrationImageUrl }: {
+  storeName: string; accentColor: string; facebookUrl?: string | null; zaloUrl?: string | null; tiktokUrl?: string | null; govRegistrationUrl?: string | null; govRegistrationImageUrl?: string | null;
 }) {
   return (
     <footer className="bg-[#f5f5f7] border-t border-[#d2d2d7]">
@@ -233,6 +233,13 @@ function AppleFooter({ storeName, accentColor, facebookUrl, zaloUrl, tiktokUrl }
             {tiktokUrl && <a href={tiktokUrl} target="_blank" rel="noopener noreferrer" className="block hover:text-[#1d1d1f]">TikTok</a>}
           </div>
         </div>
+        {govRegistrationUrl && govRegistrationImageUrl && (
+          <div className="mt-4 flex justify-center">
+            <a href={govRegistrationUrl} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+              <img src={govRegistrationImageUrl} alt="Đã thông báo Bộ Công Thương" className="h-12 sm:h-14 object-contain" />
+            </a>
+          </div>
+        )}
         <div className="mt-6 pt-4 border-t border-[#d2d2d7] text-[11px] text-[#86868b]">
           © {new Date().getFullYear()} {storeName}. All rights reserved.
         </div>
@@ -1347,7 +1354,7 @@ export default function AppleStyleLandingTemplate({
         })()}
       </main>
 
-      <AppleFooter storeName={displayStoreName} accentColor={accentColor} facebookUrl={facebookUrl} zaloUrl={zaloUrl} tiktokUrl={tiktokUrl} />
+      <AppleFooter storeName={displayStoreName} accentColor={accentColor} facebookUrl={facebookUrl} zaloUrl={zaloUrl} tiktokUrl={tiktokUrl} govRegistrationUrl={(settings as any)?.gov_registration_url} govRegistrationImageUrl={(settings as any)?.gov_registration_image_url} />
       <AppleStickyBar accentColor={accentColor} zaloUrl={zaloUrl} warrantyHotline={warrantyHotline} />
 
       <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
