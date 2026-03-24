@@ -297,6 +297,62 @@ const INDUSTRY_HOME_SECTIONS: Record<string, HomeSection[]> = {
   hotel_store: ['hero', 'trustBadges', 'featuredProducts', 'articles', 'reviews', 'branches', 'storeInfo'],
 };
 
+// Dynamic footer title verb per industry (instead of always "mua hàng")
+export const INDUSTRY_FOOTER_VERB: Record<string, string> = {
+  // Retail / Shopping
+  phone_store: 'mua hàng',
+  laptop_store: 'mua hàng',
+  accessories_store: 'mua hàng',
+  electronics_store: 'mua hàng',
+  fashion_store: 'mua sắm',
+  shoes_store: 'mua hàng',
+  cosmetics_store: 'mua sắm',
+  watch_store: 'mua hàng',
+  jewelry_store: 'mua sắm',
+  baby_store: 'mua sắm',
+  sports_store: 'mua hàng',
+  pet_store: 'mua sắm',
+  minimart_store: 'mua sắm',
+  grocery_store: 'mua sắm',
+  wholesale_store: 'đặt hàng',
+  general_store: 'mua sắm',
+  farm_store: 'mua hàng',
+  // Services
+  spa_store: 'sử dụng dịch vụ',
+  salon_store: 'sử dụng dịch vụ',
+  massage_store: 'sử dụng dịch vụ',
+  karaoke_store: 'sử dụng dịch vụ',
+  repair_service: 'sử dụng dịch vụ',
+  vehicle_repair: 'sử dụng dịch vụ',
+  hvac_repair: 'sử dụng dịch vụ',
+  clinic_store: 'khám tại',
+  pharmacy_store: 'mua thuốc',
+  training_center: 'học tại',
+  company_site: 'hợp tác với',
+  // Hospitality
+  hotel_store: 'đặt phòng tại',
+  restaurant_store: 'ăn uống tại',
+  cafe_store: 'đến',
+  boba_store: 'đến',
+  bakery_store: 'đặt bánh tại',
+  // Real estate
+  realestate_store: 'chọn',
+  car_showroom: 'mua xe tại',
+  motorbike_showroom: 'mua xe tại',
+  furniture_store: 'mua nội thất tại',
+  construction_store: 'mua hàng',
+  // Tech services
+  audio_store: 'mua hàng',
+  // Generic
+  landing_page: 'chọn',
+  apple_landing: 'mua hàng',
+};
+
+export function getFooterWhyChooseTitle(storeName: string, templateId?: string): string {
+  const verb = (templateId && INDUSTRY_FOOTER_VERB[templateId]) || 'chọn';
+  return `Tại sao ${verb} tại ${storeName}?`;
+}
+
 // Default "why choose" footer content per industry
 export const INDUSTRY_WHY_CHOOSE_CONTENT: Record<string, string> = {
   phone_store: '✅ Cam kết 100% hàng chính hãng, nguyên seal\n✅ Bảo hành dài hạn, hỗ trợ 1 đổi 1\n✅ Trả góp 0% lãi suất, duyệt nhanh 15 phút\n✅ Giao hàng nhanh 2h nội thành\n✅ Đội ngũ tư vấn chuyên nghiệp, tận tâm',
