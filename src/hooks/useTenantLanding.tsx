@@ -89,6 +89,7 @@ export interface TenantLandingSettings {
   payment_confirm_messenger_url: string | null;
   gov_registration_url: string | null;
   gov_registration_image_url: string | null;
+  footer_why_choose_content: string | null;
   created_at: string;
   updated_at: string;
 }
