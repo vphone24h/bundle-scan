@@ -46,95 +46,30 @@ function AppleFooter({ storeName, facebookUrl, zaloUrl, tiktokUrl }: FooterProps
   );
 }
 
-function TGDDFooter({ storeName, facebookUrl, zaloUrl, tiktokUrl }: FooterProps) {
+function CommonFooter({ storeName, govRegistrationUrl, govRegistrationImageUrl, facebookUrl, zaloUrl, tiktokUrl, linkClass, textClass, wrapperClass }: FooterProps & { linkClass: string; textClass: string; wrapperClass: string }) {
   return (
-    <footer className="py-6 border-t-2 border-yellow-400 bg-gray-50">
+    <footer className={wrapperClass}>
       <div className="max-w-[1200px] mx-auto px-4 text-center space-y-3">
-        <SocialLinks facebookUrl={facebookUrl} zaloUrl={zaloUrl} tiktokUrl={tiktokUrl} linkClass="text-blue-600 hover:text-blue-800 transition-colors" />
-        <p className="text-xs text-gray-500 font-medium">© {new Date().getFullYear()} {storeName}</p>
-      </div>
-    </footer>
-  );
-}
-
-function HasakiFooter({ storeName, facebookUrl, zaloUrl, tiktokUrl }: FooterProps) {
-  return (
-    <footer className="py-6 bg-gradient-to-r from-pink-50 to-red-50 border-t border-pink-200">
-      <div className="max-w-[1200px] mx-auto px-4 text-center space-y-3">
-        <SocialLinks facebookUrl={facebookUrl} zaloUrl={zaloUrl} tiktokUrl={tiktokUrl} linkClass="text-pink-600 hover:text-pink-800 transition-colors" />
-        <p className="text-xs text-pink-400">© {new Date().getFullYear()} {storeName}</p>
-      </div>
-    </footer>
-  );
-}
-
-function NikeFooter({ storeName, facebookUrl, zaloUrl, tiktokUrl }: FooterProps) {
-  return (
-    <footer className="py-8 bg-black border-t border-white/10">
-      <div className="max-w-[1200px] mx-auto px-4 text-center space-y-3">
-        <SocialLinks facebookUrl={facebookUrl} zaloUrl={zaloUrl} tiktokUrl={tiktokUrl} linkClass="text-white/50 hover:text-white transition-colors" />
-        <p className="text-xs text-white/30 uppercase tracking-wider">© {new Date().getFullYear()} {storeName}</p>
-      </div>
-    </footer>
-  );
-}
-
-function LuxuryFooter({ storeName, facebookUrl, zaloUrl, tiktokUrl }: FooterProps) {
-  return (
-    <footer className="py-10 bg-[#0f0f23] border-t border-amber-900/20">
-      <div className="max-w-[1200px] mx-auto px-4 text-center space-y-4">
-        <div className="w-12 h-px bg-amber-400/30 mx-auto" />
-        <SocialLinks facebookUrl={facebookUrl} zaloUrl={zaloUrl} tiktokUrl={tiktokUrl} linkClass="text-amber-400/50 hover:text-amber-300 transition-colors" />
-        <p className="text-[10px] text-amber-200/30 tracking-[0.2em] uppercase">{storeName} — © {new Date().getFullYear()}</p>
-      </div>
-    </footer>
-  );
-}
-
-function MinimalFooter({ storeName, facebookUrl, zaloUrl, tiktokUrl }: FooterProps) {
-  return (
-    <footer className="py-8 bg-[#faf9f6] border-t border-stone-200">
-      <div className="max-w-[1200px] mx-auto px-4 text-center space-y-3">
-        <SocialLinks facebookUrl={facebookUrl} zaloUrl={zaloUrl} tiktokUrl={tiktokUrl} linkClass="text-stone-400 hover:text-stone-600 transition-colors" />
-        <p className="text-xs text-stone-400">© {new Date().getFullYear()} {storeName}</p>
-      </div>
-    </footer>
-  );
-}
-
-function ShopeeFooter({ storeName, facebookUrl, zaloUrl, tiktokUrl }: FooterProps) {
-  return (
-    <footer className="py-6 bg-orange-50 border-t-2 border-orange-300">
-      <div className="max-w-[1200px] mx-auto px-4 text-center space-y-3">
-        <SocialLinks facebookUrl={facebookUrl} zaloUrl={zaloUrl} tiktokUrl={tiktokUrl} linkClass="text-orange-500 hover:text-orange-700 transition-colors" />
-        <p className="text-xs text-orange-400 font-medium">© {new Date().getFullYear()} {storeName}</p>
-      </div>
-    </footer>
-  );
-}
-
-function OrganicFooter({ storeName, facebookUrl, zaloUrl, tiktokUrl }: FooterProps) {
-  return (
-    <footer className="py-8 bg-green-50 border-t border-green-200">
-      <div className="max-w-[1200px] mx-auto px-4 text-center space-y-3">
-        <SocialLinks facebookUrl={facebookUrl} zaloUrl={zaloUrl} tiktokUrl={tiktokUrl} linkClass="text-green-600 hover:text-green-800 transition-colors" />
-        <p className="text-xs text-green-500">🌿 © {new Date().getFullYear()} {storeName}</p>
+        <SocialLinks facebookUrl={facebookUrl} zaloUrl={zaloUrl} tiktokUrl={tiktokUrl} linkClass={linkClass} />
+        <GovBadge url={govRegistrationUrl} imageUrl={govRegistrationImageUrl} />
+        <p className={textClass}>© {new Date().getFullYear()} {storeName}</p>
       </div>
     </footer>
   );
 }
 
 export function LayoutFooter({ layoutStyle, ...props }: FooterProps & { layoutStyle: LayoutStyle }) {
-  switch (layoutStyle) {
-    case 'tgdd': return <TGDDFooter {...props} />;
-    case 'hasaki': return <HasakiFooter {...props} />;
-    case 'nike':
-    case 'canifa': return <NikeFooter {...props} />;
-    case 'luxury': return <LuxuryFooter {...props} />;
-    case 'minimal': return <MinimalFooter {...props} />;
-    case 'shopee': return <ShopeeFooter {...props} />;
-    case 'organic': return <OrganicFooter {...props} />;
-    case 'apple':
-    default: return <AppleFooter {...props} />;
-  }
+  const configs: Record<string, { wrapperClass: string; linkClass: string; textClass: string }> = {
+    tgdd: { wrapperClass: 'py-6 border-t-2 border-yellow-400 bg-gray-50', linkClass: 'text-blue-600 hover:text-blue-800 transition-colors', textClass: 'text-xs text-gray-500 font-medium' },
+    hasaki: { wrapperClass: 'py-6 bg-gradient-to-r from-pink-50 to-red-50 border-t border-pink-200', linkClass: 'text-pink-600 hover:text-pink-800 transition-colors', textClass: 'text-xs text-pink-400' },
+    nike: { wrapperClass: 'py-8 bg-black border-t border-white/10', linkClass: 'text-white/50 hover:text-white transition-colors', textClass: 'text-xs text-white/30 uppercase tracking-wider' },
+    canifa: { wrapperClass: 'py-8 bg-black border-t border-white/10', linkClass: 'text-white/50 hover:text-white transition-colors', textClass: 'text-xs text-white/30 uppercase tracking-wider' },
+    luxury: { wrapperClass: 'py-10 bg-[#0f0f23] border-t border-amber-900/20', linkClass: 'text-amber-400/50 hover:text-amber-300 transition-colors', textClass: 'text-[10px] text-amber-200/30 tracking-[0.2em] uppercase' },
+    minimal: { wrapperClass: 'py-8 bg-[#faf9f6] border-t border-stone-200', linkClass: 'text-stone-400 hover:text-stone-600 transition-colors', textClass: 'text-xs text-stone-400' },
+    shopee: { wrapperClass: 'py-6 bg-orange-50 border-t-2 border-orange-300', linkClass: 'text-orange-500 hover:text-orange-700 transition-colors', textClass: 'text-xs text-orange-400 font-medium' },
+    organic: { wrapperClass: 'py-8 bg-green-50 border-t border-green-200', linkClass: 'text-green-600 hover:text-green-800 transition-colors', textClass: 'text-xs text-green-500' },
+    apple: { wrapperClass: 'py-8 border-t border-black/5 bg-[#f5f5f7]', linkClass: 'text-[#86868b] hover:text-[#1d1d1f] transition-colors', textClass: 'text-xs text-[#86868b]' },
+  };
+  const cfg = configs[layoutStyle] || configs.apple;
+  return <CommonFooter {...props} {...cfg} />;
 }
