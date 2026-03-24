@@ -184,6 +184,9 @@ export function DataManagementSection() {
       {/* Data Backup Section */}
       <DataBackupSection />
 
+      {/* Cross-platform Backup/Restore */}
+      <CrossPlatformBackupSection />
+
       {/* Test Mode Section */}
       <Card className="border-orange-200 bg-orange-50/50">
         <CardHeader>
