@@ -342,7 +342,7 @@ export function KiotVietImportDialog({
   }, [parsedRows, categories]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
@@ -350,37 +350,103 @@ export function KiotVietImportDialog({
             Nhập hàng từ KiotViet
           </DialogTitle>
           <DialogDescription>
-            Tải lên file xuất từ KiotViet để tự động chuyển đổi sang VKHO
+            {guideStep >= 0 ? 'Làm theo hướng dẫn bên dưới để xuất file từ KiotViet' : 'Tải lên file xuất từ KiotViet để tự động chuyển đổi sang VKHO'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
-          {/* Column mapping info */}
-          <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg p-3 text-xs space-y-1">
-            <p className="font-medium text-orange-700 dark:text-orange-400">Ánh xạ cột tự động:</p>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-muted-foreground">
-              <span>Tên hàng → Tên SP & SKU</span>
-              <span>Thương hiệu → Danh mục</span>
-              <span>Giá vốn → Giá nhập</span>
-              <span>Tồn kho → Số lượng</span>
-              <span>Serial/IMEI → IMEI</span>
-              <span>Mẫu ghi chú → Ghi chú</span>
-              <span>Vị trí → Chi nhánh</span>
-              <span>Thời gian tạo → Ngày nhập</span>
-            </div>
-          </div>
+          {/* Step-by-step guide */}
+          {guideStep >= 0 && (
+            <div className="space-y-3">
+              {guideSteps.map((s, idx) => (
+                <div
+                  key={s.step}
+                  className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
+                    idx === guideStep
+                      ? 'border-primary bg-primary/5 shadow-sm'
+                      : idx < guideStep
+                        ? 'border-muted bg-muted/30 opacity-60'
+                        : 'border-muted/50 opacity-40'
+                  }`}
+                >
+                  <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${
+                    idx < guideStep
+                      ? 'bg-primary text-primary-foreground'
+                      : idx === guideStep
+                        ? 'bg-primary text-primary-foreground animate-pulse'
+                        : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {idx < guideStep ? <CheckCircle2 className="h-4 w-4" /> : s.step}
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{s.title}</p>
+                    <p className="text-xs text-muted-foreground">{s.desc}</p>
+                  </div>
+                </div>
+              ))}
 
-          <div className="form-field">
-            <Label htmlFor="kvFile">Chọn file KiotViet (.xlsx)</Label>
-            <Input
-              ref={fileInputRef}
-              id="kvFile"
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileChange}
-              className="cursor-pointer"
-            />
-          </div>
+              <div className="flex justify-between pt-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setGuideStep(prev => Math.max(0, prev - 1))}
+                  disabled={guideStep === 0}
+                >
+                  ← Quay lại
+                </Button>
+                {guideStep < guideSteps.length - 1 ? (
+                  <Button size="sm" onClick={() => setGuideStep(prev => prev + 1)}>
+                    Tiếp theo →
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={() => setGuideStep(-1)}>
+                    <Upload className="mr-1.5 h-4 w-4" />
+                    Tải file lên
+                  </Button>
+                )}
+              </div>
+
+              {/* Skip link */}
+              <div className="text-center">
+                <button
+                  onClick={() => setGuideStep(-1)}
+                  className="text-xs text-muted-foreground hover:text-foreground underline"
+                >
+                  Bỏ qua hướng dẫn, tải file lên ngay
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Upload mode */}
+          {guideStep < 0 && (
+            <>
+              {/* Column mapping info */}
+              <div className="bg-accent/50 border border-border rounded-lg p-3 text-xs space-y-1">
+                <p className="font-medium text-foreground">Ánh xạ cột tự động:</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-muted-foreground">
+                  <span>Tên hàng → Tên SP & SKU</span>
+                  <span>Thương hiệu → Danh mục</span>
+                  <span>Giá vốn → Giá nhập</span>
+                  <span>Tồn kho → Số lượng</span>
+                  <span>Serial/IMEI → IMEI</span>
+                  <span>Mẫu ghi chú → Ghi chú</span>
+                  <span>Vị trí → Chi nhánh</span>
+                  <span>Thời gian tạo → Ngày nhập</span>
+                </div>
+              </div>
+
+              <div className="form-field">
+                <Label htmlFor="kvFile">Chọn file KiotViet (.xlsx)</Label>
+                <Input
+                  ref={fileInputRef}
+                  id="kvFile"
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleFileChange}
+                  className="cursor-pointer"
+                />
+              </div>
 
           {isLoading && (
             <div className="flex items-center justify-center py-8">
