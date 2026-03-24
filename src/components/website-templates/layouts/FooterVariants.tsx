@@ -1,6 +1,6 @@
 import { LayoutStyle, getFooterWhyChooseTitle } from '@/lib/industryConfig';
 import { BranchInfo } from '@/hooks/useTenantLanding';
-import { Phone, Mail, MapPin, Building2, MessageCircle, ExternalLink } from 'lucide-react';
+import { Phone, Mail, MapPin, MessageCircle, ExternalLink } from 'lucide-react';
 
 interface FooterProps {
   storeName: string;
@@ -93,22 +93,18 @@ function ContactSection({ storePhone, storeEmail, zaloUrl, facebookUrl, tiktokUr
   );
 }
 
-function AddressesSection({ storeAddress, additionalAddresses, branches, accentColor, linkColorClass }: {
+function AddressesSection({ storeAddress, additionalAddresses, accentColor, linkColorClass }: {
   storeAddress?: string | null; additionalAddresses?: string[] | null;
-  branches?: BranchInfo[]; accentColor: string; linkColorClass: string;
+  accentColor: string; linkColorClass: string;
 }) {
-  // Collect all addresses: from settings first, then branches
-  const settingsAddresses = [storeAddress, ...(additionalAddresses || [])].filter(Boolean) as string[];
-  const hasBranches = branches && branches.length > 0;
-  const hasAddresses = settingsAddresses.length > 0 || hasBranches;
-  if (!hasAddresses) return null;
+  const allAddresses = [storeAddress, ...(additionalAddresses || [])].filter(Boolean) as string[];
+  if (allAddresses.length === 0) return null;
 
   return (
     <div>
       <h3 className="text-sm font-bold mb-3">Địa chỉ</h3>
       <div className="space-y-2">
-        {/* Addresses from website settings */}
-        {settingsAddresses.map((addr, i) => (
+        {allAddresses.map((addr, i) => (
           <a
             key={`addr-${i}`}
             href={buildGoogleMapsUrl(addr)}
@@ -119,32 +115,6 @@ function AddressesSection({ storeAddress, additionalAddresses, branches, accentC
             <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: accentColor }} />
             <span className="line-clamp-2">{addr}</span>
           </a>
-        ))}
-        {/* Branches (if enabled) */}
-        {hasBranches && branches!.map(branch => (
-          <div key={branch.id} className="space-y-1">
-            <div className="flex items-center gap-1.5">
-              <Building2 className="h-3.5 w-3.5 shrink-0" style={{ color: accentColor }} />
-              <span className="text-xs font-semibold">{branch.name}</span>
-            </div>
-            {branch.address && (
-              <a
-                href={buildGoogleMapsUrl(branch.address)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`flex items-start gap-1.5 text-xs ${linkColorClass} hover:underline pl-5`}
-              >
-                <MapPin className="h-3 w-3 shrink-0 mt-0.5" />
-                <span className="line-clamp-2">{branch.address}</span>
-              </a>
-            )}
-            {branch.phone && (
-              <a href={`tel:${branch.phone}`} className={`flex items-center gap-1.5 text-xs ${linkColorClass} hover:underline pl-5`}>
-                <Phone className="h-3 w-3 shrink-0" />
-                <span>{branch.phone}</span>
-              </a>
-            )}
-          </div>
         ))}
       </div>
     </div>
@@ -185,7 +155,7 @@ function FullFooter({
             {hasAddresses && (
               <AddressesSection
                 storeAddress={storeAddress} additionalAddresses={additionalAddresses}
-                branches={branches} accentColor={accentColor} linkColorClass={linkColorClass}
+                accentColor={accentColor} linkColorClass={linkColorClass}
               />
             )}
           </div>
