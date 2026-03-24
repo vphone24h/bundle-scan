@@ -806,7 +806,6 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
               size="sm"
               className="text-xs"
               onClick={() => {
-                const { INDUSTRY_WHY_CHOOSE_CONTENT } = require('@/lib/industryConfig');
                 const templateId = formData.website_template || 'phone_store';
                 const defaultContent = INDUSTRY_WHY_CHOOSE_CONTENT[templateId] || INDUSTRY_WHY_CHOOSE_CONTENT.phone_store || '';
                 if (defaultContent) {
