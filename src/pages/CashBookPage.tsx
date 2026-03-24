@@ -1522,12 +1522,19 @@ export default function CashBookPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-popover">
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenEdit(entry); }}>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); requireSecurityPassword(() => handleOpenEdit(entry)); }}>
                               <Pencil className="mr-2 h-4 w-4" />
                               Chỉnh sửa
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleAccounting(entry);
+                            }}>
+                              <BookOpen className="mr-2 h-4 w-4" />
+                              {entry.is_business_accounting ? 'Bỏ hạch toán' : 'Bật hạch toán'}
+                            </DropdownMenuItem>
                             <DropdownMenuItem 
-                              onClick={(e) => { e.stopPropagation(); handleOpenDelete(entry); }}
+                              onClick={(e) => { e.stopPropagation(); requireSecurityPassword(() => handleOpenDelete(entry)); }}
                               className="text-destructive focus:text-destructive"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
