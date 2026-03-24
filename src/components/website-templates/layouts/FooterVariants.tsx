@@ -152,28 +152,29 @@ function AddressesSection({ storeAddress, additionalAddresses, branches, accentC
 }
 
 function FullFooter({
-  storeName, accentColor, govRegistrationUrl, govRegistrationImageUrl,
+  storeName, accentColor, templateId, footerContentEnabled,
+  govRegistrationUrl, govRegistrationImageUrl,
   facebookUrl, zaloUrl, tiktokUrl, storePhone, storeEmail, storeAddress,
-  branches, whyChooseContent,
+  additionalAddresses, branches, whyChooseContent,
   wrapperClass, linkColorClass, textColorClass, borderColorClass, copyrightClass,
 }: FooterProps & { wrapperClass: string; linkColorClass: string; textColorClass: string; borderColorClass: string; copyrightClass: string }) {
-  const hasWhyChoose = !!whyChooseContent;
-  const hasContact = storePhone || storeEmail || zaloUrl || facebookUrl || tiktokUrl;
+  const isEnabled = footerContentEnabled !== false; // default true
+  const hasWhyChoose = isEnabled && !!whyChooseContent;
+  const hasContact = isEnabled && (storePhone || storeEmail || zaloUrl || facebookUrl || tiktokUrl);
+  const settingsAddresses = [storeAddress, ...(additionalAddresses || [])].filter(Boolean) as string[];
   const hasBranches = branches && branches.length > 0;
+  const hasAddresses = isEnabled && (settingsAddresses.length > 0 || hasBranches);
   const hasGov = govRegistrationUrl && govRegistrationImageUrl;
-  const hasContent = hasWhyChoose || hasContact || hasBranches;
+  const hasContent = hasWhyChoose || hasContact || hasAddresses;
 
   return (
     <footer className={wrapperClass}>
       <div className="max-w-[1200px] mx-auto px-4">
         {hasContent && (
           <div className={`grid grid-cols-1 md:grid-cols-3 gap-8 pb-6 ${borderColorClass} border-b mb-6`}>
-            {/* Col 1: Why Choose */}
             {hasWhyChoose && (
-              <WhyChooseSection storeName={storeName} content={whyChooseContent!} textColorClass={textColorClass} />
+              <WhyChooseSection storeName={storeName} content={whyChooseContent!} textColorClass={textColorClass} templateId={templateId} />
             )}
-
-            {/* Col 2: Contact */}
             {hasContact && (
               <ContactSection
                 storePhone={storePhone} storeEmail={storeEmail}
@@ -181,15 +182,14 @@ function FullFooter({
                 accentColor={accentColor} linkColorClass={linkColorClass}
               />
             )}
-
-            {/* Col 3: Branches */}
-            {hasBranches && (
-              <BranchesSection branches={branches!} accentColor={accentColor} linkColorClass={linkColorClass} />
+            {hasAddresses && (
+              <AddressesSection
+                storeAddress={storeAddress} additionalAddresses={additionalAddresses}
+                branches={branches} accentColor={accentColor} linkColorClass={linkColorClass}
+              />
             )}
           </div>
         )}
-
-        {/* Gov Badge + Copyright */}
         <div className="flex flex-col items-center gap-3 py-4">
           {hasGov && <GovBadge url={govRegistrationUrl} imageUrl={govRegistrationImageUrl} />}
           <p className={copyrightClass}>© {new Date().getFullYear()} {storeName}. Tất cả quyền được bảo lưu.</p>
