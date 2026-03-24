@@ -978,6 +978,11 @@ export default function ImportNewPage() {
               <span className="hidden sm:inline">{t('tours.importNew.importFromExcel')}</span>
               <span className="sm:hidden">{t('tours.importNew.importFromExcelShort')}</span>
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setKiotVietImportOpen(true)} className="border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-950/30">
+              <FileSpreadsheet className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">Nhập từ KiotViet</span>
+              <span className="sm:hidden">KiotViet</span>
+            </Button>
           </div>
         }
       />
