@@ -1,10 +1,12 @@
-import { LayoutStyle } from '@/lib/industryConfig';
+import { LayoutStyle, getFooterWhyChooseTitle } from '@/lib/industryConfig';
 import { BranchInfo } from '@/hooks/useTenantLanding';
 import { Phone, Mail, MapPin, Building2, MessageCircle, ExternalLink } from 'lucide-react';
 
 interface FooterProps {
   storeName: string;
   accentColor: string;
+  templateId?: string;
+  footerContentEnabled?: boolean;
   facebookUrl?: string | null;
   zaloUrl?: string | null;
   tiktokUrl?: string | null;
@@ -13,6 +15,7 @@ interface FooterProps {
   storePhone?: string | null;
   storeEmail?: string | null;
   storeAddress?: string | null;
+  additionalAddresses?: string[] | null;
   branches?: BranchInfo[];
   whyChooseContent?: string | null;
 }
@@ -34,10 +37,10 @@ function buildGoogleMapsUrl(address: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
 
-function WhyChooseSection({ storeName, content, textColorClass }: { storeName: string; content: string; textColorClass: string }) {
+function WhyChooseSection({ storeName, content, textColorClass, templateId }: { storeName: string; content: string; textColorClass: string; templateId?: string }) {
   return (
     <div>
-      <h3 className="text-sm font-bold mb-3">Tại sao chọn mua hàng tại {storeName}?</h3>
+      <h3 className="text-sm font-bold mb-3">{getFooterWhyChooseTitle(storeName, templateId)}</h3>
       <div className={`text-xs leading-relaxed space-y-1 ${textColorClass} whitespace-pre-line`}>
         {content}
       </div>
@@ -90,13 +93,35 @@ function ContactSection({ storePhone, storeEmail, zaloUrl, facebookUrl, tiktokUr
   );
 }
 
-function BranchesSection({ branches, accentColor, linkColorClass }: { branches: BranchInfo[]; accentColor: string; linkColorClass: string }) {
-  if (!branches || branches.length === 0) return null;
+function AddressesSection({ storeAddress, additionalAddresses, branches, accentColor, linkColorClass }: {
+  storeAddress?: string | null; additionalAddresses?: string[] | null;
+  branches?: BranchInfo[]; accentColor: string; linkColorClass: string;
+}) {
+  // Collect all addresses: from settings first, then branches
+  const settingsAddresses = [storeAddress, ...(additionalAddresses || [])].filter(Boolean) as string[];
+  const hasBranches = branches && branches.length > 0;
+  const hasAddresses = settingsAddresses.length > 0 || hasBranches;
+  if (!hasAddresses) return null;
+
   return (
     <div>
-      <h3 className="text-sm font-bold mb-3">Hệ thống chi nhánh</h3>
-      <div className="space-y-2.5">
-        {branches.map(branch => (
+      <h3 className="text-sm font-bold mb-3">Địa chỉ</h3>
+      <div className="space-y-2">
+        {/* Addresses from website settings */}
+        {settingsAddresses.map((addr, i) => (
+          <a
+            key={`addr-${i}`}
+            href={buildGoogleMapsUrl(addr)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`flex items-start gap-1.5 text-xs ${linkColorClass} hover:underline`}
+          >
+            <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: accentColor }} />
+            <span className="line-clamp-2">{addr}</span>
+          </a>
+        ))}
+        {/* Branches (if enabled) */}
+        {hasBranches && branches!.map(branch => (
           <div key={branch.id} className="space-y-1">
             <div className="flex items-center gap-1.5">
               <Building2 className="h-3.5 w-3.5 shrink-0" style={{ color: accentColor }} />
@@ -127,28 +152,29 @@ function BranchesSection({ branches, accentColor, linkColorClass }: { branches: 
 }
 
 function FullFooter({
-  storeName, accentColor, govRegistrationUrl, govRegistrationImageUrl,
+  storeName, accentColor, templateId, footerContentEnabled,
+  govRegistrationUrl, govRegistrationImageUrl,
   facebookUrl, zaloUrl, tiktokUrl, storePhone, storeEmail, storeAddress,
-  branches, whyChooseContent,
+  additionalAddresses, branches, whyChooseContent,
   wrapperClass, linkColorClass, textColorClass, borderColorClass, copyrightClass,
 }: FooterProps & { wrapperClass: string; linkColorClass: string; textColorClass: string; borderColorClass: string; copyrightClass: string }) {
-  const hasWhyChoose = !!whyChooseContent;
-  const hasContact = storePhone || storeEmail || zaloUrl || facebookUrl || tiktokUrl;
+  const isEnabled = footerContentEnabled !== false; // default true
+  const hasWhyChoose = isEnabled && !!whyChooseContent;
+  const hasContact = isEnabled && (storePhone || storeEmail || zaloUrl || facebookUrl || tiktokUrl);
+  const settingsAddresses = [storeAddress, ...(additionalAddresses || [])].filter(Boolean) as string[];
   const hasBranches = branches && branches.length > 0;
+  const hasAddresses = isEnabled && (settingsAddresses.length > 0 || hasBranches);
   const hasGov = govRegistrationUrl && govRegistrationImageUrl;
-  const hasContent = hasWhyChoose || hasContact || hasBranches;
+  const hasContent = hasWhyChoose || hasContact || hasAddresses;
 
   return (
     <footer className={wrapperClass}>
       <div className="max-w-[1200px] mx-auto px-4">
         {hasContent && (
           <div className={`grid grid-cols-1 md:grid-cols-3 gap-8 pb-6 ${borderColorClass} border-b mb-6`}>
-            {/* Col 1: Why Choose */}
             {hasWhyChoose && (
-              <WhyChooseSection storeName={storeName} content={whyChooseContent!} textColorClass={textColorClass} />
+              <WhyChooseSection storeName={storeName} content={whyChooseContent!} textColorClass={textColorClass} templateId={templateId} />
             )}
-
-            {/* Col 2: Contact */}
             {hasContact && (
               <ContactSection
                 storePhone={storePhone} storeEmail={storeEmail}
@@ -156,15 +182,14 @@ function FullFooter({
                 accentColor={accentColor} linkColorClass={linkColorClass}
               />
             )}
-
-            {/* Col 3: Branches */}
-            {hasBranches && (
-              <BranchesSection branches={branches!} accentColor={accentColor} linkColorClass={linkColorClass} />
+            {hasAddresses && (
+              <AddressesSection
+                storeAddress={storeAddress} additionalAddresses={additionalAddresses}
+                branches={branches} accentColor={accentColor} linkColorClass={linkColorClass}
+              />
             )}
           </div>
         )}
-
-        {/* Gov Badge + Copyright */}
         <div className="flex flex-col items-center gap-3 py-4">
           {hasGov && <GovBadge url={govRegistrationUrl} imageUrl={govRegistrationImageUrl} />}
           <p className={copyrightClass}>© {new Date().getFullYear()} {storeName}. Tất cả quyền được bảo lưu.</p>

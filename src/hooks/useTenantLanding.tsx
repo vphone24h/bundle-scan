@@ -90,6 +90,7 @@ export interface TenantLandingSettings {
   gov_registration_url: string | null;
   gov_registration_image_url: string | null;
   footer_why_choose_content: string | null;
+  footer_content_enabled: boolean;
   created_at: string;
   updated_at: string;
 }

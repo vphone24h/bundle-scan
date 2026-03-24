@@ -1860,6 +1860,8 @@ export default function UniversalStoreTemplate({
         layoutStyle={config.layoutStyle}
         storeName={displayStoreName}
         accentColor={accentColor}
+        templateId={settings?.website_template}
+        footerContentEnabled={(settings as any)?.footer_content_enabled}
         facebookUrl={facebookUrl}
         zaloUrl={zaloUrl}
         tiktokUrl={tiktokUrl}
@@ -1868,6 +1870,7 @@ export default function UniversalStoreTemplate({
         storePhone={settings?.store_phone}
         storeEmail={settings?.store_email}
         storeAddress={settings?.store_address}
+        additionalAddresses={settings?.additional_addresses}
         branches={branches}
         whyChooseContent={(settings as any)?.footer_why_choose_content}
       />

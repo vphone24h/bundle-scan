@@ -21,7 +21,7 @@ import { OrderLookupPage } from '@/components/landing/OrderLookupPage';
 import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 import { VoucherClaimForm } from '@/components/landing/VoucherClaimForm';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
-import { getIndustryConfig, NavItemConfig, getDefaultNavItems, HomeSection, GOOGLE_FONTS } from '@/lib/industryConfig';
+import { getIndustryConfig, NavItemConfig, getDefaultNavItems, HomeSection, GOOGLE_FONTS, getFooterWhyChooseTitle } from '@/lib/industryConfig';
 import {
   RepairPage, TradeInPage, InstallmentPage, PriceListPage,
   BookingPage, BranchesPage as SystemBranchesPage, ContactPage, AccessoriesPage,
@@ -204,29 +204,31 @@ function AppleHeader({
 // ============================
 // Apple Footer (standalone)
 // ============================
-function AppleFooter({ storeName, accentColor, facebookUrl, zaloUrl, tiktokUrl, govRegistrationUrl, govRegistrationImageUrl, storePhone, storeEmail, branches, whyChooseContent }: {
-  storeName: string; accentColor: string; facebookUrl?: string | null; zaloUrl?: string | null; tiktokUrl?: string | null;
+function AppleFooter({ storeName, accentColor, templateId, footerContentEnabled, facebookUrl, zaloUrl, tiktokUrl, govRegistrationUrl, govRegistrationImageUrl, storePhone, storeEmail, storeAddress, additionalAddresses, branches, whyChooseContent }: {
+  storeName: string; accentColor: string; templateId?: string; footerContentEnabled?: boolean;
+  facebookUrl?: string | null; zaloUrl?: string | null; tiktokUrl?: string | null;
   govRegistrationUrl?: string | null; govRegistrationImageUrl?: string | null;
-  storePhone?: string | null; storeEmail?: string | null; branches?: BranchInfo[];
+  storePhone?: string | null; storeEmail?: string | null; storeAddress?: string | null; additionalAddresses?: string[] | null; branches?: BranchInfo[];
   whyChooseContent?: string | null;
 }) {
-  const hasWhyChoose = !!whyChooseContent;
-  const hasContact = storePhone || storeEmail || zaloUrl || facebookUrl || tiktokUrl;
+  const isEnabled = footerContentEnabled !== false;
+  const hasWhyChoose = isEnabled && !!whyChooseContent;
+  const hasContact = isEnabled && (storePhone || storeEmail || zaloUrl || facebookUrl || tiktokUrl);
+  const settingsAddresses = [storeAddress, ...(additionalAddresses || [])].filter(Boolean) as string[];
   const hasBranches = branches && branches.length > 0;
+  const hasAddresses = isEnabled && (settingsAddresses.length > 0 || hasBranches);
 
   return (
     <footer className="bg-[#f5f5f7] border-t border-[#d2d2d7]">
       <div className="max-w-[1024px] mx-auto px-4 py-8">
         {/* Main footer grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Why Choose */}
           {hasWhyChoose && (
             <div>
-              <p className="font-semibold text-[#1d1d1f] text-sm mb-3">Tại sao chọn mua hàng tại {storeName}?</p>
+              <p className="font-semibold text-[#1d1d1f] text-sm mb-3">{getFooterWhyChooseTitle(storeName, templateId)}</p>
               <div className="text-xs text-[#6e6e73] leading-relaxed whitespace-pre-line">{whyChooseContent}</div>
             </div>
           )}
-          {/* Contact */}
           {hasContact && (
             <div>
               <p className="font-semibold text-[#1d1d1f] text-sm mb-3">Liên hệ</p>
@@ -239,12 +241,17 @@ function AppleFooter({ storeName, accentColor, facebookUrl, zaloUrl, tiktokUrl, 
               </div>
             </div>
           )}
-          {/* Branches */}
-          {hasBranches && (
+          {hasAddresses && (
             <div>
-              <p className="font-semibold text-[#1d1d1f] text-sm mb-3">Hệ thống chi nhánh</p>
-              <div className="space-y-3 text-xs text-[#6e6e73]">
-                {branches!.map(b => (
+              <p className="font-semibold text-[#1d1d1f] text-sm mb-3">Địa chỉ</p>
+              <div className="space-y-2 text-xs text-[#6e6e73]">
+                {settingsAddresses.map((addr, i) => (
+                  <a key={`addr-${i}`} href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`}
+                    target="_blank" rel="noopener noreferrer" className="block hover:text-[#1d1d1f]">
+                    📍 {addr}
+                  </a>
+                ))}
+                {hasBranches && branches!.map(b => (
                   <div key={b.id} className="space-y-0.5">
                     <p className="font-medium text-[#1d1d1f]">{b.name}</p>
                     {b.address && (
@@ -1386,6 +1393,8 @@ export default function AppleStyleLandingTemplate({
       <AppleFooter
         storeName={displayStoreName}
         accentColor={accentColor}
+        templateId={settings?.website_template}
+        footerContentEnabled={(settings as any)?.footer_content_enabled}
         facebookUrl={facebookUrl}
         zaloUrl={zaloUrl}
         tiktokUrl={tiktokUrl}
@@ -1393,6 +1402,8 @@ export default function AppleStyleLandingTemplate({
         govRegistrationImageUrl={(settings as any)?.gov_registration_image_url}
         storePhone={settings?.store_phone}
         storeEmail={settings?.store_email}
+        storeAddress={settings?.store_address}
+        additionalAddresses={settings?.additional_addresses}
         branches={branches}
         whyChooseContent={(settings as any)?.footer_why_choose_content}
       />
