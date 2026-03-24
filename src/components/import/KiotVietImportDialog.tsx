@@ -84,7 +84,7 @@ export function KiotVietImportDialog({
   };
 
   const guideSteps = [
-    { step: 1, title: 'Đăng nhập KiotViet', desc: 'Truy cập trang quản lý KiotViet của bạn tại kiotviet.vn và đăng nhập.' },
+    { step: 1, title: 'Đăng nhập KiotViet', desc: 'Truy cập trang quản lý KiotViet trên máy tính (điện thoại không xuất được file). Vào kiotviet.vn và đăng nhập.' },
     { step: 2, title: 'Vào tab Hàng Hóa', desc: 'Trên thanh menu bên trái, chọn mục "Hàng hóa".' },
     { step: 3, title: 'Danh sách hàng hóa', desc: 'Mở trang "Danh sách hàng hóa" để xem toàn bộ sản phẩm.' },
     { step: 4, title: 'Xuất file Excel', desc: 'Nhấn nút "Xuất file" ở góc phải để tải file Excel chứa danh sách sản phẩm.' },
