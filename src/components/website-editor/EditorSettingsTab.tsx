@@ -824,7 +824,7 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
                       const file = e.target.files?.[0];
                       if (!file) return;
                       try {
-                        const url = await uploadLandingAsset(file, 'gov-badge');
+                        const url = await uploadLandingAsset(file, tenantId || '', 'gov-badge');
                         onChange('gov_registration_image_url', url);
                       } catch {
                         toast({ title: 'Lỗi tải ảnh', variant: 'destructive' });
