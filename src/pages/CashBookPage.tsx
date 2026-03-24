@@ -2444,6 +2444,17 @@ export default function CashBookPage() {
         onSkip={() => { completeCashTour(); setManualTourActive(false); }}
         tourKey="cashbook_guide"
       />
+
+      <SecurityPasswordDialog
+        open={showSecurityDialog}
+        onOpenChange={(open) => {
+          setShowSecurityDialog(open);
+          if (!open) setPendingSecurityAction(null);
+        }}
+        onSuccess={handleSecuritySuccess}
+        title="Xác thực bảo mật"
+        description="Nhập mật khẩu bảo mật để thực hiện thao tác trên sổ quỹ"
+      />
     </MainLayout>
   );
 }
