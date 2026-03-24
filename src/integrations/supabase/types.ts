@@ -6593,6 +6593,8 @@ export type Database = {
           custom_products_page_tabs: Json | null
           custom_trust_badges: Json | null
           facebook_url: string | null
+          gov_registration_image_url: string | null
+          gov_registration_url: string | null
           hero_cta: string | null
           hero_subtitle: string | null
           hero_title: string | null
@@ -6678,6 +6680,8 @@ export type Database = {
           custom_products_page_tabs?: Json | null
           custom_trust_badges?: Json | null
           facebook_url?: string | null
+          gov_registration_image_url?: string | null
+          gov_registration_url?: string | null
           hero_cta?: string | null
           hero_subtitle?: string | null
           hero_title?: string | null
@@ -6763,6 +6767,8 @@ export type Database = {
           custom_products_page_tabs?: Json | null
           custom_trust_badges?: Json | null
           facebook_url?: string | null
+          gov_registration_image_url?: string | null
+          gov_registration_url?: string | null
           hero_cta?: string | null
           hero_subtitle?: string | null
           hero_title?: string | null
