@@ -779,6 +779,48 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
 
       {/* Email tự động đơn hàng - đã chuyển ra LandingPageSettings */}
 
+      {/* Nội dung chân trang - Tại sao chọn mua hàng tại ... */}
+      <SettingsBlock
+        id="footer-why-choose"
+        icon="📝"
+        title="Nội dung chân trang"
+        description="Phần 'Tại sao chọn mua hàng tại cửa hàng'"
+        isExpanded={expandedBlocks.has('footer-why-choose')}
+        onToggle={() => toggleBlock('footer-why-choose')}
+      >
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Nội dung giới thiệu (hiển thị ở footer)</Label>
+            <Textarea
+              value={(formData as any).footer_why_choose_content || ''}
+              onChange={e => onChange('footer_why_choose_content', e.target.value)}
+              placeholder="✅ Cam kết hàng chính hãng 100%&#10;✅ Bảo hành dài hạn&#10;✅ Giao hàng nhanh..."
+              rows={5}
+            />
+            <p className="text-[10px] text-muted-foreground">💡 Mỗi dòng là một lý do khách hàng nên chọn cửa hàng. Để trống sẽ không hiển thị phần này.</p>
+          </div>
+          {!(formData as any).footer_why_choose_content && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              onClick={() => {
+                const { INDUSTRY_WHY_CHOOSE_CONTENT } = require('@/lib/industryConfig');
+                const templateId = formData.website_template || 'phone_store';
+                const defaultContent = INDUSTRY_WHY_CHOOSE_CONTENT[templateId] || INDUSTRY_WHY_CHOOSE_CONTENT.phone_store || '';
+                if (defaultContent) {
+                  onChange('footer_why_choose_content', defaultContent);
+                }
+              }}
+            >
+              <Sparkles className="h-3 w-3 mr-1" />
+              Tạo nội dung mẫu
+            </Button>
+          )}
+        </div>
+      </SettingsBlock>
+
       {/* Bộ Công Thương */}
       <SettingsBlock
         id="gov-registration"
