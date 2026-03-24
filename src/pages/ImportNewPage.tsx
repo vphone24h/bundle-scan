@@ -123,6 +123,7 @@ export default function ImportNewPage() {
   const [cart, setCart] = useState<ImportReceiptItem[]>([]);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [excelImportOpen, setExcelImportOpen] = useState(false);
+  const [kiotVietImportOpen, setKiotVietImportOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [printQRPromptOpen, setPrintQRPromptOpen] = useState(false);
   const [printQRProducts, setPrintQRProducts] = useState<{ id: string; name: string; sku: string; imei?: string; importPrice: number; salePrice?: number }[]>([]);
