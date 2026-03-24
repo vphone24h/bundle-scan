@@ -130,7 +130,7 @@ export function KiotVietImportDialog({
 
       const rows = jsonData.slice(1).filter(row => row.some(cell => cell !== undefined && cell !== ''));
 
-      const parsed: KVParsedRow[] = rows.map((row) => {
+      const parsed: KVParsedRow[] = (rows.map((row) => {
         const errors: string[] = [];
 
         const tenHang = String(row[colTenHang] || '').trim();
