@@ -24,6 +24,17 @@ function SocialLinks({ facebookUrl, zaloUrl, tiktokUrl, linkClass }: { facebookU
   );
 }
 
+function GovBadge({ url, imageUrl }: { url?: string | null; imageUrl?: string | null }) {
+  if (!url || !imageUrl) return null;
+  return (
+    <div className="flex justify-center">
+      <a href={url} target="_blank" rel="noopener noreferrer" className="inline-block hover:opacity-80 transition-opacity">
+        <img src={imageUrl} alt="Đã thông báo Bộ Công Thương" className="h-12 sm:h-14 object-contain" />
+      </a>
+    </div>
+  );
+}
+
 function AppleFooter({ storeName, facebookUrl, zaloUrl, tiktokUrl }: FooterProps) {
   return (
     <footer className="py-8 border-t border-black/5 bg-[#f5f5f7]">
