@@ -5,6 +5,7 @@ import { ImportCart } from '@/components/import/ImportCart';
 import { SupplierSearchCombobox } from '@/components/import/SupplierSearchCombobox';
 import { PaymentDialog } from '@/components/import/PaymentDialog';
 import { ExcelImportDialog } from '@/components/import/ExcelImportDialog';
+import { KiotVietImportDialog } from '@/components/import/KiotVietImportDialog';
 import { ProductNamingTip } from '@/components/import/ProductNamingTip';
 import { VariantConfigPanel, VariantConfig, VariantLevel } from '@/components/import/VariantConfig';
 import { VariantSelector, SelectedVariants, buildVariantProductName } from '@/components/import/VariantSelector';
