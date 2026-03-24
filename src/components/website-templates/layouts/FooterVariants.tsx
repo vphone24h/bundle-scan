@@ -5,6 +5,8 @@ import { Phone, Mail, MapPin, Building2, MessageCircle, ExternalLink } from 'luc
 interface FooterProps {
   storeName: string;
   accentColor: string;
+  templateId?: string;
+  footerContentEnabled?: boolean;
   facebookUrl?: string | null;
   zaloUrl?: string | null;
   tiktokUrl?: string | null;
@@ -13,6 +15,7 @@ interface FooterProps {
   storePhone?: string | null;
   storeEmail?: string | null;
   storeAddress?: string | null;
+  additionalAddresses?: string[] | null;
   branches?: BranchInfo[];
   whyChooseContent?: string | null;
 }
