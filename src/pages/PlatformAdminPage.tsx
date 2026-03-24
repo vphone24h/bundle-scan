@@ -274,44 +274,91 @@ export default function PlatformAdminPage() {
             </TabsContent>
 
             <TabsContent value="export-all" className="mt-6">
-              <Card className="border-green-200 bg-green-50/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-green-700">
-                    <Database className="h-5 w-5" />
-                    {t('pages.platformAdmin.exportAllTitle')}
-                  </CardTitle>
-                  <CardDescription>
-                    {t('pages.platformAdmin.exportAllDesc')}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>• {t('pages.platformAdmin.exportAllNote1')}</p>
-                    <p>• {t('pages.platformAdmin.exportAllNote2')}</p>
-                    <p>• {t('pages.platformAdmin.exportAllNote3')}</p>
-                  </div>
-                  <Button
-                    onClick={handleExportAllData}
-                    disabled={isExportingAll}
-                    className="w-full bg-green-600 hover:bg-green-700"
-                  >
-                    {isExportingAll ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        {t('pages.platformAdmin.exportingAll')}
-                      </>
-                    ) : (
-                      <>
-                        <Database className="h-4 w-4 mr-2" />
-                        {t('pages.platformAdmin.exportAllBtn')}
-                      </>
-                    )}
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center">
-                    {t('pages.platformAdmin.exportWarning')}
-                  </p>
-                </CardContent>
-              </Card>
+              <div className="space-y-6">
+                {/* Cross-platform Backup - ALL SHOPS */}
+                <Card className="border-emerald-200 bg-emerald-50/50">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-emerald-700">
+                      <RefreshCw className="h-5 w-5" />
+                      Đồng bộ dữ liệu (Cross-platform) - Tất cả Shop
+                    </CardTitle>
+                    <CardDescription>
+                      Xuất toàn bộ dữ liệu của TẤT CẢ cửa hàng thành file JSON chuẩn v1.0. Mỗi shop có dữ liệu riêng biệt, dùng external_id để di chuyển sang VPS.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-3 rounded-lg bg-emerald-100/50 border border-emerald-200 text-sm space-y-1">
+                      <ul className="list-disc list-inside text-emerald-700 space-y-0.5 ml-1 text-xs">
+                        <li>Mỗi shop được tách riêng với tên cửa hàng + subdomain</li>
+                        <li>Sử dụng external_id thay UUID - tương thích mọi database</li>
+                        <li>Giữ nguyên liên kết: NCC ↔ Phiếu nhập, KH ↔ Phiếu xuất</li>
+                        <li>Bao gồm: SP, KH, NCC, Phiếu, Sổ quỹ, Cấu hình web</li>
+                        <li>Import vào VPS: mỗi shop dùng file riêng, không lộn dữ liệu</li>
+                      </ul>
+                    </div>
+                    <Button
+                      onClick={handleCrossPlatformExport}
+                      disabled={isExportingCross}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700"
+                    >
+                      {isExportingCross ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Đang xuất tất cả shop...
+                        </>
+                      ) : (
+                        <>
+                          <ArrowDownToLine className="h-4 w-4 mr-2" />
+                          Tải JSON Cross-platform (Tất cả Shop)
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      💡 File JSON chứa dữ liệu tất cả shop, mỗi shop tách biệt để import riêng trên VPS
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Original Database Export */}
+                <Card className="border-green-200 bg-green-50/50">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-green-700">
+                      <Database className="h-5 w-5" />
+                      {t('pages.platformAdmin.exportAllTitle')}
+                    </CardTitle>
+                    <CardDescription>
+                      {t('pages.platformAdmin.exportAllDesc')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <p>• {t('pages.platformAdmin.exportAllNote1')}</p>
+                      <p>• {t('pages.platformAdmin.exportAllNote2')}</p>
+                      <p>• {t('pages.platformAdmin.exportAllNote3')}</p>
+                    </div>
+                    <Button
+                      onClick={handleExportAllData}
+                      disabled={isExportingAll}
+                      className="w-full bg-green-600 hover:bg-green-700"
+                    >
+                      {isExportingAll ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          {t('pages.platformAdmin.exportingAll')}
+                        </>
+                      ) : (
+                        <>
+                          <Database className="h-4 w-4 mr-2" />
+                          {t('pages.platformAdmin.exportAllBtn')}
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      {t('pages.platformAdmin.exportWarning')}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
         </Tabs>
       </div>
