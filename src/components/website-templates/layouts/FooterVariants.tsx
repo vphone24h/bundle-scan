@@ -37,10 +37,10 @@ function buildGoogleMapsUrl(address: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
 
-function WhyChooseSection({ storeName, content, textColorClass }: { storeName: string; content: string; textColorClass: string }) {
+function WhyChooseSection({ storeName, content, textColorClass, templateId }: { storeName: string; content: string; textColorClass: string; templateId?: string }) {
   return (
     <div>
-      <h3 className="text-sm font-bold mb-3">Tại sao chọn mua hàng tại {storeName}?</h3>
+      <h3 className="text-sm font-bold mb-3">{getFooterWhyChooseTitle(storeName, templateId)}</h3>
       <div className={`text-xs leading-relaxed space-y-1 ${textColorClass} whitespace-pre-line`}>
         {content}
       </div>
