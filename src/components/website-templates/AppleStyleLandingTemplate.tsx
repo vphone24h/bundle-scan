@@ -251,18 +251,6 @@ function AppleFooter({ storeName, accentColor, templateId, footerContentEnabled,
                     📍 {addr}
                   </a>
                 ))}
-                {hasBranches && branches!.map(b => (
-                  <div key={b.id} className="space-y-0.5">
-                    <p className="font-medium text-[#1d1d1f]">{b.name}</p>
-                    {b.address && (
-                      <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.address)}`}
-                        target="_blank" rel="noopener noreferrer" className="block hover:text-[#1d1d1f]">
-                        📍 {b.address}
-                      </a>
-                    )}
-                    {b.phone && <a href={`tel:${b.phone}`} className="block hover:text-[#1d1d1f]">📞 {b.phone}</a>}
-                  </div>
-                ))}
               </div>
             </div>
           )}
