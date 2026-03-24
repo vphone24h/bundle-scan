@@ -130,7 +130,7 @@ export function KiotVietImportDialog({
 
       const rows = jsonData.slice(1).filter(row => row.some(cell => cell !== undefined && cell !== ''));
 
-      const parsed: KVParsedRow[] = rows.map((row) => {
+      const parsed: KVParsedRow[] = (rows.map((row) => {
         const errors: string[] = [];
 
         const tenHang = String(row[colTenHang] || '').trim();
@@ -164,6 +164,11 @@ export function KiotVietImportDialog({
           salePrice = imei ? importPrice + 2000000 : importPrice * 2;
         }
 
+        // Skip products with 0 stock (unless has IMEI)
+        if (!imei && stockQty <= 0) {
+          return null; // Will be filtered out
+        }
+
         // Quantity: for IMEI products always 1, otherwise use stock qty (min 1)
         const quantity = imei ? 1 : Math.max(stockQty, 1);
 
@@ -190,7 +195,7 @@ export function KiotVietImportDialog({
           isValid: errors.length === 0,
           errors,
         };
-      });
+      })).filter(Boolean) as KVParsedRow[];
 
       setParsedRows(parsed);
 
