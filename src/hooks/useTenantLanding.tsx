@@ -87,6 +87,8 @@ export interface TenantLandingSettings {
   payment_account_holder: string | null;
   payment_confirm_zalo_url: string | null;
   payment_confirm_messenger_url: string | null;
+  gov_registration_url: string | null;
+  gov_registration_image_url: string | null;
   created_at: string;
   updated_at: string;
 }

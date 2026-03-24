@@ -6,6 +6,8 @@ interface FooterProps {
   facebookUrl?: string | null;
   zaloUrl?: string | null;
   tiktokUrl?: string | null;
+  govRegistrationUrl?: string | null;
+  govRegistrationImageUrl?: string | null;
 }
 
 const FacebookIcon = () => (
