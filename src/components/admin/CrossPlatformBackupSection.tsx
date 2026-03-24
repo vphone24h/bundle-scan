@@ -190,7 +190,10 @@ export function CrossPlatformBackupSection() {
       }
     } catch (error) {
       console.error('Import error:', error);
-      const message = (error as Error).message || 'Lỗi không xác định';
+      const rawMessage = (error as Error).message || 'Lỗi không xác định';
+      const message = /Failed to send a request to the Edge Function/i.test(rawMessage)
+        ? 'Import bị quá thời gian xử lý hoặc mất kết nối. Vui lòng thử lại (nếu file lớn, hãy chia nhỏ dữ liệu rồi import từng phần).'
+        : rawMessage;
       setImportResult({
         stats: {},
         errors: [message],
