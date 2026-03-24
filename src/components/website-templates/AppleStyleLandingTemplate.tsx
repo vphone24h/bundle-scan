@@ -211,9 +211,12 @@ function AppleFooter({ storeName, accentColor, templateId, footerContentEnabled,
   storePhone?: string | null; storeEmail?: string | null; storeAddress?: string | null; additionalAddresses?: string[] | null; branches?: BranchInfo[];
   whyChooseContent?: string | null;
 }) {
-  const hasWhyChoose = !!whyChooseContent;
-  const hasContact = storePhone || storeEmail || zaloUrl || facebookUrl || tiktokUrl;
+  const isEnabled = footerContentEnabled !== false;
+  const hasWhyChoose = isEnabled && !!whyChooseContent;
+  const hasContact = isEnabled && (storePhone || storeEmail || zaloUrl || facebookUrl || tiktokUrl);
+  const settingsAddresses = [storeAddress, ...(additionalAddresses || [])].filter(Boolean) as string[];
   const hasBranches = branches && branches.length > 0;
+  const hasAddresses = isEnabled && (settingsAddresses.length > 0 || hasBranches);
 
   return (
     <footer className="bg-[#f5f5f7] border-t border-[#d2d2d7]">
