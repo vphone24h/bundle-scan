@@ -204,8 +204,8 @@ function AppleHeader({
 // ============================
 // Apple Footer (standalone)
 // ============================
-function AppleFooter({ storeName, accentColor, facebookUrl, zaloUrl, tiktokUrl }: {
-  storeName: string; accentColor: string; facebookUrl?: string | null; zaloUrl?: string | null; tiktokUrl?: string | null;
+function AppleFooter({ storeName, accentColor, facebookUrl, zaloUrl, tiktokUrl, govRegistrationUrl, govRegistrationImageUrl }: {
+  storeName: string; accentColor: string; facebookUrl?: string | null; zaloUrl?: string | null; tiktokUrl?: string | null; govRegistrationUrl?: string | null; govRegistrationImageUrl?: string | null;
 }) {
   return (
     <footer className="bg-[#f5f5f7] border-t border-[#d2d2d7]">
