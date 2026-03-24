@@ -155,7 +155,7 @@ function FullFooter({
             {hasAddresses && (
               <AddressesSection
                 storeAddress={storeAddress} additionalAddresses={additionalAddresses}
-                branches={branches} accentColor={accentColor} linkColorClass={linkColorClass}
+                accentColor={accentColor} linkColorClass={linkColorClass}
               />
             )}
           </div>
