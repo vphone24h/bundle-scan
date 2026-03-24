@@ -204,44 +204,73 @@ function AppleHeader({
 // ============================
 // Apple Footer (standalone)
 // ============================
-function AppleFooter({ storeName, accentColor, facebookUrl, zaloUrl, tiktokUrl, govRegistrationUrl, govRegistrationImageUrl }: {
-  storeName: string; accentColor: string; facebookUrl?: string | null; zaloUrl?: string | null; tiktokUrl?: string | null; govRegistrationUrl?: string | null; govRegistrationImageUrl?: string | null;
+function AppleFooter({ storeName, accentColor, facebookUrl, zaloUrl, tiktokUrl, govRegistrationUrl, govRegistrationImageUrl, storePhone, storeEmail, branches, whyChooseContent }: {
+  storeName: string; accentColor: string; facebookUrl?: string | null; zaloUrl?: string | null; tiktokUrl?: string | null;
+  govRegistrationUrl?: string | null; govRegistrationImageUrl?: string | null;
+  storePhone?: string | null; storeEmail?: string | null; branches?: BranchInfo[];
+  whyChooseContent?: string | null;
 }) {
+  const hasWhyChoose = !!whyChooseContent;
+  const hasContact = storePhone || storeEmail || zaloUrl || facebookUrl || tiktokUrl;
+  const hasBranches = branches && branches.length > 0;
+
   return (
     <footer className="bg-[#f5f5f7] border-t border-[#d2d2d7]">
       <div className="max-w-[1024px] mx-auto px-4 py-8">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-xs text-[#6e6e73]">
-          <div>
-            <p className="font-semibold text-[#1d1d1f] mb-3">Cửa hàng</p>
-            <p>{storeName}</p>
-          </div>
-          <div>
-            <p className="font-semibold text-[#1d1d1f] mb-3">Dịch vụ</p>
-            <p>Bảo hành</p>
-            <p>Sửa chữa</p>
-            <p>Trả góp 0%</p>
-          </div>
-          <div>
-            <p className="font-semibold text-[#1d1d1f] mb-3">Hỗ trợ</p>
-            <p>Thu cũ đổi mới</p>
-            <p>Phụ kiện</p>
-          </div>
-          <div>
-            <p className="font-semibold text-[#1d1d1f] mb-3">Kết nối</p>
-            {facebookUrl && <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="block hover:text-[#1d1d1f]">Facebook</a>}
-            {zaloUrl && <a href={zaloUrl} target="_blank" rel="noopener noreferrer" className="block hover:text-[#1d1d1f]">Zalo</a>}
-            {tiktokUrl && <a href={tiktokUrl} target="_blank" rel="noopener noreferrer" className="block hover:text-[#1d1d1f]">TikTok</a>}
-          </div>
+        {/* Main footer grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Why Choose */}
+          {hasWhyChoose && (
+            <div>
+              <p className="font-semibold text-[#1d1d1f] text-sm mb-3">Tại sao chọn mua hàng tại {storeName}?</p>
+              <div className="text-xs text-[#6e6e73] leading-relaxed whitespace-pre-line">{whyChooseContent}</div>
+            </div>
+          )}
+          {/* Contact */}
+          {hasContact && (
+            <div>
+              <p className="font-semibold text-[#1d1d1f] text-sm mb-3">Liên hệ</p>
+              <div className="space-y-2 text-xs text-[#6e6e73]">
+                {storePhone && <a href={`tel:${storePhone}`} className="flex items-center gap-2 hover:text-[#1d1d1f]">📞 {storePhone}</a>}
+                {storeEmail && <a href={`mailto:${storeEmail}`} className="flex items-center gap-2 hover:text-[#1d1d1f]">📧 {storeEmail}</a>}
+                {zaloUrl && <a href={zaloUrl} target="_blank" rel="noopener noreferrer" className="block hover:text-[#1d1d1f]">💬 Zalo</a>}
+                {facebookUrl && <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="block hover:text-[#1d1d1f]">Facebook</a>}
+                {tiktokUrl && <a href={tiktokUrl} target="_blank" rel="noopener noreferrer" className="block hover:text-[#1d1d1f]">TikTok</a>}
+              </div>
+            </div>
+          )}
+          {/* Branches */}
+          {hasBranches && (
+            <div>
+              <p className="font-semibold text-[#1d1d1f] text-sm mb-3">Hệ thống chi nhánh</p>
+              <div className="space-y-3 text-xs text-[#6e6e73]">
+                {branches!.map(b => (
+                  <div key={b.id} className="space-y-0.5">
+                    <p className="font-medium text-[#1d1d1f]">{b.name}</p>
+                    {b.address && (
+                      <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.address)}`}
+                        target="_blank" rel="noopener noreferrer" className="block hover:text-[#1d1d1f]">
+                        📍 {b.address}
+                      </a>
+                    )}
+                    {b.phone && <a href={`tel:${b.phone}`} className="block hover:text-[#1d1d1f]">📞 {b.phone}</a>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-        {govRegistrationUrl && govRegistrationImageUrl && (
-          <div className="mt-4 flex justify-center">
-            <a href={govRegistrationUrl} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
-              <img src={govRegistrationImageUrl} alt="Đã thông báo Bộ Công Thương" className="h-12 sm:h-14 object-contain" />
-            </a>
-          </div>
-        )}
-        <div className="mt-6 pt-4 border-t border-[#d2d2d7] text-[11px] text-[#86868b]">
-          © {new Date().getFullYear()} {storeName}. All rights reserved.
+
+        {/* Gov badge + Copyright */}
+        <div className="mt-6 pt-4 border-t border-[#d2d2d7]">
+          {govRegistrationUrl && govRegistrationImageUrl && (
+            <div className="flex justify-center mb-3">
+              <a href={govRegistrationUrl} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                <img src={govRegistrationImageUrl} alt="Đã thông báo Bộ Công Thương" className="h-12 sm:h-14 object-contain" />
+              </a>
+            </div>
+          )}
+          <p className="text-[11px] text-[#86868b] text-center">© {new Date().getFullYear()} {storeName}. Tất cả quyền được bảo lưu.</p>
         </div>
       </div>
     </footer>
