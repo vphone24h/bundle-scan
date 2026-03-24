@@ -1354,7 +1354,7 @@ export default function AppleStyleLandingTemplate({
         })()}
       </main>
 
-      <AppleFooter storeName={displayStoreName} accentColor={accentColor} facebookUrl={facebookUrl} zaloUrl={zaloUrl} tiktokUrl={tiktokUrl} />
+      <AppleFooter storeName={displayStoreName} accentColor={accentColor} facebookUrl={facebookUrl} zaloUrl={zaloUrl} tiktokUrl={tiktokUrl} govRegistrationUrl={(settings as any)?.gov_registration_url} govRegistrationImageUrl={(settings as any)?.gov_registration_image_url} />
       <AppleStickyBar accentColor={accentColor} zaloUrl={zaloUrl} warrantyHotline={warrantyHotline} />
 
       <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
