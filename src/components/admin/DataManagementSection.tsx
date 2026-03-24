@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import { RestoreSupplierNoteSection } from './RestoreSupplierNoteSection';
 import { UpdateImportDatesSection } from './UpdateImportDatesSection';
 import { DataBackupSection } from './DataBackupSection';
+import { CrossPlatformBackupSection } from './CrossPlatformBackupSection';
 
 export function DataManagementSection() {
   const { data: tenant, refetch: refetchTenant } = useCurrentTenant();
