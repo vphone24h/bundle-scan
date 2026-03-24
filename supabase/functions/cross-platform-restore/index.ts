@@ -13,6 +13,7 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
+      console.error('No auth header')
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -28,20 +29,25 @@ Deno.serve(async (req) => {
 
     const { data: { user }, error: userError } = await userClient.auth.getUser()
     if (userError || !user) {
+      console.error('Auth error:', userError?.message)
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
+    console.log('User authenticated:', user.id)
+
     const adminClient = createClient(supabaseUrl, serviceRoleKey)
 
     // Get tenant
-    const { data: tenantData } = await adminClient
+    const { data: tenantData, error: tenantError } = await adminClient
       .from('platform_users')
       .select('tenant_id')
       .eq('user_id', user.id)
       .eq('is_active', true)
-      .single()
+      .maybeSingle()
+
+    console.log('Tenant lookup:', { tenantData, tenantError: tenantError?.message })
 
     if (!tenantData?.tenant_id) {
       return new Response(JSON.stringify({ error: 'Tenant not found' }), {
@@ -50,14 +56,16 @@ Deno.serve(async (req) => {
     }
 
     // Check admin role
-    const { data: roleData } = await adminClient
+    const { data: roleData, error: roleError } = await adminClient
       .from('user_roles')
       .select('user_role')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (!roleData || roleData.user_role !== 'super_admin') {
-      return new Response(JSON.stringify({ error: 'Forbidden: Super Admin only' }), {
+    console.log('Role check:', { roleData, roleError: roleError?.message })
+
+    if (!roleData || !['super_admin', 'branch_admin'].includes(roleData.user_role || '')) {
+      return new Response(JSON.stringify({ error: `Forbidden: Admin only. Your role: ${roleData?.user_role || 'none'}` }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -66,6 +74,9 @@ Deno.serve(async (req) => {
     const body = await req.json()
     const { importData, mode } = body // mode: 'merge' | 'overwrite'
 
+    console.log('Import mode:', mode)
+    console.log('Import data keys:', Object.keys(importData || {}))
+
     if (!importData || !importData.version) {
       return new Response(JSON.stringify({ error: 'File JSON không hợp lệ hoặc thiếu version' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -73,13 +84,41 @@ Deno.serve(async (req) => {
     }
 
     if (importData.version !== '1.0') {
-      return new Response(JSON.stringify({ error: `Version "${importData.version}" không được hỗ trợ. Chỉ hỗ trợ version 1.0` }), {
+      return new Response(JSON.stringify({ error: `Version "${importData.version}" không được hỗ trợ` }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
     const results: Record<string, number> = {}
     const errors: string[] = []
+
+    // If overwrite mode, delete existing data in reverse dependency order
+    if (mode === 'overwrite') {
+      console.log('Overwrite mode: deleting existing data for tenant', tenantId)
+      const deleteTables = [
+        'export_receipt_payments',
+        'export_receipt_items',
+        'export_receipts',
+        'import_receipts',
+        'cash_book',
+        'debt_payments',
+        'imei_histories',
+        'products',
+        'customers',
+        'suppliers',
+        'categories',
+        'branches',
+      ]
+      for (const table of deleteTables) {
+        const { error: delErr } = await adminClient.from(table).delete().eq('tenant_id', tenantId)
+        if (delErr) {
+          console.log(`Delete ${table} error:`, delErr.message)
+          // Some tables may not have tenant_id, try without filter for child tables
+        } else {
+          console.log(`Deleted ${table} for tenant`)
+        }
+      }
+    }
 
     // ID mapping: external_id → new database UUID
     const branchMap: Record<string, string> = {}
@@ -96,6 +135,7 @@ Deno.serve(async (req) => {
     try {
       // 1. Branches
       if (importData.branches?.length > 0) {
+        console.log(`Importing ${importData.branches.length} branches...`)
         for (const b of importData.branches) {
           const { data, error } = await adminClient.from('branches').insert({
             tenant_id: tenantId,
@@ -108,16 +148,18 @@ Deno.serve(async (req) => {
 
           if (error) {
             errors.push(`Branch "${b.name}": ${error.message}`)
+            console.error(`Branch insert error:`, error.message)
           } else if (data) {
             branchMap[b.external_id] = data.id
           }
         }
         results.branches = Object.keys(branchMap).length
+        console.log(`Branches imported: ${results.branches}`)
       }
 
       // 2. Categories
       if (importData.categories?.length > 0) {
-        // First pass: insert categories without parent
+        console.log(`Importing ${importData.categories.length} categories...`)
         const withParent: any[] = []
         for (const c of importData.categories) {
           if (c.parent_external_id) {
@@ -135,7 +177,6 @@ Deno.serve(async (req) => {
             categoryMap[c.external_id] = data.id
           }
         }
-        // Second pass: insert categories with parent
         for (const c of withParent) {
           const { data, error } = await adminClient.from('categories').insert({
             tenant_id: tenantId,
@@ -150,15 +191,17 @@ Deno.serve(async (req) => {
           }
         }
         results.categories = Object.keys(categoryMap).length
+        console.log(`Categories imported: ${results.categories}`)
       }
 
       // 3. Suppliers
       if (importData.suppliers?.length > 0) {
+        console.log(`Importing ${importData.suppliers.length} suppliers...`)
         for (const s of importData.suppliers) {
           const { data, error } = await adminClient.from('suppliers').insert({
             tenant_id: tenantId,
             name: s.name,
-            phone: s.phone,
+            phone: s.phone || '',
             email: s.email,
             address: s.address,
             tax_code: s.tax_code,
@@ -169,20 +212,23 @@ Deno.serve(async (req) => {
 
           if (error) {
             errors.push(`Supplier "${s.name}": ${error.message}`)
+            console.error(`Supplier insert error:`, error.message)
           } else if (data) {
             supplierMap[s.external_id] = data.id
           }
         }
         results.suppliers = Object.keys(supplierMap).length
+        console.log(`Suppliers imported: ${results.suppliers}`)
       }
 
       // 4. Customers
       if (importData.customers?.length > 0) {
+        console.log(`Importing ${importData.customers.length} customers...`)
         for (const c of importData.customers) {
           const { data, error } = await adminClient.from('customers').insert({
             tenant_id: tenantId,
             name: c.name,
-            phone: c.phone,
+            phone: c.phone || '',
             email: c.email,
             address: c.address,
             birthday: c.birthday,
@@ -203,15 +249,18 @@ Deno.serve(async (req) => {
 
           if (error) {
             errors.push(`Customer "${c.name}": ${error.message}`)
+            console.error(`Customer insert error:`, error.message)
           } else if (data) {
             customerMap[c.external_id] = data.id
           }
         }
         results.customers = Object.keys(customerMap).length
+        console.log(`Customers imported: ${results.customers}`)
       }
 
       // 5. Products
       if (importData.products?.length > 0) {
+        console.log(`Importing ${importData.products.length} products...`)
         for (const p of importData.products) {
           const { data, error } = await adminClient.from('products').insert({
             tenant_id: tenantId,
@@ -241,15 +290,18 @@ Deno.serve(async (req) => {
 
           if (error) {
             errors.push(`Product "${p.name}": ${error.message}`)
+            console.error(`Product insert error:`, error.message)
           } else if (data) {
             productMap[p.external_id] = data.id
           }
         }
         results.products = Object.keys(productMap).length
+        console.log(`Products imported: ${results.products}`)
       }
 
       // 6. Import receipts
       if (importData.import_receipts?.length > 0) {
+        console.log(`Importing ${importData.import_receipts.length} import receipts...`)
         for (const r of importData.import_receipts) {
           const { data, error } = await adminClient.from('import_receipts').insert({
             tenant_id: tenantId,
@@ -266,15 +318,18 @@ Deno.serve(async (req) => {
 
           if (error) {
             errors.push(`Import receipt "${r.code}": ${error.message}`)
+            console.error(`Import receipt error:`, error.message)
           } else if (data) {
             importReceiptMap[r.external_id] = data.id
           }
         }
         results.import_receipts = Object.keys(importReceiptMap).length
+        console.log(`Import receipts imported: ${results.import_receipts}`)
       }
 
       // 7. Export receipts
       if (importData.export_receipts?.length > 0) {
+        console.log(`Importing ${importData.export_receipts.length} export receipts...`)
         for (const r of importData.export_receipts) {
           const { data, error } = await adminClient.from('export_receipts').insert({
             tenant_id: tenantId,
@@ -297,15 +352,18 @@ Deno.serve(async (req) => {
 
           if (error) {
             errors.push(`Export receipt "${r.code}": ${error.message}`)
+            console.error(`Export receipt error:`, error.message)
           } else if (data) {
             exportReceiptMap[r.external_id] = data.id
           }
         }
         results.export_receipts = Object.keys(exportReceiptMap).length
+        console.log(`Export receipts imported: ${results.export_receipts}`)
       }
 
       // 8. Export receipt items
       if (importData.export_receipt_items?.length > 0) {
+        console.log(`Importing ${importData.export_receipt_items.length} export receipt items...`)
         let itemCount = 0
         for (const item of importData.export_receipt_items) {
           const receiptId = mapRef(item.receipt_external_id, exportReceiptMap)
@@ -334,6 +392,7 @@ Deno.serve(async (req) => {
 
       // 9. Export receipt payments
       if (importData.export_receipt_payments?.length > 0) {
+        console.log(`Importing ${importData.export_receipt_payments.length} payments...`)
         let paymentCount = 0
         for (const p of importData.export_receipt_payments) {
           const receiptId = mapRef(p.receipt_external_id, exportReceiptMap)
@@ -358,6 +417,7 @@ Deno.serve(async (req) => {
 
       // 10. Cash book
       if (importData.cash_book?.length > 0) {
+        console.log(`Importing ${importData.cash_book.length} cash book entries...`)
         let cbCount = 0
         for (const cb of importData.cash_book) {
           const { error } = await adminClient.from('cash_book').insert({
@@ -384,10 +444,12 @@ Deno.serve(async (req) => {
           }
         }
         results.cash_book = cbCount
+        console.log(`Cash book imported: ${cbCount}`)
       }
 
       // 11. Debt payments
       if (importData.debt_payments?.length > 0) {
+        console.log(`Importing ${importData.debt_payments.length} debt payments...`)
         let dpCount = 0
         for (const dp of importData.debt_payments) {
           const { error } = await adminClient.from('debt_payments').insert({
@@ -414,6 +476,7 @@ Deno.serve(async (req) => {
 
       // 12. Web config
       if (importData.web_config) {
+        console.log('Importing web config...')
         const wc = importData.web_config
         const { error } = await adminClient.from('tenant_landing_settings').upsert({
           tenant_id: tenantId,
@@ -435,13 +498,22 @@ Deno.serve(async (req) => {
 
         if (error) {
           errors.push(`Web config: ${error.message}`)
+          console.error('Web config error:', error.message)
         } else {
           results.web_config = 1
         }
       }
 
     } catch (e) {
-      errors.push(`Fatal: ${(e as Error).message}`)
+      const msg = (e as Error).message
+      errors.push(`Fatal: ${msg}`)
+      console.error('Fatal import error:', msg)
+    }
+
+    console.log('Import complete. Results:', JSON.stringify(results))
+    console.log('Total errors:', errors.length)
+    if (errors.length > 0) {
+      console.log('First errors:', errors.slice(0, 5))
     }
 
     // Log
@@ -450,13 +522,13 @@ Deno.serve(async (req) => {
       user_id: user.id,
       action_type: 'CROSS_PLATFORM_IMPORT',
       table_name: 'ALL',
-      description: `Import cross-platform JSON v1.0 (mode: ${mode || 'merge'})`,
+      description: `Import cross-platform JSON v1.0 (mode: ${mode || 'merge'}). Results: ${JSON.stringify(results)}`,
     })
 
     return new Response(JSON.stringify({
       success: true,
       results,
-      errors: errors.length > 0 ? errors.slice(0, 20) : [],
+      errors: errors.length > 0 ? errors.slice(0, 50) : [],
       total_errors: errors.length,
     }), {
       status: 200,
@@ -464,7 +536,7 @@ Deno.serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('Cross-platform import error:', error)
+    console.error('Cross-platform import error:', (error as Error).message)
     return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
