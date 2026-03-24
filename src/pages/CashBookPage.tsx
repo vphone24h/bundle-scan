@@ -89,6 +89,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useProfile } from '@/hooks/useProfile';
 import { useCustomPaymentSources, useAddCustomPaymentSource, useDeleteCustomPaymentSource, useUpdateCustomPaymentSource } from '@/hooks/useCustomPaymentSources';
 import { useTranslation } from 'react-i18next';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 
 // Normalize legacy payment_source values (old data stored i18n keys)
 const LEGACY_SOURCE_MAP: Record<string, string> = {
@@ -231,6 +233,30 @@ export default function CashBookPage() {
   const [editingSourceName, setEditingSourceName] = useState('');
   const [deleteSourceTarget, setDeleteSourceTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleteSourceConfirmText, setDeleteSourceConfirmText] = useState('');
+  
+  // Security password protection
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked: cashBookUnlocked, unlock: unlockCashBook } = useSecurityUnlock('cashbook_edit');
+  const [showSecurityDialog, setShowSecurityDialog] = useState(false);
+  const [pendingSecurityAction, setPendingSecurityAction] = useState<(() => void) | null>(null);
+
+  const requireSecurityPassword = (action: () => void) => {
+    if (!hasSecurityPassword || cashBookUnlocked) {
+      action();
+      return;
+    }
+    setPendingSecurityAction(() => action);
+    setShowSecurityDialog(true);
+  };
+
+  const handleSecuritySuccess = () => {
+    unlockCashBook();
+    setShowSecurityDialog(false);
+    if (pendingSecurityAction) {
+      pendingSecurityAction();
+      setPendingSecurityAction(null);
+    }
+  };
   
   // All payment sources (built-in + custom)
   const allPaymentSources = useMemo(() => {
@@ -849,6 +875,34 @@ export default function CashBookPage() {
     }
   };
 
+  const handleToggleAccounting = async (entry: CashBookEntry) => {
+    try {
+      await updateEntry.mutateAsync({
+        id: entry.id,
+        oldData: entry,
+        category: entry.category,
+        description: entry.description,
+        amount: entry.amount,
+        payment_source: entry.payment_source,
+        is_business_accounting: !entry.is_business_accounting,
+        branch_id: entry.branch_id || null,
+        note: entry.note || undefined,
+        recipient_name: entry.recipient_name || null,
+        recipient_phone: entry.recipient_phone || null,
+      });
+      toast({
+        title: entry.is_business_accounting ? 'Đã bỏ hạch toán' : 'Đã bật hạch toán',
+        description: entry.description,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Lỗi',
+        description: error.message || 'Không thể cập nhật',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleDelete = async () => {
     if (!editingEntry || !deleteReason.trim()) return;
 
@@ -1115,7 +1169,7 @@ export default function CashBookPage() {
                         variant="ghost" 
                         size="icon" 
                         className="h-8 w-8"
-                        onClick={() => handleOpenAdjustBalance(source.id)}
+                        onClick={() => requireSecurityPassword(() => handleOpenAdjustBalance(source.id))}
                       >
                         <Settings className="h-4 w-4" />
                       </Button>
@@ -1496,12 +1550,19 @@ export default function CashBookPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-popover">
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenEdit(entry); }}>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); requireSecurityPassword(() => handleOpenEdit(entry)); }}>
                               <Pencil className="mr-2 h-4 w-4" />
                               Chỉnh sửa
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleAccounting(entry);
+                            }}>
+                              <BookOpen className="mr-2 h-4 w-4" />
+                              {entry.is_business_accounting ? 'Bỏ hạch toán' : 'Bật hạch toán'}
+                            </DropdownMenuItem>
                             <DropdownMenuItem 
-                              onClick={(e) => { e.stopPropagation(); handleOpenDelete(entry); }}
+                              onClick={(e) => { e.stopPropagation(); requireSecurityPassword(() => handleOpenDelete(entry)); }}
                               className="text-destructive focus:text-destructive"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
@@ -1630,12 +1691,19 @@ export default function CashBookPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-popover">
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenEdit(entry); }}>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); requireSecurityPassword(() => handleOpenEdit(entry)); }}>
                                 <Pencil className="mr-2 h-4 w-4" />
                                 Chỉnh sửa
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleAccounting(entry);
+                              }}>
+                                <BookOpen className="mr-2 h-4 w-4" />
+                                {entry.is_business_accounting ? 'Bỏ hạch toán' : 'Bật hạch toán'}
+                              </DropdownMenuItem>
                               <DropdownMenuItem 
-                                onClick={(e) => { e.stopPropagation(); handleOpenDelete(entry); }}
+                                onClick={(e) => { e.stopPropagation(); requireSecurityPassword(() => handleOpenDelete(entry)); }}
                                 className="text-destructive focus:text-destructive"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
@@ -2376,6 +2444,17 @@ export default function CashBookPage() {
         onComplete={() => { completeCashTour(); setManualTourActive(false); }}
         onSkip={() => { completeCashTour(); setManualTourActive(false); }}
         tourKey="cashbook_guide"
+      />
+
+      <SecurityPasswordDialog
+        open={showSecurityDialog}
+        onOpenChange={(open) => {
+          setShowSecurityDialog(open);
+          if (!open) setPendingSecurityAction(null);
+        }}
+        onSuccess={handleSecuritySuccess}
+        title="Xác thực bảo mật"
+        description="Nhập mật khẩu bảo mật để thực hiện thao tác trên sổ quỹ"
       />
     </MainLayout>
   );
