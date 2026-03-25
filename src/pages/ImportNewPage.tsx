@@ -643,6 +643,7 @@ export default function ImportNewPage() {
         import_price: item.importPrice,
         sale_price: item.salePrice || null,
         quantity: item.quantity,
+        unit: item.unit || 'cái',
         supplier_id: selectedSupplierId || null,
         note: item.note || null,
         variant_1: item.variant1 || null,
