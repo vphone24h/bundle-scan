@@ -1304,6 +1304,7 @@ export function LandingPageSettings() {
         </CardContent>
       </Card>
 
+      {formData.is_enabled && (<>
       {/* Menu Website */}
       <Card>
         <CardHeader>
