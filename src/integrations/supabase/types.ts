@@ -4811,6 +4811,7 @@ export type Database = {
           supplier_id: string | null
           tenant_id: string | null
           total_import_cost: number
+          unit: string
           updated_at: string
           variant_1: string | null
           variant_2: string | null
@@ -4838,6 +4839,7 @@ export type Database = {
           supplier_id?: string | null
           tenant_id?: string | null
           total_import_cost?: number
+          unit?: string
           updated_at?: string
           variant_1?: string | null
           variant_2?: string | null
@@ -4865,6 +4867,7 @@ export type Database = {
           supplier_id?: string | null
           tenant_id?: string | null
           total_import_cost?: number
+          unit?: string
           updated_at?: string
           variant_1?: string | null
           variant_2?: string | null

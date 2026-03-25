@@ -59,7 +59,7 @@ export function ImportCart({ items, onRemove, onCheckout }: ImportCartProps) {
                   )}
                   <div className="flex items-center gap-2 mt-1">
                     <p className="text-sm font-medium text-primary">
-                      {formatCurrency(item.importPrice)} x {item.quantity}
+                      {formatCurrency(item.importPrice)} x {item.quantity}{item.unit && item.unit !== 'cái' ? ` ${item.unit}` : ''}
                     </p>
                     {item.quantity > 1 && (
                       <p className="text-xs text-muted-foreground">

@@ -145,6 +145,7 @@ export default function ImportNewPage() {
     importPrice: '',
     salePrice: '',
     quantity: '1',
+    unit: 'cái',
     note: '',
   });
 
@@ -295,6 +296,21 @@ export default function ImportNewPage() {
     // Only fill base product name - don't pre-fill price/sku for variant products
     // so users can configure variants and per-variant pricing
     const hasVariantData = !product.import_price && !product.sale_price;
+
+    // Fetch unit from existing product
+    let productUnit = 'cái';
+    try {
+      const { data: existingProduct } = await supabase
+        .from('products')
+        .select('unit')
+        .ilike('name', product.name)
+        .not('unit', 'is', null)
+        .limit(1);
+      if (existingProduct?.[0]?.unit) {
+        productUnit = existingProduct[0].unit;
+      }
+    } catch {}
+
     setForm({
       ...form,
       productName: product.name,
@@ -302,6 +318,7 @@ export default function ImportNewPage() {
       categoryId: '', // Always require re-selecting category
       importPrice: product.import_price ? String(product.import_price) : '',
       salePrice: product.sale_price ? String(product.sale_price) : '',
+      unit: productUnit,
     });
     setSuggestions([]);
     setProductFormMode('form');
@@ -445,7 +462,11 @@ export default function ImportNewPage() {
     const category = categories?.find((c) => c.id === form.categoryId);
     
     // For IMEI products, quantity is always 1
-    const quantity = form.imei ? 1 : Math.max(1, parseInt(form.quantity) || 1);
+    // For decimal units (kg, lít, mét), allow decimal values
+    const isDecimalUnit = ['kg', 'lít', 'mét'].includes(form.unit);
+    const quantity = form.imei ? 1 : isDecimalUnit
+      ? Math.max(0.001, parseFloat(form.quantity) || 1)
+      : Math.max(1, parseInt(form.quantity) || 1);
 
     const importPrice = Number(form.importPrice);
     // Auto-calculate sale price if not manually set
@@ -469,6 +490,7 @@ export default function ImportNewPage() {
       importPrice,
       salePrice,
       quantity,
+      unit: form.imei ? 'cái' : form.unit,
       supplierId: '', // Will use receipt-level supplier
       supplierName: '',
       note: form.note || undefined,
@@ -543,6 +565,7 @@ export default function ImportNewPage() {
         importPrice: '',
         salePrice: '',
         quantity: '1',
+        unit: 'cái',
         note: '',
       });
       setProductFormMode('search');
@@ -620,6 +643,7 @@ export default function ImportNewPage() {
         import_price: item.importPrice,
         sale_price: item.salePrice || null,
         quantity: item.quantity,
+        unit: item.unit || 'cái',
         supplier_id: selectedSupplierId || null,
         note: item.note || null,
         variant_1: item.variant1 || null,
@@ -772,6 +796,7 @@ export default function ImportNewPage() {
             import_price: item.importPrice,
             sale_price: item.salePrice || null,
             quantity: item.quantity,
+            unit: item.unit || 'cái',
             supplier_id: supplierId,
             note: item.note || null,
           })),
@@ -895,6 +920,7 @@ export default function ImportNewPage() {
         importPrice: 0, // User sẽ tự nhập giá nhập mới
         salePrice: salePrice || undefined,
         quantity: 1,
+        unit: (matchedProduct && 'unit' in matchedProduct ? (matchedProduct as any).unit : 'cái') || 'cái',
         supplierId: '',
         supplierName: '',
         note: data.note || undefined,
@@ -1064,7 +1090,7 @@ export default function ImportNewPage() {
                     size="sm"
                     onClick={() => {
                       setProductFormMode('search');
-                      setForm({ productName: '', sku: '', imei: '', categoryId: '', importPrice: '', salePrice: '', quantity: '1', note: '' });
+                      setForm({ productName: '', sku: '', imei: '', categoryId: '', importPrice: '', salePrice: '', quantity: '1', unit: 'cái', note: '' });
                       setSuggestions([]);
                       setFieldErrors({});
                       setVariantConfig({ enabled: false, levels: [] });
@@ -1341,24 +1367,50 @@ export default function ImportNewPage() {
                       </p>
                     </div>
 
-                    {/* Quantity */}
+                    {/* Quantity + Unit */}
                     <div className="form-field">
                       <Label htmlFor="quantity">
                         {t('pages.importNew.quantityLabel')} {form.imei ? t('pages.importNew.quantityImei') : '*'}
                       </Label>
-                      <Input
-                        id="quantity"
-                        type="number"
-                        min="1"
-                        value={form.imei ? '1' : form.quantity}
-                        onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                        placeholder="1"
-                        disabled={!!form.imei}
-                        className={form.imei ? 'opacity-50' : ''}
-                      />
+                      <div className="flex gap-2">
+                        <Input
+                          id="quantity"
+                          type="number"
+                          min={['kg', 'lít', 'mét'].includes(form.unit) ? '0.001' : '1'}
+                          step={['kg', 'lít', 'mét'].includes(form.unit) ? '0.1' : '1'}
+                          value={form.imei ? '1' : form.quantity}
+                          onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                          placeholder={['kg', 'lít', 'mét'].includes(form.unit) ? '1.5' : '1'}
+                          disabled={!!form.imei}
+                          className={`flex-1 ${form.imei ? 'opacity-50' : ''}`}
+                        />
+                        <select
+                          value={form.imei ? 'cái' : form.unit}
+                          onChange={(e) => {
+                            const newUnit = e.target.value;
+                            const isDecimal = ['kg', 'lít', 'mét'].includes(newUnit);
+                            const wasDecimal = ['kg', 'lít', 'mét'].includes(form.unit);
+                            // Reset quantity when switching between integer/decimal units
+                            const newQty = (!wasDecimal && isDecimal) || (wasDecimal && !isDecimal) ? '1' : form.quantity;
+                            setForm({ ...form, unit: newUnit, quantity: newQty });
+                          }}
+                          disabled={!!form.imei}
+                          className={`h-9 w-20 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring ${form.imei ? 'opacity-50' : ''}`}
+                        >
+                          {['cái', 'kg', 'lít', 'mét', 'hộp', 'thùng'].map(u => (
+                            <option key={u} value={u}>{u}</option>
+                          ))}
+                        </select>
+                      </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         {form.imei ? (
                           <>{t('pages.importNew.quantityImeiHint')}</>
+                        ) : ['kg', 'lít', 'mét'].includes(form.unit) ? (
+                          <>Cho phép số thập phân (VD: 1.5 {form.unit})
+                            {form.importPrice && form.quantity && (
+                              <><br />Thành tiền: {(Number(form.importPrice) * Number(form.quantity)).toLocaleString('vi-VN')}đ</>
+                            )}
+                          </>
                         ) : form.importPrice && form.quantity ? (
                           <>{t('pages.importNew.quantityBatchHint')}
                             <br />{t('pages.importNew.quantitySubtotal', { amount: (Number(form.importPrice) * Number(form.quantity)).toLocaleString('vi-VN') })}
