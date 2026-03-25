@@ -23,6 +23,7 @@ interface AdjustQuantityDialogProps {
   productName: string;
   sku: string;
   currentQuantity: number;
+  unit?: string;
 }
 
 export function AdjustQuantityDialog({
@@ -32,7 +33,9 @@ export function AdjustQuantityDialog({
   productName,
   sku,
   currentQuantity,
+  unit = 'cái',
 }: AdjustQuantityDialogProps) {
+  const isDecimalUnit = ['kg', 'lít', 'mét'].includes(unit);
   const queryClient = useQueryClient();
   const [newQuantity, setNewQuantity] = useState<number>(currentQuantity);
   const [reason, setReason] = useState('');
@@ -191,13 +194,14 @@ export function AdjustQuantityDialog({
               id="newQuantity"
               type="number"
               min={0}
+              step={isDecimalUnit ? 0.1 : 1}
               value={newQuantity}
-              onChange={(e) => setNewQuantity(parseInt(e.target.value) || 0)}
+              onChange={(e) => setNewQuantity(isDecimalUnit ? (parseFloat(e.target.value) || 0) : (parseInt(e.target.value) || 0))}
               className="text-lg font-medium"
             />
             {diff !== 0 && (
               <p className={`text-sm font-medium ${diff > 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
-                {diff > 0 ? `+${diff}` : diff} sản phẩm
+                {diff > 0 ? `+${diff}` : diff} {unit}
               </p>
             )}
           </div>

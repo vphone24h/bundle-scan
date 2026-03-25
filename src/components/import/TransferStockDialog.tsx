@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ArrowRight, Loader2, Package } from 'lucide-react';
+import { DECIMAL_UNITS } from '@/types/warehouse';
 import { useBranches, Branch } from '@/hooks/useBranches';
 import { useCreateStockTransfer } from '@/hooks/useStockTransfers';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -243,18 +244,27 @@ export function TransferStockDialog({
                     {!isIMEI && (
                       <div className="flex items-center gap-2 pl-7">
                         <Label className="text-xs text-muted-foreground whitespace-nowrap">SL chuyển:</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={product.quantity}
-                          value={transferQty}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value) || 0;
-                            setTransferQty(product.id, Math.min(Math.max(val, 0), product.quantity));
-                          }}
-                          className="h-7 w-20 text-xs text-center"
-                        />
-                        <span className="text-xs text-muted-foreground">/ {product.quantity}</span>
+                        {(() => {
+                          const productUnit = (product as any).unit || 'cái';
+                          const isDecimal = DECIMAL_UNITS.includes(productUnit);
+                          return (
+                            <>
+                              <Input
+                                type="number"
+                                min={isDecimal ? 0.001 : 1}
+                                max={product.quantity}
+                                step={isDecimal ? 0.1 : 1}
+                                value={transferQty}
+                                onChange={(e) => {
+                                  const val = isDecimal ? (parseFloat(e.target.value) || 0) : (parseInt(e.target.value) || 0);
+                                  setTransferQty(product.id, Math.min(Math.max(val, 0), product.quantity));
+                                }}
+                                className="h-7 w-20 text-xs text-center"
+                              />
+                              <span className="text-xs text-muted-foreground">/ {product.quantity}{productUnit !== 'cái' ? ` ${productUnit}` : ''}</span>
+                            </>
+                          );
+                        })()}
                         {isPartial && (
                           <Badge variant="secondary" className="text-[10px] h-5">
                             Chuyển 1 phần
