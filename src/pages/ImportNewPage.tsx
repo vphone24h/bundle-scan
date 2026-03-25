@@ -1366,24 +1366,50 @@ export default function ImportNewPage() {
                       </p>
                     </div>
 
-                    {/* Quantity */}
+                    {/* Quantity + Unit */}
                     <div className="form-field">
                       <Label htmlFor="quantity">
                         {t('pages.importNew.quantityLabel')} {form.imei ? t('pages.importNew.quantityImei') : '*'}
                       </Label>
-                      <Input
-                        id="quantity"
-                        type="number"
-                        min="1"
-                        value={form.imei ? '1' : form.quantity}
-                        onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                        placeholder="1"
-                        disabled={!!form.imei}
-                        className={form.imei ? 'opacity-50' : ''}
-                      />
+                      <div className="flex gap-2">
+                        <Input
+                          id="quantity"
+                          type="number"
+                          min={['kg', 'lít', 'mét'].includes(form.unit) ? '0.001' : '1'}
+                          step={['kg', 'lít', 'mét'].includes(form.unit) ? '0.1' : '1'}
+                          value={form.imei ? '1' : form.quantity}
+                          onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                          placeholder={['kg', 'lít', 'mét'].includes(form.unit) ? '1.5' : '1'}
+                          disabled={!!form.imei}
+                          className={`flex-1 ${form.imei ? 'opacity-50' : ''}`}
+                        />
+                        <select
+                          value={form.imei ? 'cái' : form.unit}
+                          onChange={(e) => {
+                            const newUnit = e.target.value;
+                            const isDecimal = ['kg', 'lít', 'mét'].includes(newUnit);
+                            const wasDecimal = ['kg', 'lít', 'mét'].includes(form.unit);
+                            // Reset quantity when switching between integer/decimal units
+                            const newQty = (!wasDecimal && isDecimal) || (wasDecimal && !isDecimal) ? '1' : form.quantity;
+                            setForm({ ...form, unit: newUnit, quantity: newQty });
+                          }}
+                          disabled={!!form.imei}
+                          className={`h-9 w-20 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring ${form.imei ? 'opacity-50' : ''}`}
+                        >
+                          {['cái', 'kg', 'lít', 'mét', 'hộp', 'thùng'].map(u => (
+                            <option key={u} value={u}>{u}</option>
+                          ))}
+                        </select>
+                      </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         {form.imei ? (
                           <>{t('pages.importNew.quantityImeiHint')}</>
+                        ) : ['kg', 'lít', 'mét'].includes(form.unit) ? (
+                          <>Cho phép số thập phân (VD: 1.5 {form.unit})
+                            {form.importPrice && form.quantity && (
+                              <><br />Thành tiền: {(Number(form.importPrice) * Number(form.quantity)).toLocaleString('vi-VN')}đ</>
+                            )}
+                          </>
                         ) : form.importPrice && form.quantity ? (
                           <>{t('pages.importNew.quantityBatchHint')}
                             <br />{t('pages.importNew.quantitySubtotal', { amount: (Number(form.importPrice) * Number(form.quantity)).toLocaleString('vi-VN') })}
