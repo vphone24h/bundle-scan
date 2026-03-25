@@ -241,6 +241,7 @@ export default function ExportNewPage() {
           categoryName: p.categoryName,
           branchName: p.branchName,
           quantity: 1,
+          unit: p.unit || 'cái',
           warranty: '',
         };
         setCart([newItem]);
@@ -379,6 +380,7 @@ export default function ExportNewPage() {
             sale_price: encodedPrice,
             note: null,
             quantity: 1,
+            unit: matchedProduct.unit || 'cái',
             warranty: null,
           };
 
@@ -475,6 +477,7 @@ export default function ExportNewPage() {
         sale_price: encodedPrice,
         note: null,
         quantity: 1,
+        unit: result.unit || 'cái',
         warranty: scanWarranty || null,
       };
 
@@ -516,6 +519,7 @@ export default function ExportNewPage() {
         sale_price: result.sale_price,
         note: null,
         quantity: 1,
+        unit: result.unit || 'cái',
         warranty: scanWarranty || null,
       };
 
