@@ -1066,7 +1066,7 @@ export default function ImportNewPage() {
                     size="sm"
                     onClick={() => {
                       setProductFormMode('search');
-                      setForm({ productName: '', sku: '', imei: '', categoryId: '', importPrice: '', salePrice: '', quantity: '1', note: '' });
+                      setForm({ productName: '', sku: '', imei: '', categoryId: '', importPrice: '', salePrice: '', quantity: '1', unit: 'cái', note: '' });
                       setSuggestions([]);
                       setFieldErrors({});
                       setVariantConfig({ enabled: false, levels: [] });
