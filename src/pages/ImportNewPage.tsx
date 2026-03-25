@@ -544,6 +544,7 @@ export default function ImportNewPage() {
         importPrice: '',
         salePrice: '',
         quantity: '1',
+        unit: 'cái',
         note: '',
       });
       setProductFormMode('search');
