@@ -9,7 +9,7 @@ import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
 import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Calculator, PlayCircle, Crown, MessageCircle, Eye, EyeOff } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { usePlatformUser } from '@/hooks/useTenant';
+import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { GettingStartedChecklist } from '@/components/dashboard/GettingStartedChecklist';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
