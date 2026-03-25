@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { useCustomDomainArticlePublic } from '@/hooks/useAppConfig';
 import { useNavigate } from 'react-router-dom';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings, TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
 import { useLandingProductCategories } from '@/hooks/useLandingProducts';
@@ -23,6 +22,7 @@ import { HomeSectionManager, HomeSectionItem } from './HomeSectionManager';
 import { ZaloOASetupWizard } from './ZaloOASetupWizard';
 import { PaymentConfigSection } from './PaymentConfigSection';
 import { buildMetaShareUrl } from '@/lib/shareMetaUrl';
+import { sanitizeCustomDomainArticle } from '@/lib/customDomainArticle';
 
 import {
   Dialog,
@@ -246,9 +246,8 @@ function OrderEmailConfigSection({ formData, handleChange, tenantId, onSave }: {
 
 // ZaloOAConfigSection moved to ZaloOASetupWizard.tsx
 
-function CustomDomainCTA() {
+function CustomDomainCTA({ article }: { article?: string | null }) {
   const [open, setOpen] = useState(false);
-  const { data: article } = useCustomDomainArticlePublic();
   const { data: tenant } = useCurrentTenant();
   const storeUrl = tenant?.subdomain ? `https://${tenant.subdomain}.vkho.vn` : null;
 
@@ -294,7 +293,7 @@ function CustomDomainCTA() {
           {article ? (
             <div
               className="prose prose-sm max-w-none [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_a]:text-primary [&_a]:underline"
-              dangerouslySetInnerHTML={{ __html: article.replace(/<p[^>]*>.*?📞[^<]*0396[^<]*<\/p>/gs, '') }}
+              dangerouslySetInnerHTML={{ __html: sanitizeCustomDomainArticle(article) }}
             />
           ) : (
             <div className="space-y-3 text-sm">
@@ -901,6 +900,7 @@ export function LandingPageSettings() {
     facebook_url: '',
     zalo_url: '',
     tiktok_url: '',
+    custom_domain_article: '',
     voucher_enabled: false,
     voucher_template_id: null,
     website_template: 'phone_store',
@@ -942,6 +942,7 @@ export function LandingPageSettings() {
         facebook_url: settings.facebook_url || '',
         zalo_url: settings.zalo_url || '',
         tiktok_url: settings.tiktok_url || '',
+        custom_domain_article: settings.custom_domain_article || '',
         voucher_enabled: settings.voucher_enabled ?? false,
         voucher_template_id: settings.voucher_template_id || null,
         website_template: settings.website_template || 'phone_store',
@@ -1251,7 +1252,23 @@ export function LandingPageSettings() {
           <Separator className="my-3" />
 
           {/* B3: CTA tên miền riêng - ẩn khi đã có domain riêng, nổi bật */}
-          {!customDomainUrl && <CustomDomainCTA />}
+          {!customDomainUrl && <CustomDomainCTA article={(formData as any).custom_domain_article} />}
+
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2 text-sm font-medium">
+              <FileText className="h-4 w-4" />
+              Nội dung popup “Xem chi tiết” tên miền
+            </Label>
+            <RichTextEditor
+              value={(formData as any).custom_domain_article || ''}
+              onChange={(v) => handleChange('custom_domain_article' as any, v)}
+              placeholder="Nhập nội dung hiển thị trong popup Xem chi tiết"
+              minHeight="140px"
+            />
+            <p className="text-xs text-muted-foreground">
+              Nội dung này dùng cho popup tên miền riêng trong tab Website và nút “Xem chi tiết”.
+            </p>
+          </div>
 
           <Separator className="my-3" />
 

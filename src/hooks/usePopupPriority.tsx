@@ -1,8 +1,8 @@
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useRef, useCallback, useEffect, ReactNode } from 'react';
 
 /**
  * Popup priority system — only one popup at a time.
- * Priority order: tour > notification > push > adgate
+ * Priority order: tour > notification > domain > push > adgate
  */
 type PopupLayer = 'none' | 'tour' | 'notification' | 'domain' | 'push' | 'adgate';
 
@@ -35,6 +35,11 @@ const PopupPriorityContext = createContext<PopupPriorityContextType>({
 
 export function PopupPriorityProvider({ children }: { children: ReactNode }) {
   const [activeLayer, setActiveLayer] = useState<PopupLayer>('none');
+  const activeLayerRef = useRef<PopupLayer>('none');
+
+  useEffect(() => {
+    activeLayerRef.current = activeLayer;
+  }, [activeLayer]);
 
   // Also watch for tour via DOM attribute (tours render outside MainLayout)
   useEffect(() => {
@@ -52,19 +57,17 @@ export function PopupPriorityProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const claim = useCallback((layer: PopupLayer) => {
-    let granted = false;
-    setActiveLayer(prev => {
-      if (PRIORITY[layer] >= PRIORITY[prev]) {
-        granted = true;
-        return layer;
-      }
-      return prev;
-    });
-    return granted;
+    const current = activeLayerRef.current;
+    if (PRIORITY[layer] < PRIORITY[current]) return false;
+    activeLayerRef.current = layer;
+    setActiveLayer(layer);
+    return true;
   }, []);
 
   const release = useCallback((layer: PopupLayer) => {
-    setActiveLayer(prev => (prev === layer ? 'none' : prev));
+    if (activeLayerRef.current !== layer) return;
+    activeLayerRef.current = 'none';
+    setActiveLayer('none');
   }, []);
 
   const canShow = useCallback((layer: PopupLayer) => {
