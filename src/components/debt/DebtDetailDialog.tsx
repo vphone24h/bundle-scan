@@ -704,6 +704,8 @@ export function DebtDetailDialog({
           return items.map((item: any, idx: number) => {
             const name = entityType === 'customer' ? item.product_name : item.name;
             const price = entityType === 'customer' ? item.sale_price : item.import_price;
+            const quantity = Number(item.quantity ?? 1);
+            const unit = item.unit || 'cái';
             return (
               <div key={item.id || idx} className="border rounded-lg p-3 bg-card">
                 <div className="flex items-start justify-between gap-2">
@@ -711,6 +713,7 @@ export function DebtDetailDialog({
                     <p className="font-medium text-sm break-words">{name}</p>
                     <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
                       {item.sku && <span className="text-xs text-muted-foreground">SKU: {item.sku}</span>}
+                      <span className="text-xs text-muted-foreground">SL: {quantity}{unit !== 'cái' ? ` ${unit}` : ''}</span>
                       {item.imei && <Badge variant="outline" className="text-xs font-mono">IMEI: {item.imei}</Badge>}
                     </div>
                     {item.note && <p className="text-xs text-muted-foreground mt-1 italic">{item.note}</p>}

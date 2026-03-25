@@ -125,7 +125,7 @@ export function useDebtDetail(entityType: 'customer' | 'supplier', entityId: str
           .from('export_receipts')
           .select(`
             id, code, export_date, total_amount, paid_amount, debt_amount, original_debt_amount, note, status,
-            export_receipt_items(id, product_name, sku, imei, sale_price, note, status)
+            export_receipt_items(id, product_name, sku, imei, sale_price, quantity, unit, note, status)
           `)
           .eq('customer_id', entityId)
           .in('status', ['completed', 'partial_return', 'full_return'])
@@ -138,7 +138,7 @@ export function useDebtDetail(entityType: 'customer' | 'supplier', entityId: str
           .from('import_receipts')
           .select(`
             id, code, import_date, total_amount, paid_amount, debt_amount, original_debt_amount, note,
-            products(id, name, sku, imei, import_price, note, status)
+            products(id, name, sku, imei, import_price, quantity, unit, note, status)
           `)
           .in('supplier_id', entityIds)
           .eq('status', 'completed')
