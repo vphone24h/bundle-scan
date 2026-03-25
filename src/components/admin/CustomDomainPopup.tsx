@@ -5,7 +5,7 @@ import { Globe, ExternalLink } from 'lucide-react';
 import { usePopupPriority } from '@/hooks/usePopupPriority';
 import { useCustomDomains } from '@/hooks/useCustomDomains';
 import { useCurrentTenant } from '@/hooks/useTenant';
-import { useCustomDomainArticlePublic } from '@/hooks/useAppConfig';
+import { useCustomDomainArticlePublic, useAppConfig } from '@/hooks/useAppConfig';
 import { sanitizeCustomDomainArticle } from '@/lib/customDomainArticle';
 
 interface Props {
@@ -19,14 +19,18 @@ export function CustomDomainPopup({ isEnabled }: Props) {
   const { data: customDomains } = useCustomDomains();
   const { data: tenant } = useCurrentTenant();
   const { data: article } = useCustomDomainArticlePublic();
+  const { data: configs } = useAppConfig();
 
   const isDomainDataReady = customDomains !== undefined;
   const verifiedDomain = customDomains?.find(d => d.is_verified && d.tenant_id === tenant?.id);
   const hasCustomDomain = !!verifiedDomain;
 
-  const ADMIN_PHONE = '0355820185';
-  const ADMIN_PHONE_DISPLAY = '0355 820 185';
-  const ZALO_URL = `https://zalo.me/${ADMIN_PHONE}`;
+  // Lấy thông tin liên hệ từ admin config
+  const feedbackZaloUrl = configs?.find(c => c.config_key === 'feedback_zalo_url')?.config_value || '';
+  const feedbackFbUrl = configs?.find(c => c.config_key === 'feedback_fb_url')?.config_value || '';
+  const feedbackHotline = configs?.find(c => c.config_key === 'feedback_hotline')?.config_value || '';
+  const ZALO_URL = feedbackZaloUrl ? (feedbackZaloUrl.startsWith('http') ? feedbackZaloUrl : `https://zalo.me/${feedbackZaloUrl}`) : '';
+  const PHONE_DISPLAY = feedbackHotline ? feedbackHotline.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3') : '';
 
   const shouldShow = useCallback(() => {
     if (!isEnabled || !tenant?.id || !isDomainDataReady || hasCustomDomain) return false;
@@ -124,20 +128,34 @@ export function CustomDomainPopup({ isEnabled }: Props) {
           <div className="rounded-lg border bg-muted/50 p-4 mt-3 space-y-3">
             <p className="text-sm font-medium">👉 Để kích hoạt tính năng, vui lòng liên hệ Admin:</p>
             <div className="flex flex-col sm:flex-row gap-2">
-              <a
-                href={`tel:${ADMIN_PHONE}`}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-background hover:bg-accent transition-colors text-sm font-medium"
-              >
-                📞 {ADMIN_PHONE_DISPLAY}
-              </a>
-              <a
-                href={ZALO_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-background hover:bg-accent transition-colors text-sm font-medium"
-              >
-                💬 Nhắn Zalo
-              </a>
+              {feedbackHotline && (
+                <a
+                  href={`tel:${feedbackHotline.replace(/\s/g, '')}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-background hover:bg-accent transition-colors text-sm font-medium"
+                >
+                  📞 {PHONE_DISPLAY}
+                </a>
+              )}
+              {ZALO_URL && (
+                <a
+                  href={ZALO_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-background hover:bg-accent transition-colors text-sm font-medium"
+                >
+                  💬 Nhắn Zalo
+                </a>
+              )}
+              {feedbackFbUrl && (
+                <a
+                  href={feedbackFbUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-background hover:bg-accent transition-colors text-sm font-medium"
+                >
+                  📘 Facebook
+                </a>
+              )}
             </div>
           </div>
         </DialogContent>
