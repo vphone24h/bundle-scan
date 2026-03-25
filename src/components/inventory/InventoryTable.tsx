@@ -279,7 +279,7 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
       </div>
 
       {selectedItem && <IMEIDetailDialog open={showIMEIDialog} onOpenChange={setShowIMEIDialog} productName={selectedItem.productName} sku={selectedItem.sku} branchId={selectedItem.branchId} />}
-      {selectedItem && <NonIMEIDetailDialog open={showNonIMEIDialog} onOpenChange={setShowNonIMEIDialog} productId={selectedItem.productId} productName={selectedItem.productName} sku={selectedItem.sku} totalStock={selectedItem.stock} avgImportPrice={selectedItem.avgImportPrice} branchId={selectedItem.branchId} />}
+      {selectedItem && <NonIMEIDetailDialog open={showNonIMEIDialog} onOpenChange={setShowNonIMEIDialog} productId={selectedItem.productId} productName={selectedItem.productName} sku={selectedItem.sku} totalStock={selectedItem.stock} avgImportPrice={selectedItem.avgImportPrice} branchId={selectedItem.branchId} unit={selectedItem.unit} />}
     </>
   );
 }
