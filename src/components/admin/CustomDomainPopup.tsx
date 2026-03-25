@@ -128,20 +128,34 @@ export function CustomDomainPopup({ isEnabled }: Props) {
           <div className="rounded-lg border bg-muted/50 p-4 mt-3 space-y-3">
             <p className="text-sm font-medium">👉 Để kích hoạt tính năng, vui lòng liên hệ Admin:</p>
             <div className="flex flex-col sm:flex-row gap-2">
-              <a
-                href={`tel:${ADMIN_PHONE}`}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-background hover:bg-accent transition-colors text-sm font-medium"
-              >
-                📞 {ADMIN_PHONE_DISPLAY}
-              </a>
-              <a
-                href={ZALO_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-background hover:bg-accent transition-colors text-sm font-medium"
-              >
-                💬 Nhắn Zalo
-              </a>
+              {feedbackHotline && (
+                <a
+                  href={`tel:${feedbackHotline.replace(/\s/g, '')}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-background hover:bg-accent transition-colors text-sm font-medium"
+                >
+                  📞 {PHONE_DISPLAY}
+                </a>
+              )}
+              {ZALO_URL && (
+                <a
+                  href={ZALO_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-background hover:bg-accent transition-colors text-sm font-medium"
+                >
+                  💬 Nhắn Zalo
+                </a>
+              )}
+              {feedbackFbUrl && (
+                <a
+                  href={feedbackFbUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-background hover:bg-accent transition-colors text-sm font-medium"
+                >
+                  📘 Facebook
+                </a>
+              )}
             </div>
           </div>
         </DialogContent>
