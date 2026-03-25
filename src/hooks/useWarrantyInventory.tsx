@@ -82,6 +82,7 @@ function processProductsToWarrantyInventory(products: any[]): InventoryItem[] {
           variant1: null,
           variant2: null,
           variant3: null,
+          unit: product.unit || 'cái',
         });
       } else {
         const quantity = product.quantity || 1;
@@ -106,6 +107,7 @@ function processProductsToWarrantyInventory(products: any[]): InventoryItem[] {
           variant1: null,
           variant2: null,
           variant3: null,
+          unit: product.unit || 'cái',
         });
       }
     }
