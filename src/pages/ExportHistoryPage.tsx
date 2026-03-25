@@ -286,18 +286,19 @@ export default function ExportHistoryPage() {
     const grouped: Map<string, ExportReceiptItemDetail & { quantity: number; groupedIds: string[] }> = new Map();
     
     (items || []).forEach((item) => {
+      const itemQty = item.quantity ?? 1;
       if (!item.imei) {
         const groupKey = `${item.product_name}|${item.export_receipts?.branch_id || ''}|${item.receipt_id}|${item.sale_price}`;
         
         if (grouped.has(groupKey)) {
           const existing = grouped.get(groupKey)!;
-          existing.quantity += 1;
+          existing.quantity += itemQty;
           existing.groupedIds.push(item.id);
         } else {
-          grouped.set(groupKey, { ...item, quantity: 1, groupedIds: [item.id] });
+          grouped.set(groupKey, { ...item, quantity: itemQty, unit: item.unit || 'cái', groupedIds: [item.id] });
         }
       } else {
-        grouped.set(item.id, { ...item, quantity: 1, groupedIds: [item.id] });
+        grouped.set(item.id, { ...item, quantity: itemQty, groupedIds: [item.id] });
       }
     });
     
