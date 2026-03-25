@@ -716,8 +716,12 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
                           <Input
                             type="number"
                             min={0}
+                            step={['kg', 'lít', 'mét'].includes((item as any).unit || 'cái') ? 0.1 : 1}
                             value={item.actualQuantity}
-                            onChange={(e) => handleUpdateQuantity(item, parseInt(e.target.value) || 0)}
+                            onChange={(e) => {
+                              const isDecimal = ['kg', 'lít', 'mét'].includes((item as any).unit || 'cái');
+                              handleUpdateQuantity(item, isDecimal ? (parseFloat(e.target.value) || 0) : (parseInt(e.target.value) || 0));
+                            }}
                             className="w-20 text-center mx-auto"
                           />
                         )}

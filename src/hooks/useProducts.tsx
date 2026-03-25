@@ -29,6 +29,7 @@ export interface Product {
   status: ProductStatus;
   note: string | null;
   quantity: number;
+  unit: string;
   total_import_cost?: number;
   is_printed: boolean;
   created_at?: string;
@@ -94,7 +95,7 @@ export function useProducts(filters?: ProductFilters) {
         .select(`
           id, name, sku, imei, category_id, sale_price, import_price,
           import_date, supplier_id, branch_id, import_receipt_id, status,
-          note, quantity, is_printed,
+          note, quantity, unit, is_printed,
           group_id, variant_1, variant_2, variant_3
         `)
         .in('status', ['in_stock', 'sold', 'returned', 'template'])
