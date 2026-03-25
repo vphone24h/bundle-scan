@@ -62,7 +62,8 @@ export function ProductTable({
     productName: string;
     sku: string;
     quantity: number;
-  }>({ open: false, productId: '', productName: '', sku: '', quantity: 0 });
+    unit: string;
+  }>({ open: false, productId: '', productName: '', sku: '', quantity: 0, unit: 'cái' });
 
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -111,6 +112,7 @@ export function ProductTable({
       productName: product.name,
       sku: product.sku,
       quantity: product.quantity || 1,
+      unit: (product as any).unit || 'cái',
     });
   };
 
@@ -290,6 +292,7 @@ export function ProductTable({
           productName={adjustDialog.productName}
           sku={adjustDialog.sku}
           currentQuantity={adjustDialog.quantity}
+          unit={adjustDialog.unit}
         />
 
         <DeleteProductDialog
