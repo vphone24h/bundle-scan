@@ -14,7 +14,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Eye, Wallet, Plus, Printer, MoreHorizontal, UserPlus, Hash, Phone, MessageSquare, Settings, ArrowLeftRight } from 'lucide-react';
+import { Eye, Wallet, Plus, Printer, MoreHorizontal, UserPlus, Hash, Phone, MessageSquare, Settings, ArrowLeftRight, Pencil } from 'lucide-react';
 import { DebtDetailDialog } from './DebtDetailDialog';
 import { DebtPaymentDialog } from './DebtPaymentDialog';
 import { DebtAdditionDialog } from './DebtAdditionDialog';
@@ -22,6 +22,8 @@ import { CreateDebtDialog } from './CreateDebtDialog';
 import { DebtTagAssignDialog } from './DebtTagAssignDialog';
 import { DebtOffsetDialog } from './DebtOffsetDialog';
 import { OverdueDaysDialog } from './OverdueDaysDialog';
+import { DebtEditAmountDialog } from './DebtEditAmountDialog';
+import { exportDebtToExcel } from './DebtExportExcel';
 import { useDebtOffsetMatches, DebtOffsetMatch } from '@/hooks/useDebtOffset';
 
 function getDebtStatusBadge(daysOverdue: number, remaining: number, overdueDays: number) {
@@ -77,6 +79,7 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
   const [showAddition, setShowAddition] = useState(false);
   const [showCreateDebt, setShowCreateDebt] = useState(false);
   const [showTagAssign, setShowTagAssign] = useState(false);
+  const [showEditAmount, setShowEditAmount] = useState(false);
   
   const [showOverdueDays, setShowOverdueDays] = useState(false);
   const [showOffset, setShowOffset] = useState(false);
@@ -137,7 +140,10 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
             </DropdownMenuItem>
           </>
         )}
-        <DropdownMenuItem onClick={() => console.log('Print', debt.entity_name)}>
+        <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowEditAmount(true); }}>
+          <Pencil className="mr-2 h-4 w-4" /> Sửa số tiền nợ
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => exportDebtToExcel(debt, 'customer')}>
           <Printer className="mr-2 h-4 w-4" /> In công nợ
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -341,6 +347,9 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
           <OverdueDaysDialog open={showOverdueDays} onOpenChange={setShowOverdueDays}
             customerId={selectedDebt.entity_id} customerName={selectedDebt.entity_name}
             globalOverdueDays={overdueDays} />
+          <DebtEditAmountDialog open={showEditAmount} onOpenChange={setShowEditAmount} entityType="customer"
+            entityId={selectedDebt.entity_id} entityName={selectedDebt.entity_name}
+            remainingAmount={selectedDebt.remaining_amount} branchId={selectedDebt.branch_id} />
         </>
       )}
       <CreateDebtDialog open={showCreateDebt} onOpenChange={setShowCreateDebt} entityType="customer" />
