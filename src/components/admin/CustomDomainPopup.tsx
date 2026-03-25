@@ -5,7 +5,7 @@ import { Globe, ExternalLink } from 'lucide-react';
 import { usePopupPriority } from '@/hooks/usePopupPriority';
 import { useCustomDomains } from '@/hooks/useCustomDomains';
 import { useCurrentTenant } from '@/hooks/useTenant';
-import { useTenantLandingSettings } from '@/hooks/useTenantLanding';
+import { useCustomDomainArticlePublic } from '@/hooks/useAppConfig';
 import { sanitizeCustomDomainArticle } from '@/lib/customDomainArticle';
 
 interface Props {
@@ -18,9 +18,8 @@ export function CustomDomainPopup({ isEnabled }: Props) {
   const { activeLayer, claim, release } = usePopupPriority();
   const { data: customDomains } = useCustomDomains();
   const { data: tenant } = useCurrentTenant();
-  const { data: landingSettings } = useTenantLandingSettings();
+  const { data: article } = useCustomDomainArticlePublic();
 
-  const article = landingSettings?.custom_domain_article || null;
   const isDomainDataReady = customDomains !== undefined;
   const verifiedDomain = customDomains?.find(d => d.is_verified && d.tenant_id === tenant?.id);
   const hasCustomDomain = !!verifiedDomain;
