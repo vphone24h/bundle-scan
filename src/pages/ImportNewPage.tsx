@@ -296,6 +296,21 @@ export default function ImportNewPage() {
     // Only fill base product name - don't pre-fill price/sku for variant products
     // so users can configure variants and per-variant pricing
     const hasVariantData = !product.import_price && !product.sale_price;
+
+    // Fetch unit from existing product
+    let productUnit = 'cái';
+    try {
+      const { data: existingProduct } = await supabase
+        .from('products')
+        .select('unit')
+        .ilike('name', product.name)
+        .not('unit', 'is', null)
+        .limit(1);
+      if (existingProduct?.[0]?.unit) {
+        productUnit = existingProduct[0].unit;
+      }
+    } catch {}
+
     setForm({
       ...form,
       productName: product.name,
@@ -303,6 +318,7 @@ export default function ImportNewPage() {
       categoryId: '', // Always require re-selecting category
       importPrice: product.import_price ? String(product.import_price) : '',
       salePrice: product.sale_price ? String(product.sale_price) : '',
+      unit: productUnit,
     });
     setSuggestions([]);
     setProductFormMode('form');
