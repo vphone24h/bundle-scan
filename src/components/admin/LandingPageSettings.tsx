@@ -294,7 +294,7 @@ function CustomDomainCTA() {
           {article ? (
             <div
               className="prose prose-sm max-w-none [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_a]:text-primary [&_a]:underline"
-              dangerouslySetInnerHTML={{ __html: article }}
+              dangerouslySetInnerHTML={{ __html: article.replace(/<p[^>]*>.*?(?:👉 Để kích hoạt|📞|0396[^<]*).*?<\/p>/gs, '') }}
             />
           ) : (
             <div className="space-y-3 text-sm">
