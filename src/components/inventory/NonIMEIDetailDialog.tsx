@@ -30,6 +30,7 @@ interface NonIMEIDetailDialogProps {
   totalStock: number;
   avgImportPrice: number;
   branchId?: string | null;
+  unit?: string;
 }
 
 export function NonIMEIDetailDialog({
@@ -41,6 +42,7 @@ export function NonIMEIDetailDialog({
   totalStock,
   avgImportPrice,
   branchId,
+  unit = 'cái',
 }: NonIMEIDetailDialogProps) {
   const { data: permissions } = usePermissions();
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
@@ -135,11 +137,11 @@ export function NonIMEIDetailDialog({
                       </TableCell>
                     )}
                     <TableCell className="text-center text-muted-foreground">
-                      {item.quantity}
+                      {item.quantity}{unit !== 'cái' ? ` ${unit}` : ''}
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant={item.remainingQty === item.quantity ? 'default' : 'secondary'}>
-                        {item.remainingQty}
+                        {item.remainingQty}{unit !== 'cái' ? ` ${unit}` : ''}
                       </Badge>
                     </TableCell>
                     {canViewImportPrice && (
@@ -158,10 +160,10 @@ export function NonIMEIDetailDialog({
         <div className="border-t pt-4 flex items-center justify-between text-sm">
           <div className="space-x-4">
             <span className="text-muted-foreground">
-              Tổng nhập: <strong>{totalImported}</strong>
+              Tổng nhập: <strong>{totalImported}{unit !== 'cái' ? ` ${unit}` : ''}</strong>
             </span>
             <span className="text-muted-foreground">
-              Tồn kho: <strong className={totalStock <= 2 ? 'text-destructive' : ''}>{totalStock}</strong>
+              Tồn kho: <strong className={totalStock <= 2 ? 'text-destructive' : ''}>{totalStock}{unit !== 'cái' ? ` ${unit}` : ''}</strong>
             </span>
           </div>
           {canViewImportPrice && (
