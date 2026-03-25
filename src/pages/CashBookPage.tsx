@@ -2171,12 +2171,22 @@ export default function CashBookPage() {
 
             <div>
               <Label>Số dư thực tế *</Label>
-              <Input
-                type="number"
-                placeholder="Nhập số dư thực tế"
-                value={adjustBalanceData.newBalance}
-                onChange={(e) => setAdjustBalanceData({ ...adjustBalanceData, newBalance: e.target.value })}
-              />
+              <div className="relative">
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Nhập số dư thực tế"
+                  value={adjustBalanceData.newBalance ? formatNumberWithSpaces(adjustBalanceData.newBalance) : ''}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\s/g, '');
+                    // Allow negative sign and digits
+                    if (raw === '' || raw === '-' || /^-?\d+$/.test(raw)) {
+                      setAdjustBalanceData({ ...adjustBalanceData, newBalance: raw });
+                    }
+                  }}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">đ</span>
+              </div>
               {adjustBalanceData.newBalance && (
                 <div className="mt-2 text-sm">
                   {(() => {
