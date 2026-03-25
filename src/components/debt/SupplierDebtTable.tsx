@@ -22,6 +22,8 @@ import { CreateDebtDialog } from './CreateDebtDialog';
 import { EditSupplierDialog } from './EditSupplierDialog';
 import { DebtTagAssignDialog } from './DebtTagAssignDialog';
 import { DebtOffsetDialog } from './DebtOffsetDialog';
+import { DebtEditAmountDialog } from './DebtEditAmountDialog';
+import { exportDebtToExcel } from './DebtExportExcel';
 import { useDebtOffsetMatches, DebtOffsetMatch } from '@/hooks/useDebtOffset';
 
 function getDebtStatusBadge(daysOverdue: number, remaining: number, overdueDays: number) {
@@ -78,6 +80,7 @@ export function SupplierDebtTable({ showSettled, branchFilter, tagFilter, quickF
   const [showCreateDebt, setShowCreateDebt] = useState(false);
   const [showEditSupplier, setShowEditSupplier] = useState(false);
   const [showTagAssign, setShowTagAssign] = useState(false);
+  const [showEditAmount, setShowEditAmount] = useState(false);
   const [showOffset, setShowOffset] = useState(false);
   const [selectedOffsetMatch, setSelectedOffsetMatch] = useState<DebtOffsetMatch | null>(null);
   const offsetMatches = useDebtOffsetMatches();
@@ -132,7 +135,10 @@ export function SupplierDebtTable({ showSettled, branchFilter, tagFilter, quickF
         <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowEditSupplier(true); }}>
           <Pencil className="mr-2 h-4 w-4" /> Sửa NCC
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => console.log('Print', debt.entity_name)}>
+        <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowEditAmount(true); }}>
+          <Pencil className="mr-2 h-4 w-4" /> Sửa số tiền nợ
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => exportDebtToExcel(debt, 'supplier')}>
           <Printer className="mr-2 h-4 w-4" /> In công nợ
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -339,6 +345,9 @@ export function SupplierDebtTable({ showSettled, branchFilter, tagFilter, quickF
             supplierPhone={selectedDebt.entity_phone} branchName={selectedDebt.branch_name} />
           <DebtTagAssignDialog open={showTagAssign} onOpenChange={setShowTagAssign}
             entityId={selectedDebt.entity_id} entityType="supplier" entityName={selectedDebt.entity_name} />
+          <DebtEditAmountDialog open={showEditAmount} onOpenChange={setShowEditAmount} entityType="supplier"
+            entityId={selectedDebt.entity_id} entityName={selectedDebt.entity_name}
+            remainingAmount={selectedDebt.remaining_amount} branchId={selectedDebt.branch_id} />
         </>
       )}
       <CreateDebtDialog open={showCreateDebt} onOpenChange={setShowCreateDebt} entityType="supplier" />
