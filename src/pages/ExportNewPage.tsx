@@ -676,7 +676,9 @@ export default function ExportNewPage() {
       return;
     }
 
-    const quantity = selectedProduct.imei ? 1 : itemQuantity;
+    const productUnit = selectedProduct.unit || 'cái';
+    const isDecimalUnit = ['kg', 'lít', 'mét'].includes(productUnit);
+    const quantity = selectedProduct.imei ? 1 : (isDecimalUnit ? Math.max(0.001, itemQuantity) : Math.max(1, Math.round(itemQuantity)));
     
     const newItem: CartItem = {
       tempId: Date.now().toString(),
@@ -691,6 +693,7 @@ export default function ExportNewPage() {
       sale_price: parseFloat(salePrice),
       note: itemNote || null,
       quantity: quantity,
+      unit: productUnit,
       warranty: itemWarranty || null,
     };
 
