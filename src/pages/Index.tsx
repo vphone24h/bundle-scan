@@ -164,7 +164,8 @@ const Index = () => {
   const recentProducts = recentProductsData || [];
   const recentReceipts = recentReceiptsData || [];
 
-  const showDashTour = manualTourActive || (!dashTourLoading && !dashTourDone);
+  const businessTypeDialogOpen = !!currentTenant && !currentTenant.business_type && !isPlatformAdmin;
+  const showDashTour = !businessTypeDialogOpen && (manualTourActive || (!dashTourLoading && !dashTourDone));
 
   // Platform Admin: redirect to platform admin page
   if (isPlatformAdmin) {
