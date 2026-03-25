@@ -19,14 +19,18 @@ export function CustomDomainPopup({ isEnabled }: Props) {
   const { data: customDomains } = useCustomDomains();
   const { data: tenant } = useCurrentTenant();
   const { data: article } = useCustomDomainArticlePublic();
+  const { data: configs } = useAppConfig();
 
   const isDomainDataReady = customDomains !== undefined;
   const verifiedDomain = customDomains?.find(d => d.is_verified && d.tenant_id === tenant?.id);
   const hasCustomDomain = !!verifiedDomain;
 
-  const ADMIN_PHONE = '0355820185';
-  const ADMIN_PHONE_DISPLAY = '0355 820 185';
-  const ZALO_URL = `https://zalo.me/${ADMIN_PHONE}`;
+  // Lấy thông tin liên hệ từ admin config
+  const feedbackZaloUrl = configs?.find(c => c.config_key === 'feedback_zalo_url')?.config_value || '';
+  const feedbackFbUrl = configs?.find(c => c.config_key === 'feedback_fb_url')?.config_value || '';
+  const feedbackHotline = configs?.find(c => c.config_key === 'feedback_hotline')?.config_value || '';
+  const ZALO_URL = feedbackZaloUrl ? (feedbackZaloUrl.startsWith('http') ? feedbackZaloUrl : `https://zalo.me/${feedbackZaloUrl}`) : '';
+  const PHONE_DISPLAY = feedbackHotline ? feedbackHotline.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3') : '';
 
   const shouldShow = useCallback(() => {
     if (!isEnabled || !tenant?.id || !isDomainDataReady || hasCustomDomain) return false;
