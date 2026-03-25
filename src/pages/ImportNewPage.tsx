@@ -796,6 +796,7 @@ export default function ImportNewPage() {
             import_price: item.importPrice,
             sale_price: item.salePrice || null,
             quantity: item.quantity,
+            unit: item.unit || 'cái',
             supplier_id: supplierId,
             note: item.note || null,
           })),
