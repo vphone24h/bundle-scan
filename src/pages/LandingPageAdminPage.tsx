@@ -120,6 +120,7 @@ export default function LandingPageAdminPage() {
   const landingGuideUrl = useLandingGuideUrl();
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('landing-page-admin-v3');
   const [tourDismissed, setTourDismissed] = useState(false);
+  const { data: landingSettings } = useTenantLandingSettings();
 
   // Prefetch all tab data in parallel on page mount (uses cache, no extra fetches when tabs open)
   useLandingProductCategories(tenantId);
