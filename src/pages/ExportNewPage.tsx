@@ -1255,7 +1255,7 @@ export default function ExportNewPage() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5" />
-                {t('tours.exportNew.cart')} ({cart.length} {t('pages.exportNew.cartProducts', { count: cart.length })})
+                {t('tours.exportNew.cart')} ({t('pages.exportNew.cartProducts', { count: cart.reduce((sum, item) => sum + item.quantity, 0) })})
               </CardTitle>
             </CardHeader>
             <CardContent>
