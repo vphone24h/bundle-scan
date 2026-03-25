@@ -471,9 +471,19 @@ export function DebtDetailDialog({
                                   <p className="text-xs text-muted-foreground">Người thu: {p.createdBy}</p>
                                 )}
                               </div>
-                              <span className="font-semibold shrink-0 text-green-600 dark:text-green-400">
-                                -{formatNumber(p.amount)}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold shrink-0 text-green-600 dark:text-green-400">
+                                  -{formatNumber(p.amount)}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: p.id, amount: p.amount, description: p.description, payment_type: 'payment', entity_type: entityType, entity_id: entityId }); }}
+                                  className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                  title="Sửa số tiền"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
                             </div>
                             <div className="text-xs text-muted-foreground mt-1 pt-1 border-t border-dashed">
                               Dư nợ tại thời điểm: <span className="font-semibold text-foreground">{formatNumber((item as any).storedBalance != null ? (item as any).storedBalance : (item as any).runningBalance)}</span>
