@@ -91,6 +91,71 @@ const normalizeImportResponse = (raw: any) => {
   };
 };
 
+type ImportSectionKey =
+  | 'branches'
+  | 'categories'
+  | 'suppliers'
+  | 'customers'
+  | 'products'
+  | 'import_receipts'
+  | 'export_receipts'
+  | 'export_receipt_items'
+  | 'export_receipt_payments'
+  | 'cash_book'
+  | 'debt_payments'
+  | 'web_config';
+
+type ImportStage = {
+  label: string;
+  sections: ImportSectionKey[];
+};
+
+const IMPORT_STAGES: ImportStage[] = [
+  { label: 'Nền tảng', sections: ['branches', 'categories', 'suppliers'] },
+  { label: 'Khách hàng', sections: ['customers'] },
+  { label: 'Sản phẩm', sections: ['products'] },
+  { label: 'Phiếu nhập/xuất', sections: ['import_receipts', 'export_receipts'] },
+  { label: 'Chi tiết & thanh toán phiếu xuất', sections: ['export_receipt_items', 'export_receipt_payments'] },
+  { label: 'Sổ quỹ & công nợ', sections: ['cash_book', 'debt_payments'] },
+  { label: 'Cấu hình web', sections: ['web_config'] },
+];
+
+const sectionHasData = (importData: any, section: ImportSectionKey) => {
+  if (section === 'web_config') return !!importData?.web_config;
+  return Array.isArray(importData?.[section]) && importData[section].length > 0;
+};
+
+const mergeImportResponses = (responses: any[]) => {
+  const mergedStats: ImportStats = {};
+  const mergedErrors: string[] = [];
+
+  for (const response of responses) {
+    const normalized = normalizeImportResponse(response);
+    for (const [key, stat] of Object.entries(normalized.stats || {})) {
+      const next = stat as ImportStat;
+      if (!mergedStats[key]) {
+        mergedStats[key] = { total: 0, success: 0, skipped: 0, error: 0 };
+      }
+
+      mergedStats[key].total += toNumber(next.total);
+      mergedStats[key].success += toNumber(next.success);
+      mergedStats[key].skipped += toNumber(next.skipped);
+      mergedStats[key].error += toNumber(next.error);
+    }
+
+    if (Array.isArray(normalized.errors)) {
+      mergedErrors.push(...normalized.errors);
+    }
+  }
+
+  return {
+    stats: mergedStats,
+    summary: buildSummaryFromStats(mergedStats),
+    errors: mergedErrors.slice(0, 200),
+    total_errors: mergedErrors.length,
+  };
+};
+
 export function CrossPlatformBackupSection() {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -162,15 +227,36 @@ export function CrossPlatformBackupSection() {
     setIsImporting(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('cross-platform-restore', {
-        body: { importData: importFile, mode: importMode },
-      });
-      
-      if (error) throw error;
-      if (!data) throw new Error('Không nhận được phản hồi từ hệ thống');
-      if (data?.error) throw new Error(data.error);
+      const runnableStages = IMPORT_STAGES.filter((stage) =>
+        stage.sections.some((section) => sectionHasData(importFile, section))
+      );
 
-      const normalized = normalizeImportResponse(data);
+      if (runnableStages.length === 0) {
+        throw new Error('File không có dữ liệu để import');
+      }
+
+      const stageResponses: any[] = [];
+
+      for (let i = 0; i < runnableStages.length; i++) {
+        const stage = runnableStages[i];
+        const stageMode = i === 0 ? importMode : 'merge';
+
+        const { data, error } = await supabase.functions.invoke('cross-platform-restore', {
+          body: {
+            importData: importFile,
+            mode: stageMode,
+            sections: stage.sections,
+          },
+        });
+
+        if (error) throw new Error(`${stage.label}: ${error.message}`);
+        if (!data) throw new Error(`${stage.label}: Không nhận được phản hồi từ hệ thống`);
+        if (data?.error) throw new Error(`${stage.label}: ${data.error}`);
+
+        stageResponses.push(data);
+      }
+
+      const normalized = mergeImportResponses(stageResponses);
       setImportResult(normalized);
       setShowResultDialog(true);
       setImportFile(null);
