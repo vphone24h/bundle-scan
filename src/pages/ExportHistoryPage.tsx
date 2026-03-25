@@ -1018,10 +1018,10 @@ export default function ExportHistoryPage() {
                           <TableCell className="text-center">
                             {isGrouped ? (
                               <Badge variant="secondary" className="font-medium">
-                                {quantity}
+                                {quantity}{groupedItem.unit && groupedItem.unit !== 'cái' ? ` ${groupedItem.unit}` : ''}
                               </Badge>
                             ) : (
-                              quantity
+                              <>{quantity}{groupedItem.unit && groupedItem.unit !== 'cái' ? ` ${groupedItem.unit}` : ''}</>
                             )}
                           </TableCell>
                           <TableCell className="text-right font-medium">
