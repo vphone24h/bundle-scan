@@ -528,10 +528,20 @@ export function DebtDetailDialog({
                                   </p>
                                 )}
                               </div>
-                              <span className={`font-semibold shrink-0 ${a.isFullyPaid ? 'text-green-600 dark:text-green-400' : 'text-orange-600'}`}>
-                                +{formatNumber(a.amount)}
-                                {a.isFullyPaid && <span className="text-xs ml-1">✓</span>}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className={`font-semibold shrink-0 ${a.isFullyPaid ? 'text-green-600 dark:text-green-400' : 'text-orange-600'}`}>
+                                  +{formatNumber(a.amount)}
+                                  {a.isFullyPaid && <span className="text-xs ml-1">✓</span>}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: a.id, amount: a.amount, description: a.description, payment_type: 'addition', entity_type: entityType, entity_id: entityId }); }}
+                                  className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                  title="Sửa số tiền"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
                             </div>
                             <div className="text-xs text-muted-foreground mt-1 pt-1 border-t border-dashed">
                               Dư nợ tại thời điểm: <span className="font-semibold text-foreground">{formatNumber((item as any).storedBalance != null ? (item as any).storedBalance : (item as any).runningBalance)}</span>
