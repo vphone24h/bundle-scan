@@ -411,7 +411,7 @@ export default function UniversalStoreTemplate({
     // Update browser URL path
     const pagePath = buildPagePath(view);
     window.history.replaceState(null, '', pagePath === '/' ? '/' : pagePath);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
   };
 
   const openArticle = (article: LandingArticle) => {
