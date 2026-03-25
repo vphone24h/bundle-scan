@@ -16,6 +16,8 @@ import { useTranslation } from 'react-i18next';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useLandingProductCategories, useLandingProducts } from '@/hooks/useLandingProducts';
 import { useLandingArticleCategories, useLandingArticles } from '@/hooks/useLandingArticles';
+import { useTenantLandingSettings } from '@/hooks/useTenantLanding';
+import { CustomDomainPopup } from '@/components/admin/CustomDomainPopup';
 
 // Lazy load tab components with eager preloading to avoid delay on tab switch
 const importSettings = () => import('@/components/admin/LandingPageSettings').then(m => ({ default: m.LandingPageSettings }));
@@ -118,6 +120,7 @@ export default function LandingPageAdminPage() {
   const landingGuideUrl = useLandingGuideUrl();
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('landing-page-admin-v3');
   const [tourDismissed, setTourDismissed] = useState(false);
+  const { data: landingSettings } = useTenantLandingSettings();
 
   // Prefetch all tab data in parallel on page mount (uses cache, no extra fetches when tabs open)
   useLandingProductCategories(tenantId);
@@ -241,6 +244,7 @@ export default function LandingPageAdminPage() {
         onSkip={() => { completeTour(); setTourDismissed(true); }}
         tourKey="landing-page-admin-v3"
       />
+      <CustomDomainPopup isEnabled={!!landingSettings?.is_enabled} />
     </MainLayout>
   );
 }

@@ -4,11 +4,12 @@ import { createContext, useContext, useState, useCallback, useEffect, ReactNode 
  * Popup priority system — only one popup at a time.
  * Priority order: tour > notification > push > adgate
  */
-type PopupLayer = 'none' | 'tour' | 'notification' | 'push' | 'adgate';
+type PopupLayer = 'none' | 'tour' | 'notification' | 'domain' | 'push' | 'adgate';
 
 const PRIORITY: Record<PopupLayer, number> = {
-  tour: 4,
-  notification: 3,
+  tour: 5,
+  notification: 4,
+  domain: 3,
   push: 2,
   adgate: 1,
   none: 0,
