@@ -172,9 +172,9 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
             <Badge variant="outline">{t('tours.inventory.normalType')}</Badge>
           )}
         </TableCell>
-        <TableCell className="text-center hidden lg:table-cell"><Badge variant="outline">{item.totalImported}</Badge></TableCell>
-        <TableCell className="text-center hidden lg:table-cell"><Badge variant="secondary">{item.totalSold}</Badge></TableCell>
-        <TableCell className="text-center"><Badge className={cn('min-w-[40px]', getStockBadgeClass(item.stock))}>{item.stock}</Badge></TableCell>
+        <TableCell className="text-center hidden lg:table-cell"><Badge variant="outline">{item.totalImported}{item.unit !== 'cái' ? ` ${item.unit}` : ''}</Badge></TableCell>
+        <TableCell className="text-center hidden lg:table-cell"><Badge variant="secondary">{item.totalSold}{item.unit !== 'cái' ? ` ${item.unit}` : ''}</Badge></TableCell>
+        <TableCell className="text-center"><Badge className={cn('min-w-[40px]', getStockBadgeClass(item.stock))}>{item.stock}{item.unit !== 'cái' ? ` ${item.unit}` : ''}</Badge></TableCell>
         {canViewImportPrice && <TableCell className="text-right hidden md:table-cell font-medium">{formatCurrencyWithSpaces(item.avgImportPrice)}</TableCell>}
         <TableCell className="text-right">
           <Button variant="outline" size="sm" onClick={() => handleViewDetail(item)}
