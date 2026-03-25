@@ -702,6 +702,7 @@ export function useUpdateImportReceipt() {
         category_id?: string | null;
         import_price?: number;
         oldImportPrice?: number;
+        unit?: string;
       }[];
       newSupplierId?: string | null;
     }) => {
@@ -729,6 +730,7 @@ export function useUpdateImportReceipt() {
         
         if (update.name) updateData.name = update.name;
         if (update.category_id !== undefined) updateData.category_id = update.category_id;
+        if (update.unit) updateData.unit = update.unit;
         if (update.import_price !== undefined) {
           updateData.import_price = update.import_price;
           updateData.total_import_cost = update.import_price;
