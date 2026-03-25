@@ -920,6 +920,7 @@ export default function ImportNewPage() {
         importPrice: 0, // User sẽ tự nhập giá nhập mới
         salePrice: salePrice || undefined,
         quantity: 1,
+        unit: (matchedProduct && 'unit' in matchedProduct ? (matchedProduct as any).unit : 'cái') || 'cái',
         supplierId: '',
         supplierName: '',
         note: data.note || undefined,
