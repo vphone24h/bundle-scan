@@ -7524,6 +7524,7 @@ export type Database = {
           total_import_cost: number
           total_imported: number
           total_sold: number
+          unit: string
           variant_1: string
           variant_2: string
           variant_3: string

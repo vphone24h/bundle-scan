@@ -24,6 +24,7 @@ export interface InventoryItem {
   variant1: string | null;
   variant2: string | null;
   variant3: string | null;
+  unit: string;
 }
 
 export interface ProductDetail {
