@@ -16,6 +16,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import type { Product } from '@/hooks/useProducts';
 import { formatCurrency } from '@/lib/mockData';
 import { PriceInput } from '@/components/ui/price-input';
+import { PRODUCT_UNITS } from '@/types/warehouse';
 
 interface EditProductDialogProps {
   product: Product | null;
@@ -45,6 +46,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     category_id: '',
     supplier_id: '',
     branch_id: '',
+    unit: 'cái',
   });
 
   useEffect(() => {
@@ -58,6 +60,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         category_id: product.category_id || '_none_',
         supplier_id: product.supplier_id || '_none_',
         branch_id: product.branch_id || '_none_',
+        unit: product.unit || 'cái',
       });
     }
   }, [product]);
@@ -168,6 +171,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         note: formData.note.trim() || null,
         category_id: formData.category_id === '_none_' ? null : formData.category_id,
         supplier_id: formData.supplier_id === '_none_' ? null : formData.supplier_id,
+        unit: product.imei ? 'cái' : formData.unit,
       };
 
       // Chỉ Super Admin / Branch Admin mới được sửa giá bán
@@ -353,6 +357,31 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Đơn vị tính - chỉ hiện cho sản phẩm không IMEI */}
+              {!product.imei && (
+                <div className="space-y-2">
+                  <Label>Đơn vị tính</Label>
+                  <Select 
+                    value={formData.unit} 
+                    onValueChange={(v) => setFormData(prev => ({ ...prev, unit: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn đơn vị" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      {PRODUCT_UNITS.map((u) => (
+                        <SelectItem key={u} value={u}>
+                          {u}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Đơn vị kg, lít, mét cho phép nhập số thập phân
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label>Chi nhánh</Label>

@@ -10,6 +10,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useImportReceiptDetails, useUpdateImportReceipt, ImportReceipt } from '@/hooks/useImportReceipts';
 import { formatNumberWithSpaces, parseFormattedNumber, formatCurrencyWithSpaces } from '@/lib/formatNumber';
+import { PRODUCT_UNITS, DECIMAL_UNITS } from '@/types/warehouse';
 
 interface EditImportReceiptDialogProps {
   receipt: ImportReceipt | null;
@@ -27,6 +28,7 @@ interface ProductEdit {
   originalPrice: number;
   displayPrice: string;
   quantity: number;
+  unit: string;
 }
 
 export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImportReceiptDialogProps) {
@@ -53,6 +55,7 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
           originalPrice: Number(item.import_price),
           displayPrice: formatNumberWithSpaces(Number(item.import_price)),
           quantity: Number(item.quantity) || 1,
+          unit: item.products?.unit || item.unit || 'cái',
         }))
       );
     }
@@ -84,6 +87,7 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
       category_id: edit.category_id,
       import_price: edit.import_price,
       oldImportPrice: edit.originalPrice,
+      unit: edit.unit,
     }));
 
     try {
@@ -193,17 +197,21 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
                       />
                     </div>
                   </div>
-                  {/* Quantity editable for non-IMEI products */}
+                  {/* Quantity & Unit editable for non-IMEI products */}
                   {!product.imei && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                       <div className="space-y-1">
                         <Label className="text-xs">Số lượng</Label>
                         <Input
                           type="number"
-                          min={1}
+                          min={DECIMAL_UNITS.includes(product.unit) ? 0.001 : 1}
+                          step={DECIMAL_UNITS.includes(product.unit) ? 0.1 : 1}
                           value={product.quantity}
                           onChange={(e) => {
-                            const qty = Math.max(1, parseInt(e.target.value) || 1);
+                            const isDecimal = DECIMAL_UNITS.includes(product.unit);
+                            const qty = isDecimal 
+                              ? Math.max(0.001, parseFloat(e.target.value) || 0.001)
+                              : Math.max(1, parseInt(e.target.value) || 1);
                             setProductEdits(prev => {
                               const updated = [...prev];
                               updated[index] = { ...updated[index], quantity: qty };
@@ -212,6 +220,32 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
                           }}
                           className="text-right"
                         />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Đơn vị</Label>
+                        <Select
+                          value={product.unit}
+                          onValueChange={(v) => {
+                            setProductEdits(prev => {
+                              const updated = [...prev];
+                              // Reset quantity when switching unit types
+                              const wasDecimal = DECIMAL_UNITS.includes(updated[index].unit);
+                              const isDecimal = DECIMAL_UNITS.includes(v);
+                              const newQty = (wasDecimal !== isDecimal) ? 1 : updated[index].quantity;
+                              updated[index] = { ...updated[index], unit: v, quantity: newQty };
+                              return updated;
+                            });
+                          }}
+                        >
+                          <SelectTrigger className="h-10">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover">
+                            {PRODUCT_UNITS.map((u) => (
+                              <SelectItem key={u} value={u}>{u}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Thành tiền</Label>
