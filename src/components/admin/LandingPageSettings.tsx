@@ -1254,22 +1254,6 @@ export function LandingPageSettings() {
           {/* B3: CTA tên miền riêng - ẩn khi đã có domain riêng, nổi bật */}
           {!customDomainUrl && <CustomDomainCTA />}
 
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-sm font-medium">
-              <FileText className="h-4 w-4" />
-              Nội dung popup “Xem chi tiết” tên miền
-            </Label>
-            <RichTextEditor
-              value={(formData as any).custom_domain_article || ''}
-              onChange={(v) => handleChange('custom_domain_article' as any, v)}
-              placeholder="Nhập nội dung hiển thị trong popup Xem chi tiết"
-              minHeight="140px"
-            />
-            <p className="text-xs text-muted-foreground">
-              Nội dung này dùng cho popup tên miền riêng trong tab Website và nút “Xem chi tiết”.
-            </p>
-          </div>
-
           <Separator className="my-3" />
 
           {/* B2: Chọn mẫu website */}
