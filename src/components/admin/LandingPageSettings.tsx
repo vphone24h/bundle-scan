@@ -294,7 +294,7 @@ function CustomDomainCTA() {
           {article ? (
             <div
               className="prose prose-sm max-w-none [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_a]:text-primary [&_a]:underline"
-              dangerouslySetInnerHTML={{ __html: article.replace(/<p[^>]*>.*?(?:👉 Để kích hoạt|📞|0396[^<]*).*?<\/p>/gs, '') }}
+              dangerouslySetInnerHTML={{ __html: article.replace(/<p[^>]*>.*?📞[^<]*0396[^<]*<\/p>/gs, '') }}
             />
           ) : (
             <div className="space-y-3 text-sm">
@@ -1200,6 +1200,7 @@ export function LandingPageSettings() {
             />
           </div>
 
+          {formData.is_enabled && (<>
           {/* Link và QR Code */}
           {fullLandingUrl && (
             <div className="rounded-lg border bg-muted/30 p-4">
@@ -1299,9 +1300,11 @@ export function LandingPageSettings() {
               toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
             });
           }} />
+          </>)}
         </CardContent>
       </Card>
 
+      {formData.is_enabled && (<>
       {/* Menu Website */}
       <Card>
         <CardHeader>
@@ -2035,6 +2038,7 @@ export function LandingPageSettings() {
           Đang lưu...
         </div>
       )}
+      </>)}
     </div>
   );
 }
