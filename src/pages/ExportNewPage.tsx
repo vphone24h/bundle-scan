@@ -81,6 +81,7 @@ interface CartItem extends ExportReceiptItem {
   categoryName?: string;
   branchName?: string;
   quantity: number;
+  unit: string;
   warranty?: string;
 }
 
@@ -240,6 +241,7 @@ export default function ExportNewPage() {
           categoryName: p.categoryName,
           branchName: p.branchName,
           quantity: 1,
+          unit: p.unit || 'cái',
           warranty: '',
         };
         setCart([newItem]);
@@ -378,6 +380,7 @@ export default function ExportNewPage() {
             sale_price: encodedPrice,
             note: null,
             quantity: 1,
+            unit: matchedProduct.unit || 'cái',
             warranty: null,
           };
 
@@ -474,6 +477,7 @@ export default function ExportNewPage() {
         sale_price: encodedPrice,
         note: null,
         quantity: 1,
+        unit: result.unit || 'cái',
         warranty: scanWarranty || null,
       };
 
@@ -515,6 +519,7 @@ export default function ExportNewPage() {
         sale_price: result.sale_price,
         note: null,
         quantity: 1,
+        unit: result.unit || 'cái',
         warranty: scanWarranty || null,
       };
 
@@ -671,7 +676,9 @@ export default function ExportNewPage() {
       return;
     }
 
-    const quantity = selectedProduct.imei ? 1 : itemQuantity;
+    const productUnit = selectedProduct.unit || 'cái';
+    const isDecimalUnit = ['kg', 'lít', 'mét'].includes(productUnit);
+    const quantity = selectedProduct.imei ? 1 : (isDecimalUnit ? Math.max(0.001, itemQuantity) : Math.max(1, Math.round(itemQuantity)));
     
     const newItem: CartItem = {
       tempId: Date.now().toString(),
@@ -686,6 +693,7 @@ export default function ExportNewPage() {
       sale_price: parseFloat(salePrice),
       note: itemNote || null,
       quantity: quantity,
+      unit: productUnit,
       warranty: itemWarranty || null,
     };
 
@@ -716,9 +724,12 @@ export default function ExportNewPage() {
 
   // Update cart item quantity (for non-IMEI products)
   const handleUpdateCartQuantity = (tempId: string, newQuantity: number) => {
-    if (newQuantity < 1) return;
-    setCart(cart.map(item => 
-      item.tempId === tempId ? { ...item, quantity: newQuantity } : item
+    const item = cart.find(i => i.tempId === tempId);
+    const isDecimal = item && ['kg', 'lít', 'mét'].includes(item.unit);
+    const minQty = isDecimal ? 0.001 : 1;
+    if (newQuantity < minQty) return;
+    setCart(cart.map(i => 
+      i.tempId === tempId ? { ...i, quantity: newQuantity } : i
     ));
   };
 
@@ -1191,12 +1202,20 @@ export default function ExportNewPage() {
                     </div>
                     {!selectedProduct.imei && (
                       <div>
-                        <Label>{t('pages.exportNew.quantity')}</Label>
+                        <Label>{t('pages.exportNew.quantity')} ({selectedProduct.unit || 'cái'})</Label>
                         <Input
                           type="number"
-                          min={1}
+                          min={['kg', 'lít', 'mét'].includes(selectedProduct.unit) ? 0.001 : 1}
+                          step={['kg', 'lít', 'mét'].includes(selectedProduct.unit) ? 0.1 : 1}
                           value={itemQuantity}
-                          onChange={(e) => setItemQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            if (['kg', 'lít', 'mét'].includes(selectedProduct.unit)) {
+                              setItemQuantity(Math.max(0.001, val || 0.001));
+                            } else {
+                              setItemQuantity(Math.max(1, Math.round(val) || 1));
+                            }
+                          }}
                           className="text-center"
                         />
                       </div>
@@ -1275,13 +1294,23 @@ export default function ExportNewPage() {
                           {item.imei ? (
                             <span className="text-sm font-medium">1</span>
                           ) : (
-                            <Input
-                              type="number"
-                              min={1}
-                              value={item.quantity}
-                              onChange={(e) => handleUpdateCartQuantity(item.tempId, Math.max(1, parseInt(e.target.value) || 1))}
-                              className="w-16 text-center h-8"
-                            />
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                min={['kg', 'lít', 'mét'].includes(item.unit) ? 0.001 : 1}
+                                step={['kg', 'lít', 'mét'].includes(item.unit) ? 0.1 : 1}
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value);
+                                  const isDecimal = ['kg', 'lít', 'mét'].includes(item.unit);
+                                  handleUpdateCartQuantity(item.tempId, isDecimal ? Math.max(0.001, val || 0.001) : Math.max(1, Math.round(val) || 1));
+                                }}
+                                className="w-16 text-center h-8"
+                              />
+                              {item.unit !== 'cái' && (
+                                <span className="text-xs text-muted-foreground">{item.unit}</span>
+                              )}
+                            </div>
                           )}
                         </TableCell>
                         <TableCell className="text-right">

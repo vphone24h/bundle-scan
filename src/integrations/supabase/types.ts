@@ -2713,10 +2713,12 @@ export type Database = {
           note: string | null
           product_id: string | null
           product_name: string
+          quantity: number | null
           receipt_id: string
           sale_price: number
           sku: string
           status: string
+          unit: string | null
           warranty: string | null
         }
         Insert: {
@@ -2727,10 +2729,12 @@ export type Database = {
           note?: string | null
           product_id?: string | null
           product_name: string
+          quantity?: number | null
           receipt_id: string
           sale_price: number
           sku: string
           status?: string
+          unit?: string | null
           warranty?: string | null
         }
         Update: {
@@ -2741,10 +2745,12 @@ export type Database = {
           note?: string | null
           product_id?: string | null
           product_name?: string
+          quantity?: number | null
           receipt_id?: string
           sale_price?: number
           sku?: string
           status?: string
+          unit?: string | null
           warranty?: string | null
         }
         Relationships: [
@@ -7518,6 +7524,7 @@ export type Database = {
           total_import_cost: number
           total_imported: number
           total_sold: number
+          unit: string
           variant_1: string
           variant_2: string
           variant_3: string

@@ -24,6 +24,7 @@ export interface InventoryItem {
   variant1: string | null;
   variant2: string | null;
   variant3: string | null;
+  unit: string;
 }
 
 export interface ProductDetail {
@@ -161,6 +162,7 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
           variant1: product.variant_1 || null,
           variant2: product.variant_2 || null,
           variant3: product.variant_3 || null,
+          unit: product.unit || 'cái',
         });
       } else {
         const quantity = product.quantity || 1;
@@ -189,6 +191,7 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
           variant1: product.variant_1 || null,
           variant2: product.variant_2 || null,
           variant3: product.variant_3 || null,
+          unit: product.unit || 'cái',
         });
       }
     }
@@ -242,6 +245,7 @@ export function useInventory() {
         variant1: row.variant_1 || null,
         variant2: row.variant_2 || null,
         variant3: row.variant_3 || null,
+        unit: row.unit || 'cái',
       })) as InventoryItem[];
     },
     staleTime: 2 * 60 * 1000,
