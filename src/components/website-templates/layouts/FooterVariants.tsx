@@ -160,7 +160,7 @@ function FullFooter({
             )}
           </div>
         )}
-        <div className="flex flex-col items-center gap-3 py-4">
+        <div className="flex flex-col items-center gap-3 py-4 pb-16 sm:pb-4">
           {hasGov && <GovBadge url={govRegistrationUrl} imageUrl={govRegistrationImageUrl} />}
           <p className={copyrightClass}>© {new Date().getFullYear()} {storeName}. Tất cả quyền được bảo lưu.</p>
         </div>
