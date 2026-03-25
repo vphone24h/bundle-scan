@@ -628,11 +628,21 @@ export function DebtDetailDialog({
                             )}
                           </div>
 
-                          <div className="text-right shrink-0">
-                            <p className={`font-semibold ${isAddition ? 'text-orange-600' : 'text-green-600'}`}>
-                              {isAddition ? '+' : '-'}{formatNumber(payment.amount)}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
+                          <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                            <div className="flex items-center gap-1.5">
+                              <p className={`font-semibold ${isAddition ? 'text-orange-600' : 'text-green-600'}`}>
+                                {isAddition ? '+' : '-'}{formatNumber(payment.amount)}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: payment.id, amount: payment.amount, description: payment.description, payment_type: payment.payment_type, entity_type: entityType, entity_id: entityId }); }}
+                                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                title="Sửa số tiền"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
                               Còn nợ: <span className="font-medium text-destructive">{formatNumber(payment.balance_after)}</span>
                             </p>
                           </div>
