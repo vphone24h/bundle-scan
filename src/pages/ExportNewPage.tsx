@@ -724,9 +724,12 @@ export default function ExportNewPage() {
 
   // Update cart item quantity (for non-IMEI products)
   const handleUpdateCartQuantity = (tempId: string, newQuantity: number) => {
-    if (newQuantity < 1) return;
-    setCart(cart.map(item => 
-      item.tempId === tempId ? { ...item, quantity: newQuantity } : item
+    const item = cart.find(i => i.tempId === tempId);
+    const isDecimal = item && ['kg', 'lít', 'mét'].includes(item.unit);
+    const minQty = isDecimal ? 0.001 : 1;
+    if (newQuantity < minQty) return;
+    setCart(cart.map(i => 
+      i.tempId === tempId ? { ...i, quantity: newQuantity } : i
     ));
   };
 
@@ -1199,12 +1202,20 @@ export default function ExportNewPage() {
                     </div>
                     {!selectedProduct.imei && (
                       <div>
-                        <Label>{t('pages.exportNew.quantity')}</Label>
+                        <Label>{t('pages.exportNew.quantity')} ({selectedProduct.unit || 'cái'})</Label>
                         <Input
                           type="number"
-                          min={1}
+                          min={['kg', 'lít', 'mét'].includes(selectedProduct.unit) ? 0.001 : 1}
+                          step={['kg', 'lít', 'mét'].includes(selectedProduct.unit) ? 0.1 : 1}
                           value={itemQuantity}
-                          onChange={(e) => setItemQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            if (['kg', 'lít', 'mét'].includes(selectedProduct.unit)) {
+                              setItemQuantity(Math.max(0.001, val || 0.001));
+                            } else {
+                              setItemQuantity(Math.max(1, Math.round(val) || 1));
+                            }
+                          }}
                           className="text-center"
                         />
                       </div>
