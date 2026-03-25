@@ -252,8 +252,8 @@ function CustomDomainCTA() {
   const { data: tenant } = useCurrentTenant();
   const storeUrl = tenant?.subdomain ? `https://${tenant.subdomain}.vkho.vn` : null;
 
-  const ADMIN_PHONE = '0333820185';
-  const ADMIN_PHONE_DISPLAY = '0333 820 185';
+  const ADMIN_PHONE = '0355820185';
+  const ADMIN_PHONE_DISPLAY = '0355 820 185';
   const ZALO_URL = `https://zalo.me/${ADMIN_PHONE}`;
 
   return (
