@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { EditCustomerDebtDialog } from './EditCustomerDebtDialog';
 import { DebtPaymentDialog } from './DebtPaymentDialog';
 import { DebtAdditionDialog } from './DebtAdditionDialog';
+import { DebtPaymentEditDialog } from './DebtPaymentEditDialog';
 import {
   Select,
   SelectContent,
@@ -74,6 +75,7 @@ export function DebtDetailDialog({
   const [showAddition, setShowAddition] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
   const [onlyShowDebt, setOnlyShowDebt] = useState(true);
+  const [editingPayment, setEditingPayment] = useState<any>(null);
   const { data: allReceipts, isLoading: receiptsLoading } = useDebtDetail(entityType, entityId, mergedEntityIds);
   const { data: paymentHistory, isLoading: historyLoading } = useDebtPaymentHistory(entityType, entityId, mergedEntityIds);
 
@@ -469,9 +471,19 @@ export function DebtDetailDialog({
                                   <p className="text-xs text-muted-foreground">Người thu: {p.createdBy}</p>
                                 )}
                               </div>
-                              <span className="font-semibold shrink-0 text-green-600 dark:text-green-400">
-                                -{formatNumber(p.amount)}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold shrink-0 text-green-600 dark:text-green-400">
+                                  -{formatNumber(p.amount)}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: p.id, amount: p.amount, description: p.description, payment_type: 'payment', entity_type: entityType, entity_id: entityId }); }}
+                                  className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                  title="Sửa số tiền"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
                             </div>
                             <div className="text-xs text-muted-foreground mt-1 pt-1 border-t border-dashed">
                               Dư nợ tại thời điểm: <span className="font-semibold text-foreground">{formatNumber((item as any).storedBalance != null ? (item as any).storedBalance : (item as any).runningBalance)}</span>
@@ -516,10 +528,20 @@ export function DebtDetailDialog({
                                   </p>
                                 )}
                               </div>
-                              <span className={`font-semibold shrink-0 ${a.isFullyPaid ? 'text-green-600 dark:text-green-400' : 'text-orange-600'}`}>
-                                +{formatNumber(a.amount)}
-                                {a.isFullyPaid && <span className="text-xs ml-1">✓</span>}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className={`font-semibold shrink-0 ${a.isFullyPaid ? 'text-green-600 dark:text-green-400' : 'text-orange-600'}`}>
+                                  +{formatNumber(a.amount)}
+                                  {a.isFullyPaid && <span className="text-xs ml-1">✓</span>}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: a.id, amount: a.amount, description: a.description, payment_type: 'addition', entity_type: entityType, entity_id: entityId }); }}
+                                  className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                  title="Sửa số tiền"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
                             </div>
                             <div className="text-xs text-muted-foreground mt-1 pt-1 border-t border-dashed">
                               Dư nợ tại thời điểm: <span className="font-semibold text-foreground">{formatNumber((item as any).storedBalance != null ? (item as any).storedBalance : (item as any).runningBalance)}</span>
@@ -606,11 +628,21 @@ export function DebtDetailDialog({
                             )}
                           </div>
 
-                          <div className="text-right shrink-0">
-                            <p className={`font-semibold ${isAddition ? 'text-orange-600' : 'text-green-600'}`}>
-                              {isAddition ? '+' : '-'}{formatNumber(payment.amount)}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
+                          <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                            <div className="flex items-center gap-1.5">
+                              <p className={`font-semibold ${isAddition ? 'text-orange-600' : 'text-green-600'}`}>
+                                {isAddition ? '+' : '-'}{formatNumber(payment.amount)}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: payment.id, amount: payment.amount, description: payment.description, payment_type: payment.payment_type, entity_type: entityType, entity_id: entityId }); }}
+                                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                title="Sửa số tiền"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
                               Còn nợ: <span className="font-medium text-destructive">{formatNumber(payment.balance_after)}</span>
                             </p>
                           </div>
@@ -733,6 +765,14 @@ export function DebtDetailDialog({
         branchId={branchId ?? null}
         mergedEntityIds={mergedEntityIds}
         nested
+      />
+
+      <DebtPaymentEditDialog
+        open={!!editingPayment}
+        onOpenChange={(open) => !open && setEditingPayment(null)}
+        payment={editingPayment}
+        entityName={entityName}
+        branchId={branchId}
       />
 
       {/* Receipt Detail Popup */}
