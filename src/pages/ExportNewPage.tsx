@@ -81,6 +81,7 @@ interface CartItem extends ExportReceiptItem {
   categoryName?: string;
   branchName?: string;
   quantity: number;
+  unit: string;
   warranty?: string;
 }
 

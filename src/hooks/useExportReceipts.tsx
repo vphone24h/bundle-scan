@@ -22,6 +22,7 @@ export interface ExportReceiptItem {
   sale_price: number;
   note?: string | null;
   quantity?: number; // For non-IMEI products
+  unit?: string; // Đơn vị tính (cái, kg, lít...)
   warranty?: string | null; // Warranty info
   branch_id?: string | null; // Branch of product
 }
@@ -407,39 +408,24 @@ export function useCreateExportReceipt() {
 
       if (receiptError) throw receiptError;
 
-      // Insert items - expand quantity for non-IMEI products
-      const expandedItems: Array<{
-        receipt_id: string;
-        product_id: string | null;
-        product_name: string;
-        sku: string;
-        imei: string | null;
-        category_id: string | null;
-        sale_price: number;
-        note: string | null | undefined;
-        warranty: string | null | undefined;
-      }> = [];
-      
-      for (const item of items) {
-        const qty = item.quantity || 1;
-        for (let i = 0; i < qty; i++) {
-          expandedItems.push({
-            receipt_id: receipt.id,
-            product_id: item.product_id,
-            product_name: item.product_name,
-            sku: item.sku,
-            imei: item.imei,
-            category_id: item.category_id,
-            sale_price: item.sale_price,
-            note: item.note,
-            warranty: item.warranty,
-          });
-        }
-      }
+      // Insert items with unit and quantity
+      const itemsToInsert = items.map(item => ({
+        receipt_id: receipt.id,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        sku: item.sku,
+        imei: item.imei,
+        category_id: item.category_id,
+        sale_price: item.sale_price,
+        note: item.note,
+        warranty: item.warranty,
+        unit: item.unit || 'cái',
+        quantity: item.quantity || 1,
+      }));
 
       const { error: itemsError } = await supabase
         .from('export_receipt_items')
-        .insert(expandedItems);
+        .insert(itemsToInsert);
 
       if (itemsError) throw itemsError;
 
@@ -806,6 +792,8 @@ export function useCheckProductForSale() {
           status,
           category_id,
           branch_id,
+          unit,
+          quantity,
           categories(name),
           branches(name)
         `)
@@ -838,6 +826,8 @@ export function useSearchProductsByName() {
           status,
           category_id,
           branch_id,
+          unit,
+          quantity,
           categories(name),
           branches(name)
         `)
