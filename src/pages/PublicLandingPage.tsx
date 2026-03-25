@@ -272,9 +272,9 @@ export default function PublicLandingPage() {
             <div>
               <h3 className="font-semibold mb-4">Liên hệ</h3>
               <div className="space-y-3 text-sm text-muted-foreground">
-                <a href="tel:0396793883" className="flex items-center gap-2 hover:text-primary transition-colors">
+                <a href="tel:0355820185" className="flex items-center gap-2 hover:text-primary transition-colors">
                   <Phone className="h-4 w-4" />
-                  0396.793.883
+                  0355.820.185
                 </a>
                 <a href="mailto:vkho.vn@gmail.com" className="flex items-center gap-2 hover:text-primary transition-colors">
                   <Mail className="h-4 w-4" />
