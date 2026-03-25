@@ -222,6 +222,7 @@ export function useCreateImportReceipt() {
         import_price: number;
         sale_price?: number | null;
         quantity: number;
+        unit?: string | null;
         supplier_id?: string | null;
         note?: string | null;
         group_id?: string | null;
