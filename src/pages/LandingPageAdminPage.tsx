@@ -244,6 +244,7 @@ export default function LandingPageAdminPage() {
         onSkip={() => { completeTour(); setTourDismissed(true); }}
         tourKey="landing-page-admin-v3"
       />
+      <CustomDomainPopup isEnabled={!!landingSettings?.is_enabled} />
     </MainLayout>
   );
 }
