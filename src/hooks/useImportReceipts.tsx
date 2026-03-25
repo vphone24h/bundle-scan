@@ -427,6 +427,7 @@ export function useCreateImportReceipt() {
           import_price: p.import_price,
           sale_price: p.sale_price || null,
           quantity: 1,
+          unit: 'cái',
           total_import_cost: p.import_price,
           supplier_id: supplierId,
           import_receipt_id: receipt.id,
