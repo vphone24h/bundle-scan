@@ -9,7 +9,7 @@ import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
 import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Calculator, PlayCircle, Crown, MessageCircle, Eye, EyeOff } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { usePlatformUser } from '@/hooks/useTenant';
+import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { GettingStartedChecklist } from '@/components/dashboard/GettingStartedChecklist';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
@@ -146,6 +146,7 @@ const Index = () => {
   const isFirstLoad = statsLoading && !stats;
   const { data: permissions } = usePermissions();
   const { data: platformUser } = usePlatformUser();
+  const { data: currentTenant } = useCurrentTenant();
   const isPlatformAdmin = platformUser?.platform_role === 'platform_admin';
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
   const { data: recentProductsData } = useRecentProducts(5);
@@ -163,7 +164,8 @@ const Index = () => {
   const recentProducts = recentProductsData || [];
   const recentReceipts = recentReceiptsData || [];
 
-  const showDashTour = manualTourActive || (!dashTourLoading && !dashTourDone);
+  const businessTypeDialogOpen = !!currentTenant && !currentTenant.business_type && !isPlatformAdmin;
+  const showDashTour = !businessTypeDialogOpen && (manualTourActive || (!dashTourLoading && !dashTourDone));
 
   // Platform Admin: redirect to platform admin page
   if (isPlatformAdmin) {
