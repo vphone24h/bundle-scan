@@ -191,8 +191,8 @@ export function CrossPlatformBackupSection() {
     } catch (error) {
       console.error('Import error:', error);
       const rawMessage = (error as Error).message || 'Lỗi không xác định';
-      const message = /Failed to send a request to the Edge Function/i.test(rawMessage)
-        ? 'Import bị quá thời gian xử lý hoặc mất kết nối. Vui lòng thử lại (nếu file lớn, hãy chia nhỏ dữ liệu rồi import từng phần).'
+      const message = /(Failed to send a request to the Edge Function|Edge Function returned a non-2xx status code|CPU Time exceeded)/i.test(rawMessage)
+        ? 'Import bị quá thời gian xử lý trên máy chủ (file lớn). Vui lòng thử lại; nếu vẫn lỗi, hãy chia nhỏ dữ liệu và import theo từng phần.'
         : rawMessage;
       setImportResult({
         stats: {},
