@@ -68,6 +68,8 @@ export interface ExportReceiptItemDetail {
   imei: string | null;
   category_id: string | null;
   sale_price: number;
+  quantity: number;
+  unit: string;
   status: string;
   note: string | null;
   warranty: string | null;
@@ -250,6 +252,8 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
         imei: r.imei,
         category_id: r.category_id,
         sale_price: r.sale_price,
+        quantity: r.quantity ?? 1,
+        unit: r.unit || 'cái',
         status: r.status,
         note: r.note,
         warranty: r.warranty,
@@ -634,7 +638,7 @@ export function useCreateExportReceipt() {
           total_amount: totalAmount,
           paid_amount: paidAmount,
           debt_amount: debtAmount,
-          items_count: items.length,
+          items_count: items.reduce((sum, item) => sum + (item.quantity || 1), 0),
           points_earned: pointsToEarn,
           points_redeemed: pointsRedeemed,
         },

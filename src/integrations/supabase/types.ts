@@ -7489,6 +7489,7 @@ export type Database = {
           note: string
           product_id: string
           product_name: string
+          quantity: number
           receipt_branch_id: string
           receipt_code: string
           receipt_created_by: string
@@ -7499,6 +7500,8 @@ export type Database = {
           sale_price: number
           sku: string
           status: string
+          total_count: number
+          unit: string
           warranty: string
         }[]
       }
