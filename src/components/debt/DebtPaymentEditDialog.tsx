@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,9 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatNumber, parseFormattedNumber, formatInputNumber } from '@/lib/formatNumber';
 import { Loader2, ShieldAlert } from 'lucide-react';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
@@ -35,39 +34,30 @@ export function DebtPaymentEditDialog({
   entityName,
   branchId,
 }: DebtPaymentEditDialogProps) {
-  const { user, profile } = useAuth();
   const queryClient = useQueryClient();
-  const { isUnlocked } = useSecurityPasswordStatus();
-  const { unlock } = useSecurityUnlock();
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked, unlock } = useSecurityUnlock('debt-payment-edit');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
-
   const [newAmount, setNewAmount] = useState('');
   const [reason, setReason] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const formatWithSpaces = (val: string) => {
-    const num = val.replace(/\s/g, '');
-    if (!num) return '';
-    return Number(num).toLocaleString('en-US').replace(/,/g, ' ');
-  };
-
-  const handleOpen = () => {
-    if (payment) {
-      setNewAmount(String(payment.amount));
+  useEffect(() => {
+    if (open && payment) {
+      setNewAmount(formatInputNumber(String(payment.amount)));
       setReason('');
     }
-  };
+  }, [open, payment]);
 
   const handleSave = async () => {
-    if (!payment || !user) return;
+    if (!payment) return;
 
-    if (!isUnlocked) {
+    if (hasSecurityPassword && !unlocked) {
       setShowPasswordDialog(true);
       return;
     }
 
-    const raw = newAmount.replace(/\s/g, '');
-    const numAmount = Number(raw);
+    const numAmount = parseFormattedNumber(newAmount);
     if (!numAmount || numAmount <= 0) {
       toast.error('Số tiền không hợp lệ');
       return;
@@ -86,7 +76,9 @@ export function DebtPaymentEditDialog({
       const oldAmount = payment.amount;
       const diff = numAmount - oldAmount;
 
-      // Update the payment record
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Update the payment amount
       const { error } = await supabase
         .from('debt_payments')
         .update({ amount: numAmount })
@@ -94,8 +86,7 @@ export function DebtPaymentEditDialog({
 
       if (error) throw error;
 
-      // Recalculate balance_after for all subsequent payments
-      // Fetch all payments for this entity ordered by date
+      // Recalculate balance_after for this and subsequent payments
       const { data: allPayments } = await supabase
         .from('debt_payments')
         .select('id, payment_type, amount, created_at, balance_after')
@@ -105,23 +96,13 @@ export function DebtPaymentEditDialog({
 
       if (allPayments && allPayments.length > 0) {
         let foundEdited = false;
-        let balanceAdjustment = 0;
+        const balanceAdjustment = payment.payment_type === 'addition' ? diff : -diff;
 
         for (const p of allPayments) {
           if (p.id === payment.id) {
             foundEdited = true;
-            // This is the edited payment - adjust based on type
-            if (payment.payment_type === 'addition') {
-              balanceAdjustment = diff; // more addition = higher balance
-            } else {
-              balanceAdjustment = -diff; // more payment = lower balance
-            }
-            // Update this record's balance
-            const newBalance = (Number(p.balance_after) || 0) + balanceAdjustment;
-            await supabase.from('debt_payments').update({
-              balance_after: Math.max(0, newBalance),
-            }).eq('id', p.id);
-          } else if (foundEdited && p.balance_after != null) {
+          }
+          if (foundEdited && p.balance_after != null) {
             const newBalance = (Number(p.balance_after) || 0) + balanceAdjustment;
             await supabase.from('debt_payments').update({
               balance_after: Math.max(0, newBalance),
@@ -132,14 +113,14 @@ export function DebtPaymentEditDialog({
 
       // Audit log
       await supabase.from('audit_logs').insert([{
-        user_id: user.id,
+        user_id: user?.id,
         action_type: 'update',
         table_name: 'debt_payments',
         record_id: payment.id,
         branch_id: branchId,
         description: `Sửa số tiền ${payment.payment_type === 'addition' ? 'phiếu thêm nợ' : 'phiếu thu nợ'}: ${entityName} | ${formatNumber(oldAmount)}đ → ${formatNumber(numAmount)}đ | Lý do: ${reason.trim()}`,
         old_data: { amount: oldAmount },
-        new_data: { amount: numAmount, reason: reason.trim(), edited_by: profile?.display_name },
+        new_data: { amount: numAmount, reason: reason.trim() },
       }]);
 
       queryClient.invalidateQueries({ queryKey: ['debt'] });
@@ -148,7 +129,7 @@ export function DebtPaymentEditDialog({
       queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
       queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
 
-      toast.success(`Đã sửa số tiền: ${formatNumber(oldAmount)}đ → ${formatNumber(numAmount)}đ`);
+      toast.success(`Đã sửa: ${formatNumber(oldAmount)}đ → ${formatNumber(numAmount)}đ`);
       onOpenChange(false);
     } catch (err) {
       console.error('Edit payment error:', err);
@@ -165,9 +146,9 @@ export function DebtPaymentEditDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-sm" onOpenAutoFocus={handleOpen}>
+        <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-base">
               <ShieldAlert className="h-5 w-5 text-orange-500" />
               Sửa {typeLabel}
             </DialogTitle>
@@ -175,7 +156,7 @@ export function DebtPaymentEditDialog({
 
           <div className="space-y-4">
             <div>
-              <Label className="text-xs text-muted-foreground">Khách hàng</Label>
+              <Label className="text-xs text-muted-foreground">Đối tượng</Label>
               <p className="font-medium text-sm">{entityName}</p>
             </div>
 
@@ -185,18 +166,16 @@ export function DebtPaymentEditDialog({
             </div>
 
             <div>
-              <Label htmlFor="newAmount">Số tiền mới <span className="text-destructive">*</span></Label>
+              <Label htmlFor="editPaymentAmount">Số tiền mới <span className="text-destructive">*</span></Label>
               <div className="relative">
                 <Input
-                  id="newAmount"
+                  id="editPaymentAmount"
                   type="text"
                   inputMode="numeric"
-                  value={formatWithSpaces(newAmount)}
+                  value={newAmount}
                   onChange={(e) => {
-                    const raw = e.target.value.replace(/\s/g, '');
-                    if (raw === '' || /^\d+$/.test(raw)) {
-                      setNewAmount(raw);
-                    }
+                    const formatted = formatInputNumber(e.target.value);
+                    setNewAmount(formatted);
                   }}
                   className="pr-8"
                 />
@@ -205,9 +184,9 @@ export function DebtPaymentEditDialog({
             </div>
 
             <div>
-              <Label htmlFor="reason">Lý do chỉnh sửa <span className="text-destructive">*</span></Label>
+              <Label htmlFor="editPaymentReason">Lý do chỉnh sửa <span className="text-destructive">*</span></Label>
               <Textarea
-                id="reason"
+                id="editPaymentReason"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Nhập lý do sửa số tiền..."
@@ -217,7 +196,7 @@ export function DebtPaymentEditDialog({
 
             <Button onClick={handleSave} disabled={saving} className="w-full">
               {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {isUnlocked ? 'Xác nhận sửa' : 'Nhập mật khẩu bảo mật'}
+              {hasSecurityPassword && !unlocked ? 'Nhập mật khẩu bảo mật' : 'Xác nhận sửa'}
             </Button>
           </div>
         </DialogContent>
