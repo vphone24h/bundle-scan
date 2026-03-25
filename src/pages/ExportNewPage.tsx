@@ -1294,13 +1294,23 @@ export default function ExportNewPage() {
                           {item.imei ? (
                             <span className="text-sm font-medium">1</span>
                           ) : (
-                            <Input
-                              type="number"
-                              min={1}
-                              value={item.quantity}
-                              onChange={(e) => handleUpdateCartQuantity(item.tempId, Math.max(1, parseInt(e.target.value) || 1))}
-                              className="w-16 text-center h-8"
-                            />
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                min={['kg', 'lít', 'mét'].includes(item.unit) ? 0.001 : 1}
+                                step={['kg', 'lít', 'mét'].includes(item.unit) ? 0.1 : 1}
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value);
+                                  const isDecimal = ['kg', 'lít', 'mét'].includes(item.unit);
+                                  handleUpdateCartQuantity(item.tempId, isDecimal ? Math.max(0.001, val || 0.001) : Math.max(1, Math.round(val) || 1));
+                                }}
+                                className="w-16 text-center h-8"
+                              />
+                              {item.unit !== 'cái' && (
+                                <span className="text-xs text-muted-foreground">{item.unit}</span>
+                              )}
+                            </div>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
