@@ -1287,7 +1287,7 @@ export default function ImportHistoryPage() {
                             <td className="p-3 text-muted-foreground">
                               {item.products?.categories?.name || '-'}
                             </td>
-                            <td className="p-3 text-center">{item.quantity}</td>
+                            <td className="p-3 text-center">{item.quantity}{item.unit && item.unit !== 'cái' ? ` ${item.unit}` : ''}</td>
                             <td className="p-3 text-right font-medium">
                               {formatCurrency(Number(item.import_price))}
                             </td>
