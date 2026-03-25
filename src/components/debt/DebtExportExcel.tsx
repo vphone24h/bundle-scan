@@ -107,28 +107,53 @@ export async function exportDebtToExcel(
     const entityLabel = entityType === 'customer' ? 'Khách hàng' : 'Nhà cung cấp';
     const safeName = debt.entity_name.replace(/[^a-zA-Z0-9\u00C0-\u024F\u1E00-\u1EFF\s]/g, '').trim().substring(0, 30);
 
-    exportToExcel({
-      filename: `CongNo_${safeName}_${new Date().toISOString().slice(0, 10)}`,
-      sheetName: 'Công nợ',
-      columns: [
-        { header: 'Ngày', key: 'date', width: 18, format: (v) => formatDateForExcel(v, 'dd/MM/yyyy HH:mm') },
-        { header: 'Loại', key: 'type', width: 12 },
-        { header: 'Mã phiếu', key: 'code', width: 16 },
-        { header: 'Diễn giải', key: 'description', width: 30 },
-        { header: 'Phát sinh nợ', key: 'debtAmount', width: 18, isNumeric: true, format: (v) => v || '' },
-        { header: entityType === 'customer' ? 'Đã thu' : 'Đã trả', key: 'paymentAmount', width: 18, isNumeric: true, format: (v) => v || '' },
-        { header: 'Dư nợ', key: 'balanceAfter', width: 18, isNumeric: true },
-      ],
-      data: [
-        // Header info row
-        { date: '', type: '', code: `${entityLabel}: ${debt.entity_name}`, description: debt.entity_phone || '', debtAmount: '', paymentAmount: '', balanceAfter: '' },
-        { date: '', type: '', code: `Chi nhánh: ${debt.branch_name || ''}`, description: debt.entity_code || '', debtAmount: '', paymentAmount: '', balanceAfter: '' },
-        { date: '', type: '', code: '', description: '', debtAmount: '', paymentAmount: '', balanceAfter: '' },
-        ...timeline,
-        // Summary row
-        { date: '', type: '', code: '', description: 'TỔNG CỘNG', debtAmount: debt.total_amount, paymentAmount: debt.paid_amount, balanceAfter: debt.remaining_amount },
-      ],
-    });
+    const paymentHeader = entityType === 'customer' ? 'Đã thu' : 'Đã trả';
+    const colDefs = [
+      { header: 'Ngày', key: 'c0', width: 18 },
+      { header: 'Loại', key: 'c1', width: 12 },
+      { header: 'Mã phiếu', key: 'c2', width: 16 },
+      { header: 'Diễn giải', key: 'c3', width: 30 },
+      { header: 'Phát sinh nợ', key: 'c4', width: 18, isNumeric: true },
+      { header: paymentHeader, key: 'c5', width: 18, isNumeric: true },
+      { header: 'Dư nợ', key: 'c6', width: 18, isNumeric: true },
+    ];
+
+    const makeRow = (c0: any = '', c1: any = '', c2: any = '', c3: any = '', c4: any = '', c5: any = '', c6: any = '') =>
+      ({ c0, c1, c2, c3, c4, c5, c6 });
+
+    const dataRows = [
+      // Info rows first (before header)
+      makeRow(`${entityLabel}: ${debt.entity_name}`, '', debt.entity_phone || ''),
+      makeRow(`Chi nhánh: ${debt.branch_name || ''}`, '', debt.entity_code || ''),
+      makeRow(), // empty row
+      // Column headers row (will appear as data row since real headers are hidden)
+      makeRow('Ngày', 'Loại', 'Mã phiếu', 'Diễn giải', 'Phát sinh nợ', paymentHeader, 'Dư nợ'),
+      // Timeline
+      ...timeline.map(t => makeRow(
+        formatDateForExcel(t.date, 'dd/MM/yyyy HH:mm'),
+        t.type,
+        t.code,
+        t.description,
+        t.debtAmount || '',
+        t.paymentAmount || '',
+        t.balanceAfter,
+      )),
+      // Summary
+      makeRow('', '', '', 'TỔNG CỘNG', debt.total_amount, debt.paid_amount, debt.remaining_amount),
+    ];
+
+    // Use multi-sheet to skip auto-header: pass columns without header text
+    const wb = (await import('xlsx'));
+    const wsData = dataRows.map(row => colDefs.map(col => {
+      const v = (row as any)[col.key];
+      if (col.isNumeric && typeof v === 'number') return v;
+      return v ?? '';
+    }));
+    const ws = wb.utils.aoa_to_sheet(wsData);
+    ws['!cols'] = colDefs.map(col => ({ wch: col.width || 15 }));
+    const workbook = wb.utils.book_new();
+    wb.utils.book_append_sheet(workbook, ws, 'Công nợ');
+    wb.writeFile(workbook, `CongNo_${safeName}_${new Date().toISOString().slice(0, 10)}.xlsx`);
 
     toast.success('Đã xuất file Excel');
   } catch (error) {
