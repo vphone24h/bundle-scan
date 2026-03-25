@@ -1502,7 +1502,7 @@ export default function ExportNewPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>{t('tours.exportNew.productCount')}:</span>
-                  <span className="font-medium">{cart.length}</span>
+                  <span className="font-medium">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>{t('tours.exportNew.subtotal')}:</span>
