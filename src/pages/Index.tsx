@@ -146,6 +146,7 @@ const Index = () => {
   const isFirstLoad = statsLoading && !stats;
   const { data: permissions } = usePermissions();
   const { data: platformUser } = usePlatformUser();
+  const { data: currentTenant } = useCurrentTenant();
   const isPlatformAdmin = platformUser?.platform_role === 'platform_admin';
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
   const { data: recentProductsData } = useRecentProducts(5);
