@@ -190,7 +190,7 @@ export function useCreateStockTransfer() {
       // Fetch products with supplier info
       const { data: products, error: fetchError } = await supabase
         .from('products')
-        .select('id, name, sku, imei, branch_id, status, quantity, import_price, supplier_id, note, category_id, total_import_cost, sale_price')
+        .select('id, name, sku, imei, branch_id, status, quantity, import_price, supplier_id, note, category_id, total_import_cost, sale_price, unit')
         .in('id', productIds)
         .eq('tenant_id', tenantId);
 
@@ -214,8 +214,9 @@ export function useCreateStockTransfer() {
       for (const p of products) {
         if (!p.imei && transferQuantities[p.id] !== undefined) {
           const tQty = transferQuantities[p.id];
-          if (tQty < 1 || tQty > p.quantity) {
-            throw new Error(`Số lượng chuyển "${p.name}" không hợp lệ (1-${p.quantity})`);
+          const minQty = ['kg', 'lít', 'mét'].includes(p.unit || 'cái') ? 0.001 : 1;
+          if (tQty < minQty || tQty > p.quantity) {
+            throw new Error(`Số lượng chuyển "${p.name}" không hợp lệ (${minQty}-${p.quantity})`);
           }
         }
       }
