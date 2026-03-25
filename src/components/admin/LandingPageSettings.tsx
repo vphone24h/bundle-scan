@@ -258,22 +258,23 @@ function CustomDomainCTA() {
 
   return (
     <>
-      <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+      <div className="rounded-xl border-2 border-primary/40 bg-gradient-to-r from-primary/10 to-primary/5 p-4 shadow-sm">
         <div className="flex items-start gap-3">
-          <Globe className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+          <div className="rounded-full bg-primary/20 p-2 shrink-0">
+            <Globe className="h-5 w-5 text-primary" />
+          </div>
           <div className="flex-1">
-            <p className="text-sm font-medium">
-              Bạn muốn sở hữu website với tên miền riêng của doanh nghiệp?
+            <p className="text-sm font-semibold text-primary">
+              🌐 Sở hữu tên miền riêng cho doanh nghiệp!
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Liên hệ để được hỗ trợ gắn tên miền riêng (VD: cuahang.vn) cho website bán hàng
+              Nâng cấp website với tên miền riêng (VD: cuahang.vn) — Chuyên nghiệp & dễ nhớ hơn
             </p>
           </div>
           <Button
             type="button"
             size="sm"
-            variant="outline"
-            className="shrink-0 gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
+            className="shrink-0 gap-1.5"
             onClick={() => setOpen(true)}
           >
             Xem chi tiết
@@ -1248,6 +1249,11 @@ export function LandingPageSettings() {
 
           <Separator className="my-3" />
 
+          {/* B3: CTA tên miền riêng - ẩn khi đã có domain riêng, nổi bật */}
+          {!customDomainUrl && <CustomDomainCTA />}
+
+          <Separator className="my-3" />
+
           {/* B2: Chọn mẫu website */}
           <div>
             <Label className="flex items-center gap-2 text-sm font-medium mb-2">
@@ -1283,11 +1289,6 @@ export function LandingPageSettings() {
               }}
             />
           </div>
-
-          <Separator className="my-3" />
-
-          {/* B3: CTA tên miền riêng - ẩn khi đã có domain riêng */}
-          {!customDomainUrl && <CustomDomainCTA />}
 
           {/* Email tự động đơn hàng */}
           <OrderEmailConfigSection formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} onSave={() => {
