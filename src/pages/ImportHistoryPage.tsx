@@ -983,7 +983,7 @@ export default function ImportHistoryPage() {
                       <td className="text-muted-foreground">{product.sku}</td>
                       <td className="font-mono text-sm">{product.imei || '-'}</td>
                       <td>{product.categories?.name || '-'}</td>
-                      <td className="text-center font-medium">{product.quantity}</td>
+                      <td className="text-center font-medium">{product.quantity}{product.unit && product.unit !== 'cái' ? ` ${product.unit}` : ''}</td>
                       <td className="text-right font-medium">
                         {formatCurrency(Number(product.import_price))}
                       </td>
@@ -1251,7 +1251,7 @@ export default function ImportHistoryPage() {
                         </Badge>
                       </div>
                       <div className="flex justify-between items-center text-sm pt-2 border-t">
-                        <span className="text-muted-foreground">SL: {item.quantity}</span>
+                        <span className="text-muted-foreground">SL: {item.quantity}{item.unit && item.unit !== 'cái' ? ` ${item.unit}` : ''}</span>
                         <span className="font-medium">{formatCurrency(Number(item.import_price) * item.quantity)}</span>
                       </div>
                     </div>
