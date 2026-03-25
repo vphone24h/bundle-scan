@@ -16,6 +16,8 @@ import { useTranslation } from 'react-i18next';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useLandingProductCategories, useLandingProducts } from '@/hooks/useLandingProducts';
 import { useLandingArticleCategories, useLandingArticles } from '@/hooks/useLandingArticles';
+import { useTenantLandingSettings } from '@/hooks/useTenantLanding';
+import { CustomDomainPopup } from '@/components/admin/CustomDomainPopup';
 
 // Lazy load tab components with eager preloading to avoid delay on tab switch
 const importSettings = () => import('@/components/admin/LandingPageSettings').then(m => ({ default: m.LandingPageSettings }));
