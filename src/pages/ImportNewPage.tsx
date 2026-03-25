@@ -462,7 +462,11 @@ export default function ImportNewPage() {
     const category = categories?.find((c) => c.id === form.categoryId);
     
     // For IMEI products, quantity is always 1
-    const quantity = form.imei ? 1 : Math.max(1, parseInt(form.quantity) || 1);
+    // For decimal units (kg, lít, mét), allow decimal values
+    const isDecimalUnit = ['kg', 'lít', 'mét'].includes(form.unit);
+    const quantity = form.imei ? 1 : isDecimalUnit
+      ? Math.max(0.001, parseFloat(form.quantity) || 1)
+      : Math.max(1, parseInt(form.quantity) || 1);
 
     const importPrice = Number(form.importPrice);
     // Auto-calculate sale price if not manually set
