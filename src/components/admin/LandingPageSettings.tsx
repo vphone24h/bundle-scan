@@ -252,6 +252,10 @@ function CustomDomainCTA() {
   const { data: tenant } = useCurrentTenant();
   const storeUrl = tenant?.subdomain ? `https://${tenant.subdomain}.vkho.vn` : null;
 
+  const ADMIN_PHONE = '0333820185';
+  const ADMIN_PHONE_DISPLAY = '0333 820 185';
+  const ZALO_URL = `https://zalo.me/${ADMIN_PHONE}`;
+
   return (
     <>
       <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
@@ -292,20 +296,41 @@ function CustomDomainCTA() {
               dangerouslySetInnerHTML={{ __html: article }}
             />
           ) : (
-            <p className="text-sm text-muted-foreground py-4">
-              Chưa có nội dung bài viết. Vui lòng liên hệ quản trị viên nền tảng.
-            </p>
+            <div className="space-y-3 text-sm">
+              <p>Sở hữu tên miền riêng cho website của bạn</p>
+              <p>Ví dụ: cửa hàng của bạn là Apple Táo</p>
+              <p>👉 Bạn có thể sử dụng tên miền riêng như: appletao.com</p>
+              <p>Việc dùng tên miền riêng giúp:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Khách hàng truy cập trực tiếp website của bạn</li>
+                <li>Không phụ thuộc vào tên miền vkho</li>
+                <li>Tăng độ chuyên nghiệp &amp; nhận diện thương hiệu</li>
+              </ul>
+              <p>📌 Tên miền do bạn tự chọn, theo đúng tên thương hiệu của mình.</p>
+            </div>
           )}
-          <div className="rounded-lg border bg-muted/50 p-3 mt-2">
-            <p className="text-xs text-muted-foreground mb-1">🌐 Ví dụ website bán hàng:</p>
-            <a
-              href="https://page.vphone.vn"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              page.vphone.vn
-            </a>
+
+          {/* Contact section - always show */}
+          <div className="rounded-lg border bg-muted/50 p-4 mt-3 space-y-3">
+            <p className="text-sm font-medium">👉 Để kích hoạt tính năng, vui lòng liên hệ Admin:</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <a
+                href={`tel:${ADMIN_PHONE}`}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-background hover:bg-accent transition-colors text-sm font-medium"
+              >
+                <Phone className="h-4 w-4" />
+                {ADMIN_PHONE_DISPLAY}
+              </a>
+              <a
+                href={ZALO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0068FF] hover:bg-[#0055DD] text-white transition-colors text-sm font-medium"
+              >
+                <MessageCircle className="h-4 w-4" />
+                Nhắn Zalo
+              </a>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
