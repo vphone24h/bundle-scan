@@ -252,6 +252,10 @@ function CustomDomainCTA() {
   const { data: tenant } = useCurrentTenant();
   const storeUrl = tenant?.subdomain ? `https://${tenant.subdomain}.vkho.vn` : null;
 
+  const ADMIN_PHONE = '0333820185';
+  const ADMIN_PHONE_DISPLAY = '0333 820 185';
+  const ZALO_URL = `https://zalo.me/${ADMIN_PHONE}`;
+
   return (
     <>
       <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
@@ -292,20 +296,41 @@ function CustomDomainCTA() {
               dangerouslySetInnerHTML={{ __html: article }}
             />
           ) : (
-            <p className="text-sm text-muted-foreground py-4">
-              Chưa có nội dung bài viết. Vui lòng liên hệ quản trị viên nền tảng.
-            </p>
+            <div className="space-y-3 text-sm">
+              <p>Sở hữu tên miền riêng cho website của bạn</p>
+              <p>Ví dụ: cửa hàng của bạn là Apple Táo</p>
+              <p>👉 Bạn có thể sử dụng tên miền riêng như: appletao.com</p>
+              <p>Việc dùng tên miền riêng giúp:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Khách hàng truy cập trực tiếp website của bạn</li>
+                <li>Không phụ thuộc vào tên miền vkho</li>
+                <li>Tăng độ chuyên nghiệp &amp; nhận diện thương hiệu</li>
+              </ul>
+              <p>📌 Tên miền do bạn tự chọn, theo đúng tên thương hiệu của mình.</p>
+            </div>
           )}
-          <div className="rounded-lg border bg-muted/50 p-3 mt-2">
-            <p className="text-xs text-muted-foreground mb-1">🌐 Ví dụ website bán hàng:</p>
-            <a
-              href="https://page.vphone.vn"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              page.vphone.vn
-            </a>
+
+          {/* Contact section - always show */}
+          <div className="rounded-lg border bg-muted/50 p-4 mt-3 space-y-3">
+            <p className="text-sm font-medium">👉 Để kích hoạt tính năng, vui lòng liên hệ Admin:</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <a
+                href={`tel:${ADMIN_PHONE}`}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-background hover:bg-accent transition-colors text-sm font-medium"
+              >
+                <Phone className="h-4 w-4" />
+                {ADMIN_PHONE_DISPLAY}
+              </a>
+              <a
+                href={ZALO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0068FF] hover:bg-[#0055DD] text-white transition-colors text-sm font-medium"
+              >
+                <MessageCircle className="h-4 w-4" />
+                Nhắn Zalo
+              </a>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -1160,89 +1185,7 @@ export function LandingPageSettings() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Link và QR Code */}
-          {fullLandingUrl && (
-            <div className="rounded-lg border bg-muted/30 p-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                {/* Link section */}
-                <div className="flex-1 space-y-2">
-                  <Label className="flex items-center gap-2 text-sm font-medium">
-                    <Share2 className="h-4 w-4" />
-                    {customDomainUrl ? 'Website riêng' : 'Link Website bán hàng'}
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={fullLandingUrl}
-                      readOnly
-                      className="flex-1 bg-background text-sm"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={handleCopyLink}
-                      className="shrink-0"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  {customDomainUrl ? (
-                    <p className="text-xs text-emerald-600 font-medium">
-                      ✓ Tên miền riêng đã kích hoạt
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Chia sẻ link này cho khách hàng để tra cứu bảo hành
-                    </p>
-                  )}
-
-                  {/* Show default link below if custom domain active */}
-                  {customDomainUrl && defaultLandingUrl && (
-                    <div className="mt-2 pt-2 border-t">
-                      <Label className="text-xs text-muted-foreground">Link mặc định</Label>
-                      <div className="flex gap-2 mt-1">
-                        <Input
-                          value={defaultLandingUrl}
-                          readOnly
-                          className="flex-1 bg-background text-xs h-8"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 shrink-0"
-                          onClick={handleCopyDefaultLink}
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                {/* QR Code section */}
-                <div className="flex flex-col items-center gap-2">
-                  <Label className="flex items-center gap-2 text-sm font-medium">
-                    <QrCode className="h-4 w-4" />
-                    Mã QR
-                  </Label>
-                  {qrCodeUrl && (
-                    <div className="rounded-lg border bg-white p-2">
-                      <img 
-                        src={qrCodeUrl} 
-                        alt="QR Code" 
-                        className="h-24 w-24 sm:h-28 sm:w-28"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* CTA tên miền riêng - chỉ hiện khi chưa có domain riêng */}
-          {fullLandingUrl && !customDomainUrl && <CustomDomainCTA />}
-          
+          {/* B1: Bật Website bán hàng */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Bật Website bán hàng</Label>
@@ -1256,7 +1199,95 @@ export function LandingPageSettings() {
             />
           </div>
 
+          {/* Link và QR Code */}
+          {fullLandingUrl && (
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 space-y-2">
+                  <Label className="flex items-center gap-2 text-sm font-medium">
+                    <Share2 className="h-4 w-4" />
+                    {customDomainUrl ? 'Website riêng' : 'Link Website bán hàng'}
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input value={fullLandingUrl} readOnly className="flex-1 bg-background text-sm" />
+                    <Button type="button" variant="outline" size="icon" onClick={handleCopyLink} className="shrink-0">
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {customDomainUrl ? (
+                    <p className="text-xs text-emerald-600 font-medium">✓ Tên miền riêng đã kích hoạt</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Chia sẻ link này cho khách hàng để tra cứu bảo hành</p>
+                  )}
+                  {customDomainUrl && defaultLandingUrl && (
+                    <div className="mt-2 pt-2 border-t">
+                      <Label className="text-xs text-muted-foreground">Link mặc định</Label>
+                      <div className="flex gap-2 mt-1">
+                        <Input value={defaultLandingUrl} readOnly className="flex-1 bg-background text-xs h-8" />
+                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={handleCopyDefaultLink}>
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <Label className="flex items-center gap-2 text-sm font-medium">
+                    <QrCode className="h-4 w-4" />
+                    Mã QR
+                  </Label>
+                  {qrCodeUrl && (
+                    <div className="rounded-lg border bg-white p-2">
+                      <img src={qrCodeUrl} alt="QR Code" className="h-24 w-24 sm:h-28 sm:w-28" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <Separator className="my-3" />
+
+          {/* B2: Chọn mẫu website */}
+          <div>
+            <Label className="flex items-center gap-2 text-sm font-medium mb-2">
+              <Layout className="h-4 w-4" />
+              Chọn mẫu Website
+            </Label>
+            <p className="text-xs text-muted-foreground mb-3">
+              Chọn giao diện phù hợp với ngành nghề kinh doanh của bạn
+            </p>
+            <TemplateSelector
+              selectedTemplate={(formData as any).website_template || 'phone_store'}
+              onSelect={(id) => {
+                const fullNav = getFullNavItems(id);
+                const updatedData = { ...formData, website_template: id, custom_nav_items: fullNav };
+                setFormData(updatedData as any);
+                setHasChanges(true);
+                if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+                updateSettings.mutateAsync(updatedData).then(() => {
+                  setHasChanges(false);
+                  toast({ title: '✓ Đã lưu mẫu website' });
+                }).catch(() => {
+                  toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
+                });
+              }}
+              editableSettings={{
+                custom_trust_badges: (formData as any).custom_trust_badges || null,
+              }}
+              onSettingsChange={(editSettings) => {
+                if (editSettings.custom_trust_badges !== undefined) {
+                  setFormData(prev => ({ ...prev, custom_trust_badges: editSettings.custom_trust_badges as any }));
+                  setHasChanges(true);
+                }
+              }}
+            />
+          </div>
+
+          <Separator className="my-3" />
+
+          {/* B3: CTA tên miền riêng - ẩn khi đã có domain riêng */}
+          {!customDomainUrl && <CustomDomainCTA />}
 
           {/* Email tự động đơn hàng */}
           <OrderEmailConfigSection formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} onSave={() => {
@@ -1267,59 +1298,6 @@ export function LandingPageSettings() {
               toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
             });
           }} />
-
-          {/* Tạm ẩn Zalo OA - đang nghiên cứu thêm */}
-          {/* <Separator className="my-3" />
-
-          <ZaloOASetupWizard formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} onSave={() => {
-            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-            updateSettings.mutateAsync(formData).then(() => {
-              setHasChanges(false);
-            }).catch(() => {
-              toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
-            });
-          }} /> */}
-        </CardContent>
-      </Card>
-
-      {/* Chọn mẫu website */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Layout className="h-4 w-4" />
-            Chọn mẫu Website
-          </CardTitle>
-          <CardDescription>
-            Chọn giao diện phù hợp với ngành nghề kinh doanh của bạn
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TemplateSelector
-            selectedTemplate={(formData as any).website_template || 'phone_store'}
-            onSelect={(id) => {
-              const fullNav = getFullNavItems(id);
-              const updatedData = { ...formData, website_template: id, custom_nav_items: fullNav };
-              setFormData(updatedData as any);
-              setHasChanges(true);
-              // Save immediately when template changes (don't wait for auto-save)
-              if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-              updateSettings.mutateAsync(updatedData).then(() => {
-                setHasChanges(false);
-                toast({ title: '✓ Đã lưu mẫu website' });
-              }).catch(() => {
-                toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
-              });
-            }}
-            editableSettings={{
-              custom_trust_badges: (formData as any).custom_trust_badges || null,
-            }}
-            onSettingsChange={(editSettings) => {
-              if (editSettings.custom_trust_badges !== undefined) {
-                setFormData(prev => ({ ...prev, custom_trust_badges: editSettings.custom_trust_badges as any }));
-                setHasChanges(true);
-              }
-            }}
-          />
         </CardContent>
       </Card>
 
