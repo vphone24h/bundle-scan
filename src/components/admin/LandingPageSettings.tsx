@@ -1300,6 +1300,7 @@ export function LandingPageSettings() {
               toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
             });
           }} />
+          </>)}
         </CardContent>
       </Card>
 
