@@ -5,7 +5,7 @@ import { Globe, ExternalLink } from 'lucide-react';
 import { usePopupPriority } from '@/hooks/usePopupPriority';
 import { useCustomDomains } from '@/hooks/useCustomDomains';
 import { useCurrentTenant } from '@/hooks/useTenant';
-import { useCustomDomainArticlePublic } from '@/hooks/useAppConfig';
+import { useCustomDomainArticlePublic, useAppConfig } from '@/hooks/useAppConfig';
 import { sanitizeCustomDomainArticle } from '@/lib/customDomainArticle';
 
 interface Props {
