@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { EditCustomerDebtDialog } from './EditCustomerDebtDialog';
 import { DebtPaymentDialog } from './DebtPaymentDialog';
 import { DebtAdditionDialog } from './DebtAdditionDialog';
+import { DebtPaymentEditDialog } from './DebtPaymentEditDialog';
 import {
   Select,
   SelectContent,
