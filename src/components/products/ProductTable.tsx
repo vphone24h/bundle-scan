@@ -458,6 +458,7 @@ export function ProductTable({
         productName={adjustDialog.productName}
         sku={adjustDialog.sku}
         currentQuantity={adjustDialog.quantity}
+        unit={adjustDialog.unit}
       />
 
       <DeleteProductDialog
