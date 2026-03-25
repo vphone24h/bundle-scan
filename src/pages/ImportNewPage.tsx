@@ -490,6 +490,7 @@ export default function ImportNewPage() {
       importPrice,
       salePrice,
       quantity,
+      unit: form.imei ? 'cái' : form.unit,
       supplierId: '', // Will use receipt-level supplier
       supplierName: '',
       note: form.note || undefined,
