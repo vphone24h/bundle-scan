@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useCustomDomainArticlePublic } from '@/hooks/useAppConfig';
 import { useNavigate } from 'react-router-dom';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings, TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
 import { useLandingProductCategories } from '@/hooks/useLandingProducts';
@@ -246,10 +247,11 @@ function OrderEmailConfigSection({ formData, handleChange, tenantId, onSave }: {
 
 // ZaloOAConfigSection moved to ZaloOASetupWizard.tsx
 
-function CustomDomainCTA({ article }: { article?: string | null }) {
+function CustomDomainCTA() {
   const [open, setOpen] = useState(false);
   const { data: tenant } = useCurrentTenant();
   const storeUrl = tenant?.subdomain ? `https://${tenant.subdomain}.vkho.vn` : null;
+  const { data: article } = useCustomDomainArticlePublic();
 
   const ADMIN_PHONE = '0355820185';
   const ADMIN_PHONE_DISPLAY = '0355 820 185';
@@ -1252,7 +1254,7 @@ export function LandingPageSettings() {
           <Separator className="my-3" />
 
           {/* B3: CTA tên miền riêng - ẩn khi đã có domain riêng, nổi bật */}
-          {!customDomainUrl && <CustomDomainCTA article={(formData as any).custom_domain_article} />}
+          {!customDomainUrl && <CustomDomainCTA />}
 
           <div className="space-y-2">
             <Label className="flex items-center gap-2 text-sm font-medium">
