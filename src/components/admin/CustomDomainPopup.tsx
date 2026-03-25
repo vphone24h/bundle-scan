@@ -5,10 +5,8 @@ import { Globe, ExternalLink } from 'lucide-react';
 import { usePopupPriority } from '@/hooks/usePopupPriority';
 import { useCustomDomains } from '@/hooks/useCustomDomains';
 import { useCurrentTenant } from '@/hooks/useTenant';
-import { useCustomDomainArticlePublic } from '@/hooks/useAppConfig';
-
-const DISMISS_KEY = 'domain_popup_dismissed';
-const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24h
+import { useTenantLandingSettings } from '@/hooks/useTenantLanding';
+import { sanitizeCustomDomainArticle } from '@/lib/customDomainArticle';
 
 interface Props {
   isEnabled: boolean;
@@ -20,8 +18,10 @@ export function CustomDomainPopup({ isEnabled }: Props) {
   const { activeLayer, claim, release } = usePopupPriority();
   const { data: customDomains } = useCustomDomains();
   const { data: tenant } = useCurrentTenant();
-  const { data: article } = useCustomDomainArticlePublic();
+  const { data: landingSettings } = useTenantLandingSettings();
 
+  const article = landingSettings?.custom_domain_article || null;
+  const isDomainDataReady = customDomains !== undefined;
   const verifiedDomain = customDomains?.find(d => d.is_verified && d.tenant_id === tenant?.id);
   const hasCustomDomain = !!verifiedDomain;
 
@@ -30,11 +30,9 @@ export function CustomDomainPopup({ isEnabled }: Props) {
   const ZALO_URL = `https://zalo.me/${ADMIN_PHONE}`;
 
   const shouldShow = useCallback(() => {
-    if (!isEnabled || hasCustomDomain) return false;
-    const dismissed = localStorage.getItem(DISMISS_KEY);
-    if (dismissed && Date.now() - Number(dismissed) < COOLDOWN_MS) return false;
+    if (!isEnabled || !tenant?.id || !isDomainDataReady || hasCustomDomain) return false;
     return true;
-  }, [isEnabled, hasCustomDomain]);
+  }, [isEnabled, tenant?.id, isDomainDataReady, hasCustomDomain]);
 
   useEffect(() => {
     if (!shouldShow()) return;
@@ -59,14 +57,12 @@ export function CustomDomainPopup({ isEnabled }: Props) {
 
   const handleClose = () => {
     setOpen(false);
-    localStorage.setItem(DISMISS_KEY, String(Date.now()));
     release('domain');
   };
 
   const handleViewDetail = () => {
     setOpen(false);
     release('domain');
-    localStorage.setItem(DISMISS_KEY, String(Date.now()));
     setDetailOpen(true);
   };
 
@@ -110,7 +106,7 @@ export function CustomDomainPopup({ isEnabled }: Props) {
           {article ? (
             <div
               className="prose prose-sm max-w-none [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_a]:text-primary [&_a]:underline"
-              dangerouslySetInnerHTML={{ __html: article.replace(/<p[^>]*>.*?📞[^<]*0396[^<]*<\/p>/gs, '') }}
+              dangerouslySetInnerHTML={{ __html: sanitizeCustomDomainArticle(article) }}
             />
           ) : (
             <div className="space-y-3 text-sm">
