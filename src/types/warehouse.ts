@@ -37,6 +37,11 @@ export interface Product {
   quantity?: number; // For non-IMEI products
 }
 
+// Units that allow decimal quantities
+export const DECIMAL_UNITS = ['kg', 'lít', 'mét'];
+export const PRODUCT_UNITS = ['cái', 'kg', 'lít', 'mét', 'hộp', 'thùng'] as const;
+export type ProductUnit = typeof PRODUCT_UNITS[number];
+
 export interface ImportReceiptItem {
   id: string;
   productName: string;
@@ -47,6 +52,7 @@ export interface ImportReceiptItem {
   importPrice: number;
   salePrice?: number; // Giá bán gợi ý (không bắt buộc)
   quantity: number; // Always 1 for IMEI products, can be >1 for non-IMEI
+  unit?: string; // Đơn vị tính (cái, kg, lít...)
   supplierId: string;
   supplierName?: string;
   note?: string;
