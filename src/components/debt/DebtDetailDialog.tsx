@@ -767,6 +767,14 @@ export function DebtDetailDialog({
         nested
       />
 
+      <DebtPaymentEditDialog
+        open={!!editingPayment}
+        onOpenChange={(open) => !open && setEditingPayment(null)}
+        payment={editingPayment}
+        entityName={entityName}
+        branchId={branchId}
+      />
+
       {/* Receipt Detail Popup */}
       {isMobile ? (
         <Drawer open={!!selectedReceipt} onOpenChange={(open) => !open && setSelectedReceipt(null)}>
