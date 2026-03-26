@@ -7653,6 +7653,10 @@ export type Database = {
           total_sold: number
         }[]
       }
+      get_total_warehouse_value: {
+        Args: { p_branch_id?: string; p_tenant_id: string }
+        Returns: Json
+      }
       get_user_accessible_branch_ids: {
         Args: { _user_id: string }
         Returns: string[]
