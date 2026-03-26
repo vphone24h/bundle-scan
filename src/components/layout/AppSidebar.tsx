@@ -120,7 +120,7 @@ const allNavItems: NavItem[] = [
   { title: 'Khách hàng & CRM', titleKey: 'sidebar.customers', href: '/customers', icon: HeartHandshake, permission: 'canViewProducts' },
   { title: 'Công nợ', titleKey: 'sidebar.debt', href: '/debt', icon: Receipt, permission: 'canViewCashBook' },
   { title: 'Báo cáo', titleKey: 'sidebar.reports', href: '/reports', icon: BarChart3, permission: 'canViewReports' },
-  { title: 'Giá trị toàn kho', titleKey: 'sidebar.warehouseValue', href: '/warehouse-value', icon: TrendingUp, permission: 'canViewReports' },
+  
   { title: 'Sổ quỹ', titleKey: 'sidebar.cashBook', href: '/cash-book', icon: Wallet, permission: 'canViewCashBook' },
   { title: 'Quản lý chi nhánh', titleKey: 'sidebar.branches', href: '/branches', icon: Building2, permission: 'canManageBranches' },
   { title: 'Quản lý người dùng', titleKey: 'sidebar.users', href: '/users', icon: Shield, permission: 'canManageBranchStaff' },
