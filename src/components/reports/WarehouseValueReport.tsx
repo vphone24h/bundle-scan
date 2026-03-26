@@ -45,7 +45,7 @@ function ValueCard({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] sm:text-xs text-muted-foreground">{label}</p>
-            <p className={`text-sm sm:text-lg font-bold truncate ${hidden ? 'text-muted-foreground' : color}`}>
+            <p className={`text-xs sm:text-lg font-bold ${hidden ? 'text-muted-foreground' : color}`}>
               {hidden ? '••••••' : `${prefix || ''}${formatNumber(value)} đ`}
             </p>
           </div>
