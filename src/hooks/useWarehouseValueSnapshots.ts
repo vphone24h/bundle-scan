@@ -23,13 +23,18 @@ function useSaveSnapshot(data: WarehouseValueData | undefined, branchId?: string
     const today = format(new Date(), 'yyyy-MM-dd');
 
     const save = async () => {
-      const { data: existing } = await supabase
+      let checkQuery = supabase
         .from('warehouse_value_snapshots')
         .select('id')
         .eq('tenant_id', tenant.id)
-        .eq('snapshot_date', today)
-        .is('branch_id', branchId ?? null)
-        .maybeSingle();
+        .eq('snapshot_date', today);
+      
+      if (branchId) {
+        checkQuery = checkQuery.eq('branch_id', branchId);
+      } else {
+        checkQuery = checkQuery.is('branch_id', null);
+      }
+      const { data: existing } = await checkQuery.maybeSingle();
 
       if (existing) return;
 
