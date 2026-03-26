@@ -5,6 +5,7 @@ import { usePendingTransferCount } from '@/hooks/useStockTransfers';
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useUnreadReviewCount } from '@/hooks/useUnreadReviews';
 import { useUnreadSocialNotifCount } from '@/hooks/useSocial';
+import { useUnreadArticleCount } from '@/hooks/useUnreadArticles';
 import {
   LayoutDashboard,
   Package,
@@ -149,6 +150,7 @@ export function AppSidebar() {
   const { data: pendingOrderCount } = usePendingOrderCount();
   const { data: unreadReviewCount } = useUnreadReviewCount();
   const { data: unreadSocialCount } = useUnreadSocialNotifCount();
+  const { data: unreadArticleCount } = useUnreadArticleCount();
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -309,6 +311,9 @@ export function AppSidebar() {
                   <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
                     {unreadSocialCount}
                   </span>
+                )}
+                {item.href === '/guides' && (unreadArticleCount || 0) > 0 && (
+                  <span className="h-2.5 w-2.5 rounded-full bg-destructive animate-pulse" />
                 )}
               </Link>
             )}
