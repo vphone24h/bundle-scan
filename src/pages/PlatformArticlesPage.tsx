@@ -9,12 +9,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, ArrowLeft, FolderOpen, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import DOMPurify from 'dompurify';
 import {
   usePublishedPlatformArticles,
   usePlatformArticleCategories,
   PlatformArticle,
 } from '@/hooks/usePlatformArticles';
+import { markArticleAsRead, markAllArticlesAsRead } from '@/hooks/useUnreadArticles';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function PlatformArticlesPage() {
   const { data: articles = [], isLoading } = usePublishedPlatformArticles();
@@ -24,6 +27,19 @@ export default function PlatformArticlesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const isPublicRoute = location.pathname === '/public/guides';
+  const queryClient = useQueryClient();
+  const [unreadIds, setUnreadIds] = useState<Set<string>>(new Set());
+
+  // Determine unread articles on mount
+  useEffect(() => {
+    if (articles.length === 0) return;
+    try {
+      const raw = localStorage.getItem('vkho_read_articles');
+      const readIds = new Set<string>(raw ? JSON.parse(raw) : []);
+      const newUnread = new Set(articles.filter(a => !readIds.has(a.id)).map(a => a.id));
+      setUnreadIds(newUnread);
+    } catch {}
+  }, [articles]);
 
   // Deep-link: open article from URL params
   useEffect(() => {
@@ -60,6 +76,14 @@ export default function PlatformArticlesPage() {
     const newParams = new URLSearchParams(searchParams);
     newParams.set('article', article.id);
     setSearchParams(newParams, { replace: true });
+    // Mark as read
+    markArticleAsRead(article.id);
+    setUnreadIds(prev => {
+      const next = new Set(prev);
+      next.delete(article.id);
+      return next;
+    });
+    queryClient.invalidateQueries({ queryKey: ['unread-article-count'] });
   };
 
   const content = (
@@ -97,7 +121,10 @@ export default function PlatformArticlesPage() {
             {filtered.map((article) => (
               <Card
                 key={article.id}
-                className="cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+                className={cn(
+                  'cursor-pointer hover:shadow-md transition-shadow overflow-hidden',
+                  unreadIds.has(article.id) && 'ring-2 ring-destructive animate-pulse'
+                )}
                 onClick={() => handleOpenArticle(article)}
               >
                 {article.banner_url && (
