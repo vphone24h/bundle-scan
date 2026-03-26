@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
@@ -12,7 +11,7 @@ import { useBranchFilter } from '@/hooks/useBranchFilter';
 import { formatNumber } from '@/lib/formatNumber';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { TrendingUp, TrendingDown, Minus, History } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 const TIME_OPTIONS = [
   { value: '7', label: '7 ngày' },
@@ -134,7 +133,7 @@ export function WarehouseValueChart() {
       ) : chartData.length === 0 ? (
         <Card>
           <CardContent className="p-6 text-center text-muted-foreground">
-            Chưa có dữ liệu biểu đồ. Nhấn nút trên để khôi phục dữ liệu lịch sử.
+            Chưa có dữ liệu biểu đồ cho khoảng thời gian này.
           </CardContent>
         </Card>
       ) : (
