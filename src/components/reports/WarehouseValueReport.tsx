@@ -9,7 +9,6 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { formatNumber } from '@/lib/formatNumber';
 import { Package, Wallet, Users, Truck, TrendingUp, Building2, EyeOff } from 'lucide-react';
-import { Package, Wallet, Users, Truck, TrendingUp, Building2, EyeOff } from 'lucide-react';
 
 function ValueCard({
   label,
