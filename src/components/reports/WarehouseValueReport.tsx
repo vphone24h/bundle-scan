@@ -1,0 +1,249 @@
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useWarehouseValue, type BranchValue } from '@/hooks/useWarehouseValue';
+import { useBranches } from '@/hooks/useBranches';
+import { useBranchFilter } from '@/hooks/useBranchFilter';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
+import { formatNumber } from '@/lib/formatNumber';
+import { Package, Wallet, Users, Truck, TrendingUp, Building2, EyeOff } from 'lucide-react';
+
+function ValueCard({
+  label,
+  value,
+  icon: Icon,
+  color,
+  bg,
+  prefix,
+  hidden,
+  onReveal,
+}: {
+  label: string;
+  value: number;
+  icon: React.ElementType;
+  color: string;
+  bg: string;
+  prefix?: string;
+  hidden?: boolean;
+  onReveal?: () => void;
+}) {
+  return (
+    <Card
+      className={hidden ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}
+      onClick={hidden ? onReveal : undefined}
+    >
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 sm:p-3 rounded-lg ${bg}`}>
+            {hidden ? (
+              <EyeOff className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+            ) : (
+              <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${color}`} />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">{label}</p>
+            <p className={`text-sm sm:text-lg font-bold truncate ${hidden ? 'text-muted-foreground' : color}`}>
+              {hidden ? '••••••' : `${prefix || ''}${formatNumber(value)} đ`}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function BranchRow({ branch, hidden }: { branch: BranchValue; hidden: boolean }) {
+  return (
+    <div className="border rounded-lg p-3 sm:p-4 space-y-2">
+      <div className="flex items-center gap-2 mb-2">
+        <Building2 className="h-4 w-4 text-primary" />
+        <span className="font-semibold text-sm sm:text-base">{branch.branchName}</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Tồn kho:</span>
+          <span className="font-medium">{hidden ? '••••' : `${formatNumber(branch.inventoryValue)} đ`}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Số dư quỹ:</span>
+          <span className={`font-medium ${branch.cashBalance < 0 ? 'text-destructive' : ''}`}>
+            {hidden ? '••••' : `${formatNumber(branch.cashBalance)} đ`}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">CN Khách hàng:</span>
+          <span className="font-medium">{hidden ? '••••' : `${formatNumber(branch.customerDebt)} đ`}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">CN Nhà cung cấp:</span>
+          <span className="font-medium">{hidden ? '••••' : `${formatNumber(branch.supplierDebt)} đ`}</span>
+        </div>
+      </div>
+      <div className="border-t pt-2 flex justify-between items-center">
+        <span className="font-semibold text-xs sm:text-sm">Giá trị chi nhánh:</span>
+        <span className={`font-bold text-sm sm:text-base ${branch.totalValue < 0 ? 'text-destructive' : 'text-primary'}`}>
+          {hidden ? '••••••' : `${formatNumber(branch.totalValue)} đ`}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function WarehouseValueReport() {
+  const [selectedBranch, setSelectedBranch] = useState<string>('all');
+  const { data: branches } = useBranches();
+  const { shouldFilter } = useBranchFilter();
+  const { data: permissions } = usePermissions();
+  const canViewImportPrice = permissions?.canViewImportPrice ?? false;
+
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked, unlock } = useSecurityUnlock('warehouse_value');
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+
+  const valueHidden = hasSecurityPassword && !unlocked;
+
+  const { data, isLoading } = useWarehouseValue(
+    selectedBranch !== 'all' ? selectedBranch : undefined
+  );
+
+  if (!canViewImportPrice) {
+    return (
+      <p className="text-muted-foreground text-sm">Bạn không có quyền xem báo cáo này.</p>
+    );
+  }
+
+  return (
+    <div className="space-y-4 sm:space-y-6">
+      <SecurityPasswordDialog
+        open={showPasswordDialog}
+        onOpenChange={setShowPasswordDialog}
+        onSuccess={unlock}
+        title="Xem giá trị toàn kho"
+        description="Nhập mật khẩu bảo mật để xem giá trị toàn kho"
+      />
+
+      {/* Branch filter */}
+      {!shouldFilter && (
+        <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+          <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectValue placeholder="Chọn chi nhánh" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toàn bộ kho</SelectItem>
+            {branches?.map((b) => (
+              <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      {isLoading ? (
+        <div className="space-y-3">
+          <Skeleton className="h-24" />
+          <div className="grid grid-cols-2 gap-3">
+            <Skeleton className="h-20" />
+            <Skeleton className="h-20" />
+            <Skeleton className="h-20" />
+            <Skeleton className="h-20" />
+          </div>
+        </div>
+      ) : data ? (
+        <>
+          {/* Total Value - Hero Card */}
+          <Card
+            className={`border-2 border-primary/30 ${valueHidden ? 'cursor-pointer hover:shadow-md' : ''}`}
+            onClick={valueHidden ? () => setShowPasswordDialog(true) : undefined}
+          >
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 sm:p-4 rounded-xl bg-primary/10">
+                  {valueHidden ? (
+                    <EyeOff className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
+                  ) : (
+                    <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Giá trị toàn kho</p>
+                  <p className={`text-xl sm:text-3xl font-bold ${valueHidden ? 'text-muted-foreground' : data.totalValue < 0 ? 'text-destructive' : 'text-primary'}`}>
+                    {valueHidden ? '••••••••' : `${formatNumber(data.totalValue)} đ`}
+                  </p>
+                  {!valueHidden && (
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
+                      = Tồn kho + Số dư quỹ + CN khách hàng - CN nhà cung cấp
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 4 Component Cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <ValueCard
+              label="Giá trị tồn kho"
+              value={data.inventoryValue}
+              icon={Package}
+              color="text-emerald-600"
+              bg="bg-emerald-500/10"
+              hidden={valueHidden}
+              onReveal={() => setShowPasswordDialog(true)}
+            />
+            <ValueCard
+              label="Tổng số dư sổ quỹ"
+              value={data.cashBalance}
+              icon={Wallet}
+              color={data.cashBalance < 0 ? 'text-destructive' : 'text-blue-600'}
+              bg={data.cashBalance < 0 ? 'bg-destructive/10' : 'bg-blue-500/10'}
+              hidden={valueHidden}
+              onReveal={() => setShowPasswordDialog(true)}
+            />
+            <ValueCard
+              label="Công nợ khách hàng"
+              value={data.customerDebt}
+              icon={Users}
+              color="text-violet-600"
+              bg="bg-violet-500/10"
+              prefix="+ "
+              hidden={valueHidden}
+              onReveal={() => setShowPasswordDialog(true)}
+            />
+            <ValueCard
+              label="Công nợ NCC"
+              value={data.supplierDebt}
+              icon={Truck}
+              color="text-orange-600"
+              bg="bg-orange-500/10"
+              prefix="- "
+              hidden={valueHidden}
+              onReveal={() => setShowPasswordDialog(true)}
+            />
+          </div>
+
+          {/* Branch Breakdown */}
+          {data.branches.length > 0 && selectedBranch === 'all' && (
+            <Card>
+              <CardHeader className="p-3 sm:p-4 pb-2">
+                <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Chi tiết theo chi nhánh
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 sm:p-4 pt-0 space-y-3">
+                {data.branches
+                  .sort((a, b) => b.totalValue - a.totalValue)
+                  .map((branch) => (
+                    <BranchRow key={branch.branchId} branch={branch} hidden={valueHidden} />
+                  ))}
+              </CardContent>
+            </Card>
+          )}
+        </>
+      ) : null}
+    </div>
+  );
+}
