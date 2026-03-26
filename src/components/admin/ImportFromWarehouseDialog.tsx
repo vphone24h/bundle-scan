@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,12 +6,11 @@ import { SearchInput } from '@/components/ui/search-input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Search, Package, Upload, Bot, Phone, MessageCircle, FileText, ImageIcon, CheckCircle2 } from 'lucide-react';
+import { Loader2, Search, Package, Upload, FileText, ImageIcon, CheckCircle2 } from 'lucide-react';
 import { useInventory, InventoryItem } from '@/hooks/useInventory';
 import { useCategories } from '@/hooks/useCategories';
 import { useCreateLandingProduct, useUpdateLandingProduct, LandingProduct } from '@/hooks/useLandingProducts';
 import { useCurrentTenant } from '@/hooks/useTenant';
-import { useTenantLandingSettings } from '@/hooks/useTenantLanding';
 import { toast } from '@/hooks/use-toast';
 import { formatNumber } from '@/lib/formatNumber';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,26 +50,8 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
   const { data: inventory, isLoading } = useInventory();
   const { data: categories } = useCategories();
   const { data: tenant } = useCurrentTenant();
-  const { data: landingSettings } = useTenantLandingSettings();
   const createProduct = useCreateLandingProduct();
   const updateProduct = useUpdateLandingProduct();
-
-  const { data: platformSettings } = useQuery({
-    queryKey: ['platform-admin-contact'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('platform_settings')
-        .select('admin_phone, admin_zalo')
-        .limit(1)
-        .single();
-      return data as { admin_phone: string; admin_zalo: string } | null;
-    },
-  });
-
-  const aiEnabled = landingSettings?.ai_description_enabled ?? false;
-  const autoImageEnabled = landingSettings?.auto_image_enabled ?? false;
-  const adminPhone = platformSettings?.admin_phone || '';
-  const adminZalo = platformSettings?.admin_zalo || '';
 
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('_all_');
@@ -796,63 +776,15 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
                   Huỷ
                 </Button>
               </div>
-              <div className="flex gap-2 w-full">
-                <Button
-                  onClick={handleImportManual}
-                  disabled={selected.size === 0 || importing}
-                  variant="outline"
-                  className="flex-1 gap-1.5"
-                >
-                  {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  Thêm thủ công
-                </Button>
-
-                {aiEnabled ? (
-                  <div className="flex-1">
-                    <Button
-                      onClick={handleAIStep1}
-                      disabled={selected.size === 0 || importing}
-                      className="w-full gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
-                    >
-                      {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
-                      Thêm tự động (AI)
-                    </Button>
-                    <p className="text-[10px] text-muted-foreground mt-1 text-center">
-                      B1: Mô tả AI → B2: Ảnh bìa AI
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex-1">
-                    <Button disabled className="w-full gap-1.5 opacity-60" variant="secondary">
-                      <Bot className="h-4 w-4" />
-                      Thêm tự động (AI)
-                    </Button>
-                    <p className="text-[10px] text-muted-foreground mt-1 text-center">
-                      B1: Mô tả AI → B2: Ảnh bìa AI
-                    </p>
-                    <div className="flex items-center justify-center gap-2 mt-1">
-                      {adminPhone && (
-                        <a href={`tel:${adminPhone}`} className="text-[10px] text-primary flex items-center gap-0.5 hover:underline">
-                          <Phone className="h-3 w-3" />
-                          {adminPhone}
-                        </a>
-                      )}
-                      {adminZalo && (
-                        <a href={`https://zalo.me/${adminZalo}`} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 flex items-center gap-0.5 hover:underline">
-                          <MessageCircle className="h-3 w-3" />
-                          Zalo
-                        </a>
-                      )}
-                      {!adminPhone && !adminZalo && (
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                          <Phone className="h-3 w-3" />
-                          Liên hệ Admin để kích hoạt
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <Button
+                onClick={handleImportManual}
+                disabled={selected.size === 0 || importing}
+                variant="outline"
+                className="w-full gap-1.5"
+              >
+                {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                Thêm thủ công
+              </Button>
             </div>
           ) : null}
         </DialogFooter>
