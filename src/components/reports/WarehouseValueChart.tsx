@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useWarehouseValueSnapshots } from '@/hooks/useWarehouseValueSnapshots';
 import { useBranches } from '@/hooks/useBranches';
 import { useBranchFilter } from '@/hooks/useBranchFilter';
@@ -143,7 +143,7 @@ export function WarehouseValueChart() {
           </CardHeader>
           <CardContent className="p-2 sm:p-4">
             <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <BarChart data={chartData}>
+              <ComposedChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
                 <XAxis
                   dataKey="date"
@@ -186,10 +186,18 @@ export function WarehouseValueChart() {
                 />
                 <Bar
                   dataKey="totalValue"
-                  fill="hsl(var(--primary))"
+                  fill="hsl(var(--primary) / 0.3)"
                   radius={[4, 4, 0, 0]}
                 />
-              </BarChart>
+                <Line
+                  type="monotone"
+                  dataKey="totalValue"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              </ComposedChart>
             </ChartContainer>
           </CardContent>
         </Card>
