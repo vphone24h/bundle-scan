@@ -100,11 +100,10 @@ export function WarehouseValueReport() {
   const { data: permissions } = usePermissions();
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
 
+  // Reuse the same security unlock as the reports page - no need to re-enter password
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
-  const { unlocked, unlock } = useSecurityUnlock('warehouse_value');
-  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
-
-  const valueHidden = hasSecurityPassword && !unlocked;
+  const { unlocked: reportsUnlocked } = useSecurityUnlock('reports_page');
+  const valueHidden = hasSecurityPassword && !reportsUnlocked;
 
   const { data, isLoading } = useWarehouseValue(
     selectedBranch !== 'all' ? selectedBranch : undefined
