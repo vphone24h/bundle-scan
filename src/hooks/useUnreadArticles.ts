@@ -44,7 +44,7 @@ export function useUnreadArticleIds() {
         .select('id')
         .eq('is_published', true);
       if (error) throw error;
-      return data as { id: string }[];
+      return data as unknown as { id: string }[];
     },
   });
 
