@@ -48,7 +48,7 @@ export function WarehouseValueChart() {
   };
 
   const branchId = selectedBranch !== 'all' ? selectedBranch : undefined;
-  const { chartData, isLoading, percentChange } = useWarehouseValueSnapshots(
+  const { chartData, isLoading, percentChange, backfillMutation } = useWarehouseValueSnapshots(
     getDays(),
     branchId,
     timeRange === 'custom' ? customFrom : undefined,
