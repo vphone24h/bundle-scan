@@ -1,8 +1,9 @@
-import { useEffect, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useWarehouseValue, type WarehouseValueData } from './useWarehouseValue';
+import { toast } from 'sonner';
 import { startOfDay, subDays, format } from 'date-fns';
 
 export interface WarehouseSnapshot {
@@ -157,5 +158,26 @@ export function useWarehouseValueSnapshots(
     return ((last - first) / Math.abs(first)) * 100;
   }, [chartData]);
 
-  return { chartData, isLoading, percentChange };
+  // Backfill mutation
+  const queryClient = useQueryClient();
+  const backfillMutation = useMutation({
+    mutationFn: async (backfillDays: number) => {
+      if (!tenant?.id) throw new Error('No tenant');
+      const { data, error } = await supabase.rpc('backfill_warehouse_snapshots', {
+        _tenant_id: tenant.id,
+        _days: backfillDays,
+      });
+      if (error) throw error;
+      return data as number;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ['warehouse-snapshots'] });
+      toast.success(`Đã khôi phục ${count} ngày dữ liệu lịch sử`);
+    },
+    onError: () => {
+      toast.error('Không thể khôi phục dữ liệu lịch sử');
+    },
+  });
+
+  return { chartData, isLoading, percentChange, backfillMutation };
 }

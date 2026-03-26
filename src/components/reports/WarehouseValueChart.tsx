@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
@@ -11,7 +12,7 @@ import { useBranchFilter } from '@/hooks/useBranchFilter';
 import { formatNumber } from '@/lib/formatNumber';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, History } from 'lucide-react';
 
 const TIME_OPTIONS = [
   { value: '7', label: '7 ngày' },
@@ -47,7 +48,7 @@ export function WarehouseValueChart() {
   };
 
   const branchId = selectedBranch !== 'all' ? selectedBranch : undefined;
-  const { chartData, isLoading, percentChange } = useWarehouseValueSnapshots(
+  const { chartData, isLoading, percentChange, backfillMutation } = useWarehouseValueSnapshots(
     getDays(),
     branchId,
     timeRange === 'custom' ? customFrom : undefined,
@@ -126,13 +127,27 @@ export function WarehouseValueChart() {
         </div>
       )}
 
+      {/* Backfill button */}
+      {chartData.length <= 1 && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => backfillMutation.mutate(90)}
+          disabled={backfillMutation.isPending}
+          className="flex items-center gap-2"
+        >
+          <History className="h-4 w-4" />
+          {backfillMutation.isPending ? 'Đang khôi phục...' : 'Khôi phục dữ liệu lịch sử (90 ngày)'}
+        </Button>
+      )}
+
       {/* Chart */}
       {isLoading ? (
         <Skeleton className="h-[300px] w-full" />
       ) : chartData.length === 0 ? (
         <Card>
           <CardContent className="p-6 text-center text-muted-foreground">
-            Chưa có dữ liệu biểu đồ. Dữ liệu sẽ được ghi nhận hàng ngày.
+            Chưa có dữ liệu biểu đồ. Nhấn nút trên để khôi phục dữ liệu lịch sử.
           </CardContent>
         </Card>
       ) : (
