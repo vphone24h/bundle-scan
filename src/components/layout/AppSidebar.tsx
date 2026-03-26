@@ -40,7 +40,6 @@ import {
   Star,
   MessageCircleMore,
   Settings,
-  TrendingUp,
 } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { cn } from '@/lib/utils';
