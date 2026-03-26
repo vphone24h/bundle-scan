@@ -75,6 +75,7 @@ export function useWarehouseValue(branchId?: string) {
     (customerDebts || []).forEach((d) => {
       const remaining = d.remaining_amount || 0;
       if (remaining <= 0) return;
+      if (effectiveBranchId && d.branch_id !== effectiveBranchId) return;
       totalCustDebt += remaining;
       if (d.branch_id && validBranches.has(d.branch_id)) {
         custByBranch.set(d.branch_id, (custByBranch.get(d.branch_id) || 0) + remaining);
@@ -87,6 +88,7 @@ export function useWarehouseValue(branchId?: string) {
     (supplierDebts || []).forEach((d) => {
       const remaining = d.remaining_amount || 0;
       if (remaining <= 0) return;
+      if (effectiveBranchId && d.branch_id !== effectiveBranchId) return;
       totalSuppDebt += remaining;
       if (d.branch_id && validBranches.has(d.branch_id)) {
         suppByBranch.set(d.branch_id, (suppByBranch.get(d.branch_id) || 0) + remaining);
