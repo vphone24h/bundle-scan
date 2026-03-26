@@ -161,11 +161,10 @@ export function useWarehouseValueSnapshots(
   // Backfill mutation
   const queryClient = useQueryClient();
   const backfillMutation = useMutation({
-    mutationFn: async (backfillDays: number) => {
+    mutationFn: async () => {
       if (!tenant?.id) throw new Error('No tenant');
-      const { data, error } = await supabase.rpc('backfill_warehouse_snapshots', {
-        _tenant_id: tenant.id,
-        _days: backfillDays,
+      const { data, error } = await supabase.rpc('backfill_warehouse_snapshots_v2', {
+        _tid: tenant.id,
       });
       if (error) throw error;
       return data as number;

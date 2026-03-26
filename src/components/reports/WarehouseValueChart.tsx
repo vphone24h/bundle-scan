@@ -127,19 +127,6 @@ export function WarehouseValueChart() {
         </div>
       )}
 
-      {/* Backfill button */}
-      {chartData.length <= 1 && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => backfillMutation.mutate(90)}
-          disabled={backfillMutation.isPending}
-          className="flex items-center gap-2"
-        >
-          <History className="h-4 w-4" />
-          {backfillMutation.isPending ? 'Đang khôi phục...' : 'Khôi phục dữ liệu lịch sử (90 ngày)'}
-        </Button>
-      )}
 
       {/* Chart */}
       {isLoading ? (
