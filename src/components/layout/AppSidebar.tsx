@@ -313,7 +313,9 @@ export function AppSidebar() {
                   </span>
                 )}
                 {item.href === '/guides' && (unreadArticleCount || 0) > 0 && (
-                  <span className="h-2.5 w-2.5 rounded-full bg-destructive animate-pulse" />
+                  <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1 animate-pulse">
+                    {unreadArticleCount}
+                  </span>
                 )}
               </Link>
             )}
