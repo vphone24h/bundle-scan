@@ -7096,6 +7096,53 @@ export type Database = {
           },
         ]
       }
+      warehouse_value_snapshots: {
+        Row: {
+          branch_id: string | null
+          cash_balance: number
+          created_at: string
+          customer_debt: number
+          id: string
+          inventory_value: number
+          snapshot_date: string
+          supplier_debt: number
+          tenant_id: string
+          total_value: number
+        }
+        Insert: {
+          branch_id?: string | null
+          cash_balance?: number
+          created_at?: string
+          customer_debt?: number
+          id?: string
+          inventory_value?: number
+          snapshot_date?: string
+          supplier_debt?: number
+          tenant_id: string
+          total_value?: number
+        }
+        Update: {
+          branch_id?: string | null
+          cash_balance?: number
+          created_at?: string
+          customer_debt?: number
+          id?: string
+          inventory_value?: number
+          snapshot_date?: string
+          supplier_debt?: number
+          tenant_id?: string
+          total_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warehouse_value_snapshots_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       warranty_lookup_logs: {
         Row: {
           created_at: string | null
