@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
 import { useCustomerDebts, useSupplierDebts } from './useDebt';
 import { useCashBook } from './useCashBook';
+import { useInventory } from './useInventory';
 
 export interface BranchValue {
   branchId: string;
@@ -26,28 +25,15 @@ export interface WarehouseValueData {
 }
 
 export function useWarehouseValue(branchId?: string) {
-  const { data: tenant, isLoading: tenantLoading } = useCurrentTenant();
+  const { isLoading: tenantLoading } = useCurrentTenant();
   const { branchId: userBranchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   const effectiveBranchId = branchId || (shouldFilter ? userBranchId : undefined);
 
-  // 1. Inventory value from RPC
-  const { data: invData, isLoading: invLoading } = useQuery({
-    queryKey: ['warehouse-inventory-value', tenant?.id, effectiveBranchId],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_total_warehouse_value' as any, {
-        p_tenant_id: tenant!.id,
-        p_branch_id: effectiveBranchId || null,
-      });
-      if (error) throw error;
-      return data as any;
-    },
-    enabled: !tenantLoading && !branchLoading && !!tenant?.id,
-    staleTime: 2 * 60 * 1000,
-    refetchOnWindowFocus: false,
-  });
+  // 1. Inventory - reuse existing hook (already correct)
+  const { data: inventory, isLoading: invLoading } = useInventory();
 
-  // 2. Cash book - reuse existing hook (all entries, no date filter)
+  // 2. Cash book - reuse existing hook
   const { data: cashBookEntries, isLoading: cashLoading } = useCashBook({
     branchId: effectiveBranchId,
   });
@@ -61,9 +47,29 @@ export function useWarehouseValue(branchId?: string) {
   const isLoading = invLoading || cashLoading || custLoading || suppLoading || tenantLoading || branchLoading;
 
   const data = useMemo<WarehouseValueData | undefined>(() => {
-    if (!invData) return undefined;
+    if (!inventory) return undefined;
 
-    // Cash balance from cash book entries (same logic as CashBookPage)
+    // Inventory value from existing inventory data (totalImportCost per item)
+    const invByBranch = new Map<string, { name: string; value: number }>();
+    let totalInventory = 0;
+    inventory.forEach((item) => {
+      if (effectiveBranchId && item.branchId !== effectiveBranchId) return;
+      const cost = item.totalImportCost || 0;
+      totalInventory += cost;
+      if (item.branchId) {
+        const existing = invByBranch.get(item.branchId);
+        if (existing) {
+          existing.value += cost;
+        } else {
+          invByBranch.set(item.branchId, {
+            name: item.branchName || 'Không xác định',
+            value: cost,
+          });
+        }
+      }
+    });
+
+    // Cash balance from cash book entries
     const cashByBranch = new Map<string, { name: string; balance: number }>();
     let totalCash = 0;
     (cashBookEntries || []).forEach((entry) => {
@@ -82,7 +88,7 @@ export function useWarehouseValue(branchId?: string) {
       }
     });
 
-    // Customer debt totals (remaining_amount = what customers owe us)
+    // Customer debt totals
     const custByBranch = new Map<string, number>();
     let totalCustDebt = 0;
     (customerDebts || []).forEach((d) => {
@@ -94,7 +100,7 @@ export function useWarehouseValue(branchId?: string) {
       }
     });
 
-    // Supplier debt totals (remaining_amount = what we owe suppliers)
+    // Supplier debt totals
     const suppByBranch = new Map<string, number>();
     let totalSuppDebt = 0;
     (supplierDebts || []).forEach((d) => {
@@ -106,59 +112,39 @@ export function useWarehouseValue(branchId?: string) {
       }
     });
 
-    // Inventory per branch from RPC
-    const invBranches = (invData.branches || []) as any[];
-    const totalInventory = Number(invData.totalInventory || 0);
-
     // Build branch breakdown
     const branchMap = new Map<string, BranchValue>();
-    invBranches.forEach((b: any) => {
-      branchMap.set(b.branchId, {
-        branchId: b.branchId,
-        branchName: b.branchName,
-        inventoryValue: Number(b.inventoryValue || 0),
-        cashBalance: 0,
-        customerDebt: 0,
-        supplierDebt: 0,
-        totalValue: 0,
-      });
-    });
 
-    // Merge cash balance into branches
-    cashByBranch.forEach((val, bid) => {
-      const existing = branchMap.get(bid);
-      if (existing) {
-        existing.cashBalance = val.balance;
-      } else {
+    const ensureBranch = (bid: string, name: string) => {
+      if (!branchMap.has(bid)) {
         branchMap.set(bid, {
           branchId: bid,
-          branchName: val.name,
+          branchName: name,
           inventoryValue: 0,
-          cashBalance: val.balance,
+          cashBalance: 0,
           customerDebt: 0,
           supplierDebt: 0,
           totalValue: 0,
         });
       }
-    });
+      return branchMap.get(bid)!;
+    };
 
-    // Merge customer debt
+    invByBranch.forEach((val, bid) => {
+      ensureBranch(bid, val.name).inventoryValue = val.value;
+    });
+    cashByBranch.forEach((val, bid) => {
+      ensureBranch(bid, val.name).cashBalance = val.balance;
+    });
     custByBranch.forEach((val, bid) => {
-      const existing = branchMap.get(bid);
-      if (existing) {
-        existing.customerDebt = val;
-      }
+      const b = branchMap.get(bid);
+      if (b) b.customerDebt = val;
     });
-
-    // Merge supplier debt
     suppByBranch.forEach((val, bid) => {
-      const existing = branchMap.get(bid);
-      if (existing) {
-        existing.supplierDebt = val;
-      }
+      const b = branchMap.get(bid);
+      if (b) b.supplierDebt = val;
     });
 
-    // Calculate total values
     const branches: BranchValue[] = [];
     branchMap.forEach((b) => {
       b.totalValue = b.inventoryValue + b.cashBalance + b.customerDebt - b.supplierDebt;
@@ -166,17 +152,15 @@ export function useWarehouseValue(branchId?: string) {
     });
     branches.sort((a, b) => b.totalValue - a.totalValue);
 
-    const totalValue = totalInventory + totalCash + totalCustDebt - totalSuppDebt;
-
     return {
       inventoryValue: totalInventory,
       cashBalance: totalCash,
       customerDebt: totalCustDebt,
       supplierDebt: totalSuppDebt,
-      totalValue,
+      totalValue: totalInventory + totalCash + totalCustDebt - totalSuppDebt,
       branches,
     };
-  }, [invData, cashBookEntries, customerDebts, supplierDebts]);
+  }, [inventory, cashBookEntries, customerDebts, supplierDebts, effectiveBranchId]);
 
   return { data, isLoading };
 }
