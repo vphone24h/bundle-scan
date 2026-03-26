@@ -127,13 +127,27 @@ export function WarehouseValueChart() {
         </div>
       )}
 
+      {/* Backfill button */}
+      {chartData.length <= 1 && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => backfillMutation.mutate(90)}
+          disabled={backfillMutation.isPending}
+          className="flex items-center gap-2"
+        >
+          <History className="h-4 w-4" />
+          {backfillMutation.isPending ? 'Đang khôi phục...' : 'Khôi phục dữ liệu lịch sử (90 ngày)'}
+        </Button>
+      )}
+
       {/* Chart */}
       {isLoading ? (
         <Skeleton className="h-[300px] w-full" />
       ) : chartData.length === 0 ? (
         <Card>
           <CardContent className="p-6 text-center text-muted-foreground">
-            Chưa có dữ liệu biểu đồ. Dữ liệu sẽ được ghi nhận hàng ngày.
+            Chưa có dữ liệu biểu đồ. Nhấn nút trên để khôi phục dữ liệu lịch sử.
           </CardContent>
         </Card>
       ) : (
