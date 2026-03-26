@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useWarehouseValueSnapshots } from '@/hooks/useWarehouseValueSnapshots';
 import { useBranches } from '@/hooks/useBranches';
 import { useBranchFilter } from '@/hooks/useBranchFilter';
@@ -143,7 +143,7 @@ export function WarehouseValueChart() {
           </CardHeader>
           <CardContent className="p-2 sm:p-4">
             <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <LineChart data={chartData}>
+              <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
                 <XAxis
                   dataKey="date"
@@ -184,15 +184,12 @@ export function WarehouseValueChart() {
                     />
                   }
                 />
-                <Line
-                  type="monotone"
+                <Bar
                   dataKey="totalValue"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
+                  fill="hsl(var(--primary))"
+                  radius={[4, 4, 0, 0]}
                 />
-              </LineChart>
+              </BarChart>
             </ChartContainer>
           </CardContent>
         </Card>
