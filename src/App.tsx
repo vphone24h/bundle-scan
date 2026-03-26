@@ -54,7 +54,7 @@ const SocialPage = lazy(() => import("./pages/SocialPage"));
 const WebsiteEditorPage = lazy(() => import("./pages/WebsiteEditorPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const WarrantyCheckPage = lazy(() => import("./pages/WarrantyCheckPage"));
-const WarehouseValuePage = lazy(() => import("./pages/WarehouseValuePage"));
+
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Only preload admin pages when user is logged in (not on store landing / CTV pages)
