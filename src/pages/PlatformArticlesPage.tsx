@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, ArrowLeft, FolderOpen, Link2 } from 'lucide-react';
-import { Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import DOMPurify from 'dompurify';
 import {
   usePublishedPlatformArticles,
