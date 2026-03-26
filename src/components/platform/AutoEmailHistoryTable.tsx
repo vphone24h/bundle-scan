@@ -309,6 +309,65 @@ function ScenarioDetail({ group }: { group: GroupedScenario }) {
   );
 }
 
+function ResendGroupButton({ group }: { group: GroupedScenario }) {
+  const queryClient = useQueryClient();
+  const [resending, setResending] = useState(false);
+
+  const handleResend = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const failedLogs = group.logs.filter(l => l.status !== 'sent' && !(l as any).skip_resend);
+    if (failedLogs.length === 0) return;
+    if (!confirm(`Gửi lại ${failedLogs.length} email thất bại?`)) return;
+    setResending(true);
+    try {
+      const { data: automation } = group.automationId
+        ? await supabase.from('platform_email_automations' as any).select('html_content').eq('id', group.automationId).single()
+        : { data: null };
+      const htmlContent = (automation as any)?.html_content || '<p>Nội dung email</p>';
+      const emails = failedLogs.map(l => l.recipient_email);
+      const { data, error } = await supabase.functions.invoke('send-bulk-email', {
+        body: { emails, subject: failedLogs[0].subject, htmlContent },
+      });
+      if (error) throw error;
+      const failedEmailSet = new Set(data?.failedEmails || []);
+      const successLogIds = failedLogs.filter(l => !failedEmailSet.has(l.recipient_email)).map(l => l.id);
+      if (successLogIds.length > 0) {
+        await supabase
+          .from('platform_email_automation_logs' as any)
+          .update({ status: 'sent', error_message: null, sent_at: new Date().toISOString() } as any)
+          .in('id', successLogIds);
+      }
+      const invalidEmailSet = new Set(data?.invalidEmails || []);
+      const invalidLogIds = failedLogs.filter(l => invalidEmailSet.has(l.recipient_email)).map(l => l.id);
+      if (invalidLogIds.length > 0) {
+        await supabase
+          .from('platform_email_automation_logs' as any)
+          .update({ skip_resend: true } as any)
+          .in('id', invalidLogIds);
+      }
+      toast.success(`Gửi lại: ${data?.sent || 0} thành công`);
+      queryClient.invalidateQueries({ queryKey: ['platform-email-automation-logs'] });
+    } catch (err: any) {
+      toast.error('Lỗi gửi lại: ' + err.message);
+    } finally {
+      setResending(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-6 text-[10px] px-2 gap-1"
+      onClick={handleResend}
+      disabled={resending}
+    >
+      <RefreshCw className={`h-3 w-3 ${resending ? 'animate-spin' : ''}`} />
+      Gửi lại
+    </Button>
+  );
+}
+
 export function AutoEmailHistoryTable() {
   const { data: automations = [] } = usePlatformEmailAutomations();
   const [expandedId, setExpandedId] = useState<string | null>(null);
