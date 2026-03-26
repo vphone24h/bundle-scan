@@ -12,6 +12,7 @@ import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurit
 import { formatNumber } from '@/lib/formatNumber';
 import { Package, Wallet, Users, Truck, TrendingUp, Building2, EyeOff, BarChart3, Database } from 'lucide-react';
 import { WarehouseValueChart } from './WarehouseValueChart';
+import { WarehouseValueHistory } from './WarehouseValueHistory';
 import {
   startOfDay, subDays, startOfWeek, startOfMonth, startOfYear,
   endOfDay, endOfWeek, endOfMonth, format
@@ -294,6 +295,14 @@ export function WarehouseValueReport() {
                     ))}
                 </CardContent>
               </Card>
+            )}
+
+            {/* Value History */}
+            {!valueHidden && (
+              <WarehouseValueHistory
+                currentData={data}
+                dateRange={getDateRange(dateFilter)}
+              />
             )}
           </>
         ) : null}
