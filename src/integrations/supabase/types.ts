@@ -7397,6 +7397,10 @@ export type Database = {
           points_added: number
         }[]
       }
+      backfill_warehouse_snapshots: {
+        Args: { _days?: number; _tenant_id: string }
+        Returns: number
+      }
       belongs_to_tenant: {
         Args: { _tenant_id: string; _user_id: string }
         Returns: boolean
