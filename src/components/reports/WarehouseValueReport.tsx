@@ -7,7 +7,6 @@ import { useBranches } from '@/hooks/useBranches';
 import { useBranchFilter } from '@/hooks/useBranchFilter';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
-import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 import { formatNumber } from '@/lib/formatNumber';
 import { Package, Wallet, Users, Truck, TrendingUp, Building2, EyeOff } from 'lucide-react';
 
@@ -100,11 +99,10 @@ export function WarehouseValueReport() {
   const { data: permissions } = usePermissions();
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
 
+  // Reuse the same security unlock as the reports page - no need to re-enter password
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
-  const { unlocked, unlock } = useSecurityUnlock('warehouse_value');
-  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
-
-  const valueHidden = hasSecurityPassword && !unlocked;
+  const { unlocked: reportsUnlocked } = useSecurityUnlock('reports_page');
+  const valueHidden = hasSecurityPassword && !reportsUnlocked;
 
   const { data, isLoading } = useWarehouseValue(
     selectedBranch !== 'all' ? selectedBranch : undefined
@@ -118,13 +116,6 @@ export function WarehouseValueReport() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <SecurityPasswordDialog
-        open={showPasswordDialog}
-        onOpenChange={setShowPasswordDialog}
-        onSuccess={unlock}
-        title="Xem giá trị toàn kho"
-        description="Nhập mật khẩu bảo mật để xem giá trị toàn kho"
-      />
 
       {/* Branch filter */}
       {!shouldFilter && (
@@ -154,10 +145,7 @@ export function WarehouseValueReport() {
       ) : data ? (
         <>
           {/* Total Value - Hero Card */}
-          <Card
-            className={`border-2 border-primary/30 ${valueHidden ? 'cursor-pointer hover:shadow-md' : ''}`}
-            onClick={valueHidden ? () => setShowPasswordDialog(true) : undefined}
-          >
+          <Card className="border-2 border-primary/30">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 sm:p-4 rounded-xl bg-primary/10">
@@ -191,7 +179,6 @@ export function WarehouseValueReport() {
               color="text-emerald-600"
               bg="bg-emerald-500/10"
               hidden={valueHidden}
-              onReveal={() => setShowPasswordDialog(true)}
             />
             <ValueCard
               label="Tổng số dư sổ quỹ"
@@ -200,7 +187,6 @@ export function WarehouseValueReport() {
               color={data.cashBalance < 0 ? 'text-destructive' : 'text-blue-600'}
               bg={data.cashBalance < 0 ? 'bg-destructive/10' : 'bg-blue-500/10'}
               hidden={valueHidden}
-              onReveal={() => setShowPasswordDialog(true)}
             />
             <ValueCard
               label="Công nợ khách hàng"
@@ -210,7 +196,6 @@ export function WarehouseValueReport() {
               bg="bg-violet-500/10"
               prefix="+ "
               hidden={valueHidden}
-              onReveal={() => setShowPasswordDialog(true)}
             />
             <ValueCard
               label="Công nợ NCC"
@@ -220,7 +205,6 @@ export function WarehouseValueReport() {
               bg="bg-orange-500/10"
               prefix="- "
               hidden={valueHidden}
-              onReveal={() => setShowPasswordDialog(true)}
             />
           </div>
 
