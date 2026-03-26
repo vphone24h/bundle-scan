@@ -9,7 +9,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 import { formatNumber } from '@/lib/formatNumber';
-import { Package, Wallet, Users, Truck, TrendingUp, Building2, EyeOff, Eye } from 'lucide-react';
+import { Package, Wallet, Users, Truck, TrendingUp, Building2, EyeOff } from 'lucide-react';
 
 function ValueCard({
   label,
@@ -76,11 +76,11 @@ function BranchRow({ branch, hidden }: { branch: BranchValue; hidden: boolean })
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">CN Khách hàng:</span>
-          <span className="font-medium text-blue-600">{hidden ? '••••' : `${formatNumber(branch.customerDebt)} đ`}</span>
+          <span className="font-medium">{hidden ? '••••' : `${formatNumber(branch.customerDebt)} đ`}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">CN Nhà cung cấp:</span>
-          <span className="font-medium text-orange-600">{hidden ? '••••' : `${formatNumber(branch.supplierDebt)} đ`}</span>
+          <span className="font-medium">{hidden ? '••••' : `${formatNumber(branch.supplierDebt)} đ`}</span>
         </div>
       </div>
       <div className="border-t pt-2 flex justify-between items-center">
@@ -93,7 +93,7 @@ function BranchRow({ branch, hidden }: { branch: BranchValue; hidden: boolean })
   );
 }
 
-export default function WarehouseValuePage() {
+export function WarehouseValueReport() {
   const [selectedBranch, setSelectedBranch] = useState<string>('all');
   const { data: branches } = useBranches();
   const { shouldFilter } = useBranchFilter();
@@ -112,14 +112,12 @@ export default function WarehouseValuePage() {
 
   if (!canViewImportPrice) {
     return (
-      <div className="p-4 sm:p-6">
-        <p className="text-muted-foreground">Bạn không có quyền xem báo cáo này.</p>
-      </div>
+      <p className="text-muted-foreground text-sm">Bạn không có quyền xem báo cáo này.</p>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-4 sm:space-y-6">
       <SecurityPasswordDialog
         open={showPasswordDialog}
         onOpenChange={setShowPasswordDialog}
@@ -128,28 +126,20 @@ export default function WarehouseValuePage() {
         description="Nhập mật khẩu bảo mật để xem giá trị toàn kho"
       />
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-lg sm:text-xl font-bold">Giá trị toàn kho</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Tổng quan tài sản doanh nghiệp
-          </p>
-        </div>
-        {!shouldFilter && (
-          <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <SelectValue placeholder="Chọn chi nhánh" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toàn bộ kho</SelectItem>
-              {branches?.map((b) => (
-                <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-      </div>
+      {/* Branch filter */}
+      {!shouldFilter && (
+        <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+          <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectValue placeholder="Chọn chi nhánh" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toàn bộ kho</SelectItem>
+            {branches?.map((b) => (
+              <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
       {isLoading ? (
         <div className="space-y-3">
