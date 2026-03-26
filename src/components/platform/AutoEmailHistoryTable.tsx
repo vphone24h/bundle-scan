@@ -407,6 +407,9 @@ export function AutoEmailHistoryTable() {
                       <Ban className="h-3 w-3" /> {group.skipped}
                     </Badge>
                   )}
+                  {group.failed > 0 && (
+                    <ResendGroupButton group={group} />
+                  )}
                 </div>
               </div>
 
