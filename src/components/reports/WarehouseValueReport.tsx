@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWarehouseValue, type BranchValue } from '@/hooks/useWarehouseValue';
 import { useBranches } from '@/hooks/useBranches';
@@ -8,7 +9,8 @@ import { useBranchFilter } from '@/hooks/useBranchFilter';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { formatNumber } from '@/lib/formatNumber';
-import { Package, Wallet, Users, Truck, TrendingUp, Building2, EyeOff } from 'lucide-react';
+import { Package, Wallet, Users, Truck, TrendingUp, Building2, EyeOff, BarChart3, Database } from 'lucide-react';
+import { WarehouseValueChart } from './WarehouseValueChart';
 
 function ValueCard({
   label,
@@ -18,7 +20,6 @@ function ValueCard({
   bg,
   prefix,
   hidden,
-  onReveal,
 }: {
   label: string;
   value: number;
@@ -27,13 +28,9 @@ function ValueCard({
   bg: string;
   prefix?: string;
   hidden?: boolean;
-  onReveal?: () => void;
 }) {
   return (
-    <Card
-      className={hidden ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}
-      onClick={hidden ? onReveal : undefined}
-    >
+    <Card>
       <CardContent className="p-3 sm:p-4">
         <div className="flex items-center gap-3">
           <div className={`p-2 sm:p-3 rounded-lg ${bg}`}>
@@ -45,7 +42,7 @@ function ValueCard({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] sm:text-xs text-muted-foreground">{label}</p>
-            <p className={`text-xs sm:text-lg font-bold ${hidden ? 'text-muted-foreground' : color}`}>
+            <p className={`text-xs sm:text-base font-bold break-all leading-tight ${hidden ? 'text-muted-foreground' : color}`}>
               {hidden ? '••••••' : `${prefix || ''}${formatNumber(value)} đ`}
             </p>
           </div>
@@ -99,7 +96,6 @@ export function WarehouseValueReport() {
   const { data: permissions } = usePermissions();
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
 
-  // Reuse the same security unlock as the reports page - no need to re-enter password
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
   const { unlocked: reportsUnlocked } = useSecurityUnlock('reports_page');
   const valueHidden = hasSecurityPassword && !reportsUnlocked;
@@ -115,119 +111,137 @@ export function WarehouseValueReport() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <Tabs defaultValue="data" className="space-y-4">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="data" className="flex items-center gap-1.5 text-xs sm:text-sm">
+          <Database className="h-3.5 w-3.5" />
+          Số liệu
+        </TabsTrigger>
+        <TabsTrigger value="chart" className="flex items-center gap-1.5 text-xs sm:text-sm">
+          <BarChart3 className="h-3.5 w-3.5" />
+          Biểu đồ tăng trưởng
+        </TabsTrigger>
+      </TabsList>
 
-      {/* Branch filter */}
-      {!shouldFilter && (
-        <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-          <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Chọn chi nhánh" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toàn bộ kho</SelectItem>
-            {branches?.map((b) => (
-              <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
+      {/* DATA TAB */}
+      <TabsContent value="data" className="space-y-4">
+        {/* Branch filter */}
+        {!shouldFilter && (
+          <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectValue placeholder="Chọn chi nhánh" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toàn bộ kho</SelectItem>
+              {branches?.map((b) => (
+                <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
-      {isLoading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-24" />
-          <div className="grid grid-cols-2 gap-3">
-            <Skeleton className="h-20" />
-            <Skeleton className="h-20" />
-            <Skeleton className="h-20" />
-            <Skeleton className="h-20" />
+        {isLoading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-24" />
+            <div className="grid grid-cols-2 gap-3">
+              <Skeleton className="h-20" />
+              <Skeleton className="h-20" />
+              <Skeleton className="h-20" />
+              <Skeleton className="h-20" />
+            </div>
           </div>
-        </div>
-      ) : data ? (
-        <>
-          {/* Total Value - Hero Card */}
-          <Card className="border-2 border-primary/30">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 sm:p-4 rounded-xl bg-primary/10">
-                  {valueHidden ? (
-                    <EyeOff className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
-                  ) : (
-                    <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-                  )}
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Giá trị toàn kho</p>
-                  <p className={`text-xl sm:text-3xl font-bold ${valueHidden ? 'text-muted-foreground' : data.totalValue < 0 ? 'text-destructive' : 'text-primary'}`}>
-                    {valueHidden ? '••••••••' : `${formatNumber(data.totalValue)} đ`}
-                  </p>
-                  {!valueHidden && (
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
-                      = Tồn kho + Số dư quỹ + CN khách hàng - CN nhà cung cấp
+        ) : data ? (
+          <>
+            {/* Total Value - Hero Card */}
+            <Card className="border-2 border-primary/30">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 sm:p-4 rounded-xl bg-primary/10">
+                    {valueHidden ? (
+                      <EyeOff className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
+                    ) : (
+                      <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm text-muted-foreground">Giá trị toàn kho</p>
+                    <p className={`text-lg sm:text-2xl font-bold break-all leading-tight ${valueHidden ? 'text-muted-foreground' : data.totalValue < 0 ? 'text-destructive' : 'text-primary'}`}>
+                      {valueHidden ? '••••••••' : `${formatNumber(data.totalValue)} đ`}
                     </p>
-                  )}
+                    {!valueHidden && (
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
+                        = Tồn kho + Số dư quỹ + CN khách hàng - CN nhà cung cấp
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 4 Component Cards */}
-          <div className="grid grid-cols-2 gap-3">
-            <ValueCard
-              label="Giá trị tồn kho"
-              value={data.inventoryValue}
-              icon={Package}
-              color="text-emerald-600"
-              bg="bg-emerald-500/10"
-              hidden={valueHidden}
-            />
-            <ValueCard
-              label="Tổng số dư sổ quỹ"
-              value={data.cashBalance}
-              icon={Wallet}
-              color={data.cashBalance < 0 ? 'text-destructive' : 'text-blue-600'}
-              bg={data.cashBalance < 0 ? 'bg-destructive/10' : 'bg-blue-500/10'}
-              hidden={valueHidden}
-            />
-            <ValueCard
-              label="Công nợ khách hàng"
-              value={data.customerDebt}
-              icon={Users}
-              color="text-violet-600"
-              bg="bg-violet-500/10"
-              prefix="+ "
-              hidden={valueHidden}
-            />
-            <ValueCard
-              label="Công nợ NCC"
-              value={data.supplierDebt}
-              icon={Truck}
-              color="text-orange-600"
-              bg="bg-orange-500/10"
-              prefix="- "
-              hidden={valueHidden}
-            />
-          </div>
-
-          {/* Branch Breakdown */}
-          {data.branches.length > 0 && selectedBranch === 'all' && (
-            <Card>
-              <CardHeader className="p-3 sm:p-4 pb-2">
-                <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  Chi tiết theo chi nhánh
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 sm:p-4 pt-0 space-y-3">
-                {data.branches
-                  .sort((a, b) => b.totalValue - a.totalValue)
-                  .map((branch) => (
-                    <BranchRow key={branch.branchId} branch={branch} hidden={valueHidden} />
-                  ))}
               </CardContent>
             </Card>
-          )}
-        </>
-      ) : null}
-    </div>
+
+            {/* 4 Component Cards */}
+            <div className="grid grid-cols-2 gap-3">
+              <ValueCard
+                label="Giá trị tồn kho"
+                value={data.inventoryValue}
+                icon={Package}
+                color="text-emerald-600"
+                bg="bg-emerald-500/10"
+                hidden={valueHidden}
+              />
+              <ValueCard
+                label="Tổng số dư sổ quỹ"
+                value={data.cashBalance}
+                icon={Wallet}
+                color={data.cashBalance < 0 ? 'text-destructive' : 'text-blue-600'}
+                bg={data.cashBalance < 0 ? 'bg-destructive/10' : 'bg-blue-500/10'}
+                hidden={valueHidden}
+              />
+              <ValueCard
+                label="Công nợ khách hàng"
+                value={data.customerDebt}
+                icon={Users}
+                color="text-violet-600"
+                bg="bg-violet-500/10"
+                prefix="+ "
+                hidden={valueHidden}
+              />
+              <ValueCard
+                label="Công nợ NCC"
+                value={data.supplierDebt}
+                icon={Truck}
+                color="text-orange-600"
+                bg="bg-orange-500/10"
+                prefix="- "
+                hidden={valueHidden}
+              />
+            </div>
+
+            {/* Branch Breakdown */}
+            {data.branches.length > 0 && selectedBranch === 'all' && (
+              <Card>
+                <CardHeader className="p-3 sm:p-4 pb-2">
+                  <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Chi tiết theo chi nhánh
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3 sm:p-4 pt-0 space-y-3">
+                  {data.branches
+                    .sort((a, b) => b.totalValue - a.totalValue)
+                    .map((branch) => (
+                      <BranchRow key={branch.branchId} branch={branch} hidden={valueHidden} />
+                    ))}
+                </CardContent>
+              </Card>
+            )}
+          </>
+        ) : null}
+      </TabsContent>
+
+      {/* CHART TAB */}
+      <TabsContent value="chart">
+        <WarehouseValueChart />
+      </TabsContent>
+    </Tabs>
   );
 }
