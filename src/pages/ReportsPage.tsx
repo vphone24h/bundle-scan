@@ -20,6 +20,7 @@ import {
   Receipt,
   PlayCircle,
   Lock,
+  TrendingUp,
 } from 'lucide-react';
 import { useReportsGuideUrl } from '@/hooks/useAppConfig';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -29,6 +30,7 @@ import { CustomerReport } from '@/components/reports/CustomerReport';
 import { SupplierReport } from '@/components/reports/SupplierReport';
 import { StaffReport } from '@/components/reports/StaffReport';
 import { TaxReport } from '@/components/reports/TaxReport';
+import { WarehouseValueReport } from '@/components/reports/WarehouseValueReport';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,6 +49,7 @@ const baseReportTabs = [
 ];
 
 const taxTab = { id: 'tax', labelKey: 'pages.reports.taxReport', descKey: 'pages.reports.taxReportDesc', icon: Receipt };
+const warehouseValueTab = { id: 'warehouse-value', labelKey: 'Giá trị toàn kho', descKey: 'Tổng quan tài sản doanh nghiệp', icon: TrendingUp };
 
 // --- Tour steps per tab ---
 const TOUR_STEPS: Record<string, TourStep[]> = {
@@ -267,7 +270,7 @@ export default function ReportsPage() {
   // Chỉ super_admin và branch_admin mới thấy báo cáo thuế, và không ở chế độ bí mật
   const isSecretMode = tenant?.business_mode === 'secret';
   const canViewTaxReport = !isSecretMode && (permissions?.role === 'super_admin' || permissions?.role === 'branch_admin');
-  const reportTabs = canViewTaxReport ? [...baseReportTabs, taxTab] : baseReportTabs;
+  const reportTabs = canViewTaxReport ? [...baseReportTabs, taxTab, warehouseValueTab] : [...baseReportTabs, warehouseValueTab];
 
   const activeReport = reportTabs.find(t => t.id === activeTab);
   const ActiveIcon = activeReport?.icon || DollarSign;
@@ -424,6 +427,7 @@ export default function ReportsPage() {
           {activeTab === 'suppliers' && <SupplierReport />}
           {activeTab === 'staff' && <StaffReport />}
           {activeTab === 'tax' && canViewTaxReport && <TaxReport />}
+          {activeTab === 'warehouse-value' && <WarehouseValueReport />}
         </div>
       )}
     </MainLayout>
