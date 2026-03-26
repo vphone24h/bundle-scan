@@ -146,10 +146,7 @@ export function WarehouseValueReport() {
       ) : data ? (
         <>
           {/* Total Value - Hero Card */}
-           <Card
-             className={`border-2 border-primary/30`}
-           >
-          >
+          <Card className="border-2 border-primary/30">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 sm:p-4 rounded-xl bg-primary/10">
