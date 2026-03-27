@@ -903,6 +903,57 @@ export function TenantsManagement() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Tenant Dialog */}
+      <Dialog open={actionDialog === 'edit'} onOpenChange={(open) => !open && setActionDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5" />
+              Sửa thông tin cửa hàng
+            </DialogTitle>
+            <DialogDescription>
+              Cập nhật tên, ID và email cho <strong>{selectedTenant?.name}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Tên cửa hàng</Label>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Nhập tên cửa hàng"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>ID cửa hàng (subdomain)</Label>
+              <Input
+                value={editSubdomain}
+                onChange={(e) => setEditSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                placeholder="vd: cuahang123"
+              />
+              <p className="text-xs text-muted-foreground">Chỉ chữ thường, số và dấu gạch ngang. Dùng để đăng nhập và truy cập website.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                placeholder="email@example.com"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActionDialog(null)}>Hủy</Button>
+            <Button onClick={handleSaveEdit} disabled={savingEdit}>
+              {savingEdit && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <Save className="h-4 w-4 mr-2" />
+              Lưu
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Products Dialog */}
       <TenantProductsDialog
         open={showProductsDialog}
