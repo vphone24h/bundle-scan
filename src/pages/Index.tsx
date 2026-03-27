@@ -5,7 +5,6 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useDashboardStats, useTodaySoldProducts, useRecentProducts, useRecentImportReceipts } from '@/hooks/useDashboardStats';
 import { useReportStats } from '@/hooks/useReportStats';
-import { useDetailedProfitReport } from '@/hooks/useDetailedProfitReport';
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
@@ -172,14 +171,9 @@ const Index = () => {
   };
 
   const { data: todayReportStats } = useReportStats(todayReportFilters);
-  const { data: todayDetailedProfit } = useDetailedProfitReport({
-    ...todayReportFilters,
-    search: undefined,
-  });
 
   const dashboardTodayRevenue = Number(todayReportStats?.netRevenue || 0);
-  const dashboardTodayBusinessProfit = Number(todayDetailedProfit?.totals.totalProfit ?? todayReportStats?.businessProfit ?? 0);
-  const dashboardTodayProfit = dashboardTodayBusinessProfit + Number(todayReportStats?.otherIncome || 0) - Number(todayReportStats?.totalExpenses || 0);
+  const dashboardTodayProfit = Number(todayReportStats?.netProfit || 0);
 
   const profitHidden = hasSecurityPassword && !profitUnlocked;
   const stockValueHidden = hasSecurityPassword && !profitUnlocked;
