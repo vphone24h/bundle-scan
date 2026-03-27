@@ -155,6 +155,7 @@ export function ReceiptReturnDialog({
       setIsBusinessAccounting(true);
       setPaymentsTouched(false);
       setCurrentIndex(0);
+      setReturnQuantities({});
     }
   }, [open]);
 
