@@ -118,6 +118,7 @@ export function DataManagementSection() {
 
   const handleStopTestRequest = () => {
     setConfirmText('');
+    setDeleteMode('full');
     setShowStopTestDialog(true);
   };
 
