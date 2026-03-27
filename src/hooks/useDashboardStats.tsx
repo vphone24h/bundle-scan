@@ -82,8 +82,8 @@ export function useDashboardStats() {
 
       const reportAgg = (todayReportAgg || {}) as Record<string, unknown>;
       const todayRevenue = Number(reportAgg.netRevenue || 0);
-      // Đồng bộ với báo cáo: lấy lợi nhuận kinh doanh (3.1), không lấy lợi nhuận thuần (6)
-      const todayProfit = Number(reportAgg.businessProfit || 0);
+      // Đồng bộ với báo cáo: lấy lợi nhuận thuần (6)
+      const todayProfit = Number(reportAgg.netProfit || 0);
       const todaySold = Number(reportAgg.productsSold || 0);
       const todayImports = todayImportsCount || 0;
 
