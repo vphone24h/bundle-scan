@@ -1632,6 +1632,13 @@ export default function ExportNewPage() {
         onSkip={() => { completeExportTour(); setManualTourActive(false); }}
         tourKey="export_new"
       />
+      <ResumeDraftDialog
+        open={exportDraft.showResumePrompt}
+        itemCount={exportDraft.pendingDraft?.items.length ?? 0}
+        onResume={handleResumeExportDraft}
+        onDiscard={exportDraft.dismissPrompt}
+        title="Phát hiện phiếu xuất chưa hoàn thành"
+      />
     </MainLayout>
   );
 }
