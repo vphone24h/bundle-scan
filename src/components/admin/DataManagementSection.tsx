@@ -145,6 +145,7 @@ export function DataManagementSection() {
           confirmText: confirmText.toLowerCase(),
           password,
           restoreOption: 'delete',
+          deleteMode,
         },
       });
 
@@ -162,7 +163,9 @@ export function DataManagementSection() {
       await refetchTenant();
       queryClient.invalidateQueries();
       
-      toast.success('Đã xoá toàn bộ dữ liệu thành công. Không thể khôi phục.');
+      toast.success(deleteMode === 'keep_templates' 
+        ? 'Đã xoá lịch sử & reset tồn kho. Sản phẩm mẫu được giữ lại.'
+        : 'Đã xoá toàn bộ dữ liệu thành công. Không thể khôi phục.');
     } catch (error) {
       console.error('Stop test error:', error);
       toast.error('Không thể thực hiện: ' + (error as Error).message);
