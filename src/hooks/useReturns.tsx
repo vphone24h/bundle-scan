@@ -314,12 +314,21 @@ export function useCreateImportReturn() {
         if (paymentsError) throw paymentsError;
       }
 
-      const { error: productError } = await supabase
-        .from('products')
-        .update({ status: 'returned' })
-        .eq('id', product.id);
-
-      if (productError) throw productError;
+      // Cập nhật trạng thái sản phẩm
+      if (product.imei) {
+        const { error: productError } = await supabase
+          .from('products')
+          .update({ status: 'returned' })
+          .eq('id', product.id);
+        if (productError) throw productError;
+      } else {
+        // Non-IMEI: set quantity to 0
+        const { error: productError } = await supabase
+          .from('products')
+          .update({ status: 'returned', quantity: 0 })
+          .eq('id', product.id);
+        if (productError) throw productError;
+      }
 
       // Xử lý tiền hoàn trả:
       // - debt: luôn giảm công nợ (không phụ thuộc ghi sổ quỹ)
@@ -642,15 +651,26 @@ export function useCreateExportReturn() {
 
             if (updateError) throw updateError;
           } else {
-            // SẢN PHẨM KHÔNG IMEI: Cộng lại quantity
+            // SẢN PHẨM KHÔNG IMEI: Cộng lại quantity từ export_receipt_items
             const currentQty = existingProduct?.quantity || 0;
             const newStatus = existingProduct?.status === 'sold' ? 'in_stock' : existingProduct?.status;
+
+            // Lấy số lượng đã bán từ export_receipt_item
+            let returnQty = 1;
+            if (item.export_receipt_item_id) {
+              const { data: receiptItem } = await supabase
+                .from('export_receipt_items')
+                .select('quantity')
+                .eq('id', item.export_receipt_item_id)
+                .single();
+              returnQty = Number(receiptItem?.quantity) || 1;
+            }
             
             const { error: updateError } = await supabase
               .from('products')
               .update({ 
-                quantity: currentQty + 1,
-                status: newStatus,
+                quantity: currentQty + returnQty,
+                status: newStatus || 'in_stock',
               })
               .eq('id', item.product_id);
 
