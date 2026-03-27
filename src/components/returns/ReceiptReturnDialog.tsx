@@ -307,7 +307,8 @@ export function ReceiptReturnDialog({
       for (let i = 0; i < returnableItems.length; i++) {
         setCurrentIndex(i);
         const item = returnableItems[i];
-        const itemTotal = item.sale_price * (item.quantity || 1);
+        const returnQty = getReturnQty(item.id, item.quantity || 1);
+        const itemTotal = item.sale_price * returnQty;
         const itemFee = calculateItemFee(itemTotal);
         const itemPayments = calculateItemPayments(itemTotal, itemFee)
           .filter(p => p.amount > 0)
@@ -330,7 +331,7 @@ export function ReceiptReturnDialog({
             imei: item.imei,
             import_price: 0,
             sale_price: item.sale_price,
-            quantity: item.quantity || 1,
+            quantity: returnQty,
             sale_date: receipt.export_date || null,
           },
           feeType: itemFee.feeType,
