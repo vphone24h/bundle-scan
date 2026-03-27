@@ -78,7 +78,7 @@ export function ReceiptReturnDialog({
     (item) => item.status !== 'returned'
   ) || [];
 
-  const totalSalePrice = returnableItems.reduce((sum, item) => sum + item.sale_price, 0);
+  const totalSalePrice = returnableItems.reduce((sum, item) => sum + item.sale_price * (item.quantity || 1), 0);
 
   // Calculate refund amount
   const calculateRefund = () => {
@@ -279,8 +279,9 @@ export function ReceiptReturnDialog({
       for (let i = 0; i < returnableItems.length; i++) {
         setCurrentIndex(i);
         const item = returnableItems[i];
-        const itemFee = calculateItemFee(item.sale_price);
-        const itemPayments = calculateItemPayments(item.sale_price, itemFee)
+        const itemTotal = item.sale_price * (item.quantity || 1);
+        const itemFee = calculateItemFee(itemTotal);
+        const itemPayments = calculateItemPayments(itemTotal, itemFee)
           .filter(p => p.amount > 0)
           .filter(p => !!p.source);
 
@@ -301,6 +302,7 @@ export function ReceiptReturnDialog({
             imei: item.imei,
             import_price: 0,
             sale_price: item.sale_price,
+            quantity: item.quantity || 1,
             sale_date: receipt.export_date || null,
           },
           feeType: itemFee.feeType,
@@ -414,9 +416,15 @@ export function ReceiptReturnDialog({
                           <div className="font-medium">{item.product_name}</div>
                           <div className="text-xs text-muted-foreground">
                             {item.imei ? `IMEI: ${item.imei}` : `SKU: ${item.sku}`}
+                            {!item.imei && (item.quantity || 1) > 1 && ` • SL: ${item.quantity}`}
                           </div>
                         </div>
-                        <span className="font-medium">{formatCurrencyWithSpaces(item.sale_price)}</span>
+                        <div className="text-right">
+                          {(item.quantity || 1) > 1 && (
+                            <div className="text-xs text-muted-foreground">{item.quantity} × {formatCurrencyWithSpaces(item.sale_price)}</div>
+                          )}
+                          <span className="font-medium">{formatCurrencyWithSpaces(item.sale_price * (item.quantity || 1))}</span>
+                        </div>
                       </div>
                     ))}
                   </div>

@@ -560,6 +560,7 @@ export function useCreateExportReturn() {
         // KHÔNG update sản phẩm cũ - sản phẩm cũ vẫn ở trạng thái 'sold'
         const newImportTotal = refundAmount;
         const newUnitImportPrice = returnQty > 0 ? (newImportTotal / returnQty) : 0;
+        const importCode = `PN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
 
         // Lấy thông tin sản phẩm gốc để lấy supplier_id
         let originalSupplierIdForReceipt: string | null = null;
@@ -610,8 +611,8 @@ export function useCreateExportReturn() {
             name: originalProduct?.name || item.product_name,
             sku: originalProduct?.sku || item.sku,
             imei: originalProduct?.imei || item.imei,
-            import_price: newImportPrice,
-            quantity: 1,
+            import_price: newUnitImportPrice,
+            quantity: returnQty,
             status: 'in_stock',
             category_id: originalProduct?.category_id || null,
             supplier_id: originalProduct?.supplier_id || null,
@@ -632,8 +633,8 @@ export function useCreateExportReturn() {
             product_id: newProduct.id,
             imei: item.imei,
             action_type: 'return_with_fee',
-            price: newImportPrice,
-            note: `Trả hàng có phí từ phiếu ${code}. Sản phẩm mới được tạo với giá nhập = ${newImportPrice.toLocaleString('vi-VN')}đ`,
+            price: newUnitImportPrice,
+            note: `Trả hàng có phí từ phiếu ${code}. Sản phẩm mới được tạo với giá nhập = ${newUnitImportPrice.toLocaleString('vi-VN')}đ`,
             created_by: user.id,
           }]);
         }
@@ -658,20 +659,9 @@ export function useCreateExportReturn() {
 
             if (updateError) throw updateError;
           } else {
-            // SẢN PHẨM KHÔNG IMEI: Cộng lại quantity từ export_receipt_items
+            // SẢN PHẨM KHÔNG IMEI: Cộng lại quantity
             const currentQty = existingProduct?.quantity || 0;
             const newStatus = existingProduct?.status === 'sold' ? 'in_stock' : existingProduct?.status;
-
-            // Lấy số lượng đã bán từ export_receipt_item
-            let returnQty = 1;
-            if (item.export_receipt_item_id) {
-              const { data: receiptItem } = await supabase
-                .from('export_receipt_items')
-                .select('quantity')
-                .eq('id', item.export_receipt_item_id)
-                .single();
-              returnQty = Number(receiptItem?.quantity) || 1;
-            }
             
             const { error: updateError } = await supabase
               .from('products')
@@ -700,6 +690,7 @@ export function useCreateExportReturn() {
           imei: item.imei,
           import_price: item.import_price,
           sale_price: item.sale_price,
+          quantity: returnQty,
           original_sale_date: item.sale_date,
           fee_type: feeType,
           fee_percentage: feePercentage,

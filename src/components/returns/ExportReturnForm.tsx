@@ -42,6 +42,8 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
   const [isBusinessAccounting, setIsBusinessAccounting] = useState(true);
   const [recordToCashBook, setRecordToCashBook] = useState(true);
   const [payments, setPayments] = useState<PaymentLine[]>([]);
+  const [returnQty, setReturnQty] = useState<number>(1);
+  const [returnQtyDisplay, setReturnQtyDisplay] = useState<string>('1');
 
   const createExportReturn = useCreateExportReturn();
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
@@ -55,16 +57,33 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
     return [...BUILT_IN_PAYMENT_SOURCES, ...custom];
   }, [customPaymentSources]);
 
+  // Max quantity from item
+  const maxQty = item ? (item.quantity || 1) : 1;
+  const isImei = !!item?.imei;
+
+  // Init returnQty when item changes
+  useEffect(() => {
+    if (item) {
+      const qty = item.quantity || 1;
+      setReturnQty(qty);
+      setReturnQtyDisplay(String(qty));
+    }
+  }, [item]);
+
+  // Total sale amount for return
+  const unitSalePrice = item?.sale_price || 0;
+  const totalSaleAmount = unitSalePrice * returnQty;
+
   // Calculate refund amount
   const calculateRefund = () => {
     if (!item) return 0;
-    if (feeType === 'none') return item.sale_price;
-    if (feeType === 'percentage') return item.sale_price * (1 - feePercentage / 100);
-    return item.sale_price - feeAmount;
+    if (feeType === 'none') return totalSaleAmount;
+    if (feeType === 'percentage') return totalSaleAmount * (1 - feePercentage / 100);
+    return totalSaleAmount - feeAmount;
   };
 
   const refundAmount = calculateRefund();
-  const storeKeepAmount = (item?.sale_price || 0) - refundAmount;
+  const storeKeepAmount = totalSaleAmount - refundAmount;
 
   // Initialize payments when refund amount changes
   useEffect(() => {
@@ -154,6 +173,7 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
         imei: item.imei,
         import_price: 0,
         sale_price: item.sale_price,
+        quantity: returnQty,
         sale_date: item.export_receipts?.export_date || null,
       },
       feeType,
@@ -212,9 +232,33 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
               </div>
             )}
             <div>
-              <Label className="text-muted-foreground">Giá bán</Label>
+              <Label className="text-muted-foreground">Giá bán (đơn giá)</Label>
               <p className="font-bold text-primary">{formatCurrencyWithSpaces(item.sale_price)}</p>
             </div>
+            {!isImei && maxQty > 1 && (
+              <div>
+                <Label className="text-muted-foreground">Số lượng trả (tối đa {maxQty})</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={maxQty}
+                  value={returnQtyDisplay}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setReturnQtyDisplay(val);
+                    const num = parseInt(val) || 0;
+                    setReturnQty(Math.max(1, Math.min(num, maxQty)));
+                  }}
+                  className="w-24 mt-1"
+                />
+              </div>
+            )}
+            {returnQty > 1 && (
+              <div>
+                <Label className="text-muted-foreground">Thành tiền</Label>
+                <p className="font-bold text-lg text-primary">{formatCurrencyWithSpaces(totalSaleAmount)}</p>
+              </div>
+            )}
             <div>
               <Label className="text-muted-foreground">Khách hàng</Label>
               <p>{item.export_receipts?.customers?.name || '-'}</p>
@@ -298,8 +342,8 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
           {/* Refund Summary */}
           <div className="mt-4 p-4 bg-muted rounded-lg space-y-2">
             <div className="flex justify-between">
-              <span>Giá bán:</span>
-              <span className="font-medium">{formatCurrencyWithSpaces(item.sale_price)}</span>
+              <span>Tổng giá bán{returnQty > 1 ? ` (${returnQty} × ${formatCurrencyWithSpaces(unitSalePrice)})` : ''}:</span>
+              <span className="font-medium">{formatCurrencyWithSpaces(totalSaleAmount)}</span>
             </div>
             <div className="flex justify-between text-success">
               <span>Số tiền hoàn cho khách:</span>
