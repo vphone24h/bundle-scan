@@ -41,6 +41,8 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
   const [note, setNote] = useState('');
   const [recordToCashBook, setRecordToCashBook] = useState(true);
   const [payments, setPayments] = useState<PaymentLine[]>([]);
+  const [returnQty, setReturnQty] = useState<number>(1);
+  const [returnQtyDisplay, setReturnQtyDisplay] = useState<string>('1');
 
   const createImportReturn = useCreateImportReturn();
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
@@ -53,9 +55,26 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
     return [...BUILT_IN_PAYMENT_SOURCES, ...custom];
   }, [customPaymentSources]);
 
-  // For non-IMEI products, total cost = import_price * quantity
-  const productQty = product ? (product.imei ? 1 : (Number(product.quantity) || 1)) : 1;
-  const productTotalCost = product ? product.import_price * productQty : 0;
+  const isImei = !!product?.imei;
+  const DECIMAL_UNITS = ['kg', 'lít', 'mét'];
+  const isDecimalUnit = product?.unit ? DECIMAL_UNITS.includes(product.unit.toLowerCase()) : false;
+  const stepValue = isDecimalUnit ? 0.1 : 1;
+  const minValue = isDecimalUnit ? 0.1 : 1;
+  
+  // Max qty from product
+  const maxQty = product ? (isImei ? 1 : (Number(product.quantity) || 1)) : 1;
+
+  // Init returnQty when product changes
+  useEffect(() => {
+    if (product) {
+      const qty = isImei ? 1 : (Number(product.quantity) || 1);
+      setReturnQty(qty);
+      setReturnQtyDisplay(String(qty));
+    }
+  }, [product?.id]);
+
+  // For non-IMEI products, total cost = import_price * returnQty
+  const productTotalCost = product ? product.import_price * returnQty : 0;
 
   // Calculate refund amount based on fee type
   const calculateRefund = () => {
