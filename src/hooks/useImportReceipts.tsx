@@ -895,22 +895,29 @@ export function useReturnImportReceipt() {
 
       const returnIds: string[] = [];
 
-      // Tạo phiếu trả hàng cho từng sản phẩm
+      // Tạo phiếu trả hàng cho từng sản phẩm (tính theo quantity)
+      // Tính tổng giá trị nhập thực tế (import_price * quantity)
+      const totalImportAll = products.reduce((s: number, p: any) => {
+        const qty = Number(p.quantity) || 1;
+        return s + Number(p.import_price) * qty;
+      }, 0);
+
       for (let i = 0; i < products.length; i++) {
         const product = products[i];
+        const qty = Number(product.quantity) || 1;
+        const productTotalCost = Number(product.import_price) * qty;
         const code = products.length === 1 ? baseCode : `${baseCode}_${i + 1}`;
 
         // Calculate per-product refund based on fee
-        const totalImportAll = products.reduce((s: number, p: any) => s + Number(p.import_price), 0);
-        const productRatio = totalImportAll > 0 ? Number(product.import_price) / totalImportAll : 0;
-        let productRefund = product.import_price;
+        const productRatio = totalImportAll > 0 ? productTotalCost / totalImportAll : 0;
+        let productRefund = productTotalCost;
         let productFeeAmount = 0;
         if (feeType === 'percentage') {
-          productFeeAmount = product.import_price * feePercentage / 100;
-          productRefund = product.import_price - productFeeAmount;
+          productFeeAmount = productTotalCost * feePercentage / 100;
+          productRefund = productTotalCost - productFeeAmount;
         } else if (feeType === 'fixed_amount') {
           productFeeAmount = feeAmount * productRatio;
-          productRefund = product.import_price - productFeeAmount;
+          productRefund = productTotalCost - productFeeAmount;
         }
 
         const { data: returnData, error: returnError } = await supabase
@@ -925,6 +932,7 @@ export function useReturnImportReceipt() {
             sku: product.sku,
             imei: product.imei,
             import_price: product.import_price,
+            quantity: qty,
             original_import_date: product.import_date,
             total_refund_amount: productRefund,
             fee_type: feeType,
@@ -941,10 +949,19 @@ export function useReturnImportReceipt() {
         returnIds.push(returnData.id);
 
         // Cập nhật trạng thái sản phẩm
-        await supabase
-          .from('products')
-          .update({ status: 'returned' })
-          .eq('id', product.id);
+        if (product.imei) {
+          // IMEI product: set status to returned
+          await supabase
+            .from('products')
+            .update({ status: 'returned' })
+            .eq('id', product.id);
+        } else {
+          // Non-IMEI product: set quantity to 0 and status to returned
+          await supabase
+            .from('products')
+            .update({ status: 'returned', quantity: 0 })
+            .eq('id', product.id);
+        }
       }
 
       // Tạo thanh toán và sổ quỹ
