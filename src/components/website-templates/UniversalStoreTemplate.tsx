@@ -271,8 +271,7 @@ export default function UniversalStoreTemplate({
 
     if (warrantyResults.length > 0) {
       window.setTimeout(() => {
-        const firstItem = warrantyResultsRef.current?.querySelector<HTMLElement>('[data-warranty-item]');
-        (firstItem ?? warrantyResultsRef.current)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        warrantyResultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }, 140);
     } else {
       window.alert('Không tìm thấy sản phẩm.\nKiểm tra lại IMEI/SĐT');
@@ -398,8 +397,7 @@ export default function UniversalStoreTemplate({
 
       if (persistedResults.length > 0) {
         window.setTimeout(() => {
-          const firstItem = warrantyResultsRef.current?.querySelector<HTMLElement>('[data-warranty-item]');
-          (firstItem ?? warrantyResultsRef.current)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          warrantyResultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }, 180);
       } else {
         window.alert('Không tìm thấy sản phẩm.\nKiểm tra lại IMEI/SĐT');
