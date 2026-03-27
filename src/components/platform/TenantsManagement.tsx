@@ -724,6 +724,15 @@ export function TenantsManagement() {
                       variant="outline" 
                       size="sm" 
                       className="shrink-0 h-9 text-xs px-3"
+                      onClick={() => openEditDialog(tenant)}
+                    >
+                      <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                      Sửa
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="shrink-0 h-9 text-xs px-3"
                       onClick={() => {
                         setSelectedTenant(tenant);
                         setShowProductsDialog(true);
