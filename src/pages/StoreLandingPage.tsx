@@ -121,7 +121,7 @@ function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?:
   }, [storeId, storeName, logoUrl, location.pathname]);
 }
 
-// === Dynamic OG Meta Tags ===
+// === Dynamic OG Meta Tags + Canonical + JSON-LD ===
 function useDynamicOGMeta(title?: string, description?: string, imageUrl?: string) {
   useEffect(() => {
     if (!title) return;
@@ -144,6 +144,20 @@ function useDynamicOGMeta(title?: string, description?: string, imageUrl?: strin
       setMeta('meta[name="description"]', 'name', description);
     }
     if (imageUrl) setMeta('meta[property="og:image"]', 'property', imageUrl);
+
+    // og:url — canonical URL for social sharing
+    const canonicalUrl = window.location.origin + window.location.pathname;
+    setMeta('meta[property="og:url"]', 'property', canonicalUrl);
+
+    // Canonical link tag
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', canonicalUrl);
+
     return () => {
       document.title = prev.title;
       setMeta('meta[property="og:title"]', 'property', prev.ogTitle);
@@ -152,6 +166,99 @@ function useDynamicOGMeta(title?: string, description?: string, imageUrl?: strin
       if (prev.ogImage) setMeta('meta[property="og:image"]', 'property', prev.ogImage);
     };
   }, [title, description, imageUrl]);
+}
+
+// === JSON-LD Structured Data ===
+interface JsonLdData {
+  storeName?: string;
+  storeDescription?: string;
+  storeLogo?: string;
+  storePhone?: string;
+  storeAddress?: string;
+  product?: { name: string; price?: number; salePrice?: number; image?: string; description?: string; id: string; categoryName?: string };
+  article?: { title: string; summary?: string; image?: string; publishedAt?: string; id: string };
+  breadcrumbs?: { name: string; url: string }[];
+}
+
+function useJsonLd(data: JsonLdData) {
+  useEffect(() => {
+    const scripts: HTMLScriptElement[] = [];
+    const addJsonLd = (obj: Record<string, any>) => {
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.textContent = JSON.stringify(obj);
+      document.head.appendChild(script);
+      scripts.push(script);
+    };
+
+    const baseUrl = window.location.origin;
+
+    // Organization schema
+    if (data.storeName) {
+      addJsonLd({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: data.storeName,
+        url: baseUrl,
+        ...(data.storeLogo ? { logo: data.storeLogo } : {}),
+        ...(data.storeDescription ? { description: data.storeDescription } : {}),
+        ...(data.storePhone ? { telephone: data.storePhone } : {}),
+        ...(data.storeAddress ? { address: { '@type': 'PostalAddress', streetAddress: data.storeAddress } } : {}),
+      });
+    }
+
+    // Product schema
+    if (data.product) {
+      const p = data.product;
+      addJsonLd({
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: p.name,
+        ...(p.image ? { image: p.image } : {}),
+        ...(p.description ? { description: p.description } : {}),
+        ...(p.categoryName ? { category: p.categoryName } : {}),
+        offers: {
+          '@type': 'Offer',
+          priceCurrency: 'VND',
+          price: p.salePrice || p.price || 0,
+          availability: 'https://schema.org/InStock',
+          url: window.location.href,
+        },
+      });
+    }
+
+    // Article schema
+    if (data.article) {
+      const a = data.article;
+      addJsonLd({
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: a.title,
+        ...(a.image ? { image: a.image } : {}),
+        ...(a.summary ? { description: a.summary } : {}),
+        ...(a.publishedAt ? { datePublished: a.publishedAt } : {}),
+        ...(data.storeName ? { publisher: { '@type': 'Organization', name: data.storeName, ...(data.storeLogo ? { logo: { '@type': 'ImageObject', url: data.storeLogo } } : {}) } } : {}),
+      });
+    }
+
+    // BreadcrumbList
+    if (data.breadcrumbs && data.breadcrumbs.length > 0) {
+      addJsonLd({
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: data.breadcrumbs.map((b, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          name: b.name,
+          item: b.url,
+        })),
+      });
+    }
+
+    return () => {
+      scripts.forEach(s => s.remove());
+    };
+  }, [data.storeName, data.storeDescription, data.storeLogo, data.product?.id, data.article?.id]);
 }
 
 interface StoreLandingPageProps { storeIdFromSubdomain?: string | null; }
@@ -403,6 +510,50 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const ogDesc = settings?.store_description || settings?.meta_description || undefined;
   const ogImage = settings?.store_logo_url || undefined;
   useDynamicOGMeta(ogTitle, ogDesc, ogImage);
+
+  // JSON-LD structured data for SEO
+  const jsonLdData = useMemo<JsonLdData>(() => {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const breadcrumbs: { name: string; url: string }[] = [{ name: storeName || 'Trang chủ', url: baseUrl }];
+
+    if (pathInfo?.pageView === 'products' && pathInfo.contentId && productsData?.products) {
+      const prod = productsData.products.find(p => p.id?.startsWith(pathInfo.contentId!));
+      if (prod) {
+        breadcrumbs.push({ name: 'Sản phẩm', url: `${baseUrl}/san-pham` });
+        breadcrumbs.push({ name: prod.name, url: window.location.href });
+        return {
+          storeName, storeDescription: ogDesc, storeLogo: ogImage,
+          storePhone: (settings as any)?.hotline,
+          storeAddress: (settings as any)?.store_address,
+          product: {
+            name: prod.name,
+            price: prod.price,
+            salePrice: prod.sale_price,
+            image: prod.image_url,
+            description: prod.description,
+            id: prod.id,
+            categoryName: (prod as any).category_name,
+          },
+          breadcrumbs,
+        };
+      }
+    }
+    if (pathInfo?.pageView === 'news' && pathInfo.contentId && articlesData?.articles) {
+      const art = articlesData.articles.find(a => a.id?.startsWith(pathInfo.contentId!));
+      if (art) {
+        breadcrumbs.push({ name: 'Tin tức', url: `${baseUrl}/tin-tuc` });
+        breadcrumbs.push({ name: art.title, url: window.location.href });
+        return {
+          storeName, storeDescription: ogDesc, storeLogo: ogImage,
+          article: { title: art.title, summary: art.summary, image: art.thumbnail_url, publishedAt: art.created_at, id: art.id },
+          breadcrumbs,
+        };
+      }
+    }
+    return { storeName, storeDescription: ogDesc, storeLogo: ogImage, storePhone: (settings as any)?.hotline, storeAddress: (settings as any)?.store_address, breadcrumbs };
+  }, [storeName, ogDesc, ogImage, pathInfo?.pageView, pathInfo?.contentId, productsData?.products, articlesData?.articles, settings]);
+
+  useJsonLd(jsonLdData);
 
   // Only keep recovering when BOTH identifier and tenant data are missing.
   // This allows rendering cached tenant data instantly even if identifier is temporarily unavailable.
