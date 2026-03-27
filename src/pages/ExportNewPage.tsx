@@ -639,6 +639,19 @@ export default function ExportNewPage() {
     setProductSuggestions([]);
   };
 
+  // Auto-save export cart to localStorage for draft persistence
+  useEffect(() => {
+    exportDraft.saveDraft(cart);
+  }, [cart]);
+
+  // Handle resume export draft
+  const handleResumeExportDraft = useCallback(() => {
+    if (exportDraft.pendingDraft) {
+      setCart(exportDraft.pendingDraft.items);
+    }
+    exportDraft.acceptDraft();
+  }, [exportDraft.pendingDraft]);
+
 
   // Add to cart
   const handleAddToCart = () => {
