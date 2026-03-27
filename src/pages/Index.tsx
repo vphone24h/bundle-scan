@@ -4,11 +4,9 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useDashboardStats, useTodaySoldProducts, useRecentProducts, useRecentImportReceipts } from '@/hooks/useDashboardStats';
-import { useReportStats } from '@/hooks/useReportStats';
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
-import { getLocalDateString } from '@/lib/vietnamTime';
 import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Calculator, PlayCircle, Crown, MessageCircle, Eye, EyeOff } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
@@ -160,20 +158,6 @@ const Index = () => {
   const { unlocked: profitUnlocked, unlock: unlockProfit } = useSecurityUnlock('dashboard_profit');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [passwordDialogContext, setPasswordDialogContext] = useState<'profit' | 'stockValue'>('profit');
-
-  const todayDate = getLocalDateString();
-  const reportBranchId = permissions?.canViewAllBranches ? undefined : permissions?.branchId || undefined;
-  const todayReportFilters = {
-    startDate: todayDate,
-    endDate: todayDate,
-    branchId: reportBranchId,
-    categoryId: undefined,
-  };
-
-  const { data: todayReportStats } = useReportStats(todayReportFilters);
-
-  const dashboardTodayRevenue = Number(todayReportStats?.netRevenue || 0);
-  const dashboardTodayProfit = Number(todayReportStats?.netProfit || 0);
 
   const profitHidden = hasSecurityPassword && !profitUnlocked;
   const stockValueHidden = hasSecurityPassword && !profitUnlocked;
@@ -348,14 +332,14 @@ const Index = () => {
                     </>
                   ) : (
                     <div className="cursor-pointer" onClick={() => navigate('/reports')}>
-                      <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(dashboardTodayProfit)}</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(stats?.todayProfit || 0)}</p>
                       <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayProfit')}</p>
                     </div>
                   )}
                 </div>
               )}
               <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/reports')}>
-                <p className="text-2xl sm:text-3xl font-bold text-primary">{formatCurrency(dashboardTodayRevenue)}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-primary">{formatCurrency(stats?.todayRevenue || 0)}</p>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayRevenue')}</p>
               </div>
               <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/export/history')}>

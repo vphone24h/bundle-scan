@@ -66,10 +66,7 @@ export function useDashboardStats() {
       }
 
       // Sync Dashboard with Reports source of truth: no local recalculation
-      const [
-        { data: todayReportAgg, error: reportError },
-        { count: todayImportsCount, error: todayImportsError },
-      ] = await Promise.all([
+      const [{ data: todayReportAgg, error: reportError }, { count: todayImportsCount, error: todayImportsError }] = await Promise.all([
         supabase.rpc('get_report_stats_aggregated' as any, {
           p_tenant_id: tenant!.id,
           p_start_iso: todayStartUTC,
@@ -84,7 +81,6 @@ export function useDashboardStats() {
       if (todayImportsError) throw todayImportsError;
 
       const reportAgg = (todayReportAgg || {}) as Record<string, unknown>;
-      // Đồng bộ trực tiếp từ Báo cáo: không tự tính lại
       const todayRevenue = Number(reportAgg.netRevenue || 0);
       const todayProfit = Number(reportAgg.netProfit || 0);
       const todaySold = Number(reportAgg.productsSold || 0);

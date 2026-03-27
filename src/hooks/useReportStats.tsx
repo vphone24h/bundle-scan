@@ -1,4 +1,4 @@
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
@@ -230,8 +230,6 @@ export function useReportStats(filters?: {
     },
     enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
     refetchOnWindowFocus: false,
-    placeholderData: keepPreviousData,
-    staleTime: 30_000,
   });
 }
 
@@ -280,7 +278,5 @@ export function useReportChartData(filters?: {
     },
     enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
     refetchOnWindowFocus: false,
-    placeholderData: keepPreviousData,
-    staleTime: 30_000,
   });
 }
