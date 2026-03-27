@@ -150,6 +150,10 @@ export function useAllTenants() {
       if (error) throw error;
       return data as Tenant[];
     },
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 }
 
