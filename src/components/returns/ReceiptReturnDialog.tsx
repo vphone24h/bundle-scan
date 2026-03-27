@@ -438,23 +438,41 @@ export function ReceiptReturnDialog({
                 </CardHeader>
                 <CardContent className="py-2">
                   <div className="space-y-2 text-sm">
-                    {returnableItems.map((item, index) => (
-                      <div key={item.id} className="flex justify-between items-center py-1 border-b last:border-0">
-                        <div>
+                    {returnableItems.map((item, index) => {
+                      const maxQty = item.quantity || 1;
+                      const returnQty = getReturnQty(item.id, maxQty);
+                      const itemTotal = item.sale_price * returnQty;
+                      return (
+                      <div key={item.id} className="flex justify-between items-start py-2 border-b last:border-0 gap-2">
+                        <div className="flex-1 min-w-0">
                           <div className="font-medium">{item.product_name}</div>
                           <div className="text-xs text-muted-foreground">
                             {item.imei ? `IMEI: ${item.imei}` : `SKU: ${item.sku}`}
-                            {!item.imei && (item.quantity || 1) > 1 && ` • SL: ${item.quantity}`}
                           </div>
-                        </div>
-                        <div className="text-right">
-                          {(item.quantity || 1) > 1 && (
-                            <div className="text-xs text-muted-foreground">{item.quantity} × {formatCurrencyWithSpaces(item.sale_price)}</div>
+                          {!item.imei && maxQty > 1 && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-muted-foreground">SL trả:</span>
+                              <Input
+                                type="number"
+                                min={1}
+                                max={maxQty}
+                                value={returnQty}
+                                onChange={(e) => handleReturnQtyChange(item.id, e.target.value, maxQty)}
+                                className="w-16 h-7 text-xs text-center"
+                              />
+                              <span className="text-xs text-muted-foreground">/ {maxQty}</span>
+                            </div>
                           )}
-                          <span className="font-medium">{formatCurrencyWithSpaces(item.sale_price * (item.quantity || 1))}</span>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          {returnQty > 1 && (
+                            <div className="text-xs text-muted-foreground">{returnQty} × {formatCurrencyWithSpaces(item.sale_price)}</div>
+                          )}
+                          <span className="font-medium">{formatCurrencyWithSpaces(itemTotal)}</span>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
