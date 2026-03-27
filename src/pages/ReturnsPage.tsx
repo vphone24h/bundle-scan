@@ -913,6 +913,13 @@ export default function ReturnsPage() {
          profiles={profiles}
        />
 
+       {/* Edit Dialog */}
+       <EditReturnDialog
+         returnItem={itemToEdit}
+         open={editDialogOpen}
+         onOpenChange={setEditDialogOpen}
+       />
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
