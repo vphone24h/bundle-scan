@@ -122,6 +122,8 @@ export default function ImportNewPage() {
     }
   }, [branches, selectedBranchId, isSuperAdmin, permissions?.branchId]);
 
+  const draft = useDraftCart<ImportReceiptItem>('import_draft_cart');
+
   const [cart, setCart] = useState<ImportReceiptItem[]>([]);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [excelImportOpen, setExcelImportOpen] = useState(false);
