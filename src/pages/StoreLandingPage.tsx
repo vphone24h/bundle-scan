@@ -532,7 +532,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
             image: prod.image_url,
             description: prod.description,
             id: prod.id,
-            categoryName: prod.category_name,
+            categoryName: (prod as any).category_name,
           },
           breadcrumbs,
         };
