@@ -60,7 +60,10 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
   ) || [];
   
   const totalImportAmount = inStockProducts.reduce(
-    (sum: number, item: any) => sum + Number(item.import_price),
+    (sum: number, item: any) => {
+      const qty = Number(item.quantity) || 1;
+      return sum + Number(item.import_price) * qty;
+    },
     0
   );
 
@@ -201,7 +204,7 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
           <div className="space-y-6">
             {/* Products to return */}
             <div className="space-y-2">
-              <Label>Sản phẩm sẽ trả ({inStockProducts.length} sản phẩm)</Label>
+              <Label>Sản phẩm sẽ trả ({inStockProducts.reduce((s: number, item: any) => s + (Number(item.quantity) || 1), 0)} sản phẩm)</Label>
               <div className="border rounded-lg divide-y max-h-48 overflow-y-auto">
                 {inStockProducts.map((item: any) => (
                   <div key={item.id} className="p-3 flex items-center justify-between">
@@ -213,7 +216,10 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium">{formatCurrencyWithSpaces(Number(item.import_price))}</p>
+                      {(Number(item.quantity) || 1) > 1 && (
+                        <p className="text-xs text-muted-foreground">SL: {Number(item.quantity)} × {formatCurrencyWithSpaces(Number(item.import_price))}</p>
+                      )}
+                      <p className="font-medium">{formatCurrencyWithSpaces(Number(item.import_price) * (Number(item.quantity) || 1))}</p>
                       <Badge variant="outline" className="text-xs">Tồn kho</Badge>
                     </div>
                   </div>
