@@ -76,52 +76,71 @@ export default function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      localStorage.setItem(CURRENT_STORE_ID_KEY, storeId.toLowerCase().trim());
-      const { error } = await signIn(loginEmail, loginPassword);
+      const inputStoreId = storeId.toLowerCase().trim();
+      localStorage.setItem(CURRENT_STORE_ID_KEY, inputStoreId);
+      
+      const { error, data: signInData } = await supabase.auth.signInWithPassword({ 
+        email: loginEmail, 
+        password: loginPassword 
+      });
       if (error) {
         toast({ title: t('pages.auth.loginFailed'), description: t('pages.auth.wrongCredentials'), variant: 'destructive' });
         setLoading(false);
         return;
       }
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: platformUser } = await supabase.from('platform_users').select('tenant_id, platform_role').eq('user_id', user.id).maybeSingle();
-        const { data: userRole } = await supabase.from('user_roles').select('tenant_id').eq('user_id', user.id).maybeSingle();
-        const userTenantId = platformUser?.tenant_id || userRole?.tenant_id;
-        if (platformUser?.platform_role === 'platform_admin') {
-          toast({ title: t('pages.auth.loginSuccess'), description: t('pages.auth.welcomeAdmin') });
-          setPendingRedirect('/platform-admin');
-          return;
-        }
-        if (!userTenantId) {
-          await supabase.auth.signOut({ scope: 'local' });
-          toast({ title: t('pages.auth.loginFailed'), description: t('pages.auth.wrongCredentials'), variant: 'destructive' });
-          setLoading(false);
-          return;
-        }
-        const { data: tenant, error: tenantError } = await supabase.from('tenants').select('id, subdomain, status').eq('id', userTenantId).maybeSingle();
-        if (tenantError || !tenant) {
-          await supabase.auth.signOut({ scope: 'local' });
-          toast({ title: t('pages.auth.loginFailed'), description: t('pages.auth.wrongCredentials'), variant: 'destructive' });
-          setLoading(false);
-          return;
-        }
-        if (tenant.status === 'locked') {
-          await supabase.auth.signOut({ scope: 'local' });
-          toast({ title: t('pages.auth.storeLocked'), description: t('pages.auth.storeLockedDesc'), variant: 'destructive' });
-          setLoading(false);
-          return;
-        }
-        const inputStoreId = storeId.toLowerCase().trim();
-        if (tenant.subdomain !== inputStoreId) {
-          await supabase.auth.signOut({ scope: 'local' });
-          toast({ title: t('pages.auth.loginFailed'), description: t('pages.auth.wrongCredentials'), variant: 'destructive' });
-          setLoading(false);
-          return;
-        }
+      
+      const loggedInUser = signInData.user;
+      if (!loggedInUser) {
+        setLoading(false);
+        return;
       }
+
+      // Parallel queries instead of sequential
+      const [platformRes, roleRes] = await Promise.all([
+        supabase.from('platform_users').select('tenant_id, platform_role').eq('user_id', loggedInUser.id).maybeSingle(),
+        supabase.from('user_roles').select('tenant_id').eq('user_id', loggedInUser.id).maybeSingle(),
+      ]);
+
+      const platformUser = platformRes.data;
+      const userRole = roleRes.data;
+      const userTenantId = platformUser?.tenant_id || userRole?.tenant_id;
+
+      if (platformUser?.platform_role === 'platform_admin') {
+        toast({ title: t('pages.auth.loginSuccess'), description: t('pages.auth.welcomeAdmin') });
+        navigate('/platform-admin', { replace: true });
+        return;
+      }
+
+      if (!userTenantId) {
+        await supabase.auth.signOut({ scope: 'local' });
+        toast({ title: t('pages.auth.loginFailed'), description: t('pages.auth.wrongCredentials'), variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
+      const { data: tenant } = await supabase.from('tenants').select('id, subdomain, status').eq('id', userTenantId).maybeSingle();
+      
+      if (!tenant) {
+        await supabase.auth.signOut({ scope: 'local' });
+        toast({ title: t('pages.auth.loginFailed'), description: t('pages.auth.wrongCredentials'), variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+      if (tenant.status === 'locked') {
+        await supabase.auth.signOut({ scope: 'local' });
+        toast({ title: t('pages.auth.storeLocked'), description: t('pages.auth.storeLockedDesc'), variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+      if (tenant.subdomain !== inputStoreId) {
+        await supabase.auth.signOut({ scope: 'local' });
+        toast({ title: t('pages.auth.loginFailed'), description: t('pages.auth.wrongCredentials'), variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
       toast({ title: t('pages.auth.loginSuccess'), description: t('pages.auth.welcomeBack') });
-      setPendingRedirect('/');
+      navigate('/', { replace: true });
     } catch (error: any) {
       toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
       setLoading(false);
