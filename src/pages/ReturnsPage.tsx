@@ -118,6 +118,8 @@ export default function ReturnsPage() {
   const [selectedReturnItem, setSelectedReturnItem] = useState<CombinedReturn | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<CombinedReturn | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [itemToEdit, setItemToEdit] = useState<CombinedReturn | null>(null);
 
   const deleteImportReturn = useDeleteImportReturn();
   const deleteExportReturn = useDeleteExportReturn();
