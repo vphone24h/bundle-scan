@@ -31,9 +31,11 @@ export function SecurityPasswordDialog({ open, onOpenChange, onSuccess, title, d
     try {
       const result = await verify.mutateAsync(password);
       if (result.valid) {
-        onSuccess();
+        // Close immediately for fast UX
         onOpenChange(false);
         setPassword('');
+        // Call onSuccess after closing
+        onSuccess();
       } else {
         toast.error('Mật khẩu không đúng');
       }
