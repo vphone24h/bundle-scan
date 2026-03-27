@@ -268,6 +268,15 @@ export default function UniversalStoreTemplate({
       results: warrantyResults,
     });
     setLookupEnabled(false);
+
+    if (warrantyResults.length > 0) {
+      window.setTimeout(() => {
+        const firstItem = warrantyResultsRef.current?.querySelector<HTMLElement>('[data-warranty-item]');
+        (firstItem ?? warrantyResultsRef.current)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 140);
+    } else {
+      window.alert('Không tìm thấy sản phẩm.\nKiểm tra lại IMEI/SĐT');
+    }
   }, [warrantyStorageKey, lookupEnabled, submittedValue, isFetched, warrantyError, warrantyResults]);
 
   useEffect(() => {
@@ -386,6 +395,15 @@ export default function UniversalStoreTemplate({
     if (normalized === submittedValue && persistedResults !== null) {
       setLookupEnabled(false);
       if (pageView === 'home') setPageView('warranty');
+
+      if (persistedResults.length > 0) {
+        window.setTimeout(() => {
+          const firstItem = warrantyResultsRef.current?.querySelector<HTMLElement>('[data-warranty-item]');
+          (firstItem ?? warrantyResultsRef.current)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 180);
+      } else {
+        window.alert('Không tìm thấy sản phẩm.\nKiểm tra lại IMEI/SĐT');
+      }
       return;
     }
 
@@ -1714,7 +1732,7 @@ export default function UniversalStoreTemplate({
                     {effectiveWarrantyResults.map(item => {
                       const ws = calculateWarrantyStatus(item);
                       return (
-                        <div key={item.id} className="bg-white rounded-2xl p-5 space-y-4 border border-black/5">
+                        <div key={item.id} data-warranty-item className="bg-white rounded-2xl p-5 space-y-4 border border-black/5">
                           <div className="flex items-start gap-3">
                             <div className="flex-1">
                               <h3 className="font-semibold text-sm">{item.product_name}</h3>
