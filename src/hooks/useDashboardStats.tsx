@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
 import { getLocalDateString, getLocalDateRangeISO } from '@/lib/vietnamTime';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 export interface DashboardStats {
   totalProducts: number;
@@ -65,8 +66,50 @@ export function useDashboardStats() {
         todayImportsQuery = todayImportsQuery.eq('branch_id', effectiveBranchId);
       }
 
+      const buildSoldProfitQuery = () => {
+        let q = supabase
+          .from('export_receipt_items')
+          .select(`
+            sale_price,
+            quantity,
+            product_id,
+            products(import_price),
+            export_receipts!inner(export_date, branch_id, status)
+          `)
+          .in('status', ['sold', 'returned'])
+          .neq('export_receipts.status', 'cancelled')
+          .gte('export_receipts.export_date', todayStartUTC)
+          .lte('export_receipts.export_date', todayEndUTC);
+
+        if (effectiveBranchId) {
+          q = q.eq('export_receipts.branch_id', effectiveBranchId);
+        }
+
+        return q;
+      };
+
+      const buildReturnProfitQuery = () => {
+        let q = supabase
+          .from('export_returns')
+          .select('sale_price, quantity, product_id, fee_type, return_date, branch_id, products(import_price)')
+          .eq('fee_type', 'none')
+          .gte('return_date', todayStartUTC)
+          .lte('return_date', todayEndUTC);
+
+        if (effectiveBranchId) {
+          q = q.eq('branch_id', effectiveBranchId);
+        }
+
+        return q;
+      };
+
       // Sync Dashboard with Reports source of truth: no local recalculation
-      const [{ data: todayReportAgg, error: reportError }, { count: todayImportsCount, error: todayImportsError }] = await Promise.all([
+      const [
+        { data: todayReportAgg, error: reportError },
+        { count: todayImportsCount, error: todayImportsError },
+        soldProfitRows,
+        returnProfitRows,
+      ] = await Promise.all([
         supabase.rpc('get_report_stats_aggregated' as any, {
           p_tenant_id: tenant!.id,
           p_start_iso: todayStartUTC,
@@ -75,14 +118,33 @@ export function useDashboardStats() {
           p_category_id: null,
         }),
         todayImportsQuery,
+        fetchAllRows<any>(() => buildSoldProfitQuery()),
+        fetchAllRows<any>(() => buildReturnProfitQuery()),
       ]);
 
       if (reportError) throw reportError;
       if (todayImportsError) throw todayImportsError;
 
+      const todayBusinessProfitFromDetails =
+        (soldProfitRows || []).reduce((sum, item: any) => {
+          const qty = Number(item.quantity ?? 1) || 1;
+          const lineSalePrice = Number(item.sale_price || 0) * qty;
+          const lineImportPrice = Number(item.products?.import_price || 0) * qty;
+          return sum + (lineSalePrice - lineImportPrice);
+        }, 0) -
+        (returnProfitRows || []).reduce((sum, item: any) => {
+          const qty = Number(item.quantity ?? 1) || 1;
+          const lineSalePrice = Number(item.sale_price || 0) * qty;
+          const lineImportPrice = Number(item.products?.import_price || 0) * qty;
+          return sum + (lineSalePrice - lineImportPrice);
+        }, 0);
+
       const reportAgg = (todayReportAgg || {}) as Record<string, unknown>;
       const todayRevenue = Number(reportAgg.netRevenue || 0);
-      const todayProfit = Number(reportAgg.netProfit || 0);
+      const totalExpenses = Number(reportAgg.totalExpenses || 0);
+      const otherIncome = Number(reportAgg.otherIncome || 0);
+      // Đồng bộ tuyệt đối với báo cáo: LN thuần = LN KD (từ bảng chi tiết) + Thu nhập khác - Chi phí
+      const todayProfit = todayBusinessProfitFromDetails + otherIncome - totalExpenses;
       const todaySold = Number(reportAgg.productsSold || 0);
       const todayImports = todayImportsCount || 0;
 
