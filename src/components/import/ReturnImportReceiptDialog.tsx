@@ -77,7 +77,7 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
   
   const totalImportAmount = inStockProducts.reduce(
     (sum: number, item: any) => {
-      const qty = item.products?.imei ? 1 : (returnQuantities[item.id] ?? Number(item.quantity) || 1);
+      const qty = item.products?.imei ? 1 : (returnQuantities[item.id] ?? (Number(item.quantity) || 1));
       return sum + Number(item.import_price) * qty;
     },
     0
