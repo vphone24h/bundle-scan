@@ -154,11 +154,13 @@ export function RevenueProfitReport() {
   const stats = useMemo(() => {
     if (!rawStats) return null;
     const businessProfit = Number(detailTotals?.totalProfit ?? rawStats.businessProfit ?? 0);
+    const totalExpenses = Number(rawStats.totalExpenses || 0);
+    const otherIncome = Number(rawStats.otherIncome || 0);
     return {
       ...rawStats,
       businessProfit,
-      // LN thuần lấy trực tiếp từ báo cáo tổng hợp (RPC) để làm nguồn đồng bộ cho Dashboard
-      netProfit: Number(rawStats.netProfit || 0),
+      // Công thức chuẩn: LN thuần = LN KD + Thu nhập khác - Chi phí
+      netProfit: businessProfit + otherIncome - totalExpenses,
     };
   }, [rawStats, detailTotals]);
 
