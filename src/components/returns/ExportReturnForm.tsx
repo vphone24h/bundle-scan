@@ -173,6 +173,7 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
         imei: item.imei,
         import_price: 0,
         sale_price: item.sale_price,
+        quantity: returnQty,
         sale_date: item.export_receipts?.export_date || null,
       },
       feeType,
@@ -231,9 +232,33 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
               </div>
             )}
             <div>
-              <Label className="text-muted-foreground">Giá bán</Label>
+              <Label className="text-muted-foreground">Giá bán (đơn giá)</Label>
               <p className="font-bold text-primary">{formatCurrencyWithSpaces(item.sale_price)}</p>
             </div>
+            {!isImei && maxQty > 1 && (
+              <div>
+                <Label className="text-muted-foreground">Số lượng trả (tối đa {maxQty})</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={maxQty}
+                  value={returnQtyDisplay}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setReturnQtyDisplay(val);
+                    const num = parseInt(val) || 0;
+                    setReturnQty(Math.max(1, Math.min(num, maxQty)));
+                  }}
+                  className="w-24 mt-1"
+                />
+              </div>
+            )}
+            {returnQty > 1 && (
+              <div>
+                <Label className="text-muted-foreground">Thành tiền</Label>
+                <p className="font-bold text-lg text-primary">{formatCurrencyWithSpaces(totalSaleAmount)}</p>
+              </div>
+            )}
             <div>
               <Label className="text-muted-foreground">Khách hàng</Label>
               <p>{item.export_receipts?.customers?.name || '-'}</p>
