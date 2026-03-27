@@ -44,6 +44,7 @@ export interface ExportReturn {
   import_price: number;
   sale_price: number;
   quantity: number;
+  original_sale_date: string | null;
   fee_type: 'none' | 'percentage' | 'fixed_amount';
   fee_percentage: number;
   fee_amount: number;
