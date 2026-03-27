@@ -28,7 +28,9 @@ import {
   Mail,
   Filter,
   Globe,
-  CheckCircle2
+  CheckCircle2,
+  Pencil,
+  Save
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -69,7 +71,7 @@ export function TenantsManagement() {
   
   const [search, setSearch] = useState('');
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
-  const [actionDialog, setActionDialog] = useState<'lock' | 'unlock' | 'extend' | 'set_days' | null>(null);
+  const [actionDialog, setActionDialog] = useState<'lock' | 'unlock' | 'extend' | 'set_days' | 'edit' | null>(null);
   const [reason, setReason] = useState('');
   const [days, setDays] = useState('30');
   const [setDaysValue, setSetDaysValue] = useState('0');
@@ -82,6 +84,12 @@ export function TenantsManagement() {
   const [bulkExtendDays, setBulkExtendDays] = useState('7');
   const [bulkExtendNote, setBulkExtendNote] = useState('');
   const [bulkExtending, setBulkExtending] = useState(false);
+  
+  // Edit tenant states
+  const [editName, setEditName] = useState('');
+  const [editSubdomain, setEditSubdomain] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
   
   // Filters
   const [statusFilter, setStatusFilter] = useState('_all_');
