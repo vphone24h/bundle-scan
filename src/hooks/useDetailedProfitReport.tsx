@@ -66,6 +66,7 @@ export function useDetailedProfitReport(filters?: {
             sku,
             imei,
             sale_price,
+            quantity,
             status,
             product_id,
             category_id,
@@ -178,9 +179,11 @@ export function useDetailedProfitReport(filters?: {
       soldItems?.forEach(item => {
         const receipt = item.export_receipts as any;
         const productInfo = item.product_id ? productsMap[item.product_id] : null;
-        const importPrice = productInfo?.import_price || 0;
-        const salePrice = Number(item.sale_price);
-        const profit = salePrice - importPrice;
+        const itemQty = Number(item.quantity ?? 1) || 1;
+        const unitImportPrice = productInfo?.import_price || 0;
+        const lineImportPrice = unitImportPrice * itemQty;
+        const lineSalePrice = Number(item.sale_price) * itemQty;
+        const lineProfit = lineSalePrice - lineImportPrice;
 
         if (item.imei) {
           results.push({
@@ -190,10 +193,10 @@ export function useDetailedProfitReport(filters?: {
             imei: item.imei,
             branchId: receipt?.branch_id,
             branchName: receipt?.branches?.name || 'N/A',
-            importPrice,
-            salePrice,
-            quantity: 1,
-            profit,
+            importPrice: lineImportPrice,
+            salePrice: lineSalePrice,
+            quantity: itemQty,
+            profit: lineProfit,
             saleDate: receipt?.export_date,
             status: 'sold',
             customerId: receipt?.customer_id,
@@ -210,7 +213,7 @@ export function useDetailedProfitReport(filters?: {
               imei: null,
               branchId: receipt?.branch_id,
               branchName: receipt?.branches?.name || 'N/A',
-              importPrice,
+              importPrice: 0,
               salePrice: 0,
               quantity: 0,
               profit: 0,
@@ -221,9 +224,10 @@ export function useDetailedProfitReport(filters?: {
               receiptCode: receipt?.code || '',
             };
           }
-          nonImeiGroupMap[groupKey].salePrice += salePrice;
-          nonImeiGroupMap[groupKey].quantity += 1;
-          nonImeiGroupMap[groupKey].profit += profit;
+          nonImeiGroupMap[groupKey].importPrice += lineImportPrice;
+          nonImeiGroupMap[groupKey].salePrice += lineSalePrice;
+          nonImeiGroupMap[groupKey].quantity += itemQty;
+          nonImeiGroupMap[groupKey].profit += lineProfit;
         }
       });
 
@@ -241,8 +245,9 @@ export function useDetailedProfitReport(filters?: {
         }
 
         const originalSalePrice = Number(item.sale_price);
-        const originalImportPrice = productInfo?.import_price || 0;
-        const originalProfit = originalSalePrice - originalImportPrice;
+        const itemQty = Number(item.quantity ?? 1) || 1;
+        const originalImportPrice = (productInfo?.import_price || 0) * itemQty;
+        const originalProfit = (originalSalePrice * itemQty) - originalImportPrice;
 
         const profit = -originalProfit;
 
@@ -255,7 +260,7 @@ export function useDetailedProfitReport(filters?: {
           branchName: (item.branches as any)?.name || 'N/A',
           importPrice: 0,
           salePrice: 0,
-          quantity: 1,
+          quantity: itemQty,
           profit,
           saleDate: item.return_date,
           status: 'returned',

@@ -92,7 +92,7 @@ export function useReportStats(filters?: {
         let q = supabase
           .from('export_receipt_items')
           .select(`
-            product_name, sku, sale_price, status, product_id, category_id,
+            product_name, sku, sale_price, quantity, status, product_id, category_id,
             categories(name),
             export_receipts!inner(export_date, branch_id, status),
             products(import_price)
@@ -115,7 +115,7 @@ export function useReportStats(filters?: {
       const buildReturnDetailQuery = () => {
         let q = supabase
           .from('export_returns')
-          .select('product_name, imei, import_price, sale_price, return_date, branch_id, fee_type, product_id, products(import_price)')
+          .select('product_name, imei, import_price, sale_price, quantity, return_date, branch_id, fee_type, product_id, products(import_price)')
           .eq('fee_type', 'none')
           .gte('return_date', startISO)
           .lte('return_date', endISO)
@@ -150,8 +150,9 @@ export function useReportStats(filters?: {
 
       // Build detail arrays for popup
       const salesDetails: SaleDetailItem[] = (salesRaw || []).map((item: any) => {
-        const salePrice = Number(item.sale_price);
-        const importPrice = Number(item.products?.import_price || 0);
+        const qty = Number(item.quantity ?? 1) || 1;
+        const salePrice = Number(item.sale_price) * qty;
+        const importPrice = Number(item.products?.import_price || 0) * qty;
         return {
           date: item.export_receipts?.export_date || '',
           productName: item.product_name || 'SP',
@@ -165,8 +166,9 @@ export function useReportStats(filters?: {
       });
 
       const returnDetails: ReturnDetailItem[] = (returnsRaw || []).map((item: any) => {
-        const salePrice = Number(item.sale_price);
-        const importPrice = Number(item.products?.import_price || item.import_price || 0);
+        const qty = Number(item.quantity ?? 1) || 1;
+        const salePrice = Number(item.sale_price) * qty;
+        const importPrice = Number(item.products?.import_price || item.import_price || 0) * qty;
         const profit = salePrice - importPrice;
         return {
           date: item.return_date,
