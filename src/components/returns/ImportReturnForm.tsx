@@ -133,6 +133,7 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
         sku: product.sku,
         imei: product.imei,
         import_price: product.import_price,
+        quantity: productQty,
         import_receipt_id: product.import_receipt_id,
         supplier_id: product.supplier_id,
         branch_id: product.branch_id,

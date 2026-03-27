@@ -284,6 +284,7 @@ export function useCreateImportReturn() {
           sku: product.sku,
           imei: product.imei,
           import_price: product.import_price,
+          quantity: product.quantity || 1,
           original_import_date: product.import_date,
           total_refund_amount: totalRefund,
           fee_type: feeType,
