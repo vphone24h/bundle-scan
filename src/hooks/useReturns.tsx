@@ -1150,12 +1150,34 @@ export function useDeleteImportReturn() {
         .eq('reference_id', returnItem.id)
         .eq('reference_type', 'import_return');
 
-      // 3. Restore product status back to in_stock
+      // 3. Restore product: IMEI → back to in_stock; non-IMEI → add quantity back
       if (returnItem.product_id) {
-        await supabase
+        const { data: prod } = await supabase
           .from('products')
-          .update({ status: 'in_stock' })
-          .eq('id', returnItem.product_id);
+          .select('imei, quantity')
+          .eq('id', returnItem.product_id)
+          .single();
+
+        // Get return quantity from import_returns record
+        const { data: returnRecord } = await supabase
+          .from('import_returns')
+          .select('quantity')
+          .eq('id', returnItem.id)
+          .single();
+        const returnQty = Number(returnRecord?.quantity) || 1;
+
+        if (prod?.imei) {
+          await supabase
+            .from('products')
+            .update({ status: 'in_stock' })
+            .eq('id', returnItem.product_id);
+        } else {
+          // Non-IMEI: add the returned quantity back (undo the return)
+          await supabase
+            .from('products')
+            .update({ quantity: (prod?.quantity || 0) + returnQty })
+            .eq('id', returnItem.product_id);
+        }
       }
 
       // 4. Delete the import return record
@@ -1252,15 +1274,18 @@ export function useDeleteExportReturn() {
           .eq('id', returnItem.product_id)
           .single();
 
+        const returnQty = returnItem.quantity || 1;
+
         if (prod?.imei) {
           await supabase
             .from('products')
             .update({ status: 'sold' })
             .eq('id', returnItem.product_id);
         } else {
+          // Subtract the returned quantity back out of inventory
           await supabase
             .from('products')
-            .update({ quantity: Math.max((prod?.quantity || 1) - 1, 0) })
+            .update({ quantity: Math.max((prod?.quantity || 0) - returnQty, 0) })
             .eq('id', returnItem.product_id);
         }
       }
