@@ -145,7 +145,7 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
   const remaining = totalRefundAmount - totalPayment;
   const hasDebtPayment = payments.some((p) => p.source === 'debt' && p.amount > 0);
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!receipt) return;
 
     if ((recordToCashBook || hasDebtPayment) && totalPayment !== totalRefundAmount) {
@@ -157,37 +157,37 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
       return;
     }
 
-    try {
-      const result = await returnReceipt.mutateAsync({
-        receiptId: receipt.id,
-        feeType,
-        feePercentage,
-        feeAmount: feeType === 'fixed_amount' ? feeAmount : (feeType === 'percentage' ? supplierKeepAmount : 0),
-        payments: payments
-          .filter(p => p.amount > 0)
-          .filter(p => p.source === 'debt' || recordToCashBook)
-          .map(p => ({
-            source: p.source,
-            amount: p.amount,
-          })),
-        recordToCashBook,
-        note: note || null,
-        returnQuantities,
-      });
+    // Close dialog immediately
+    onOpenChange(false);
+    toast({ title: 'Đang xử lý trả hàng...', description: 'Hệ thống đang xử lý, vui lòng chờ thông báo.' });
 
+    returnReceipt.mutateAsync({
+      receiptId: receipt.id,
+      feeType,
+      feePercentage,
+      feeAmount: feeType === 'fixed_amount' ? feeAmount : (feeType === 'percentage' ? supplierKeepAmount : 0),
+      payments: payments
+        .filter(p => p.amount > 0)
+        .filter(p => p.source === 'debt' || recordToCashBook)
+        .map(p => ({
+          source: p.source,
+          amount: p.amount,
+        })),
+      recordToCashBook,
+      note: note || null,
+      returnQuantities,
+    }).then((result) => {
       toast({
         title: 'Trả hàng thành công',
         description: `Đã trả ${result.productsReturned} sản phẩm về nhà cung cấp`,
       });
-
-      onOpenChange(false);
-    } catch (error: any) {
+    }).catch((error: any) => {
       toast({
-        title: 'Lỗi',
+        title: 'Lỗi trả hàng',
         description: error.message || 'Không thể hoàn tất trả hàng',
         variant: 'destructive',
       });
-    }
+    });
   };
 
   return (
