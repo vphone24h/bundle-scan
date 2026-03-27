@@ -14,7 +14,6 @@ import { useTranslation } from 'react-i18next';
 export default function PlatformAuthPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { signIn } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const [email, setEmail] = useState('');
@@ -25,7 +24,7 @@ export default function PlatformAuthPage() {
     setLoading(true);
 
     try {
-      const { error } = await signIn(email, password);
+      const { error, data } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
         toast({
@@ -39,8 +38,7 @@ export default function PlatformAuthPage() {
         return;
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const user = data.user;
       if (user) {
         const { data: platformUser } = await supabase
           .from('platform_users')
@@ -63,7 +61,7 @@ export default function PlatformAuthPage() {
           title: t('pages.platformAuth.loginSuccess'),
           description: t('pages.platformAuth.welcomeAdmin'),
         });
-        navigate('/platform-admin');
+        navigate('/platform-admin', { replace: true });
       }
     } catch (error: any) {
       toast({
