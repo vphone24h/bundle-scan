@@ -122,17 +122,7 @@ export default function WarrantyCheckPage() {
       results,
     });
     setLookupEnabled(false);
-
-    // Auto-scroll to results or show toast if empty
-    if (results.length > 0) {
-      setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    } else {
-      toast.error('Không tìm thấy sản phẩm', {
-        description: 'Kiểm tra lại IMEI hoặc số điện thoại và thử lại',
-      });
-    }
+    scrollOrToast(results);
   }, [lookupEnabled, searchValue, isFetched, error, results]);
 
   useEffect(() => {
