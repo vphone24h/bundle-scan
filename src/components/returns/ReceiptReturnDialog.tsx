@@ -414,9 +414,15 @@ export function ReceiptReturnDialog({
                           <div className="font-medium">{item.product_name}</div>
                           <div className="text-xs text-muted-foreground">
                             {item.imei ? `IMEI: ${item.imei}` : `SKU: ${item.sku}`}
+                            {!item.imei && (item.quantity || 1) > 1 && ` • SL: ${item.quantity}`}
                           </div>
                         </div>
-                        <span className="font-medium">{formatCurrencyWithSpaces(item.sale_price)}</span>
+                        <div className="text-right">
+                          {(item.quantity || 1) > 1 && (
+                            <div className="text-xs text-muted-foreground">{item.quantity} × {formatCurrencyWithSpaces(item.sale_price)}</div>
+                          )}
+                          <span className="font-medium">{formatCurrencyWithSpaces(item.sale_price * (item.quantity || 1))}</span>
+                        </div>
                       </div>
                     ))}
                   </div>
