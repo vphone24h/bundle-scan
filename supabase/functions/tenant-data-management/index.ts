@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json()
-    const { action, tenantId, password, confirmText, restoreOption } = body
+    const { action, tenantId, password, confirmText, restoreOption, deleteMode } = body
 
     if (!action) {
       return new Response(
@@ -270,9 +270,12 @@ Deno.serve(async (req) => {
           )
         }
 
-        // Delete current data first (for both options)
-        await deleteAllWarehouseData(supabaseAdmin, callerTenantId)
-
+        // Delete data based on deleteMode
+        if (deleteMode === 'keep_templates') {
+          await deleteKeepTemplates(supabaseAdmin, callerTenantId)
+        } else {
+          await deleteAllWarehouseData(supabaseAdmin, callerTenantId)
+        }
         if (restoreOption === 'restore') {
           // Restore from backup
           // Restore products
@@ -352,9 +355,11 @@ Deno.serve(async (req) => {
           await supabaseAdmin.from('audit_logs').insert({
             tenant_id: callerTenantId,
             user_id: caller.id,
-            action_type: 'DELETE_ALL_WAREHOUSE_DATA',
+            action_type: deleteMode === 'keep_templates' ? 'DELETE_KEEP_TEMPLATES' : 'DELETE_ALL_WAREHOUSE_DATA',
             table_name: 'ALL',
-            description: 'Ngưng Test - Xoá toàn bộ dữ liệu kho',
+            description: deleteMode === 'keep_templates' 
+              ? 'Xoá lịch sử, giữ sản phẩm mẫu (tồn kho = 0)' 
+              : 'Ngưng Test - Xoá toàn bộ dữ liệu kho',
           })
         }
 
@@ -582,6 +587,122 @@ async function deleteAllWarehouseData(supabaseAdmin: any, tenantId: string) {
     .eq('tenant_id', tenantId)
 
   // 13. Reset customer data (but keep customers)
+  await supabaseAdmin
+    .from('customers')
+    .update({
+      total_spent: 0,
+      current_points: 0,
+      pending_points: 0,
+      total_points_earned: 0,
+      total_points_used: 0,
+      last_purchase_date: null,
+    })
+    .eq('tenant_id', tenantId)
+}
+
+async function deleteKeepTemplates(supabaseAdmin: any, tenantId: string) {
+  // This mode: delete all transaction history but keep products as templates (qty=0)
+  
+  // Get all product IDs for this tenant
+  const { data: products } = await supabaseAdmin
+    .from('products')
+    .select('id')
+    .eq('tenant_id', tenantId)
+  
+  const productIds = products?.map((p: any) => p.id) || []
+
+  // 1. Delete IMEI histories
+  if (productIds.length > 0) {
+    await supabaseAdmin
+      .from('imei_histories')
+      .delete()
+      .in('product_id', productIds)
+  }
+
+  // 2. Delete export returns
+  await supabaseAdmin.from('export_returns').delete().eq('tenant_id', tenantId)
+
+  // 3. Delete import returns
+  await supabaseAdmin.from('import_returns').delete().eq('tenant_id', tenantId)
+
+  // 4. Delete export receipt items & payments
+  const { data: exportReceipts } = await supabaseAdmin
+    .from('export_receipts')
+    .select('id')
+    .eq('tenant_id', tenantId)
+  
+  const exportReceiptIds = exportReceipts?.map((r: any) => r.id) || []
+  
+  if (exportReceiptIds.length > 0) {
+    await supabaseAdmin.from('export_receipt_items').delete().in('receipt_id', exportReceiptIds)
+    await supabaseAdmin.from('export_receipt_payments').delete().in('receipt_id', exportReceiptIds)
+  }
+
+  // 5. Delete export receipts
+  await supabaseAdmin.from('export_receipts').delete().eq('tenant_id', tenantId)
+
+  // 6. Delete import receipt payments
+  const { data: importReceipts } = await supabaseAdmin
+    .from('import_receipts')
+    .select('id')
+    .eq('tenant_id', tenantId)
+  
+  const importReceiptIds = importReceipts?.map((r: any) => r.id) || []
+  
+  if (importReceiptIds.length > 0) {
+    try {
+      await supabaseAdmin.from('import_receipt_payments').delete().in('receipt_id', importReceiptIds)
+    } catch { /* Table might not exist */ }
+  }
+
+  // 7. Delete import receipts
+  await supabaseAdmin.from('import_receipts').delete().eq('tenant_id', tenantId)
+
+  // 8. Reset products to template (qty=0, status=in_stock, clear IMEI)
+  // Delete IMEI products (they are unique per unit, no point keeping as template)
+  await supabaseAdmin
+    .from('products')
+    .delete()
+    .eq('tenant_id', tenantId)
+    .not('imei', 'is', null)
+
+  // Reset non-IMEI products: quantity=0
+  await supabaseAdmin
+    .from('products')
+    .update({ 
+      quantity: 0,
+      status: 'in_stock',
+    })
+    .eq('tenant_id', tenantId)
+
+  // 9. Delete cash book entries
+  await supabaseAdmin.from('cash_book').delete().eq('tenant_id', tenantId)
+
+  // 10. Delete debt payments
+  await supabaseAdmin.from('debt_payments').delete().eq('tenant_id', tenantId)
+
+  // 11. Delete stock counts
+  const { data: stockCounts } = await supabaseAdmin
+    .from('stock_counts')
+    .select('id')
+    .eq('tenant_id', tenantId)
+  
+  const stockCountIds = stockCounts?.map((s: any) => s.id) || []
+  
+  if (stockCountIds.length > 0) {
+    try {
+      await supabaseAdmin.from('stock_count_items').delete().in('stock_count_id', stockCountIds)
+    } catch { /* Ignore */ }
+  }
+
+  try {
+    await supabaseAdmin.from('stock_counts').delete().eq('tenant_id', tenantId)
+  } catch { /* Ignore */ }
+
+  // 12. Delete audit logs
+  await supabaseAdmin.from('audit_logs').delete().eq('tenant_id', tenantId)
+
+  // 13. Reset customer data (keep customers)
   await supabaseAdmin
     .from('customers')
     .update({
