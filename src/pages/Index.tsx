@@ -353,8 +353,7 @@ const Index = () => {
                     </>
                   ) : (
                     <div className="cursor-pointer" onClick={() => navigate('/reports')}>
-                      <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(stats?.todayProfit || 0)}</p>
-                      <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400" style={{display:'none'}}>{formatCurrency(todayNetProfit ?? 0)}</p>
+                      <p className={`text-2xl sm:text-3xl font-bold ${(todayNetProfit ?? stats?.todayProfit ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>{formatCurrency(todayNetProfit ?? stats?.todayProfit ?? 0)}</p>
                       <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayProfit')}</p>
                     </div>
                   )}
