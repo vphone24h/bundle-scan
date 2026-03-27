@@ -41,6 +41,7 @@ import {
   Trash2,
   ChevronDown,
   ChevronRight,
+  Pencil,
 } from 'lucide-react';
 import { format, startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -54,6 +55,7 @@ import { formatNumberWithSpaces } from '@/lib/formatNumber';
 import { ImportReturnForm } from '@/components/returns/ImportReturnForm';
 import { ExportReturnForm } from '@/components/returns/ExportReturnForm';
 import { ReturnDetailDialog } from '@/components/returns/ReturnDetailDialog';
+import { EditReturnDialog } from '@/components/returns/EditReturnDialog';
 import { toast } from 'sonner';
 import {
   AlertDialog,
