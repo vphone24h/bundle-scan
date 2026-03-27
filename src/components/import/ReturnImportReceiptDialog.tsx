@@ -53,15 +53,31 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
   const [feePercentage, setFeePercentage] = useState<number>(0);
   const [feeAmount, setFeeAmount] = useState<number>(0);
   const [feeDisplayAmount, setFeeDisplayAmount] = useState<string>('');
+  const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
+
+  const DECIMAL_UNITS = ['kg', 'lít', 'mét'];
 
   // Count in-stock products
   const inStockProducts = details?.productImports?.filter(
     (item: any) => item.products?.status === 'in_stock'
   ) || [];
+
+  // Initialize returnQuantities when details load
+  useEffect(() => {
+    if (open && inStockProducts.length > 0) {
+      const initial: Record<string, number> = {};
+      inStockProducts.forEach((item: any) => {
+        if (!item.products?.imei) {
+          initial[item.id] = Number(item.quantity) || 1;
+        }
+      });
+      setReturnQuantities(initial);
+    }
+  }, [open, details]);
   
   const totalImportAmount = inStockProducts.reduce(
     (sum: number, item: any) => {
-      const qty = Number(item.quantity) || 1;
+      const qty = item.products?.imei ? 1 : (returnQuantities[item.id] ?? (Number(item.quantity) || 1));
       return sum + Number(item.import_price) * qty;
     },
     0
@@ -156,6 +172,7 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
           })),
         recordToCashBook,
         note: note || null,
+        returnQuantities,
       });
 
       toast({
@@ -204,26 +221,66 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
           <div className="space-y-6">
             {/* Products to return */}
             <div className="space-y-2">
-              <Label>Sản phẩm sẽ trả ({inStockProducts.reduce((s: number, item: any) => s + (Number(item.quantity) || 1), 0)} sản phẩm)</Label>
-              <div className="border rounded-lg divide-y max-h-48 overflow-y-auto">
-                {inStockProducts.map((item: any) => (
-                  <div key={item.id} className="p-3 flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-sm">{item.products?.name || 'N/A'}</p>
-                      <p className="text-xs text-muted-foreground">
-                        SKU: {item.products?.sku || 'N/A'}
-                        {item.products?.imei && ` • IMEI: ${item.products.imei}`}
-                      </p>
+              <Label>Sản phẩm sẽ trả ({inStockProducts.reduce((s: number, item: any) => {
+                const qty = item.products?.imei ? 1 : (returnQuantities[item.id] ?? (Number(item.quantity) || 1));
+                return s + qty;
+              }, 0)} sản phẩm)</Label>
+              <div className="border rounded-lg divide-y max-h-64 overflow-y-auto">
+                {inStockProducts.map((item: any) => {
+                  const isImei = !!item.products?.imei;
+                  const maxQty = Number(item.quantity) || 1;
+                  const currentQty = isImei ? 1 : (returnQuantities[item.id] ?? maxQty);
+                  const unitName = item.unit || 'cái';
+                  const isDecimal = DECIMAL_UNITS.includes(unitName.toLowerCase());
+                  const stepVal = isDecimal ? 0.1 : 1;
+
+                  return (
+                  <div key={item.id} className="p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">{item.products?.name || 'N/A'}</p>
+                        <p className="text-xs text-muted-foreground">
+                          SKU: {item.products?.sku || 'N/A'}
+                          {item.products?.imei && ` • IMEI: ${item.products.imei}`}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="text-xs flex-shrink-0">Tồn kho</Badge>
                     </div>
-                    <div className="text-right">
-                      {(Number(item.quantity) || 1) > 1 && (
-                        <p className="text-xs text-muted-foreground">SL: {Number(item.quantity)} × {formatCurrencyWithSpaces(Number(item.import_price))}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      {!isImei ? (
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs text-muted-foreground whitespace-nowrap">SL trả:</Label>
+                          <Input
+                            type="number"
+                            min={isDecimal ? 0.1 : 1}
+                            max={maxQty}
+                            step={stepVal}
+                            value={currentQty}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value);
+                              if (!isNaN(val)) {
+                                const clamped = Math.max(isDecimal ? 0.1 : 1, Math.min(val, maxQty));
+                                const final = isDecimal ? Math.round(clamped * 1000) / 1000 : Math.round(clamped);
+                                setReturnQuantities(prev => ({ ...prev, [item.id]: final }));
+                              }
+                            }}
+                            className="w-24 h-8 text-center text-sm"
+                          />
+                          <span className="text-xs text-muted-foreground">/ {maxQty} {unitName !== 'cái' ? unitName : ''}</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">SL: 1</span>
                       )}
-                      <p className="font-medium">{formatCurrencyWithSpaces(Number(item.import_price) * (Number(item.quantity) || 1))}</p>
-                      <Badge variant="outline" className="text-xs">Tồn kho</Badge>
+                      <div className="text-right">
+                        {currentQty > 1 && (
+                          <p className="text-xs text-muted-foreground">{currentQty} × {formatCurrencyWithSpaces(Number(item.import_price))}</p>
+                        )}
+                        <p className="font-medium">{formatCurrencyWithSpaces(Number(item.import_price) * currentQty)}</p>
+                      </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

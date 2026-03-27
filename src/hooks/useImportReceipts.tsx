@@ -882,6 +882,7 @@ export function useReturnImportReceipt() {
       payments,
       recordToCashBook = true,
       note,
+      returnQuantities,
     }: {
       receiptId: string;
       feeType?: 'none' | 'percentage' | 'fixed_amount';
@@ -890,6 +891,7 @@ export function useReturnImportReceipt() {
       payments: { source: string; amount: number }[];
       recordToCashBook?: boolean;
       note?: string | null;
+      returnQuantities?: Record<string, number>;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -925,15 +927,16 @@ export function useReturnImportReceipt() {
       const returnIds: string[] = [];
 
       // Tạo phiếu trả hàng cho từng sản phẩm (tính theo quantity)
-      // Tính tổng giá trị nhập thực tế (import_price * quantity)
+      // Sử dụng returnQuantities nếu có (cho phép trả một phần)
+      // Tính tổng giá trị nhập thực tế
       const totalImportAll = products.reduce((s: number, p: any) => {
-        const qty = Number(p.quantity) || 1;
+        const qty = p.imei ? 1 : (returnQuantities?.[p.id] ?? (Number(p.quantity) || 1));
         return s + Number(p.import_price) * qty;
       }, 0);
 
       for (let i = 0; i < products.length; i++) {
         const product = products[i];
-        const qty = Number(product.quantity) || 1;
+        const qty = product.imei ? 1 : (returnQuantities?.[product.id] ?? (Number(product.quantity) || 1));
         const productTotalCost = Number(product.import_price) * qty;
         const code = products.length === 1 ? baseCode : `${baseCode}_${i + 1}`;
 
@@ -967,7 +970,7 @@ export function useReturnImportReceipt() {
             fee_type: feeType,
             fee_percentage: feePercentage,
             fee_amount: productFeeAmount,
-            note: note || `Trả toàn bộ phiếu ${receipt.code}`,
+            note: note || `Trả hàng phiếu ${receipt.code}`,
             created_by: user.id,
             tenant_id: tenantId,
           }])
@@ -979,16 +982,18 @@ export function useReturnImportReceipt() {
 
         // Cập nhật trạng thái sản phẩm
         if (product.imei) {
-          // IMEI product: set status to returned
           await supabase
             .from('products')
             .update({ status: 'returned' })
             .eq('id', product.id);
         } else {
-          // Non-IMEI product: set quantity to 0 and status to returned
+          // Non-IMEI: trừ số lượng trả, nếu hết thì chuyển returned
+          const currentQty = Number(product.quantity) || 0;
+          const newQty = Math.max(0, currentQty - qty);
+          const newStatus = newQty <= 0 ? 'returned' : 'in_stock';
           await supabase
             .from('products')
-            .update({ status: 'returned', quantity: 0 })
+            .update({ status: newStatus, quantity: newQty })
             .eq('id', product.id);
         }
       }
