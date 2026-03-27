@@ -171,6 +171,21 @@ export default function ImportNewPage() {
   const [isSearching, setIsSearching] = useState(false);
 
 
+  // Auto-save cart to localStorage for draft persistence
+  useEffect(() => {
+    draft.saveDraft(cart, { supplierId: selectedSupplierId, branchId: selectedBranchId });
+  }, [cart, selectedSupplierId, selectedBranchId]);
+
+  // Handle resume draft
+  const handleResumeDraft = useCallback(() => {
+    if (draft.pendingDraft) {
+      setCart(draft.pendingDraft.items);
+      if (draft.pendingDraft.supplierId) setSelectedSupplierId(draft.pendingDraft.supplierId);
+      if (draft.pendingDraft.branchId) setSelectedBranchId(draft.pendingDraft.branchId);
+    }
+    draft.acceptDraft();
+  }, [draft.pendingDraft]);
+
   const totalAmount = useMemo(
     () => cart.reduce((sum, item) => sum + item.importPrice * item.quantity, 0),
     [cart]
