@@ -53,16 +53,20 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
     return [...BUILT_IN_PAYMENT_SOURCES, ...custom];
   }, [customPaymentSources]);
 
+  // For non-IMEI products, total cost = import_price * quantity
+  const productQty = product ? (product.imei ? 1 : (Number(product.quantity) || 1)) : 1;
+  const productTotalCost = product ? product.import_price * productQty : 0;
+
   // Calculate refund amount based on fee type
   const calculateRefund = () => {
     if (!product) return 0;
-    if (feeType === 'none') return product.import_price;
-    if (feeType === 'percentage') return product.import_price * (1 - feePercentage / 100);
-    return product.import_price - feeAmount;
+    if (feeType === 'none') return productTotalCost;
+    if (feeType === 'percentage') return productTotalCost * (1 - feePercentage / 100);
+    return productTotalCost - feeAmount;
   };
 
   const refundAmount = calculateRefund();
-  const supplierKeepAmount = (product?.import_price || 0) - refundAmount;
+  const supplierKeepAmount = productTotalCost - refundAmount;
 
   // Initialize payments when refund amount changes
   useEffect(() => {

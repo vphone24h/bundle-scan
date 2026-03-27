@@ -247,6 +247,7 @@ export function useCreateImportReturn() {
         sku: string;
         imei?: string | null;
         import_price: number;
+        quantity?: number;
         import_receipt_id?: string | null;
         supplier_id?: string | null;
         branch_id?: string | null;
