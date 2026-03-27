@@ -1660,6 +1660,13 @@ export default function ImportNewPage() {
         onSkip={() => { completeTour(); setTourDismissed(true); setManualTourActive(false); }}
         tourKey="import_new"
       />
+      <ResumeDraftDialog
+        open={draft.showResumePrompt}
+        itemCount={draft.pendingDraft?.items.length ?? 0}
+        onResume={handleResumeDraft}
+        onDiscard={draft.dismissPrompt}
+        title="Phát hiện phiếu nhập chưa hoàn thành"
+      />
     </MainLayout>
   );
 }
