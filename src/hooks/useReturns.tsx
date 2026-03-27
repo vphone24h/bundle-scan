@@ -538,13 +538,16 @@ export function useCreateExportReturn() {
       const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
       if (!tenantId) throw new Error('Không tìm thấy tenant');
 
+      const returnQty = Math.max(1, Number(item.quantity) || 1);
+      const baseSaleAmount = Number(item.sale_price) * returnQty;
+
       let storeKeepAmount = 0;
       if (feeType === 'percentage') {
-        storeKeepAmount = item.sale_price * (feePercentage / 100);
+        storeKeepAmount = baseSaleAmount * (feePercentage / 100);
       } else if (feeType === 'fixed_amount') {
         storeKeepAmount = feeAmount;
       }
-      const refundAmount = item.sale_price - storeKeepAmount;
+      const refundAmount = baseSaleAmount - storeKeepAmount;
 
       const now = new Date();
       const code = `TX${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
@@ -555,8 +558,8 @@ export function useCreateExportReturn() {
       if (feeType !== 'none' && storeKeepAmount > 0) {
         // TRẢ HÀNG CÓ PHÍ: Tạo phiếu nhập MỚI + sản phẩm MỚI
         // KHÔNG update sản phẩm cũ - sản phẩm cũ vẫn ở trạng thái 'sold'
-        const importCode = `PN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
-        const newImportPrice = item.sale_price - storeKeepAmount;
+        const newImportTotal = refundAmount;
+        const newUnitImportPrice = returnQty > 0 ? (newImportTotal / returnQty) : 0;
 
         // Lấy thông tin sản phẩm gốc để lấy supplier_id
         let originalSupplierIdForReceipt: string | null = null;
@@ -574,8 +577,8 @@ export function useCreateExportReturn() {
           .from('import_receipts')
           .insert([{
             code: importCode,
-            total_amount: newImportPrice,
-            paid_amount: newImportPrice,
+            total_amount: newImportTotal,
+            paid_amount: newImportTotal,
             debt_amount: 0,
             created_by: user.id,
             note: `Tự động tạo từ phiếu trả hàng ${code}`,
