@@ -47,6 +47,8 @@ import { downloadImportTemplate } from '@/lib/excelTemplates';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
 import { useTranslation } from 'react-i18next';
+import { useDraftCart } from '@/hooks/useDraftCart';
+import { ResumeDraftDialog } from '@/components/import/ResumeDraftDialog';
 
 function useImportNewTourSteps(): TourStep[] {
   const { t } = useTranslation();
@@ -120,6 +122,8 @@ export default function ImportNewPage() {
     }
   }, [branches, selectedBranchId, isSuperAdmin, permissions?.branchId]);
 
+  const draft = useDraftCart<ImportReceiptItem>('import_draft_cart');
+
   const [cart, setCart] = useState<ImportReceiptItem[]>([]);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [excelImportOpen, setExcelImportOpen] = useState(false);
@@ -166,6 +170,21 @@ export default function ImportNewPage() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
+
+  // Auto-save cart to localStorage for draft persistence
+  useEffect(() => {
+    draft.saveDraft(cart, { supplierId: selectedSupplierId, branchId: selectedBranchId });
+  }, [cart, selectedSupplierId, selectedBranchId]);
+
+  // Handle resume draft
+  const handleResumeDraft = useCallback(() => {
+    if (draft.pendingDraft) {
+      setCart(draft.pendingDraft.items);
+      if (draft.pendingDraft.supplierId) setSelectedSupplierId(draft.pendingDraft.supplierId);
+      if (draft.pendingDraft.branchId) setSelectedBranchId(draft.pendingDraft.branchId);
+    }
+    draft.acceptDraft();
+  }, [draft.pendingDraft]);
 
   const totalAmount = useMemo(
     () => cart.reduce((sum, item) => sum + item.importPrice * item.quantity, 0),
@@ -608,6 +627,7 @@ export default function ImportNewPage() {
     // Close payment dialog & clear cart
     setPaymentOpen(false);
     setCart([]);
+    draft.clearDraft();
     setVariantConfig({ enabled: false, levels: [] });
     setSelectedVariants({});
 
@@ -1639,6 +1659,13 @@ export default function ImportNewPage() {
         onComplete={() => { completeTour(); setManualTourActive(false); }}
         onSkip={() => { completeTour(); setTourDismissed(true); setManualTourActive(false); }}
         tourKey="import_new"
+      />
+      <ResumeDraftDialog
+        open={draft.showResumePrompt}
+        itemCount={draft.pendingDraft?.items.length ?? 0}
+        onResume={handleResumeDraft}
+        onDiscard={draft.dismissPrompt}
+        title="Phát hiện phiếu nhập chưa hoàn thành"
       />
     </MainLayout>
   );

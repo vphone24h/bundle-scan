@@ -4,6 +4,8 @@ import { vi } from 'date-fns/locale';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
 import { useTranslation } from 'react-i18next';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
+import { useDraftCart } from '@/hooks/useDraftCart';
+import { ResumeDraftDialog } from '@/components/import/ResumeDraftDialog';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -117,6 +119,7 @@ export default function ExportNewPage() {
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
 
   // Cart
+  const exportDraft = useDraftCart<CartItem>('export_draft_cart');
   const [cart, setCart] = useState<CartItem[]>([]);
   // Ref to track product IDs being processed (prevents race condition on fast scans)
   const pendingProductIdsRef = useRef<Set<string>>(new Set());
@@ -636,6 +639,19 @@ export default function ExportNewPage() {
     setProductSuggestions([]);
   };
 
+  // Auto-save export cart to localStorage for draft persistence
+  useEffect(() => {
+    exportDraft.saveDraft(cart);
+  }, [cart]);
+
+  // Handle resume export draft
+  const handleResumeExportDraft = useCallback(() => {
+    if (exportDraft.pendingDraft) {
+      setCart(exportDraft.pendingDraft.items);
+    }
+    exportDraft.acceptDraft();
+  }, [exportDraft.pendingDraft]);
+
 
   // Add to cart
   const handleAddToCart = () => {
@@ -841,6 +857,7 @@ export default function ExportNewPage() {
     const savedSalesStaffId = isSuperAdmin ? salesStaffId : user?.id || null;
 
     setCart([]);
+    exportDraft.clearDraft();
     setCustomerName('');
     setCustomerPhone('');
     setCustomerAddress('');
@@ -1614,6 +1631,13 @@ export default function ExportNewPage() {
         onComplete={() => { completeExportTour(); setManualTourActive(false); }}
         onSkip={() => { completeExportTour(); setManualTourActive(false); }}
         tourKey="export_new"
+      />
+      <ResumeDraftDialog
+        open={exportDraft.showResumePrompt}
+        itemCount={exportDraft.pendingDraft?.items.length ?? 0}
+        onResume={handleResumeExportDraft}
+        onDiscard={exportDraft.dismissPrompt}
+        title="Phát hiện phiếu xuất chưa hoàn thành"
       />
     </MainLayout>
   );
