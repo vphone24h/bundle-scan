@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { PullToRefresh } from '@/components/layout/PullToRefresh';
 import DOMPurify from 'dompurify';
 import { SetURLSearchParams, useLocation } from 'react-router-dom';
@@ -193,6 +193,7 @@ export default function UniversalStoreTemplate({
   const [submittedValue, setSubmittedValue] = useState('');
   const [persistedResults, setPersistedResults] = useState<WarrantyResult[] | null>(null);
   const [lookupEnabled, setLookupEnabled] = useState(false);
+  const warrantyResultsRef = useRef<HTMLDivElement>(null);
 
   const {
     data: warrantyResults,
@@ -1700,7 +1701,7 @@ export default function UniversalStoreTemplate({
 
             {/* Results */}
             {showWarrantyResultBlock && (
-              <div className="space-y-4">
+              <div ref={warrantyResultsRef} className="space-y-4">
                 {showWarrantyError ? (
                   <div className="text-center py-12 rounded-2xl bg-red-50">
                     <XCircle className="h-12 w-12 mx-auto text-red-400 mb-3" />
