@@ -4,6 +4,8 @@ import { vi } from 'date-fns/locale';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
 import { useTranslation } from 'react-i18next';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
+import { useDraftCart } from '@/hooks/useDraftCart';
+import { ResumeDraftDialog } from '@/components/import/ResumeDraftDialog';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
