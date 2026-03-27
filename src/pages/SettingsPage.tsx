@@ -146,6 +146,8 @@ export default function SettingsPage() {
 
   const [storeName, setStoreName] = useState('');
   const [storePhone, setStorePhone] = useState('');
+  const [storeSubdomain, setStoreSubdomain] = useState('');
+  const [storeEmail, setStoreEmail] = useState('');
   const [language, setLanguage] = useState(i18n.language);
   const [saving, setSaving] = useState(false);
 
@@ -155,6 +157,8 @@ export default function SettingsPage() {
     if (tenant) {
       setStoreName(tenant.name || '');
       setStorePhone(tenant.phone || '');
+      setStoreSubdomain(tenant.subdomain || '');
+      setStoreEmail(tenant.email || '');
     }
   }, [tenant]);
 
