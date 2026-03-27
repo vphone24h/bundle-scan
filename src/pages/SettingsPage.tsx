@@ -143,6 +143,7 @@ export default function SettingsPage() {
   const { t, i18n } = useTranslation();
   const { data: tenant } = useCurrentTenant();
   const { data: permissions } = usePermissions();
+  const queryClient = useQueryClient();
 
   const [storeName, setStoreName] = useState('');
   const [storePhone, setStorePhone] = useState('');
@@ -217,6 +218,12 @@ export default function SettingsPage() {
         .eq('id', tenant.id);
 
       if (error) throw error;
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['current-tenant-combined'] }),
+        queryClient.invalidateQueries({ queryKey: ['all-tenants'] }),
+      ]);
+
       toast({ title: t('settings.saved') });
     } catch {
       toast({ title: 'Error', variant: 'destructive' });
