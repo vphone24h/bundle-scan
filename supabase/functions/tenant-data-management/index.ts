@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json()
-    const { action, tenantId, password, confirmText, restoreOption } = body
+    const { action, tenantId, password, confirmText, restoreOption, deleteMode } = body
 
     if (!action) {
       return new Response(
@@ -270,9 +270,12 @@ Deno.serve(async (req) => {
           )
         }
 
-        // Delete current data first (for both options)
-        await deleteAllWarehouseData(supabaseAdmin, callerTenantId)
-
+        // Delete data based on deleteMode
+        if (deleteMode === 'keep_templates') {
+          await deleteKeepTemplates(supabaseAdmin, callerTenantId)
+        } else {
+          await deleteAllWarehouseData(supabaseAdmin, callerTenantId)
+        }
         if (restoreOption === 'restore') {
           // Restore from backup
           // Restore products
