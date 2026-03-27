@@ -158,6 +158,14 @@ export function useImportReceiptDetails(receiptId: string | null) {
 
       if (paymentsError) throw paymentsError;
 
+      // Lấy product_imports để có số lượng gốc khi nhập
+      const { data: piData, error: piError } = await supabase
+        .from('product_imports')
+        .select('id, product_id, import_price, quantity')
+        .eq('import_receipt_id', receiptId);
+
+      if (piError) throw piError;
+
       // Lấy sản phẩm trực tiếp từ bảng products (có import_receipt_id)
       const { data: products, error: productsError } = await supabase
         .from('products')
@@ -168,6 +176,7 @@ export function useImportReceiptDetails(receiptId: string | null) {
           imei,
           import_price,
           quantity,
+          unit,
           status,
           category_id,
           categories(name)
@@ -176,21 +185,41 @@ export function useImportReceiptDetails(receiptId: string | null) {
 
       if (productsError) throw productsError;
 
-      // Chuyển đổi thành định dạng tương thích với UI
-      const productItems = (products || []).map(p => ({
-        id: p.id,
-        import_price: p.import_price,
-        quantity: p.quantity,
-        products: {
-          id: p.id,
-          name: p.name,
-          sku: p.sku,
-          imei: p.imei,
-          status: p.status,
-          category_id: p.category_id,
-          categories: p.categories
+      // Build map: product_id -> original imported quantity from product_imports
+      const piMap = new Map<string, { quantity: number; import_price: number }>();
+      (piData || []).forEach(pi => {
+        const existing = piMap.get(pi.product_id);
+        if (existing) {
+          existing.quantity += pi.quantity;
+        } else {
+          piMap.set(pi.product_id, { quantity: pi.quantity, import_price: pi.import_price });
         }
-      }));
+      });
+
+      // Chuyển đổi thành định dạng tương thích với UI
+      // Dùng số lượng gốc từ product_imports thay vì quantity hiện tại trong products
+      const productItems = (products || []).map(p => {
+        const piInfo = piMap.get(p.id);
+        // Với hàng IMEI: quantity luôn là 1, dùng từ products
+        // Với hàng không IMEI: dùng số lượng gốc từ product_imports
+        const originalQty = p.imei ? p.quantity : (piInfo?.quantity ?? p.quantity);
+        return {
+          id: p.id,
+          import_price: p.import_price,
+          quantity: originalQty,
+          original_import_quantity: originalQty,
+          unit: p.unit,
+          products: {
+            id: p.id,
+            name: p.name,
+            sku: p.sku,
+            imei: p.imei,
+            status: p.status,
+            category_id: p.category_id,
+            categories: p.categories
+          }
+        };
+      });
 
       return {
         receipt,
