@@ -53,15 +53,31 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
   const [feePercentage, setFeePercentage] = useState<number>(0);
   const [feeAmount, setFeeAmount] = useState<number>(0);
   const [feeDisplayAmount, setFeeDisplayAmount] = useState<string>('');
+  const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
+
+  const DECIMAL_UNITS = ['kg', 'lít', 'mét'];
 
   // Count in-stock products
   const inStockProducts = details?.productImports?.filter(
     (item: any) => item.products?.status === 'in_stock'
   ) || [];
+
+  // Initialize returnQuantities when details load
+  useEffect(() => {
+    if (open && inStockProducts.length > 0) {
+      const initial: Record<string, number> = {};
+      inStockProducts.forEach((item: any) => {
+        if (!item.products?.imei) {
+          initial[item.id] = Number(item.quantity) || 1;
+        }
+      });
+      setReturnQuantities(initial);
+    }
+  }, [open, details]);
   
   const totalImportAmount = inStockProducts.reduce(
     (sum: number, item: any) => {
-      const qty = Number(item.quantity) || 1;
+      const qty = item.products?.imei ? 1 : (returnQuantities[item.id] ?? Number(item.quantity) || 1);
       return sum + Number(item.import_price) * qty;
     },
     0
