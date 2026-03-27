@@ -221,8 +221,11 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
           <div className="space-y-6">
             {/* Products to return */}
             <div className="space-y-2">
-              <Label>Sản phẩm sẽ trả ({inStockProducts.reduce((s: number, item: any) => s + (Number(item.quantity) || 1), 0)} sản phẩm)</Label>
-              <div className="border rounded-lg divide-y max-h-48 overflow-y-auto">
+              <Label>Sản phẩm sẽ trả ({inStockProducts.reduce((s: number, item: any) => {
+                const qty = item.products?.imei ? 1 : (returnQuantities[item.id] ?? (Number(item.quantity) || 1));
+                return s + qty;
+              }, 0)} sản phẩm)</Label>
+              <div className="border rounded-lg divide-y max-h-64 overflow-y-auto">
                 {inStockProducts.map((item: any) => {
                   const isImei = !!item.products?.imei;
                   const maxQty = Number(item.quantity) || 1;
