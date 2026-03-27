@@ -520,6 +520,7 @@ export function useCreateExportReturn() {
         imei?: string | null;
         import_price: number;
         sale_price: number;
+        quantity?: number;
         sale_date?: string | null;
       };
       feeType: 'none' | 'percentage' | 'fixed_amount';
