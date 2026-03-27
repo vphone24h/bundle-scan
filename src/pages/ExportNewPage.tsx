@@ -857,6 +857,7 @@ export default function ExportNewPage() {
     const savedSalesStaffId = isSuperAdmin ? salesStaffId : user?.id || null;
 
     setCart([]);
+    exportDraft.clearDraft();
     setCustomerName('');
     setCustomerPhone('');
     setCustomerAddress('');
