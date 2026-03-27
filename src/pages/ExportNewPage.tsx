@@ -119,6 +119,7 @@ export default function ExportNewPage() {
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
 
   // Cart
+  const exportDraft = useDraftCart<CartItem>('export_draft_cart');
   const [cart, setCart] = useState<CartItem[]>([]);
   // Ref to track product IDs being processed (prevents race condition on fast scans)
   const pendingProductIdsRef = useRef<Set<string>>(new Set());
