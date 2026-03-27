@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Shield, Search, Package, Calendar, Store, Phone, ArrowLeft, Loader2, Al
 import { format, differenceInDays, addMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { readWarrantySession, writeWarrantySession } from '@/lib/warrantySession';
+import { toast } from 'sonner';
 
 let _cachedIp: string | null = null;
 let _ipPromise: Promise<string | null> | null = null;
@@ -68,6 +69,7 @@ export default function WarrantyCheckPage() {
   const [searchValue, setSearchValue] = useState('');
   const [persistedResults, setPersistedResults] = useState<WarrantyItem[] | null>(null);
   const [lookupEnabled, setLookupEnabled] = useState(false);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const { data: results, isLoading, error, isFetched } = useQuery({
     queryKey: ['global-warranty', searchValue],
@@ -120,6 +122,17 @@ export default function WarrantyCheckPage() {
       results,
     });
     setLookupEnabled(false);
+
+    // Auto-scroll to results or show toast if empty
+    if (results.length > 0) {
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    } else {
+      toast.error('Không tìm thấy sản phẩm', {
+        description: 'Kiểm tra lại IMEI hoặc số điện thoại và thử lại',
+      });
+    }
   }, [lookupEnabled, searchValue, isFetched, error, results]);
 
   useEffect(() => {
@@ -200,7 +213,7 @@ export default function WarrantyCheckPage() {
       </section>
 
       {/* Results */}
-      <section className="pb-20">
+      <section className="pb-20" ref={resultsRef}>
         <div className="container mx-auto px-4 max-w-2xl">
           {showError && (
             <Card className="border-destructive/50 bg-destructive/5">
