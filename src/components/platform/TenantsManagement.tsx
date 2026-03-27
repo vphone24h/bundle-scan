@@ -293,13 +293,12 @@ export function TenantsManagement() {
     try {
       // Check subdomain uniqueness if changed
       if (editSubdomain !== selectedTenant.subdomain) {
-        const { data: existing } = await supabase
-          .from('tenants')
-          .select('id')
-          .eq('subdomain', editSubdomain)
-          .neq('id', selectedTenant.id)
-          .maybeSingle();
-        if (existing) {
+        const { data: isDuplicate } = await supabase.rpc('check_tenant_unique_field', {
+          _field: 'subdomain',
+          _value: editSubdomain,
+          _exclude_tenant_id: selectedTenant.id,
+        });
+        if (isDuplicate) {
           toast({ title: 'Lỗi', description: 'ID cửa hàng đã tồn tại', variant: 'destructive' });
           setSavingEdit(false);
           return;
@@ -308,13 +307,12 @@ export function TenantsManagement() {
 
       // Check email uniqueness if changed
       if (editEmail.trim() && editEmail.trim() !== (selectedTenant.email || '')) {
-        const { data: existingEmail } = await supabase
-          .from('tenants')
-          .select('id')
-          .eq('email', editEmail.trim())
-          .neq('id', selectedTenant.id)
-          .maybeSingle();
-        if (existingEmail) {
+        const { data: isDuplicateEmail } = await supabase.rpc('check_tenant_unique_field', {
+          _field: 'email',
+          _value: editEmail.trim(),
+          _exclude_tenant_id: selectedTenant.id,
+        });
+        if (isDuplicateEmail) {
           toast({ title: 'Lỗi', description: 'Email đã được sử dụng bởi cửa hàng khác', variant: 'destructive' });
           setSavingEdit(false);
           return;
