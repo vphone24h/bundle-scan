@@ -2956,6 +2956,7 @@ export type Database = {
           original_sale_date: string | null
           product_id: string
           product_name: string
+          quantity: number
           refund_amount: number
           return_date: string
           sale_price: number
@@ -2984,6 +2985,7 @@ export type Database = {
           original_sale_date?: string | null
           product_id: string
           product_name: string
+          quantity?: number
           refund_amount?: number
           return_date?: string
           sale_price: number
@@ -3012,6 +3014,7 @@ export type Database = {
           original_sale_date?: string | null
           product_id?: string
           product_name?: string
+          quantity?: number
           refund_amount?: number
           return_date?: string
           sale_price?: number
@@ -3278,6 +3281,7 @@ export type Database = {
           original_import_date: string | null
           product_id: string
           product_name: string
+          quantity: number
           return_date: string
           sku: string
           supplier_id: string | null
@@ -3301,6 +3305,7 @@ export type Database = {
           original_import_date?: string | null
           product_id: string
           product_name: string
+          quantity?: number
           return_date?: string
           sku: string
           supplier_id?: string | null
@@ -3324,6 +3329,7 @@ export type Database = {
           original_import_date?: string | null
           product_id?: string
           product_name?: string
+          quantity?: number
           return_date?: string
           sku?: string
           supplier_id?: string | null
