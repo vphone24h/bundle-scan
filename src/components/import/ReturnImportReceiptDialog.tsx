@@ -172,6 +172,7 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
           })),
         recordToCashBook,
         note: note || null,
+        returnQuantities,
       });
 
       toast({
