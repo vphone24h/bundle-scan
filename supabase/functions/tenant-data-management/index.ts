@@ -355,9 +355,11 @@ Deno.serve(async (req) => {
           await supabaseAdmin.from('audit_logs').insert({
             tenant_id: callerTenantId,
             user_id: caller.id,
-            action_type: 'DELETE_ALL_WAREHOUSE_DATA',
+            action_type: deleteMode === 'keep_templates' ? 'DELETE_KEEP_TEMPLATES' : 'DELETE_ALL_WAREHOUSE_DATA',
             table_name: 'ALL',
-            description: 'Ngưng Test - Xoá toàn bộ dữ liệu kho',
+            description: deleteMode === 'keep_templates' 
+              ? 'Xoá lịch sử, giữ sản phẩm mẫu (tồn kho = 0)' 
+              : 'Ngưng Test - Xoá toàn bộ dữ liệu kho',
           })
         }
 
