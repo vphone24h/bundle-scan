@@ -230,6 +230,24 @@ export default function SettingsPage() {
               <Input value={storeName} onChange={e => setStoreName(e.target.value)} />
             </div>
             <div className="space-y-2">
+              <Label>ID cửa hàng (subdomain)</Label>
+              <Input 
+                value={storeSubdomain} 
+                onChange={e => setStoreSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                placeholder="vd: cuahang123"
+              />
+              <p className="text-xs text-muted-foreground">Dùng để đăng nhập và truy cập website. Chỉ chữ thường, số, gạch ngang.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input 
+                type="email"
+                value={storeEmail} 
+                onChange={e => setStoreEmail(e.target.value)}
+                placeholder="email@example.com"
+              />
+            </div>
+            <div className="space-y-2">
               <Label>{t('settings.storePhone')}</Label>
               <Input value={storePhone} onChange={e => setStorePhone(e.target.value)} />
             </div>
