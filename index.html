@@ -221,6 +221,11 @@
           var name = settings.store_name || '';
           var desc = settings.store_description || settings.meta_description || '';
           var logo = settings.store_logo_url || '';
+          var canonicalUrl = location.origin + location.pathname;
+          // Set canonical + og:url
+          setMeta('property', 'og:url', canonicalUrl);
+          var canonicalEl = document.querySelector('link[rel="canonical"]');
+          if (canonicalEl) canonicalEl.setAttribute('href', canonicalUrl);
           if (name) {
             document.title = name;
             setMeta('name', 'description', desc || name);
