@@ -558,14 +558,23 @@ export default function ReturnsPage() {
                         <Eye className="h-4 w-4" />
                       </Button>
                       {isSingleItem && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={(e) => { e.stopPropagation(); openDeleteDialog(firstItem); }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); setItemToEdit(firstItem); setEditDialogOpen(true); }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={(e) => { e.stopPropagation(); openDeleteDialog(firstItem); }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </TableCell>
@@ -606,6 +615,13 @@ export default function ReturnsPage() {
                           onClick={() => openDetailDialog(r)}
                         >
                           <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={(e) => { e.stopPropagation(); setItemToEdit(r); setEditDialogOpen(true); }}
+                        >
+                          <Pencil className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
