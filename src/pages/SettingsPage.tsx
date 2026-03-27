@@ -180,13 +180,12 @@ export default function SettingsPage() {
           setSaving(false);
           return;
         }
-        const { data: existing } = await supabase
-          .from('tenants')
-          .select('id')
-          .eq('subdomain', storeSubdomain)
-          .neq('id', tenant.id)
-          .maybeSingle();
-        if (existing) {
+        const { data: isDuplicate } = await supabase.rpc('check_tenant_unique_field', {
+          _field: 'subdomain',
+          _value: storeSubdomain,
+          _exclude_tenant_id: tenant.id,
+        });
+        if (isDuplicate) {
           toast({ title: 'ID cửa hàng đã tồn tại', variant: 'destructive' });
           setSaving(false);
           return;
@@ -195,13 +194,12 @@ export default function SettingsPage() {
 
       // Validate email uniqueness if changed
       if (storeEmail.trim() && storeEmail.trim() !== (tenant.email || '')) {
-        const { data: existingEmail } = await supabase
-          .from('tenants')
-          .select('id')
-          .eq('email', storeEmail.trim())
-          .neq('id', tenant.id)
-          .maybeSingle();
-        if (existingEmail) {
+        const { data: isDuplicateEmail } = await supabase.rpc('check_tenant_unique_field', {
+          _field: 'email',
+          _value: storeEmail.trim(),
+          _exclude_tenant_id: tenant.id,
+        });
+        if (isDuplicateEmail) {
           toast({ title: 'Email đã được sử dụng bởi cửa hàng khác', variant: 'destructive' });
           setSaving(false);
           return;
