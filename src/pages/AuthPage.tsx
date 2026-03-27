@@ -55,7 +55,6 @@ export default function AuthPage() {
         if (tenant?.subdomain && tenant.subdomain !== desiredStoreId) {
           await signOut();
           toast({ title: t('pages.auth.switchedStore'), description: t('pages.auth.switchedStoreDesc'), variant: 'destructive' });
-          setPendingRedirect(null);
           setLoading(false);
         }
       } catch { }
