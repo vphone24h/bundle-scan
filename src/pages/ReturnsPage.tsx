@@ -41,6 +41,7 @@ import {
   Trash2,
   ChevronDown,
   ChevronRight,
+  Pencil,
 } from 'lucide-react';
 import { format, startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -54,6 +55,7 @@ import { formatNumberWithSpaces } from '@/lib/formatNumber';
 import { ImportReturnForm } from '@/components/returns/ImportReturnForm';
 import { ExportReturnForm } from '@/components/returns/ExportReturnForm';
 import { ReturnDetailDialog } from '@/components/returns/ReturnDetailDialog';
+import { EditReturnDialog } from '@/components/returns/EditReturnDialog';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -116,6 +118,8 @@ export default function ReturnsPage() {
   const [selectedReturnItem, setSelectedReturnItem] = useState<CombinedReturn | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<CombinedReturn | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [itemToEdit, setItemToEdit] = useState<CombinedReturn | null>(null);
 
   const deleteImportReturn = useDeleteImportReturn();
   const deleteExportReturn = useDeleteExportReturn();
@@ -554,14 +558,23 @@ export default function ReturnsPage() {
                         <Eye className="h-4 w-4" />
                       </Button>
                       {isSingleItem && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={(e) => { e.stopPropagation(); openDeleteDialog(firstItem); }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); setItemToEdit(firstItem); setEditDialogOpen(true); }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={(e) => { e.stopPropagation(); openDeleteDialog(firstItem); }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </TableCell>
@@ -602,6 +615,13 @@ export default function ReturnsPage() {
                           onClick={() => openDetailDialog(r)}
                         >
                           <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={(e) => { e.stopPropagation(); setItemToEdit(r); setEditDialogOpen(true); }}
+                        >
+                          <Pencil className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
@@ -891,6 +911,13 @@ export default function ReturnsPage() {
          open={detailDialogOpen}
          onOpenChange={setDetailDialogOpen}
          profiles={profiles}
+       />
+
+       {/* Edit Dialog */}
+       <EditReturnDialog
+         returnItem={itemToEdit}
+         open={editDialogOpen}
+         onOpenChange={setEditDialogOpen}
        />
 
       {/* Delete Confirmation Dialog */}

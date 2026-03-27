@@ -910,6 +910,203 @@ export function useCreateExportReturn() {
   });
 }
 
+export function useEditImportReturn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      returnItem,
+      newRefundAmount,
+      note,
+    }: {
+      returnItem: ImportReturn;
+      newRefundAmount: number;
+      note: string;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
+      const oldRefund = returnItem.total_refund_amount;
+
+      // 1. Update the import return record
+      const { error: updateError } = await supabase
+        .from('import_returns')
+        .update({
+          total_refund_amount: newRefundAmount,
+          note,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', returnItem.id);
+      if (updateError) throw updateError;
+
+      // 2. Update return_payments (set single payment to new amount)
+      const { data: existingPayments } = await supabase
+        .from('return_payments')
+        .select('id, payment_source, amount')
+        .eq('return_id', returnItem.id)
+        .eq('return_type', 'import_return');
+
+      if (existingPayments && existingPayments.length > 0) {
+        // If multiple payments, update first one with diff, or scale proportionally
+        const totalOld = existingPayments.reduce((s, p) => s + Number(p.amount), 0);
+        if (totalOld > 0) {
+          const ratio = newRefundAmount / totalOld;
+          for (const p of existingPayments) {
+            const newAmount = Math.round(Number(p.amount) * ratio);
+            await supabase.from('return_payments').update({ amount: newAmount }).eq('id', p.id);
+          }
+        }
+      }
+
+      // 3. Update cash_book entries (sync cash flow)
+      const { data: cashEntries } = await supabase
+        .from('cash_book')
+        .select('id, amount')
+        .eq('reference_id', returnItem.id)
+        .eq('reference_type', 'import_return');
+
+      if (cashEntries && cashEntries.length > 0) {
+        const totalOldCash = cashEntries.reduce((s, c) => s + Number(c.amount), 0);
+        if (totalOldCash > 0) {
+          const ratio = newRefundAmount / totalOldCash;
+          for (const c of cashEntries) {
+            const newAmount = Math.round(Number(c.amount) * ratio);
+            await supabase.from('cash_book').update({ amount: newAmount }).eq('id', c.id);
+          }
+        }
+      }
+
+      // 4. Audit log
+      await supabase.from('audit_logs').insert([{
+        user_id: user.id,
+        action_type: 'EDIT_IMPORT_RETURN',
+        table_name: 'import_returns',
+        record_id: returnItem.id,
+        branch_id: returnItem.branch_id || null,
+        tenant_id: tenantId,
+        old_data: { total_refund_amount: oldRefund, note: returnItem.note },
+        new_data: { total_refund_amount: newRefundAmount, note },
+        description: `Sửa phiếu trả hàng nhập: ${returnItem.product_name} (${returnItem.code}) - ${oldRefund.toLocaleString('vi-VN')}đ → ${newRefundAmount.toLocaleString('vi-VN')}đ`,
+      }]);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['import-returns'] });
+      queryClient.invalidateQueries({ queryKey: ['return-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
+    },
+  });
+}
+
+export function useEditExportReturn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      returnItem,
+      newRefundAmount,
+      newStoreKeepAmount,
+      note,
+    }: {
+      returnItem: ExportReturn;
+      newRefundAmount: number;
+      newStoreKeepAmount: number;
+      note: string;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
+      const oldRefund = returnItem.refund_amount;
+      const oldKeep = returnItem.store_keep_amount;
+
+      // Recalculate fee
+      const totalReturn = newRefundAmount + newStoreKeepAmount;
+      const newFeeAmount = newStoreKeepAmount;
+      const newFeeType = newStoreKeepAmount > 0 ? 'fixed_amount' : 'none';
+
+      // 1. Update the export return record
+      const { error: updateError } = await supabase
+        .from('export_returns')
+        .update({
+          refund_amount: newRefundAmount,
+          store_keep_amount: newStoreKeepAmount,
+          fee_type: newFeeType as any,
+          fee_amount: newFeeAmount,
+          fee_percentage: 0,
+          note,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', returnItem.id);
+      if (updateError) throw updateError;
+
+      // 2. Update return_payments (scale proportionally)
+      const { data: existingPayments } = await supabase
+        .from('return_payments')
+        .select('id, payment_source, amount')
+        .eq('return_id', returnItem.id)
+        .eq('return_type', 'export_return');
+
+      if (existingPayments && existingPayments.length > 0) {
+        const totalOld = existingPayments.reduce((s, p) => s + Number(p.amount), 0);
+        if (totalOld > 0) {
+          const ratio = newRefundAmount / totalOld;
+          for (const p of existingPayments) {
+            const newAmount = Math.round(Number(p.amount) * ratio);
+            await supabase.from('return_payments').update({ amount: newAmount }).eq('id', p.id);
+          }
+        }
+      }
+
+      // 3. Update cash_book entries for refund (reference_type = 'export_return')
+      const { data: refundCashEntries } = await supabase
+        .from('cash_book')
+        .select('id, amount')
+        .eq('reference_id', returnItem.id)
+        .eq('reference_type', 'export_return');
+
+      if (refundCashEntries && refundCashEntries.length > 0) {
+        const totalOldCash = refundCashEntries.reduce((s, c) => s + Number(c.amount), 0);
+        if (totalOldCash > 0) {
+          const ratio = newRefundAmount / totalOldCash;
+          for (const c of refundCashEntries) {
+            const newAmount = Math.round(Number(c.amount) * ratio);
+            await supabase.from('cash_book').update({ amount: newAmount }).eq('id', c.id);
+          }
+        }
+      }
+
+      // 4. Audit log
+      await supabase.from('audit_logs').insert([{
+        user_id: user.id,
+        action_type: 'EDIT_EXPORT_RETURN',
+        table_name: 'export_returns',
+        record_id: returnItem.id,
+        branch_id: returnItem.branch_id || null,
+        tenant_id: tenantId,
+        old_data: { refund_amount: oldRefund, store_keep_amount: oldKeep, note: returnItem.note },
+        new_data: { refund_amount: newRefundAmount, store_keep_amount: newStoreKeepAmount, note },
+        description: `Sửa phiếu trả hàng bán: ${returnItem.product_name} (${returnItem.code}) - Hoàn: ${oldRefund.toLocaleString('vi-VN')}đ → ${newRefundAmount.toLocaleString('vi-VN')}đ`,
+      }]);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['export-returns'] });
+      queryClient.invalidateQueries({ queryKey: ['return-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['report-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
+    },
+  });
+}
+
 export function useDeleteImportReturn() {
   const queryClient = useQueryClient();
 
