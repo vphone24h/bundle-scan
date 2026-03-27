@@ -627,6 +627,7 @@ export default function ImportNewPage() {
     // Close payment dialog & clear cart
     setPaymentOpen(false);
     setCart([]);
+    draft.clearDraft();
     setVariantConfig({ enabled: false, levels: [] });
     setSelectedVariants({});
 
