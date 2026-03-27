@@ -78,7 +78,7 @@ export function ReceiptReturnDialog({
     (item) => item.status !== 'returned'
   ) || [];
 
-  const totalSalePrice = returnableItems.reduce((sum, item) => sum + item.sale_price, 0);
+  const totalSalePrice = returnableItems.reduce((sum, item) => sum + item.sale_price * (item.quantity || 1), 0);
 
   // Calculate refund amount
   const calculateRefund = () => {
