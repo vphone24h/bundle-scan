@@ -306,6 +306,21 @@ export function TenantsManagement() {
         }
       }
 
+      // Check email uniqueness if changed
+      if (editEmail.trim() && editEmail.trim() !== (selectedTenant.email || '')) {
+        const { data: existingEmail } = await supabase
+          .from('tenants')
+          .select('id')
+          .eq('email', editEmail.trim())
+          .neq('id', selectedTenant.id)
+          .maybeSingle();
+        if (existingEmail) {
+          toast({ title: 'Lỗi', description: 'Email đã được sử dụng bởi cửa hàng khác', variant: 'destructive' });
+          setSavingEdit(false);
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from('tenants')
         .update({ 
