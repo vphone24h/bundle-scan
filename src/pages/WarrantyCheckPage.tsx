@@ -147,12 +147,26 @@ export default function WarrantyCheckPage() {
   const showError = !!error && isFetched && (lookupEnabled || persistedResults === null);
   const hasResults = effectiveResults.length > 0;
 
+  const scrollOrToast = (items: WarrantyItem[] | null) => {
+    if (items && items.length > 0) {
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    } else {
+      toast.error('Không tìm thấy sản phẩm', {
+        description: 'Kiểm tra lại IMEI hoặc số điện thoại và thử lại',
+      });
+    }
+  };
+
   const handleSearch = () => {
     const v = input.trim();
     if (!v) return;
 
+    // Already have cached results for this search value
     if (v === searchValue && persistedResults !== null) {
       setLookupEnabled(false);
+      scrollOrToast(persistedResults);
       return;
     }
 
