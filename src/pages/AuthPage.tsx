@@ -17,9 +17,8 @@ const CURRENT_STORE_ID_KEY = 'current_store_id';
 export default function AuthPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { signIn, signOut, user, loading: authLoading } = useAuth();
+  const { signOut, user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
   
   const resolvedTenant = useTenantResolver();
   const isSubdomainMode = resolvedTenant.status === 'resolved' && resolvedTenant.subdomain;
@@ -64,13 +63,6 @@ export default function AuthPage() {
     check();
   }, [user?.id, authLoading, storeId, isSubdomainMode, signOut, t]);
 
-  useEffect(() => {
-    if (pendingRedirect && user && !authLoading) {
-      navigate(pendingRedirect, { replace: true });
-      setPendingRedirect(null);
-      setLoading(false);
-    }
-  }, [user, authLoading, pendingRedirect, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
