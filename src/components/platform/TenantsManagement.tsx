@@ -28,7 +28,9 @@ import {
   Mail,
   Filter,
   Globe,
-  CheckCircle2
+  CheckCircle2,
+  Pencil,
+  Save
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -69,7 +71,7 @@ export function TenantsManagement() {
   
   const [search, setSearch] = useState('');
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
-  const [actionDialog, setActionDialog] = useState<'lock' | 'unlock' | 'extend' | 'set_days' | null>(null);
+  const [actionDialog, setActionDialog] = useState<'lock' | 'unlock' | 'extend' | 'set_days' | 'edit' | null>(null);
   const [reason, setReason] = useState('');
   const [days, setDays] = useState('30');
   const [setDaysValue, setSetDaysValue] = useState('0');
@@ -82,6 +84,12 @@ export function TenantsManagement() {
   const [bulkExtendDays, setBulkExtendDays] = useState('7');
   const [bulkExtendNote, setBulkExtendNote] = useState('');
   const [bulkExtending, setBulkExtending] = useState(false);
+  
+  // Edit tenant states
+  const [editName, setEditName] = useState('');
+  const [editSubdomain, setEditSubdomain] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
   
   // Filters
   const [statusFilter, setStatusFilter] = useState('_all_');
@@ -258,6 +266,64 @@ export function TenantsManagement() {
       });
     }
     setBulkExtending(false);
+  };
+
+  const openEditDialog = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setEditName(tenant.name);
+    setEditSubdomain(tenant.subdomain);
+    setEditEmail(tenant.email || '');
+    setActionDialog('edit');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedTenant) return;
+    if (!editName.trim() || !editSubdomain.trim()) {
+      toast({ title: 'Lỗi', description: 'Tên và ID cửa hàng không được để trống', variant: 'destructive' });
+      return;
+    }
+    // Validate subdomain format
+    const subdomainRegex = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
+    if (editSubdomain.length < 2 || !subdomainRegex.test(editSubdomain)) {
+      toast({ title: 'Lỗi', description: 'ID cửa hàng chỉ chứa chữ thường, số và dấu gạch ngang', variant: 'destructive' });
+      return;
+    }
+
+    setSavingEdit(true);
+    try {
+      // Check subdomain uniqueness if changed
+      if (editSubdomain !== selectedTenant.subdomain) {
+        const { data: existing } = await supabase
+          .from('tenants')
+          .select('id')
+          .eq('subdomain', editSubdomain)
+          .neq('id', selectedTenant.id)
+          .maybeSingle();
+        if (existing) {
+          toast({ title: 'Lỗi', description: 'ID cửa hàng đã tồn tại', variant: 'destructive' });
+          setSavingEdit(false);
+          return;
+        }
+      }
+
+      const { error } = await supabase
+        .from('tenants')
+        .update({ 
+          name: editName.trim(), 
+          subdomain: editSubdomain.trim().toLowerCase(),
+          email: editEmail.trim() || null,
+        })
+        .eq('id', selectedTenant.id);
+
+      if (error) throw error;
+
+      toast({ title: 'Thành công', description: `Đã cập nhật thông tin ${editName}` });
+      setActionDialog(null);
+      queryClient.invalidateQueries({ queryKey: ['all-tenants'] });
+    } catch (error: any) {
+      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    }
+    setSavingEdit(false);
   };
 
   if (isLoading) {
@@ -487,6 +553,10 @@ export function TenantsManagement() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEditDialog(tenant)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Sửa thông tin
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => {
                             setSelectedTenant(tenant);
                             setShowProductsDialog(true);
@@ -650,6 +720,15 @@ export function TenantsManagement() {
                 </div>
                 <div className="mt-3 overflow-x-auto -mx-4 px-4 pb-1" onClick={(e) => e.stopPropagation()}>
                   <div className="flex gap-2 min-w-max">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="shrink-0 h-9 text-xs px-3"
+                      onClick={() => openEditDialog(tenant)}
+                    >
+                      <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                      Sửa
+                    </Button>
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -819,6 +898,57 @@ export function TenantsManagement() {
             <Button onClick={handleSetDays} disabled={settingDays}>
               {settingDays && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Xác nhận
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Tenant Dialog */}
+      <Dialog open={actionDialog === 'edit'} onOpenChange={(open) => !open && setActionDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5" />
+              Sửa thông tin cửa hàng
+            </DialogTitle>
+            <DialogDescription>
+              Cập nhật tên, ID và email cho <strong>{selectedTenant?.name}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Tên cửa hàng</Label>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Nhập tên cửa hàng"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>ID cửa hàng (subdomain)</Label>
+              <Input
+                value={editSubdomain}
+                onChange={(e) => setEditSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                placeholder="vd: cuahang123"
+              />
+              <p className="text-xs text-muted-foreground">Chỉ chữ thường, số và dấu gạch ngang. Dùng để đăng nhập và truy cập website.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                placeholder="email@example.com"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActionDialog(null)}>Hủy</Button>
+            <Button onClick={handleSaveEdit} disabled={savingEdit}>
+              {savingEdit && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <Save className="h-4 w-4 mr-2" />
+              Lưu
             </Button>
           </DialogFooter>
         </DialogContent>
