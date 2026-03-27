@@ -217,9 +217,37 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
               </div>
             )}
             <div>
-              <Label className="text-muted-foreground">Giá nhập</Label>
+              <Label className="text-muted-foreground">Giá nhập (đơn giá)</Label>
               <p className="font-bold text-primary">{formatCurrencyWithSpaces(product.import_price)}</p>
             </div>
+            {!isImei && (
+              <div>
+                <Label className="text-muted-foreground">
+                  Số lượng trả (tối đa {maxQty}{product.unit ? ` ${product.unit}` : ''})
+                </Label>
+                <Input
+                  type="number"
+                  min={minValue}
+                  max={maxQty}
+                  step={stepValue}
+                  value={returnQtyDisplay}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setReturnQtyDisplay(val);
+                    const num = parseFloat(val) || 0;
+                    const clamped = Math.max(minValue, Math.min(num, maxQty));
+                    setReturnQty(isDecimalUnit ? Math.round(clamped * 1000) / 1000 : Math.round(clamped));
+                  }}
+                  className="w-24 mt-1"
+                />
+              </div>
+            )}
+            {returnQty > 1 && (
+              <div>
+                <Label className="text-muted-foreground">Thành tiền</Label>
+                <p className="font-bold text-lg text-primary">{formatCurrencyWithSpaces(productTotalCost)}</p>
+              </div>
+            )}
             <div>
               <Label className="text-muted-foreground">Nhà cung cấp</Label>
               <p>{product.suppliers?.name || '-'}</p>
