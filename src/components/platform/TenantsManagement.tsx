@@ -360,7 +360,7 @@ export function TenantsManagement() {
 
       toast({ title: 'Thành công', description: `Đã cập nhật thông tin ${editName}` });
       setActionDialog(null);
-      Promise.all([
+      await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['all-tenants'], refetchType: 'all' }),
         queryClient.invalidateQueries({ queryKey: ['current-tenant-combined'], refetchType: 'all' }),
       ]);
