@@ -330,9 +330,40 @@ export function TenantsManagement() {
 
       if (error) throw error;
 
+      const normalizedName = editName.trim();
+      const normalizedSubdomain = editSubdomain.trim().toLowerCase();
+      const normalizedEmail = editEmail.trim() || null;
+
+      queryClient.setQueriesData({ queryKey: ['all-tenants'] }, (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((item: any) =>
+          item.id === selectedTenant.id
+            ? {
+                ...item,
+                name: normalizedName,
+                subdomain: normalizedSubdomain,
+                email: normalizedEmail,
+              }
+            : item
+        );
+      });
+
+      queryClient.setQueriesData({ queryKey: ['current-tenant-combined'] }, (old: any) => {
+        if (!old || old.id !== selectedTenant.id) return old;
+        return {
+          ...old,
+          name: normalizedName,
+          subdomain: normalizedSubdomain,
+          email: normalizedEmail,
+        };
+      });
+
       toast({ title: 'Thành công', description: `Đã cập nhật thông tin ${editName}` });
       setActionDialog(null);
-      queryClient.invalidateQueries({ queryKey: ['all-tenants'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['all-tenants'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['current-tenant-combined'], refetchType: 'all' }),
+      ]);
     } catch (error: any) {
       toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
     }

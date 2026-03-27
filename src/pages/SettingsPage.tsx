@@ -143,6 +143,7 @@ export default function SettingsPage() {
   const { t, i18n } = useTranslation();
   const { data: tenant } = useCurrentTenant();
   const { data: permissions } = usePermissions();
+  const queryClient = useQueryClient();
 
   const [storeName, setStoreName] = useState('');
   const [storePhone, setStorePhone] = useState('');
@@ -217,6 +218,41 @@ export default function SettingsPage() {
         .eq('id', tenant.id);
 
       if (error) throw error;
+
+      const normalizedSubdomain = storeSubdomain.trim().toLowerCase();
+      const normalizedEmail = storeEmail.trim() || null;
+
+      queryClient.setQueriesData({ queryKey: ['current-tenant-combined'] }, (old: any) => {
+        if (!old || old.id !== tenant.id) return old;
+        return {
+          ...old,
+          name: storeName,
+          phone: storePhone,
+          subdomain: normalizedSubdomain,
+          email: normalizedEmail,
+        };
+      });
+
+      queryClient.setQueriesData({ queryKey: ['all-tenants'] }, (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((item: any) =>
+          item.id === tenant.id
+            ? {
+                ...item,
+                name: storeName,
+                phone: storePhone,
+                subdomain: normalizedSubdomain,
+                email: normalizedEmail,
+              }
+            : item
+        );
+      });
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['current-tenant-combined'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['all-tenants'], refetchType: 'all' }),
+      ]);
+
       toast({ title: t('settings.saved') });
     } catch {
       toast({ title: 'Error', variant: 'destructive' });
