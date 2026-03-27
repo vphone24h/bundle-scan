@@ -172,9 +172,35 @@ export default function SettingsPage() {
     if (!tenant) return;
     setSaving(true);
     try {
+      // Validate subdomain if changed
+      if (storeSubdomain !== tenant.subdomain) {
+        const subdomainRegex = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
+        if (storeSubdomain.length < 2 || !subdomainRegex.test(storeSubdomain)) {
+          toast({ title: 'ID cửa hàng chỉ chứa chữ thường, số và dấu gạch ngang', variant: 'destructive' });
+          setSaving(false);
+          return;
+        }
+        const { data: existing } = await supabase
+          .from('tenants')
+          .select('id')
+          .eq('subdomain', storeSubdomain)
+          .neq('id', tenant.id)
+          .maybeSingle();
+        if (existing) {
+          toast({ title: 'ID cửa hàng đã tồn tại', variant: 'destructive' });
+          setSaving(false);
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from('tenants')
-        .update({ name: storeName, phone: storePhone })
+        .update({ 
+          name: storeName, 
+          phone: storePhone,
+          subdomain: storeSubdomain.trim().toLowerCase(),
+          email: storeEmail.trim() || null,
+        })
         .eq('id', tenant.id);
 
       if (error) throw error;
