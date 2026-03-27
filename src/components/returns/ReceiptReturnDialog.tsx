@@ -61,6 +61,7 @@ export function ReceiptReturnDialog({
   const [paymentsTouched, setPaymentsTouched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
 
   const createExportReturn = useCreateExportReturn();
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
@@ -78,7 +79,33 @@ export function ReceiptReturnDialog({
     (item) => item.status !== 'returned'
   ) || [];
 
-  const totalSalePrice = returnableItems.reduce((sum, item) => sum + item.sale_price * (item.quantity || 1), 0);
+  // Initialize return quantities when dialog opens
+  useEffect(() => {
+    if (open && returnableItems.length > 0) {
+      const initial: Record<string, number> = {};
+      returnableItems.forEach(item => {
+        initial[item.id] = item.quantity || 1;
+      });
+      setReturnQuantities(initial);
+    }
+  }, [open]);
+
+  const getReturnQty = (itemId: string, maxQty: number) => {
+    return returnQuantities[itemId] ?? maxQty;
+  };
+
+  const handleReturnQtyChange = (itemId: string, value: string, maxQty: number) => {
+    const num = parseInt(value) || 0;
+    setReturnQuantities(prev => ({
+      ...prev,
+      [itemId]: Math.max(1, Math.min(num, maxQty)),
+    }));
+  };
+
+  const totalSalePrice = returnableItems.reduce((sum, item) => {
+    const qty = getReturnQty(item.id, item.quantity || 1);
+    return sum + item.sale_price * qty;
+  }, 0);
 
   // Calculate refund amount
   const calculateRefund = () => {
@@ -128,6 +155,7 @@ export function ReceiptReturnDialog({
       setIsBusinessAccounting(true);
       setPaymentsTouched(false);
       setCurrentIndex(0);
+      setReturnQuantities({});
     }
   }, [open]);
 
@@ -279,7 +307,8 @@ export function ReceiptReturnDialog({
       for (let i = 0; i < returnableItems.length; i++) {
         setCurrentIndex(i);
         const item = returnableItems[i];
-        const itemTotal = item.sale_price * (item.quantity || 1);
+        const returnQty = getReturnQty(item.id, item.quantity || 1);
+        const itemTotal = item.sale_price * returnQty;
         const itemFee = calculateItemFee(itemTotal);
         const itemPayments = calculateItemPayments(itemTotal, itemFee)
           .filter(p => p.amount > 0)
@@ -302,7 +331,7 @@ export function ReceiptReturnDialog({
             imei: item.imei,
             import_price: 0,
             sale_price: item.sale_price,
-            quantity: item.quantity || 1,
+            quantity: returnQty,
             sale_date: receipt.export_date || null,
           },
           feeType: itemFee.feeType,
@@ -410,23 +439,41 @@ export function ReceiptReturnDialog({
                 </CardHeader>
                 <CardContent className="py-2">
                   <div className="space-y-2 text-sm">
-                    {returnableItems.map((item, index) => (
-                      <div key={item.id} className="flex justify-between items-center py-1 border-b last:border-0">
-                        <div>
+                    {returnableItems.map((item, index) => {
+                      const maxQty = item.quantity || 1;
+                      const returnQty = getReturnQty(item.id, maxQty);
+                      const itemTotal = item.sale_price * returnQty;
+                      return (
+                      <div key={item.id} className="flex justify-between items-start py-2 border-b last:border-0 gap-2">
+                        <div className="flex-1 min-w-0">
                           <div className="font-medium">{item.product_name}</div>
                           <div className="text-xs text-muted-foreground">
                             {item.imei ? `IMEI: ${item.imei}` : `SKU: ${item.sku}`}
-                            {!item.imei && (item.quantity || 1) > 1 && ` • SL: ${item.quantity}`}
                           </div>
-                        </div>
-                        <div className="text-right">
-                          {(item.quantity || 1) > 1 && (
-                            <div className="text-xs text-muted-foreground">{item.quantity} × {formatCurrencyWithSpaces(item.sale_price)}</div>
+                          {!item.imei && maxQty > 1 && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-muted-foreground">SL trả:</span>
+                              <Input
+                                type="number"
+                                min={1}
+                                max={maxQty}
+                                value={returnQty}
+                                onChange={(e) => handleReturnQtyChange(item.id, e.target.value, maxQty)}
+                                className="w-16 h-7 text-xs text-center"
+                              />
+                              <span className="text-xs text-muted-foreground">/ {maxQty}</span>
+                            </div>
                           )}
-                          <span className="font-medium">{formatCurrencyWithSpaces(item.sale_price * (item.quantity || 1))}</span>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          {returnQty > 1 && (
+                            <div className="text-xs text-muted-foreground">{returnQty} × {formatCurrencyWithSpaces(item.sale_price)}</div>
+                          )}
+                          <span className="font-medium">{formatCurrencyWithSpaces(itemTotal)}</span>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
