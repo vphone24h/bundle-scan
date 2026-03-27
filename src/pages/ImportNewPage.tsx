@@ -47,6 +47,8 @@ import { downloadImportTemplate } from '@/lib/excelTemplates';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
 import { useTranslation } from 'react-i18next';
+import { useDraftCart } from '@/hooks/useDraftCart';
+import { ResumeDraftDialog } from '@/components/import/ResumeDraftDialog';
 
 function useImportNewTourSteps(): TourStep[] {
   const { t } = useTranslation();
