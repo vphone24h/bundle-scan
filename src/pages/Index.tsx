@@ -156,8 +156,8 @@ const Index = () => {
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const todayFilters = useMemo(() => ({ startDate: todayStr, endDate: todayStr }), [todayStr]);
-  const { data: todayReportStats } = useReportStats(todayFilters);
-  const { data: todayDetailData } = useDetailedProfitReport(todayFilters);
+  const { data: todayReportStats, isLoading: todayReportLoading } = useReportStats(todayFilters);
+  const { data: todayDetailData, isLoading: todayDetailLoading } = useDetailedProfitReport(todayFilters);
 
   const todayNetProfit = useMemo(() => {
     if (!todayReportStats) return null;
@@ -169,6 +169,8 @@ const Index = () => {
     const otherIncome = Number(todayReportStats.otherIncome || 0);
     return businessProfit + otherIncome - totalExpenses;
   }, [todayReportStats, todayDetailData]);
+
+  const isTodayProfitLoading = todayReportLoading || todayDetailLoading || todayNetProfit === null;
 
   const { data: recentProductsData } = useRecentProducts(5);
   const { data: recentReceiptsData } = useRecentImportReceipts(3);
@@ -353,7 +355,11 @@ const Index = () => {
                     </>
                   ) : (
                     <div className="cursor-pointer" onClick={() => navigate('/reports')}>
-                      <p className={`text-2xl sm:text-3xl font-bold ${(todayNetProfit ?? stats?.todayProfit ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>{formatCurrency(todayNetProfit ?? stats?.todayProfit ?? 0)}</p>
+                      {isTodayProfitLoading ? (
+                        <p className="text-2xl sm:text-3xl font-bold text-muted-foreground select-none">••••••</p>
+                      ) : (
+                        <p className={`text-2xl sm:text-3xl font-bold ${(todayNetProfit || 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>{formatCurrency(todayNetProfit || 0)}</p>
+                      )}
                       <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayProfit')}</p>
                     </div>
                   )}
