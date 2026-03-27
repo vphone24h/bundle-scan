@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
 import { getLocalDateString, getLocalDateRangeISO } from '@/lib/vietnamTime';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 export interface DashboardStats {
   totalProducts: number;
@@ -65,8 +66,113 @@ export function useDashboardStats() {
         todayImportsQuery = todayImportsQuery.eq('branch_id', effectiveBranchId);
       }
 
+      const getTodayDetailedBusinessProfit = async () => {
+        const buildSoldQuery = () => {
+          let q = supabase
+            .from('export_receipt_items')
+            .select(`
+              id,
+              sale_price,
+              quantity,
+              product_id,
+              status,
+              export_receipts!inner(
+                id,
+                export_date,
+                branch_id,
+                status
+              )
+            `)
+            .in('status', ['sold', 'returned'])
+            .neq('export_receipts.status', 'cancelled')
+            .gte('export_receipts.export_date', todayStartUTC)
+            .lte('export_receipts.export_date', todayEndUTC);
+
+          if (effectiveBranchId) {
+            q = q.eq('export_receipts.branch_id', effectiveBranchId);
+          }
+
+          return q.order('created_at', { ascending: false });
+        };
+
+        const buildReturnQuery = () => {
+          let q = supabase
+            .from('export_returns')
+            .select(`
+              id,
+              sale_price,
+              quantity,
+              product_id,
+              fee_type,
+              return_date,
+              branch_id
+            `)
+            .eq('fee_type', 'none')
+            .gte('return_date', todayStartUTC)
+            .lte('return_date', todayEndUTC)
+            .order('return_date', { ascending: false });
+
+          if (effectiveBranchId) {
+            q = q.eq('branch_id', effectiveBranchId);
+          }
+
+          return q;
+        };
+
+        const [soldItems, returnItems] = await Promise.all([
+          fetchAllRows<any>(() => buildSoldQuery()),
+          fetchAllRows<any>(() => buildReturnQuery()),
+        ]);
+
+        const productIds = Array.from(
+          new Set([
+            ...(soldItems?.map((i) => i.product_id).filter(Boolean) || []),
+            ...(returnItems?.map((i: any) => i.product_id).filter(Boolean) || []),
+          ])
+        );
+
+        const productsMap: Record<string, number> = {};
+        if (productIds.length > 0) {
+          const BATCH_SIZE = 500;
+          for (let i = 0; i < productIds.length; i += BATCH_SIZE) {
+            const batch = productIds.slice(i, i + BATCH_SIZE);
+            const { data: products } = await supabase
+              .from('products')
+              .select('id, import_price')
+              .in('id', batch)
+              .limit(BATCH_SIZE);
+
+            products?.forEach((p: any) => {
+              productsMap[p.id] = Number(p.import_price || 0);
+            });
+          }
+        }
+
+        let totalProfit = 0;
+
+        soldItems?.forEach((item: any) => {
+          const qty = Number(item.quantity ?? 1) || 1;
+          const lineSalePrice = Number(item.sale_price || 0) * qty;
+          const lineImportPrice = Number(productsMap[item.product_id] || 0) * qty;
+          totalProfit += lineSalePrice - lineImportPrice;
+        });
+
+        returnItems?.forEach((item: any) => {
+          const qty = Number(item.quantity ?? 1) || 1;
+          const lineSalePrice = Number(item.sale_price || 0) * qty;
+          const lineImportPrice = Number(productsMap[item.product_id] || 0) * qty;
+          totalProfit += -(lineSalePrice - lineImportPrice);
+        });
+
+        return totalProfit;
+      };
+
       // Sync Dashboard with Reports source of truth: no local recalculation
-      const [{ data: todayReportAgg, error: reportError }, { count: todayImportsCount, error: todayImportsError }] = await Promise.all([
+      const [
+        { data: todayReportAgg, error: reportError },
+        { count: todayImportsCount, error: todayImportsError },
+        todayBusinessProfitFromDetail,
+      ] = await Promise.all([
         supabase.rpc('get_report_stats_aggregated' as any, {
           p_tenant_id: tenant!.id,
           p_start_iso: todayStartUTC,
@@ -75,6 +181,7 @@ export function useDashboardStats() {
           p_category_id: null,
         }),
         todayImportsQuery,
+        getTodayDetailedBusinessProfit(),
       ]);
 
       if (reportError) throw reportError;
@@ -82,8 +189,10 @@ export function useDashboardStats() {
 
       const reportAgg = (todayReportAgg || {}) as Record<string, unknown>;
       const todayRevenue = Number(reportAgg.netRevenue || 0);
-      // Đồng bộ với báo cáo: lấy lợi nhuận thuần (6)
-      const todayProfit = Number(reportAgg.netProfit || 0);
+      const todayExpenses = Number(reportAgg.totalExpenses || 0);
+      const todayOtherIncome = Number(reportAgg.otherIncome || 0);
+      // Đồng bộ tuyệt đối với báo cáo hiển thị: LN thuần = LN KD (từ bảng chi tiết) + Thu nhập khác - Chi phí
+      const todayProfit = Number(todayBusinessProfitFromDetail || 0) + todayOtherIncome - todayExpenses;
       const todaySold = Number(reportAgg.productsSold || 0);
       const todayImports = todayImportsCount || 0;
 
