@@ -7428,6 +7428,10 @@ export type Database = {
           rating: number
         }[]
       }
+      check_tenant_unique_field: {
+        Args: { _exclude_tenant_id: string; _field: string; _value: string }
+        Returns: boolean
+      }
       check_warranty_lookup_limit: {
         Args: { _ip_address: string }
         Returns: boolean
