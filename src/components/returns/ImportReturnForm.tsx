@@ -41,6 +41,8 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
   const [note, setNote] = useState('');
   const [recordToCashBook, setRecordToCashBook] = useState(true);
   const [payments, setPayments] = useState<PaymentLine[]>([]);
+  const [returnQty, setReturnQty] = useState<number>(1);
+  const [returnQtyDisplay, setReturnQtyDisplay] = useState<string>('1');
 
   const createImportReturn = useCreateImportReturn();
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
@@ -53,9 +55,26 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
     return [...BUILT_IN_PAYMENT_SOURCES, ...custom];
   }, [customPaymentSources]);
 
-  // For non-IMEI products, total cost = import_price * quantity
-  const productQty = product ? (product.imei ? 1 : (Number(product.quantity) || 1)) : 1;
-  const productTotalCost = product ? product.import_price * productQty : 0;
+  const isImei = !!product?.imei;
+  const DECIMAL_UNITS = ['kg', 'lít', 'mét'];
+  const isDecimalUnit = product?.unit ? DECIMAL_UNITS.includes(product.unit.toLowerCase()) : false;
+  const stepValue = isDecimalUnit ? 0.1 : 1;
+  const minValue = isDecimalUnit ? 0.1 : 1;
+  
+  // Max qty from product
+  const maxQty = product ? (isImei ? 1 : (Number(product.quantity) || 1)) : 1;
+
+  // Init returnQty when product changes
+  useEffect(() => {
+    if (product) {
+      const qty = isImei ? 1 : (Number(product.quantity) || 1);
+      setReturnQty(qty);
+      setReturnQtyDisplay(String(qty));
+    }
+  }, [product?.id]);
+
+  // For non-IMEI products, total cost = import_price * returnQty
+  const productTotalCost = product ? product.import_price * returnQty : 0;
 
   // Calculate refund amount based on fee type
   const calculateRefund = () => {
@@ -133,7 +152,7 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
         sku: product.sku,
         imei: product.imei,
         import_price: product.import_price,
-        quantity: productQty,
+        quantity: returnQty,
         import_receipt_id: product.import_receipt_id,
         supplier_id: product.supplier_id,
         branch_id: product.branch_id,
@@ -198,9 +217,37 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
               </div>
             )}
             <div>
-              <Label className="text-muted-foreground">Giá nhập</Label>
+              <Label className="text-muted-foreground">Giá nhập (đơn giá)</Label>
               <p className="font-bold text-primary">{formatCurrencyWithSpaces(product.import_price)}</p>
             </div>
+            {!isImei && (
+              <div>
+                <Label className="text-muted-foreground">
+                  Số lượng trả (tối đa {maxQty}{product.unit ? ` ${product.unit}` : ''})
+                </Label>
+                <Input
+                  type="number"
+                  min={minValue}
+                  max={maxQty}
+                  step={stepValue}
+                  value={returnQtyDisplay}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setReturnQtyDisplay(val);
+                    const num = parseFloat(val) || 0;
+                    const clamped = Math.max(minValue, Math.min(num, maxQty));
+                    setReturnQty(isDecimalUnit ? Math.round(clamped * 1000) / 1000 : Math.round(clamped));
+                  }}
+                  className="w-24 mt-1"
+                />
+              </div>
+            )}
+            {returnQty > 1 && (
+              <div>
+                <Label className="text-muted-foreground">Thành tiền</Label>
+                <p className="font-bold text-lg text-primary">{formatCurrencyWithSpaces(productTotalCost)}</p>
+              </div>
+            )}
             <div>
               <Label className="text-muted-foreground">Nhà cung cấp</Label>
               <p>{product.suppliers?.name || '-'}</p>

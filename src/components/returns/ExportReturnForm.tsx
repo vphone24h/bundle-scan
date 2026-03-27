@@ -60,6 +60,10 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
   // Max quantity from item
   const maxQty = item ? (item.quantity || 1) : 1;
   const isImei = !!item?.imei;
+  const DECIMAL_UNITS = ['kg', 'lít', 'mét'];
+  const isDecimalUnit = item?.unit ? DECIMAL_UNITS.includes(item.unit.toLowerCase()) : false;
+  const stepValue = isDecimalUnit ? 0.1 : 1;
+  const minValue = isDecimalUnit ? 0.1 : 1;
 
   // Init returnQty when item changes
   useEffect(() => {
@@ -235,19 +239,23 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
               <Label className="text-muted-foreground">Giá bán (đơn giá)</Label>
               <p className="font-bold text-primary">{formatCurrencyWithSpaces(item.sale_price)}</p>
             </div>
-            {!isImei && maxQty > 1 && (
+            {!isImei && (
               <div>
-                <Label className="text-muted-foreground">Số lượng trả (tối đa {maxQty})</Label>
+                <Label className="text-muted-foreground">
+                  Số lượng trả (tối đa {maxQty}{item?.unit ? ` ${item.unit}` : ''})
+                </Label>
                 <Input
                   type="number"
-                  min={1}
+                  min={minValue}
                   max={maxQty}
+                  step={stepValue}
                   value={returnQtyDisplay}
                   onChange={(e) => {
                     const val = e.target.value;
                     setReturnQtyDisplay(val);
-                    const num = parseInt(val) || 0;
-                    setReturnQty(Math.max(1, Math.min(num, maxQty)));
+                    const num = parseFloat(val) || 0;
+                    const clamped = Math.max(minValue, Math.min(num, maxQty));
+                    setReturnQty(isDecimalUnit ? Math.round(clamped * 1000) / 1000 : Math.round(clamped));
                   }}
                   className="w-24 mt-1"
                 />
