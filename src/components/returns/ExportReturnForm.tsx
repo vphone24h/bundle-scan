@@ -42,6 +42,8 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
   const [isBusinessAccounting, setIsBusinessAccounting] = useState(true);
   const [recordToCashBook, setRecordToCashBook] = useState(true);
   const [payments, setPayments] = useState<PaymentLine[]>([]);
+  const [returnQty, setReturnQty] = useState<number>(1);
+  const [returnQtyDisplay, setReturnQtyDisplay] = useState<string>('1');
 
   const createExportReturn = useCreateExportReturn();
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
@@ -55,16 +57,33 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
     return [...BUILT_IN_PAYMENT_SOURCES, ...custom];
   }, [customPaymentSources]);
 
+  // Max quantity from item
+  const maxQty = item ? (item.quantity || 1) : 1;
+  const isImei = !!item?.imei;
+
+  // Init returnQty when item changes
+  useEffect(() => {
+    if (item) {
+      const qty = item.quantity || 1;
+      setReturnQty(qty);
+      setReturnQtyDisplay(String(qty));
+    }
+  }, [item]);
+
+  // Total sale amount for return
+  const unitSalePrice = item?.sale_price || 0;
+  const totalSaleAmount = unitSalePrice * returnQty;
+
   // Calculate refund amount
   const calculateRefund = () => {
     if (!item) return 0;
-    if (feeType === 'none') return item.sale_price;
-    if (feeType === 'percentage') return item.sale_price * (1 - feePercentage / 100);
-    return item.sale_price - feeAmount;
+    if (feeType === 'none') return totalSaleAmount;
+    if (feeType === 'percentage') return totalSaleAmount * (1 - feePercentage / 100);
+    return totalSaleAmount - feeAmount;
   };
 
   const refundAmount = calculateRefund();
-  const storeKeepAmount = (item?.sale_price || 0) - refundAmount;
+  const storeKeepAmount = totalSaleAmount - refundAmount;
 
   // Initialize payments when refund amount changes
   useEffect(() => {
