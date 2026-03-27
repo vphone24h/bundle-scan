@@ -1252,15 +1252,18 @@ export function useDeleteExportReturn() {
           .eq('id', returnItem.product_id)
           .single();
 
+        const returnQty = returnItem.quantity || 1;
+
         if (prod?.imei) {
           await supabase
             .from('products')
             .update({ status: 'sold' })
             .eq('id', returnItem.product_id);
         } else {
+          // Subtract the returned quantity back out of inventory
           await supabase
             .from('products')
-            .update({ quantity: Math.max((prod?.quantity || 1) - 1, 0) })
+            .update({ quantity: Math.max((prod?.quantity || 0) - returnQty, 0) })
             .eq('id', returnItem.product_id);
         }
       }
