@@ -90,15 +90,20 @@ export function ReceiptReturnDialog({
     }
   }, [open]);
 
+  const DECIMAL_UNITS = ['kg', 'lít', 'mét'];
+
   const getReturnQty = (itemId: string, maxQty: number) => {
     return returnQuantities[itemId] ?? maxQty;
   };
 
-  const handleReturnQtyChange = (itemId: string, value: string, maxQty: number) => {
-    const num = parseInt(value) || 0;
+  const handleReturnQtyChange = (itemId: string, value: string, maxQty: number, unit?: string) => {
+    const isDecimal = unit ? DECIMAL_UNITS.includes(unit.toLowerCase()) : false;
+    const num = parseFloat(value) || 0;
+    const minVal = isDecimal ? 0.1 : 1;
+    const clamped = Math.max(minVal, Math.min(num, maxQty));
     setReturnQuantities(prev => ({
       ...prev,
-      [itemId]: Math.max(1, Math.min(num, maxQty)),
+      [itemId]: isDecimal ? Math.round(clamped * 1000) / 1000 : Math.round(clamped),
     }));
   };
 
@@ -450,18 +455,19 @@ export function ReceiptReturnDialog({
                           <div className="text-xs text-muted-foreground">
                             {item.imei ? `IMEI: ${item.imei}` : `SKU: ${item.sku}`}
                           </div>
-                          {!item.imei && maxQty > 1 && (
+                          {!item.imei && (
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-xs text-muted-foreground">SL trả:</span>
                               <Input
                                 type="number"
-                                min={1}
+                                min={DECIMAL_UNITS.includes((item.unit || '').toLowerCase()) ? 0.1 : 1}
                                 max={maxQty}
+                                step={DECIMAL_UNITS.includes((item.unit || '').toLowerCase()) ? 0.1 : 1}
                                 value={returnQty}
-                                onChange={(e) => handleReturnQtyChange(item.id, e.target.value, maxQty)}
-                                className="w-16 h-7 text-xs text-center"
+                                onChange={(e) => handleReturnQtyChange(item.id, e.target.value, maxQty, item.unit)}
+                                className="w-20 h-7 text-xs text-center"
                               />
-                              <span className="text-xs text-muted-foreground">/ {maxQty}</span>
+                              <span className="text-xs text-muted-foreground">/ {maxQty} {item.unit || ''}</span>
                             </div>
                           )}
                         </div>
