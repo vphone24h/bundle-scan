@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { fetchAllRows } from '@/lib/fetchAllRows';
@@ -31,8 +32,22 @@ export function useDetailedProfitReport(filters?: {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
 
+  // Debounce filters to avoid rapid re-fetching when switching presets
+  const [debouncedFilters, setDebouncedFilters] = useState(filters);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedFilters(filters);
+    }, 350);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [JSON.stringify(filters)]);
+
   return useQuery({
-    queryKey: ['detailed-profit-report', filters, isDataHidden],
+    queryKey: ['detailed-profit-report', debouncedFilters, isDataHidden],
     queryFn: async () => {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) {
@@ -48,8 +63,8 @@ export function useDetailedProfitReport(filters?: {
       };
       
       const now = new Date();
-      const startDate = filters?.startDate || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-      const endDate = filters?.endDate || getLocalDateString(now);
+      const startDate = debouncedFilters?.startDate || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const endDate = debouncedFilters?.endDate || getLocalDateString(now);
       
       // Create proper local timezone boundaries for queries
       const startDateTime = new Date(startDate + 'T00:00:00');
@@ -87,14 +102,14 @@ export function useDetailedProfitReport(filters?: {
           .gte('export_receipts.export_date', startISO)
           .lte('export_receipts.export_date', endISO);
 
-        if (filters?.branchId) {
-          q = q.eq('export_receipts.branch_id', filters.branchId);
+        if (debouncedFilters?.branchId) {
+          q = q.eq('export_receipts.branch_id', debouncedFilters.branchId);
         }
-        if (filters?.categoryId) {
-          q = q.eq('category_id', filters.categoryId);
+        if (debouncedFilters?.categoryId) {
+          q = q.eq('category_id', debouncedFilters.categoryId);
         }
-        if (filters?.search) {
-          q = q.or(`product_name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,imei.ilike.%${filters.search}%`);
+        if (debouncedFilters?.search) {
+          q = q.or(`product_name.ilike.%${debouncedFilters.search}%,sku.ilike.%${debouncedFilters.search}%,imei.ilike.%${debouncedFilters.search}%`);
         }
         return q.order('created_at', { ascending: false });
       };
@@ -126,12 +141,12 @@ export function useDetailedProfitReport(filters?: {
           .lte('return_date', endISO)
           .order('return_date', { ascending: false });
 
-        if (filters?.branchId) {
-          q = q.eq('branch_id', filters.branchId);
+        if (debouncedFilters?.branchId) {
+          q = q.eq('branch_id', debouncedFilters.branchId);
         }
 
-        if (filters?.search) {
-          q = q.or(`product_name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,imei.ilike.%${filters.search}%`);
+        if (debouncedFilters?.search) {
+          q = q.or(`product_name.ilike.%${debouncedFilters.search}%,sku.ilike.%${debouncedFilters.search}%,imei.ilike.%${debouncedFilters.search}%`);
         }
 
         return q;
@@ -240,7 +255,7 @@ export function useDetailedProfitReport(filters?: {
         const productInfo = item.product_id ? productsMap[item.product_id] : null;
 
         // Lọc theo danh mục nếu có filter
-        if (filters?.categoryId && productInfo?.category_id !== filters.categoryId) {
+        if (debouncedFilters?.categoryId && productInfo?.category_id !== debouncedFilters.categoryId) {
           return;
         }
 
@@ -292,5 +307,7 @@ export function useDetailedProfitReport(filters?: {
     },
     enabled: !isTenantLoading,
     refetchOnWindowFocus: false,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
   });
 }
