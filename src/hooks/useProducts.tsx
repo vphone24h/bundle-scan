@@ -246,7 +246,33 @@ export function useAllProducts(filters?: {
 
       const { data, error, count } = await query;
       if (error) throw error;
-      return { items: (data || []) as Product[], totalCount: count || 0 };
+
+      const items = (data || []) as Product[];
+
+      // Lấy số lượng gốc từ product_imports cho sản phẩm không IMEI
+      const nonImeiIds = items.filter(p => !p.imei).map(p => p.id);
+      if (nonImeiIds.length > 0) {
+        const BATCH = 100;
+        const piMap = new Map<string, number>();
+        for (let i = 0; i < nonImeiIds.length; i += BATCH) {
+          const batch = nonImeiIds.slice(i, i + BATCH);
+          const { data: piData } = await supabase
+            .from('product_imports')
+            .select('product_id, quantity')
+            .in('product_id', batch);
+          (piData || []).forEach(pi => {
+            piMap.set(pi.product_id, (piMap.get(pi.product_id) || 0) + pi.quantity);
+          });
+        }
+        items.forEach(p => {
+          if (!p.imei && piMap.has(p.id)) {
+            (p as any).original_import_quantity = piMap.get(p.id)!;
+            p.quantity = piMap.get(p.id)!;
+          }
+        });
+      }
+
+      return { items, totalCount: count || 0 };
     },
     enabled: !!user?.id && !branchLoading,
     staleTime: 2 * 60 * 1000,
