@@ -61,6 +61,7 @@ export function ReceiptReturnDialog({
   const [paymentsTouched, setPaymentsTouched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
 
   const createExportReturn = useCreateExportReturn();
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
@@ -78,7 +79,33 @@ export function ReceiptReturnDialog({
     (item) => item.status !== 'returned'
   ) || [];
 
-  const totalSalePrice = returnableItems.reduce((sum, item) => sum + item.sale_price * (item.quantity || 1), 0);
+  // Initialize return quantities when dialog opens
+  useEffect(() => {
+    if (open && returnableItems.length > 0) {
+      const initial: Record<string, number> = {};
+      returnableItems.forEach(item => {
+        initial[item.id] = item.quantity || 1;
+      });
+      setReturnQuantities(initial);
+    }
+  }, [open]);
+
+  const getReturnQty = (itemId: string, maxQty: number) => {
+    return returnQuantities[itemId] ?? maxQty;
+  };
+
+  const handleReturnQtyChange = (itemId: string, value: string, maxQty: number) => {
+    const num = parseInt(value) || 0;
+    setReturnQuantities(prev => ({
+      ...prev,
+      [itemId]: Math.max(1, Math.min(num, maxQty)),
+    }));
+  };
+
+  const totalSalePrice = returnableItems.reduce((sum, item) => {
+    const qty = getReturnQty(item.id, item.quantity || 1);
+    return sum + item.sale_price * qty;
+  }, 0);
 
   // Calculate refund amount
   const calculateRefund = () => {
