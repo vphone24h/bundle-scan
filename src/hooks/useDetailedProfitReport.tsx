@@ -97,7 +97,8 @@ export function useDetailedProfitReport(filters?: {
               customers(name)
             )
           `)
-          .in('status', ['sold', 'returned'])
+          // Chỉ lấy đơn bán thực tế; trả hàng lấy từ bảng export_returns để tránh tính trùng
+          .eq('status', 'sold')
           .neq('export_receipts.status', 'cancelled')
           .gte('export_receipts.export_date', startISO)
           .lte('export_receipts.export_date', endISO);
