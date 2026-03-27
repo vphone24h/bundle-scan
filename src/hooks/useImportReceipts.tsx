@@ -205,7 +205,7 @@ export function useImportReceiptDetails(receiptId: string | null) {
         const originalQty = p.imei ? p.quantity : (piInfo?.quantity ?? p.quantity);
         return {
           id: p.id,
-          import_price: p.import_price,
+          import_price: (!p.imei && piInfo) ? piInfo.import_price : p.import_price,
           quantity: originalQty,
           original_import_quantity: originalQty,
           unit: p.unit,
