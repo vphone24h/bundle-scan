@@ -272,7 +272,12 @@ export function useDetailedProfitReport(filters?: {
 
       const totals = results.reduce(
         (acc, item) => {
-          acc.totalQuantity += item.quantity;
+          if (item.status === 'sold') {
+            acc.totalQuantity += item.quantity;
+          } else {
+            // Số lượng thực bán = bán - trả
+            acc.totalQuantity -= item.quantity;
+          }
           acc.totalRevenue += item.salePrice;
           acc.totalProfit += item.profit;
           return acc;
