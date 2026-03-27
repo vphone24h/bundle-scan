@@ -302,103 +302,97 @@ export function ReceiptReturnDialog({
       return;
     }
 
-    setIsSubmitting(true);
+    // Close dialog immediately for instant UX
+    onOpenChange(false);
+    toast({ title: 'Đang xử lý trả hàng...', description: 'Hệ thống đang xử lý, vui lòng chờ thông báo.' });
 
-    try {
-      // Process each item sequentially
-      // Pass debt payments through so useCreateExportReturn handles FIFO
-      // Pass non-debt with recordToCashBook=false to consolidate cash book below
-      const returnCodes: string[] = [];
-      for (let i = 0; i < returnableItems.length; i++) {
-        setCurrentIndex(i);
-        const item = returnableItems[i];
-        const returnQty = getReturnQty(item.id, item.quantity || 1);
-        const itemTotal = item.sale_price * returnQty;
-        const itemFee = calculateItemFee(itemTotal);
-        const itemPayments = calculateItemPayments(itemTotal, itemFee)
-          .filter(p => p.amount > 0)
-          .filter(p => !!p.source);
+    // Process in background
+    (async () => {
+      try {
+        const returnCodes: string[] = [];
+        for (let i = 0; i < returnableItems.length; i++) {
+          const item = returnableItems[i];
+          const returnQty = getReturnQty(item.id, item.quantity || 1);
+          const itemTotal = item.sale_price * returnQty;
+          const itemFee = calculateItemFee(itemTotal);
+          const itemPayments = calculateItemPayments(itemTotal, itemFee)
+            .filter(p => p.amount > 0)
+            .filter(p => !!p.source);
 
-        // Split: debt payments always go through hook for FIFO; non-debt skip cash book
-        const debtPayments = itemPayments.filter(p => p.source === 'debt');
-        const nonDebtPayments = itemPayments.filter(p => p.source !== 'debt');
+          const debtPayments = itemPayments.filter(p => p.source === 'debt');
+          const nonDebtPayments = itemPayments.filter(p => p.source !== 'debt');
 
-        const result = await createExportReturn.mutateAsync({
-          item: {
-            id: item.id,
-            product_id: item.product_id,
-            export_receipt_id: receipt.id,
-            export_receipt_item_id: item.id,
-            customer_id: receipt.customer_id || null,
-            branch_id: receipt.branch_id || null,
-            product_name: item.product_name,
-            sku: item.sku,
-            imei: item.imei,
-            import_price: 0,
-            sale_price: item.sale_price,
-            quantity: returnQty,
-            sale_date: receipt.export_date || null,
-          },
-          feeType: itemFee.feeType,
-          feePercentage: itemFee.feePercentage,
-          feeAmount: itemFee.feeAmount,
-          // Pass ALL payments (debt + non-debt) so hook handles debt FIFO correctly
-          payments: itemPayments,
-          isBusinessAccounting,
-          recordToCashBook: false, // Don't record non-debt individually - we'll consolidate below
-          note: i === 0 ? (note || `Trả toàn bộ phiếu ${receipt.code}`) : null,
-        });
-        returnCodes.push(result.code);
-      }
+          const result = await createExportReturn.mutateAsync({
+            item: {
+              id: item.id,
+              product_id: item.product_id,
+              export_receipt_id: receipt.id,
+              export_receipt_item_id: item.id,
+              customer_id: receipt.customer_id || null,
+              branch_id: receipt.branch_id || null,
+              product_name: item.product_name,
+              sku: item.sku,
+              imei: item.imei,
+              import_price: 0,
+              sale_price: item.sale_price,
+              quantity: returnQty,
+              sale_date: receipt.export_date || null,
+            },
+            feeType: itemFee.feeType,
+            feePercentage: itemFee.feePercentage,
+            feeAmount: itemFee.feeAmount,
+            payments: itemPayments,
+            isBusinessAccounting,
+            recordToCashBook: false,
+            note: i === 0 ? (note || `Trả toàn bộ phiếu ${receipt.code}`) : null,
+          });
+          returnCodes.push(result.code);
+        }
 
-      // Consolidated cash book entry - ONE entry per non-debt payment source for the whole receipt
-      const validPayments = payments.filter(p => p.amount > 0 && !!p.source);
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
-      const { data: { user } } = await supabase.auth.getUser();
+        // Consolidated cash book entry
+        const validPayments = payments.filter(p => p.amount > 0 && !!p.source);
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+        const { data: { user } } = await supabase.auth.getUser();
 
-      if (recordToCashBook && user && tenantId) {
-        for (const payment of validPayments) {
-          if (payment.source !== 'debt') {
-            const productDetails = returnableItems.map(item => 
-              `${item.product_name}${item.imei ? ` (IMEI: ${item.imei})` : ''}: ${formatCurrencyWithSpaces(item.sale_price)}`
-            ).join('\n');
+        if (recordToCashBook && user && tenantId) {
+          for (const payment of validPayments) {
+            if (payment.source !== 'debt') {
+              const productDetails = returnableItems.map(item => 
+                `${item.product_name}${item.imei ? ` (IMEI: ${item.imei})` : ''}: ${formatCurrencyWithSpaces(item.sale_price)}`
+              ).join('\n');
 
-            await supabase.from('cash_book').insert([{
-              type: 'expense' as const,
-              category: 'Hoan tien khach hang',
-              description: `Trả hàng phiếu ${receipt.code} (${returnableItems.length} SP)`,
-              amount: payment.amount,
-              payment_source: payment.source,
-              is_business_accounting: false,
-              branch_id: receipt.branch_id,
-              reference_id: receipt.id,
-              reference_type: 'export_return_receipt',
-              created_by: user.id,
-              tenant_id: tenantId,
-              note: productDetails,
-            }]);
+              await supabase.from('cash_book').insert([{
+                type: 'expense' as const,
+                category: 'Hoan tien khach hang',
+                description: `Trả hàng phiếu ${receipt.code} (${returnableItems.length} SP)`,
+                amount: payment.amount,
+                payment_source: payment.source,
+                is_business_accounting: false,
+                branch_id: receipt.branch_id,
+                reference_id: receipt.id,
+                reference_type: 'export_return_receipt',
+                created_by: user.id,
+                tenant_id: tenantId,
+                note: productDetails,
+              }]);
+            }
           }
         }
+
+        toast({
+          title: 'Trả hàng thành công',
+          description: `Đã hoàn ${formatCurrencyWithSpaces(refundAmount)} cho khách hàng (${returnableItems.length} sản phẩm)`,
+        });
+        onSuccess();
+      } catch (error: any) {
+        toast({
+          title: 'Lỗi trả hàng',
+          description: error.message || 'Không thể hoàn tất trả hàng',
+          variant: 'destructive',
+        });
       }
-
-      toast({
-        title: 'Trả hàng thành công',
-        description: `Đã hoàn ${formatCurrencyWithSpaces(refundAmount)} cho khách hàng (${returnableItems.length} sản phẩm)`,
-      });
-
-      onOpenChange(false);
-      onSuccess();
-    } catch (error: any) {
-      toast({
-        title: 'Lỗi',
-        description: error.message || 'Không thể hoàn tất trả hàng',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
-      setCurrentIndex(0);
-    }
+    })();
   };
 
   const cannotReturn = receipt.status === 'full_return' || receipt.status === 'cancelled';
