@@ -49,7 +49,6 @@ import {
 import { format, subDays, startOfWeek, startOfMonth, subMonths, subWeeks } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useReportStats, useReportChartData } from '@/hooks/useReportStats';
-import { useDetailedProfitReport } from '@/hooks/useDetailedProfitReport';
 import { useBranches } from '@/hooks/useBranches';
 import { useCategories } from '@/hooks/useCategories';
 import { formatCurrency } from '@/lib/mockData';
@@ -141,64 +140,23 @@ export function RevenueProfitReport() {
   };
 
   const { data: rawStats, isLoading: statsLoading } = useReportStats(filters);
-  const { data: detailData, isLoading: detailLoading } = useDetailedProfitReport({
-    ...filters,
-    search: undefined,
-  });
   const { data: chartData, isLoading: chartLoading } = useReportChartData({
     ...filters,
     groupBy: chartGroupBy,
   });
 
-  // Nguồn chuẩn: đồng bộ số liệu thẻ tổng hợp theo bảng chi tiết lợi nhuận
-  const detailSyncedMetrics = useMemo(() => {
-    if (!detailData) return null;
-
-    let totalSalesRevenue = 0;
-    let totalReturnRevenue = 0;
-    let productsSold = 0;
-    let productsReturned = 0;
-    let salesCount = 0;
-    let returnCount = 0;
-
-    detailData.items.forEach((item) => {
-      if (item.status === 'sold') {
-        totalSalesRevenue += Number(item.salePrice || 0);
-        productsSold += Number(item.quantity || 0);
-        salesCount += 1;
-      } else {
-        totalReturnRevenue += Math.abs(Number(item.salePrice || 0));
-        productsReturned += Number(item.quantity || 0);
-        returnCount += 1;
-      }
-    });
-
+  // Sử dụng trực tiếp RPC stats (nhanh) - công thức chuẩn
+  const stats = useMemo(() => {
+    if (!rawStats) return null;
+    const businessProfit = Number(rawStats.businessProfit || 0);
+    const totalExpenses = Number(rawStats.totalExpenses || 0);
+    const otherIncome = Number(rawStats.otherIncome || 0);
     return {
-      totalSalesRevenue,
-      totalReturnRevenue,
-      netRevenue: totalSalesRevenue - totalReturnRevenue,
-      businessProfit: Number(detailData.totals.totalProfit || 0),
-      productsSold,
-      productsReturned,
-      salesCount,
-      returnCount,
+      ...rawStats,
+      businessProfit,
+      netProfit: businessProfit + otherIncome - totalExpenses,
     };
-  }, [detailData]);
-
-  const stats = rawStats
-    ? (() => {
-        const businessProfit = Number(detailSyncedMetrics?.businessProfit ?? rawStats.businessProfit ?? 0);
-        const totalExpenses = Number(rawStats.totalExpenses || 0);
-        const otherIncome = Number(rawStats.otherIncome || 0);
-
-        return {
-          ...rawStats,
-          ...(detailSyncedMetrics || {}),
-          businessProfit,
-          netProfit: businessProfit + otherIncome - totalExpenses,
-        };
-      })()
-    : rawStats;
+  }, [rawStats]);
 
   const handleTimePreset = (preset: string) => {
     const now = new Date();
@@ -272,7 +230,7 @@ export function RevenueProfitReport() {
     value,
   })).sort((a, b) => b.value - a.value) : [];
 
-  const isInitialLoad = (statsLoading || detailLoading) && !detailSyncedMetrics;
+  const isInitialLoad = statsLoading && !stats;
 
   return (
     <div className="space-y-6">
@@ -343,7 +301,7 @@ export function RevenueProfitReport() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-      <div className={`space-y-6 transition-opacity duration-200 ${(statsLoading || detailLoading) ? 'opacity-50 pointer-events-none' : ''}`}>
+      <div className={`space-y-6 transition-opacity duration-200 ${statsLoading ? 'opacity-50 pointer-events-none' : ''}`}>
       {/* Main Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard title={`1. ${t('common.salesRevenue')}`} value={formatCurrency(stats?.totalSalesRevenue || 0)} icon={<ShoppingCart className="h-5 w-5" />} description={`${stats?.productsSold || 0} ${t('common.productsSold')}`} onClick={() => setDetailType('sales')} />
