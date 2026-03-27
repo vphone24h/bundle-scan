@@ -612,13 +612,22 @@ export default function ExportNewPage() {
     if (nameSearch.length >= 1) {
       const timer = setTimeout(async () => {
         const results = await searchProducts.mutateAsync(nameSearch);
-        setProductSuggestions(results || []);
+        // Filter out IMEI products already in cart
+        const cartImeis = new Set(cart.filter(c => c.imei).map(c => c.imei));
+        const cartProductIds = new Set(cart.filter(c => c.imei).map(c => c.productId));
+        const filtered = (results || []).filter((p: any) => {
+          if (p.imei) {
+            return !cartImeis.has(p.imei) && !cartProductIds.has(p.id);
+          }
+          return true;
+        });
+        setProductSuggestions(filtered);
       }, 300);
       return () => clearTimeout(timer);
     } else {
       setProductSuggestions([]);
     }
-  }, [nameSearch]);
+  }, [nameSearch, cart]);
 
   // Select product from suggestions
   const handleSelectProduct = (product: any) => {
