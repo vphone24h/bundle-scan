@@ -882,6 +882,7 @@ export function useReturnImportReceipt() {
       payments,
       recordToCashBook = true,
       note,
+      returnQuantities,
     }: {
       receiptId: string;
       feeType?: 'none' | 'percentage' | 'fixed_amount';
@@ -890,6 +891,7 @@ export function useReturnImportReceipt() {
       payments: { source: string; amount: number }[];
       recordToCashBook?: boolean;
       note?: string | null;
+      returnQuantities?: Record<string, number>;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
