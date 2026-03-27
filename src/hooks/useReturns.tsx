@@ -701,6 +701,7 @@ export function useCreateExportReturn() {
           imei: item.imei,
           import_price: item.import_price,
           sale_price: item.sale_price,
+          quantity: returnQty,
           original_sale_date: item.sale_date,
           fee_type: feeType,
           fee_percentage: feePercentage,
