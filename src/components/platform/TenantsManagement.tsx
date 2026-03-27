@@ -268,7 +268,64 @@ export function TenantsManagement() {
     setBulkExtending(false);
   };
 
-  if (isLoading) {
+  const openEditDialog = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setEditName(tenant.name);
+    setEditSubdomain(tenant.subdomain);
+    setEditEmail(tenant.email || '');
+    setActionDialog('edit');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedTenant) return;
+    if (!editName.trim() || !editSubdomain.trim()) {
+      toast({ title: 'Lỗi', description: 'Tên và ID cửa hàng không được để trống', variant: 'destructive' });
+      return;
+    }
+    // Validate subdomain format
+    const subdomainRegex = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
+    if (editSubdomain.length < 2 || !subdomainRegex.test(editSubdomain)) {
+      toast({ title: 'Lỗi', description: 'ID cửa hàng chỉ chứa chữ thường, số và dấu gạch ngang', variant: 'destructive' });
+      return;
+    }
+
+    setSavingEdit(true);
+    try {
+      // Check subdomain uniqueness if changed
+      if (editSubdomain !== selectedTenant.subdomain) {
+        const { data: existing } = await supabase
+          .from('tenants')
+          .select('id')
+          .eq('subdomain', editSubdomain)
+          .neq('id', selectedTenant.id)
+          .maybeSingle();
+        if (existing) {
+          toast({ title: 'Lỗi', description: 'ID cửa hàng đã tồn tại', variant: 'destructive' });
+          setSavingEdit(false);
+          return;
+        }
+      }
+
+      const { error } = await supabase
+        .from('tenants')
+        .update({ 
+          name: editName.trim(), 
+          subdomain: editSubdomain.trim().toLowerCase(),
+          email: editEmail.trim() || null,
+        })
+        .eq('id', selectedTenant.id);
+
+      if (error) throw error;
+
+      toast({ title: 'Thành công', description: `Đã cập nhật thông tin ${editName}` });
+      setActionDialog(null);
+      queryClient.invalidateQueries({ queryKey: ['all-tenants'] });
+    } catch (error: any) {
+      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    }
+    setSavingEdit(false);
+  };
+
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
