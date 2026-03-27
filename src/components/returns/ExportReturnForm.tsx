@@ -342,8 +342,8 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
           {/* Refund Summary */}
           <div className="mt-4 p-4 bg-muted rounded-lg space-y-2">
             <div className="flex justify-between">
-              <span>Giá bán:</span>
-              <span className="font-medium">{formatCurrencyWithSpaces(item.sale_price)}</span>
+              <span>Tổng giá bán{returnQty > 1 ? ` (${returnQty} × ${formatCurrencyWithSpaces(unitSalePrice)})` : ''}:</span>
+              <span className="font-medium">{formatCurrencyWithSpaces(totalSaleAmount)}</span>
             </div>
             <div className="flex justify-between text-success">
               <span>Số tiền hoàn cho khách:</span>
