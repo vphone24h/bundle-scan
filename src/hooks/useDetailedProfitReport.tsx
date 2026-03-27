@@ -244,12 +244,10 @@ export function useDetailedProfitReport(filters?: {
           return;
         }
 
-        const originalSalePrice = Number(item.sale_price);
         const itemQty = Number(item.quantity ?? 1) || 1;
-        const originalImportPrice = (productInfo?.import_price || 0) * itemQty;
-        const originalProfit = (originalSalePrice * itemQty) - originalImportPrice;
-
-        const profit = -originalProfit;
+        const lineSalePrice = Number(item.sale_price) * itemQty;
+        const lineImportPrice = (productInfo?.import_price || 0) * itemQty;
+        const profit = -(lineSalePrice - lineImportPrice);
 
         results.push({
           id: `return-${item.id}`,
@@ -258,8 +256,8 @@ export function useDetailedProfitReport(filters?: {
           imei: item.imei,
           branchId: item.branch_id,
           branchName: (item.branches as any)?.name || 'N/A',
-          importPrice: 0,
-          salePrice: 0,
+          importPrice: -lineImportPrice,
+          salePrice: -lineSalePrice,
           quantity: itemQty,
           profit,
           saleDate: item.return_date,
