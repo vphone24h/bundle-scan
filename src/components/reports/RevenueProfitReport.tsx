@@ -186,10 +186,18 @@ export function RevenueProfitReport() {
   }, [detailData]);
 
   const stats = rawStats
-    ? {
-        ...rawStats,
-        ...(detailSyncedMetrics || {}),
-      }
+    ? (() => {
+        const businessProfit = Number(detailSyncedMetrics?.businessProfit ?? rawStats.businessProfit ?? 0);
+        const totalExpenses = Number(rawStats.totalExpenses || 0);
+        const otherIncome = Number(rawStats.otherIncome || 0);
+
+        return {
+          ...rawStats,
+          ...(detailSyncedMetrics || {}),
+          businessProfit,
+          netProfit: businessProfit + otherIncome - totalExpenses,
+        };
+      })()
     : rawStats;
 
   const handleTimePreset = (preset: string) => {
