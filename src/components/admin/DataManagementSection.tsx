@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 import {
   AlertDialog,
@@ -48,6 +49,7 @@ export function DataManagementSection() {
   // Stop test dialog states
   const [showStopTestDialog, setShowStopTestDialog] = useState(false);
   const [confirmText, setConfirmText] = useState('');
+  const [deleteMode, setDeleteMode] = useState<'full' | 'keep_templates'>('full');
   
   // Password confirmation dialog
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
