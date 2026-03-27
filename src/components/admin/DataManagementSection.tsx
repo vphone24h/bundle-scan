@@ -305,20 +305,31 @@ export function DataManagementSection() {
               <AlertDialogHeader>
                 <AlertDialogTitle className="flex items-center gap-2 text-destructive">
                   <AlertTriangle className="h-5 w-5" />
-                  Xoá toàn bộ dữ liệu
+                  Xoá dữ liệu
                 </AlertDialogTitle>
                 <AlertDialogDescription asChild>
                   <div className="space-y-4">
                     <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 text-sm space-y-1">
                       <p className="font-medium text-destructive">⚠️ Hành động này KHÔNG THỂ hoàn tác!</p>
-                      <p className="text-muted-foreground">Toàn bộ dữ liệu sẽ bị xoá vĩnh viễn:</p>
-                      <ul className="list-disc list-inside text-muted-foreground space-y-0.5 ml-1">
-                        <li>Sản phẩm, tồn kho, IMEI</li>
-                        <li>Phiếu nhập, đơn bán hàng</li>
-                        <li>Khách hàng, nhà cung cấp</li>
-                        <li>Sổ quỹ, báo cáo</li>
-                      </ul>
                     </div>
+
+                    {/* Delete mode selection */}
+                    <RadioGroup value={deleteMode} onValueChange={(v) => setDeleteMode(v as 'full' | 'keep_templates')} className="space-y-3">
+                      <label htmlFor="mode-full" className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${deleteMode === 'full' ? 'border-destructive bg-destructive/5' : 'border-border'}`}>
+                        <RadioGroupItem value="full" id="mode-full" className="mt-0.5" />
+                        <div className="space-y-1">
+                          <p className="font-medium text-sm text-foreground">Xoá toàn bộ dữ liệu</p>
+                          <p className="text-xs text-muted-foreground">Xoá tất cả: sản phẩm, tồn kho, IMEI, phiếu nhập/xuất, khách hàng, NCC, sổ quỹ, báo cáo</p>
+                        </div>
+                      </label>
+                      <label htmlFor="mode-keep" className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${deleteMode === 'keep_templates' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                        <RadioGroupItem value="keep_templates" id="mode-keep" className="mt-0.5" />
+                        <div className="space-y-1">
+                          <p className="font-medium text-sm text-foreground">Xoá lịch sử, giữ sản phẩm mẫu</p>
+                          <p className="text-xs text-muted-foreground">Xoá phiếu nhập/xuất, sổ quỹ, báo cáo. Giữ lại danh sách sản phẩm (tồn kho = 0) để nhập lại nhanh</p>
+                        </div>
+                      </label>
+                    </RadioGroup>
 
                     <div className="space-y-2 pt-2">
                       <Label>
