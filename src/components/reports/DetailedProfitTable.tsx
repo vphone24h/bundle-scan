@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Download, Search, Loader2, X, FolderOpen } from 'lucide-react';
@@ -49,9 +49,10 @@ interface DetailedProfitTableProps {
     branchId?: string;
     categoryId?: string;
   };
+  onTotalsChange?: (totals: { totalQuantity: number; totalRevenue: number; totalProfit: number } | null) => void;
 }
 
-export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProps) {
+export function DetailedProfitTable({ externalFilters, onTotalsChange }: DetailedProfitTableProps) {
   const today = format(new Date(), 'yyyy-MM-dd');
 
   // Nếu có external filters thì dùng, không thì dùng local state
@@ -82,6 +83,10 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
   };
 
   const { data, isLoading } = useDetailedProfitReport(filters);
+
+  useEffect(() => {
+    onTotalsChange?.(data?.totals ?? null);
+  }, [data?.totals, onTotalsChange]);
 
   // Pagination
   const pagination = usePagination(data?.items || [], { storageKey: 'detailed-profit' });

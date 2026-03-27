@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { DetailedProfitTable } from '@/components/reports/DetailedProfitTable';
 import { ReportStatDetailDialog, type DetailType } from '@/components/reports/ReportStatDetailDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -109,6 +109,7 @@ export function RevenueProfitReport() {
   const [chartGroupBy, setChartGroupBy] = useState<'day' | 'week' | 'month'>('day');
   const [detailType, setDetailType] = useState<DetailType | null>(null);
   const [activePreset, setActivePreset] = useState<string | null>('today');
+  const [detailTotals, setDetailTotals] = useState<{ totalQuantity: number; totalRevenue: number; totalProfit: number } | null>(null);
 
   const timePresets = [
     { label: t('common.today'), value: 'today' },
@@ -145,10 +146,14 @@ export function RevenueProfitReport() {
     groupBy: chartGroupBy,
   });
 
-  // Sử dụng trực tiếp RPC stats (nhanh) - công thức chuẩn
+  const handleDetailTotalsChange = useCallback((totals: { totalQuantity: number; totalRevenue: number; totalProfit: number } | null) => {
+    setDetailTotals(totals);
+  }, []);
+
+  // Đồng bộ LN KD theo bảng chi tiết (nguồn chuẩn user yêu cầu)
   const stats = useMemo(() => {
     if (!rawStats) return null;
-    const businessProfit = Number(rawStats.businessProfit || 0);
+    const businessProfit = Number(detailTotals?.totalProfit ?? rawStats.businessProfit ?? 0);
     const totalExpenses = Number(rawStats.totalExpenses || 0);
     const otherIncome = Number(rawStats.otherIncome || 0);
     return {
@@ -156,7 +161,7 @@ export function RevenueProfitReport() {
       businessProfit,
       netProfit: businessProfit + otherIncome - totalExpenses,
     };
-  }, [rawStats]);
+  }, [rawStats, detailTotals]);
 
   const handleTimePreset = (preset: string) => {
     const now = new Date();
@@ -392,7 +397,7 @@ export function RevenueProfitReport() {
         </TabsList>
 
         <TabsContent value="detailed">
-          <DetailedProfitTable externalFilters={filters} />
+          <DetailedProfitTable externalFilters={filters} onTotalsChange={handleDetailTotalsChange} />
         </TabsContent>
 
         <TabsContent value="category">
