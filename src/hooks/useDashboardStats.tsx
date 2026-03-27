@@ -52,33 +52,7 @@ export function useDashboardStats() {
       const pendingDebt = Number(agg.pending_debt || 0);
       const totalStockQty = Number(agg.total_stock_qty || 0);
 
-      // Always use direct queries for today's stats (browser local TZ)
-      // to stay in sync with Reports page — don't rely on daily_stats cache
-      let exportQuery = supabase
-        .from('export_receipts')
-        .select(`
-          id, total_amount, status,
-          export_receipt_items(sale_price, status, product_id, imei)
-        `)
-        .neq('status', 'cancelled')
-        .gte('export_date', todayStartUTC)
-        .lte('export_date', todayEndUTC);
-
-      if (shouldFilter && branchId) {
-        exportQuery = exportQuery.eq('branch_id', branchId);
-      }
-
-      // Query returns (fee_type=none) — same as Reports page
-      let returnQuery = supabase
-        .from('export_returns')
-        .select('id, sale_price, import_price, product_id, fee_type')
-        .eq('fee_type', 'none')
-        .gte('return_date', todayStartUTC)
-        .lte('return_date', todayEndUTC);
-
-      if (shouldFilter && branchId) {
-        returnQuery = returnQuery.eq('branch_id', branchId);
-      }
+      const effectiveBranchId = shouldFilter && branchId ? branchId : null;
 
       let todayImportsQuery = supabase
         .from('import_receipts')
@@ -87,120 +61,29 @@ export function useDashboardStats() {
         .lte('import_date', todayEndUTC)
         .limit(0);
 
-      if (shouldFilter && branchId) {
-        todayImportsQuery = todayImportsQuery.eq('branch_id', branchId);
+      if (effectiveBranchId) {
+        todayImportsQuery = todayImportsQuery.eq('branch_id', effectiveBranchId);
       }
 
-      // Cash book: expenses + other income for today (to calculate net profit like Reports)
-      let cashBookQuery = supabase
-        .from('cash_book')
-        .select('type, amount')
-        .eq('is_business_accounting', true)
-        .gte('transaction_date', todayStartUTC)
-        .lte('transaction_date', todayEndUTC);
-
-      if (shouldFilter && branchId) {
-        cashBookQuery = cashBookQuery.eq('branch_id', branchId);
-      }
-
-      const [{ data: todayExports }, { data: todayReturns }, { count: todayImportsCount }, { data: cashBookEntries }] = await Promise.all([
-        exportQuery,
-        returnQuery,
+      // Sync Dashboard with Reports source of truth: no local recalculation
+      const [{ data: todayReportAgg, error: reportError }, { count: todayImportsCount, error: todayImportsError }] = await Promise.all([
+        supabase.rpc('get_report_stats_aggregated' as any, {
+          p_tenant_id: tenant!.id,
+          p_start_iso: todayStartUTC,
+          p_end_iso: todayEndUTC,
+          p_branch_id: effectiveBranchId,
+          p_category_id: null,
+        }),
         todayImportsQuery,
-        cashBookQuery,
       ]);
 
-      // Calculate revenue, profit, sold count — same logic as useReportStats
-      let todayRevenue = 0;
-      let todayProfit = 0;
-      let todaySold = 0;
+      if (reportError) throw reportError;
+      if (todayImportsError) throw todayImportsError;
 
-      // Collect all product IDs from sales + returns
-      const productIdsSet = new Set<string>();
-      todayExports?.forEach(receipt => {
-        receipt.export_receipt_items?.forEach(item => {
-          if (item.status === 'sold' || item.status === 'returned') {
-            if (item.product_id) productIdsSet.add(item.product_id);
-          }
-        });
-      });
-      todayReturns?.forEach((ret: any) => {
-        if (ret.product_id) productIdsSet.add(ret.product_id);
-      });
-
-      let productsMap: Record<string, number> = {};
-      const productIds = Array.from(productIdsSet);
-      if (productIds.length > 0) {
-        for (let i = 0; i < productIds.length; i += 500) {
-          const chunk = productIds.slice(i, i + 500);
-          const { data: products } = await supabase
-            .from('products')
-            .select('id, import_price')
-            .in('id', chunk);
-          (products || []).forEach(p => {
-            productsMap[p.id] = Number(p.import_price);
-          });
-        }
-      }
-
-      // IMEI fallback for items without product_id
-      const dashOrphanImeis = Array.from(new Set(
-        todayExports?.flatMap(r =>
-          r.export_receipt_items?.filter(i => !i.product_id && i.imei).map(i => i.imei as string) || []
-        ) || []
-      ));
-      let dashImeiPriceMap: Record<string, number> = {};
-      if (dashOrphanImeis.length > 0) {
-        const { data: imeiProducts } = await supabase
-          .from('products')
-          .select('imei, import_price')
-          .in('imei', dashOrphanImeis)
-          .gt('import_price', 0);
-        imeiProducts?.forEach(p => {
-          if (p.imei && p.import_price) {
-            dashImeiPriceMap[p.imei] = Number(p.import_price);
-          }
-        });
-      }
-
-      // Sales profit
-      todayExports?.forEach(receipt => {
-        receipt.export_receipt_items?.forEach(item => {
-          if (item.status === 'sold' || item.status === 'returned') {
-            const salePrice = Number(item.sale_price);
-            const importPrice = item.product_id
-              ? (productsMap[item.product_id] || 0)
-              : (item.imei ? (dashImeiPriceMap[item.imei] || 0) : 0);
-            todayRevenue += salePrice;
-            todayProfit += (salePrice - importPrice);
-            todaySold++;
-          }
-        });
-      });
-
-      // Subtract returns (fee_type=none) — matching Reports logic exactly
-      todayReturns?.forEach((ret: any) => {
-        const salePrice = Number(ret.sale_price);
-        const importPrice = ret.product_id
-          ? (productsMap[ret.product_id] || 0)
-          : (ret.imei ? (dashImeiPriceMap[ret.imei] || 0) : 0);
-        todayProfit -= (salePrice - importPrice);
-      });
-
-      // Add other income and subtract expenses from cash_book
-      // to match "Lợi nhuận thuần" = LN kinh doanh + Thu nhập khác - Chi phí
-      let todayExpenses = 0;
-      let todayOtherIncome = 0;
-      cashBookEntries?.forEach((entry: any) => {
-        const amount = Number(entry.amount || 0);
-        if (entry.type === 'expense') {
-          todayExpenses += amount;
-        } else if (entry.type === 'income') {
-          todayOtherIncome += amount;
-        }
-      });
-      todayProfit = todayProfit + todayOtherIncome - todayExpenses;
-
+      const reportAgg = (todayReportAgg || {}) as Record<string, unknown>;
+      const todayRevenue = Number(reportAgg.netRevenue || 0);
+      const todayProfit = Number(reportAgg.netProfit || 0);
+      const todaySold = Number(reportAgg.productsSold || 0);
       const todayImports = todayImportsCount || 0;
 
       return {
