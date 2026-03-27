@@ -614,7 +614,7 @@ export default function ExportNewPage() {
         const results = await searchProducts.mutateAsync(nameSearch);
         // Filter out IMEI products already in cart
         const cartImeis = new Set(cart.filter(c => c.imei).map(c => c.imei));
-        const cartProductIds = new Set(cart.filter(c => c.imei).map(c => c.productId));
+        const cartProductIds = new Set(cart.filter(c => c.imei).map(c => c.product_id));
         const filtered = (results || []).filter((p: any) => {
           if (p.imei) {
             return !cartImeis.has(p.imei) && !cartProductIds.has(p.id);
