@@ -659,20 +659,9 @@ export function useCreateExportReturn() {
 
             if (updateError) throw updateError;
           } else {
-            // SẢN PHẨM KHÔNG IMEI: Cộng lại quantity từ export_receipt_items
+            // SẢN PHẨM KHÔNG IMEI: Cộng lại quantity
             const currentQty = existingProduct?.quantity || 0;
             const newStatus = existingProduct?.status === 'sold' ? 'in_stock' : existingProduct?.status;
-
-            // Lấy số lượng đã bán từ export_receipt_item
-            let returnQty = 1;
-            if (item.export_receipt_item_id) {
-              const { data: receiptItem } = await supabase
-                .from('export_receipt_items')
-                .select('quantity')
-                .eq('id', item.export_receipt_item_id)
-                .single();
-              returnQty = Number(receiptItem?.quantity) || 1;
-            }
             
             const { error: updateError } = await supabase
               .from('products')
