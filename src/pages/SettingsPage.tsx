@@ -193,6 +193,21 @@ export default function SettingsPage() {
         }
       }
 
+      // Validate email uniqueness if changed
+      if (storeEmail.trim() && storeEmail.trim() !== (tenant.email || '')) {
+        const { data: existingEmail } = await supabase
+          .from('tenants')
+          .select('id')
+          .eq('email', storeEmail.trim())
+          .neq('id', tenant.id)
+          .maybeSingle();
+        if (existingEmail) {
+          toast({ title: 'Email đã được sử dụng bởi cửa hàng khác', variant: 'destructive' });
+          setSaving(false);
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from('tenants')
         .update({ 
