@@ -553,6 +553,10 @@ export function TenantsManagement() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEditDialog(tenant)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Sửa thông tin
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => {
                             setSelectedTenant(tenant);
                             setShowProductsDialog(true);
