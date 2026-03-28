@@ -704,7 +704,10 @@ export default function ExportNewPage() {
 
     const productUnit = selectedProduct.unit || 'cái';
     const isDecimalUnit = ['kg', 'lít', 'mét'].includes(productUnit);
-    const quantity = selectedProduct.imei ? 1 : (isDecimalUnit ? Math.max(0.001, itemQuantity) : Math.max(1, Math.round(itemQuantity)));
+    const numQuantity = typeof itemQuantity === 'string' ? parseFloat(itemQuantity) || 0 : itemQuantity;
+    const maxQty = availableStock ?? Infinity;
+    const clampedQty = Math.min(numQuantity, maxQty);
+    const quantity = selectedProduct.imei ? 1 : (isDecimalUnit ? Math.max(0.001, clampedQty) : Math.max(1, Math.round(clampedQty)));
     
     const newItem: CartItem = {
       tempId: Date.now().toString(),
