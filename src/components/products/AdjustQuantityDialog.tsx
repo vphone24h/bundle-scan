@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 
 interface AdjustQuantityDialogProps {
   open: boolean;
@@ -37,26 +37,72 @@ export function AdjustQuantityDialog({
 }: AdjustQuantityDialogProps) {
   const isDecimalUnit = ['kg', 'lít', 'mét'].includes(unit);
   const queryClient = useQueryClient();
-  const [newQuantity, setNewQuantity] = useState<number>(currentQuantity);
+  const [newTotalImported, setNewTotalImported] = useState<string>('');
+  const [newStock, setNewStock] = useState<string>('');
   const [reason, setReason] = useState('');
 
+  // Fetch product_imports total for this product
+  const { data: importData } = useQuery({
+    queryKey: ['product-import-total', productId],
+    queryFn: async () => {
+      // Get product info
+      const { data: product } = await supabase
+        .from('products')
+        .select('name, sku, branch_id, quantity, import_price, total_import_cost')
+        .eq('id', productId)
+        .single();
+
+      if (!product) return null;
+
+      // Get product_imports records for this product
+      const { data: piRecords } = await supabase
+        .from('product_imports')
+        .select('id, quantity, import_price')
+        .eq('product_id', productId);
+
+      // Also get total from products table entries with same name/sku
+      const totalImportedFromPI = piRecords?.reduce((sum, r) => sum + Number(r.quantity), 0) || 0;
+
+      return {
+        product,
+        totalImported: totalImportedFromPI > 0 ? totalImportedFromPI : Number(product.quantity),
+        currentStock: Number(product.quantity),
+        hasProductImports: (piRecords?.length || 0) > 0,
+        piRecords: piRecords || [],
+      };
+    },
+    enabled: open && !!productId,
+  });
+
   useEffect(() => {
-    if (open) {
-      setNewQuantity(currentQuantity);
+    if (open && importData) {
+      setNewTotalImported(String(importData.totalImported));
+      setNewStock(String(importData.currentStock));
       setReason('');
     }
-  }, [open, currentQuantity]);
+  }, [open, importData]);
+
+  const parsedTotalImported = parseFloat(newTotalImported) || 0;
+  const parsedStock = parseFloat(newStock) || 0;
+  const originalTotalImported = importData?.totalImported || 0;
+  const originalStock = importData?.currentStock || currentQuantity;
+
+  const totalImportedDiff = parsedTotalImported - originalTotalImported;
+  const stockDiff = parsedStock - originalStock;
+  const hasChanges = totalImportedDiff !== 0 || stockDiff !== 0;
 
   const adjustMutation = useMutation({
     mutationFn: async () => {
-      if (newQuantity < 0) {
+      if (parsedStock < 0 || parsedTotalImported < 0) {
         throw new Error('Số lượng không được âm');
+      }
+      if (parsedStock > parsedTotalImported) {
+        throw new Error('Tồn kho không được lớn hơn tổng nhập');
       }
       if (!reason.trim()) {
         throw new Error('Vui lòng nhập lý do điều chỉnh');
       }
 
-      // Lấy thông tin tenant và user
       const [tenantResult, userResult] = await Promise.all([
         supabase.rpc('get_user_tenant_id_secure'),
         supabase.auth.getUser(),
@@ -64,10 +110,9 @@ export function AdjustQuantityDialog({
 
       const tenantId = tenantResult.data;
       const user = userResult.data.user;
-
       if (!tenantId) throw new Error('Không tìm thấy tenant');
 
-      // Lấy thông tin sản phẩm hiện tại
+      // Get current product data
       const { data: product, error: fetchError } = await supabase
         .from('products')
         .select('quantity, total_import_cost, import_price')
@@ -76,26 +121,33 @@ export function AdjustQuantityDialog({
 
       if (fetchError) throw fetchError;
 
-      const oldQuantity = product.quantity;
-      const quantityDiff = newQuantity - oldQuantity;
+      const oldQuantity = Number(product.quantity);
+      const newQuantityValue = isDecimalUnit
+        ? Math.round(parsedStock * 1000) / 1000
+        : Math.round(parsedStock);
 
-      // Tính toán lại total_import_cost
-      // Nếu tăng số lượng: thêm với giá nhập hiện tại
-      // Nếu giảm số lượng: giảm theo tỷ lệ
-      let newTotalCost = product.total_import_cost;
-      if (quantityDiff > 0) {
-        newTotalCost = product.total_import_cost + (quantityDiff * product.import_price);
-      } else if (quantityDiff < 0 && oldQuantity > 0) {
-        const costPerUnit = product.total_import_cost / oldQuantity;
-        newTotalCost = Math.max(0, newQuantity * costPerUnit);
+      // Recalculate total_import_cost based on new stock
+      let newTotalCost = Number(product.total_import_cost || 0);
+      const importPrice = Number(product.import_price || 0);
+
+      if (newQuantityValue !== oldQuantity) {
+        if (newQuantityValue > oldQuantity) {
+          // Stock increased - add cost at import price
+          newTotalCost += (newQuantityValue - oldQuantity) * importPrice;
+        } else if (oldQuantity > 0) {
+          // Stock decreased - reduce proportionally
+          const costPerUnit = newTotalCost / oldQuantity;
+          newTotalCost = Math.max(0, newQuantityValue * costPerUnit);
+        }
+        newTotalCost = Math.round(newTotalCost * 1000) / 1000;
       }
 
-      // Cập nhật số lượng sản phẩm
+      // Update products table
       const updateData: Record<string, any> = {
-        quantity: newQuantity,
+        quantity: newQuantityValue,
         total_import_cost: newTotalCost,
       };
-      if (newQuantity === 0) {
+      if (newQuantityValue === 0) {
         updateData.status = 'deleted';
       }
 
@@ -106,43 +158,58 @@ export function AdjustQuantityDialog({
 
       if (updateError) throw updateError;
 
-      // Ghi log thao tác với format rõ ràng
+      // Update product_imports if total imported changed
+      if (totalImportedDiff !== 0 && importData?.hasProductImports && importData.piRecords.length > 0) {
+        // Adjust the latest product_import record
+        const latestPI = importData.piRecords[importData.piRecords.length - 1];
+        const newPIQuantity = Math.max(0, Number(latestPI.quantity) + totalImportedDiff);
+
+        const { error: piError } = await supabase
+          .from('product_imports')
+          .update({ quantity: isDecimalUnit ? Math.round(newPIQuantity * 1000) / 1000 : Math.round(newPIQuantity) })
+          .eq('id', latestPI.id);
+
+        if (piError) throw piError;
+      }
+
+      // Audit log
       await supabase.from('audit_logs').insert({
         tenant_id: tenantId,
         user_id: user?.id,
         action_type: 'ADJUST_QUANTITY',
         table_name: 'products',
         record_id: productId,
-        description: `Điều chỉnh số lượng: ${productName} (${sku}) | ${oldQuantity} → ${newQuantity} (${quantityDiff > 0 ? '+' : ''}${quantityDiff}) | Lý do: ${reason.trim()}`,
+        description: `Điều chỉnh số lượng: ${productName} (${sku}) | Tổng nhập: ${originalTotalImported} → ${parsedTotalImported} | Tồn kho: ${oldQuantity} → ${newQuantityValue} | Lý do: ${reason.trim()}`,
         old_data: {
           name: productName,
-          sku: sku,
+          sku,
           quantity: oldQuantity,
+          total_imported: originalTotalImported,
           total_import_cost: product.total_import_cost,
         },
         new_data: {
           name: productName,
-          sku: sku,
-          quantity: newQuantity,
+          sku,
+          quantity: newQuantityValue,
+          total_imported: parsedTotalImported,
           total_import_cost: newTotalCost,
           reason: reason.trim(),
-          quantity_change: `${oldQuantity} → ${newQuantity}`,
-          quantity_diff: quantityDiff,
         },
       });
 
-      return { oldQuantity, newQuantity, quantityDiff };
+      return { oldQuantity, newQuantityValue, stockDiff };
     },
     onSuccess: (data) => {
-      // Invalidate all related queries to refresh data immediately
       queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ['all-products'], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ['inventory'], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ['product-import-history'], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ['product-import-total'], refetchType: 'all' });
 
       toast({
         title: 'Điều chỉnh thành công',
-        description: `Số lượng đã thay đổi từ ${data.oldQuantity} → ${data.newQuantity} (${data.quantityDiff > 0 ? '+' : ''}${data.quantityDiff})`,
+        description: `Tồn kho: ${data.oldQuantity} → ${data.newQuantityValue} (${data.stockDiff > 0 ? '+' : ''}${data.stockDiff})`,
       });
       onOpenChange(false);
     },
@@ -155,11 +222,15 @@ export function AdjustQuantityDialog({
     },
   });
 
-  const handleSubmit = () => {
-    adjustMutation.mutate();
+  const handleNumberChange = (
+    value: string,
+    setter: (v: string) => void,
+  ) => {
+    // Allow empty, digits, decimal point
+    if (value === '' || /^[0-9]*\.?[0-9]*$/.test(value)) {
+      setter(value);
+    }
   };
-
-  const diff = newQuantity - currentQuantity;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -181,30 +252,65 @@ export function AdjustQuantityDialog({
             <p className="text-xs text-muted-foreground">SKU: {sku}</p>
           </div>
 
-          {/* Current quantity */}
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Số lượng hiện tại:</span>
-            <span className="font-medium">{currentQuantity}</span>
+          {/* Two columns: Tổng nhập & Tồn kho */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Tổng nhập */}
+            <div className="space-y-2">
+              <Label htmlFor="totalImported">
+                Tổng nhập ({unit})
+              </Label>
+              <Input
+                id="totalImported"
+                type="text"
+                inputMode="decimal"
+                value={newTotalImported}
+                onChange={(e) => handleNumberChange(e.target.value, setNewTotalImported)}
+                onBlur={() => {
+                  const num = parseFloat(newTotalImported);
+                  if (!Number.isFinite(num) || num < 0) {
+                    setNewTotalImported('0');
+                  }
+                }}
+                className="text-lg font-medium"
+              />
+              {totalImportedDiff !== 0 && (
+                <p className={`text-xs font-medium ${totalImportedDiff > 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                  {totalImportedDiff > 0 ? `+${totalImportedDiff}` : totalImportedDiff} {unit}
+                </p>
+              )}
+            </div>
+
+            {/* Tồn kho */}
+            <div className="space-y-2">
+              <Label htmlFor="stock">
+                Tồn kho ({unit})
+              </Label>
+              <Input
+                id="stock"
+                type="text"
+                inputMode="decimal"
+                value={newStock}
+                onChange={(e) => handleNumberChange(e.target.value, setNewStock)}
+                onBlur={() => {
+                  const num = parseFloat(newStock);
+                  if (!Number.isFinite(num) || num < 0) {
+                    setNewStock('0');
+                  }
+                }}
+                className="text-lg font-medium"
+              />
+              {stockDiff !== 0 && (
+                <p className={`text-xs font-medium ${stockDiff > 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                  {stockDiff > 0 ? `+${stockDiff}` : stockDiff} {unit}
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* New quantity input */}
-          <div className="space-y-2">
-            <Label htmlFor="newQuantity">Số lượng mới <span className="text-destructive">*</span></Label>
-            <Input
-              id="newQuantity"
-              type="number"
-              min={0}
-              step={isDecimalUnit ? 0.1 : 1}
-              value={newQuantity}
-              onChange={(e) => setNewQuantity(isDecimalUnit ? (parseFloat(e.target.value) || 0) : (parseInt(e.target.value) || 0))}
-              className="text-lg font-medium"
-            />
-            {diff !== 0 && (
-              <p className={`text-sm font-medium ${diff > 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
-                {diff > 0 ? `+${diff}` : diff} {unit}
-              </p>
-            )}
-          </div>
+          {/* Validation warning */}
+          {parsedStock > parsedTotalImported && (
+            <p className="text-xs text-destructive">⚠ Tồn kho không được lớn hơn tổng nhập</p>
+          )}
 
           {/* Reason */}
           <div className="space-y-2">
@@ -224,8 +330,8 @@ export function AdjustQuantityDialog({
             Hủy
           </Button>
           <Button
-            onClick={handleSubmit}
-            disabled={adjustMutation.isPending || diff === 0 || !reason.trim()}
+            onClick={() => adjustMutation.mutate()}
+            disabled={adjustMutation.isPending || !hasChanges || !reason.trim() || parsedStock > parsedTotalImported}
           >
             {adjustMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Xác nhận điều chỉnh
