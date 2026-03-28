@@ -1422,7 +1422,8 @@ export default function ImportHistoryPage() {
           productId={adjustProduct.id}
           productName={adjustProduct.name}
           sku={adjustProduct.sku}
-          currentQuantity={adjustProduct.quantity}
+          currentQuantity={(adjustProduct as any).current_stock ?? adjustProduct.quantity}
+          unit={(adjustProduct as any).unit || 'cái'}
         />
       )}
 
