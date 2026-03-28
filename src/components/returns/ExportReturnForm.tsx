@@ -63,7 +63,7 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
   const DECIMAL_UNITS = ['kg', 'lít', 'mét'];
   const isDecimalUnit = item?.unit ? DECIMAL_UNITS.includes(item.unit.toLowerCase()) : false;
   const stepValue = isDecimalUnit ? 0.1 : 1;
-  const minValue = isDecimalUnit ? 0.1 : 1;
+  const minValue = isDecimalUnit ? 0.001 : 1;
 
   // Init returnQty when item changes
   useEffect(() => {
@@ -241,21 +241,39 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
             </div>
             {!isImei && (
               <div>
-                <Label className="text-muted-foreground">
+              <Label className="text-muted-foreground">
                   Số lượng trả (tối đa {maxQty}{item?.unit ? ` ${item.unit}` : ''})
                 </Label>
                 <Input
                   type="number"
-                  min={minValue}
+                  min={0}
                   max={maxQty}
                   step={stepValue}
                   value={returnQtyDisplay}
                   onChange={(e) => {
                     const val = e.target.value;
+                    if (val === '' || val === '0' || val === '0.') {
+                      setReturnQtyDisplay(val);
+                      setReturnQty(0);
+                      return;
+                    }
                     setReturnQtyDisplay(val);
-                    const num = parseFloat(val) || 0;
-                    const clamped = Math.max(minValue, Math.min(num, maxQty));
+                    const num = parseFloat(val);
+                    if (!Number.isFinite(num)) return;
+                    const clamped = Math.max(0, Math.min(num, maxQty));
                     setReturnQty(isDecimalUnit ? Math.round(clamped * 1000) / 1000 : Math.round(clamped));
+                  }}
+                  onBlur={() => {
+                    const num = parseFloat(returnQtyDisplay);
+                    if (!Number.isFinite(num) || num <= 0) {
+                      setReturnQty(minValue);
+                      setReturnQtyDisplay(String(minValue));
+                    } else {
+                      const clamped = Math.min(num, maxQty);
+                      const final = isDecimalUnit ? Math.round(clamped * 1000) / 1000 : Math.round(clamped);
+                      setReturnQty(final);
+                      setReturnQtyDisplay(String(final));
+                    }
                   }}
                   className="w-24 mt-1"
                 />
