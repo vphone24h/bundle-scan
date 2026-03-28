@@ -692,6 +692,8 @@ export function useCreateExportReceipt() {
         queryClient.invalidateQueries({ queryKey: ['customer-debts'] }),
         queryClient.invalidateQueries({ queryKey: ['supplier-debts'] }),
         queryClient.invalidateQueries({ queryKey: ['debt-detail'] }),
+        queryClient.invalidateQueries({ queryKey: ['import-summary-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['warehouse-snapshots'] }),
       ]);
     },
   });
@@ -775,6 +777,10 @@ export function useReturnProduct() {
       queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
       queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
       queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
+      queryClient.invalidateQueries({ queryKey: ['import-summary-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['all-products'] });
+      queryClient.invalidateQueries({ queryKey: ['warehouse-snapshots'] });
     },
   });
 }
