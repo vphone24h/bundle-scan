@@ -513,6 +513,9 @@ export default function ReturnsPage() {
                         <div className="font-medium">{firstItem.product_name}</div>
                         <div className="text-xs text-muted-foreground">
                           {firstItem.imei ? `IMEI: ${firstItem.imei}` : `SKU: ${firstItem.sku}`}
+                          {!firstItem.imei && (firstItem as any).quantity > 0 && (
+                            <span className="ml-1">• SL: {(firstItem as any).quantity} {(firstItem as any).products?.unit || 'cái'}</span>
+                          )}
                         </div>
                       </>
                     ) : (
@@ -591,6 +594,9 @@ export default function ReturnsPage() {
                       <div className="text-sm">{r.product_name}</div>
                       <div className="text-xs text-muted-foreground">
                         {r.imei ? `IMEI: ${r.imei}` : `SKU: ${r.sku}`}
+                        {!r.imei && (r as any).quantity > 0 && (
+                          <span className="ml-1">• SL: {(r as any).quantity} {(r as any).products?.unit || 'cái'}</span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="text-right text-sm">

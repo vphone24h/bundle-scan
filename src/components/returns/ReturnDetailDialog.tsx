@@ -135,6 +135,12 @@ export function ReturnDetailDialog({
                 <span className="text-muted-foreground">SKU:</span>
                 <div className="font-medium">{returnItem.sku}</div>
               </div>
+              {!returnItem.imei && (returnItem as any).quantity > 0 && (
+                <div>
+                  <span className="text-muted-foreground">Số lượng:</span>
+                  <div className="font-medium">{(returnItem as any).quantity} {(returnItem as any).products?.unit || 'cái'}</div>
+                </div>
+              )}
               {returnItem.imei && (
                 <div className="col-span-2">
                   <span className="text-muted-foreground">IMEI:</span>
