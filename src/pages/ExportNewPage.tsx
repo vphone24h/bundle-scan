@@ -630,6 +630,24 @@ export default function ExportNewPage() {
     }
   }, [nameSearch, cart]);
 
+  // Fetch available stock for non-IMEI product
+  const fetchAvailableStock = async (product: any) => {
+    if (product.imei) { setAvailableStock(null); return; }
+    const { data } = await supabase
+      .from('products')
+      .select('quantity')
+      .eq('name', product.name)
+      .eq('sku', product.sku)
+      .eq('status', 'in_stock')
+      .eq('branch_id', product.branch_id);
+    const total = (data || []).reduce((s: number, r: any) => s + (r.quantity || 0), 0);
+    // Subtract items already in cart for same product+branch
+    const inCart = cart
+      .filter(c => !c.imei && c.product_name === product.name && c.sku === product.sku && c.branch_id === product.branch_id)
+      .reduce((s, c) => s + c.quantity, 0);
+    setAvailableStock(Math.max(0, total - inCart));
+  };
+
   // Select product from suggestions
   const handleSelectProduct = (product: any) => {
     // ⛔ Block selecting products from other branches
@@ -644,9 +662,10 @@ export default function ExportNewPage() {
 
     setSelectedProduct(product);
     setSalePrice(''); // Leave empty - don't reveal import price
-    setItemQuantity(product.imei ? 1 : 1); // Default to 1, user can change for non-IMEI
+    setItemQuantity(1); // Default to 1
     setNameSearch('');
     setProductSuggestions([]);
+    fetchAvailableStock(product);
   };
 
   // Auto-save export cart to localStorage for draft persistence
