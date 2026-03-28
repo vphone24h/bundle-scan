@@ -111,8 +111,8 @@ export function NonIMEIDetailDialog({
                   <TableHead>Ngày nhập</TableHead>
                   <TableHead>Mã phiếu</TableHead>
                   {canViewImportPrice && <TableHead className="text-right">Giá nhập</TableHead>}
-                  <TableHead className="text-center">Đã nhập</TableHead>
-                  <TableHead className="text-center">Còn lại</TableHead>
+                  <TableHead className="text-center">Tổng nhập</TableHead>
+                  <TableHead className="text-center">Tồn kho</TableHead>
                   {canViewImportPrice && <TableHead className="text-right">Giá trị tồn</TableHead>}
                   <TableHead>Nhà cung cấp</TableHead>
                 </TableRow>
