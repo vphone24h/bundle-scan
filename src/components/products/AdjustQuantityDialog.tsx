@@ -82,6 +82,9 @@ export function AdjustQuantityDialog({
     }
   }, [open, importData]);
 
+  const effectiveUnit = importData?.unit || unit;
+  const isDecimalUnit = ['kg', 'lít', 'mét'].includes(effectiveUnit);
+
   const parsedTotalImported = Math.round((parseFloat(newTotalImported) || 0) * 1000) / 1000;
   const parsedStock = Math.round((parseFloat(newStock) || 0) * 1000) / 1000;
   const originalTotalImported = importData?.totalImported || 0;
