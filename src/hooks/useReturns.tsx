@@ -94,7 +94,8 @@ export function useImportReturns(filters?: {
           *,
           suppliers(name),
           branches(name),
-          import_receipts(code)
+          import_receipts(code),
+          products!import_returns_product_id_fkey(unit)
         `)
         .order('return_date', { ascending: false })
         .limit(5000);
@@ -153,7 +154,8 @@ export function useExportReturns(filters?: {
           *,
           customers(name, phone),
           branches(name),
-          export_receipts!export_returns_export_receipt_id_fkey(code)
+          export_receipts!export_returns_export_receipt_id_fkey(code),
+          products!export_returns_product_id_fkey(unit)
         `)
         .order('return_date', { ascending: false })
         .limit(5000);
