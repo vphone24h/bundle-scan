@@ -45,23 +45,22 @@ export function AdjustQuantityDialog({
   const { data: importData } = useQuery({
     queryKey: ['product-import-total', productId],
     queryFn: async () => {
-      // Get product info
       const { data: product } = await supabase
         .from('products')
-        .select('name, sku, branch_id, quantity, import_price, total_import_cost')
+        .select('name, sku, branch_id, quantity, import_price, total_import_cost, unit')
         .eq('id', productId)
         .single();
 
       if (!product) return null;
 
-      // Get product_imports records for this product
       const { data: piRecords } = await supabase
         .from('product_imports')
         .select('id, quantity, import_price')
         .eq('product_id', productId);
 
-      // Also get total from products table entries with same name/sku
       const totalImportedFromPI = piRecords?.reduce((sum, r) => sum + Number(r.quantity), 0) || 0;
+
+      const productUnit = product.unit || unit;
 
       return {
         product,
@@ -69,6 +68,7 @@ export function AdjustQuantityDialog({
         currentStock: Number(product.quantity),
         hasProductImports: (piRecords?.length || 0) > 0,
         piRecords: piRecords || [],
+        unit: productUnit,
       };
     },
     enabled: open && !!productId,
