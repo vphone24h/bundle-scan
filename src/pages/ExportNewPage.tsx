@@ -398,6 +398,7 @@ export default function ExportNewPage() {
         
         // Clear form for next scan
         setSelectedProduct(null);
+        setAvailableStock(null);
         setSalePrice('');
         setItemNote('');
         setItemQuantity(1);
@@ -495,6 +496,7 @@ export default function ExportNewPage() {
       pendingProductIdsRef.current.delete(productKey);
       
       setSelectedProduct(null);
+      setAvailableStock(null);
       setSalePrice('');
       setItemNote('');
       setItemQuantity(1);
@@ -537,6 +539,7 @@ export default function ExportNewPage() {
       pendingProductIdsRef.current.delete(productKey);
       
       setSelectedProduct(null);
+      setAvailableStock(null);
       setSalePrice('');
       setItemNote('');
       setItemQuantity(1);
@@ -748,6 +751,7 @@ export default function ExportNewPage() {
 
     setCart([...cart, newItem]);
     setSelectedProduct(null);
+    setAvailableStock(null);
     setSalePrice('');
     setItemNote('');
     setItemQuantity(1);
@@ -1230,6 +1234,7 @@ export default function ExportNewPage() {
                         className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                         onClick={() => {
                           setSelectedProduct(null);
+                          setAvailableStock(null);
                           setSalePrice('');
                           setItemNote('');
                           setItemQuantity(1);
