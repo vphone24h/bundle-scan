@@ -495,6 +495,11 @@ export function useCreateImportReturn() {
       queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
       queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
       queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['import-summary-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['product-import-history'] });
+      queryClient.invalidateQueries({ queryKey: ['product-import-total'] });
+      queryClient.invalidateQueries({ queryKey: ['warehouse-snapshots'] });
     },
   });
 }
@@ -1225,6 +1230,11 @@ export function useDeleteImportReturn() {
       queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
       queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
       queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['import-summary-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['product-import-history'] });
+      queryClient.invalidateQueries({ queryKey: ['product-import-total'] });
+      queryClient.invalidateQueries({ queryKey: ['warehouse-snapshots'] });
     },
   });
 }
