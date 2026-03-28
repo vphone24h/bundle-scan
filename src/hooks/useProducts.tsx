@@ -205,7 +205,7 @@ export function useAllProducts(filters?: {
         .select(`
           id, name, sku, imei, category_id, import_price, import_date,
           supplier_id, branch_id, import_receipt_id, status, note,
-          quantity, total_import_cost, created_at, updated_at,
+          quantity, total_import_cost, created_at, updated_at, unit,
           categories(name), suppliers(name), branches(name)
         `, { count: 'exact' })
         .order('import_date', { ascending: false });
