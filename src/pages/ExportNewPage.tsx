@@ -601,6 +601,7 @@ export default function ExportNewPage() {
     setItemNote('');
     setNameSearch('');
     setProductSuggestions([]);
+    fetchAvailableStock(result);
     
     toast({
       title: t('pages.exportNew.foundProduct'),
