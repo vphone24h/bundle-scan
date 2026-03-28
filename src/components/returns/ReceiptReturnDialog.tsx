@@ -79,14 +79,18 @@ export function ReceiptReturnDialog({
     (item) => item.status !== 'returned'
   ) || [];
 
-  // Initialize return quantities when dialog opens
+  // Initialize return quantities and displays when dialog opens
   useEffect(() => {
     if (open && returnableItems.length > 0) {
       const initial: Record<string, number> = {};
+      const initialDisplays: Record<string, string> = {};
       returnableItems.forEach(item => {
-        initial[item.id] = item.quantity || 1;
+        const qty = item.quantity || 1;
+        initial[item.id] = qty;
+        initialDisplays[item.id] = String(qty);
       });
       setReturnQuantities(initial);
+      setReturnQtyDisplays(initialDisplays);
     }
   }, [open]);
 
