@@ -296,7 +296,9 @@ export function InvoicePrintDialog({
                     <td className="py-1 text-right">{lineTotal.toLocaleString('vi-VN')}đ</td>
                   )}
                 </tr>
-              ))}
+                );
+              })}
+
             </tbody>
           </table>
 
