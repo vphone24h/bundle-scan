@@ -561,6 +561,7 @@ export default function ExportNewPage() {
     setItemWarranty('');
     setItemNote('');
     setNameSearch('');
+    fetchAvailableStock(result);
     setProductSuggestions([]);
     
     toast({
