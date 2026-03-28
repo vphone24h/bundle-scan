@@ -264,7 +264,18 @@ export function InvoicePrintDialog({
               </tr>
             </thead>
             <tbody>
-              {receipt.items?.map((item: any, index: number) => (
+              {receipt.items?.map((item: any, index: number) => {
+                const qty = Number(item.quantity) || 1;
+                const unitPrice = Number(item.sale_price) || 0;
+                const lineTotal = Math.round(qty * unitPrice * 1000) / 1000;
+                const unit = item.unit || '';
+                const isDecimalUnit = ['kg', 'lít', 'mét'].includes(unit.toLowerCase());
+                const displayQty = isDecimalUnit
+                  ? parseFloat(qty.toFixed(3))
+                  : Math.round(qty);
+                const showQty = !item.imei && qty !== 1;
+
+                return (
                 <tr key={index} className="border-b border-dashed">
                   <td className="py-1">
                     {settings.show_product_name && <div>{item.product_name}</div>}
@@ -272,15 +283,22 @@ export function InvoicePrintDialog({
                     {settings.show_imei && item.imei && (
                       <div className="text-xs text-gray">IMEI: {item.imei}</div>
                     )}
+                    {showQty && (
+                      <div className="text-xs text-gray">
+                        SL: {displayQty}{unit ? ` ${unit}` : ''} x {unitPrice.toLocaleString('vi-VN')}đ
+                      </div>
+                    )}
                     {settings.show_warranty && item.warranty && (
                       <div className="text-xs" style={{ color: '#0066cc' }}>BH: {item.warranty}</div>
                     )}
                   </td>
                   {settings.show_sale_price && (
-                    <td className="py-1 text-right">{item.sale_price?.toLocaleString('vi-VN')}đ</td>
+                    <td className="py-1 text-right">{lineTotal.toLocaleString('vi-VN')}đ</td>
                   )}
                 </tr>
-              ))}
+                );
+              })}
+
             </tbody>
           </table>
 
