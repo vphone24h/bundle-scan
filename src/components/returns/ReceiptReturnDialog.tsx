@@ -98,9 +98,10 @@ export function ReceiptReturnDialog({
 
   const handleReturnQtyChange = (itemId: string, value: string, maxQty: number, unit?: string) => {
     const isDecimal = unit ? DECIMAL_UNITS.includes(unit.toLowerCase()) : false;
-    const num = parseFloat(value) || 0;
-    const minVal = isDecimal ? 0.1 : 1;
-    const clamped = Math.max(minVal, Math.min(num, maxQty));
+    const num = parseFloat(value);
+    const safeNum = Number.isFinite(num) ? num : 0;
+    const clamped = Math.max(0, Math.min(safeNum, maxQty));
+
     setReturnQuantities(prev => ({
       ...prev,
       [itemId]: isDecimal ? Math.round(clamped * 1000) / 1000 : Math.round(clamped),
@@ -111,6 +112,9 @@ export function ReceiptReturnDialog({
     const qty = getReturnQty(item.id, item.quantity || 1);
     return sum + item.sale_price * qty;
   }, 0);
+
+  const selectedReturnItems = returnableItems.filter((item) => getReturnQty(item.id, item.quantity || 1) > 0);
+  const selectedItemsCount = selectedReturnItems.length;
 
   // Calculate refund amount
   const calculateRefund = () => {
