@@ -687,12 +687,12 @@ export function ReceiptReturnDialog({
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Đang xử lý ({currentIndex + 1}/{returnableItems.length})
+                  Đang xử lý ({currentIndex + 1}/{selectedItemsCount})
                 </>
               ) : (
                 <>
                   <RotateCcw className="h-4 w-4 mr-2" />
-                  Trả {returnableItems.length} sản phẩm
+                  Trả {selectedItemsCount} sản phẩm
                 </>
               )}
             </Button>

@@ -538,7 +538,11 @@ export function useCreateExportReturn() {
       const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
       if (!tenantId) throw new Error('Không tìm thấy tenant');
 
-      const returnQty = Math.max(1, Number(item.quantity) || 1);
+      const returnQtyRaw = Number(item.quantity);
+      const returnQty = Number.isFinite(returnQtyRaw) ? Math.max(0, returnQtyRaw) : 0;
+      if (returnQty <= 0) {
+        throw new Error('Số lượng trả phải lớn hơn 0');
+      }
       const baseSaleAmount = Number(item.sale_price) * returnQty;
 
       let storeKeepAmount = 0;
