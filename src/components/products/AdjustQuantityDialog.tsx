@@ -35,9 +35,8 @@ export function AdjustQuantityDialog({
   currentQuantity,
   unit = 'cái',
 }: AdjustQuantityDialogProps) {
-  const effectiveUnit = importData?.unit || unit;
-  const isDecimalUnit = ['kg', 'lít', 'mét'].includes(effectiveUnit);
   const queryClient = useQueryClient();
+  
   const [newTotalImported, setNewTotalImported] = useState<string>('');
   const [newStock, setNewStock] = useState<string>('');
   const [reason, setReason] = useState('');
