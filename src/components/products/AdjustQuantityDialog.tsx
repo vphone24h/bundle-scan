@@ -260,7 +260,7 @@ export function AdjustQuantityDialog({
             {/* Tổng nhập */}
             <div className="space-y-2">
               <Label htmlFor="totalImported">
-                Tổng nhập ({unit})
+                Tổng nhập ({effectiveUnit})
               </Label>
               <Input
                 id="totalImported"
@@ -278,7 +278,7 @@ export function AdjustQuantityDialog({
               />
               {totalImportedDiff !== 0 && (
                 <p className={`text-xs font-medium ${totalImportedDiff > 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
-                  {totalImportedDiff > 0 ? `+${totalImportedDiff}` : totalImportedDiff} {unit}
+                  {totalImportedDiff > 0 ? `+${totalImportedDiff}` : totalImportedDiff} {effectiveUnit}
                 </p>
               )}
             </div>
@@ -286,7 +286,7 @@ export function AdjustQuantityDialog({
             {/* Tồn kho */}
             <div className="space-y-2">
               <Label htmlFor="stock">
-                Tồn kho ({unit})
+                Tồn kho ({effectiveUnit})
               </Label>
               <Input
                 id="stock"
@@ -304,7 +304,7 @@ export function AdjustQuantityDialog({
               />
               {stockDiff !== 0 && (
                 <p className={`text-xs font-medium ${stockDiff > 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
-                  {stockDiff > 0 ? `+${stockDiff}` : stockDiff} {unit}
+                  {stockDiff > 0 ? `+${stockDiff}` : stockDiff} {effectiveUnit}
                 </p>
               )}
             </div>
