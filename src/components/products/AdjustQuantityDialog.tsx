@@ -82,13 +82,13 @@ export function AdjustQuantityDialog({
     }
   }, [open, importData]);
 
-  const parsedTotalImported = parseFloat(newTotalImported) || 0;
-  const parsedStock = parseFloat(newStock) || 0;
+  const parsedTotalImported = Math.round((parseFloat(newTotalImported) || 0) * 1000) / 1000;
+  const parsedStock = Math.round((parseFloat(newStock) || 0) * 1000) / 1000;
   const originalTotalImported = importData?.totalImported || 0;
   const originalStock = importData?.currentStock || currentQuantity;
 
-  const totalImportedDiff = parsedTotalImported - originalTotalImported;
-  const stockDiff = parsedStock - originalStock;
+  const totalImportedDiff = Math.round((parsedTotalImported - originalTotalImported) * 1000) / 1000;
+  const stockDiff = Math.round((parsedStock - originalStock) * 1000) / 1000;
   const hasChanges = totalImportedDiff !== 0 || stockDiff !== 0;
 
   const adjustMutation = useMutation({
