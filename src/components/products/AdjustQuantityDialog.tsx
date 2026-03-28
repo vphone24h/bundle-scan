@@ -35,8 +35,8 @@ export function AdjustQuantityDialog({
   currentQuantity,
   unit = 'cái',
 }: AdjustQuantityDialogProps) {
-  const isDecimalUnit = ['kg', 'lít', 'mét'].includes(unit);
   const queryClient = useQueryClient();
+  
   const [newTotalImported, setNewTotalImported] = useState<string>('');
   const [newStock, setNewStock] = useState<string>('');
   const [reason, setReason] = useState('');
@@ -45,23 +45,22 @@ export function AdjustQuantityDialog({
   const { data: importData } = useQuery({
     queryKey: ['product-import-total', productId],
     queryFn: async () => {
-      // Get product info
       const { data: product } = await supabase
         .from('products')
-        .select('name, sku, branch_id, quantity, import_price, total_import_cost')
+        .select('name, sku, branch_id, quantity, import_price, total_import_cost, unit')
         .eq('id', productId)
         .single();
 
       if (!product) return null;
 
-      // Get product_imports records for this product
       const { data: piRecords } = await supabase
         .from('product_imports')
         .select('id, quantity, import_price')
         .eq('product_id', productId);
 
-      // Also get total from products table entries with same name/sku
       const totalImportedFromPI = piRecords?.reduce((sum, r) => sum + Number(r.quantity), 0) || 0;
+
+      const productUnit = product.unit || unit;
 
       return {
         product,
@@ -69,6 +68,7 @@ export function AdjustQuantityDialog({
         currentStock: Number(product.quantity),
         hasProductImports: (piRecords?.length || 0) > 0,
         piRecords: piRecords || [],
+        unit: productUnit,
       };
     },
     enabled: open && !!productId,
@@ -82,13 +82,16 @@ export function AdjustQuantityDialog({
     }
   }, [open, importData]);
 
-  const parsedTotalImported = parseFloat(newTotalImported) || 0;
-  const parsedStock = parseFloat(newStock) || 0;
+  const effectiveUnit = importData?.unit || unit;
+  const isDecimalUnit = ['kg', 'lít', 'mét'].includes(effectiveUnit);
+
+  const parsedTotalImported = Math.round((parseFloat(newTotalImported) || 0) * 1000) / 1000;
+  const parsedStock = Math.round((parseFloat(newStock) || 0) * 1000) / 1000;
   const originalTotalImported = importData?.totalImported || 0;
   const originalStock = importData?.currentStock || currentQuantity;
 
-  const totalImportedDiff = parsedTotalImported - originalTotalImported;
-  const stockDiff = parsedStock - originalStock;
+  const totalImportedDiff = Math.round((parsedTotalImported - originalTotalImported) * 1000) / 1000;
+  const stockDiff = Math.round((parsedStock - originalStock) * 1000) / 1000;
   const hasChanges = totalImportedDiff !== 0 || stockDiff !== 0;
 
   const adjustMutation = useMutation({
@@ -257,7 +260,7 @@ export function AdjustQuantityDialog({
             {/* Tổng nhập */}
             <div className="space-y-2">
               <Label htmlFor="totalImported">
-                Tổng nhập ({unit})
+                Tổng nhập ({effectiveUnit})
               </Label>
               <Input
                 id="totalImported"
@@ -275,7 +278,7 @@ export function AdjustQuantityDialog({
               />
               {totalImportedDiff !== 0 && (
                 <p className={`text-xs font-medium ${totalImportedDiff > 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
-                  {totalImportedDiff > 0 ? `+${totalImportedDiff}` : totalImportedDiff} {unit}
+                  {totalImportedDiff > 0 ? `+${totalImportedDiff}` : totalImportedDiff} {effectiveUnit}
                 </p>
               )}
             </div>
@@ -283,7 +286,7 @@ export function AdjustQuantityDialog({
             {/* Tồn kho */}
             <div className="space-y-2">
               <Label htmlFor="stock">
-                Tồn kho ({unit})
+                Tồn kho ({effectiveUnit})
               </Label>
               <Input
                 id="stock"
@@ -301,7 +304,7 @@ export function AdjustQuantityDialog({
               />
               {stockDiff !== 0 && (
                 <p className={`text-xs font-medium ${stockDiff > 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
-                  {stockDiff > 0 ? `+${stockDiff}` : stockDiff} {unit}
+                  {stockDiff > 0 ? `+${stockDiff}` : stockDiff} {effectiveUnit}
                 </p>
               )}
             </div>
