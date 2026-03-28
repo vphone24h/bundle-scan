@@ -1251,21 +1251,48 @@ export default function ExportNewPage() {
                     </div>
                     {!selectedProduct.imei && (
                       <div>
-                        <Label>{t('pages.exportNew.quantity')} ({selectedProduct.unit || 'cái'})</Label>
+                        <Label>
+                          {t('pages.exportNew.quantity')} ({selectedProduct.unit || 'cái'})
+                          {availableStock != null && (
+                            <span className="text-muted-foreground font-normal ml-1">- Còn: {availableStock}</span>
+                          )}
+                        </Label>
                         <Input
                           type="number"
                           min={['kg', 'lít', 'mét'].includes(selectedProduct.unit) ? 0.001 : 1}
+                          max={availableStock ?? undefined}
                           step={['kg', 'lít', 'mét'].includes(selectedProduct.unit) ? 0.1 : 1}
                           value={itemQuantity}
                           onChange={(e) => {
-                            const val = parseFloat(e.target.value);
+                            const raw = e.target.value;
+                            // Allow empty field for easy re-typing
+                            if (raw === '' || raw === '0') {
+                              setItemQuantity(raw);
+                              return;
+                            }
+                            const val = parseFloat(raw);
+                            if (isNaN(val)) return;
+                            const maxQty = availableStock ?? Infinity;
                             if (['kg', 'lít', 'mét'].includes(selectedProduct.unit)) {
-                              setItemQuantity(Math.max(0.001, val || 0.001));
+                              setItemQuantity(Math.min(val, maxQty));
                             } else {
-                              setItemQuantity(Math.max(1, Math.round(val) || 1));
+                              setItemQuantity(Math.min(Math.max(1, Math.round(val)), maxQty));
+                            }
+                          }}
+                          onBlur={() => {
+                            // On blur, ensure valid value
+                            const num = typeof itemQuantity === 'string' ? parseFloat(itemQuantity) : itemQuantity;
+                            const isDecimal = ['kg', 'lít', 'mét'].includes(selectedProduct.unit);
+                            const minVal = isDecimal ? 0.001 : 1;
+                            const maxVal = availableStock ?? Infinity;
+                            if (isNaN(num as number) || (num as number) < minVal) {
+                              setItemQuantity(minVal);
+                            } else if ((num as number) > maxVal) {
+                              setItemQuantity(maxVal);
                             }
                           }}
                           className="text-center"
+                          placeholder={availableStock != null ? `Tối đa: ${availableStock}` : ''}
                         />
                       </div>
                     )}
