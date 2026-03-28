@@ -432,7 +432,7 @@ export function ReceiptReturnDialog({
               <Card>
                 <CardHeader className="py-3">
                   <CardTitle className="text-sm flex items-center justify-between">
-                    <span>Sản phẩm sẽ trả ({returnableItems.length})</span>
+                    <span>Sản phẩm sẽ trả ({selectedItemsCount})</span>
                     <Badge variant="secondary">
                       Tổng: {formatCurrencyWithSpaces(totalSalePrice)}
                     </Badge>
@@ -440,7 +440,7 @@ export function ReceiptReturnDialog({
                 </CardHeader>
                 <CardContent className="py-2">
                   <div className="space-y-2 text-sm">
-                    {returnableItems.map((item, index) => {
+                    {returnableItems.map((item) => {
                       const maxQty = item.quantity || 1;
                       const returnQty = getReturnQty(item.id, maxQty);
                       const itemTotal = item.sale_price * returnQty;
@@ -456,7 +456,7 @@ export function ReceiptReturnDialog({
                               <span className="text-xs text-muted-foreground">SL trả:</span>
                               <Input
                                 type="number"
-                                min={DECIMAL_UNITS.includes((item.unit || '').toLowerCase()) ? 0.1 : 1}
+                                min={0}
                                 max={maxQty}
                                 step={DECIMAL_UNITS.includes((item.unit || '').toLowerCase()) ? 0.1 : 1}
                                 value={returnQty}
