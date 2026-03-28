@@ -17,6 +17,7 @@ export interface ImportReturn {
   sku: string;
   imei: string | null;
   import_price: number;
+  quantity: number;
   original_import_date: string | null;
   total_refund_amount: number;
   note: string | null;
@@ -27,6 +28,7 @@ export interface ImportReturn {
   branches?: { name: string } | null;
   import_receipts?: { code: string } | null;
   profiles?: { display_name: string } | null;
+  products?: { unit: string | null } | null;
 }
 
 export interface ExportReturn {
@@ -60,6 +62,7 @@ export interface ExportReturn {
   branches?: { name: string } | null;
   export_receipts?: { code: string } | null;
   profiles?: { display_name: string } | null;
+  products?: { unit: string | null } | null;
 }
 
 export interface ReturnPayment {
