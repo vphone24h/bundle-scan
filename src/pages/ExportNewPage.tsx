@@ -111,9 +111,10 @@ export default function ExportNewPage() {
   const [nameSearch, setNameSearch] = useState('');
   const [productSuggestions, setProductSuggestions] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [availableStock, setAvailableStock] = useState<number | null>(null);
   const [salePrice, setSalePrice] = useState('');
   const [itemNote, setItemNote] = useState('');
-  const [itemQuantity, setItemQuantity] = useState(1);
+  const [itemQuantity, setItemQuantity] = useState<number | string>(1);
   const [itemWarranty, setItemWarranty] = useState('');
   const [scanWarranty, setScanWarranty] = useState('6 Tháng');
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
@@ -397,6 +398,7 @@ export default function ExportNewPage() {
         
         // Clear form for next scan
         setSelectedProduct(null);
+        setAvailableStock(null);
         setSalePrice('');
         setItemNote('');
         setItemQuantity(1);
@@ -494,6 +496,7 @@ export default function ExportNewPage() {
       pendingProductIdsRef.current.delete(productKey);
       
       setSelectedProduct(null);
+      setAvailableStock(null);
       setSalePrice('');
       setItemNote('');
       setItemQuantity(1);
@@ -536,6 +539,7 @@ export default function ExportNewPage() {
       pendingProductIdsRef.current.delete(productKey);
       
       setSelectedProduct(null);
+      setAvailableStock(null);
       setSalePrice('');
       setItemNote('');
       setItemQuantity(1);
@@ -557,6 +561,7 @@ export default function ExportNewPage() {
     setItemWarranty('');
     setItemNote('');
     setNameSearch('');
+    fetchAvailableStock(result);
     setProductSuggestions([]);
     
     toast({
@@ -600,6 +605,7 @@ export default function ExportNewPage() {
     setItemNote('');
     setNameSearch('');
     setProductSuggestions([]);
+    fetchAvailableStock(result);
     
     toast({
       title: t('pages.exportNew.foundProduct'),
@@ -629,6 +635,24 @@ export default function ExportNewPage() {
     }
   }, [nameSearch, cart]);
 
+  // Fetch available stock for non-IMEI product
+  const fetchAvailableStock = async (product: any) => {
+    if (product.imei) { setAvailableStock(null); return; }
+    const { data } = await supabase
+      .from('products')
+      .select('quantity')
+      .eq('name', product.name)
+      .eq('sku', product.sku)
+      .eq('status', 'in_stock')
+      .eq('branch_id', product.branch_id);
+    const total = (data || []).reduce((s: number, r: any) => s + (r.quantity || 0), 0);
+    // Subtract items already in cart for same product+branch
+    const inCart = cart
+      .filter(c => !c.imei && c.product_name === product.name && c.sku === product.sku && c.branch_id === product.branch_id)
+      .reduce((s, c) => s + c.quantity, 0);
+    setAvailableStock(Math.max(0, total - inCart));
+  };
+
   // Select product from suggestions
   const handleSelectProduct = (product: any) => {
     // ⛔ Block selecting products from other branches
@@ -643,9 +667,10 @@ export default function ExportNewPage() {
 
     setSelectedProduct(product);
     setSalePrice(''); // Leave empty - don't reveal import price
-    setItemQuantity(product.imei ? 1 : 1); // Default to 1, user can change for non-IMEI
+    setItemQuantity(1); // Default to 1
     setNameSearch('');
     setProductSuggestions([]);
+    fetchAvailableStock(product);
   };
 
   // Auto-save export cart to localStorage for draft persistence
@@ -703,7 +728,10 @@ export default function ExportNewPage() {
 
     const productUnit = selectedProduct.unit || 'cái';
     const isDecimalUnit = ['kg', 'lít', 'mét'].includes(productUnit);
-    const quantity = selectedProduct.imei ? 1 : (isDecimalUnit ? Math.max(0.001, itemQuantity) : Math.max(1, Math.round(itemQuantity)));
+    const numQuantity = typeof itemQuantity === 'string' ? parseFloat(itemQuantity) || 0 : itemQuantity;
+    const maxQty = availableStock ?? Infinity;
+    const clampedQty = Math.min(numQuantity, maxQty);
+    const quantity = selectedProduct.imei ? 1 : (isDecimalUnit ? Math.max(0.001, clampedQty) : Math.max(1, Math.round(clampedQty)));
     
     const newItem: CartItem = {
       tempId: Date.now().toString(),
@@ -724,6 +752,7 @@ export default function ExportNewPage() {
 
     setCart([...cart, newItem]);
     setSelectedProduct(null);
+    setAvailableStock(null);
     setSalePrice('');
     setItemNote('');
     setItemQuantity(1);
@@ -1206,6 +1235,7 @@ export default function ExportNewPage() {
                         className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                         onClick={() => {
                           setSelectedProduct(null);
+                          setAvailableStock(null);
                           setSalePrice('');
                           setItemNote('');
                           setItemQuantity(1);
@@ -1228,21 +1258,48 @@ export default function ExportNewPage() {
                     </div>
                     {!selectedProduct.imei && (
                       <div>
-                        <Label>{t('pages.exportNew.quantity')} ({selectedProduct.unit || 'cái'})</Label>
+                        <Label>
+                          {t('pages.exportNew.quantity')} ({selectedProduct.unit || 'cái'})
+                          {availableStock != null && (
+                            <span className="text-muted-foreground font-normal ml-1">- Còn: {availableStock}</span>
+                          )}
+                        </Label>
                         <Input
                           type="number"
                           min={['kg', 'lít', 'mét'].includes(selectedProduct.unit) ? 0.001 : 1}
+                          max={availableStock ?? undefined}
                           step={['kg', 'lít', 'mét'].includes(selectedProduct.unit) ? 0.1 : 1}
                           value={itemQuantity}
                           onChange={(e) => {
-                            const val = parseFloat(e.target.value);
+                            const raw = e.target.value;
+                            // Allow empty field for easy re-typing
+                            if (raw === '' || raw === '0') {
+                              setItemQuantity(raw);
+                              return;
+                            }
+                            const val = parseFloat(raw);
+                            if (isNaN(val)) return;
+                            const maxQty = availableStock ?? Infinity;
                             if (['kg', 'lít', 'mét'].includes(selectedProduct.unit)) {
-                              setItemQuantity(Math.max(0.001, val || 0.001));
+                              setItemQuantity(Math.min(val, maxQty));
                             } else {
-                              setItemQuantity(Math.max(1, Math.round(val) || 1));
+                              setItemQuantity(Math.min(Math.max(1, Math.round(val)), maxQty));
+                            }
+                          }}
+                          onBlur={() => {
+                            // On blur, ensure valid value
+                            const num = typeof itemQuantity === 'string' ? parseFloat(itemQuantity) : itemQuantity;
+                            const isDecimal = ['kg', 'lít', 'mét'].includes(selectedProduct.unit);
+                            const minVal = isDecimal ? 0.001 : 1;
+                            const maxVal = availableStock ?? Infinity;
+                            if (isNaN(num as number) || (num as number) < minVal) {
+                              setItemQuantity(minVal);
+                            } else if ((num as number) > maxVal) {
+                              setItemQuantity(maxVal);
                             }
                           }}
                           className="text-center"
+                          placeholder={availableStock != null ? `Tối đa: ${availableStock}` : ''}
                         />
                       </div>
                     )}
