@@ -111,9 +111,10 @@ export default function ExportNewPage() {
   const [nameSearch, setNameSearch] = useState('');
   const [productSuggestions, setProductSuggestions] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [availableStock, setAvailableStock] = useState<number | null>(null);
   const [salePrice, setSalePrice] = useState('');
   const [itemNote, setItemNote] = useState('');
-  const [itemQuantity, setItemQuantity] = useState(1);
+  const [itemQuantity, setItemQuantity] = useState<number | string>(1);
   const [itemWarranty, setItemWarranty] = useState('');
   const [scanWarranty, setScanWarranty] = useState('6 Tháng');
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
