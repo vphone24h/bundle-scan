@@ -949,7 +949,8 @@ export default function ImportHistoryPage() {
                     <th>SKU</th>
                     <th>IMEI</th>
                     <th>Danh mục</th>
-                    <th className="text-center">SL</th>
+                    <th className="text-center">Tổng nhập</th>
+                    <th className="text-center">Tồn kho</th>
                     <th className="text-right">Giá nhập</th>
                     <th className="text-right">Thành tiền</th>
                     <th>Ngày nhập</th>
@@ -984,6 +985,16 @@ export default function ImportHistoryPage() {
                       <td className="font-mono text-sm">{product.imei || '-'}</td>
                       <td>{product.categories?.name || '-'}</td>
                       <td className="text-center font-medium">{product.quantity}{product.unit && product.unit !== 'cái' ? ` ${product.unit}` : ''}</td>
+                      <td className="text-center font-medium">
+                        {!product.imei ? (
+                          <span className={(product as any).current_stock != null && (product as any).current_stock <= 2 ? 'text-destructive font-semibold' : ''}>
+                            {(product as any).current_stock != null ? (product as any).current_stock : product.quantity}
+                            {product.unit && product.unit !== 'cái' ? ` ${product.unit}` : ''}
+                          </span>
+                        ) : (
+                          <span>{product.status === 'in_stock' ? 1 : 0}</span>
+                        )}
+                      </td>
                       <td className="text-right font-medium">
                         {formatCurrency(Number(product.import_price))}
                       </td>
@@ -1411,7 +1422,8 @@ export default function ImportHistoryPage() {
           productId={adjustProduct.id}
           productName={adjustProduct.name}
           sku={adjustProduct.sku}
-          currentQuantity={adjustProduct.quantity}
+          currentQuantity={(adjustProduct as any).current_stock ?? adjustProduct.quantity}
+          unit={(adjustProduct as any).unit || 'cái'}
         />
       )}
 

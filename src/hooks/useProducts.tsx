@@ -266,8 +266,9 @@ export function useAllProducts(filters?: {
         }
         items.forEach(p => {
           if (!p.imei && piMap.has(p.id)) {
+            (p as any).current_stock = p.quantity; // Tồn kho thực tế
             (p as any).original_import_quantity = piMap.get(p.id)!;
-            p.quantity = piMap.get(p.id)!;
+            p.quantity = piMap.get(p.id)!; // Tổng nhập
           }
         });
       }
