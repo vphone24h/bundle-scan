@@ -98,9 +98,10 @@ export function ReceiptReturnDialog({
 
   const handleReturnQtyChange = (itemId: string, value: string, maxQty: number, unit?: string) => {
     const isDecimal = unit ? DECIMAL_UNITS.includes(unit.toLowerCase()) : false;
-    const num = parseFloat(value) || 0;
-    const minVal = isDecimal ? 0.1 : 1;
-    const clamped = Math.max(minVal, Math.min(num, maxQty));
+    const num = parseFloat(value);
+    const safeNum = Number.isFinite(num) ? num : 0;
+    const clamped = Math.max(0, Math.min(safeNum, maxQty));
+
     setReturnQuantities(prev => ({
       ...prev,
       [itemId]: isDecimal ? Math.round(clamped * 1000) / 1000 : Math.round(clamped),
@@ -111,6 +112,9 @@ export function ReceiptReturnDialog({
     const qty = getReturnQty(item.id, item.quantity || 1);
     return sum + item.sale_price * qty;
   }, 0);
+
+  const selectedReturnItems = returnableItems.filter((item) => getReturnQty(item.id, item.quantity || 1) > 0);
+  const selectedItemsCount = selectedReturnItems.length;
 
   // Calculate refund amount
   const calculateRefund = () => {
@@ -293,10 +297,10 @@ export function ReceiptReturnDialog({
       return;
     }
 
-    if (returnableItems.length === 0) {
+    if (selectedItemsCount === 0) {
       toast({
-        title: 'Không có sản phẩm để trả',
-        description: 'Tất cả sản phẩm trong phiếu đã được trả trước đó',
+        title: 'Chưa chọn sản phẩm trả',
+        description: 'Vui lòng nhập số lượng > 0 cho ít nhất 1 sản phẩm.',
         variant: 'destructive',
       });
       return;
@@ -310,17 +314,14 @@ export function ReceiptReturnDialog({
     (async () => {
       try {
         const returnCodes: string[] = [];
-        for (let i = 0; i < returnableItems.length; i++) {
-          const item = returnableItems[i];
+        for (let i = 0; i < selectedReturnItems.length; i++) {
+          const item = selectedReturnItems[i];
           const returnQty = getReturnQty(item.id, item.quantity || 1);
           const itemTotal = item.sale_price * returnQty;
           const itemFee = calculateItemFee(itemTotal);
           const itemPayments = calculateItemPayments(itemTotal, itemFee)
             .filter(p => p.amount > 0)
             .filter(p => !!p.source);
-
-          const debtPayments = itemPayments.filter(p => p.source === 'debt');
-          const nonDebtPayments = itemPayments.filter(p => p.source !== 'debt');
 
           const result = await createExportReturn.mutateAsync({
             item: {
@@ -344,7 +345,7 @@ export function ReceiptReturnDialog({
             payments: itemPayments,
             isBusinessAccounting,
             recordToCashBook: false,
-            note: i === 0 ? (note || `Trả toàn bộ phiếu ${receipt.code}`) : null,
+            note: i === 0 ? (note || `Trả hàng phiếu ${receipt.code}`) : null,
           });
           returnCodes.push(result.code);
         }
@@ -358,14 +359,15 @@ export function ReceiptReturnDialog({
         if (recordToCashBook && user && tenantId) {
           for (const payment of validPayments) {
             if (payment.source !== 'debt') {
-              const productDetails = returnableItems.map(item => 
-                `${item.product_name}${item.imei ? ` (IMEI: ${item.imei})` : ''}: ${formatCurrencyWithSpaces(item.sale_price)}`
-              ).join('\n');
+              const productDetails = selectedReturnItems.map(item => {
+                const qty = getReturnQty(item.id, item.quantity || 1);
+                return `${item.product_name}${item.imei ? ` (IMEI: ${item.imei})` : ''}: ${qty} ${item.unit || ''} × ${formatCurrencyWithSpaces(item.sale_price)}`;
+              }).join('\n');
 
               await supabase.from('cash_book').insert([{
                 type: 'expense' as const,
                 category: 'Hoan tien khach hang',
-                description: `Trả hàng phiếu ${receipt.code} (${returnableItems.length} SP)`,
+                description: `Trả hàng phiếu ${receipt.code} (${selectedItemsCount} SP)`,
                 amount: payment.amount,
                 payment_source: payment.source,
                 is_business_accounting: false,
@@ -382,7 +384,7 @@ export function ReceiptReturnDialog({
 
         toast({
           title: 'Trả hàng thành công',
-          description: `Đã hoàn ${formatCurrencyWithSpaces(refundAmount)} cho khách hàng (${returnableItems.length} sản phẩm)`,
+          description: `Đã hoàn ${formatCurrencyWithSpaces(refundAmount)} cho khách hàng (${selectedItemsCount} sản phẩm)`,
         });
         onSuccess();
       } catch (error: any) {
@@ -430,7 +432,7 @@ export function ReceiptReturnDialog({
               <Card>
                 <CardHeader className="py-3">
                   <CardTitle className="text-sm flex items-center justify-between">
-                    <span>Sản phẩm sẽ trả ({returnableItems.length})</span>
+                    <span>Sản phẩm sẽ trả ({selectedItemsCount})</span>
                     <Badge variant="secondary">
                       Tổng: {formatCurrencyWithSpaces(totalSalePrice)}
                     </Badge>
@@ -438,7 +440,7 @@ export function ReceiptReturnDialog({
                 </CardHeader>
                 <CardContent className="py-2">
                   <div className="space-y-2 text-sm">
-                    {returnableItems.map((item, index) => {
+                    {returnableItems.map((item) => {
                       const maxQty = item.quantity || 1;
                       const returnQty = getReturnQty(item.id, maxQty);
                       const itemTotal = item.sale_price * returnQty;
@@ -454,7 +456,7 @@ export function ReceiptReturnDialog({
                               <span className="text-xs text-muted-foreground">SL trả:</span>
                               <Input
                                 type="number"
-                                min={DECIMAL_UNITS.includes((item.unit || '').toLowerCase()) ? 0.1 : 1}
+                                min={0}
                                 max={maxQty}
                                 step={DECIMAL_UNITS.includes((item.unit || '').toLowerCase()) ? 0.1 : 1}
                                 value={returnQty}
@@ -685,12 +687,12 @@ export function ReceiptReturnDialog({
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Đang xử lý ({currentIndex + 1}/{returnableItems.length})
+                  Đang xử lý ({currentIndex + 1}/{selectedItemsCount})
                 </>
               ) : (
                 <>
                   <RotateCcw className="h-4 w-4 mr-2" />
-                  Trả {returnableItems.length} sản phẩm
+                  Trả {selectedItemsCount} sản phẩm
                 </>
               )}
             </Button>
