@@ -484,8 +484,8 @@ export function useCreateExportReceipt() {
             ]);
           } else {
             // SẢN PHẨM KHÔNG IMEI: Giảm số lượng và giá trị kho theo quantity đã bán
-            const currentQty = product?.quantity || qty;
-            const newQuantity = currentQty - qty;
+            const currentQty = Number(product?.quantity) || qty;
+            const newQuantity = Math.round((currentQty - qty) * 1000) / 1000; // preserve decimal precision
             const currentTotalCost = Number(product?.total_import_cost || 0);
             const avgPrice = currentQty > 0 ? currentTotalCost / currentQty : Number(product?.import_price || 0);
             const costReduction = avgPrice * qty;
