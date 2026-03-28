@@ -49,3 +49,12 @@ export function formatCurrencyWithSpaces(value: number | string): string {
   const formatted = formatNumberWithSpaces(value);
   return formatted ? `${formatted}đ` : '';
 }
+
+/**
+ * Format currency compactly for cards (no truncation)
+ * Example: 123311000 -> "123.311.000đ"
+ */
+export function formatCurrencyCompact(value: number): string {
+  if (value === 0) return '0đ';
+  return value.toLocaleString('vi-VN') + 'đ';
+}
