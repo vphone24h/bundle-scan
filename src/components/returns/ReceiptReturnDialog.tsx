@@ -92,20 +92,50 @@ export function ReceiptReturnDialog({
 
   const DECIMAL_UNITS = ['kg', 'lít', 'mét'];
 
+  const [returnQtyDisplays, setReturnQtyDisplays] = useState<Record<string, string>>({});
+
   const getReturnQty = (itemId: string, maxQty: number) => {
     return returnQuantities[itemId] ?? maxQty;
   };
 
+  const getReturnQtyDisplay = (itemId: string, maxQty: number) => {
+    return returnQtyDisplays[itemId] ?? String(maxQty);
+  };
+
   const handleReturnQtyChange = (itemId: string, value: string, maxQty: number, unit?: string) => {
     const isDecimal = unit ? DECIMAL_UNITS.includes(unit.toLowerCase()) : false;
+    
+    if (value === '' || value === '0' || value === '0.') {
+      setReturnQtyDisplays(prev => ({ ...prev, [itemId]: value }));
+      setReturnQuantities(prev => ({ ...prev, [itemId]: 0 }));
+      return;
+    }
+
+    setReturnQtyDisplays(prev => ({ ...prev, [itemId]: value }));
     const num = parseFloat(value);
-    const safeNum = Number.isFinite(num) ? num : 0;
-    const clamped = Math.max(0, Math.min(safeNum, maxQty));
+    if (!Number.isFinite(num)) return;
+    const clamped = Math.max(0, Math.min(num, maxQty));
 
     setReturnQuantities(prev => ({
       ...prev,
       [itemId]: isDecimal ? Math.round(clamped * 1000) / 1000 : Math.round(clamped),
     }));
+  };
+
+  const handleReturnQtyBlur = (itemId: string, maxQty: number, unit?: string) => {
+    const isDecimal = unit ? DECIMAL_UNITS.includes(unit.toLowerCase()) : false;
+    const minVal = isDecimal ? 0.001 : 0;
+    const display = returnQtyDisplays[itemId];
+    const num = parseFloat(display ?? '');
+    if (!Number.isFinite(num) || num < 0) {
+      setReturnQuantities(prev => ({ ...prev, [itemId]: minVal }));
+      setReturnQtyDisplays(prev => ({ ...prev, [itemId]: String(minVal) }));
+    } else {
+      const clamped = Math.min(num, maxQty);
+      const final = isDecimal ? Math.round(clamped * 1000) / 1000 : Math.round(clamped);
+      setReturnQuantities(prev => ({ ...prev, [itemId]: final }));
+      setReturnQtyDisplays(prev => ({ ...prev, [itemId]: String(final) }));
+    }
   };
 
   const totalSalePrice = returnableItems.reduce((sum, item) => {
@@ -459,8 +489,9 @@ export function ReceiptReturnDialog({
                                 min={0}
                                 max={maxQty}
                                 step={DECIMAL_UNITS.includes((item.unit || '').toLowerCase()) ? 0.1 : 1}
-                                value={returnQty}
+                                value={getReturnQtyDisplay(item.id, maxQty)}
                                 onChange={(e) => handleReturnQtyChange(item.id, e.target.value, maxQty, item.unit)}
+                                onBlur={() => handleReturnQtyBlur(item.id, maxQty, item.unit)}
                                 className="w-20 h-7 text-xs text-center"
                               />
                               <span className="text-xs text-muted-foreground">/ {maxQty} {item.unit || ''}</span>
