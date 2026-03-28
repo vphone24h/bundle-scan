@@ -246,9 +246,9 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
                   }}
                   onBlur={() => {
                     const num = parseFloat(returnQtyDisplay);
-                    if (!Number.isFinite(num) || num <= 0) {
-                      setReturnQty(minValue);
-                      setReturnQtyDisplay(String(minValue));
+                    if (!Number.isFinite(num) || num < 0) {
+                      setReturnQty(0);
+                      setReturnQtyDisplay('0');
                     } else {
                       const clamped = Math.min(num, maxQty);
                       const final = isDecimalUnit ? Math.round(clamped * 1000) / 1000 : Math.round(clamped);
