@@ -46,17 +46,33 @@ export function useSaveCustomPermissions() {
       tenantId: string;
       permissions: PermissionMap;
     }) => {
-      const { error } = await supabase
+      // Check if exists first
+      const { data: existing } = await supabase
         .from('user_custom_permissions')
-        .upsert(
-          {
+        .select('id')
+        .eq('user_id', userId)
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('user_custom_permissions')
+          .update({
+            permissions: permissions as unknown as Record<string, unknown>,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_custom_permissions')
+          .insert({
             user_id: userId,
             tenant_id: tenantId,
             permissions: permissions as unknown as Record<string, unknown>,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id,tenant_id' }
-        );
+          });
+        if (error) throw error;
+      }
 
       if (error) throw error;
     },
