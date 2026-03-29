@@ -395,7 +395,7 @@ export function useCreateStockTransfer() {
 
       await supabase.from('audit_logs').insert(auditLogs);
 
-      return { count: products.length, status };
+      return { count: products.length, status, requestId: request.id, fromBranchName, toBranchName, note, createdAt: request.created_at, items };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });

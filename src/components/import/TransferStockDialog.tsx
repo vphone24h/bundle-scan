@@ -26,6 +26,7 @@ import { useCreateStockTransfer } from '@/hooks/useStockTransfers';
 import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/mockData';
+import { StockTransferPrintReceipt, type TransferPrintData } from '@/components/import/StockTransferPrintReceipt';
 import type { Product } from '@/hooks/useProducts';
 
 interface TransferStockDialogProps {
@@ -53,6 +54,7 @@ export function TransferStockDialog({
 
   // Track transfer quantities for non-IMEI products
   const [transferQuantities, setTransferQuantities] = useState<Record<string, number>>({});
+  const [printData, setPrintData] = useState<TransferPrintData | null>(null);
 
   const isSuperAdmin = permissions?.role === 'super_admin';
 
@@ -134,10 +136,36 @@ export function TransferStockDialog({
             ? `Đã chuyển ${data.count} sản phẩm từ "${fromBranchName}" sang "${toBranchName}"`
             : `Đã tạo phiếu chuyển ${data.count} sản phẩm. Chờ chi nhánh "${toBranchName}" duyệt.`;
           toast({ title: data.status === 'approved' ? 'Chuyển hàng thành công' : 'Tạo phiếu thành công', description: msg });
+
+          // Prepare print data
+          const profileName = ''; // will be filled from creator
+          setPrintData({
+            id: data.requestId,
+            fromBranchName: data.fromBranchName,
+            toBranchName: data.toBranchName,
+            createdAt: data.createdAt,
+            creatorName: profileName,
+            note: data.note || undefined,
+            status: data.status,
+            items: data.items.map((item: any) => ({
+              id: item.id || '',
+              transfer_request_id: data.requestId,
+              product_id: item.product_id || '',
+              product_name: item.product_name,
+              sku: item.sku,
+              imei: item.imei,
+              quantity: item.quantity,
+              import_price: item.import_price,
+              supplier_id: item.supplier_id,
+              supplier_name: item.supplier_name,
+              note: item.note,
+              created_at: data.createdAt,
+            })),
+          });
+
           setToBranchId('');
           setNote('');
           setTransferQuantities({});
-          onOpenChange(false);
           onSuccess();
         },
         onError: (error: any) => {
@@ -148,7 +176,8 @@ export function TransferStockDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open && !printData} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -308,5 +337,26 @@ export function TransferStockDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Print Dialog after successful transfer */}
+    <Dialog open={!!printData} onOpenChange={(open) => { if (!open) { setPrintData(null); onOpenChange(false); } }}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="text-center">Chuyển hàng thành công!</DialogTitle>
+          <DialogDescription className="text-center">
+            Bạn có muốn in phiếu chuyển hàng không?
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-2 pt-2">
+          {printData && (
+            <StockTransferPrintReceipt data={printData} />
+          )}
+          <Button variant="ghost" onClick={() => { setPrintData(null); onOpenChange(false); }}>
+            Bỏ qua
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

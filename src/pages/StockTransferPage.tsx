@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SearchInput } from '@/components/ui/search-input';
-import { Loader2, Search, ArrowRight, Eye, Check, X, Package, ArrowRightLeft, Info } from 'lucide-react';
+import { Loader2, Search, ArrowRight, Eye, Check, X, Package, ArrowRightLeft, Info, Printer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/mockData';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -18,6 +18,7 @@ import {
   useRejectTransfer,
   StockTransferRequest,
 } from '@/hooks/useStockTransfers';
+import { StockTransferPrintReceipt, type TransferPrintData } from '@/components/import/StockTransferPrintReceipt';
 import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -124,6 +125,38 @@ export default function StockTransferPage() {
     return permissions?.role === 'branch_admin' && request.to_branch_id === userBranchId;
   };
 
+  const handleQuickPrint = useCallback(async (request: StockTransferRequest) => {
+    try {
+      const { data: items, error } = await (await import('@/integrations/supabase/client')).supabase
+        .from('stock_transfer_items')
+        .select('*')
+        .eq('transfer_request_id', request.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      const printData: TransferPrintData = {
+        id: request.id,
+        fromBranchName: (request.from_branch as any)?.name || '?',
+        toBranchName: (request.to_branch as any)?.name || '?',
+        createdAt: request.created_at,
+        creatorName: request.creator_profile?.display_name,
+        note: request.note || undefined,
+        status: request.status,
+        items: (items || []) as any,
+      };
+
+      // Trigger print directly
+      const { StockTransferPrintReceipt: _C } = await import('@/components/import/StockTransferPrintReceipt');
+      // Create a temporary element to trigger print
+      setPrintTransferData(printData);
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+    }
+  }, []);
+
+  const [printTransferData, setPrintTransferData] = useState<TransferPrintData | null>(null);
+
   const renderRequestCard = (request: StockTransferRequest, type: 'outgoing' | 'incoming') => {
     const statusCfg = STATUS_CONFIG[request.status] || STATUS_CONFIG.pending;
     const isPending = request.status === 'pending';
@@ -175,6 +208,15 @@ export default function StockTransferPage() {
             >
               <Eye className="h-3.5 w-3.5" />
               Chi tiết
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickPrint(request)}
+              className="gap-1.5"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              In
             </Button>
             {canApprove(request) && (
               <>
@@ -377,6 +419,24 @@ export default function StockTransferPage() {
             </div>
           )}
 
+          {/* Print button in detail dialog */}
+          {detailRequest && detailItems && detailItems.length > 0 && (
+            <div className="flex justify-center">
+              <StockTransferPrintReceipt
+                data={{
+                  id: detailRequest.id,
+                  fromBranchName: (detailRequest.from_branch as any)?.name || '?',
+                  toBranchName: (detailRequest.to_branch as any)?.name || '?',
+                  createdAt: detailRequest.created_at,
+                  creatorName: detailRequest.creator_profile?.display_name,
+                  note: detailRequest.note || undefined,
+                  status: detailRequest.status,
+                  items: detailItems,
+                }}
+              />
+            </div>
+          )}
+
           {detailRequest && canApprove(detailRequest) && (
             <DialogFooter className="gap-2 sm:gap-0">
               <Button
@@ -440,6 +500,26 @@ export default function StockTransferPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Hidden print trigger for quick print from card */}
+      {printTransferData && (
+        <Dialog open={!!printTransferData} onOpenChange={(open) => !open && setPrintTransferData(null)}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-center">In phiếu chuyển hàng</DialogTitle>
+              <DialogDescription className="text-center">
+                {(printTransferData.fromBranchName)} → {(printTransferData.toBranchName)}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-2 pt-2">
+              <StockTransferPrintReceipt data={printTransferData} />
+              <Button variant="ghost" onClick={() => setPrintTransferData(null)}>
+                Đóng
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </MainLayout>
   );
 }
