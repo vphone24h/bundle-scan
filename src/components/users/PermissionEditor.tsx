@@ -69,7 +69,10 @@ interface PermissionEditorProps {
   currentRole?: string;
 }
 
-export function PermissionEditor({ permissions, onChange, disabled }: PermissionEditorProps) {
+export function PermissionEditor({ permissions, onChange, disabled, currentRole }: PermissionEditorProps) {
+  const [hintOpen, setHintOpen] = useState(true);
+  const hint = currentRole ? ROLE_HINTS[currentRole] : null;
+
   const togglePermission = (key: string, checked: boolean) => {
     onChange({ ...permissions, [key]: checked });
   };
@@ -77,11 +80,8 @@ export function PermissionEditor({ permissions, onChange, disabled }: Permission
   const toggleCategory = (categoryKey: string, checked: boolean) => {
     const category = PERMISSION_CATEGORIES.find(c => c.key === categoryKey);
     if (!category) return;
-
     const updates = { ...permissions };
-    category.children.forEach(child => {
-      updates[child.key] = checked;
-    });
+    category.children.forEach(child => { updates[child.key] = checked; });
     onChange(updates);
   };
 
@@ -101,6 +101,42 @@ export function PermissionEditor({ permissions, onChange, disabled }: Permission
   return (
     <ScrollArea className="h-[400px] pr-3">
       <div className="space-y-4">
+        {/* Role hint */}
+        {hint && (
+          <Collapsible open={hintOpen} onOpenChange={setHintOpen}>
+            <div className="border rounded-lg bg-accent/30 overflow-hidden">
+              <CollapsibleTrigger className="w-full flex items-center justify-between p-3 text-left">
+                <div className="flex items-center gap-2">
+                  <Info className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold">{hint.icon} {hint.title}</span>
+                </div>
+                {hintOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="px-3 pb-3 space-y-2">
+                  <div>
+                    <p className="text-[11px] font-medium text-green-600 mb-1">✅ Được phép:</p>
+                    <ul className="space-y-0.5">
+                      {hint.allowed.map((item, i) => (
+                        <li key={i} className="text-[11px] text-muted-foreground pl-3">• {item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-medium text-destructive mb-1">❌ Hạn chế:</p>
+                    <ul className="space-y-0.5">
+                      {hint.restricted.map((item, i) => (
+                        <li key={i} className="text-[11px] text-muted-foreground pl-3">• {item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground italic">Bạn có thể tuỳ chỉnh quyền bên dưới.</p>
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+        )}
+
         {PERMISSION_CATEGORIES.map(category => {
           const allChecked = isCategoryChecked(category.key);
           const indeterminate = isCategoryIndeterminate(category.key);
@@ -108,7 +144,6 @@ export function PermissionEditor({ permissions, onChange, disabled }: Permission
 
           return (
             <div key={category.key} className="border rounded-lg p-3 bg-card">
-              {/* Category header */}
               <div className="flex items-center gap-2 mb-2">
                 <Checkbox
                   id={`cat-${category.key}`}
@@ -116,10 +151,7 @@ export function PermissionEditor({ permissions, onChange, disabled }: Permission
                   disabled={disabled}
                   onCheckedChange={(checked) => toggleCategory(category.key, !!checked)}
                 />
-                <Label
-                  htmlFor={`cat-${category.key}`}
-                  className="text-sm font-semibold cursor-pointer"
-                >
+                <Label htmlFor={`cat-${category.key}`} className="text-sm font-semibold cursor-pointer">
                   {category.label}
                 </Label>
                 {!allChecked && !indeterminate && (
@@ -127,7 +159,6 @@ export function PermissionEditor({ permissions, onChange, disabled }: Permission
                 )}
               </div>
 
-              {/* Children - only show if category has multiple items */}
               {hasMultipleChildren && (
                 <div className="ml-6 space-y-2">
                   {category.children.map(child => (
@@ -139,10 +170,7 @@ export function PermissionEditor({ permissions, onChange, disabled }: Permission
                         onCheckedChange={(checked) => togglePermission(child.key, !!checked)}
                       />
                       <div className="flex-1">
-                        <Label
-                          htmlFor={`perm-${child.key}`}
-                          className="text-xs cursor-pointer leading-tight"
-                        >
+                        <Label htmlFor={`perm-${child.key}`} className="text-xs cursor-pointer leading-tight">
                           {child.label}
                         </Label>
                         {child.description && (
