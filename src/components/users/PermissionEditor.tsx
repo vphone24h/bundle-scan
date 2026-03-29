@@ -115,6 +115,25 @@ export function PermissionEditor({ permissions, onChange, disabled, currentRole,
   return (
     <ScrollArea className="h-[400px] pr-3">
       <div className="space-y-4">
+        {/* Quick role selector */}
+        <div className="flex gap-2">
+          {QUICK_ROLES.map(r => (
+            <button
+              key={r.value}
+              type="button"
+              disabled={disabled}
+              onClick={() => handleQuickRole(r.value)}
+              className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
+                selectedQuickRole === r.value
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-card text-foreground border-border hover:bg-accent'
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+
         {/* Role hint */}
         {hint && (
           <Collapsible open={hintOpen} onOpenChange={setHintOpen}>
