@@ -56,26 +56,24 @@ export function useSaveCustomPermissions() {
         .maybeSingle();
 
       if (existing) {
-        const { error } = await supabase
+        const { error: updateErr } = await supabase
           .from('user_custom_permissions')
           .update({
-            permissions: permissions as unknown as Record<string, unknown>,
+            permissions: permissions as unknown as Json,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existing.id);
-        if (error) throw error;
+        if (updateErr) throw updateErr;
       } else {
-        const { error } = await supabase
+        const { error: insertErr } = await supabase
           .from('user_custom_permissions')
-          .insert({
+          .insert([{
             user_id: userId,
             tenant_id: tenantId,
-            permissions: permissions as unknown as Record<string, unknown>,
-          });
-        if (error) throw error;
+            permissions: permissions as unknown as Json,
+          }]);
+        if (insertErr) throw insertErr;
       }
-
-      if (error) throw error;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['user-custom-permissions', variables.userId] });
