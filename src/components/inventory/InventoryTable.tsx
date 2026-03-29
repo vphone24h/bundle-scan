@@ -52,7 +52,7 @@ function getVariantLabel(item: InventoryItem): string {
 export function InventoryTable({ data, isLoading }: InventoryTableProps) {
   const { t } = useTranslation();
   const { data: permissions } = usePermissions();
-  const canViewImportPrice = permissions?.canViewImportPrice ?? false;
+  const canViewImportPrice = permissions?.canViewInventoryImportPrice ?? false;
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [showIMEIDialog, setShowIMEIDialog] = useState(false);
   const [showNonIMEIDialog, setShowNonIMEIDialog] = useState(false);

@@ -28,7 +28,7 @@ export function ImportHistoryTable({
 }: ImportHistoryTableProps) {
   const { t } = useTranslation();
   const { data: permissions } = usePermissions();
-  const canViewImportPrice = permissions?.canViewImportHistoryPrice ?? permissions?.canViewImportPrice ?? false;
+  const canViewImportPrice = permissions?.canViewImportHistoryPrice ?? false;
 
   return (
     <div className="overflow-x-auto rounded-lg border bg-card">

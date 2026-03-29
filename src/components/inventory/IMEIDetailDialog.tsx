@@ -37,7 +37,7 @@ export function IMEIDetailDialog({
   branchId,
 }: IMEIDetailDialogProps) {
   const { data: permissions } = usePermissions();
-  const canViewImportPrice = permissions?.canViewImportPrice ?? false;
+  const canViewImportPrice = permissions?.canViewInventoryImportPrice ?? false;
 
   // Fetch IMEI products on-demand when dialog opens
   const { data: inStockProducts = [], isLoading } = useQuery({
