@@ -177,6 +177,15 @@ export default function StockTransferPage() {
               <Eye className="h-3.5 w-3.5" />
               Chi tiết
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickPrint(request)}
+              className="gap-1.5"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              In
+            </Button>
             {canApprove(request) && (
               <>
                 <Button
