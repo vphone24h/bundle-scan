@@ -20,6 +20,7 @@ import { useStockCountGuideUrl } from '@/hooks/useAppConfig';
 import { exportToExcel } from '@/lib/exportExcel';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
+import { usePermissions } from '@/hooks/usePermissions';
 
 function useInventoryTourSteps(): TourStep[] {
   const { t } = useTranslation();
@@ -41,6 +42,7 @@ export default function InventoryPage() {
   const { toast } = useToast();
   const { data: inventory, isLoading } = useInventory();
   const stockCountGuideUrl = useStockCountGuideUrl();
+  const { data: permissions } = usePermissions();
   const [activeTab, setActiveTab] = useState('inventory');
 
   const [filters, setFilters] = useState<InventoryFilters>({
@@ -216,8 +218,12 @@ export default function InventoryPage() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="inventory" className="gap-2"><Package className="h-4 w-4" />{t('pages.inventory.inventoryTab')}</TabsTrigger>
-            <TabsTrigger value="warranty" className="gap-2"><Wrench className="h-4 w-4" />{t('pages.inventory.warrantyTab')}</TabsTrigger>
-            <TabsTrigger value="stock-count" className="gap-2"><ClipboardList className="h-4 w-4" />{t('pages.inventory.stockCountTab')}</TabsTrigger>
+            {permissions?.canViewWarranty !== false && (
+              <TabsTrigger value="warranty" className="gap-2"><Wrench className="h-4 w-4" />{t('pages.inventory.warrantyTab')}</TabsTrigger>
+            )}
+            {permissions?.canViewStockCheck !== false && (
+              <TabsTrigger value="stock-count" className="gap-2"><ClipboardList className="h-4 w-4" />{t('pages.inventory.stockCountTab')}</TabsTrigger>
+            )}
           </TabsList>
           <TabsContent value="inventory" className="space-y-4 sm:space-y-6">
             <InventoryStats {...filteredStats} />
@@ -227,8 +233,12 @@ export default function InventoryPage() {
               <TablePagination currentPage={pagination.currentPage} totalPages={pagination.totalPages} pageSize={pagination.pageSize} totalItems={pagination.totalItems} startIndex={pagination.startIndex} endIndex={pagination.endIndex} onPageChange={pagination.setPage} onPageSizeChange={pagination.setPageSize} />
             )}
           </TabsContent>
-          <TabsContent value="warranty"><WarrantyTab /></TabsContent>
-          <TabsContent value="stock-count"><StockCountTab /></TabsContent>
+          {permissions?.canViewWarranty !== false && (
+            <TabsContent value="warranty"><WarrantyTab /></TabsContent>
+          )}
+          {permissions?.canViewStockCheck !== false && (
+            <TabsContent value="stock-count"><StockCountTab /></TabsContent>
+          )}
         </Tabs>
       </div>
       <OnboardingTourOverlay steps={useInventoryTourSteps()} isActive={manualTourActive || (!tourCompleted && !tourDismissed)} onComplete={() => { completeTour(); setManualTourActive(false); }} onSkip={() => { completeTour(); setTourDismissed(true); setManualTourActive(false); }} tourKey="inventory" />
