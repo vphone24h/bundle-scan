@@ -7469,6 +7469,7 @@ export type Database = {
           rating: number
         }[]
       }
+      check_tenant_has_security_password: { Args: never; Returns: boolean }
       check_tenant_unique_field: {
         Args: { _exclude_tenant_id: string; _field: string; _value: string }
         Returns: boolean
