@@ -26,6 +26,7 @@ import { useCreateStockTransfer } from '@/hooks/useStockTransfers';
 import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/mockData';
+import { StockTransferPrintReceipt, type TransferPrintData } from '@/components/import/StockTransferPrintReceipt';
 import type { Product } from '@/hooks/useProducts';
 
 interface TransferStockDialogProps {
@@ -53,6 +54,7 @@ export function TransferStockDialog({
 
   // Track transfer quantities for non-IMEI products
   const [transferQuantities, setTransferQuantities] = useState<Record<string, number>>({});
+  const [printData, setPrintData] = useState<TransferPrintData | null>(null);
 
   const isSuperAdmin = permissions?.role === 'super_admin';
 
