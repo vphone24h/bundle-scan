@@ -21,6 +21,9 @@ export function useOrderLimitCheck() {
     10
   );
 
+  // 0 = unlimited
+  const hasLimit = freeOrderLimit > 0;
+
   const { data: orderCount = 0, isLoading } = useQuery({
     queryKey: ['tenant-order-count', tenant?.id],
     queryFn: async () => {
@@ -48,7 +51,7 @@ export function useOrderLimitCheck() {
     return false;
   })();
 
-  const isLimitReached = !hasActiveSubscription && orderCount >= freeOrderLimit;
+  const isLimitReached = hasLimit && !hasActiveSubscription && orderCount >= freeOrderLimit;
 
   return {
     orderCount,
