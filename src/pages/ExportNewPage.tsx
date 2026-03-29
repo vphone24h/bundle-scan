@@ -1715,6 +1715,12 @@ export default function ExportNewPage() {
         onDiscard={exportDraft.dismissPrompt}
         title="Phát hiện phiếu xuất chưa hoàn thành"
       />
+      <OrderLimitDialog
+        open={showOrderLimitDialog}
+        onOpenChange={setShowOrderLimitDialog}
+        orderCount={orderCount}
+        freeOrderLimit={freeOrderLimit}
+      />
     </MainLayout>
   );
 }
