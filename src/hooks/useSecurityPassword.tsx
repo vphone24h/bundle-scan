@@ -8,10 +8,7 @@ export function useSecurityPasswordStatus() {
   return useQuery({
     queryKey: ['security-password-status', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('security_passwords' as any)
-        .select('id')
-        .maybeSingle();
+      const { data, error } = await supabase.rpc('check_tenant_has_security_password' as any);
       if (error) throw error;
       return !!data;
     },
