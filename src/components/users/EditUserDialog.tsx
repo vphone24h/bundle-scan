@@ -34,9 +34,12 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Trash2, Eye } from 'lucide-react';
-import { UserRole } from '@/hooks/usePermissions';
+import { Loader2, Trash2, Shield, User, GitBranch } from 'lucide-react';
+import { UserRole, useAuditLog } from '@/hooks/usePermissions';
 import { useUserBranchAccess, useManageBranchAccess } from '@/hooks/useUserBranchAccess';
+import { PermissionEditor } from './PermissionEditor';
+import { PermissionMap, getDefaultPermissionsForRole } from '@/config/permissionDefinitions';
+import { useUserCustomPermissions, useSaveCustomPermissions } from '@/hooks/useCustomPermissions';
 
 interface Branch {
   id: string;
@@ -79,17 +82,24 @@ export function EditUserDialog({
   tenantId,
 }: EditUserDialogProps) {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('role');
-  
-  // Role tab state
+  const { logAction } = useAuditLog();
+  const [activeTab, setActiveTab] = useState('info');
+
+  // Info tab state
   const [editRole, setEditRole] = useState<UserRole>('staff');
   const [editBranchId, setEditBranchId] = useState<string>('');
-  
-  // Info tab state
   const [editEmail, setEditEmail] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editDisplayName, setEditDisplayName] = useState('');
   const [editPhone, setEditPhone] = useState('');
+
+  // Permissions
+  const { data: customPerms, isLoading: permsLoading } = useUserCustomPermissions(
+    user?.user_id || null,
+    tenantId || null
+  );
+  const savePermissions = useSaveCustomPermissions();
+  const [permissions, setPermissions] = useState<PermissionMap>({});
 
   useEffect(() => {
     if (user) {
@@ -99,9 +109,20 @@ export function EditUserDialog({
       setEditPhone(user.profiles?.phone || '');
       setEditEmail('');
       setEditPassword('');
-      setActiveTab('role');
+      setActiveTab('info');
     }
   }, [user]);
+
+  // Load permissions when custom perms or user changes
+  useEffect(() => {
+    if (user) {
+      if (customPerms) {
+        setPermissions(customPerms);
+      } else {
+        setPermissions(getDefaultPermissionsForRole(user.user_role));
+      }
+    }
+  }, [user, customPerms]);
 
   const updateUserRole = useMutation({
     mutationFn: async ({ userId, role, branchId }: { userId: string; role: UserRole; branchId: string | null }) => {
@@ -110,7 +131,6 @@ export function EditUserDialog({
         branch_id: role === 'super_admin' ? null : branchId,
       } as Record<string, unknown>;
 
-      // 1) Prefer updating the row in the current tenant
       if (tenantId) {
         const { data: updatedRows, error } = await supabase
           .from('user_roles')
@@ -121,8 +141,6 @@ export function EditUserDialog({
 
         if (error) throw error;
 
-        // 2) If nothing was updated, this is likely a legacy row with tenant_id = NULL.
-        //    Update it and also attach tenant_id so it won't "revert" on reload.
         if (!updatedRows || updatedRows.length === 0) {
           const { error: legacyError } = await supabase
             .from('user_roles')
@@ -132,11 +150,9 @@ export function EditUserDialog({
 
           if (legacyError) throw legacyError;
         }
-
         return;
       }
 
-      // Fallback (should be rare): no tenantId available
       const { error } = await supabase
         .from('user_roles')
         .update(updates)
@@ -146,7 +162,7 @@ export function EditUserDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users-with-roles'] });
-      toast.success('Cập nhật quyền thành công');
+      toast.success('Cập nhật thông tin thành công');
       onOpenChange(false);
     },
     onError: (error) => {
@@ -159,7 +175,7 @@ export function EditUserDialog({
       if (!user) throw new Error('No user selected');
 
       const body: Record<string, string> = { userId: user.user_id };
-      
+
       if (editEmail.trim()) body.email = editEmail.trim();
       if (editPassword.trim()) body.password = editPassword.trim();
       if (editDisplayName.trim() && editDisplayName !== user.profiles?.display_name) {
@@ -169,22 +185,17 @@ export function EditUserDialog({
         body.phone = editPhone.trim();
       }
 
-      // Check if there are any updates
       if (Object.keys(body).length === 1) {
         throw new Error('Không có thay đổi nào');
       }
 
       const response = await supabase.functions.invoke('update-user', { body });
 
-      // Check specific error from function response body first
       if (response.data?.error) throw new Error(response.data.error);
-      // Then check generic invoke error  
       if (response.error) {
-        // Try to extract specific error from response
-        const errorMsg = response.error.message || 'Lỗi không xác định';
-        throw new Error(errorMsg);
+        throw new Error(response.error.message || 'Lỗi không xác định');
       }
-      
+
       return response.data;
     },
     onSuccess: () => {
@@ -207,7 +218,7 @@ export function EditUserDialog({
 
       if (response.error) throw new Error(response.error.message);
       if (response.data?.error) throw new Error(response.data.error);
-      
+
       return response.data;
     },
     onSuccess: (data) => {
@@ -220,21 +231,6 @@ export function EditUserDialog({
     },
   });
 
-  const handleSaveRole = () => {
-    if (!user) return;
-
-    if (editRole !== 'super_admin' && !editBranchId) {
-      toast.error('Vui lòng chọn chi nhánh cho tài khoản này');
-      return;
-    }
-
-    updateUserRole.mutate({
-      userId: user.user_id,
-      role: editRole,
-      branchId: editRole === 'super_admin' ? null : editBranchId,
-    });
-  };
-
   const handleSaveInfo = () => {
     if (!user) return;
 
@@ -243,7 +239,52 @@ export function EditUserDialog({
       return;
     }
 
-    updateUserInfo.mutate();
+    // Save role + branch + info
+    const roleChanged = editRole !== user.user_role || editBranchId !== (user.branch_id || '');
+    const infoChanged = editDisplayName !== (user.profiles?.display_name || '') ||
+      editPhone !== (user.profiles?.phone || '') ||
+      editEmail.trim() || editPassword.trim();
+
+    if (roleChanged) {
+      updateUserRole.mutate({
+        userId: user.user_id,
+        role: editRole,
+        branchId: editRole === 'super_admin' ? null : editBranchId,
+      });
+    }
+
+    if (infoChanged) {
+      updateUserInfo.mutate();
+    }
+
+    if (!roleChanged && !infoChanged) {
+      toast.info('Không có thay đổi nào');
+    }
+  };
+
+  const handleSavePermissions = async () => {
+    if (!user || !tenantId) return;
+
+    try {
+      await savePermissions.mutateAsync({
+        userId: user.user_id,
+        tenantId,
+        permissions,
+      });
+
+      await logAction({
+        actionType: 'update',
+        tableName: 'user_custom_permissions',
+        recordId: user.user_id,
+        newData: { permissions },
+        description: `Cập nhật phân quyền cho ${user.profiles?.display_name}`,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
+      toast.success('Cập nhật quyền hạn thành công');
+    } catch (error) {
+      toast.error('Lỗi: ' + (error as Error).message);
+    }
   };
 
   const handleDeleteUser = () => {
@@ -256,7 +297,6 @@ export function EditUserDialog({
   const { data: branchAccess, isLoading: branchAccessLoading } = useUserBranchAccess(user?.user_id || null);
   const { grantAccess, revokeAccess } = useManageBranchAccess();
 
-  // Get list of extra branch IDs this user can access
   const extraBranchIds = new Set((branchAccess || []).map(ba => ba.branch_id));
 
   const handleToggleBranch = async (branchId: string, checked: boolean) => {
@@ -275,12 +315,11 @@ export function EditUserDialog({
     }
   };
 
-  // Filter branches for the access tab: exclude the user's assigned branch
   const otherBranches = branches?.filter(b => b.id !== user?.branch_id) || [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Chỉnh sửa tài khoản</DialogTitle>
           <DialogDescription>
@@ -288,19 +327,24 @@ export function EditUserDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className={`grid w-full ${isSuperAdmin && user?.user_role !== 'super_admin' ? 'grid-cols-3' : 'grid-cols-2'}`}>
-            <TabsTrigger value="role">Quyền hạn</TabsTrigger>
-            {isSuperAdmin && user?.user_role !== 'super_admin' && (
-              <TabsTrigger value="branch-access" className="gap-1">
-                <Eye className="h-3 w-3" />
-                Xem chi nhánh
-              </TabsTrigger>
-            )}
-            {isSuperAdmin && <TabsTrigger value="info">Thông tin</TabsTrigger>}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="info" className="gap-1 text-xs">
+              <User className="h-3 w-3" />
+              Thông tin
+            </TabsTrigger>
+            <TabsTrigger value="permissions" className="gap-1 text-xs">
+              <Shield className="h-3 w-3" />
+              Quyền hạn
+            </TabsTrigger>
+            <TabsTrigger value="branches" className="gap-1 text-xs">
+              <GitBranch className="h-3 w-3" />
+              Chi nhánh
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="role" className="space-y-4 mt-4">
+          {/* Tab 1: Thông tin */}
+          <TabsContent value="info" className="space-y-4 mt-4 overflow-y-auto flex-1">
             <div className="space-y-2">
               <Label>Vai trò</Label>
               <Select value={editRole} onValueChange={(v) => setEditRole(v as UserRole)}>
@@ -333,128 +377,59 @@ export function EditUserDialog({
               </div>
             )}
 
-            <DialogFooter className="pt-4">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Hủy
-              </Button>
-              <Button onClick={handleSaveRole} disabled={isLoading}>
-                {updateUserRole.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Lưu quyền
-              </Button>
-            </DialogFooter>
-          </TabsContent>
+            <div className="space-y-2">
+              <Label>Tên hiển thị</Label>
+              <Input
+                placeholder="Nguyễn Văn A"
+                value={editDisplayName}
+                onChange={(e) => setEditDisplayName(e.target.value)}
+              />
+            </div>
 
-          {/* Tab xem chi nhánh bổ sung */}
-          {isSuperAdmin && user?.user_role !== 'super_admin' && (
-            <TabsContent value="branch-access" className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Chi nhánh chính</Label>
-                <p className="text-sm text-muted-foreground px-2 py-1.5 bg-muted rounded">
-                  {user?.branches?.name || 'Chưa gán'}
-                </p>
-              </div>
+            <div className="space-y-2">
+              <Label>Số điện thoại</Label>
+              <Input
+                placeholder="0901234567"
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+              />
+            </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Cho phép xem thêm chi nhánh</Label>
-                <div className="flex items-center gap-2 mb-2">
-                  <p className="text-xs text-muted-foreground">
-                    Tích vào chi nhánh để nhân viên xem được tồn kho chi nhánh đó
-                  </p>
-                  <Badge variant="secondary" className="text-[10px] whitespace-nowrap shrink-0">
-                    Tự động lưu
-                  </Badge>
+            {isSuperAdmin && (
+              <>
+                <div className="space-y-2">
+                  <Label>Email hiện tại</Label>
+                  <Input
+                    value={user?.platform_user?.email || 'Không có email'}
+                    disabled
+                    className="bg-muted"
+                  />
                 </div>
 
-                {branchAccessLoading ? (
-                  <div className="text-center py-4 text-muted-foreground text-sm">Đang tải...</div>
-                ) : otherBranches.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-2">Không có chi nhánh nào khác</p>
-                ) : (
-                  <div className="space-y-3 max-h-48 overflow-y-auto">
-                    {otherBranches.map((branch) => {
-                      const isGranted = extraBranchIds.has(branch.id);
-                      const isPending = grantAccess.isPending || revokeAccess.isPending;
+                <div className="space-y-2">
+                  <Label>Email mới</Label>
+                  <Input
+                    type="email"
+                    placeholder="Để trống nếu không đổi"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                  />
+                </div>
 
-                      return (
-                        <div key={branch.id} className="flex items-center space-x-3 px-2 py-1.5 rounded hover:bg-muted/50">
-                          <Checkbox
-                            id={`branch-${branch.id}`}
-                            checked={isGranted}
-                            disabled={isPending}
-                            onCheckedChange={(checked) => handleToggleBranch(branch.id, !!checked)}
-                          />
-                          <label
-                            htmlFor={`branch-${branch.id}`}
-                            className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1"
-                          >
-                            {branch.name}
-                          </label>
-                          {isPending && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+                <div className="space-y-2">
+                  <Label>Mật khẩu mới</Label>
+                  <Input
+                    type="password"
+                    placeholder="Để trống nếu không đổi"
+                    value={editPassword}
+                    onChange={(e) => setEditPassword(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
 
-              <DialogFooter className="pt-4">
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                  Đóng
-                </Button>
-              </DialogFooter>
-            </TabsContent>
-          )}
-
-          {isSuperAdmin && (
-            <TabsContent value="info" className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label>Tên hiển thị</Label>
-                <Input
-                  placeholder="Nguyễn Văn A"
-                  value={editDisplayName}
-                  onChange={(e) => setEditDisplayName(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Số điện thoại</Label>
-                <Input
-                  placeholder="0901234567"
-                  value={editPhone}
-                  onChange={(e) => setEditPhone(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Email hiện tại</Label>
-                <Input
-                  value={user?.platform_user?.email || 'Không có email'}
-                  disabled
-                  className="bg-muted"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Email mới</Label>
-                <Input
-                  type="email"
-                  placeholder="Để trống nếu không đổi"
-                  value={editEmail}
-                  onChange={(e) => setEditEmail(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Mật khẩu mới</Label>
-                <Input
-                  type="password"
-                  placeholder="Để trống nếu không đổi"
-                  value={editPassword}
-                  onChange={(e) => setEditPassword(e.target.value)}
-                />
-              </div>
-
-              <DialogFooter className="pt-4 flex-col sm:flex-row gap-2">
+            <DialogFooter className="pt-4 flex-col sm:flex-row gap-2">
+              {isSuperAdmin && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" className="w-full sm:w-auto" disabled={isLoading}>
@@ -466,13 +441,13 @@ export function EditUserDialog({
                     <AlertDialogHeader>
                       <AlertDialogTitle>Xác nhận xóa người dùng</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Bạn có chắc chắn muốn xóa tài khoản <strong>{user?.profiles?.display_name}</strong>? 
+                        Bạn có chắc chắn muốn xóa tài khoản <strong>{user?.profiles?.display_name}</strong>?
                         Hành động này không thể hoàn tác.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Hủy</AlertDialogCancel>
-                      <AlertDialogAction 
+                      <AlertDialogAction
                         onClick={handleDeleteUser}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
@@ -482,18 +457,105 @@ export function EditUserDialog({
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-initial">
-                    Hủy
-                  </Button>
-                  <Button onClick={handleSaveInfo} disabled={isLoading} className="flex-1 sm:flex-initial">
-                    {updateUserInfo.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Lưu thông tin
-                  </Button>
+              )}
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-initial">
+                  Hủy
+                </Button>
+                <Button onClick={handleSaveInfo} disabled={isLoading} className="flex-1 sm:flex-initial">
+                  {(updateUserRole.isPending || updateUserInfo.isPending) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Lưu
+                </Button>
+              </div>
+            </DialogFooter>
+          </TabsContent>
+
+          {/* Tab 2: Quyền hạn */}
+          <TabsContent value="permissions" className="mt-4 flex-1 overflow-hidden flex flex-col">
+            {permsLoading ? (
+              <div className="flex items-center justify-center py-8 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Đang tải quyền...
+              </div>
+            ) : (
+              <PermissionEditor
+                permissions={permissions}
+                onChange={setPermissions}
+              />
+            )}
+
+            <DialogFooter className="pt-4">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Hủy
+              </Button>
+              <Button
+                onClick={handleSavePermissions}
+                disabled={savePermissions.isPending}
+              >
+                {savePermissions.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Lưu quyền
+              </Button>
+            </DialogFooter>
+          </TabsContent>
+
+          {/* Tab 3: Chi nhánh */}
+          <TabsContent value="branches" className="space-y-4 mt-4 overflow-y-auto flex-1">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Chi nhánh chính</Label>
+              <p className="text-sm text-muted-foreground px-2 py-1.5 bg-muted rounded">
+                {user?.branches?.name || 'Chưa gán'}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Cho phép xem thêm chi nhánh</Label>
+              <div className="flex items-center gap-2 mb-2">
+                <p className="text-xs text-muted-foreground">
+                  Tích vào chi nhánh để nhân viên xem được tồn kho chi nhánh đó
+                </p>
+                <Badge variant="secondary" className="text-[10px] whitespace-nowrap shrink-0">
+                  Tự động lưu
+                </Badge>
+              </div>
+
+              {branchAccessLoading ? (
+                <div className="text-center py-4 text-muted-foreground text-sm">Đang tải...</div>
+              ) : otherBranches.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-2">Không có chi nhánh nào khác</p>
+              ) : (
+                <div className="space-y-3 max-h-48 overflow-y-auto">
+                  {otherBranches.map((branch) => {
+                    const isGranted = extraBranchIds.has(branch.id);
+                    const isPending = grantAccess.isPending || revokeAccess.isPending;
+
+                    return (
+                      <div key={branch.id} className="flex items-center space-x-3 px-2 py-1.5 rounded hover:bg-muted/50">
+                        <Checkbox
+                          id={`branch-${branch.id}`}
+                          checked={isGranted}
+                          disabled={isPending}
+                          onCheckedChange={(checked) => handleToggleBranch(branch.id, !!checked)}
+                        />
+                        <label
+                          htmlFor={`branch-${branch.id}`}
+                          className="text-sm font-medium leading-none cursor-pointer flex-1"
+                        >
+                          {branch.name}
+                        </label>
+                        {isPending && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                      </div>
+                    );
+                  })}
                 </div>
-              </DialogFooter>
-            </TabsContent>
-          )}
+              )}
+            </div>
+
+            <DialogFooter className="pt-4">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Đóng
+              </Button>
+            </DialogFooter>
+          </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
