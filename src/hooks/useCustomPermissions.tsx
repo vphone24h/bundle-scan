@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { PermissionMap } from '@/config/permissionDefinitions';
+import type { Json } from '@/integrations/supabase/types';
 
 /**
  * Fetch custom (granular) permissions for a specific user in a tenant.
