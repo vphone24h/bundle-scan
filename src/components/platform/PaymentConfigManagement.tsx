@@ -452,7 +452,27 @@ export function PaymentConfigManagement() {
             </div>
           </div>
 
-          {/* Bài viết dịch vụ tên miền riêng */}
+          {/* Giới hạn đơn hàng miễn phí */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="font-medium text-sm mb-3 flex items-center gap-2">
+              📦 Giới hạn đơn hàng gói Miễn phí
+            </h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              Khi cửa hàng xuất đủ số đơn hàng này, hệ thống sẽ yêu cầu nâng cấp lên gói Chuyên nghiệp để tiếp tục xuất hàng.
+            </p>
+            <div className="max-w-xs space-y-2">
+              <Label>Số đơn hàng tối đa (gói Miễn phí)</Label>
+              <Input
+                type="number"
+                min="0"
+                value={freeOrderLimit}
+                onChange={(e) => setFreeOrderLimit(e.target.value)}
+                placeholder="1000"
+              />
+              <p className="text-xs text-muted-foreground">Đặt 0 = không giới hạn</p>
+            </div>
+          </div>
+
           <div className="border-t pt-4 mt-4">
             <h3 className="font-medium text-sm mb-3 flex items-center gap-2">
               🌐 Bài mô tả dịch vụ tên miền riêng
