@@ -13,10 +13,22 @@ export interface UserPermissions {
   canViewReports: boolean;
   canViewCashBook: boolean;
   canViewImportPrice: boolean;
+  canViewSalePrice: boolean;
   canViewAuditLogs: boolean;
   canViewProducts: boolean;
   canViewInventory: boolean;
+  canViewWarranty: boolean;
+  canViewStockCheck: boolean;
+  canViewInventoryImportPrice: boolean;
   canViewStaffReviews: boolean;
+  canViewDebt: boolean;
+  canViewCRM: boolean;
+  canViewWebsite: boolean;
+  canViewSocial: boolean;
+  canViewApp: boolean;
+  canViewSubscription: boolean;
+  canViewGuide: boolean;
+  canViewSettings: boolean;
   // Quyền thao tác
   canManageUsers: boolean;
   canManageBranchStaff: boolean;
@@ -25,12 +37,18 @@ export interface UserPermissions {
   canExportProducts: boolean;
   canCreateImportReceipt: boolean;
   canCreateExportReceipt: boolean;
+  canTransferStock: boolean;
+  canCreateReturn: boolean;
   canManageProducts: boolean;
   canManageCategories: boolean;
   canManageSuppliers: boolean;
   canManageCustomers: boolean;
   canManageInvoiceTemplates: boolean;
   canManageCashBook: boolean;
+  canViewImportHistory: boolean;
+  canViewImportHistoryPrice: boolean;
+  canViewExportHistory: boolean;
+  canViewExportCustomerInfo: boolean;
   // Quyền đặc biệt (chỉ Super Admin)
   canEditSalePrice: boolean;
   canAdjustProductQuantity: boolean;
@@ -46,10 +64,22 @@ const DEFAULT_PERMISSIONS: UserPermissions = {
   canViewReports: false,
   canViewCashBook: false,
   canViewImportPrice: false,
+  canViewSalePrice: true,
   canViewAuditLogs: false,
   canViewProducts: true,
   canViewInventory: true,
+  canViewWarranty: false,
+  canViewStockCheck: false,
+  canViewInventoryImportPrice: false,
   canViewStaffReviews: true,
+  canViewDebt: false,
+  canViewCRM: true,
+  canViewWebsite: false,
+  canViewSocial: false,
+  canViewApp: false,
+  canViewSubscription: false,
+  canViewGuide: true,
+  canViewSettings: false,
   canManageUsers: false,
   canManageBranchStaff: false,
   canManageBranches: false,
@@ -57,12 +87,18 @@ const DEFAULT_PERMISSIONS: UserPermissions = {
   canExportProducts: false,
   canCreateImportReceipt: false,
   canCreateExportReceipt: false,
+  canTransferStock: false,
+  canCreateReturn: false,
   canManageProducts: false,
   canManageCategories: false,
   canManageSuppliers: false,
   canManageCustomers: false,
   canManageInvoiceTemplates: false,
   canManageCashBook: false,
+  canViewImportHistory: false,
+  canViewImportHistoryPrice: false,
+  canViewExportHistory: false,
+  canViewExportCustomerInfo: false,
   canEditSalePrice: false,
   canAdjustProductQuantity: false,
   canDeleteIMEIProducts: false,
@@ -81,10 +117,22 @@ function mapGranularToLegacy(role: UserRole, branchId: string | null, granular: 
     canViewReports: !!granular.view_reports,
     canViewCashBook: !!granular.view_reports, // cashbook tied to reports
     canViewImportPrice: !!granular.view_import_price,
+    canViewSalePrice: !!granular.view_sale_price,
     canViewAuditLogs: !!granular.view_audit_logs,
     canViewProducts: !!granular.view_products,
     canViewInventory: !!granular.view_inventory,
+    canViewWarranty: !!granular.view_warranty,
+    canViewStockCheck: !!granular.view_stock_check,
+    canViewInventoryImportPrice: !!granular.view_inventory_import_price,
     canViewStaffReviews: role === 'staff',
+    canViewDebt: !!granular.view_debt,
+    canViewCRM: !!granular.view_crm,
+    canViewWebsite: !!granular.view_website,
+    canViewSocial: !!granular.view_social,
+    canViewApp: !!granular.view_app,
+    canViewSubscription: !!granular.view_subscription,
+    canViewGuide: !!granular.view_guide,
+    canViewSettings: !!granular.view_settings,
     canManageUsers: !!granular.manage_users || role === 'super_admin',
     canManageBranchStaff: role === 'branch_admin' || role === 'super_admin',
     canManageBranches: !!granular.manage_branches,
@@ -92,12 +140,18 @@ function mapGranularToLegacy(role: UserRole, branchId: string | null, granular: 
     canExportProducts: !!granular.create_export || !!granular.view_export_history,
     canCreateImportReceipt: !!granular.create_import,
     canCreateExportReceipt: !!granular.create_export,
+    canTransferStock: !!granular.transfer_stock,
+    canCreateReturn: !!granular.create_return,
     canManageProducts: role === 'super_admin' || role === 'branch_admin',
     canManageCategories: role === 'super_admin' || role === 'branch_admin',
     canManageSuppliers: !!granular.view_suppliers,
     canManageCustomers: !!granular.view_crm,
     canManageInvoiceTemplates: role === 'super_admin' || role === 'branch_admin' || role === 'cashier',
     canManageCashBook: !!granular.view_reports,
+    canViewImportHistory: !!granular.view_import_history,
+    canViewImportHistoryPrice: !!granular.view_import_history_price,
+    canViewExportHistory: !!granular.view_export_history,
+    canViewExportCustomerInfo: !!granular.view_export_customer_info,
     canEditSalePrice: role === 'super_admin' || role === 'branch_admin',
     canAdjustProductQuantity: role === 'super_admin',
     canDeleteIMEIProducts: role === 'super_admin',
