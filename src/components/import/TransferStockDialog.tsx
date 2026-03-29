@@ -336,5 +336,26 @@ export function TransferStockDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Print Dialog after successful transfer */}
+    <Dialog open={!!printData} onOpenChange={(open) => { if (!open) { setPrintData(null); onOpenChange(false); } }}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="text-center">Chuyển hàng thành công!</DialogTitle>
+          <DialogDescription className="text-center">
+            Bạn có muốn in phiếu chuyển hàng không?
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-2 pt-2">
+          {printData && (
+            <StockTransferPrintReceipt data={printData} />
+          )}
+          <Button variant="ghost" onClick={() => { setPrintData(null); onOpenChange(false); }}>
+            Bỏ qua
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
