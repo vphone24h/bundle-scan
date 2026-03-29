@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SearchInput } from '@/components/ui/search-input';
-import { Loader2, Search, ArrowRight, Eye, Check, X, Package, ArrowRightLeft, Info } from 'lucide-react';
+import { Loader2, Search, ArrowRight, Eye, Check, X, Package, ArrowRightLeft, Info, Printer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/mockData';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -18,6 +18,7 @@ import {
   useRejectTransfer,
   StockTransferRequest,
 } from '@/hooks/useStockTransfers';
+import { StockTransferPrintReceipt, type TransferPrintData } from '@/components/import/StockTransferPrintReceipt';
 import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
