@@ -65,7 +65,7 @@ export function CreateUserDialog({
   const [useCustomRole, setUseCustomRole] = useState(false);
   const [newBranchId, setNewBranchId] = useState<string>('');
   const [permissions, setPermissions] = useState<PermissionMap>(() =>
-    getDefaultPermissionsForRole('staff')
+    getDefaultPermissionsForRole('super_admin')
   );
 
   const resetForm = () => {
@@ -78,13 +78,13 @@ export function CreateUserDialog({
     setCustomRoleName('');
     setUseCustomRole(false);
     setNewBranchId('');
-    setPermissions(getDefaultPermissionsForRole('staff'));
+    setPermissions(getDefaultPermissionsForRole('super_admin'));
   };
 
   const handleRoleChange = (value: string) => {
     if (value === '_custom') {
       setUseCustomRole(true);
-      setPermissions(getDefaultPermissionsForRole('staff'));
+      setPermissions(getDefaultPermissionsForRole('super_admin'));
     } else {
       setUseCustomRole(false);
       setNewRole(value as UserRole);
