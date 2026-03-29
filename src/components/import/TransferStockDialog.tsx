@@ -150,6 +150,7 @@ export function TransferStockDialog({
             items: data.items.map((item: any) => ({
               id: item.id || '',
               transfer_request_id: data.requestId,
+              product_id: item.product_id || '',
               product_name: item.product_name,
               sku: item.sku,
               imei: item.imei,
