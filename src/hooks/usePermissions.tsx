@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { PermissionMap, getDefaultPermissionsForRole } from '@/config/permissionDefinitions';
 
 export type UserRole = 'super_admin' | 'branch_admin' | 'staff' | 'cashier';
 
@@ -17,13 +18,13 @@ export interface UserPermissions {
   canViewInventory: boolean;
   canViewStaffReviews: boolean;
   // Quyền thao tác
-  canManageUsers: boolean; // Super Admin: quản lý tất cả user
-  canManageBranchStaff: boolean; // Branch Admin: quản lý nhân viên chi nhánh
+  canManageUsers: boolean;
+  canManageBranchStaff: boolean;
   canManageBranches: boolean;
-  canImportProducts: boolean;   // Xem menu nhập hàng
-  canExportProducts: boolean;   // Xem menu xuất hàng
-  canCreateImportReceipt: boolean; // Tạo phiếu nhập mới
-  canCreateExportReceipt: boolean; // Tạo phiếu xuất mới
+  canImportProducts: boolean;
+  canExportProducts: boolean;
+  canCreateImportReceipt: boolean;
+  canCreateExportReceipt: boolean;
   canManageProducts: boolean;
   canManageCategories: boolean;
   canManageSuppliers: boolean;
@@ -34,6 +35,8 @@ export interface UserPermissions {
   canEditSalePrice: boolean;
   canAdjustProductQuantity: boolean;
   canDeleteIMEIProducts: boolean;
+  // Granular permissions (from custom permissions table)
+  granular: PermissionMap;
 }
 
 const DEFAULT_PERMISSIONS: UserPermissions = {
@@ -63,133 +66,48 @@ const DEFAULT_PERMISSIONS: UserPermissions = {
   canEditSalePrice: false,
   canAdjustProductQuantity: false,
   canDeleteIMEIProducts: false,
+  granular: getDefaultPermissionsForRole('staff'),
 };
 
+/**
+ * Map granular permission keys to the legacy UserPermissions fields.
+ * Custom permissions override role-based defaults.
+ */
+function mapGranularToLegacy(role: UserRole, branchId: string | null, granular: PermissionMap): UserPermissions {
+  return {
+    role,
+    branchId,
+    canViewAllBranches: role === 'super_admin' || !!granular.view_other_branches,
+    canViewReports: !!granular.view_reports,
+    canViewCashBook: !!granular.view_reports, // cashbook tied to reports
+    canViewImportPrice: !!granular.view_import_price,
+    canViewAuditLogs: !!granular.view_audit_logs,
+    canViewProducts: !!granular.view_products,
+    canViewInventory: !!granular.view_inventory,
+    canViewStaffReviews: role === 'staff',
+    canManageUsers: !!granular.manage_users || role === 'super_admin',
+    canManageBranchStaff: role === 'branch_admin' || role === 'super_admin',
+    canManageBranches: !!granular.manage_branches,
+    canImportProducts: !!granular.create_import || !!granular.view_import_history,
+    canExportProducts: !!granular.create_export || !!granular.view_export_history,
+    canCreateImportReceipt: !!granular.create_import,
+    canCreateExportReceipt: !!granular.create_export,
+    canManageProducts: role === 'super_admin' || role === 'branch_admin',
+    canManageCategories: role === 'super_admin' || role === 'branch_admin',
+    canManageSuppliers: !!granular.view_suppliers,
+    canManageCustomers: !!granular.view_crm,
+    canManageInvoiceTemplates: role === 'super_admin' || role === 'branch_admin' || role === 'cashier',
+    canManageCashBook: !!granular.view_reports,
+    canEditSalePrice: role === 'super_admin' || role === 'branch_admin',
+    canAdjustProductQuantity: role === 'super_admin',
+    canDeleteIMEIProducts: role === 'super_admin',
+    granular,
+  };
+}
+
 function getPermissionsForRole(role: UserRole, branchId: string | null): UserPermissions {
-  const base = { role, branchId };
-
-  switch (role) {
-    case 'super_admin':
-      // ✅ Quyền cao nhất – quản trị toàn hệ thống
-      return {
-        ...base,
-        canViewAllBranches: true,
-        canViewReports: true,
-        canViewCashBook: true,
-        canViewImportPrice: true,
-        canViewAuditLogs: true,
-        canViewProducts: true,
-        canViewInventory: true,
-        canViewStaffReviews: false, // Super Admin xem qua tab Quản lý người dùng
-        canManageUsers: true,
-        canManageBranchStaff: true,
-        canManageBranches: true,
-        canImportProducts: true,
-        canExportProducts: true,
-        canCreateImportReceipt: true,
-        canCreateExportReceipt: true,
-        canManageProducts: true,
-        canManageCategories: true,
-        canManageSuppliers: true,
-        canManageCustomers: true,
-        canManageInvoiceTemplates: true,
-        canManageCashBook: true,
-        canEditSalePrice: true,
-        canAdjustProductQuantity: true,
-        canDeleteIMEIProducts: true,
-      };
-
-    case 'branch_admin':
-      // ✅ Chỉ quản lý một chi nhánh được gán
-      return {
-        ...base,
-        canViewAllBranches: false,
-        canViewReports: true,
-        canViewCashBook: true,
-        canViewImportPrice: true,
-        canViewAuditLogs: true,
-        canViewProducts: true,
-        canViewInventory: true,
-        canViewStaffReviews: false, // Branch Admin xem qua tab Quản lý người dùng
-        canManageUsers: false,
-        canManageBranchStaff: true,
-        canManageBranches: false,
-        canImportProducts: true,
-        canExportProducts: true,
-        canCreateImportReceipt: true,
-        canCreateExportReceipt: true,
-        canManageProducts: true,
-        canManageCategories: true,
-        canManageSuppliers: true,
-        canManageCustomers: true,
-        canManageInvoiceTemplates: true,
-        canManageCashBook: true,
-        canEditSalePrice: true,
-        canAdjustProductQuantity: false,
-        canDeleteIMEIProducts: false,
-      };
-
-    case 'cashier':
-      // ✅ Kế toán - phụ trách sổ sách, báo cáo tài chính
-      return {
-        ...base,
-        canViewAllBranches: false,     // ❌ Chỉ chi nhánh được gán
-        canViewReports: true,           // ✅ Xem tất cả báo cáo
-        canViewCashBook: true,          // ✅ Xem sổ quỹ
-        canViewImportPrice: true,       // ✅ Xem giá nhập, giá vốn
-        canViewAuditLogs: false,        // ❌ Không xem audit logs
-        canViewProducts: true,          // ✅ Xem sản phẩm
-        canViewInventory: true,         // ✅ Xem tồn kho
-        canViewStaffReviews: false,     // Cashier không cần xem đánh giá
-        canManageUsers: false,          // ❌ Không quản lý tài khoản
-        canManageBranchStaff: false,    // ❌ Không quản lý nhân viên
-        canManageBranches: false,       // ❌ Không quản lý chi nhánh
-        canImportProducts: true,        // ✅ Xem lịch sử nhập hàng
-        canExportProducts: true,        // ✅ Xem lịch sử xuất hàng
-        canCreateImportReceipt: false,  // ❌ Không tạo phiếu nhập
-        canCreateExportReceipt: false,  // ❌ Không tạo phiếu xuất
-        canManageProducts: false,       // ❌ Không sửa/xóa sản phẩm
-        canManageCategories: false,     // ❌ Không quản lý danh mục
-        canManageSuppliers: true,       // ✅ Xem NCC, công nợ NCC
-        canManageCustomers: true,       // ✅ Xem khách hàng
-        canManageInvoiceTemplates: true, // ✅ Hoá đơn điện tử
-        canManageCashBook: true,        // ✅ Xem/tạo thu chi sổ quỹ
-        canEditSalePrice: false,         // ❌ Không sửa giá bán
-        canAdjustProductQuantity: false, // ❌
-        canDeleteIMEIProducts: false,    // ❌
-      };
-
-    case 'staff':
-    default:
-      // ✅ Nhân viên bán hàng/kỹ thuật
-      return {
-        ...base,
-        canViewAllBranches: false,
-        canViewReports: false,
-        canViewCashBook: false,
-        canViewImportPrice: false,
-        canViewAuditLogs: false,
-        canViewProducts: true,
-        canViewInventory: true,
-        canViewStaffReviews: true, // ✅ Nhân viên xem đánh giá của mình
-        canManageUsers: false,
-        canManageBranchStaff: false,
-        canManageBranches: false,
-        canImportProducts: false,
-        canExportProducts: true,
-        canCreateImportReceipt: false,
-        canCreateExportReceipt: true,
-        canManageProducts: false,
-        canManageCategories: false,
-        canManageSuppliers: false,
-        canManageCustomers: true,
-        canManageInvoiceTemplates: false,
-        canManageCashBook: false,
-        canEditSalePrice: false,
-        canAdjustProductQuantity: false,
-        canDeleteIMEIProducts: false,
-      };
-  }
+  const granular = getDefaultPermissionsForRole(role);
+  return mapGranularToLegacy(role, branchId, granular);
 }
 
 export function usePermissions() {
@@ -200,8 +118,6 @@ export function usePermissions() {
     queryFn: async () => {
       if (!user?.id) return DEFAULT_PERMISSIONS;
 
-      // Resolve tenant first, then pick the correct user_roles row for that tenant.
-      // Without tenant_id filtering, `.single()` can return the wrong branch after reload.
       const { data: platformUser, error: puError } = await supabase
         .from('platform_users')
         .select('tenant_id')
@@ -232,10 +148,26 @@ export function usePermissions() {
 
       const role = (data.user_role as UserRole) || 'staff';
       const branchId = data.branch_id as string | null;
+
+      // Check for custom permissions
+      if (tenantId) {
+        const { data: customPerms } = await supabase
+          .from('user_custom_permissions')
+          .select('permissions')
+          .eq('user_id', user.id)
+          .eq('tenant_id', tenantId)
+          .maybeSingle();
+
+        if (customPerms?.permissions) {
+          const granular = customPerms.permissions as unknown as PermissionMap;
+          return mapGranularToLegacy(role, branchId, granular);
+        }
+      }
+
       return getPermissionsForRole(role, branchId);
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // Cache 5 phút
+    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
