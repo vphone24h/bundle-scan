@@ -85,3 +85,9 @@ export function useCustomDomainArticlePublic() {
     staleTime: 5 * 60 * 1000, // cache 5 min
   });
 }
+
+export function useFreeOrderLimit() {
+  const { data: configs } = useAppConfig();
+  const val = configs?.find(c => c.config_key === 'free_order_limit')?.config_value;
+  return val ? parseInt(val, 10) : 1000;
+}
