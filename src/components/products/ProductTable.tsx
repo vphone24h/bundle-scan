@@ -262,9 +262,15 @@ export function ProductTable({
                         <span className="font-semibold text-sm">{formatCurrency(product.importPrice)}</span>
                       )}
                       {product.salePrice && product.salePrice > 0 && (
-                        <span className={cn("text-xs text-success", !permissions?.canViewImportPrice && "font-semibold text-sm text-foreground")}>
-                          {permissions?.canViewImportPrice ? 'Giá bán: ' : ''}{formatCurrencyWithSpaces(product.salePrice)}đ
-                        </span>
+                        permissions?.canViewSalePrice !== false ? (
+                          <span className={cn("text-xs text-success", !permissions?.canViewImportPrice && "font-semibold text-sm text-foreground")}>
+                            {permissions?.canViewImportPrice ? 'Giá bán: ' : ''}{formatCurrencyWithSpaces(product.salePrice)}đ
+                          </span>
+                        ) : (
+                          <span className={cn("text-xs text-muted-foreground", !permissions?.canViewImportPrice && "font-semibold text-sm")}>
+                            {permissions?.canViewImportPrice ? 'Giá bán: ' : ''}***
+                          </span>
+                        )
                       )}
                       {getStatusBadge(product.status, product)}
                       {(product as any).isPrinted && (
@@ -326,7 +332,7 @@ export function ProductTable({
               <th className="hidden lg:table-cell">IMEI</th>
               <th className="hidden sm:table-cell">Danh mục</th>
               {permissions?.canViewImportPrice && <th className="text-right">Giá nhập</th>}
-              <th className="text-right hidden sm:table-cell">Giá bán</th>
+              {permissions?.canViewSalePrice !== false && <th className="text-right hidden sm:table-cell">Giá bán</th>}
               <th className="hidden md:table-cell">Ngày nhập</th>
               <th className="hidden lg:table-cell">Nhà cung cấp</th>
               <th>Trạng thái</th>
@@ -358,9 +364,11 @@ export function ProductTable({
                 <td className="font-mono text-xs sm:text-sm hidden lg:table-cell">{product.imei || '-'}</td>
                 <td className="hidden sm:table-cell">{product.categoryName}</td>
                 {permissions?.canViewImportPrice && <td className="text-right font-medium text-sm">{formatCurrency(product.importPrice)}</td>}
-                <td className="text-right font-medium text-sm hidden sm:table-cell">
-                  {product.salePrice ? formatCurrencyWithSpaces(product.salePrice) + 'đ' : '-'}
-                </td>
+                {permissions?.canViewSalePrice !== false && (
+                  <td className="text-right font-medium text-sm hidden sm:table-cell">
+                    {product.salePrice ? formatCurrencyWithSpaces(product.salePrice) + 'đ' : '-'}
+                  </td>
+                )}
                 <td className="hidden md:table-cell">{formatDate(product.importDate)}</td>
                 <td className="hidden lg:table-cell">{product.supplierName}</td>
                 <td>

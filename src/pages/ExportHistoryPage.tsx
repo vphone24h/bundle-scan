@@ -834,7 +834,7 @@ export default function ExportHistoryPage() {
                     <TableRow>
                       <TableHead>Mã phiếu</TableHead>
                       <TableHead>Ngày bán</TableHead>
-                      <TableHead>Khách hàng</TableHead>
+                      {permissions?.canViewExportCustomerInfo !== false && <TableHead>Khách hàng</TableHead>}
                       <TableHead className="hidden lg:table-cell">Chi nhánh</TableHead>
                       <TableHead className="text-center">Số SP</TableHead>
                       <TableHead className="text-right">Tổng tiền</TableHead>
@@ -860,12 +860,14 @@ export default function ExportHistoryPage() {
                         <TableCell>
                           {format(new Date(receipt.export_date), 'dd/MM/yyyy HH:mm', { locale: vi })}
                         </TableCell>
-                        <TableCell>
-                          <div>{receipt.customers?.name || '-'}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {receipt.customers?.phone}
-                          </div>
-                        </TableCell>
+                        {permissions?.canViewExportCustomerInfo !== false && (
+                          <TableCell>
+                            <div>{receipt.customers?.name || '-'}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {receipt.customers?.phone}
+                            </div>
+                          </TableCell>
+                        )}
                         <TableCell className="hidden lg:table-cell">
                           {receipt.branches?.name || '-'}
                         </TableCell>
@@ -986,7 +988,7 @@ export default function ExportHistoryPage() {
                       <TableHead className="text-right">Thành tiền</TableHead>
                       <TableHead>Bảo hành</TableHead>
                       <TableHead>Ghi chú</TableHead>
-                      <TableHead>Khách hàng</TableHead>
+                      {permissions?.canViewExportCustomerInfo !== false && <TableHead>Khách hàng</TableHead>}
                       <TableHead>Nhân viên</TableHead>
                       <TableHead>Ngày bán</TableHead>
                       <TableHead>Chi nhánh</TableHead>
@@ -1038,12 +1040,14 @@ export default function ExportHistoryPage() {
                               {item.note || '-'}
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <div>{item.export_receipts?.customers?.name || '-'}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {item.export_receipts?.customers?.phone}
-                            </div>
-                          </TableCell>
+                          {permissions?.canViewExportCustomerInfo !== false && (
+                            <TableCell>
+                              <div>{item.export_receipts?.customers?.name || '-'}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {item.export_receipts?.customers?.phone}
+                              </div>
+                            </TableCell>
+                          )}
                           <TableCell>
                             {(() => {
                               const staffId = (item.export_receipts as any)?.sales_staff_id || item.export_receipts?.created_by;
