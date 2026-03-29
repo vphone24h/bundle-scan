@@ -97,8 +97,8 @@ const allNavItems: NavItem[] = [
     permission: 'canImportProducts',
     children: [
       { title: 'Tạo phiếu nhập', titleKey: 'sidebar.createImport', href: '/import/new', permission: 'canCreateImportReceipt' },
-      { title: 'Lịch sử nhập', titleKey: 'sidebar.importHistory', href: '/import/history' },
-      { title: 'Chuyển hàng', titleKey: 'sidebar.transfer', href: '/import/transfer', badgeKey: 'pendingTransfer', permission: 'canCreateImportReceipt' },
+      { title: 'Lịch sử nhập', titleKey: 'sidebar.importHistory', href: '/import/history', permission: 'canViewImportHistory' },
+      { title: 'Chuyển hàng', titleKey: 'sidebar.transfer', href: '/import/transfer', badgeKey: 'pendingTransfer', permission: 'canTransferStock' },
     ],
   },
   {
@@ -108,16 +108,16 @@ const allNavItems: NavItem[] = [
     permission: 'canExportProducts',
     children: [
       { title: 'Bán Hàng', titleKey: 'sidebar.sell', href: '/export/new', permission: 'canCreateExportReceipt' },
-      { title: 'Lịch sử Bán hàng', titleKey: 'sidebar.exportHistory', href: '/export/history' },
+      { title: 'Lịch sử Bán hàng', titleKey: 'sidebar.exportHistory', href: '/export/history', permission: 'canViewExportHistory' },
       { title: 'Mẫu in hóa đơn', titleKey: 'sidebar.invoiceTemplate', href: '/export/template', permission: 'canManageInvoiceTemplates' },
       { title: 'Hoá đơn điện tử', titleKey: 'sidebar.eInvoice', href: '/einvoice', permission: 'canManageInvoiceTemplates', hideInSecretMode: true },
       { title: 'Mức Thuế 2026', titleKey: 'sidebar.taxPolicy', href: '/export/tax-policy', hideInSecretMode: true },
     ],
   },
-  { title: 'Trả hàng', titleKey: 'sidebar.returns', href: '/returns', icon: RotateCcw, permission: 'canImportProducts' },
+  { title: 'Trả hàng', titleKey: 'sidebar.returns', href: '/returns', icon: RotateCcw, permission: 'canCreateReturn' },
   { title: 'Nhà cung cấp', titleKey: 'sidebar.suppliers', href: '/suppliers', icon: Users, permission: 'canManageSuppliers' },
-  { title: 'Khách hàng & CRM', titleKey: 'sidebar.customers', href: '/customers', icon: HeartHandshake, permission: 'canViewProducts' },
-  { title: 'Công nợ', titleKey: 'sidebar.debt', href: '/debt', icon: Receipt, permission: 'canViewCashBook' },
+  { title: 'Khách hàng & CRM', titleKey: 'sidebar.customers', href: '/customers', icon: HeartHandshake, permission: 'canViewCRM' },
+  { title: 'Công nợ', titleKey: 'sidebar.debt', href: '/debt', icon: Receipt, permission: 'canViewDebt' },
   { title: 'Báo cáo', titleKey: 'sidebar.reports', href: '/reports', icon: BarChart3, permission: 'canViewReports' },
   
   { title: 'Sổ quỹ', titleKey: 'sidebar.cashBook', href: '/cash-book', icon: Wallet, permission: 'canViewCashBook' },
@@ -125,14 +125,14 @@ const allNavItems: NavItem[] = [
   { title: 'Quản lý người dùng', titleKey: 'sidebar.users', href: '/users', icon: Shield, permission: 'canManageBranchStaff' },
   { title: 'Đánh giá nhân viên', titleKey: 'sidebar.staffReviews', href: '/users', icon: Star, permission: 'canViewStaffReviews' },
   { title: 'Lịch sử thao tác', titleKey: 'sidebar.auditLogs', href: '/audit-logs', icon: History, permission: 'canViewAuditLogs' },
-  { title: 'Website bán hàng', titleKey: 'sidebar.website', href: '/landing-settings', icon: Globe, permission: 'canViewProducts', badge: 'HOT' },
-  { title: 'Mạng xã hội', titleKey: 'sidebar.social', href: '/social', icon: MessageCircleMore, permission: 'canManageBranches' },
-  { title: 'Ứng dụng', titleKey: 'sidebar.applications', href: '/applications', icon: AppWindow },
+  { title: 'Website bán hàng', titleKey: 'sidebar.website', href: '/landing-settings', icon: Globe, permission: 'canViewWebsite', badge: 'HOT' },
+  { title: 'Mạng xã hội', titleKey: 'sidebar.social', href: '/social', icon: MessageCircleMore, permission: 'canViewSocial' },
+  { title: 'Ứng dụng', titleKey: 'sidebar.applications', href: '/applications', icon: AppWindow, permission: 'canViewApp' },
   { title: 'Affiliate', titleKey: 'sidebar.affiliate', href: '/affiliate', icon: Share2, permission: 'canManageBranches' },
   { title: 'Tải ứng dụng', titleKey: 'sidebar.installApp', href: '/install-app', icon: Download },
-  { title: 'Gói dịch vụ', titleKey: 'sidebar.subscription', href: '/subscription', icon: CreditCard, permission: 'canManageBranches' },
-  { title: 'Hướng dẫn & Thông tin', titleKey: 'sidebar.guides', href: '/guides', icon: FileText },
-  { title: 'Cài đặt', titleKey: 'sidebar.settings', href: '/settings', icon: Settings },
+  { title: 'Gói dịch vụ', titleKey: 'sidebar.subscription', href: '/subscription', icon: CreditCard, permission: 'canViewSubscription' },
+  { title: 'Hướng dẫn & Thông tin', titleKey: 'sidebar.guides', href: '/guides', icon: FileText, permission: 'canViewGuide' },
+  { title: 'Cài đặt', titleKey: 'sidebar.settings', href: '/settings', icon: Settings, permission: 'canViewSettings' },
 ];
 
 export function AppSidebar() {
