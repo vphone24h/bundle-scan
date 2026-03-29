@@ -73,6 +73,7 @@ export function PaymentConfigManagement() {
   const [paypalEmail, setPaypalEmail] = useState('');
   const [paypalNoteTemplate, setPaypalNoteTemplate] = useState('MUA {GOI} - {SDT}');
   const [usdExchangeRate, setUsdExchangeRate] = useState('25000');
+  const [freeOrderLimit, setFreeOrderLimit] = useState('1000');
   const [savingConfig, setSavingConfig] = useState(false);
 
   // Bank account dialog
@@ -152,6 +153,8 @@ export function PaymentConfigManagement() {
       if (paypalNoteConfig?.config_value) setPaypalNoteTemplate(paypalNoteConfig.config_value);
       const usdRateConfig = configs.find(c => c.config_key === 'usd_exchange_rate');
       if (usdRateConfig?.config_value) setUsdExchangeRate(usdRateConfig.config_value);
+      const freeOrderLimitConfig = configs.find(c => c.config_key === 'free_order_limit');
+      if (freeOrderLimitConfig?.config_value) setFreeOrderLimit(freeOrderLimitConfig.config_value);
     }
   }, [configs]);
 
@@ -179,6 +182,7 @@ export function PaymentConfigManagement() {
         { config_key: 'paypal_email', config_value: paypalEmail },
         { config_key: 'paypal_note_template', config_value: paypalNoteTemplate },
         { config_key: 'usd_exchange_rate', config_value: usdExchangeRate },
+        { config_key: 'free_order_limit', config_value: freeOrderLimit },
       ];
 
       for (const update of updates) {
@@ -448,7 +452,27 @@ export function PaymentConfigManagement() {
             </div>
           </div>
 
-          {/* Bài viết dịch vụ tên miền riêng */}
+          {/* Giới hạn đơn hàng miễn phí */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="font-medium text-sm mb-3 flex items-center gap-2">
+              📦 Giới hạn đơn hàng gói Miễn phí
+            </h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              Khi cửa hàng xuất đủ số đơn hàng này, hệ thống sẽ yêu cầu nâng cấp lên gói Chuyên nghiệp để tiếp tục xuất hàng.
+            </p>
+            <div className="max-w-xs space-y-2">
+              <Label>Số đơn hàng tối đa (gói Miễn phí)</Label>
+              <Input
+                type="number"
+                min="0"
+                value={freeOrderLimit}
+                onChange={(e) => setFreeOrderLimit(e.target.value)}
+                placeholder="1000"
+              />
+              <p className="text-xs text-muted-foreground">Đặt 0 = không giới hạn</p>
+            </div>
+          </div>
+
           <div className="border-t pt-4 mt-4">
             <h3 className="font-medium text-sm mb-3 flex items-center gap-2">
               🌐 Bài mô tả dịch vụ tên miền riêng

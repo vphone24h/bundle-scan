@@ -54,6 +54,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTenantLandingSettings } from '@/hooks/useTenantLanding';
 import { supabase } from '@/integrations/supabase/client';
 import { ExportPaymentDialog } from '@/components/export/ExportPaymentDialog';
+import { OrderLimitDialog } from '@/components/export/OrderLimitDialog';
+import { useOrderLimitCheck } from '@/hooks/useOrderLimitCheck';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { BarcodeScannerInput } from '@/components/export/BarcodeScannerInput';
 import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombobox';
@@ -147,6 +149,7 @@ export default function ExportNewPage() {
   const [showInstallment, setShowInstallment] = useState(false);
   const [createdReceipt, setCreatedReceipt] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showOrderLimitDialog, setShowOrderLimitDialog] = useState(false);
 
   // Auto email toggle
   const [autoEmailEnabled, setAutoEmailEnabled] = useState(true);
@@ -167,6 +170,7 @@ export default function ExportNewPage() {
   const { data: permissions } = usePermissions();
   const { data: staffList } = useStaffList();
   const { data: landingSettings } = useTenantLandingSettings();
+  const { isLimitReached, orderCount, freeOrderLimit } = useOrderLimitCheck();
   const isSuperAdmin = permissions?.role === 'super_admin';
 
   // Sync auto email toggle with landing settings
@@ -794,6 +798,12 @@ export default function ExportNewPage() {
 
   // Handle proceed to payment
   const handleProceedToPayment = () => {
+    // Check order limit first
+    if (isLimitReached) {
+      setShowOrderLimitDialog(true);
+      return;
+    }
+
     if (cart.length === 0) {
       toast({
         title: t('pages.exportNew.emptyCartError'),
@@ -1704,6 +1714,12 @@ export default function ExportNewPage() {
         onResume={handleResumeExportDraft}
         onDiscard={exportDraft.dismissPrompt}
         title="Phát hiện phiếu xuất chưa hoàn thành"
+      />
+      <OrderLimitDialog
+        open={showOrderLimitDialog}
+        onOpenChange={setShowOrderLimitDialog}
+        orderCount={orderCount}
+        freeOrderLimit={freeOrderLimit}
       />
     </MainLayout>
   );
