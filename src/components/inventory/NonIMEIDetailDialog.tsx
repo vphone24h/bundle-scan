@@ -45,7 +45,7 @@ export function NonIMEIDetailDialog({
   unit = 'cái',
 }: NonIMEIDetailDialogProps) {
   const { data: permissions } = usePermissions();
-  const canViewImportPrice = permissions?.canViewImportPrice ?? false;
+  const canViewImportPrice = permissions?.canViewInventoryImportPrice ?? false;
   const { data: importHistory, isLoading } = useProductImportHistory(open ? productId : null, branchId);
 
   // FIFO: Tính số lượng còn lại cho từng phiếu nhập
