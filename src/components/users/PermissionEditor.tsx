@@ -1,7 +1,7 @@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { PERMISSION_CATEGORIES, PermissionMap } from '@/config/permissionDefinitions';
+import { PERMISSION_CATEGORIES, PermissionMap, getDefaultPermissionsForRole } from '@/config/permissionDefinitions';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
@@ -67,11 +67,25 @@ interface PermissionEditorProps {
   onChange: (permissions: PermissionMap) => void;
   disabled?: boolean;
   currentRole?: string;
+  onRoleChange?: (role: string) => void;
 }
 
-export function PermissionEditor({ permissions, onChange, disabled, currentRole }: PermissionEditorProps) {
+const QUICK_ROLES = [
+  { value: 'cashier', label: '👤 Kế toán' },
+  { value: 'branch_admin', label: '🧑‍💼 Quản lý' },
+  { value: 'staff', label: '👨‍🔧 Nhân viên' },
+];
+
+export function PermissionEditor({ permissions, onChange, disabled, currentRole, onRoleChange }: PermissionEditorProps) {
   const [hintOpen, setHintOpen] = useState(true);
-  const hint = currentRole ? ROLE_HINTS[currentRole] : null;
+  const [selectedQuickRole, setSelectedQuickRole] = useState<string | null>(currentRole || null);
+  const hint = selectedQuickRole ? ROLE_HINTS[selectedQuickRole] : null;
+
+  const handleQuickRole = (role: string) => {
+    setSelectedQuickRole(role);
+    onChange(getDefaultPermissionsForRole(role));
+    onRoleChange?.(role);
+  };
 
   const togglePermission = (key: string, checked: boolean) => {
     onChange({ ...permissions, [key]: checked });
@@ -101,6 +115,25 @@ export function PermissionEditor({ permissions, onChange, disabled, currentRole 
   return (
     <ScrollArea className="h-[400px] pr-3">
       <div className="space-y-4">
+        {/* Quick role selector */}
+        <div className="flex gap-2">
+          {QUICK_ROLES.map(r => (
+            <button
+              key={r.value}
+              type="button"
+              disabled={disabled}
+              onClick={() => handleQuickRole(r.value)}
+              className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
+                selectedQuickRole === r.value
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-card text-foreground border-border hover:bg-accent'
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+
         {/* Role hint */}
         {hint && (
           <Collapsible open={hintOpen} onOpenChange={setHintOpen}>
