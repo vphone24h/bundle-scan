@@ -272,6 +272,7 @@ export function CreateUserDialog({
             <PermissionEditor
               permissions={permissions}
               onChange={setPermissions}
+              currentRole={useCustomRole ? undefined : newRole}
             />
           </div>
         )}
