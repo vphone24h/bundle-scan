@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
@@ -124,6 +124,38 @@ export default function StockTransferPage() {
     // Branch admin can approve incoming to their branch
     return permissions?.role === 'branch_admin' && request.to_branch_id === userBranchId;
   };
+
+  const handleQuickPrint = useCallback(async (request: StockTransferRequest) => {
+    try {
+      const { data: items, error } = await (await import('@/integrations/supabase/client')).supabase
+        .from('stock_transfer_items')
+        .select('*')
+        .eq('transfer_request_id', request.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      const printData: TransferPrintData = {
+        id: request.id,
+        fromBranchName: (request.from_branch as any)?.name || '?',
+        toBranchName: (request.to_branch as any)?.name || '?',
+        createdAt: request.created_at,
+        creatorName: request.creator_profile?.display_name,
+        note: request.note || undefined,
+        status: request.status,
+        items: (items || []) as any,
+      };
+
+      // Trigger print directly
+      const { StockTransferPrintReceipt: _C } = await import('@/components/import/StockTransferPrintReceipt');
+      // Create a temporary element to trigger print
+      setPrintTransferData(printData);
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+    }
+  }, []);
+
+  const [printTransferData, setPrintTransferData] = useState<TransferPrintData | null>(null);
 
   const renderRequestCard = (request: StockTransferRequest, type: 'outgoing' | 'incoming') => {
     const statusCfg = STATUS_CONFIG[request.status] || STATUS_CONFIG.pending;
