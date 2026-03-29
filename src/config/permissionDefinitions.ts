@@ -148,9 +148,9 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
   },
   {
     key: 'cross_branch',
-    label: 'Quyền chi nhánh',
+    label: 'Xem tồn kho chi nhánh khác',
     children: [
-      { key: 'view_other_branches', label: 'Cho phép xem hàng hóa chi nhánh khác', description: 'Không tick → chỉ thấy dữ liệu chi nhánh hiện tại' },
+      { key: 'view_other_branches', label: 'Cho phép xem tồn kho chi nhánh khác (để tư vấn khách)', description: 'Không tick → chỉ thấy dữ liệu chi nhánh hiện tại' },
     ],
   },
 ];
