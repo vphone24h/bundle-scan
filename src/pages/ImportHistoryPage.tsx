@@ -416,6 +416,7 @@ export default function ImportHistoryPage() {
   }, [selectedProducts, selectedBranchId]);
 
   const canTransferStock = permissions?.role === 'super_admin' || permissions?.role === 'branch_admin';
+  const canViewImportHistoryPrice = permissions?.canViewImportHistoryPrice ?? false;
 
   const handleOpenTransfer = () => {
     if (!canTransferStock) {
@@ -498,9 +499,13 @@ export default function ImportHistoryPage() {
               { header: 'STT', key: 'stt', width: 6, isNumeric: true },
               { header: 'Mã phiếu', key: 'code', width: 18 },
               { header: 'Ngày nhập', key: 'import_date', width: 18, format: (v) => formatDateForExcel(v, 'dd/MM/yyyy HH:mm') },
-              { header: 'Tổng tiền', key: 'total_amount', width: 15, isNumeric: true },
-              { header: 'Đã thanh toán', key: 'paid_amount', width: 15, isNumeric: true },
-              { header: 'Còn nợ', key: 'debt_amount', width: 15, isNumeric: true },
+              ...(canViewImportHistoryPrice
+                ? [
+                    { header: 'Tổng tiền', key: 'total_amount', width: 15, isNumeric: true },
+                    { header: 'Đã thanh toán', key: 'paid_amount', width: 15, isNumeric: true },
+                    { header: 'Còn nợ', key: 'debt_amount', width: 15, isNumeric: true },
+                  ]
+                : []),
               { header: 'Nhà cung cấp', key: 'supplier_name', width: 25 },
               { header: 'Chi nhánh', key: 'branch_name', width: 20 },
               { header: 'Nhân viên', key: 'staff_name', width: 18 },
@@ -527,7 +532,9 @@ export default function ImportHistoryPage() {
               { header: 'IMEI', key: 'imei', width: 18 },
               { header: 'Tên sản phẩm', key: 'name', width: 35 },
               { header: 'SKU', key: 'sku', width: 35 },
-              { header: 'Giá nhập', key: 'import_price', width: 15, isNumeric: true },
+              ...(canViewImportHistoryPrice
+                ? [{ header: 'Giá nhập', key: 'import_price', width: 15, isNumeric: true }]
+                : []),
               { header: 'Ngày nhập', key: 'import_date', width: 12, format: (v) => formatDateForExcel(v) },
               { header: 'Nhà cung cấp', key: 'supplier_name', width: 18 },
               { header: 'Chi nhánh', key: 'branch_name', width: 15 },
@@ -775,9 +782,9 @@ export default function ImportHistoryPage() {
                   <tr>
                     <th>Mã phiếu</th>
                     <th>Ngày nhập</th>
-                    <th className="text-right">Tổng tiền</th>
-                    <th className="text-right">Đã thanh toán</th>
-                    <th className="text-right">Còn nợ</th>
+                    {canViewImportHistoryPrice && <th className="text-right">Tổng tiền</th>}
+                    {canViewImportHistoryPrice && <th className="text-right">Đã thanh toán</th>}
+                    {canViewImportHistoryPrice && <th className="text-right">Còn nợ</th>}
                     <th>Nhà cung cấp</th>
                     <th>Chi nhánh</th>
                     <th>Nhân viên</th>
@@ -798,17 +805,23 @@ export default function ImportHistoryPage() {
                         {receipt.code}
                       </td>
                       <td>{formatDate(new Date(receipt.import_date))}</td>
-                      <td className="text-right font-medium">{formatCurrency(Number(receipt.total_amount))}</td>
-                      <td className="text-right text-success">{formatCurrency(Number(receipt.paid_amount))}</td>
-                      <td className="text-right">
-                        {Number(receipt.debt_amount) > 0 ? (
-                          <span className="text-destructive font-medium">
-                            {formatCurrency(Number(receipt.debt_amount))}
-                          </span>
-                        ) : (
-                          '-'
-                        )}
-                      </td>
+                      {canViewImportHistoryPrice && (
+                        <td className="text-right font-medium">{formatCurrency(Number(receipt.total_amount))}</td>
+                      )}
+                      {canViewImportHistoryPrice && (
+                        <td className="text-right text-success">{formatCurrency(Number(receipt.paid_amount))}</td>
+                      )}
+                      {canViewImportHistoryPrice && (
+                        <td className="text-right">
+                          {Number(receipt.debt_amount) > 0 ? (
+                            <span className="text-destructive font-medium">
+                              {formatCurrency(Number(receipt.debt_amount))}
+                            </span>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                      )}
                       <td>{receipt.suppliers?.name || '-'}</td>
                       <td>{receipt.branches?.name || '-'}</td>
                       <td className="text-sm">{receipt.created_by ? (staffNameMap.get(receipt.created_by) || '-') : '-'}</td>
@@ -951,8 +964,8 @@ export default function ImportHistoryPage() {
                     <th>Danh mục</th>
                     <th className="text-center">Tổng nhập</th>
                     <th className="text-center">Tồn kho</th>
-                    <th className="text-right">Giá nhập</th>
-                    <th className="text-right">Thành tiền</th>
+                    {canViewImportHistoryPrice && <th className="text-right">Giá nhập</th>}
+                    {canViewImportHistoryPrice && <th className="text-right">Thành tiền</th>}
                     <th>Ngày nhập</th>
                     <th>Nhà cung cấp</th>
                     <th>Chi nhánh</th>
@@ -995,12 +1008,16 @@ export default function ImportHistoryPage() {
                           <span>{product.status === 'in_stock' ? 1 : 0}</span>
                         )}
                       </td>
-                      <td className="text-right font-medium">
-                        {formatCurrency(Number(product.import_price))}
-                      </td>
-                      <td className="text-right font-medium text-primary">
-                        {formatCurrency(Number(product.import_price) * product.quantity)}
-                      </td>
+                      {canViewImportHistoryPrice && (
+                        <td className="text-right font-medium">
+                          {formatCurrency(Number(product.import_price))}
+                        </td>
+                      )}
+                      {canViewImportHistoryPrice && (
+                        <td className="text-right font-medium text-primary">
+                          {formatCurrency(Number(product.import_price) * product.quantity)}
+                        </td>
+                      )}
                       <td>{formatDate(new Date(product.import_date))}</td>
                       <td>{product.suppliers?.name || '-'}</td>
                       <td>{product.branches?.name || '-'}</td>
@@ -1263,7 +1280,9 @@ export default function ImportHistoryPage() {
                       </div>
                       <div className="flex justify-between items-center text-sm pt-2 border-t">
                         <span className="text-muted-foreground">SL: {item.quantity}{item.unit && item.unit !== 'cái' ? ` ${item.unit}` : ''}</span>
-                        <span className="font-medium">{formatCurrency(Number(item.import_price) * item.quantity)}</span>
+                        {canViewImportHistoryPrice && (
+                          <span className="font-medium">{formatCurrency(Number(item.import_price) * item.quantity)}</span>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1281,8 +1300,8 @@ export default function ImportHistoryPage() {
                           <th className="text-left p-3 font-medium">IMEI</th>
                           <th className="text-left p-3 font-medium">Danh mục</th>
                           <th className="text-center p-3 font-medium">SL</th>
-                          <th className="text-right p-3 font-medium">Đơn giá</th>
-                          <th className="text-right p-3 font-medium">Thành tiền</th>
+                          {canViewImportHistoryPrice && <th className="text-right p-3 font-medium">Đơn giá</th>}
+                          {canViewImportHistoryPrice && <th className="text-right p-3 font-medium">Thành tiền</th>}
                           <th className="text-center p-3 font-medium">Trạng thái</th>
                         </tr>
                       </thead>
@@ -1299,12 +1318,16 @@ export default function ImportHistoryPage() {
                               {item.products?.categories?.name || '-'}
                             </td>
                             <td className="p-3 text-center">{item.quantity}{item.unit && item.unit !== 'cái' ? ` ${item.unit}` : ''}</td>
-                            <td className="p-3 text-right font-medium">
-                              {formatCurrency(Number(item.import_price))}
-                            </td>
-                            <td className="p-3 text-right font-medium">
-                              {formatCurrency(Number(item.import_price) * item.quantity)}
-                            </td>
+                            {canViewImportHistoryPrice && (
+                              <td className="p-3 text-right font-medium">
+                                {formatCurrency(Number(item.import_price))}
+                              </td>
+                            )}
+                            {canViewImportHistoryPrice && (
+                              <td className="p-3 text-right font-medium">
+                                {formatCurrency(Number(item.import_price) * item.quantity)}
+                              </td>
+                            )}
                             <td className="p-3 text-center">
                               <Badge
                                 variant="outline"
@@ -1340,47 +1363,48 @@ export default function ImportHistoryPage() {
                 </div>
               </div>
 
-              {/* Payment Summary */}
-              <div className="rounded-lg bg-muted/50 p-3 sm:p-4 space-y-3">
-                <h4 className="font-semibold text-sm sm:text-base">Thanh toán</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
-                  <div className="flex justify-between sm:block text-sm">
-                    <span className="text-muted-foreground">Tổng tiền:</span>
-                    <span className="sm:ml-2 font-bold sm:text-lg">{formatCurrency(Number(receiptDetails.receipt.total_amount))}</span>
-                  </div>
-                  <div className="flex justify-between sm:block text-sm">
-                    <span className="text-muted-foreground">Đã thanh toán:</span>
-                    <span className="sm:ml-2 text-success font-medium sm:text-lg">
-                      {formatCurrency(Number(receiptDetails.receipt.paid_amount))}
-                    </span>
-                  </div>
-                  {Number(receiptDetails.receipt.debt_amount) > 0 && (
+              {canViewImportHistoryPrice && (
+                <div className="rounded-lg bg-muted/50 p-3 sm:p-4 space-y-3">
+                  <h4 className="font-semibold text-sm sm:text-base">Thanh toán</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
                     <div className="flex justify-between sm:block text-sm">
-                      <span className="text-muted-foreground">Còn nợ:</span>
-                      <span className="sm:ml-2 text-destructive font-medium sm:text-lg">
-                        {formatCurrency(Number(receiptDetails.receipt.debt_amount))}
+                      <span className="text-muted-foreground">Tổng tiền:</span>
+                      <span className="sm:ml-2 font-bold sm:text-lg">{formatCurrency(Number(receiptDetails.receipt.total_amount))}</span>
+                    </div>
+                    <div className="flex justify-between sm:block text-sm">
+                      <span className="text-muted-foreground">Đã thanh toán:</span>
+                      <span className="sm:ml-2 text-success font-medium sm:text-lg">
+                        {formatCurrency(Number(receiptDetails.receipt.paid_amount))}
                       </span>
+                    </div>
+                    {Number(receiptDetails.receipt.debt_amount) > 0 && (
+                      <div className="flex justify-between sm:block text-sm">
+                        <span className="text-muted-foreground">Còn nợ:</span>
+                        <span className="sm:ml-2 text-destructive font-medium sm:text-lg">
+                          {formatCurrency(Number(receiptDetails.receipt.debt_amount))}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  {receiptDetails.payments && receiptDetails.payments.length > 0 && (
+                    <div className="pt-3 border-t text-sm text-muted-foreground flex flex-wrap gap-2 sm:gap-3">
+                      <span>Hình thức:</span>
+                      {receiptDetails.payments.map((p: any) => (
+                        <Badge key={p.id} variant="outline" className="font-normal text-xs">
+                          {p.payment_type === 'cash'
+                            ? 'Tiền mặt'
+                            : p.payment_type === 'bank_card'
+                            ? 'Thẻ NH'
+                            : p.payment_type === 'e_wallet'
+                            ? 'Ví ĐT'
+                            : 'Công nợ'}
+                          : {formatCurrency(Number(p.amount))}
+                        </Badge>
+                      ))}
                     </div>
                   )}
                 </div>
-                {receiptDetails.payments && receiptDetails.payments.length > 0 && (
-                  <div className="pt-3 border-t text-sm text-muted-foreground flex flex-wrap gap-2 sm:gap-3">
-                    <span>Hình thức:</span>
-                    {receiptDetails.payments.map((p: any) => (
-                      <Badge key={p.id} variant="outline" className="font-normal text-xs">
-                        {p.payment_type === 'cash'
-                          ? 'Tiền mặt'
-                          : p.payment_type === 'bank_card'
-                          ? 'Thẻ NH'
-                          : p.payment_type === 'e_wallet'
-                          ? 'Ví ĐT'
-                          : 'Công nợ'}
-                        : {formatCurrency(Number(p.amount))}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
+              )}
 
               {receiptDetails.receipt.note && (
                 <div className="rounded-lg border p-3 sm:p-4">
