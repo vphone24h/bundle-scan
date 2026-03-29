@@ -73,6 +73,7 @@ export function PaymentConfigManagement() {
   const [paypalEmail, setPaypalEmail] = useState('');
   const [paypalNoteTemplate, setPaypalNoteTemplate] = useState('MUA {GOI} - {SDT}');
   const [usdExchangeRate, setUsdExchangeRate] = useState('25000');
+  const [freeOrderLimit, setFreeOrderLimit] = useState('1000');
   const [savingConfig, setSavingConfig] = useState(false);
 
   // Bank account dialog
@@ -152,6 +153,8 @@ export function PaymentConfigManagement() {
       if (paypalNoteConfig?.config_value) setPaypalNoteTemplate(paypalNoteConfig.config_value);
       const usdRateConfig = configs.find(c => c.config_key === 'usd_exchange_rate');
       if (usdRateConfig?.config_value) setUsdExchangeRate(usdRateConfig.config_value);
+      const freeOrderLimitConfig = configs.find(c => c.config_key === 'free_order_limit');
+      if (freeOrderLimitConfig?.config_value) setFreeOrderLimit(freeOrderLimitConfig.config_value);
     }
   }, [configs]);
 
@@ -179,6 +182,7 @@ export function PaymentConfigManagement() {
         { config_key: 'paypal_email', config_value: paypalEmail },
         { config_key: 'paypal_note_template', config_value: paypalNoteTemplate },
         { config_key: 'usd_exchange_rate', config_value: usdExchangeRate },
+        { config_key: 'free_order_limit', config_value: freeOrderLimit },
       ];
 
       for (const update of updates) {
