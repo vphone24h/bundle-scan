@@ -798,6 +798,12 @@ export default function ExportNewPage() {
 
   // Handle proceed to payment
   const handleProceedToPayment = () => {
+    // Check order limit first
+    if (isLimitReached) {
+      setShowOrderLimitDialog(true);
+      return;
+    }
+
     if (cart.length === 0) {
       toast({
         title: t('pages.exportNew.emptyCartError'),
