@@ -23,7 +23,7 @@ export function InventoryStats({
 }: InventoryStatsProps) {
   const { t } = useTranslation();
   const { data: permissions } = usePermissions();
-  const canViewImportPrice = permissions?.canViewImportPrice ?? false;
+  const canViewImportPrice = permissions?.canViewInventoryImportPrice ?? false;
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
   const { unlocked, unlock } = useSecurityUnlock('dashboard_profit');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
