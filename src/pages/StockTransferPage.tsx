@@ -419,6 +419,24 @@ export default function StockTransferPage() {
             </div>
           )}
 
+          {/* Print button in detail dialog */}
+          {detailRequest && detailItems && detailItems.length > 0 && (
+            <div className="flex justify-center">
+              <StockTransferPrintReceipt
+                data={{
+                  id: detailRequest.id,
+                  fromBranchName: (detailRequest.from_branch as any)?.name || '?',
+                  toBranchName: (detailRequest.to_branch as any)?.name || '?',
+                  createdAt: detailRequest.created_at,
+                  creatorName: detailRequest.creator_profile?.display_name,
+                  note: detailRequest.note || undefined,
+                  status: detailRequest.status,
+                  items: detailItems,
+                }}
+              />
+            </div>
+          )}
+
           {detailRequest && canApprove(detailRequest) && (
             <DialogFooter className="gap-2 sm:gap-0">
               <Button
@@ -482,6 +500,26 @@ export default function StockTransferPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Hidden print trigger for quick print from card */}
+      {printTransferData && (
+        <Dialog open={!!printTransferData} onOpenChange={(open) => !open && setPrintTransferData(null)}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-center">In phiếu chuyển hàng</DialogTitle>
+              <DialogDescription className="text-center">
+                {(printTransferData.fromBranchName)} → {(printTransferData.toBranchName)}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-2 pt-2">
+              <StockTransferPrintReceipt data={printTransferData} />
+              <Button variant="ghost" onClick={() => setPrintTransferData(null)}>
+                Đóng
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </MainLayout>
   );
 }
