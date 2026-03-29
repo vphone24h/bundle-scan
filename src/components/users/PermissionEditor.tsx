@@ -1,7 +1,7 @@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { PERMISSION_CATEGORIES, PermissionMap } from '@/config/permissionDefinitions';
+import { PERMISSION_CATEGORIES, PermissionMap, getDefaultPermissionsForRole } from '@/config/permissionDefinitions';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
