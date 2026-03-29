@@ -67,11 +67,25 @@ interface PermissionEditorProps {
   onChange: (permissions: PermissionMap) => void;
   disabled?: boolean;
   currentRole?: string;
+  onRoleChange?: (role: string) => void;
 }
 
-export function PermissionEditor({ permissions, onChange, disabled, currentRole }: PermissionEditorProps) {
+const QUICK_ROLES = [
+  { value: 'cashier', label: '👤 Kế toán' },
+  { value: 'branch_admin', label: '🧑‍💼 Quản lý' },
+  { value: 'staff', label: '👨‍🔧 Nhân viên' },
+];
+
+export function PermissionEditor({ permissions, onChange, disabled, currentRole, onRoleChange }: PermissionEditorProps) {
   const [hintOpen, setHintOpen] = useState(true);
-  const hint = currentRole ? ROLE_HINTS[currentRole] : null;
+  const [selectedQuickRole, setSelectedQuickRole] = useState<string | null>(currentRole || null);
+  const hint = selectedQuickRole ? ROLE_HINTS[selectedQuickRole] : null;
+
+  const handleQuickRole = (role: string) => {
+    setSelectedQuickRole(role);
+    onChange(getDefaultPermissionsForRole(role));
+    onRoleChange?.(role);
+  };
 
   const togglePermission = (key: string, checked: boolean) => {
     onChange({ ...permissions, [key]: checked });
