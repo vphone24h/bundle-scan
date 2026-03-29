@@ -136,10 +136,35 @@ export function TransferStockDialog({
             ? `Đã chuyển ${data.count} sản phẩm từ "${fromBranchName}" sang "${toBranchName}"`
             : `Đã tạo phiếu chuyển ${data.count} sản phẩm. Chờ chi nhánh "${toBranchName}" duyệt.`;
           toast({ title: data.status === 'approved' ? 'Chuyển hàng thành công' : 'Tạo phiếu thành công', description: msg });
+
+          // Prepare print data
+          const profileName = ''; // will be filled from creator
+          setPrintData({
+            id: data.requestId,
+            fromBranchName: data.fromBranchName,
+            toBranchName: data.toBranchName,
+            createdAt: data.createdAt,
+            creatorName: profileName,
+            note: data.note || undefined,
+            status: data.status,
+            items: data.items.map((item: any) => ({
+              id: item.id || '',
+              transfer_request_id: data.requestId,
+              product_name: item.product_name,
+              sku: item.sku,
+              imei: item.imei,
+              quantity: item.quantity,
+              import_price: item.import_price,
+              supplier_id: item.supplier_id,
+              supplier_name: item.supplier_name,
+              note: item.note,
+              created_at: data.createdAt,
+            })),
+          });
+
           setToBranchId('');
           setNote('');
           setTransferQuantities({});
-          onOpenChange(false);
           onSuccess();
         },
         onError: (error: any) => {
