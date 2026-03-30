@@ -102,6 +102,47 @@ const resolveTenantIdFromRedirectUrl = async (
 
 const formatPrice = (price: number) => new Intl.NumberFormat("vi-VN").format(price);
 
+/**
+ * Auto-generate SEO-friendly title for a product
+ * Format: "Product Name giá tốt | StoreName"
+ */
+const buildSeoTitle = (productName: string, store: string, price?: number | null): string => {
+  const suffix = store ? ` | ${store}` : "";
+  const priceTag = price ? ` giá ${formatPrice(price)}đ` : " giá tốt";
+  const base = `${productName}${priceTag}${suffix}`;
+  // Keep under 60 chars for Google
+  if (base.length <= 60) return base;
+  // Fallback: name + store only
+  const short = `${productName}${suffix}`;
+  return short.length <= 60 ? short : productName.substring(0, 57) + "...";
+};
+
+/**
+ * Auto-generate meta description for product
+ * Format: "Mua ProductName giá Xđ tại StoreName. Giao hàng nhanh, bảo hành chính hãng."
+ */
+const buildSeoDescription = (
+  productName: string,
+  store: string,
+  price?: number | null,
+  originalDesc?: string | null,
+): string => {
+  if (originalDesc && originalDesc.length > 30) {
+    // Prepend price if not already in description
+    if (price && !originalDesc.includes(formatPrice(price))) {
+      const withPrice = `${formatPrice(price)}đ - ${originalDesc}`;
+      return withPrice.length <= 160 ? withPrice : withPrice.substring(0, 157) + "...";
+    }
+    return originalDesc.length <= 160 ? originalDesc : originalDesc.substring(0, 157) + "...";
+  }
+  const parts = [`Mua ${productName}`];
+  if (price) parts[0] += ` giá ${formatPrice(price)}đ`;
+  if (store) parts.push(`tại ${store}`);
+  parts.push("Giao hàng nhanh, bảo hành chính hãng.");
+  const result = parts.join(". ");
+  return result.length <= 160 ? result : result.substring(0, 157) + "...";
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
