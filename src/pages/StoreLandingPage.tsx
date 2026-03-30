@@ -548,6 +548,8 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const jsonLdData = useMemo<JsonLdData>(() => {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
     const breadcrumbs: { name: string; url: string }[] = [{ name: storeName || 'Trang chủ', url: baseUrl }];
+    const storeDesc = settings?.store_description || settings?.meta_description || undefined;
+    const storeLogo = settings?.store_logo_url || undefined;
 
     if (pathInfo?.pageView === 'products' && pathInfo.contentId && productsData?.products) {
       const prod = productsData.products.find(p => p.id?.startsWith(pathInfo.contentId!));
@@ -555,7 +557,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
         breadcrumbs.push({ name: 'Sản phẩm', url: `${baseUrl}/san-pham` });
         breadcrumbs.push({ name: prod.name, url: window.location.href });
         return {
-          storeName, storeDescription: ogDesc, storeLogo: ogImage,
+          storeName, storeDescription: storeDesc, storeLogo,
           storePhone: (settings as any)?.hotline,
           storeAddress: (settings as any)?.store_address,
           product: {
@@ -577,14 +579,14 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
         breadcrumbs.push({ name: 'Tin tức', url: `${baseUrl}/tin-tuc` });
         breadcrumbs.push({ name: art.title, url: window.location.href });
         return {
-          storeName, storeDescription: ogDesc, storeLogo: ogImage,
+          storeName, storeDescription: storeDesc, storeLogo,
           article: { title: art.title, summary: art.summary, image: art.thumbnail_url, publishedAt: art.created_at, id: art.id },
           breadcrumbs,
         };
       }
     }
-    return { storeName, storeDescription: ogDesc, storeLogo: ogImage, storePhone: (settings as any)?.hotline, storeAddress: (settings as any)?.store_address, breadcrumbs };
-  }, [storeName, ogDesc, ogImage, pathInfo?.pageView, pathInfo?.contentId, productsData?.products, articlesData?.articles, settings]);
+    return { storeName, storeDescription: storeDesc, storeLogo, storePhone: (settings as any)?.hotline, storeAddress: (settings as any)?.store_address, breadcrumbs };
+  }, [storeName, pathInfo?.pageView, pathInfo?.contentId, productsData?.products, articlesData?.articles, settings]);
 
   useJsonLd(jsonLdData);
 
