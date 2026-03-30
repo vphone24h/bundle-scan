@@ -26,6 +26,15 @@ export default function AuthPage() {
   const [storeId, setStoreId] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+
+  const waitForSessionReady = async (userId: string) => {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id === userId) return session;
+      await new Promise((resolve) => window.setTimeout(resolve, 120));
+    }
+    throw new Error('Phiên đăng nhập chưa sẵn sàng. Vui lòng thử lại.');
+  };
   
   useEffect(() => {
     if (resolvedTenant.subdomain && resolvedTenant.status === 'resolved') {
@@ -85,6 +94,8 @@ export default function AuthPage() {
         setLoading(false);
         return;
       }
+
+      await waitForSessionReady(loggedInUser.id);
 
       // Parallel queries instead of sequential
       const [platformRes, roleRes] = await Promise.all([

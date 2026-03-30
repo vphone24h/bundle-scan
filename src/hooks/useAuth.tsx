@@ -20,29 +20,19 @@ const CURRENT_STORE_ID_KEY = 'current_store_id';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // OPTIMIZATION: Try to resolve user synchronously from localStorage
-  // to avoid the loading flash on subsequent visits
-  const initialSession = (() => {
-    try {
-      const stored = localStorage.getItem('sb-rodpbhesrwykmpywiiyd-auth-token');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed?.user && parsed?.access_token) {
-          return parsed;
-        }
-      }
-    } catch {}
-    return null;
-  })();
-
-  const [user, setUser] = useState<User | null>(initialSession?.user ?? null);
-  const [session, setSession] = useState<Session | null>(initialSession as Session | null);
-  const [loading, setLoading] = useState(!initialSession); // Skip loading if we have cached session
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
 
   // Debounce guard: prevent multiple simultaneous refresh calls across tabs
   const refreshingRef = useRef(false);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const applySession = useCallback((nextSession: Session | null) => {
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+  }, []);
 
   /**
    * Safely refresh session with debounce to prevent refresh-token rotation conflicts
@@ -60,14 +50,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (currentSession) {
-          setSession(currentSession);
-          setUser(currentSession.user);
+          applySession(currentSession);
+        } else if (userInitiatedSignOut) {
+          userInitiatedSignOut = false;
+          applySession(null);
         } else {
           // No session in memory — try refresh once before giving up
           const { data: { session: refreshed } } = await supabase.auth.refreshSession();
           if (refreshed) {
-            setSession(refreshed);
-            setUser(refreshed.user);
+            applySession(refreshed);
           }
           // If refresh also fails, DON'T force logout —
           // let onAuthStateChange handle SIGNED_OUT naturally.
@@ -76,15 +67,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         // Network error etc — don't force logout
       } finally {
+        setLoading(false);
         refreshingRef.current = false;
       }
     }, 300); // 300ms debounce — prevents storm of refresh calls
-  }, []);
+  }, [applySession]);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const scheduleSessionRecovery = () => {
+      window.setTimeout(() => {
+        if (isMounted) {
+          debouncedSessionCheck();
+        }
+      }, 0);
+    };
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
+      (event, newSession) => {
+        if (!isMounted) return;
+
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (event === 'SIGNED_IN') {
             queryClient.clear();
@@ -104,11 +108,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           }
           if (newSession) {
-            setSession(newSession);
-            setUser(newSession.user ?? null);
+            applySession(newSession);
           } else {
             // Safety: avoid clearing valid in-memory state on transient null session
-            debouncedSessionCheck();
+            scheduleSessionRecovery();
           }
           setLoading(false);
         } else if (event === 'SIGNED_OUT') {
@@ -118,50 +121,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (userInitiatedSignOut) {
             userInitiatedSignOut = false;
             queryClient.clear();
-            setSession(null);
-            setUser(null);
+            applySession(null);
             setLoading(false);
           } else {
             // Supabase fired SIGNED_OUT without user action (token rotation, multi-device, etc.)
             // IGNORE it completely — keep the current session state.
             // The user explicitly wants to stay logged in forever until they press logout.
             console.warn('[Auth] SIGNED_OUT fired without user action – IGNORING (persistent session mode)');
-            
-            // Still try to recover a valid session silently in background
-            try {
-              const { data: { session: recovered } } = await supabase.auth.getSession();
-              if (recovered) {
-                setSession(recovered);
-                setUser(recovered.user);
-                console.log('[Auth] Session recovered silently');
-              } else {
-                // Try refresh once
-                const { data: { session: refreshed } } = await supabase.auth.refreshSession();
-                if (refreshed) {
-                  setSession(refreshed);
-                  setUser(refreshed.user);
-                  console.log('[Auth] Session refreshed silently');
-                }
-                // If both fail, DON'T clear state — keep user logged in with stale session
-                // They will get fresh session on next successful API call or page reload
-              }
-            } catch {
-              // Network error — keep current state, don't logout
-            }
+
+            // Recover outside the auth callback to avoid auth deadlocks.
+            scheduleSessionRecovery();
             setLoading(false);
           }
         } else {
           // INITIAL_SESSION, USER_UPDATED, etc.
           if (newSession) {
-            setSession(newSession);
-            setUser(newSession.user ?? null);
+            applySession(newSession);
           } else if (userInitiatedSignOut) {
             userInitiatedSignOut = false;
-            setSession(null);
-            setUser(null);
-          } else {
+            applySession(null);
+          } else if (event !== 'INITIAL_SESSION') {
             // Do not clear the current user on transient null sessions
-            debouncedSessionCheck();
+            scheduleSessionRecovery();
           }
           setLoading(false);
         }
@@ -169,20 +150,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      if (existingSession) {
-        setSession(existingSession);
-        setUser(existingSession.user ?? null);
-      } else if (userInitiatedSignOut) {
-        userInitiatedSignOut = false;
-        setSession(null);
-        setUser(null);
-      } else {
-        // Keep current state and attempt silent recovery instead of forcing logout
-        debouncedSessionCheck();
-      }
-      setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session: existingSession } }) => {
+        if (!isMounted) return;
+
+        if (existingSession) {
+          applySession(existingSession);
+        } else if (userInitiatedSignOut) {
+          userInitiatedSignOut = false;
+          applySession(null);
+        }
+
+        setLoading(false);
+      })
+      .catch(() => {
+        if (isMounted) {
+          setLoading(false);
+        }
+      });
 
     // Auto-refresh session when app comes back to foreground
     const handleVisibilityChange = () => {
@@ -245,6 +230,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener('storage', handleStorageChange);
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
