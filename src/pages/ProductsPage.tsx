@@ -436,12 +436,11 @@ export default function ProductsPage() {
             </Button>
             <Button variant="outline" size="sm" onClick={() => setTemplateDialogOpen(true)}>
               <Package className="mr-1.5 h-4 w-4" />
-              <span className="hidden sm:inline">SP mẫu</span>
-              <span className="sm:hidden">Mẫu</span>
+              Thêm SP mẫu
             </Button>
             <Button onClick={() => navigate('/import/new')} size="sm">
               <Plus className="mr-1.5 h-4 w-4" />
-              {t('pages.products.addProduct')}
+              Nhập hàng
             </Button>
             <div className="flex items-center gap-1" data-tour="product-print-btn">
               <Button
