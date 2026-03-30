@@ -505,11 +505,44 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   // PWA manifest
   useDynamicManifest(storeName, storeId, settings?.store_logo_url);
 
-  // OG meta
-  const ogTitle = storeName ? `${storeName}` : undefined;
-  const ogDesc = settings?.store_description || settings?.meta_description || undefined;
-  const ogImage = settings?.store_logo_url || undefined;
-  useDynamicOGMeta(ogTitle, ogDesc, ogImage);
+  // OG meta — auto SEO title for product/article detail pages
+  const ogMeta = useMemo(() => {
+    if (pathInfo?.pageView === 'products' && pathInfo.contentId && productsData?.products) {
+      const prod = productsData.products.find(p => p.id?.startsWith(pathInfo.contentId!));
+      if (prod) {
+        const price = prod.sale_price || prod.price;
+        const formatP = (p: number) => new Intl.NumberFormat('vi-VN').format(p);
+        const suffix = storeName ? ` | ${storeName}` : '';
+        const priceTag = price ? ` giá ${formatP(price)}đ` : ' giá tốt';
+        let seoTitle = `${prod.name}${priceTag}${suffix}`;
+        if (seoTitle.length > 60) seoTitle = `${prod.name}${suffix}`;
+        if (seoTitle.length > 60) seoTitle = prod.name.substring(0, 57) + '...';
+        
+        let seoDesc = prod.description || '';
+        if (!seoDesc || seoDesc.length < 30) {
+          seoDesc = `Mua ${prod.name}${price ? ` giá ${formatP(price)}đ` : ''}${storeName ? ` tại ${storeName}` : ''}. Giao hàng nhanh, bảo hành chính hãng.`;
+        } else if (price && !seoDesc.includes(formatP(price))) {
+          seoDesc = `${formatP(price)}đ - ${seoDesc}`;
+        }
+        if (seoDesc.length > 160) seoDesc = seoDesc.substring(0, 157) + '...';
+        
+        return { title: seoTitle, desc: seoDesc, image: prod.image_url || settings?.store_logo_url };
+      }
+    }
+    if (pathInfo?.pageView === 'news' && pathInfo.contentId && articlesData?.articles) {
+      const art = articlesData.articles.find(a => a.id?.startsWith(pathInfo.contentId!));
+      if (art) {
+        const suffix = storeName ? ` | ${storeName}` : '';
+        let artTitle = `${art.title}${suffix}`;
+        if (artTitle.length > 60) artTitle = art.title.substring(0, 57) + '...';
+        const artDesc = art.summary || (storeName ? `Đọc bài viết tại ${storeName}` : '');
+        return { title: artTitle, desc: artDesc.length > 160 ? artDesc.substring(0, 157) + '...' : artDesc, image: art.thumbnail_url || settings?.store_logo_url };
+      }
+    }
+    return { title: storeName || undefined, desc: settings?.store_description || settings?.meta_description || undefined, image: settings?.store_logo_url };
+  }, [storeName, pathInfo?.pageView, pathInfo?.contentId, productsData?.products, articlesData?.articles, settings]);
+
+  useDynamicOGMeta(ogMeta.title, ogMeta.desc, ogMeta.image);
 
   // JSON-LD structured data for SEO
   const jsonLdData = useMemo<JsonLdData>(() => {
