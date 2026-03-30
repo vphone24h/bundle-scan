@@ -273,8 +273,12 @@ Deno.serve(async (req) => {
     const { data } = await query.limit(1).maybeSingle();
 
     if (data) {
-      title = `${data.title}${storeName ? ` - ${storeName}` : ""}`;
-      description = data.summary || (storeName ? `Bài viết tại ${storeName}` : "");
+      // SEO title for articles: "Title | StoreName" (under 60 chars)
+      const artSuffix = storeName ? ` | ${storeName}` : "";
+      const artTitle = `${data.title}${artSuffix}`;
+      title = artTitle.length <= 60 ? artTitle : data.title.substring(0, 57) + "...";
+      description = data.summary || (storeName ? `Đọc bài viết tại ${storeName}` : "");
+      if (description.length > 160) description = description.substring(0, 157) + "...";
       imageUrl = data.thumbnail_url || storeLogoUrl || "";
 
       // Article JSON-LD
