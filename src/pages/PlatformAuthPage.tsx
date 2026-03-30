@@ -18,6 +18,15 @@ export default function PlatformAuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  const waitForSessionReady = async (userId: string) => {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id === userId) return session;
+      await new Promise((resolve) => window.setTimeout(resolve, 120));
+    }
+    throw new Error(t('pages.platformAuth.loginError'));
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -39,6 +48,8 @@ export default function PlatformAuthPage() {
 
       const user = data.user;
       if (user) {
+        await waitForSessionReady(user.id);
+
         const { data: platformUser } = await supabase
           .from('platform_users')
           .select('platform_role')

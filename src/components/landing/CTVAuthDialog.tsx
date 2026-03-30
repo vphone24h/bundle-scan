@@ -23,11 +23,20 @@ export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentC
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: '', password: '', full_name: '', phone: '' });
 
+  const waitForSessionReady = async (userId: string) => {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id === userId) return session;
+      await new Promise((resolve) => window.setTimeout(resolve, 120));
+    }
+    throw new Error('Phiên đăng nhập chưa sẵn sàng. Vui lòng thử lại.');
+  };
+
   const handleLogin = async () => {
     setLoading(true);
     try {
       localStorage.setItem('ctv_store_mode', tenantId);
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error, data } = await supabase.auth.signInWithPassword({
         email: form.email,
         password: form.password,
       });
@@ -38,6 +47,11 @@ export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentC
         }
         throw error;
       }
+
+      if (data.user) {
+        await waitForSessionReady(data.user.id);
+      }
+
       toast({ title: 'Đăng nhập thành công!' });
       onSuccess();
       onOpenChange(false);
@@ -75,7 +89,7 @@ export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentC
         // Close dialog immediately so user doesn't see the form anymore
         onOpenChange(false);
         localStorage.setItem('ctv_store_mode', tenantId);
-        const { error: loginErr } = await supabase.auth.signInWithPassword({
+        const { error: loginErr, data: loginData } = await supabase.auth.signInWithPassword({
           email: form.email,
           password: form.password,
         });
@@ -84,6 +98,9 @@ export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentC
           onOpenChange(true);
           setMode('login');
         } else {
+          if (loginData.user) {
+            await waitForSessionReady(loginData.user.id);
+          }
           toast({ title: 'Đăng ký thành công!' });
           onSuccess();
         }
