@@ -218,13 +218,10 @@ Deno.serve(async (req) => {
     const { data } = await query.limit(1).maybeSingle();
 
     if (data) {
-      title = `${data.name}${storeName ? ` - ${storeName}` : ""}`;
-      description = data.description || (storeName ? `Sản phẩm tại ${storeName}` : "");
-      imageUrl = data.image_url || storeLogoUrl || "";
       const price = data.sale_price || data.price;
-      if (price) {
-        description = `${formatPrice(price)}đ - ${description}`;
-      }
+      title = buildSeoTitle(data.name, storeName, price);
+      description = buildSeoDescription(data.name, storeName, price, data.description);
+      imageUrl = data.image_url || storeLogoUrl || "";
 
       // Product JSON-LD
       jsonLdScripts.push(JSON.stringify({
