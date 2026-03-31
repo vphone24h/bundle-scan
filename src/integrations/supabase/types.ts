@@ -2818,6 +2818,7 @@ export type Database = {
           customer_id: string | null
           debt_amount: number
           export_date: string
+          export_date_modified: boolean
           id: string
           note: string | null
           original_debt_amount: number | null
@@ -2842,6 +2843,7 @@ export type Database = {
           customer_id?: string | null
           debt_amount?: number
           export_date?: string
+          export_date_modified?: boolean
           id?: string
           note?: string | null
           original_debt_amount?: number | null
@@ -2866,6 +2868,7 @@ export type Database = {
           customer_id?: string | null
           debt_amount?: number
           export_date?: string
+          export_date_modified?: boolean
           id?: string
           note?: string | null
           original_debt_amount?: number | null
