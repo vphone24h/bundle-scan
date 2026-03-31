@@ -110,6 +110,7 @@ export const ACTION_LABELS: Record<string, { label: string; color: string; criti
   UPDATE_CASH_BOOK: { label: 'Sửa sổ quỹ', color: 'bg-orange-600', critical: true },
   EDIT_CASH_BOOK: { label: 'Sửa sổ quỹ', color: 'bg-orange-600', critical: true },
   TRANSFER_FUNDS: { label: 'Chuyển tiền nội bộ', color: 'bg-indigo-500' },
+  TRANSFER_FUNDS_BETWEEN_BRANCHES: { label: 'Chuyển tiền liên CN', color: 'bg-indigo-600' },
   
   // Ngưng test / xóa dữ liệu / chế độ test
   DELETE_ALL_WAREHOUSE_DATA: { label: 'Ngưng Test', color: 'bg-gray-600', critical: true },
