@@ -4,10 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Save, Info } from 'lucide-react';
+import { Loader2, Save, Info, CalendarIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { cn } from '@/lib/utils';
+import { format, parseISO } from 'date-fns';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 import type { ExportReceiptItemDetail } from '@/hooks/useExportReceipts';
 
 interface EditExportItemDialogProps {
@@ -19,25 +23,59 @@ interface EditExportItemDialogProps {
 export function EditExportItemDialog({ item, open, onOpenChange }: EditExportItemDialogProps) {
   const queryClient = useQueryClient();
 
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked: securityUnlocked, unlock: securityUnlock } = useSecurityUnlock('edit-export-date');
+  const [showSecurityDialog, setShowSecurityDialog] = useState(false);
+  const [pendingDateChange, setPendingDateChange] = useState<string | null>(null);
+
   const [warranty, setWarranty] = useState('');
   const [note, setNote] = useState('');
+  const [exportDate, setExportDate] = useState('');
+  const [originalExportDate, setOriginalExportDate] = useState('');
 
   useEffect(() => {
     if (item) {
       setWarranty(item.warranty || '');
       setNote(item.note || '');
+      const dateStr = item.export_receipts?.export_date 
+        ? format(parseISO(item.export_receipts.export_date), "yyyy-MM-dd'T'HH:mm")
+        : '';
+      setExportDate(dateStr);
+      setOriginalExportDate(dateStr);
     }
   }, [item]);
+
+  const handleExportDateChange = (newDate: string) => {
+    if (newDate !== originalExportDate && hasSecurityPassword && !securityUnlocked) {
+      setPendingDateChange(newDate);
+      setShowSecurityDialog(true);
+      return;
+    }
+    setExportDate(newDate);
+  };
+
+  const handleSecuritySuccess = () => {
+    securityUnlock();
+    setShowSecurityDialog(false);
+    if (pendingDateChange) {
+      setExportDate(pendingDateChange);
+      setPendingDateChange(null);
+    }
+  };
 
   const updateItem = useMutation({
     mutationFn: async ({ 
       itemId, 
       updates,
-      oldData
+      oldData,
+      receiptId,
+      dateUpdates,
     }: { 
       itemId: string; 
       updates: { warranty?: string | null; note?: string | null };
-      oldData: { warranty: string | null; note: string | null };
+      oldData: { warranty: string | null; note: string | null; export_date?: string };
+      receiptId?: string;
+      dateUpdates?: { export_date: string; export_date_modified: boolean };
     }) => {
       const { error } = await supabase
         .from('export_receipt_items')
@@ -46,20 +84,32 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
 
       if (error) throw error;
 
+      // Update export_date on the receipt if changed
+      if (receiptId && dateUpdates) {
+        const { error: receiptError } = await supabase
+          .from('export_receipts')
+          .update(dateUpdates)
+          .eq('id', receiptId);
+        if (receiptError) throw receiptError;
+      }
+
       // Ghi nhận lịch sử thao tác
       const tenantId = await supabase.rpc('get_user_tenant_id_secure');
       const { data: { user } } = await supabase.auth.getUser();
       
       if (tenantId.data) {
+        const isDateChanged = !!dateUpdates;
         await supabase.from('audit_logs').insert({
           tenant_id: tenantId.data,
           user_id: user?.id,
-          action_type: 'UPDATE',
-          table_name: 'export_receipt_items',
-          record_id: itemId,
-          description: `Thay đổi thời gian bảo hành: ${item?.product_name}`,
+          action_type: isDateChanged ? 'UPDATE_EXPORT_DATE' : 'UPDATE',
+          table_name: isDateChanged ? 'export_receipts' : 'export_receipt_items',
+          record_id: isDateChanged ? receiptId : itemId,
+          description: isDateChanged
+            ? `Chỉnh sửa ngày bán: ${item?.product_name} (${oldData.export_date} → ${dateUpdates.export_date})`
+            : `Thay đổi thời gian bảo hành: ${item?.product_name}`,
           old_data: oldData,
-          new_data: updates,
+          new_data: { ...updates, ...(dateUpdates || {}) },
         });
       }
     },
@@ -73,10 +123,14 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
     if (!item) return;
 
     try {
-      const oldData = {
+      const oldData: Record<string, any> = {
         warranty: item.warranty || null,
         note: item.note || null,
+        export_date: item.export_receipts?.export_date || null,
       };
+
+      const dateChanged = exportDate && exportDate !== originalExportDate;
+      const receiptId = (item.export_receipts as any)?.id || item.receipt_id;
 
       await updateItem.mutateAsync({
         itemId: item.id,
@@ -85,11 +139,18 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
           note: note.trim() || null,
         },
         oldData,
+        receiptId: dateChanged ? receiptId : undefined,
+        dateUpdates: dateChanged ? {
+          export_date: new Date(exportDate).toISOString(),
+          export_date_modified: true,
+        } : undefined,
       });
 
       toast({
         title: 'Cập nhật thành công',
-        description: 'Thông tin bảo hành đã được cập nhật',
+        description: dateChanged 
+          ? 'Ngày bán và thông tin sản phẩm đã được cập nhật'
+          : 'Thông tin bảo hành đã được cập nhật',
       });
 
       onOpenChange(false);
@@ -103,8 +164,9 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Chỉnh sửa sản phẩm đã bán</DialogTitle>
         </DialogHeader>
@@ -186,6 +248,28 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
                 rows={2}
               />
             </div>
+
+            {/* Ngày bán */}
+            <div className="space-y-2">
+              <Label htmlFor="export_date" className="flex items-center gap-1.5">
+                <CalendarIcon className="h-3.5 w-3.5" />
+                Ngày giờ bán
+              </Label>
+              <Input
+                id="export_date"
+                type="datetime-local"
+                value={exportDate}
+                onChange={(e) => handleExportDateChange(e.target.value)}
+                className={cn(
+                  exportDate !== originalExportDate && 'border-green-500 ring-1 ring-green-500/30'
+                )}
+              />
+              {exportDate !== originalExportDate && (
+                <p className="text-xs text-green-600 font-medium">
+                  ⚠ Ngày bán đã thay đổi — phiếu xuất sẽ hiển thị ở ngày mới trong lịch sử bán
+                </p>
+              )}
+            </div>
           </div>
         )}
 
@@ -201,5 +285,14 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <SecurityPasswordDialog
+      open={showSecurityDialog}
+      onOpenChange={setShowSecurityDialog}
+      onSuccess={handleSecuritySuccess}
+      title="Xác nhận chỉnh sửa ngày bán"
+      description="Thay đổi ngày bán là thao tác nhạy cảm. Vui lòng nhập mật khẩu bảo mật."
+    />
+    </>
   );
 }
