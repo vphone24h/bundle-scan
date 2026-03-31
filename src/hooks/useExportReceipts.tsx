@@ -228,6 +228,7 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
         export_receipts: {
           code: r.receipt_code,
           export_date: r.export_date,
+          export_date_modified: r.export_date_modified,
           branch_id: r.receipt_branch_id,
           customer_id: r.receipt_customer_id,
           created_by: r.receipt_created_by,
