@@ -545,6 +545,13 @@ export function TenantsManagement() {
                       <span className="text-sm text-muted-foreground">{(tenant as any).business_type || '-'}</span>
                     </TableCell>
                     <TableCell>
+                      <span className="text-sm text-muted-foreground">
+                        {(tenant as any).business_need === 'warehouse' ? '📦 Quản lý kho' :
+                         (tenant as any).business_need === 'website' ? '🌐 Website' :
+                         (tenant as any).business_need === 'both' ? '🚀 Cả 2' : '-'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
                       <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
                         {tenant.subdomain}
                       </code>
