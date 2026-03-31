@@ -227,6 +227,10 @@ export default function ExportHistoryPage() {
     page: itemPage,
     pageSize: itemPageSize,
   });
+  // Stop search spinner when data finishes loading
+  useEffect(() => {
+    if (isSearching && !receiptsFetching && !itemsFetching) setIsSearching(false);
+  }, [isSearching, receiptsFetching, itemsFetching]);
   // On-demand detail items for selected receipt (detail/print)
   const detailReceiptId = selectedReceipt?.id || printReceipt?.receiptId || null;
   const { data: detailItems, isLoading: detailItemsLoading } = useExportReceiptDetail(detailReceiptId);
