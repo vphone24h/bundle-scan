@@ -251,10 +251,34 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
                 <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                 <div className="text-xs text-muted-foreground space-y-1">
                   <p><strong>Tên, SKU, IMEI, Thư mục</strong> thuộc thông tin nhập hàng, không thể sửa tại đây.</p>
-                  <p><strong>Giá bán</strong> không thể sửa. Nếu sai giá, hãy điều chỉnh dòng tiền trong <strong>Sổ quỹ</strong> hoặc thực hiện <strong>Trả hàng</strong> rồi xuất lại.</p>
                   <p>Nếu <strong>tên khách hàng</strong> hoặc <strong>SĐT</strong> sai, hãy sửa lại trong tab <strong>Khách hàng</strong>.</p>
                 </div>
               </div>
+            </div>
+
+            {/* Editable: Giá bán */}
+            <div className="space-y-2">
+              <Label htmlFor="sale_price">Giá bán (đơn giá)</Label>
+              <Input
+                id="sale_price"
+                type="number"
+                value={salePrice}
+                onChange={(e) => setSalePrice(e.target.value)}
+                min={0}
+                className={cn(
+                  salePrice !== originalSalePrice && 'border-orange-500 ring-1 ring-orange-500/30'
+                )}
+              />
+              {quantity > 1 && (
+                <p className="text-xs text-muted-foreground">
+                  Thành tiền: <strong>{totalAmount.toLocaleString('vi-VN')}đ</strong> ({quantity} x {Number(salePrice || 0).toLocaleString('vi-VN')}đ)
+                </p>
+              )}
+              {salePrice !== originalSalePrice && (
+                <p className="text-xs text-orange-600 font-medium">
+                  ⚠ Giá bán đã thay đổi — thành tiền trên phiếu sẽ được cập nhật
+                </p>
+              )}
             </div>
 
             {/* Editable fields */}
