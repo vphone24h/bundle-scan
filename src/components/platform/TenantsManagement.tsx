@@ -465,6 +465,17 @@ export function TenantsManagement() {
               <SelectItem value="off">HĐĐT tắt</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={needFilter} onValueChange={setNeedFilter}>
+            <SelectTrigger className="w-[140px] h-9 text-xs sm:text-sm">
+              <SelectValue placeholder="Nhu cầu" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all_">Tất cả NC</SelectItem>
+              <SelectItem value="warehouse">Quản lý kho</SelectItem>
+              <SelectItem value="website">Website + Email</SelectItem>
+              <SelectItem value="both">Cả 2</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
