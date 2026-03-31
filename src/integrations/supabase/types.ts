@@ -6874,6 +6874,7 @@ export type Database = {
           address: string | null
           allow_custom_domain: boolean | null
           business_mode: string
+          business_need: string | null
           business_type: string | null
           created_at: string
           einvoice_enabled: boolean
@@ -6905,6 +6906,7 @@ export type Database = {
           address?: string | null
           allow_custom_domain?: boolean | null
           business_mode?: string
+          business_need?: string | null
           business_type?: string | null
           created_at?: string
           einvoice_enabled?: boolean
@@ -6936,6 +6938,7 @@ export type Database = {
           address?: string | null
           allow_custom_domain?: boolean | null
           business_mode?: string
+          business_need?: string | null
           business_type?: string | null
           created_at?: string
           einvoice_enabled?: boolean
