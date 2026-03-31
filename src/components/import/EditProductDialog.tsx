@@ -37,6 +37,11 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
   const canEditSalePrice = permissions?.canEditSalePrice === true;
   const isBranchAdmin = permissions?.role === 'branch_admin';
 
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked: securityUnlocked, unlock: securityUnlock } = useSecurityUnlock('edit-import-date');
+  const [showSecurityDialog, setShowSecurityDialog] = useState(false);
+  const [pendingDateChange, setPendingDateChange] = useState<string | null>(null);
+
   // Branch Admin chỉ được sửa sản phẩm thuộc chi nhánh mình
   const isOwnBranch = isSuperAdmin || (product?.branch_id === permissions?.branchId);
 
@@ -50,10 +55,14 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     supplier_id: '',
     branch_id: '',
     unit: 'cái',
+    import_date: '',
   });
+
+  const [originalImportDate, setOriginalImportDate] = useState('');
 
   useEffect(() => {
     if (product) {
+      const importDateStr = product.import_date ? format(parseISO(product.import_date), 'yyyy-MM-dd\'T\'HH:mm') : '';
       setFormData({
         name: product.name || '',
         sku: product.sku || '',
@@ -64,7 +73,9 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         supplier_id: product.supplier_id || '_none_',
         branch_id: product.branch_id || '_none_',
         unit: product.unit || 'cái',
+        import_date: importDateStr,
       });
+      setOriginalImportDate(importDateStr);
     }
   }, [product]);
 
