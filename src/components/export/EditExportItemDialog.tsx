@@ -77,6 +77,7 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
       oldData,
       receiptId,
       dateUpdates,
+      priceChanged,
     }: { 
       itemId: string; 
       updates: { warranty?: string | null; note?: string | null; sale_price?: number };
