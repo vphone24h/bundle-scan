@@ -650,9 +650,21 @@ export default function ExportHistoryPage() {
                   placeholder="Tìm theo mã phiếu, IMEI, tên SP, khách hàng, SĐT..."
                   value={searchTerm}
                   onChange={setSearchTerm}
-                  loading={!!debouncedSearch && (receiptsFetching || itemsFetching)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleTriggerSearch(); }}
                 />
               </div>
+              <Button
+                onClick={handleTriggerSearch}
+                disabled={!searchTerm || (receiptsFetching || itemsFetching)}
+                className="gap-2 shrink-0"
+              >
+                {(!!debouncedSearch && (receiptsFetching || itemsFetching)) ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
+                Tìm
+              </Button>
               <Button
                 variant={showFilters ? 'secondary' : 'outline'}
                 onClick={() => setShowFilters(!showFilters)}

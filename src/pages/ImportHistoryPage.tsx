@@ -644,8 +644,20 @@ export default function ImportHistoryPage() {
                   value={searchTerm}
                   onChange={(v) => { setSearchTerm(v); setProductPage(1); }}
                   containerClassName="flex-1"
-                  loading={!!searchTerm && (receiptsLoading || productsLoading)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleTriggerSearch(); }}
                 />
+                <Button
+                  onClick={handleTriggerSearch}
+                  disabled={!searchTerm || (receiptsLoading || productsLoading)}
+                  className="gap-2 shrink-0"
+                >
+                  {(!!debouncedSearch && (receiptsLoading || productsLoading)) ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                  Tìm
+                </Button>
                 <Button
                   variant={showFilters ? 'secondary' : 'outline'}
                   onClick={() => setShowFilters(!showFilters)}
