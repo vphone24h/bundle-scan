@@ -875,7 +875,10 @@ export default function ExportHistoryPage() {
                     {(filteredReceipts || []).map((receipt) => {
                       const isReceiptToday = isToday(new Date(receipt.export_date));
                       return (
-                      <TableRow key={receipt.id} className={isReceiptToday ? 'text-destructive' : ''}>
+                      <TableRow key={receipt.id} className={cn(
+                        (receipt as any).export_date_modified && 'bg-green-50 dark:bg-green-950/20',
+                        isReceiptToday && !(receipt as any).export_date_modified && 'text-destructive'
+                      )}>
                         <TableCell 
                           className="font-medium text-primary cursor-pointer hover:underline"
                           onClick={() => handleViewDetail(receipt)}
