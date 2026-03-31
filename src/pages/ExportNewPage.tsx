@@ -711,7 +711,8 @@ export default function ExportNewPage() {
       return;
     }
 
-    if (!itemWarranty.trim()) {
+    // Bảo hành bắt buộc cho sản phẩm có IMEI
+    if (selectedProduct.imei && !itemWarranty.trim()) {
       toast({
         title: t('pages.exportNew.error'),
         description: t('pages.exportNew.errorEnterWarranty'),
@@ -1317,7 +1318,7 @@ export default function ExportNewPage() {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label>{t('pages.exportNew.warranty')} <span className="text-destructive">*</span></Label>
+                      <Label>{t('pages.exportNew.warranty')} {selectedProduct?.imei && <span className="text-destructive">*</span>}</Label>
                       <Input
                         placeholder={t('pages.exportNew.warrantyExample')}
                         value={itemWarranty}
