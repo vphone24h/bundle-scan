@@ -32,6 +32,7 @@ export interface Product {
   unit: string;
   total_import_cost?: number;
   is_printed: boolean;
+  import_date_modified?: boolean;
   created_at?: string;
   updated_at?: string;
   group_id: string | null;
