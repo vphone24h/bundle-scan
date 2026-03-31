@@ -71,56 +71,56 @@ export function PaymentSourceHistoryDialog({
               {displayEntries.map((entry) => (
                 <div
                   key={entry.id}
-                  className="p-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors space-y-1.5"
+                  className="p-2.5 rounded-lg border bg-card hover:bg-accent/30 transition-colors space-y-1"
                 >
-                  {/* Top row: icon + description + amount */}
-                  <div className="flex items-start gap-2">
+                  {/* Row 1: description */}
+                  <div className="flex items-center gap-2">
                     <div
-                      className={`mt-0.5 h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${
+                      className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${
                         entry.type === 'income'
                           ? 'bg-green-100 dark:bg-green-900/30'
                           : 'bg-red-100 dark:bg-red-900/30'
                       }`}
                     >
                       {entry.type === 'income' ? (
-                        <TrendingUp className="h-3.5 w-3.5 text-green-600" />
+                        <TrendingUp className="h-3 w-3 text-green-600" />
                       ) : (
-                        <TrendingDown className="h-3.5 w-3.5 text-destructive" />
+                        <TrendingDown className="h-3 w-3 text-destructive" />
                       )}
                     </div>
-                    <p className="flex-1 min-w-0 text-sm font-medium truncate">{entry.description}</p>
+                    <p className="flex-1 min-w-0 text-xs font-medium leading-tight line-clamp-2">{entry.description}</p>
+                  </div>
+
+                  {/* Row 2: meta info */}
+                  <div className="flex flex-wrap items-center gap-1 pl-8 text-[11px] text-muted-foreground">
+                    <span>{format(toVietnamDate(entry.transaction_date), 'dd/MM HH:mm', { locale: vi })}</span>
+                    <span>•</span>
+                    <span>{getBranchName(entry.branch_id)}</span>
+                    {entry.created_by_name && (
+                      <>
+                        <span>•</span>
+                        <span className="truncate max-w-[60px]">{entry.created_by_name}</span>
+                      </>
+                    )}
+                    {entry.category && (
+                      <Badge variant="outline" className="text-[9px] h-3.5 px-1">
+                        {entry.category}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Row 3: amount + balance */}
+                  <div className="flex items-center justify-between pl-8">
                     <p
-                      className={`shrink-0 text-sm font-bold ${
+                      className={`text-xs font-bold ${
                         entry.type === 'income' ? 'text-green-600' : 'text-destructive'
                       }`}
                     >
                       {entry.type === 'income' ? '+' : '-'}
                       {formatCurrency(Number(entry.amount))}
                     </p>
-                  </div>
-
-                  {/* Bottom row: meta + running balance */}
-                  <div className="flex items-center justify-between pl-9">
-                    <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground min-w-0">
-                      <span>
-                        {format(toVietnamDate(entry.transaction_date), 'dd/MM/yyyy HH:mm', { locale: vi })}
-                      </span>
-                      <span>•</span>
-                      <span>{getBranchName(entry.branch_id)}</span>
-                      {entry.created_by_name && (
-                        <>
-                          <span>•</span>
-                          <span className="truncate max-w-[80px]">{entry.created_by_name}</span>
-                        </>
-                      )}
-                      {entry.category && (
-                        <Badge variant="outline" className="text-[10px] h-4 px-1.5">
-                          {entry.category}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0 text-[11px] text-muted-foreground">
-                      <span>SD:</span>
+                    <div className="flex items-center gap-1 text-[11px]">
+                      <ArrowRight className="h-3 w-3 text-muted-foreground" />
                       <span className={`font-semibold ${entry.runningBalance >= 0 ? 'text-green-600' : 'text-destructive'}`}>
                         {formatCurrency(entry.runningBalance)}
                       </span>
