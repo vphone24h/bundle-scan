@@ -73,7 +73,7 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
     }: { 
       itemId: string; 
       updates: { warranty?: string | null; note?: string | null };
-      oldData: { warranty: string | null; note: string | null; export_date?: string };
+      oldData: Record<string, any>;
       receiptId?: string;
       dateUpdates?: { export_date: string; export_date_modified: boolean };
     }) => {
