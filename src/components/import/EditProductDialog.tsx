@@ -79,6 +79,24 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     }
   }, [product]);
 
+  const handleImportDateChange = (newDate: string) => {
+    if (newDate !== originalImportDate && hasSecurityPassword && !securityUnlocked) {
+      setPendingDateChange(newDate);
+      setShowSecurityDialog(true);
+      return;
+    }
+    setFormData(prev => ({ ...prev, import_date: newDate }));
+  };
+
+  const handleSecuritySuccess = () => {
+    securityUnlock();
+    setShowSecurityDialog(false);
+    if (pendingDateChange) {
+      setFormData(prev => ({ ...prev, import_date: pendingDateChange }));
+      setPendingDateChange(null);
+    }
+  };
+
   const updateProduct = useMutation({
     mutationFn: async ({ 
       productId, 
@@ -86,26 +104,8 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       oldData
     }: { 
       productId: string; 
-      updates: {
-        name?: string;
-        sku?: string;
-        imei?: string | null;
-        note?: string | null;
-        sale_price?: number | null;
-        category_id?: string | null;
-        supplier_id?: string | null;
-        branch_id?: string | null;
-      };
-      oldData: {
-        name: string;
-        sku: string;
-        imei: string | null;
-        note: string | null;
-        sale_price: number | null;
-        category_id: string | null;
-        supplier_id: string | null;
-        branch_id: string | null;
-      };
+      updates: Record<string, any>;
+      oldData: Record<string, any>;
     }) => {
       // Kiểm tra IMEI trùng nếu có giá trị mới
       if (updates.imei) {
@@ -134,13 +134,16 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       const { data: { user } } = await supabase.auth.getUser();
       
       if (tenantId.data) {
+        const isDateChanged = updates.import_date && oldData.import_date !== updates.import_date;
         await supabase.from('audit_logs').insert({
           tenant_id: tenantId.data,
           user_id: user?.id,
-          action_type: 'UPDATE',
+          action_type: isDateChanged ? 'UPDATE_IMPORT_DATE' : 'UPDATE',
           table_name: 'products',
           record_id: productId,
-          description: `Chỉnh sửa sản phẩm: ${oldData.name}`,
+          description: isDateChanged 
+            ? `Chỉnh sửa ngày nhập: ${oldData.name} (${oldData.import_date} → ${updates.import_date})`
+            : `Chỉnh sửa sản phẩm: ${oldData.name}`,
           old_data: oldData,
           new_data: updates,
           branch_id: updates.branch_id || oldData.branch_id,
@@ -150,6 +153,8 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['all-products'] });
+      queryClient.invalidateQueries({ queryKey: ['import-receipts'] });
     },
   });
 
