@@ -181,11 +181,6 @@ export default function ExportHistoryPage() {
     }
   }, [searchTerm]);
   useEffect(() => {
-    if (isSearching && !receiptsFetching && !itemsFetching) {
-      setIsSearching(false);
-    }
-  }, [isSearching, receiptsFetching, itemsFetching]);
-  useEffect(() => {
     if (!searchTerm) { setDebouncedSearch(''); setIsSearching(false); }
   }, [searchTerm]);
 

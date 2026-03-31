@@ -150,13 +150,6 @@ export default function ImportHistoryPage() {
       setIsSearching(true);
     }
   }, [searchTerm]);
-  // Stop spinner when data finishes loading
-  useEffect(() => {
-    if (isSearching && !receiptsLoading && !productsLoading) {
-      setIsSearching(false);
-    }
-  }, [isSearching, receiptsLoading, productsLoading]);
-  // Clear debouncedSearch when searchTerm is cleared
   useEffect(() => {
     if (!searchTerm) { setDebouncedSearch(''); setIsSearching(false); }
   }, [searchTerm]);
