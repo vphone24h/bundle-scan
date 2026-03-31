@@ -711,7 +711,8 @@ export default function ExportNewPage() {
       return;
     }
 
-    if (!itemWarranty.trim()) {
+    // Bảo hành bắt buộc cho sản phẩm có IMEI
+    if (selectedProduct.imei && !itemWarranty.trim()) {
       toast({
         title: t('pages.exportNew.error'),
         description: t('pages.exportNew.errorEnterWarranty'),
