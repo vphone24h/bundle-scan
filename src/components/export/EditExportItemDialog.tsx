@@ -30,13 +30,20 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
 
   const [warranty, setWarranty] = useState('');
   const [note, setNote] = useState('');
+  const [salePrice, setSalePrice] = useState('');
+  const [originalSalePrice, setOriginalSalePrice] = useState('');
   const [exportDate, setExportDate] = useState('');
   const [originalExportDate, setOriginalExportDate] = useState('');
+
+  const quantity = item?.quantity || 1;
+  const totalAmount = Number(salePrice || 0) * quantity;
 
   useEffect(() => {
     if (item) {
       setWarranty(item.warranty || '');
       setNote(item.note || '');
+      setSalePrice(String(item.sale_price || 0));
+      setOriginalSalePrice(String(item.sale_price || 0));
       const dateStr = item.export_receipts?.export_date 
         ? format(parseISO(item.export_receipts.export_date), "yyyy-MM-dd'T'HH:mm")
         : '';
@@ -70,12 +77,14 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
       oldData,
       receiptId,
       dateUpdates,
+      priceChanged,
     }: { 
       itemId: string; 
-      updates: { warranty?: string | null; note?: string | null };
+      updates: { warranty?: string | null; note?: string | null; sale_price?: number };
       oldData: Record<string, any>;
       receiptId?: string;
       dateUpdates?: { export_date: string; export_date_modified: boolean };
+      priceChanged?: boolean;
     }) => {
       const { error } = await supabase
         .from('export_receipt_items')
@@ -83,6 +92,18 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
         .eq('id', itemId);
 
       if (error) throw error;
+
+      // If price changed, recalculate receipt total_amount
+      if (priceChanged && receiptId) {
+        const { data: allItems } = await supabase
+          .from('export_receipt_items')
+          .select('sale_price, quantity')
+          .eq('receipt_id', receiptId);
+        if (allItems) {
+          const newTotal = allItems.reduce((sum, i) => sum + (Number(i.sale_price) * (Number(i.quantity) || 1)), 0);
+          await supabase.from('export_receipts').update({ total_amount: newTotal }).eq('id', receiptId);
+        }
+      }
 
       // Update export_date on the receipt if changed
       if (receiptId && dateUpdates) {
@@ -99,15 +120,20 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
       
       if (tenantId.data) {
         const isDateChanged = !!dateUpdates;
+        const isPriceChanged = !!priceChanged;
+        const actionType = isDateChanged ? 'UPDATE_EXPORT_DATE' : isPriceChanged ? 'UPDATE_SALE_PRICE' : 'UPDATE';
+        const description = isDateChanged
+          ? `Chỉnh sửa ngày bán: ${item?.product_name} (${oldData.export_date} → ${dateUpdates.export_date})`
+          : isPriceChanged
+          ? `Chỉnh sửa giá bán: ${item?.product_name} (${oldData.sale_price} → ${updates.sale_price})`
+          : `Thay đổi thời gian bảo hành: ${item?.product_name}`;
         await supabase.from('audit_logs').insert({
           tenant_id: tenantId.data,
           user_id: user?.id,
-          action_type: isDateChanged ? 'UPDATE_EXPORT_DATE' : 'UPDATE',
+          action_type: actionType,
           table_name: isDateChanged ? 'export_receipts' : 'export_receipt_items',
           record_id: isDateChanged ? receiptId : itemId,
-          description: isDateChanged
-            ? `Chỉnh sửa ngày bán: ${item?.product_name} (${oldData.export_date} → ${dateUpdates.export_date})`
-            : `Thay đổi thời gian bảo hành: ${item?.product_name}`,
+          description,
           old_data: oldData,
           new_data: { ...updates, ...(dateUpdates || {}) },
         });
@@ -126,10 +152,12 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
       const oldData: Record<string, any> = {
         warranty: item.warranty || null,
         note: item.note || null,
+        sale_price: item.sale_price,
         export_date: item.export_receipts?.export_date || null,
       };
 
       const dateChanged = exportDate && exportDate !== originalExportDate;
+      const priceChanged = salePrice !== originalSalePrice;
       const receiptId = (item.export_receipts as any)?.id || item.receipt_id;
 
       await updateItem.mutateAsync({
@@ -137,13 +165,15 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
         updates: {
           warranty: warranty.trim() || null,
           note: note.trim() || null,
+          ...(priceChanged ? { sale_price: Number(salePrice) } : {}),
         },
         oldData,
-        receiptId: dateChanged ? receiptId : undefined,
+        receiptId: (dateChanged || priceChanged) ? receiptId : undefined,
         dateUpdates: dateChanged ? {
           export_date: new Date(exportDate).toISOString(),
           export_date_modified: true,
         } : undefined,
+        priceChanged,
       });
 
       toast({
@@ -195,12 +225,12 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
                   {item.categories?.name || 'Không có'}
                 </span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Giá bán:</span>
-                <span className="font-medium">
-                  {Number(item.sale_price).toLocaleString('vi-VN')}đ
-                </span>
-              </div>
+              {quantity > 1 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Số lượng:</span>
+                  <span className="font-medium">{quantity}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Khách hàng:</span>
                 <span className="font-medium">
@@ -221,10 +251,34 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
                 <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                 <div className="text-xs text-muted-foreground space-y-1">
                   <p><strong>Tên, SKU, IMEI, Thư mục</strong> thuộc thông tin nhập hàng, không thể sửa tại đây.</p>
-                  <p><strong>Giá bán</strong> không thể sửa. Nếu sai giá, hãy điều chỉnh dòng tiền trong <strong>Sổ quỹ</strong> hoặc thực hiện <strong>Trả hàng</strong> rồi xuất lại.</p>
                   <p>Nếu <strong>tên khách hàng</strong> hoặc <strong>SĐT</strong> sai, hãy sửa lại trong tab <strong>Khách hàng</strong>.</p>
                 </div>
               </div>
+            </div>
+
+            {/* Editable: Giá bán */}
+            <div className="space-y-2">
+              <Label htmlFor="sale_price">Giá bán (đơn giá)</Label>
+              <Input
+                id="sale_price"
+                type="number"
+                value={salePrice}
+                onChange={(e) => setSalePrice(e.target.value)}
+                min={0}
+                className={cn(
+                  salePrice !== originalSalePrice && 'border-orange-500 ring-1 ring-orange-500/30'
+                )}
+              />
+              {quantity > 1 && (
+                <p className="text-xs text-muted-foreground">
+                  Thành tiền: <strong>{totalAmount.toLocaleString('vi-VN')}đ</strong> ({quantity} x {Number(salePrice || 0).toLocaleString('vi-VN')}đ)
+                </p>
+              )}
+              {salePrice !== originalSalePrice && (
+                <p className="text-xs text-orange-600 font-medium">
+                  ⚠ Giá bán đã thay đổi — thành tiền trên phiếu sẽ được cập nhật
+                </p>
+              )}
             </div>
 
             {/* Editable fields */}
