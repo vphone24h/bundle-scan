@@ -2458,6 +2458,16 @@ export default function CashBookPage() {
         tourKey="cashbook_guide"
       />
 
+      <PaymentSourceHistoryDialog
+        open={!!historySource}
+        onOpenChange={(open) => { if (!open) setHistorySource(null); }}
+        sourceName={historySource?.name || ''}
+        sourceId={historySource?.id || ''}
+        allEntries={allEntries || []}
+        branches={(branches || []).map(b => ({ id: b.id, name: b.name }))}
+        openingBalance={historySource ? (latestOpeningBalances?.[historySource.id]?.amount || 0) : 0}
+      />
+
       <SecurityPasswordDialog
         open={showSecurityDialog}
         onOpenChange={(open) => {
