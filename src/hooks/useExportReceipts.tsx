@@ -106,73 +106,39 @@ export function useExportReceipts(filters?: {
   const page = filters?.page ?? 1;
   const pageSize = filters?.pageSize ?? 50;
 
-  const selectFields = `
-    *,
-    customers(name, phone, address),
-    branches(name),
-    export_receipt_payments(*)
-  `;
-
   const result = useQuery({
     queryKey: ['export-receipts', tenant?.id, branchId, isDataHidden, filters],
     queryFn: async () => {
       if (isDataHidden) return { items: [] as ExportReceipt[], hasMore: false };
 
-      let query = supabase
-        .from('export_receipts')
-        .select(selectFields)
-        .order('export_date', { ascending: false });
-
-      // Branch filter
       const effectiveBranchId = filters?.branchId && filters.branchId !== '_all_'
         ? filters.branchId
         : (shouldFilter && branchId ? branchId : null);
 
-      if (effectiveBranchId) {
-        query = query.eq('branch_id', effectiveBranchId);
-      }
+      const { data, error } = await supabase.rpc('search_export_receipts', {
+        _search: filters?.search?.trim() || null,
+        _status: (filters?.status && filters.status !== '_all_') ? filters.status : null,
+        _date_from: filters?.dateFrom || null,
+        _date_to: filters?.dateTo || null,
+        _branch_id: effectiveBranchId || null,
+        _page: page,
+        _page_size: pageSize,
+      });
 
-      // Server-side search: receipt code + customer name/phone
-      if (filters?.search) {
-        const s = filters.search.trim();
-        if (s) {
-          const { data: matchingCustomers } = await supabase
-            .from('customers')
-            .select('id')
-            .or(`name.ilike.%${s}%,phone.ilike.%${s}%`)
-            .limit(50);
-          const customerIds = matchingCustomers?.map(c => c.id) || [];
-          if (customerIds.length > 0) {
-            query = query.or(`code.ilike.%${s}%,customer_id.in.(${customerIds.join(',')})`);
-          } else {
-            query = query.ilike('code', `%${s}%`);
-          }
-        }
-      }
-
-      if (filters?.status && filters.status !== '_all_') {
-        query = query.eq('status', filters.status);
-      }
-      if (filters?.dateFrom) {
-        query = query.gte('export_date', filters.dateFrom);
-      }
-      if (filters?.dateTo) {
-        query = query.lte('export_date', filters.dateTo + 'T23:59:59');
-      }
-
-      // N+1 pagination: fetch one extra row to determine hasMore
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize; // fetch pageSize + 1
-      query = query.range(from, to);
-
-      const { data, error } = await query;
       if (error) {
-        console.error('Export receipts query error:', error);
+        console.error('Export receipts RPC error:', error);
         throw error;
       }
-      const allRows = (data || []) as unknown as ExportReceipt[];
-      const hasMore = allRows.length > pageSize;
-      const items = hasMore ? allRows.slice(0, pageSize) : allRows;
+
+      const rows = (data || []) as any[];
+      const hasMore = rows.length > pageSize;
+      const items: ExportReceipt[] = (hasMore ? rows.slice(0, pageSize) : rows).map((r: any) => ({
+        ...r,
+        customers: r.customer_name ? { name: r.customer_name, phone: r.customer_phone, address: r.customer_address } : null,
+        branches: r.branch_name ? { name: r.branch_name } : null,
+        export_receipt_payments: r.payment_sources ? (r.payment_sources as any[]) : [],
+      }));
+
       return { items, hasMore };
     },
     enabled: !isTenantLoading && !branchLoading,
