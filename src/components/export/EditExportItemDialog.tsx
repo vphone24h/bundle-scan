@@ -225,12 +225,12 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
                   {item.categories?.name || 'Không có'}
                 </span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Giá bán:</span>
-                <span className="font-medium">
-                  {Number(item.sale_price).toLocaleString('vi-VN')}đ
-                </span>
-              </div>
+              {quantity > 1 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Số lượng:</span>
+                  <span className="font-medium">{quantity}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Khách hàng:</span>
                 <span className="font-medium">
