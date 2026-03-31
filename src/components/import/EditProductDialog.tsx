@@ -20,6 +20,7 @@ import { PRODUCT_UNITS } from '@/types/warehouse';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 import { format, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface EditProductDialogProps {
   product: Product | null;
