@@ -79,10 +79,11 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
       dateUpdates,
     }: { 
       itemId: string; 
-      updates: { warranty?: string | null; note?: string | null };
+      updates: { warranty?: string | null; note?: string | null; sale_price?: number };
       oldData: Record<string, any>;
       receiptId?: string;
       dateUpdates?: { export_date: string; export_date_modified: boolean };
+      priceChanged?: boolean;
     }) => {
       const { error } = await supabase
         .from('export_receipt_items')
@@ -90,6 +91,18 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
         .eq('id', itemId);
 
       if (error) throw error;
+
+      // If price changed, recalculate receipt total_amount
+      if (priceChanged && receiptId) {
+        const { data: allItems } = await supabase
+          .from('export_receipt_items')
+          .select('sale_price, quantity')
+          .eq('receipt_id', receiptId);
+        if (allItems) {
+          const newTotal = allItems.reduce((sum, i) => sum + (Number(i.sale_price) * (Number(i.quantity) || 1)), 0);
+          await supabase.from('export_receipts').update({ total_amount: newTotal }).eq('id', receiptId);
+        }
+      }
 
       // Update export_date on the receipt if changed
       if (receiptId && dateUpdates) {
