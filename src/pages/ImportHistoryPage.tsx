@@ -237,6 +237,11 @@ export default function ImportHistoryPage() {
 
   const { data: products, isLoading: productsLoading, totalCount: productsTotalCount } = useAllProducts(productServerFilters);
   
+  // Stop search spinner when data finishes loading
+  useEffect(() => {
+    if (isSearching && !receiptsLoading && !productsLoading) setIsSearching(false);
+  }, [isSearching, receiptsLoading, productsLoading]);
+
   const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
   const { data: receiptDetails, isLoading: detailsLoading } = useImportReceiptDetails(selectedReceiptId);
   
