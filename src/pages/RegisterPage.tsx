@@ -70,6 +70,16 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
+      if (!formData.businessNeed) {
+        toast({
+          title: 'Lỗi',
+          description: 'Vui lòng chọn nhu cầu sử dụng',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('register-tenant', {
         body: {
           businessName: formData.businessName,
@@ -80,6 +90,7 @@ export default function RegisterPage() {
           phone: formData.phone,
           businessType: formData.businessType || null,
           businessMode: formData.businessMode,
+          businessNeed: formData.businessNeed,
         },
       });
 
