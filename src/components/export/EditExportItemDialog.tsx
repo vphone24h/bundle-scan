@@ -120,15 +120,20 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
       
       if (tenantId.data) {
         const isDateChanged = !!dateUpdates;
+        const isPriceChanged = !!priceChanged;
+        const actionType = isDateChanged ? 'UPDATE_EXPORT_DATE' : isPriceChanged ? 'UPDATE_SALE_PRICE' : 'UPDATE';
+        const description = isDateChanged
+          ? `Chỉnh sửa ngày bán: ${item?.product_name} (${oldData.export_date} → ${dateUpdates.export_date})`
+          : isPriceChanged
+          ? `Chỉnh sửa giá bán: ${item?.product_name} (${oldData.sale_price} → ${updates.sale_price})`
+          : `Thay đổi thời gian bảo hành: ${item?.product_name}`;
         await supabase.from('audit_logs').insert({
           tenant_id: tenantId.data,
           user_id: user?.id,
-          action_type: isDateChanged ? 'UPDATE_EXPORT_DATE' : 'UPDATE',
+          action_type: actionType,
           table_name: isDateChanged ? 'export_receipts' : 'export_receipt_items',
           record_id: isDateChanged ? receiptId : itemId,
-          description: isDateChanged
-            ? `Chỉnh sửa ngày bán: ${item?.product_name} (${oldData.export_date} → ${dateUpdates.export_date})`
-            : `Thay đổi thời gian bảo hành: ${item?.product_name}`,
+          description,
           old_data: oldData,
           new_data: { ...updates, ...(dateUpdates || {}) },
         });
