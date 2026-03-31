@@ -143,12 +143,22 @@ export default function ImportHistoryPage() {
 
   // Manual search trigger (no debounce)
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const handleTriggerSearch = useCallback(() => {
-    setDebouncedSearch(searchTerm);
+    if (searchTerm.length >= 2) {
+      setDebouncedSearch(searchTerm);
+      setIsSearching(true);
+    }
   }, [searchTerm]);
-  // Also clear debouncedSearch when searchTerm is cleared
+  // Stop spinner when data finishes loading
   useEffect(() => {
-    if (!searchTerm) setDebouncedSearch('');
+    if (isSearching && !receiptsLoading && !productsLoading) {
+      setIsSearching(false);
+    }
+  }, [isSearching, receiptsLoading, productsLoading]);
+  // Clear debouncedSearch when searchTerm is cleared
+  useEffect(() => {
+    if (!searchTerm) { setDebouncedSearch(''); setIsSearching(false); }
   }, [searchTerm]);
 
   // Reset pages on filter change

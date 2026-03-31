@@ -173,11 +173,20 @@ export default function ExportHistoryPage() {
 
   // Manual search trigger (no debounce)
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const handleTriggerSearch = useCallback(() => {
-    setDebouncedSearch(searchTerm);
+    if (searchTerm.length >= 2) {
+      setDebouncedSearch(searchTerm);
+      setIsSearching(true);
+    }
   }, [searchTerm]);
   useEffect(() => {
-    if (!searchTerm) setDebouncedSearch('');
+    if (isSearching && !receiptsFetching && !itemsFetching) {
+      setIsSearching(false);
+    }
+  }, [isSearching, receiptsFetching, itemsFetching]);
+  useEffect(() => {
+    if (!searchTerm) { setDebouncedSearch(''); setIsSearching(false); }
   }, [searchTerm]);
 
   // Server pagination state
