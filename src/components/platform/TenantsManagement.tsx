@@ -96,6 +96,7 @@ export function TenantsManagement() {
   const [usageFilter, setUsageFilter] = useState('_all_');
   const [websiteFilter, setWebsiteFilter] = useState('_all_');
   const [einvoiceFilter, setEinvoiceFilter] = useState('_all_');
+  const [needFilter, setNeedFilter] = useState('_all_');
 
   const filteredTenants = tenants?.filter(t => {
     // Text search
