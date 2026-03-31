@@ -1098,12 +1098,15 @@ export default function ExportHistoryPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {!isGrouped && (
+                            {true && (
                               <div className="flex gap-1">
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => setEditItem(item)}
+                                  onClick={() => {
+                                    const editData = { ...item, _groupedIds: groupedItem.groupedIds, _groupedQuantity: quantity };
+                                    setEditItem(editData as any);
+                                  }}
                                   className="h-7 w-7"
                                   title="Sửa thông tin"
                                 >
