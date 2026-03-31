@@ -26,6 +26,7 @@ export default function RegisterPage() {
     phone: '',
     businessType: '',
     businessMode: 'public' as 'public' | 'secret',
+    businessNeed: '' as '' | 'warehouse' | 'website' | 'both',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
