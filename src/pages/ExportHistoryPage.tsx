@@ -661,18 +661,20 @@ export default function ExportHistoryPage() {
                   onKeyDown={(e) => { if (e.key === 'Enter') handleTriggerSearch(); }}
                 />
               </div>
-              <Button
-                onClick={handleTriggerSearch}
-                disabled={!searchTerm || (receiptsFetching || itemsFetching)}
-                className="gap-2 shrink-0"
-              >
-                {(!!debouncedSearch && (receiptsFetching || itemsFetching)) ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Search className="h-4 w-4" />
-                )}
-                Tìm
-              </Button>
+              {searchTerm.length >= 2 && (
+                <Button
+                  onClick={handleTriggerSearch}
+                  disabled={isSearching}
+                  className="gap-2 shrink-0"
+                >
+                  {isSearching ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                  Tìm
+                </Button>
+              )}
               <Button
                 variant={showFilters ? 'secondary' : 'outline'}
                 onClick={() => setShowFilters(!showFilters)}
