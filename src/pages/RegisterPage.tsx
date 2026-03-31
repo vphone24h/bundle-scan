@@ -322,6 +322,38 @@ export default function RegisterPage() {
               </div>
             </div>
 
+            <div className="space-y-2">
+              <Label>Nhu cầu của bạn là gì? *</Label>
+              <div className="space-y-2">
+                {[
+                  { value: 'warehouse', label: 'Quản lý kho hàng, doanh thu, lợi nhuận', icon: '📦' },
+                  { value: 'website', label: 'Website bán hàng + email marketing', icon: '🌐' },
+                  { value: 'both', label: 'Cả 2', icon: '🚀' },
+                ].map((option) => (
+                  <label
+                    key={option.value}
+                    className={cn(
+                      'flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all',
+                      formData.businessNeed === option.value
+                        ? 'border-primary bg-primary/5'
+                        : 'border-muted hover:border-primary/40'
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="businessNeed"
+                      value={option.value}
+                      checked={formData.businessNeed === option.value}
+                      onChange={() => setFormData(prev => ({ ...prev, businessNeed: option.value as any }))}
+                      className="sr-only"
+                    />
+                    <span className="text-lg">{option.icon}</span>
+                    <span className="text-sm font-medium">{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="password">Mật khẩu *</Label>
