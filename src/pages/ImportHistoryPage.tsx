@@ -141,11 +141,14 @@ export default function ImportHistoryPage() {
   const [branchFilter, setBranchFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Debounced search for server queries
+  // Manual search trigger (no debounce)
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const handleTriggerSearch = useCallback(() => {
+    setDebouncedSearch(searchTerm);
+  }, [searchTerm]);
+  // Also clear debouncedSearch when searchTerm is cleared
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(searchTerm), 400);
-    return () => clearTimeout(t);
+    if (!searchTerm) setDebouncedSearch('');
   }, [searchTerm]);
 
   // Reset pages on filter change

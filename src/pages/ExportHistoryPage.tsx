@@ -171,11 +171,13 @@ export default function ExportHistoryPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('_all_');
 
-  // Debounced search for server queries
+  // Manual search trigger (no debounce)
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const handleTriggerSearch = useCallback(() => {
+    setDebouncedSearch(searchTerm);
+  }, [searchTerm]);
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(searchTerm), 400);
-    return () => clearTimeout(t);
+    if (!searchTerm) setDebouncedSearch('');
   }, [searchTerm]);
 
   // Server pagination state
