@@ -7962,6 +7962,72 @@ export type Database = {
           total_spent: number
         }[]
       }
+      search_export_receipts: {
+        Args: {
+          _branch_id?: string
+          _date_from?: string
+          _date_to?: string
+          _page?: number
+          _page_size?: number
+          _search?: string
+          _status?: string
+        }
+        Returns: {
+          branch_id: string
+          branch_name: string
+          code: string
+          created_at: string
+          created_by: string
+          customer_address: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          discount_amount: number
+          export_date: string
+          final_amount: number
+          has_more: boolean
+          id: string
+          note: string
+          paid_amount: number
+          payment_source: string
+          payment_sources: Json
+          remaining_amount: number
+          sales_staff_id: string
+          status: string
+          tenant_id: string
+          total_amount: number
+          updated_at: string
+        }[]
+      }
+      search_import_receipts: {
+        Args: {
+          _branch_id?: string
+          _date_from?: string
+          _date_to?: string
+          _page?: number
+          _page_size?: number
+          _search?: string
+          _supplier_id?: string
+        }
+        Returns: {
+          branch_id: string
+          branch_name: string
+          code: string
+          created_at: string
+          created_by: string
+          id: string
+          import_date: string
+          note: string
+          paid_amount: number
+          remaining_amount: number
+          supplier_id: string
+          supplier_name: string
+          tenant_id: string
+          total_amount: number
+          total_count: number
+          updated_at: string
+        }[]
+      }
       search_product_suggestions: {
         Args: { p_limit?: number; p_search: string }
         Returns: {
