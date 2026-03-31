@@ -67,58 +67,34 @@ export function useImportReceipts(filters?: {
     queryFn: async () => {
       if (isDataHidden) return { items: [] as ImportReceipt[], totalCount: 0 };
 
-      let query = supabase
-        .from('import_receipts')
-        .select(`
-          *,
-          suppliers(name),
-          branches(name)
-        `, { count: 'exact' })
-        .order('import_date', { ascending: false });
-
       const effectiveBranchId = filters?.branchId && filters.branchId !== '_all_'
         ? filters.branchId
         : (shouldFilter && branchId ? branchId : null);
 
-      if (effectiveBranchId) {
-        query = query.eq('branch_id', effectiveBranchId);
+      const { data, error } = await supabase.rpc('search_import_receipts', {
+        _search: filters?.search?.trim() || null,
+        _supplier_id: (filters?.supplierId && filters.supplierId !== '_all_') ? filters.supplierId : null,
+        _date_from: filters?.dateFrom || null,
+        _date_to: filters?.dateTo || null,
+        _branch_id: effectiveBranchId || null,
+        _page: page,
+        _page_size: pageSize,
+      });
+
+      if (error) {
+        console.error('Import receipts RPC error:', error);
+        throw error;
       }
 
-      if (filters?.search) {
-        const s = filters.search.trim();
-        if (s) {
-          // Search by code or supplier name
-          const { data: matchingSuppliers } = await supabase
-            .from('suppliers')
-            .select('id')
-            .ilike('name', `%${s}%`)
-            .limit(50);
-          const supplierIds = matchingSuppliers?.map(c => c.id) || [];
-          if (supplierIds.length > 0) {
-            query = query.or(`code.ilike.%${s}%,supplier_id.in.(${supplierIds.join(',')})`);
-          } else {
-            query = query.ilike('code', `%${s}%`);
-          }
-        }
-      }
+      const rows = (data || []) as any[];
+      const totalCount = rows.length > 0 ? Number(rows[0].total_count) : 0;
+      const items: ImportReceipt[] = rows.map((r: any) => ({
+        ...r,
+        suppliers: r.supplier_name ? { name: r.supplier_name } : null,
+        branches: r.branch_name ? { name: r.branch_name } : null,
+      }));
 
-      if (filters?.supplierId && filters.supplierId !== '_all_') {
-        query = query.eq('supplier_id', filters.supplierId);
-      }
-      if (filters?.dateFrom) {
-        query = query.gte('import_date', filters.dateFrom);
-      }
-      if (filters?.dateTo) {
-        query = query.lte('import_date', filters.dateTo + 'T23:59:59');
-      }
-
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-      query = query.range(from, to);
-
-      const { data, error, count } = await query;
-      if (error) throw error;
-      return { items: (data || []) as unknown as ImportReceipt[], totalCount: count || 0 };
+      return { items, totalCount };
     },
     enabled: !isTenantLoading && !branchLoading,
     staleTime: 2 * 60 * 1000,
