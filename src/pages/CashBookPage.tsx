@@ -1109,7 +1109,7 @@ export default function CashBookPage() {
                                         source.color === 'purple' ? 'text-purple-600' : 'text-muted-foreground';
                 
                 return (
-                  <div key={source.id} className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <div key={source.id} className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer" onClick={() => setHistorySource({ id: source.id, name: source.name })}>
                     <div className="flex items-center gap-3">
                       <div className={cn("h-10 w-10 rounded-full flex items-center justify-center", colorClass)}>
                         {source.icon === 'banknote' ? (
