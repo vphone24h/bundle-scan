@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, CalendarIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,6 +17,9 @@ import type { Product } from '@/hooks/useProducts';
 import { formatCurrency } from '@/lib/mockData';
 import { PriceInput } from '@/components/ui/price-input';
 import { PRODUCT_UNITS } from '@/types/warehouse';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
+import { format, parseISO } from 'date-fns';
 
 interface EditProductDialogProps {
   product: Product | null;
