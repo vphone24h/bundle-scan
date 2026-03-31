@@ -32,6 +32,7 @@ export interface Product {
   unit: string;
   total_import_cost?: number;
   is_printed: boolean;
+  import_date_modified?: boolean;
   created_at?: string;
   updated_at?: string;
   group_id: string | null;
@@ -206,6 +207,7 @@ export function useAllProducts(filters?: {
           id, name, sku, imei, category_id, import_price, import_date,
           supplier_id, branch_id, import_receipt_id, status, note,
           quantity, total_import_cost, created_at, updated_at, unit,
+          import_date_modified,
           categories(name), suppliers(name), branches(name)
         `, { count: 'exact' })
         .order('import_date', { ascending: false });

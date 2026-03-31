@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, CalendarIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,6 +17,10 @@ import type { Product } from '@/hooks/useProducts';
 import { formatCurrency } from '@/lib/mockData';
 import { PriceInput } from '@/components/ui/price-input';
 import { PRODUCT_UNITS } from '@/types/warehouse';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
+import { format, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface EditProductDialogProps {
   product: Product | null;
@@ -34,6 +38,11 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
   const canEditSalePrice = permissions?.canEditSalePrice === true;
   const isBranchAdmin = permissions?.role === 'branch_admin';
 
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked: securityUnlocked, unlock: securityUnlock } = useSecurityUnlock('edit-import-date');
+  const [showSecurityDialog, setShowSecurityDialog] = useState(false);
+  const [pendingDateChange, setPendingDateChange] = useState<string | null>(null);
+
   // Branch Admin chỉ được sửa sản phẩm thuộc chi nhánh mình
   const isOwnBranch = isSuperAdmin || (product?.branch_id === permissions?.branchId);
 
@@ -47,10 +56,14 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     supplier_id: '',
     branch_id: '',
     unit: 'cái',
+    import_date: '',
   });
+
+  const [originalImportDate, setOriginalImportDate] = useState('');
 
   useEffect(() => {
     if (product) {
+      const importDateStr = product.import_date ? format(parseISO(product.import_date), 'yyyy-MM-dd\'T\'HH:mm') : '';
       setFormData({
         name: product.name || '',
         sku: product.sku || '',
@@ -61,9 +74,29 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         supplier_id: product.supplier_id || '_none_',
         branch_id: product.branch_id || '_none_',
         unit: product.unit || 'cái',
+        import_date: importDateStr,
       });
+      setOriginalImportDate(importDateStr);
     }
   }, [product]);
+
+  const handleImportDateChange = (newDate: string) => {
+    if (newDate !== originalImportDate && hasSecurityPassword && !securityUnlocked) {
+      setPendingDateChange(newDate);
+      setShowSecurityDialog(true);
+      return;
+    }
+    setFormData(prev => ({ ...prev, import_date: newDate }));
+  };
+
+  const handleSecuritySuccess = () => {
+    securityUnlock();
+    setShowSecurityDialog(false);
+    if (pendingDateChange) {
+      setFormData(prev => ({ ...prev, import_date: pendingDateChange }));
+      setPendingDateChange(null);
+    }
+  };
 
   const updateProduct = useMutation({
     mutationFn: async ({ 
@@ -72,26 +105,8 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       oldData
     }: { 
       productId: string; 
-      updates: {
-        name?: string;
-        sku?: string;
-        imei?: string | null;
-        note?: string | null;
-        sale_price?: number | null;
-        category_id?: string | null;
-        supplier_id?: string | null;
-        branch_id?: string | null;
-      };
-      oldData: {
-        name: string;
-        sku: string;
-        imei: string | null;
-        note: string | null;
-        sale_price: number | null;
-        category_id: string | null;
-        supplier_id: string | null;
-        branch_id: string | null;
-      };
+      updates: Record<string, any>;
+      oldData: Record<string, any>;
     }) => {
       // Kiểm tra IMEI trùng nếu có giá trị mới
       if (updates.imei) {
@@ -120,13 +135,16 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       const { data: { user } } = await supabase.auth.getUser();
       
       if (tenantId.data) {
+        const isDateChanged = updates.import_date && oldData.import_date !== updates.import_date;
         await supabase.from('audit_logs').insert({
           tenant_id: tenantId.data,
           user_id: user?.id,
-          action_type: 'UPDATE',
+          action_type: isDateChanged ? 'UPDATE_IMPORT_DATE' : 'UPDATE',
           table_name: 'products',
           record_id: productId,
-          description: `Chỉnh sửa sản phẩm: ${oldData.name}`,
+          description: isDateChanged 
+            ? `Chỉnh sửa ngày nhập: ${oldData.name} (${oldData.import_date} → ${updates.import_date})`
+            : `Chỉnh sửa sản phẩm: ${oldData.name}`,
           old_data: oldData,
           new_data: updates,
           branch_id: updates.branch_id || oldData.branch_id,
@@ -136,6 +154,8 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['all-products'] });
+      queryClient.invalidateQueries({ queryKey: ['import-receipts'] });
     },
   });
 
@@ -153,7 +173,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     }
 
     try {
-      const oldData = {
+      const oldData: Record<string, any> = {
         name: product.name,
         sku: product.sku,
         imei: product.imei,
@@ -162,6 +182,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         category_id: product.category_id,
         supplier_id: product.supplier_id,
         branch_id: product.branch_id,
+        import_date: product.import_date,
       };
 
       const updates: Record<string, any> = {
@@ -180,6 +201,13 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       }
       if (isSuperAdmin) {
         updates.branch_id = formData.branch_id === '_none_' ? null : formData.branch_id;
+      }
+
+      // Chỉnh sửa ngày nhập
+      const dateChanged = formData.import_date && formData.import_date !== originalImportDate;
+      if (dateChanged) {
+        updates.import_date = new Date(formData.import_date).toISOString();
+        updates.import_date_modified = true;
       }
 
       await updateProduct.mutateAsync({
@@ -204,6 +232,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
@@ -415,6 +444,28 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                   </>
                 )}
               </div>
+
+              {/* Ngày nhập */}
+              <div className="space-y-2">
+                <Label htmlFor="import_date" className="flex items-center gap-1.5">
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  Ngày giờ nhập
+                </Label>
+                <Input
+                  id="import_date"
+                  type="datetime-local"
+                  value={formData.import_date}
+                  onChange={(e) => handleImportDateChange(e.target.value)}
+                  className={cn(
+                    formData.import_date !== originalImportDate && 'border-green-500 ring-1 ring-green-500/30'
+                  )}
+                />
+                {formData.import_date !== originalImportDate && (
+                  <p className="text-xs text-green-600 font-medium">
+                    ⚠ Ngày nhập đã thay đổi — sản phẩm sẽ hiển thị ở ngày mới trong lịch sử nhập
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -431,5 +482,14 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <SecurityPasswordDialog
+      open={showSecurityDialog}
+      onOpenChange={setShowSecurityDialog}
+      onSuccess={handleSecuritySuccess}
+      title="Xác nhận chỉnh sửa ngày nhập"
+      description="Thay đổi ngày nhập là thao tác nhạy cảm. Vui lòng nhập mật khẩu bảo mật."
+    />
+    </>
   );
 }

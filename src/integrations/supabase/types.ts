@@ -4811,6 +4811,7 @@ export type Database = {
           id: string
           imei: string | null
           import_date: string
+          import_date_modified: boolean
           import_price: number
           import_receipt_id: string | null
           is_printed: boolean
@@ -4839,6 +4840,7 @@ export type Database = {
           id?: string
           imei?: string | null
           import_date?: string
+          import_date_modified?: boolean
           import_price: number
           import_receipt_id?: string | null
           is_printed?: boolean
@@ -4867,6 +4869,7 @@ export type Database = {
           id?: string
           imei?: string | null
           import_date?: string
+          import_date_modified?: boolean
           import_price?: number
           import_receipt_id?: string | null
           is_printed?: boolean
