@@ -30,13 +30,20 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
 
   const [warranty, setWarranty] = useState('');
   const [note, setNote] = useState('');
+  const [salePrice, setSalePrice] = useState('');
+  const [originalSalePrice, setOriginalSalePrice] = useState('');
   const [exportDate, setExportDate] = useState('');
   const [originalExportDate, setOriginalExportDate] = useState('');
+
+  const quantity = item?.quantity || 1;
+  const totalAmount = Number(salePrice || 0) * quantity;
 
   useEffect(() => {
     if (item) {
       setWarranty(item.warranty || '');
       setNote(item.note || '');
+      setSalePrice(String(item.sale_price || 0));
+      setOriginalSalePrice(String(item.sale_price || 0));
       const dateStr = item.export_receipts?.export_date 
         ? format(parseISO(item.export_receipts.export_date), "yyyy-MM-dd'T'HH:mm")
         : '';
