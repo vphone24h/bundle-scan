@@ -96,6 +96,7 @@ export function TenantsManagement() {
   const [usageFilter, setUsageFilter] = useState('_all_');
   const [websiteFilter, setWebsiteFilter] = useState('_all_');
   const [einvoiceFilter, setEinvoiceFilter] = useState('_all_');
+  const [needFilter, setNeedFilter] = useState('_all_');
 
   const filteredTenants = tenants?.filter(t => {
     // Text search
@@ -124,7 +125,11 @@ export function TenantsManagement() {
       (einvoiceFilter === 'on' && t.einvoice_enabled) ||
       (einvoiceFilter === 'off' && !t.einvoice_enabled);
     
-    return matchSearch && matchStatus && matchUsage && matchWebsite && matchEinvoice;
+    // Business need filter
+    const matchNeed = needFilter === '_all_' ||
+      (t as any).business_need === needFilter;
+    
+    return matchSearch && matchStatus && matchUsage && matchWebsite && matchEinvoice && matchNeed;
   });
 
   const handleAction = async () => {
@@ -460,6 +465,17 @@ export function TenantsManagement() {
               <SelectItem value="off">HĐĐT tắt</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={needFilter} onValueChange={setNeedFilter}>
+            <SelectTrigger className="w-[140px] h-9 text-xs sm:text-sm">
+              <SelectValue placeholder="Nhu cầu" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all_">Tất cả NC</SelectItem>
+              <SelectItem value="warehouse">Quản lý kho</SelectItem>
+              <SelectItem value="website">Website + Email</SelectItem>
+              <SelectItem value="both">Cả 2</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -483,7 +499,7 @@ export function TenantsManagement() {
                 </TableHead>
                 <TableHead>Doanh nghiệp</TableHead>
                 <TableHead>Ngành nghề</TableHead>
-                <TableHead>Store ID</TableHead>
+                <TableHead>Nhu cầu</TableHead>
                 <TableHead>Website</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>SĐT</TableHead>
@@ -527,6 +543,13 @@ export function TenantsManagement() {
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-muted-foreground">{(tenant as any).business_type || '-'}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-muted-foreground">
+                        {(tenant as any).business_need === 'warehouse' ? '📦 Quản lý kho' :
+                         (tenant as any).business_need === 'website' ? '🌐 Website' :
+                         (tenant as any).business_need === 'both' ? '🚀 Cả 2' : '-'}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
@@ -701,6 +724,13 @@ export function TenantsManagement() {
                       <p className="font-medium">{tenant.name}</p>
                       {(tenant as any).business_type && (
                         <p className="text-xs text-muted-foreground">{(tenant as any).business_type}</p>
+                      )}
+                      {(tenant as any).business_need && (
+                        <p className="text-xs text-muted-foreground">
+                          {(tenant as any).business_need === 'warehouse' ? '📦 Quản lý kho' :
+                           (tenant as any).business_need === 'website' ? '🌐 Website' :
+                           (tenant as any).business_need === 'both' ? '🚀 Cả 2' : ''}
+                        </p>
                       )}
                       <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
                         {tenant.subdomain}
