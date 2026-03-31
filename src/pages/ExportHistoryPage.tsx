@@ -875,7 +875,10 @@ export default function ExportHistoryPage() {
                     {(filteredReceipts || []).map((receipt) => {
                       const isReceiptToday = isToday(new Date(receipt.export_date));
                       return (
-                      <TableRow key={receipt.id} className={isReceiptToday ? 'text-destructive' : ''}>
+                      <TableRow key={receipt.id} className={cn(
+                        (receipt as any).export_date_modified && 'bg-green-50 dark:bg-green-950/20',
+                        isReceiptToday && !(receipt as any).export_date_modified && 'text-destructive'
+                      )}>
                         <TableCell 
                           className="font-medium text-primary cursor-pointer hover:underline"
                           onClick={() => handleViewDetail(receipt)}
@@ -1030,7 +1033,10 @@ export default function ExportHistoryPage() {
                       const isItemToday = item.export_receipts?.export_date ? isToday(new Date(item.export_receipts.export_date)) : false;
                       
                       return (
-                        <TableRow key={groupedItem.groupedIds?.join('-') || item.id} className={isItemToday ? 'text-destructive' : ''}>
+                        <TableRow key={groupedItem.groupedIds?.join('-') || item.id} className={cn(
+                          (item.export_receipts as any)?.export_date_modified && 'bg-green-50 dark:bg-green-950/20',
+                          isItemToday && !(item.export_receipts as any)?.export_date_modified && 'text-destructive'
+                        )}>
                           <TableCell>
                             <div className="font-medium">{item.product_name}</div>
                             <div className="text-xs text-muted-foreground">
