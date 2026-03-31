@@ -84,6 +84,7 @@ import { TransferFundsDialog } from '@/components/cashbook/TransferFundsDialog';
 import { BalanceHistorySection } from '@/components/cashbook/BalanceHistorySection';
 import { CashBookDetailDialog } from '@/components/cashbook/CashBookDetailDialog';
 import { OpeningBalanceDialog } from '@/components/cashbook/OpeningBalanceDialog';
+import { PaymentSourceHistoryDialog } from '@/components/cashbook/PaymentSourceHistoryDialog';
 import { useLatestOpeningBalances } from '@/hooks/useOpeningBalance';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useProfile } from '@/hooks/useProfile';
@@ -233,6 +234,7 @@ export default function CashBookPage() {
   const [editingSourceName, setEditingSourceName] = useState('');
   const [deleteSourceTarget, setDeleteSourceTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleteSourceConfirmText, setDeleteSourceConfirmText] = useState('');
+  const [historySource, setHistorySource] = useState<{ id: string; name: string } | null>(null);
   
   // Security password protection
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
@@ -1107,7 +1109,7 @@ export default function CashBookPage() {
                                         source.color === 'purple' ? 'text-purple-600' : 'text-muted-foreground';
                 
                 return (
-                  <div key={source.id} className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                  <div key={source.id} className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer" onClick={() => setHistorySource({ id: source.id, name: source.name })}>
                     <div className="flex items-center gap-3">
                       <div className={cn("h-10 w-10 rounded-full flex items-center justify-center", colorClass)}>
                         {source.icon === 'banknote' ? (
@@ -1164,7 +1166,7 @@ export default function CashBookPage() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -2454,6 +2456,16 @@ export default function CashBookPage() {
         onComplete={() => { completeCashTour(); setManualTourActive(false); }}
         onSkip={() => { completeCashTour(); setManualTourActive(false); }}
         tourKey="cashbook_guide"
+      />
+
+      <PaymentSourceHistoryDialog
+        open={!!historySource}
+        onOpenChange={(open) => { if (!open) setHistorySource(null); }}
+        sourceName={historySource?.name || ''}
+        sourceId={historySource?.id || ''}
+        allEntries={allEntries || []}
+        branches={(branches || []).map(b => ({ id: b.id, name: b.name }))}
+        openingBalance={historySource ? (latestOpeningBalances?.[historySource.id]?.amount || 0) : 0}
       />
 
       <SecurityPasswordDialog
