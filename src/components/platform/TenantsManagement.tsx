@@ -125,7 +125,11 @@ export function TenantsManagement() {
       (einvoiceFilter === 'on' && t.einvoice_enabled) ||
       (einvoiceFilter === 'off' && !t.einvoice_enabled);
     
-    return matchSearch && matchStatus && matchUsage && matchWebsite && matchEinvoice;
+    // Business need filter
+    const matchNeed = needFilter === '_all_' ||
+      (t as any).business_need === needFilter;
+    
+    return matchSearch && matchStatus && matchUsage && matchWebsite && matchEinvoice && matchNeed;
   });
 
   const handleAction = async () => {
