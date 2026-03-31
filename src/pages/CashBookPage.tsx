@@ -234,6 +234,7 @@ export default function CashBookPage() {
   const [editingSourceName, setEditingSourceName] = useState('');
   const [deleteSourceTarget, setDeleteSourceTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleteSourceConfirmText, setDeleteSourceConfirmText] = useState('');
+  const [historySource, setHistorySource] = useState<{ id: string; name: string } | null>(null);
   
   // Security password protection
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
