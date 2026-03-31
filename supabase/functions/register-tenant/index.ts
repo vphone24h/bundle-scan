@@ -508,6 +508,7 @@ Deno.serve(async (req) => {
         email,
         business_type: businessType,
         business_mode: businessMode,
+        business_need: businessNeed,
       })
       .select()
       .single()
