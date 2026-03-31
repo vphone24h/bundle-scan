@@ -84,6 +84,7 @@ import { TransferFundsDialog } from '@/components/cashbook/TransferFundsDialog';
 import { BalanceHistorySection } from '@/components/cashbook/BalanceHistorySection';
 import { CashBookDetailDialog } from '@/components/cashbook/CashBookDetailDialog';
 import { OpeningBalanceDialog } from '@/components/cashbook/OpeningBalanceDialog';
+import { PaymentSourceHistoryDialog } from '@/components/cashbook/PaymentSourceHistoryDialog';
 import { useLatestOpeningBalances } from '@/hooks/useOpeningBalance';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useProfile } from '@/hooks/useProfile';
