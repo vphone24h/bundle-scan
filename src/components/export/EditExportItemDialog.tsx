@@ -152,10 +152,12 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
       const oldData: Record<string, any> = {
         warranty: item.warranty || null,
         note: item.note || null,
+        sale_price: item.sale_price,
         export_date: item.export_receipts?.export_date || null,
       };
 
       const dateChanged = exportDate && exportDate !== originalExportDate;
+      const priceChanged = salePrice !== originalSalePrice;
       const receiptId = (item.export_receipts as any)?.id || item.receipt_id;
 
       await updateItem.mutateAsync({
@@ -163,13 +165,15 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
         updates: {
           warranty: warranty.trim() || null,
           note: note.trim() || null,
+          ...(priceChanged ? { sale_price: Number(salePrice) } : {}),
         },
         oldData,
-        receiptId: dateChanged ? receiptId : undefined,
+        receiptId: (dateChanged || priceChanged) ? receiptId : undefined,
         dateUpdates: dateChanged ? {
           export_date: new Date(exportDate).toISOString(),
           export_date_modified: true,
         } : undefined,
+        priceChanged,
       });
 
       toast({
