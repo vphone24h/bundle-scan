@@ -190,13 +190,26 @@ function getCachedPublicLandingData(
     hostname: typeof window !== 'undefined' ? window.location.hostname : null,
   });
 
-  const cached = readPublicLandingCache(cacheKeys) || readLastSuccessfulPublicLandingCache();
-  if (!cached?.tenant || !('settings' in cached)) return null;
+  const keyedCache = readPublicLandingCache(cacheKeys);
+  if (keyedCache?.tenant && 'settings' in keyedCache) {
+    return {
+      tenant: keyedCache.tenant,
+      settings: keyedCache.settings as TenantLandingSettings,
+      branches: (keyedCache.branches || []) as BranchInfo[],
+    };
+  }
+
+  // Với URL có định danh cửa hàng rõ ràng (subdomain/tenantId), tuyệt đối không fallback sang cache cửa hàng gần nhất.
+  const hasExplicitIdentity = Boolean((subdomain || '').trim() || (tenantIdFromDomain || '').trim());
+  if (hasExplicitIdentity) return null;
+
+  const lastSuccessCache = readLastSuccessfulPublicLandingCache();
+  if (!lastSuccessCache?.tenant || !('settings' in lastSuccessCache)) return null;
 
   return {
-    tenant: cached.tenant,
-    settings: cached.settings as TenantLandingSettings,
-    branches: (cached.branches || []) as BranchInfo[],
+    tenant: lastSuccessCache.tenant,
+    settings: lastSuccessCache.settings as TenantLandingSettings,
+    branches: (lastSuccessCache.branches || []) as BranchInfo[],
   };
 }
 

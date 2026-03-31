@@ -286,6 +286,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   );
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const storeIdFromParamsNormalized = storeIdFromParams?.trim().toLowerCase() || null;
   const storeIdFromQueryRaw = searchParams.get('store')?.trim().toLowerCase() || null;
   const storeIdFromQuery = isCustomDomainHost ? null : storeIdFromQueryRaw;
 
@@ -310,15 +311,21 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     }
   }, [isCustomDomainHost]);
 
-  // IMPORTANT: on custom domains, never let store hint/query override tenant-id resolution.
+  const hasExplicitStoreSelectorOnMainDomain = tenantHostInfo.isMainDomain && (
+    !!storeIdFromParamsNormalized || !!storeIdFromQuery
+  );
+
+  // IMPORTANT: with explicit /store/:id or ?store= on main domain, never reuse persisted tenantId from another store.
   const storeId = storeIdFromSubdomain
-    || storeIdFromParams
+    || storeIdFromParamsNormalized
     || resolvedTenant.subdomain
     || storeIdFromQuery
     || storeIdFromHint
     || persistedIdentity?.shopId
     || null;
-  const resolvedTenantId = resolvedTenant.tenantId || persistedIdentity?.tenantId || null;
+  const resolvedTenantId = hasExplicitStoreSelectorOnMainDomain
+    ? null
+    : (resolvedTenant.tenantId || persistedIdentity?.tenantId || null);
   const hasIdentifier = !!storeId || !!resolvedTenantId;
   const hasRecoverySignal = hasIdentifier || !!storeIdFromHint || !!persistedIdentity?.shopId || !!persistedIdentity?.tenantId;
 
