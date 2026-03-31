@@ -172,7 +172,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     }
 
     try {
-      const oldData = {
+      const oldData: Record<string, any> = {
         name: product.name,
         sku: product.sku,
         imei: product.imei,
@@ -181,6 +181,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         category_id: product.category_id,
         supplier_id: product.supplier_id,
         branch_id: product.branch_id,
+        import_date: product.import_date,
       };
 
       const updates: Record<string, any> = {
@@ -199,6 +200,13 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       }
       if (isSuperAdmin) {
         updates.branch_id = formData.branch_id === '_none_' ? null : formData.branch_id;
+      }
+
+      // Chỉnh sửa ngày nhập
+      const dateChanged = formData.import_date && formData.import_date !== originalImportDate;
+      if (dateChanged) {
+        updates.import_date = new Date(formData.import_date).toISOString();
+        updates.import_date_modified = true;
       }
 
       await updateProduct.mutateAsync({
