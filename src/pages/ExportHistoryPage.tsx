@@ -213,7 +213,7 @@ export default function ExportHistoryPage() {
 
   // Hooks
   const { data: receipts, isLoading: receiptsLoading, isFetching: receiptsFetching, hasMore: receiptsHasMore } = useExportReceipts({
-    search: debouncedSearch || undefined,
+    search: activeTab === 'receipts' ? (debouncedSearch || undefined) : undefined,
     status: statusFilter !== '_all_' ? statusFilter : undefined,
     dateFrom: dateFromFilter || undefined,
     dateTo: dateToFilter || undefined,
@@ -222,15 +222,16 @@ export default function ExportHistoryPage() {
     pageSize: receiptPageSize,
   });
   const { data: items, isLoading: itemsLoading, isFetching: itemsFetching, totalCount: itemsTotalCount } = useExportReceiptItems(activeTab === 'items', {
-    search: debouncedSearch || undefined,
+    search: activeTab === 'items' ? (debouncedSearch || undefined) : undefined,
     categoryId: categoryFilter !== '_all_' ? categoryFilter : undefined,
     page: itemPage,
     pageSize: itemPageSize,
   });
-  // Stop search spinner when data finishes loading
+  // Stop search spinner when active tab data finishes loading
+  const activeTabFetching = activeTab === 'receipts' ? receiptsFetching : (activeTab === 'items' ? itemsFetching : false);
   useEffect(() => {
-    if (isSearching && !receiptsFetching && !itemsFetching) setIsSearching(false);
-  }, [isSearching, receiptsFetching, itemsFetching]);
+    if (isSearching && !activeTabFetching) setIsSearching(false);
+  }, [isSearching, activeTabFetching]);
   // On-demand detail items for selected receipt (detail/print)
   const detailReceiptId = selectedReceipt?.id || printReceipt?.receiptId || null;
   const { data: detailItems, isLoading: detailItemsLoading } = useExportReceiptDetail(detailReceiptId);
