@@ -29,7 +29,11 @@ export function getPublicLandingCacheKeys(params: {
 
   if (normalizedSubdomain) keys.add(buildKey(`subdomain:${normalizedSubdomain}`));
   if (normalizedTenantId) keys.add(buildKey(`tenant:${normalizedTenantId}`));
-  if (normalizedHostname) keys.add(buildKey(`host:${normalizedHostname}`));
+
+  // Host-level cache chỉ dùng khi chưa biết định danh cửa hàng cụ thể.
+  // Tránh tình trạng /store/A đọc nhầm cache /store/B trên cùng hostname.
+  const shouldUseHostCache = !normalizedSubdomain && !normalizedTenantId;
+  if (shouldUseHostCache && normalizedHostname) keys.add(buildKey(`host:${normalizedHostname}`));
 
   return Array.from(keys);
 }
