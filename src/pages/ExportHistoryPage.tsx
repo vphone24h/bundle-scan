@@ -1098,30 +1098,33 @@ export default function ExportHistoryPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {!isGrouped && (
                               <div className="flex gap-1">
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => setEditItem(item)}
+                                  onClick={() => {
+                                    const editData = { ...item, _groupedIds: groupedItem.groupedIds, _groupedQuantity: quantity };
+                                    setEditItem(editData as any);
+                                  }}
                                   className="h-7 w-7"
                                   title="Sửa thông tin"
                                 >
                                   <Pencil className="h-3 w-3" />
                                 </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleReturn(item)}
-                                  disabled={item.status === 'returned' || returnProduct.isPending}
-                                  title="Trả hàng"
-                                  data-tour="export-item-return"
-                                >
-                                  <RotateCcw className="h-4 w-4 mr-1" />
-                                  Trả
-                                </Button>
+                                {!isGrouped && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleReturn(item)}
+                                    disabled={item.status === 'returned' || returnProduct.isPending}
+                                    title="Trả hàng"
+                                    data-tour="export-item-return"
+                                  >
+                                    <RotateCcw className="h-4 w-4 mr-1" />
+                                    Trả
+                                  </Button>
+                                )}
                               </div>
-                            )}
                           </TableCell>
                         </TableRow>
                       );
