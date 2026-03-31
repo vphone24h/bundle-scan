@@ -442,6 +442,28 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                   </>
                 )}
               </div>
+
+              {/* Ngày nhập */}
+              <div className="space-y-2">
+                <Label htmlFor="import_date" className="flex items-center gap-1.5">
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  Ngày giờ nhập
+                </Label>
+                <Input
+                  id="import_date"
+                  type="datetime-local"
+                  value={formData.import_date}
+                  onChange={(e) => handleImportDateChange(e.target.value)}
+                  className={cn(
+                    formData.import_date !== originalImportDate && 'border-green-500 ring-1 ring-green-500/30'
+                  )}
+                />
+                {formData.import_date !== originalImportDate && (
+                  <p className="text-xs text-green-600 font-medium">
+                    ⚠ Ngày nhập đã thay đổi — sản phẩm sẽ hiển thị ở ngày mới trong lịch sử nhập
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -458,5 +480,14 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <SecurityPasswordDialog
+      open={showSecurityDialog}
+      onOpenChange={setShowSecurityDialog}
+      onSuccess={handleSecuritySuccess}
+      title="Xác nhận chỉnh sửa ngày nhập"
+      description="Thay đổi ngày nhập là thao tác nhạy cảm. Vui lòng nhập mật khẩu bảo mật."
+    />
+    </>
   );
 }
