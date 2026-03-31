@@ -7589,6 +7589,7 @@ export type Database = {
           customer_name: string
           customer_phone: string
           export_date: string
+          export_date_modified: boolean
           has_more: boolean
           id: string
           imei: string
@@ -7990,6 +7991,7 @@ export type Database = {
           customer_phone: string
           discount_amount: number
           export_date: string
+          export_date_modified: boolean
           final_amount: number
           has_more: boolean
           id: string
