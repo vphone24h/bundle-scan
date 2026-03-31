@@ -173,11 +173,15 @@ export default function ExportHistoryPage() {
 
   // Manual search trigger (no debounce)
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const handleTriggerSearch = useCallback(() => {
-    setDebouncedSearch(searchTerm);
+    if (searchTerm.length >= 2) {
+      setDebouncedSearch(searchTerm);
+      setIsSearching(true);
+    }
   }, [searchTerm]);
   useEffect(() => {
-    if (!searchTerm) setDebouncedSearch('');
+    if (!searchTerm) { setDebouncedSearch(''); setIsSearching(false); }
   }, [searchTerm]);
 
   // Server pagination state
@@ -223,6 +227,10 @@ export default function ExportHistoryPage() {
     page: itemPage,
     pageSize: itemPageSize,
   });
+  // Stop search spinner when data finishes loading
+  useEffect(() => {
+    if (isSearching && !receiptsFetching && !itemsFetching) setIsSearching(false);
+  }, [isSearching, receiptsFetching, itemsFetching]);
   // On-demand detail items for selected receipt (detail/print)
   const detailReceiptId = selectedReceipt?.id || printReceipt?.receiptId || null;
   const { data: detailItems, isLoading: detailItemsLoading } = useExportReceiptDetail(detailReceiptId);
@@ -653,18 +661,20 @@ export default function ExportHistoryPage() {
                   onKeyDown={(e) => { if (e.key === 'Enter') handleTriggerSearch(); }}
                 />
               </div>
-              <Button
-                onClick={handleTriggerSearch}
-                disabled={!searchTerm || (receiptsFetching || itemsFetching)}
-                className="gap-2 shrink-0"
-              >
-                {(!!debouncedSearch && (receiptsFetching || itemsFetching)) ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Search className="h-4 w-4" />
-                )}
-                Tìm
-              </Button>
+              {searchTerm.length >= 2 && (
+                <Button
+                  onClick={handleTriggerSearch}
+                  disabled={isSearching}
+                  className="gap-2 shrink-0"
+                >
+                  {isSearching ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                  Tìm
+                </Button>
+              )}
               <Button
                 variant={showFilters ? 'secondary' : 'outline'}
                 onClick={() => setShowFilters(!showFilters)}

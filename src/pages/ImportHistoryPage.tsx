@@ -143,12 +143,15 @@ export default function ImportHistoryPage() {
 
   // Manual search trigger (no debounce)
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const handleTriggerSearch = useCallback(() => {
-    setDebouncedSearch(searchTerm);
+    if (searchTerm.length >= 2) {
+      setDebouncedSearch(searchTerm);
+      setIsSearching(true);
+    }
   }, [searchTerm]);
-  // Also clear debouncedSearch when searchTerm is cleared
   useEffect(() => {
-    if (!searchTerm) setDebouncedSearch('');
+    if (!searchTerm) { setDebouncedSearch(''); setIsSearching(false); }
   }, [searchTerm]);
 
   // Reset pages on filter change
@@ -234,6 +237,11 @@ export default function ImportHistoryPage() {
 
   const { data: products, isLoading: productsLoading, totalCount: productsTotalCount } = useAllProducts(productServerFilters);
   
+  // Stop search spinner when data finishes loading
+  useEffect(() => {
+    if (isSearching && !receiptsLoading && !productsLoading) setIsSearching(false);
+  }, [isSearching, receiptsLoading, productsLoading]);
+
   const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
   const { data: receiptDetails, isLoading: detailsLoading } = useImportReceiptDetails(selectedReceiptId);
   
@@ -646,18 +654,20 @@ export default function ImportHistoryPage() {
                   containerClassName="flex-1"
                   onKeyDown={(e) => { if (e.key === 'Enter') handleTriggerSearch(); }}
                 />
-                <Button
-                  onClick={handleTriggerSearch}
-                  disabled={!searchTerm || (receiptsLoading || productsLoading)}
-                  className="gap-2 shrink-0"
-                >
-                  {(!!debouncedSearch && (receiptsLoading || productsLoading)) ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="h-4 w-4" />
-                  )}
-                  Tìm
-                </Button>
+                {searchTerm.length >= 2 && (
+                  <Button
+                    onClick={handleTriggerSearch}
+                    disabled={isSearching}
+                    className="gap-2 shrink-0"
+                  >
+                    {isSearching ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="h-4 w-4" />
+                    )}
+                    Tìm
+                  </Button>
+                )}
                 <Button
                   variant={showFilters ? 'secondary' : 'outline'}
                   onClick={() => setShowFilters(!showFilters)}
