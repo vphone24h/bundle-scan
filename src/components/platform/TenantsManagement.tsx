@@ -725,6 +725,13 @@ export function TenantsManagement() {
                       {(tenant as any).business_type && (
                         <p className="text-xs text-muted-foreground">{(tenant as any).business_type}</p>
                       )}
+                      {(tenant as any).business_need && (
+                        <p className="text-xs text-muted-foreground">
+                          {(tenant as any).business_need === 'warehouse' ? '📦 Quản lý kho' :
+                           (tenant as any).business_need === 'website' ? '🌐 Website' :
+                           (tenant as any).business_need === 'both' ? '🚀 Cả 2' : ''}
+                        </p>
+                      )}
                       <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
                         {tenant.subdomain}
                       </code>
