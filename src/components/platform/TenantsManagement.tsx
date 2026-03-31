@@ -499,7 +499,7 @@ export function TenantsManagement() {
                 </TableHead>
                 <TableHead>Doanh nghiệp</TableHead>
                 <TableHead>Ngành nghề</TableHead>
-                <TableHead>Store ID</TableHead>
+                <TableHead>Nhu cầu</TableHead>
                 <TableHead>Website</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>SĐT</TableHead>
