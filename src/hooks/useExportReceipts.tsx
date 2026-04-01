@@ -256,6 +256,64 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
   };
 }
 
+export function useExportReceiptItemById(itemId: string | null) {
+  const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden ?? false;
+  const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+
+  return useQuery({
+    queryKey: ['export-receipt-item-by-id', tenant?.id, branchId, isDataHidden, itemId],
+    queryFn: async () => {
+      if (!itemId || isDataHidden) return null;
+
+      let query = supabase
+        .from('export_receipt_items')
+        .select(`
+          id,
+          receipt_id,
+          product_id,
+          product_name,
+          sku,
+          imei,
+          category_id,
+          sale_price,
+          quantity,
+          unit,
+          status,
+          note,
+          warranty,
+          created_at,
+          categories(name),
+          export_receipts!inner(
+            code,
+            export_date,
+            branch_id,
+            customer_id,
+            created_by,
+            status,
+            sales_staff_id,
+            customers(name, phone),
+            branches(name)
+          )
+        `)
+        .eq('id', itemId)
+        .maybeSingle();
+
+      if (shouldFilter && branchId) {
+        query = query.eq('export_receipts.branch_id', branchId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      return (data || null) as ExportReceiptItemDetail | null;
+    },
+    enabled: !!itemId && !isTenantLoading && !branchLoading,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+}
+
 export function useCreateExportReceipt() {
   const queryClient = useQueryClient();
 
