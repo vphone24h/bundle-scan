@@ -13,6 +13,7 @@ import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurit
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 import { PriceInput } from '@/components/ui/price-input';
 import type { ExportReceipt, ExportReceiptItemDetail } from '@/hooks/useExportReceipts';
+import { CustomerFormDialog } from '@/components/customers/CustomerFormDialog';
 
 interface EditExportReceiptDialogProps {
   receipt: ExportReceipt | null;
