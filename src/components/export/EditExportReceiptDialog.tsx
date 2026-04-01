@@ -174,10 +174,11 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
   // Computed
   const dateChanged = exportDate && exportDate !== originalExportDate;
   const customerChanged = selectedCustomerId !== originalCustomerId;
+  const customerInfoChanged = editCustomerName !== originalCustomerNameVal || editCustomerPhone !== originalCustomerPhoneVal;
   const priceChanges = editableItems.filter(i => i.sale_price !== i.original_sale_price);
   const hasPriceChanges = priceChanges.length > 0;
   const newTotal = editableItems.reduce((sum, i) => sum + (i.sale_price * i.quantity), 0);
-  const hasChanges = dateChanged || customerChanged || hasPriceChanges;
+  const hasChanges = dateChanged || customerChanged || customerInfoChanged || hasPriceChanges;
 
   const updateReceipt = useMutation({
     mutationFn: async () => {
