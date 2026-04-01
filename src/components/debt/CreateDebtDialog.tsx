@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
 import {
   Dialog,
   DialogContent,
@@ -15,14 +13,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PriceInput } from '@/components/ui/price-input';
-import { CalendarIcon, Loader2, Building2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Loader2, Building2, Search, Plus, Phone, User, X, Truck } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useBranches } from '@/hooks/useBranches';
+import { useSuppliers, type Supplier } from '@/hooks/useSuppliers';
+import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombobox';
 
 interface CreateDebtDialogProps {
   open: boolean;
@@ -30,7 +27,6 @@ interface CreateDebtDialogProps {
   entityType: 'customer' | 'supplier';
 }
 
-// Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
   const { data } = await supabase.rpc('get_user_tenant_id_secure');
   return data;
@@ -46,24 +42,67 @@ export function CreateDebtDialog({
   const { data: branches } = useBranches();
   const isSuperAdmin = permissions?.canViewAllBranches === true;
 
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [birthday, setBirthday] = useState<Date | undefined>();
+  const isCustomer = entityType === 'customer';
+
+  // Common state
   const [amount, setAmount] = useState(0);
   const [note, setNote] = useState('');
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
 
-  const isCustomer = entityType === 'customer';
+  // Customer search state (for CustomerSearchCombobox)
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerSource, setCustomerSource] = useState('');
+  const [customerBirthday, setCustomerBirthday] = useState<Date | undefined>();
 
-  // Auto-set branch for non-super-admin
+  // Supplier search state
+  const [supplierSearchQuery, setSupplierSearchQuery] = useState('');
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
+  const [isAddingNewSupplier, setIsAddingNewSupplier] = useState(false);
+  const [newSupplierName, setNewSupplierName] = useState('');
+  const [newSupplierPhone, setNewSupplierPhone] = useState('');
+  const supplierSearchRef = useRef<HTMLDivElement>(null);
+
+  const { data: allSuppliers } = useSuppliers();
+
+  // Filter suppliers based on search
+  const filteredSuppliers = (allSuppliers || []).filter(s => {
+    if (!supplierSearchQuery.trim()) return false;
+    const q = supplierSearchQuery.trim().toLowerCase();
+    return s.name.toLowerCase().includes(q) || (s.phone && s.phone.includes(q));
+  }).slice(0, 8);
+
+  // Close supplier dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (supplierSearchRef.current && !supplierSearchRef.current.contains(e.target as Node)) {
+        setShowSupplierDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Show dropdown when typing
+  useEffect(() => {
+    if (supplierSearchQuery.trim().length >= 2 && !selectedSupplier) {
+      setShowSupplierDropdown(true);
+    } else {
+      setShowSupplierDropdown(false);
+    }
+  }, [supplierSearchQuery, selectedSupplier]);
+
+  // Auto-set branch
   useEffect(() => {
     if (!isSuperAdmin && permissions?.branchId) {
       setSelectedBranchId(permissions.branchId);
     }
   }, [isSuperAdmin, permissions?.branchId]);
 
-  // Reset branch when dialog opens for super admin (pick default)
   useEffect(() => {
     if (open && isSuperAdmin && branches?.length && !selectedBranchId) {
       const defaultBranch = branches.find(b => b.is_default);
@@ -73,110 +112,115 @@ export function CreateDebtDialog({
 
   const createDebtMutation = useMutation({
     mutationFn: async () => {
-      if (!name.trim()) throw new Error('Vui lòng nhập tên');
-      if (!phone.trim() && isCustomer) throw new Error('Vui lòng nhập số điện thoại');
       if (amount <= 0) throw new Error('Vui lòng nhập số tiền nợ');
       if (!selectedBranchId) throw new Error('Vui lòng chọn chi nhánh');
 
       const tenantId = await getCurrentTenantId();
       if (!tenantId) throw new Error('Không tìm thấy tenant');
-
       const { data: { user } } = await supabase.auth.getUser();
 
       let entityId: string;
+      let entityName: string;
 
       if (isCustomer) {
-        // Check if customer already exists by phone
-        const { data: existingCustomer } = await supabase
-          .from('customers')
-          .select('id')
-          .eq('phone', phone.trim())
-          .eq('tenant_id', tenantId)
-          .single();
-
-        if (existingCustomer) {
-          entityId = existingCustomer.id;
-        } else {
-          // Create new customer
-          const { data: newCustomer, error: customerError } = await supabase
+        if (selectedCustomer) {
+          entityId = selectedCustomer.id;
+          entityName = selectedCustomer.name;
+        } else if (customerName.trim() && customerPhone.trim()) {
+          // Check existing by phone
+          const { data: existing } = await supabase
             .from('customers')
-            .insert([{
-              name: name.trim(),
-              phone: phone.trim(),
-              email: email.trim() || null,
-              birthday: birthday ? format(birthday, 'yyyy-MM-dd') : null,
-              source: 'Công nợ',
-              crm_status: 'new',
-              tenant_id: tenantId,
-              preferred_branch_id: selectedBranchId,
-            }])
-            .select('id')
+            .select('id, name')
+            .eq('phone', customerPhone.trim())
+            .eq('tenant_id', tenantId)
             .single();
 
-          if (customerError) throw customerError;
-          entityId = newCustomer.id;
+          if (existing) {
+            entityId = existing.id;
+            entityName = existing.name;
+          } else {
+            const { data: newCust, error } = await supabase
+              .from('customers')
+              .insert([{
+                name: customerName.trim(),
+                phone: customerPhone.trim(),
+                email: customerEmail.trim() || null,
+                address: customerAddress.trim() || null,
+                source: customerSource || 'Công nợ',
+                birthday: customerBirthday ? customerBirthday.toISOString().split('T')[0] : null,
+                crm_status: 'new',
+                tenant_id: tenantId,
+                preferred_branch_id: selectedBranchId,
+              }])
+              .select('id, name')
+              .single();
+            if (error) throw error;
+            entityId = newCust.id;
+            entityName = newCust.name;
+          }
+        } else {
+          throw new Error('Vui lòng chọn hoặc thêm khách hàng');
         }
       } else {
-        // Check if supplier already exists by name/phone
-        let query = supabase
-          .from('suppliers')
-          .select('id')
-          .eq('name', name.trim())
-          .eq('tenant_id', tenantId);
-        
-        if (phone.trim()) {
-          query = query.eq('phone', phone.trim());
-        }
-
-        const { data: existingSupplier } = await query.single();
-
-        if (existingSupplier) {
-          entityId = existingSupplier.id;
-        } else {
-          // Create new supplier with branch
-          const { data: newSupplier, error: supplierError } = await supabase
+        if (selectedSupplier) {
+          entityId = selectedSupplier.id;
+          entityName = selectedSupplier.name;
+        } else if (isAddingNewSupplier && newSupplierName.trim()) {
+          // Check existing supplier
+          const { data: existing } = await supabase
             .from('suppliers')
-            .insert([{
-              name: name.trim(),
-              phone: phone.trim() || null,
-              note: email.trim() ? `Email: ${email.trim()}` : null,
-              tenant_id: tenantId,
-              branch_id: selectedBranchId,
-            }])
-            .select('id')
-            .single();
+            .select('id, name')
+            .eq('name', newSupplierName.trim())
+            .eq('tenant_id', tenantId)
+            .maybeSingle();
 
-          if (supplierError) throw supplierError;
-          entityId = newSupplier.id;
+          if (existing) {
+            entityId = existing.id;
+            entityName = existing.name;
+          } else {
+            const { data: newSup, error } = await supabase
+              .from('suppliers')
+              .insert([{
+                name: newSupplierName.trim(),
+                phone: newSupplierPhone.trim() || null,
+                tenant_id: tenantId,
+                branch_id: selectedBranchId,
+              }])
+              .select('id, name')
+              .single();
+            if (error) throw error;
+            entityId = newSup.id;
+            entityName = newSup.name;
+          }
+        } else {
+          throw new Error('Vui lòng chọn hoặc thêm nhà cung cấp');
         }
       }
 
-      // Create debt payment record (as addition type)
+      // Create debt payment
       const { error: debtError } = await supabase
         .from('debt_payments')
         .insert([{
           entity_type: entityType,
           entity_id: entityId,
           payment_type: 'addition',
-          amount: amount,
+          amount,
           description: note.trim() || (isCustomer ? 'Công nợ khách hàng mới' : 'Công nợ nhà cung cấp mới'),
           created_by: user?.id,
           tenant_id: tenantId,
           branch_id: selectedBranchId,
         }]);
-
       if (debtError) throw debtError;
 
-      // Audit log
       await supabase.from('audit_logs').insert([{
         user_id: user?.id,
         action_type: 'create',
         table_name: 'debt_payments',
         branch_id: selectedBranchId,
-        description: `Thêm công nợ mới: ${name.trim()} - ${amount.toLocaleString('vi-VN')}đ`,
+        description: `Thêm công nợ mới: ${entityName} - ${amount.toLocaleString('vi-VN')}đ`,
       }]);
 
-      return { entityId, name: name.trim() };
+      return { entityId, name: entityName };
     },
     onSuccess: (data) => {
       toast.success(`Đã thêm công nợ cho ${data.name}`);
@@ -193,20 +237,50 @@ export function CreateDebtDialog({
   });
 
   const resetForm = () => {
-    setName('');
-    setPhone('');
-    setEmail('');
-    setBirthday(undefined);
     setAmount(0);
     setNote('');
-    if (isSuperAdmin) {
-      setSelectedBranchId('');
-    }
+    setSelectedCustomer(null);
+    setCustomerName('');
+    setCustomerPhone('');
+    setCustomerAddress('');
+    setCustomerEmail('');
+    setCustomerSource('');
+    setCustomerBirthday(undefined);
+    setSelectedSupplier(null);
+    setSupplierSearchQuery('');
+    setIsAddingNewSupplier(false);
+    setNewSupplierName('');
+    setNewSupplierPhone('');
+    if (isSuperAdmin) setSelectedBranchId('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createDebtMutation.mutate();
+  };
+
+  const handleSelectSupplier = (supplier: Supplier) => {
+    setSelectedSupplier(supplier);
+    setShowSupplierDropdown(false);
+    setSupplierSearchQuery('');
+    setIsAddingNewSupplier(false);
+  };
+
+  const handleClearSupplier = () => {
+    setSelectedSupplier(null);
+    setSupplierSearchQuery('');
+    setIsAddingNewSupplier(false);
+  };
+
+  const handleAddNewSupplier = () => {
+    setIsAddingNewSupplier(true);
+    setShowSupplierDropdown(false);
+    if (/^\d+$/.test(supplierSearchQuery)) {
+      setNewSupplierPhone(supplierSearchQuery);
+    } else if (supplierSearchQuery.trim()) {
+      setNewSupplierName(supplierSearchQuery);
+    }
+    setSupplierSearchQuery('');
   };
 
   return (
@@ -222,11 +296,9 @@ export function CreateDebtDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Branch selector - Super Admin sees dropdown, others see label */}
+          {/* Branch */}
           <div className="space-y-2">
-            <Label>
-              Chi nhánh <span className="text-destructive">*</span>
-            </Label>
+            <Label>Chi nhánh <span className="text-destructive">*</span></Label>
             {isSuperAdmin ? (
               <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
                 <SelectTrigger>
@@ -250,94 +322,158 @@ export function CreateDebtDialog({
             )}
           </div>
 
-          {/* Name */}
-          <div className="space-y-2">
-            <Label htmlFor="name">
-              {isCustomer ? 'Tên khách hàng' : 'Tên nhà cung cấp'} <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={isCustomer ? 'Nhập tên khách hàng' : 'Nhập tên nhà cung cấp'}
-              required
+          {/* Customer/Supplier Search */}
+          {isCustomer ? (
+            <CustomerSearchCombobox
+              selectedCustomer={selectedCustomer}
+              onSelect={setSelectedCustomer}
+              onCustomerInfoChange={() => {}}
+              customerName={customerName}
+              customerPhone={customerPhone}
+              customerAddress={customerAddress}
+              customerEmail={customerEmail}
+              customerSource={customerSource}
+              customerBirthday={customerBirthday}
+              setCustomerName={setCustomerName}
+              setCustomerPhone={setCustomerPhone}
+              setCustomerAddress={setCustomerAddress}
+              setCustomerEmail={setCustomerEmail}
+              setCustomerSource={setCustomerSource}
+              setCustomerBirthday={setCustomerBirthday}
             />
-          </div>
-
-          {/* Phone */}
-          <div className="space-y-2">
-            <Label htmlFor="phone">
-              Số điện thoại {isCustomer && <span className="text-destructive">*</span>}
-            </Label>
-            <Input
-              id="phone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Nhập số điện thoại"
-              required={isCustomer}
-            />
-          </div>
-
-          {/* Email */}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Nhập email (không bắt buộc)"
-            />
-          </div>
-
-          {/* Birthday */}
-          <div className="space-y-2">
-            <Label>Ngày sinh</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'w-full justify-start text-left font-normal',
-                    !birthday && 'text-muted-foreground'
-                  )}
+          ) : (
+            /* Supplier Search */
+            selectedSupplier ? (
+              <div className="p-3 rounded-xl bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 border-2 border-primary/30 relative">
+                <button
+                  type="button"
+                  onClick={handleClearSupplier}
+                  className="absolute top-2 right-2 p-1 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {birthday ? format(birthday, 'dd/MM/yyyy', { locale: vi }) : 'Chọn ngày sinh'}
+                  <X className="h-4 w-4" />
+                </button>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                    <Truck className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-semibold truncate">{selectedSupplier.name}</div>
+                    {selectedSupplier.phone && (
+                      <div className="text-sm text-muted-foreground">{selectedSupplier.phone}</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : isAddingNewSupplier ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                    <Plus className="h-4 w-4" />
+                    Thêm NCC mới
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsAddingNewSupplier(false)}
+                    className="h-7 text-xs"
+                  >
+                    ← Quay lại
+                  </Button>
+                </div>
+                <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
+                  <div>
+                    <Label className="flex items-center gap-1 text-xs mb-1">
+                      <User className="h-3 w-3" />
+                      Tên NCC <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      placeholder="Nhập tên nhà cung cấp"
+                      value={newSupplierName}
+                      onChange={(e) => setNewSupplierName(e.target.value)}
+                      className="h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label className="flex items-center gap-1 text-xs mb-1">
+                      <Phone className="h-3 w-3" />
+                      Số điện thoại
+                    </Label>
+                    <Input
+                      placeholder="Nhập SĐT (tùy chọn)"
+                      value={newSupplierPhone}
+                      onChange={(e) => setNewSupplierPhone(e.target.value)}
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 relative" ref={supplierSearchRef}>
+                <div>
+                  <Label className="flex items-center gap-1 mb-1.5">
+                    <Search className="h-3.5 w-3.5" />
+                    Nhà cung cấp
+                  </Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Nhập tên hoặc SĐT nhà cung cấp..."
+                      value={supplierSearchQuery}
+                      onChange={(e) => setSupplierSearchQuery(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Nhập từ 2 ký tự để tìm. Nếu NCC mới, bấm "Thêm mới".
+                  </p>
+                </div>
+
+                {showSupplierDropdown && filteredSuppliers.length > 0 && (
+                  <div className="absolute z-20 left-0 right-0 bg-popover border rounded-lg shadow-lg max-h-60 overflow-auto" style={{ top: '70px' }}>
+                    {filteredSuppliers.map((s) => (
+                      <button
+                        type="button"
+                        key={s.id}
+                        className="w-full px-4 py-3 text-left hover:bg-accent flex items-center gap-2 border-b last:border-b-0"
+                        onClick={() => handleSelectSupplier(s)}
+                      >
+                        <Truck className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">{s.name}</div>
+                          {s.phone && <div className="text-xs text-muted-foreground">{s.phone}</div>}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddNewSupplier}
+                  className="w-full border-dashed gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Thêm nhà cung cấp mới
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={birthday}
-                  onSelect={setBirthday}
-                  disabled={(date) => date > new Date()}
-                  initialFocus
-                  captionLayout="dropdown-buttons"
-                  fromYear={1940}
-                  toYear={new Date().getFullYear()}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+              </div>
+            )
+          )}
 
           {/* Amount */}
           <div className="space-y-2">
-            <Label htmlFor="amount">
+            <Label>
               {isCustomer ? 'Số tiền khách nợ' : 'Số tiền mình nợ'} <span className="text-destructive">*</span>
             </Label>
-            <PriceInput
-              value={amount}
-              onChange={setAmount}
-              placeholder="Nhập số tiền"
-            />
+            <PriceInput value={amount} onChange={setAmount} placeholder="Nhập số tiền" />
           </div>
 
           {/* Note */}
           <div className="space-y-2">
-            <Label htmlFor="note">Ghi chú</Label>
+            <Label>Ghi chú</Label>
             <Textarea
-              id="note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Nội dung công nợ..."
