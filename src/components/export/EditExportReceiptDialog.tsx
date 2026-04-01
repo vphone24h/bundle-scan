@@ -332,9 +332,63 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
                   <User className="h-3.5 w-3.5" />
                   Khách hàng
                 </Label>
-                <div className="rounded-lg bg-muted/50 p-2 text-sm font-medium">
-                  {selectedCustomerName}
+                <div className="rounded-lg bg-muted/50 p-2 text-sm font-medium flex items-center justify-between">
+                  {editingCustomerInfo ? (
+                    <div className="flex-1 space-y-2">
+                      <Input
+                        value={editCustomerName}
+                        onChange={(e) => setEditCustomerName(e.target.value)}
+                        placeholder="Tên khách hàng"
+                        className="h-8 text-sm"
+                      />
+                      <Input
+                        value={editCustomerPhone}
+                        onChange={(e) => setEditCustomerPhone(e.target.value)}
+                        placeholder="Số điện thoại"
+                        className="h-8 text-sm"
+                      />
+                      <div className="flex gap-1.5">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2"
+                          onClick={() => {
+                            setEditingCustomerInfo(false);
+                            setEditCustomerName(originalCustomerNameVal);
+                            setEditCustomerPhone(originalCustomerPhoneVal);
+                          }}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-7 px-2"
+                          onClick={() => setEditingCustomerInfo(false)}
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <span>{selectedCustomerName}</span>
+                      <button
+                        type="button"
+                        onClick={() => setEditingCustomerInfo(true)}
+                        className="p-1 rounded hover:bg-muted"
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    </>
+                  )}
                 </div>
+                {customerInfoChanged && (
+                  <p className="text-xs text-green-600 font-medium">
+                    ⚠ Thông tin khách hàng đã thay đổi
+                  </p>
+                )}
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
