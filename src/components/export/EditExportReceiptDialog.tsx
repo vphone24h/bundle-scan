@@ -273,7 +273,7 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
       if (tenantId && changes.length > 0) {
         const actionType = [
           dateChanged && 'DATE',
-          customerChanged && 'CUSTOMER',
+          (customerChanged || customerInfoChanged) && 'CUSTOMER',
           hasPriceChanges && 'PRICE',
         ].filter(Boolean).join('_');
 
