@@ -1383,6 +1383,13 @@ export default function ExportHistoryPage() {
           setReturnReceipt(null);
         }}
       />
+      
+      {/* Edit Export Receipt Date Dialog */}
+      <EditExportReceiptDialog
+        receipt={editReceiptDate}
+        open={!!editReceiptDate}
+        onOpenChange={(open) => !open && setEditReceiptDate(null)}
+      />
       <OnboardingTourOverlay
         steps={(receipts?.length ?? 0) > 0 ? receiptTour : receiptTourInfo}
         isActive={activeTour === 'receipt-tab' || (manualTourActive && activeTab === 'receipts')}
