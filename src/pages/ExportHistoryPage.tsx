@@ -952,6 +952,14 @@ export default function ExportHistoryPage() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              onClick={() => setEditReceiptDate(receipt)}
+                              title="Sửa ngày bán"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleReturnReceipt(receipt)}
                               title="Trả hàng toàn bộ phiếu"
                               disabled={receipt.status === 'full_return' || receipt.status === 'cancelled'}
