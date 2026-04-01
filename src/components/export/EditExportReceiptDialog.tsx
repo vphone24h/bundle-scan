@@ -456,6 +456,21 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
         title="Xác nhận chỉnh sửa phiếu xuất"
         description="Thay đổi thông tin phiếu xuất là thao tác nhạy cảm. Vui lòng nhập mật khẩu bảo mật."
       />
+
+      {editingCustomerData && (
+        <CustomerFormDialog
+          open={showEditCustomerDialog}
+          onOpenChange={(open) => {
+            setShowEditCustomerDialog(open);
+            if (!open) {
+              setEditingCustomerData(null);
+              queryClient.invalidateQueries({ queryKey: ['export-receipts'] });
+              queryClient.invalidateQueries({ queryKey: ['customers'] });
+            }
+          }}
+          customer={editingCustomerData}
+        />
+      )}
     </>
   );
 }
