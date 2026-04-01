@@ -56,13 +56,9 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [selectedCustomerName, setSelectedCustomerName] = useState('');
 
-  // Edit customer info inline
-  const [editingCustomerInfo, setEditingCustomerInfo] = useState(false);
-  const [editCustomerName, setEditCustomerName] = useState('');
-  const [editCustomerPhone, setEditCustomerPhone] = useState('');
-  const [originalCustomerNameVal, setOriginalCustomerNameVal] = useState('');
-  const [originalCustomerPhoneVal, setOriginalCustomerPhoneVal] = useState('');
-
+  // Edit customer dialog
+  const [showEditCustomerDialog, setShowEditCustomerDialog] = useState(false);
+  const [editingCustomerData, setEditingCustomerData] = useState<any>(null);
   // Items
   const [editableItems, setEditableItems] = useState<EditableItem[]>([]);
 
