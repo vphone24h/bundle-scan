@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Save, CalendarIcon, Search, User, Package, Pencil, X, Check } from 'lucide-react';
+import { Loader2, Save, CalendarIcon, Search, User, Package, Pencil } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurit
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 import { PriceInput } from '@/components/ui/price-input';
 import type { ExportReceipt, ExportReceiptItemDetail } from '@/hooks/useExportReceipts';
+import { CustomerFormDialog } from '@/components/customers/CustomerFormDialog';
 
 interface EditExportReceiptDialogProps {
   receipt: ExportReceipt | null;
@@ -55,13 +56,9 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [selectedCustomerName, setSelectedCustomerName] = useState('');
 
-  // Edit customer info inline
-  const [editingCustomerInfo, setEditingCustomerInfo] = useState(false);
-  const [editCustomerName, setEditCustomerName] = useState('');
-  const [editCustomerPhone, setEditCustomerPhone] = useState('');
-  const [originalCustomerNameVal, setOriginalCustomerNameVal] = useState('');
-  const [originalCustomerPhoneVal, setOriginalCustomerPhoneVal] = useState('');
-
+  // Edit customer dialog
+  const [showEditCustomerDialog, setShowEditCustomerDialog] = useState(false);
+  const [editingCustomerData, setEditingCustomerData] = useState<any>(null);
   // Items
   const [editableItems, setEditableItems] = useState<EditableItem[]>([]);
 
@@ -92,13 +89,7 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
       setSelectedCustomerName(receipt.customers?.name || 'Khách lẻ');
       setCustomerSearch('');
       setShowCustomerDropdown(false);
-      setEditingCustomerInfo(false);
-      const custName = receipt.customers?.name || '';
-      const custPhone = receipt.customers?.phone || '';
-      setEditCustomerName(custName);
-      setEditCustomerPhone(custPhone);
-      setOriginalCustomerNameVal(custName);
-      setOriginalCustomerPhoneVal(custPhone);
+      setShowEditCustomerDialog(false);
     }
   }, [receipt]);
 
@@ -148,11 +139,19 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
     setSelectedCustomerName(`${c.name} - ${c.phone}`);
     setCustomerSearch('');
     setShowCustomerDropdown(false);
-    setEditCustomerName(c.name);
-    setEditCustomerPhone(c.phone);
-    setOriginalCustomerNameVal(c.name);
-    setOriginalCustomerPhoneVal(c.phone);
-    setEditingCustomerInfo(false);
+  };
+
+  const handleOpenEditCustomer = async () => {
+    if (!selectedCustomerId) return;
+    const { data } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('id', selectedCustomerId)
+      .single();
+    if (data) {
+      setEditingCustomerData(data);
+      setShowEditCustomerDialog(true);
+    }
   };
 
   const handleItemPriceChange = (index: number, newPrice: number) => {
@@ -179,11 +178,10 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
   // Computed
   const dateChanged = exportDate && exportDate !== originalExportDate;
   const customerChanged = selectedCustomerId !== originalCustomerId;
-  const customerInfoChanged = editCustomerName !== originalCustomerNameVal || editCustomerPhone !== originalCustomerPhoneVal;
   const priceChanges = editableItems.filter(i => i.sale_price !== i.original_sale_price);
   const hasPriceChanges = priceChanges.length > 0;
   const newTotal = editableItems.reduce((sum, i) => sum + (i.sale_price * i.quantity), 0);
-  const hasChanges = dateChanged || customerChanged || customerInfoChanged || hasPriceChanges;
+  const hasChanges = dateChanged || customerChanged || hasPriceChanges;
 
   const updateReceipt = useMutation({
     mutationFn: async () => {
@@ -224,29 +222,6 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
         changes.push(`Khách hàng: ${receipt.customers?.name || 'Khách lẻ'} → ${selectedCustomerName}`);
       }
 
-      // 2b. Update customer info (name/phone)
-      if (customerInfoChanged && selectedCustomerId) {
-        const updateData: Record<string, string> = {};
-        if (editCustomerName !== originalCustomerNameVal) updateData.name = editCustomerName;
-        if (editCustomerPhone !== originalCustomerPhoneVal) updateData.phone = editCustomerPhone;
-        
-        const { error } = await supabase
-          .from('customers')
-          .update(updateData)
-          .eq('id', selectedCustomerId);
-        if (error) throw error;
-        
-        if (editCustomerName !== originalCustomerNameVal) {
-          changes.push(`Tên KH: ${originalCustomerNameVal} → ${editCustomerName}`);
-          oldData.customer_name_info = originalCustomerNameVal;
-          newData.customer_name_info = editCustomerName;
-        }
-        if (editCustomerPhone !== originalCustomerPhoneVal) {
-          changes.push(`SĐT KH: ${originalCustomerPhoneVal} → ${editCustomerPhone}`);
-          oldData.customer_phone = originalCustomerPhoneVal;
-          newData.customer_phone = editCustomerPhone;
-        }
-      }
 
       // 3. Update item prices
       if (hasPriceChanges) {
@@ -273,7 +248,7 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
       if (tenantId && changes.length > 0) {
         const actionType = [
           dateChanged && 'DATE',
-          (customerChanged || customerInfoChanged) && 'CUSTOMER',
+          customerChanged && 'CUSTOMER',
           hasPriceChanges && 'PRICE',
         ].filter(Boolean).join('_');
 
@@ -300,7 +275,7 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
   const handleSubmit = async () => {
     if (!receipt || !hasChanges) return;
 
-    const isSensitive = dateChanged || hasPriceChanges || customerChanged || customerInfoChanged;
+    const isSensitive = dateChanged || hasPriceChanges || customerChanged;
     if (isSensitive && hasSecurityPassword && !securityUnlocked) {
       setShowSecurityDialog(true);
       return;
@@ -339,62 +314,18 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
                   Khách hàng
                 </Label>
                 <div className="rounded-lg bg-muted/50 p-2 text-sm font-medium flex items-center justify-between">
-                  {editingCustomerInfo ? (
-                    <div className="flex-1 space-y-2">
-                      <Input
-                        value={editCustomerName}
-                        onChange={(e) => setEditCustomerName(e.target.value)}
-                        placeholder="Tên khách hàng"
-                        className="h-8 text-sm"
-                      />
-                      <Input
-                        value={editCustomerPhone}
-                        onChange={(e) => setEditCustomerPhone(e.target.value)}
-                        placeholder="Số điện thoại"
-                        className="h-8 text-sm"
-                      />
-                      <div className="flex gap-1.5">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 px-2"
-                          onClick={() => {
-                            setEditingCustomerInfo(false);
-                            setEditCustomerName(originalCustomerNameVal);
-                            setEditCustomerPhone(originalCustomerPhoneVal);
-                          }}
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          className="h-7 px-2"
-                          onClick={() => setEditingCustomerInfo(false)}
-                        >
-                          <Check className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <span>{selectedCustomerName}</span>
-                      <button
-                        type="button"
-                        onClick={() => setEditingCustomerInfo(true)}
-                        className="p-1 rounded hover:bg-muted"
-                      >
-                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                      </button>
-                    </>
+                  <span>{selectedCustomerName}</span>
+                  {selectedCustomerId && (
+                    <button
+                      type="button"
+                      onClick={handleOpenEditCustomer}
+                      className="p-1 rounded hover:bg-muted"
+                      title="Sửa thông tin khách hàng"
+                    >
+                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
                   )}
                 </div>
-                {customerInfoChanged && (
-                  <p className="text-xs text-green-600 font-medium">
-                    ⚠ Thông tin khách hàng đã thay đổi
-                  </p>
-                )}
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -525,6 +456,21 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
         title="Xác nhận chỉnh sửa phiếu xuất"
         description="Thay đổi thông tin phiếu xuất là thao tác nhạy cảm. Vui lòng nhập mật khẩu bảo mật."
       />
+
+      {editingCustomerData && (
+        <CustomerFormDialog
+          open={showEditCustomerDialog}
+          onOpenChange={(open) => {
+            setShowEditCustomerDialog(open);
+            if (!open) {
+              setEditingCustomerData(null);
+              queryClient.invalidateQueries({ queryKey: ['export-receipts'] });
+              queryClient.invalidateQueries({ queryKey: ['customers'] });
+            }
+          }}
+          customer={editingCustomerData}
+        />
+      )}
     </>
   );
 }
