@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Download, Search, Loader2, X, FolderOpen } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
 import {
