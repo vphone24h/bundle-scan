@@ -68,6 +68,7 @@ import {
 import { useInvoiceTemplateByBranch } from '@/hooks/useInvoiceTemplates';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { EditExportItemDialog } from '@/components/export/EditExportItemDialog';
+import { EditExportReceiptDialog } from '@/components/export/EditExportReceiptDialog';
 import { ReceiptReturnDialog } from '@/components/returns/ReceiptReturnDialog';
 import { exportToExcelMultiSheet, formatDateForExcel } from '@/lib/exportExcel';
 import { fetchAllRows } from '@/lib/fetchAllRows';
