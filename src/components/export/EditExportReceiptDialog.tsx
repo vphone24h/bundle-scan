@@ -92,6 +92,13 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
       setSelectedCustomerName(receipt.customers?.name || 'Khách lẻ');
       setCustomerSearch('');
       setShowCustomerDropdown(false);
+      setEditingCustomerInfo(false);
+      const custName = receipt.customers?.name || '';
+      const custPhone = receipt.customers?.phone || '';
+      setEditCustomerName(custName);
+      setEditCustomerPhone(custPhone);
+      setOriginalCustomerNameVal(custName);
+      setOriginalCustomerPhoneVal(custPhone);
     }
   }, [receipt]);
 
