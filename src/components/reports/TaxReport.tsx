@@ -29,6 +29,7 @@ import {
 import { Loader2, Download, AlertTriangle, CheckCircle2, Info, Building2, FolderTree, Settings2, BookOpen } from 'lucide-react';
 import { useTaxGuideUrl } from '@/hooks/useAppConfig';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
+import { ManualRevenueDialog, type ManualRevenueData } from './ManualRevenueDialog';
 import { useNavigate } from 'react-router-dom';
 import { vi } from 'date-fns/locale';
 import { useReportStats, useReportChartData } from '@/hooks/useReportStats';
