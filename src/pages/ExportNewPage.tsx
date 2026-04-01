@@ -948,6 +948,7 @@ export default function ExportNewPage() {
         vatAmount: savedTaxAmount,
         salesStaffId: savedSalesStaffId,
         skipCashBook,
+        exportDate: savedExportDate ? new Date(savedExportDate).toISOString() : undefined,
       });
 
       // Update receipt with real data (code from server)
