@@ -1,0 +1,1 @@
+ALTER TABLE public.import_receipts ADD COLUMN IF NOT EXISTS import_date_modified boolean NOT NULL DEFAULT false;
