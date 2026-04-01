@@ -4,13 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, CalendarIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useCategories } from '@/hooks/useCategories';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useImportReceiptDetails, useUpdateImportReceipt, ImportReceipt } from '@/hooks/useImportReceipts';
 import { formatNumberWithSpaces, parseFormattedNumber, formatCurrencyWithSpaces } from '@/lib/formatNumber';
 import { PRODUCT_UNITS, DECIMAL_UNITS } from '@/types/warehouse';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
+import { format, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface EditImportReceiptDialogProps {
   receipt: ImportReceipt | null;
@@ -37,13 +41,24 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
   const { data: details, isLoading: detailsLoading } = useImportReceiptDetails(receipt?.id || null);
   const updateReceipt = useUpdateImportReceipt();
 
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked: securityUnlocked, unlock: securityUnlock } = useSecurityUnlock('edit-import-receipt');
+  const [showSecurityDialog, setShowSecurityDialog] = useState(false);
+
   const [supplierId, setSupplierId] = useState<string>('_none_');
   const [productEdits, setProductEdits] = useState<ProductEdit[]>([]);
+  const [importDate, setImportDate] = useState('');
+  const [originalImportDate, setOriginalImportDate] = useState('');
 
   // Load data when dialog opens
   useEffect(() => {
     if (receipt && details?.productImports) {
       setSupplierId(receipt.supplier_id ?? '_none_');
+      const dateStr = receipt.import_date
+        ? format(parseISO(receipt.import_date), "yyyy-MM-dd'T'HH:mm")
+        : '';
+      setImportDate(dateStr);
+      setOriginalImportDate(dateStr);
       setProductEdits(
         details.productImports.map((item: any) => ({
           productId: item.product_id ?? item.id ?? item.products?.id,
@@ -60,6 +75,19 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
       );
     }
   }, [receipt, details]);
+
+  const handleImportDateChange = (newDate: string) => {
+    if (newDate !== originalImportDate && hasSecurityPassword && !securityUnlocked) {
+      setShowSecurityDialog(true);
+      return;
+    }
+    setImportDate(newDate);
+  };
+
+  const handleSecuritySuccess = () => {
+    securityUnlock();
+    setShowSecurityDialog(false);
+  };
 
   const handleProductChange = (index: number, field: keyof ProductEdit, value: any) => {
     setProductEdits(prev => {
@@ -81,6 +109,14 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
   const handleSubmit = async () => {
     if (!receipt) return;
 
+    const dateChanged = importDate && importDate !== originalImportDate;
+
+    // Require security password for date change
+    if (dateChanged && hasSecurityPassword && !securityUnlocked) {
+      setShowSecurityDialog(true);
+      return;
+    }
+
     const productUpdates = productEdits.map(edit => ({
       productId: edit.productId,
       name: edit.name,
@@ -99,11 +135,14 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
         receiptId: receipt.id,
         productUpdates,
         newSupplierId: validSupplierId !== originalSupplierId ? validSupplierId : undefined,
+        importDate: dateChanged ? new Date(importDate).toISOString() : undefined,
       });
 
       toast({
         title: 'Cập nhật thành công',
-        description: 'Phiếu nhập đã được chỉnh sửa',
+        description: dateChanged
+          ? 'Phiếu nhập đã được chỉnh sửa, ngày nhập đã cập nhật cho tất cả sản phẩm'
+          : 'Phiếu nhập đã được chỉnh sửa',
       });
 
       onOpenChange(false);
@@ -117,8 +156,10 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
   };
 
   const totalAmount = productEdits.reduce((sum, p) => sum + p.import_price * p.quantity, 0);
+  const dateChanged = importDate && importDate !== originalImportDate;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -131,6 +172,27 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Import Date */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <CalendarIcon className="h-3.5 w-3.5" />
+                Ngày giờ nhập
+              </Label>
+              <Input
+                type="datetime-local"
+                value={importDate}
+                onChange={(e) => handleImportDateChange(e.target.value)}
+                className={cn(
+                  dateChanged && 'border-green-500 ring-1 ring-green-500/30'
+                )}
+              />
+              {dateChanged && (
+                <p className="text-xs text-green-600 font-medium">
+                  ⚠ Ngày nhập đã thay đổi — tất cả sản phẩm trong phiếu sẽ đồng bộ ngày mới
+                </p>
+              )}
+            </div>
+
             {/* Supplier */}
             <div className="space-y-2">
               <Label>Nhà cung cấp</Label>
@@ -290,5 +352,14 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <SecurityPasswordDialog
+      open={showSecurityDialog}
+      onOpenChange={setShowSecurityDialog}
+      onSuccess={handleSecuritySuccess}
+      title="Xác nhận chỉnh sửa ngày nhập"
+      description="Thay đổi ngày nhập là thao tác nhạy cảm. Vui lòng nhập mật khẩu bảo mật."
+    />
+    </>
   );
 }
