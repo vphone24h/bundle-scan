@@ -1589,18 +1589,33 @@ export default function ExportNewPage() {
                  </div>
                 )}
 
-                {/* Export Date - compact inline */}
+                {/* Export Date - compact, hidden picker until clicked */}
                 <div className="space-y-1.5 pt-2 border-t">
                   <Label className="flex items-center gap-1.5 text-sm">
                     <Calendar className="h-3.5 w-3.5" />
                     Ngày giờ xuất hàng
                   </Label>
-                  <Input
-                    type="datetime-local"
-                    value={exportDate}
-                    onChange={(e) => setExportDate(e.target.value)}
-                    className="h-9"
-                  />
+                  <div className="relative">
+                    <input
+                      ref={(el) => {
+                        // Store ref for programmatic showPicker
+                        if (el) (el as any).__exportDateRef = true;
+                      }}
+                      type="datetime-local"
+                      value={exportDate}
+                      onChange={(e) => setExportDate(e.target.value)}
+                      className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                      style={{ WebkitAppearance: 'none' }}
+                    />
+                    <div className="flex items-center justify-between h-9 px-3 rounded-md border border-input bg-background text-sm cursor-pointer">
+                      <span className={cn(!exportDate && 'text-muted-foreground')}>
+                        {exportDate
+                          ? new Date(exportDate).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                          : 'Mặc định: thời điểm hiện tại'}
+                      </span>
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
                   {!exportDate && (
                     <p className="text-xs text-muted-foreground">Để trống = tự động lấy thời điểm hiện tại</p>
                   )}
