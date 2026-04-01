@@ -148,6 +148,11 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
     setSelectedCustomerName(`${c.name} - ${c.phone}`);
     setCustomerSearch('');
     setShowCustomerDropdown(false);
+    setEditCustomerName(c.name);
+    setEditCustomerPhone(c.phone);
+    setOriginalCustomerNameVal(c.name);
+    setOriginalCustomerPhoneVal(c.phone);
+    setEditingCustomerInfo(false);
   };
 
   const handleItemPriceChange = (index: number, newPrice: number) => {
