@@ -690,7 +690,7 @@ export function useCreateImportReceipt() {
   });
 }
 
-// Hook chỉnh sửa phiếu nhập (tên SP, danh mục, NCC, giá)
+// Hook chỉnh sửa phiếu nhập (tên SP, danh mục, NCC, giá, ngày nhập)
 export function useUpdateImportReceipt() {
   const queryClient = useQueryClient();
 
@@ -699,6 +699,7 @@ export function useUpdateImportReceipt() {
       receiptId,
       productUpdates,
       newSupplierId,
+      importDate,
     }: {
       receiptId: string;
       productUpdates: {
@@ -710,6 +711,7 @@ export function useUpdateImportReceipt() {
         unit?: string;
       }[];
       newSupplierId?: string | null;
+      importDate?: string; // New ISO date string for import date change
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -726,6 +728,32 @@ export function useUpdateImportReceipt() {
           .eq('id', receiptId);
 
         if (receiptError) throw receiptError;
+      }
+
+      // Cập nhật ngày nhập nếu có thay đổi
+      let oldImportDate: string | null = null;
+      if (importDate) {
+        // Get old date for audit log
+        const { data: oldReceipt } = await supabase
+          .from('import_receipts')
+          .select('import_date')
+          .eq('id', receiptId)
+          .single();
+        oldImportDate = oldReceipt?.import_date || null;
+
+        // Update receipt date
+        const { error: dateError } = await supabase
+          .from('import_receipts')
+          .update({ import_date: importDate, import_date_modified: true })
+          .eq('id', receiptId);
+        if (dateError) throw dateError;
+
+        // Sync all products in this receipt
+        const { error: productsDateError } = await supabase
+          .from('products')
+          .update({ import_date: importDate, import_date_modified: true })
+          .eq('import_receipt_id', receiptId);
+        if (productsDateError) throw productsDateError;
       }
 
       // Cập nhật từng sản phẩm
@@ -803,22 +831,30 @@ export function useUpdateImportReceipt() {
       }
 
       // Audit log
+      const description = importDate && oldImportDate
+        ? `Sửa phiếu nhập — Ngày nhập: ${oldImportDate.substring(0, 16).replace('T', ' ')} → ${importDate.substring(0, 16).replace('T', ' ')}${totalPriceDiff !== 0 ? `, Thay đổi giá: ${totalPriceDiff.toLocaleString('vi-VN')}đ` : ''}`
+        : `Sửa phiếu nhập - Thay đổi giá: ${totalPriceDiff.toLocaleString('vi-VN')}đ`;
+
       await supabase.from('audit_logs').insert([{
         user_id: user.id,
-        action_type: 'update',
+        action_type: importDate ? 'UPDATE_IMPORT_DATE' : 'update',
         table_name: 'import_receipts',
         record_id: receiptId,
-        old_data: { product_updates_count: productUpdates.length },
+        old_data: { 
+          product_updates_count: productUpdates.length,
+          import_date: oldImportDate,
+        },
         new_data: {
           supplier_id: newSupplierId,
           price_difference: totalPriceDiff,
+          import_date: importDate || undefined,
           products_updated: productUpdates.map(u => ({
             productId: u.productId,
             old_price: u.oldImportPrice,
             new_price: u.import_price,
           })),
         },
-        description: `Sửa phiếu nhập - Thay đổi giá: ${totalPriceDiff.toLocaleString('vi-VN')}đ`,
+        description,
       }]);
 
       return { success: true };

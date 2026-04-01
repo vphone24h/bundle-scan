@@ -130,6 +130,8 @@ export default function ExportNewPage() {
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [taxRate, setTaxRate] = useState<number | null>(null);
   const [customTaxRate, setCustomTaxRate] = useState('');
+  // Export date (default = now)
+  const [exportDate, setExportDate] = useState('');
 
   // Customer info
   const [customerName, setCustomerName] = useState('');
@@ -904,6 +906,7 @@ export default function ExportNewPage() {
     const savedTaxAmount = taxAmount;
     const savedSubtotalAmount = subtotalAmount;
     const savedSalesStaffId = isSuperAdmin ? salesStaffId : user?.id || null;
+    const savedExportDate = exportDate || null;
 
     setCart([]);
     exportDraft.clearDraft();
@@ -918,6 +921,7 @@ export default function ExportNewPage() {
     setTaxEnabled(false);
     setTaxRate(null);
     setCustomTaxRate('');
+    setExportDate('');
 
     // Process in background
     try {
@@ -944,6 +948,7 @@ export default function ExportNewPage() {
         vatAmount: savedTaxAmount,
         salesStaffId: savedSalesStaffId,
         skipCashBook,
+        exportDate: savedExportDate ? new Date(savedExportDate).toISOString() : undefined,
       });
 
       // Update receipt with real data (code from server)
@@ -1341,6 +1346,27 @@ export default function ExportNewPage() {
                   </Button>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Export Date */}
+          <Card>
+            <CardContent className="pt-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5 text-sm">
+                  <Calendar className="h-3.5 w-3.5" />
+                  Ngày giờ xuất hàng
+                </Label>
+                <Input
+                  type="datetime-local"
+                  value={exportDate}
+                  onChange={(e) => setExportDate(e.target.value)}
+                  placeholder="Mặc định: thời điểm hiện tại"
+                />
+                {!exportDate && (
+                  <p className="text-xs text-muted-foreground">Để trống = tự động lấy thời điểm hiện tại</p>
+                )}
+              </div>
             </CardContent>
           </Card>
 

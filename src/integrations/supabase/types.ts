@@ -3171,6 +3171,7 @@ export type Database = {
           debt_amount: number
           id: string
           import_date: string
+          import_date_modified: boolean
           note: string | null
           original_debt_amount: number | null
           paid_amount: number
@@ -3188,6 +3189,7 @@ export type Database = {
           debt_amount?: number
           id?: string
           import_date?: string
+          import_date_modified?: boolean
           note?: string | null
           original_debt_amount?: number | null
           paid_amount?: number
@@ -3205,6 +3207,7 @@ export type Database = {
           debt_amount?: number
           id?: string
           import_date?: string
+          import_date_modified?: boolean
           note?: string | null
           original_debt_amount?: number | null
           paid_amount?: number

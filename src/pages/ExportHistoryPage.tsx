@@ -68,6 +68,7 @@ import {
 import { useInvoiceTemplateByBranch } from '@/hooks/useInvoiceTemplates';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { EditExportItemDialog } from '@/components/export/EditExportItemDialog';
+import { EditExportReceiptDialog } from '@/components/export/EditExportReceiptDialog';
 import { ReceiptReturnDialog } from '@/components/returns/ReceiptReturnDialog';
 import { exportToExcelMultiSheet, formatDateForExcel } from '@/lib/exportExcel';
 import { fetchAllRows } from '@/lib/fetchAllRows';
@@ -210,6 +211,9 @@ export default function ExportHistoryPage() {
   // Return receipt dialog
   const [showReturnDialog, setShowReturnDialog] = useState(false);
   const [returnReceipt, setReturnReceipt] = useState<ExportReceipt | null>(null);
+  
+  // Edit receipt date dialog
+  const [editReceiptDate, setEditReceiptDate] = useState<ExportReceipt | null>(null);
 
   // Hooks
   const { data: receipts, isLoading: receiptsLoading, isFetching: receiptsFetching, hasMore: receiptsHasMore } = useExportReceipts({
@@ -948,6 +952,14 @@ export default function ExportHistoryPage() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              onClick={() => setEditReceiptDate(receipt)}
+                              title="Sửa ngày bán"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleReturnReceipt(receipt)}
                               title="Trả hàng toàn bộ phiếu"
                               disabled={receipt.status === 'full_return' || receipt.status === 'cancelled'}
@@ -1370,6 +1382,13 @@ export default function ExportHistoryPage() {
           setShowReturnDialog(false);
           setReturnReceipt(null);
         }}
+      />
+      
+      {/* Edit Export Receipt Date Dialog */}
+      <EditExportReceiptDialog
+        receipt={editReceiptDate}
+        open={!!editReceiptDate}
+        onOpenChange={(open) => !open && setEditReceiptDate(null)}
       />
       <OnboardingTourOverlay
         steps={(receipts?.length ?? 0) > 0 ? receiptTour : receiptTourInfo}
