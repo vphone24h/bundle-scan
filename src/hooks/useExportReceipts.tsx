@@ -266,7 +266,7 @@ export function useExportReceiptItemById(itemId: string | null) {
     queryFn: async () => {
       if (!itemId || isDataHidden) return null;
 
-      let query = supabase
+      const { data, error } = await supabase
         .from('export_receipt_items')
         .select(`
           id,
@@ -298,13 +298,11 @@ export function useExportReceiptItemById(itemId: string | null) {
         `)
         .eq('id', itemId)
         .maybeSingle();
-
-      if (shouldFilter && branchId) {
-        query = query.eq('export_receipts.branch_id', branchId);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
+
+      if (shouldFilter && branchId && data?.export_receipts?.branch_id !== branchId) {
+        return null;
+      }
 
       return (data || null) as ExportReceiptItemDetail | null;
     },
