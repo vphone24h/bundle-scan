@@ -1587,9 +1587,26 @@ export default function ExportNewPage() {
                      {t('tours.exportNew.salesStaffNote')}
                    </p>
                  </div>
-               )}
-            </CardContent>
-          </Card>
+                )}
+
+                {/* Export Date - compact inline */}
+                <div className="space-y-1.5 pt-2 border-t">
+                  <Label className="flex items-center gap-1.5 text-sm">
+                    <Calendar className="h-3.5 w-3.5" />
+                    Ngày giờ xuất hàng
+                  </Label>
+                  <Input
+                    type="datetime-local"
+                    value={exportDate}
+                    onChange={(e) => setExportDate(e.target.value)}
+                    className="h-9"
+                  />
+                  {!exportDate && (
+                    <p className="text-xs text-muted-foreground">Để trống = tự động lấy thời điểm hiện tại</p>
+                  )}
+                </div>
+             </CardContent>
+           </Card>
 
           {/* Payment summary */}
           <Card>
