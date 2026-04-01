@@ -374,6 +374,7 @@ export function useCreateExportReceipt() {
             created_by: user?.id,
             sales_staff_id: salesStaffId || user?.id,
             tenant_id: tenantId,
+            ...(exportDate ? { export_date: exportDate } : {}),
           },
         ])
         .select()
