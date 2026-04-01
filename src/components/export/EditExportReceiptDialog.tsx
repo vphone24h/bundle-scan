@@ -139,11 +139,19 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
     setSelectedCustomerName(`${c.name} - ${c.phone}`);
     setCustomerSearch('');
     setShowCustomerDropdown(false);
-    setEditCustomerName(c.name);
-    setEditCustomerPhone(c.phone);
-    setOriginalCustomerNameVal(c.name);
-    setOriginalCustomerPhoneVal(c.phone);
-    setEditingCustomerInfo(false);
+  };
+
+  const handleOpenEditCustomer = async () => {
+    if (!selectedCustomerId) return;
+    const { data } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('id', selectedCustomerId)
+      .single();
+    if (data) {
+      setEditingCustomerData(data);
+      setShowEditCustomerDialog(true);
+    }
   };
 
   const handleItemPriceChange = (index: number, newPrice: number) => {
