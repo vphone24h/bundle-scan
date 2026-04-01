@@ -906,6 +906,7 @@ export default function ExportNewPage() {
     const savedTaxAmount = taxAmount;
     const savedSubtotalAmount = subtotalAmount;
     const savedSalesStaffId = isSuperAdmin ? salesStaffId : user?.id || null;
+    const savedExportDate = exportDate || null;
 
     setCart([]);
     exportDraft.clearDraft();
@@ -920,6 +921,7 @@ export default function ExportNewPage() {
     setTaxEnabled(false);
     setTaxRate(null);
     setCustomTaxRate('');
+    setExportDate('');
 
     // Process in background
     try {
