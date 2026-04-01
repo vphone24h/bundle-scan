@@ -359,6 +359,7 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
               Không có dữ liệu trong khoảng thời gian này
             </div>
           ) : (
+            <>
             {isMobile ? (
               /* Mobile: Card layout */
               <div className="divide-y">
@@ -371,7 +372,6 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
                       key={item.id}
                       className={`p-3 space-y-2 ${isReturn ? 'bg-destructive/5' : ''}`}
                     >
-                      {/* Row 1: Product name + date */}
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-primary text-sm truncate">{item.productName}</p>
@@ -390,7 +390,6 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
                         </div>
                       </div>
 
-                      {/* Row 2: Price info grid */}
                       <div className="grid grid-cols-4 gap-1 text-center">
                         <div>
                           <p className="text-[10px] text-muted-foreground">Giá bán</p>
@@ -412,7 +411,6 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
                         </div>
                       </div>
 
-                      {/* Row 3: Customer + branch */}
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="text-muted-foreground truncate">
                           {item.customerName || 'Khách lẻ'}
@@ -426,7 +424,6 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
                   );
                 })}
 
-                {/* Totals */}
                 {data && (
                   <div className="p-3 bg-muted/50">
                     <div className="grid grid-cols-3 gap-2 text-center">
@@ -449,7 +446,6 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
                 )}
               </div>
             ) : (
-              /* Desktop: Table layout */
               <div className="overflow-auto">
               <Table>
                 <TableHeader>
@@ -492,9 +488,6 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
                               {item.customerName || 'Khách lẻ'}
                               {isReturn && <span className="text-destructive"> - Trả hàng</span>}
                             </p>
-                            {item.customerName && (
-                              <p className="text-xs text-muted-foreground">N/A</p>
-                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
@@ -539,18 +532,13 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
                     );
                   })}
 
-                  {/* Totals Row */}
                   <TableRow className="bg-muted/50 font-semibold border-t-2">
-                    <TableCell colSpan={4} className="text-right">
-                      TỔNG CỘNG
-                    </TableCell>
+                    <TableCell colSpan={4} className="text-right">TỔNG CỘNG</TableCell>
                     <TableCell className="text-right">—</TableCell>
                     <TableCell className="text-right text-emerald-600 dark:text-emerald-400">
                       {formatPrice(data.totals.totalRevenue)}
                     </TableCell>
-                    <TableCell className="text-center">
-                      {data.totals.totalQuantity}
-                    </TableCell>
+                    <TableCell className="text-center">{data.totals.totalQuantity}</TableCell>
                     <TableCell className={`text-right ${data.totals.totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
                       {data.totals.totalProfit >= 0 ? '+' : ''}{formatPrice(data.totals.totalProfit)}
                     </TableCell>
@@ -560,6 +548,7 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
               </Table>
               </div>
             )}
+            </>
           )}
           
           {(data?.items?.length || 0) > 0 && (
