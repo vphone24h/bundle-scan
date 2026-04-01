@@ -1349,26 +1349,7 @@ export default function ExportNewPage() {
             </CardContent>
           </Card>
 
-          {/* Export Date */}
-          <Card>
-            <CardContent className="pt-4">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-1.5 text-sm">
-                  <Calendar className="h-3.5 w-3.5" />
-                  Ngày giờ xuất hàng
-                </Label>
-                <Input
-                  type="datetime-local"
-                  value={exportDate}
-                  onChange={(e) => setExportDate(e.target.value)}
-                  placeholder="Mặc định: thời điểm hiện tại"
-                />
-                {!exportDate && (
-                  <p className="text-xs text-muted-foreground">Để trống = tự động lấy thời điểm hiện tại</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          {/* Export Date card removed - moved into customer info section */}
 
           {/* Cart */}
           <Card data-tour="export-cart">
