@@ -211,6 +211,9 @@ export default function ExportHistoryPage() {
   // Return receipt dialog
   const [showReturnDialog, setShowReturnDialog] = useState(false);
   const [returnReceipt, setReturnReceipt] = useState<ExportReceipt | null>(null);
+  
+  // Edit receipt date dialog
+  const [editReceiptDate, setEditReceiptDate] = useState<ExportReceipt | null>(null);
 
   // Hooks
   const { data: receipts, isLoading: receiptsLoading, isFetching: receiptsFetching, hasMore: receiptsHasMore } = useExportReceipts({
