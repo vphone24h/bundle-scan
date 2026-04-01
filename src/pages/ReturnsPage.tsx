@@ -48,7 +48,7 @@ import { vi } from 'date-fns/locale';
 import { useBranches } from '@/hooks/useBranches';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useProducts } from '@/hooks/useProducts';
-import { useExportReceiptItems, type ExportReceiptItemDetail } from '@/hooks/useExportReceipts';
+import { useExportReceiptItems, useExportReceiptItemById, type ExportReceiptItemDetail } from '@/hooks/useExportReceipts';
 import { useImportReturns, useExportReturns, useAllProfiles, useDeleteImportReturn, useDeleteExportReturn, type ImportReturn, type ExportReturn } from '@/hooks/useReturns';
 import { usePermissions } from '@/hooks/usePermissions';
 import { formatNumberWithSpaces } from '@/lib/formatNumber';
@@ -131,6 +131,8 @@ export default function ReturnsPage() {
   const { data: suppliers } = useSuppliers();
   const { data: products } = useProducts();
   const { data: exportItems } = useExportReceiptItems();
+  const exportItemIdFromUrl = searchParams.get('itemId');
+  const { data: exportItemById } = useExportReceiptItemById(exportItemIdFromUrl);
   const { data: profiles } = useAllProfiles();
   
   // Apply date preset
@@ -201,14 +203,14 @@ export default function ReturnsPage() {
         setSelectedImportProduct(product);
         setViewMode('import-return');
       }
-    } else if (type === 'export' && itemId && exportItems) {
-      const item = exportItems.find(i => i.id === itemId);
+    } else if (type === 'export' && itemId) {
+      const item = exportItems?.find(i => i.id === itemId) || exportItemById;
       if (item && item.status !== 'returned') {
         setSelectedExportItem(item);
         setViewMode('export-return');
       }
     }
-  }, [searchParams, products, exportItems]);
+  }, [searchParams, products, exportItems, exportItemById]);
 
   const hasActiveFilters = dateFrom || dateTo || branchFilter !== '_all_' || employeeFilter !== '_all_' || feeTypeFilter !== '_all_' || paymentSourceFilters.length > 0;
 
