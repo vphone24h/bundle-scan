@@ -222,29 +222,6 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
         changes.push(`Khách hàng: ${receipt.customers?.name || 'Khách lẻ'} → ${selectedCustomerName}`);
       }
 
-      // 2b. Update customer info (name/phone)
-      if (customerInfoChanged && selectedCustomerId) {
-        const updateData: Record<string, string> = {};
-        if (editCustomerName !== originalCustomerNameVal) updateData.name = editCustomerName;
-        if (editCustomerPhone !== originalCustomerPhoneVal) updateData.phone = editCustomerPhone;
-        
-        const { error } = await supabase
-          .from('customers')
-          .update(updateData)
-          .eq('id', selectedCustomerId);
-        if (error) throw error;
-        
-        if (editCustomerName !== originalCustomerNameVal) {
-          changes.push(`Tên KH: ${originalCustomerNameVal} → ${editCustomerName}`);
-          oldData.customer_name_info = originalCustomerNameVal;
-          newData.customer_name_info = editCustomerName;
-        }
-        if (editCustomerPhone !== originalCustomerPhoneVal) {
-          changes.push(`SĐT KH: ${originalCustomerPhoneVal} → ${editCustomerPhone}`);
-          oldData.customer_phone = originalCustomerPhoneVal;
-          newData.customer_phone = editCustomerPhone;
-        }
-      }
 
       // 3. Update item prices
       if (hasPriceChanges) {
