@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Download, Search, Loader2, X, FolderOpen } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
 import {
@@ -52,6 +53,7 @@ interface DetailedProfitTableProps {
 }
 
 export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProps) {
+  const isMobile = useIsMobile();
   const today = format(new Date(), 'yyyy-MM-dd');
 
   // Nếu có external filters thì dùng, không thì dùng local state
@@ -357,7 +359,94 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
               Không có dữ liệu trong khoảng thời gian này
             </div>
           ) : (
-            <div className="overflow-auto">
+            <>
+            {isMobile ? (
+              /* Mobile: Card layout */
+              <div className="divide-y">
+                {pagination.paginatedData.map((item) => {
+                  const margin = item.salePrice > 0 ? ((item.profit / item.salePrice) * 100).toFixed(1) : '0';
+                  const isReturn = item.status === 'returned';
+                  
+                  return (
+                    <div 
+                      key={item.id}
+                      className={`p-3 space-y-2 ${isReturn ? 'bg-destructive/5' : ''}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-primary text-sm truncate">{item.productName}</p>
+                          <p className="text-[11px] text-muted-foreground">SKU: {item.sku}</p>
+                          {item.imei && (
+                            <p className="text-[11px] text-muted-foreground font-mono">IMEI: {item.imei}</p>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-xs font-medium">
+                            {format(new Date(item.saleDate), 'd/M/yyyy', { locale: vi })}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {format(new Date(item.saleDate), 'HH:mm')}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-4 gap-1 text-center">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Giá bán</p>
+                          <p className="text-xs font-semibold text-primary">{formatPrice(item.salePrice)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">SL</p>
+                          <p className="text-xs font-semibold">{item.quantity}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Lợi nhuận</p>
+                          <p className={`text-xs font-semibold ${item.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
+                            {item.profit >= 0 ? '+' : ''}{formatPrice(item.profit)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Margin</p>
+                          <p className="text-xs font-semibold">{margin}%</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-muted-foreground truncate">
+                          {item.customerName || 'Khách lẻ'}
+                          {isReturn && <span className="text-destructive"> (Trả hàng)</span>}
+                        </span>
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 shrink-0">
+                          {item.branchName}
+                        </Badge>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {data && (
+                  <div className="p-3 bg-muted/50">
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Doanh thu</p>
+                        <p className="text-sm font-bold text-primary">{formatPrice(data.totals.totalRevenue)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Số lượng</p>
+                        <p className="text-sm font-bold">{data.totals.totalQuantity}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Lợi nhuận</p>
+                        <p className={`text-sm font-bold ${data.totals.totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
+                          {data.totals.totalProfit >= 0 ? '+' : ''}{formatPrice(data.totals.totalProfit)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -382,61 +471,43 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
                         key={item.id}
                         className={isReturn ? 'bg-red-50/50 dark:bg-red-950/10' : ''}
                       >
-                        {/* Product */}
                         <TableCell>
                           <div>
                             <p className="font-medium text-primary">{item.productName}</p>
                             <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
                           </div>
                         </TableCell>
-
-                        {/* IMEI */}
                         <TableCell>
                           <span className="font-mono text-sm text-muted-foreground">
                             {item.imei || 'N/A'}
                           </span>
                         </TableCell>
-
-                        {/* Customer */}
                         <TableCell>
                           <div>
                             <p className="font-medium">
                               {item.customerName || 'Khách lẻ'}
                               {isReturn && <span className="text-destructive"> - Trả hàng</span>}
                             </p>
-                            {item.customerName && (
-                              <p className="text-xs text-muted-foreground">N/A</p>
-                            )}
                           </div>
                         </TableCell>
-
-                        {/* Branch */}
                         <TableCell className="text-center">
                           <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-100">
                             {item.branchName}
                           </Badge>
                         </TableCell>
-
-                        {/* Import Price */}
                         <TableCell className="text-right">
                           <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                             {formatPrice(item.importPrice)}
                           </span>
                         </TableCell>
-
-                        {/* Sale Price */}
                         <TableCell className="text-right">
                           <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                             {formatPrice(item.salePrice)}
                           </span>
                         </TableCell>
-
-                        {/* Quantity */}
                         <TableCell className="text-center font-medium">
                           {item.quantity}
                         </TableCell>
-
-                        {/* Profit */}
                         <TableCell className="text-right">
                           <div>
                             <p className={`font-medium ${item.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
@@ -447,8 +518,6 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
                             </p>
                           </div>
                         </TableCell>
-
-                        {/* Sale Date */}
                         <TableCell className="text-right">
                           <div>
                             <p className="font-medium">
@@ -463,18 +532,13 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
                     );
                   })}
 
-                  {/* Totals Row */}
                   <TableRow className="bg-muted/50 font-semibold border-t-2">
-                    <TableCell colSpan={4} className="text-right">
-                      TỔNG CỘNG
-                    </TableCell>
+                    <TableCell colSpan={4} className="text-right">TỔNG CỘNG</TableCell>
                     <TableCell className="text-right">—</TableCell>
                     <TableCell className="text-right text-emerald-600 dark:text-emerald-400">
                       {formatPrice(data.totals.totalRevenue)}
                     </TableCell>
-                    <TableCell className="text-center">
-                      {data.totals.totalQuantity}
-                    </TableCell>
+                    <TableCell className="text-center">{data.totals.totalQuantity}</TableCell>
                     <TableCell className={`text-right ${data.totals.totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
                       {data.totals.totalProfit >= 0 ? '+' : ''}{formatPrice(data.totals.totalProfit)}
                     </TableCell>
@@ -482,7 +546,9 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
                   </TableRow>
                 </TableBody>
               </Table>
-            </div>
+              </div>
+            )}
+            </>
           )}
           
           {(data?.items?.length || 0) > 0 && (
