@@ -53,6 +53,7 @@ interface DetailedProfitTableProps {
 }
 
 export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProps) {
+  const isMobile = useIsMobile();
   const today = format(new Date(), 'yyyy-MM-dd');
 
   // Nếu có external filters thì dùng, không thì dùng local state
