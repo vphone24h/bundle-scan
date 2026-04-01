@@ -275,7 +275,7 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
   const handleSubmit = async () => {
     if (!receipt || !hasChanges) return;
 
-    const isSensitive = dateChanged || hasPriceChanges || customerChanged || customerInfoChanged;
+    const isSensitive = dateChanged || hasPriceChanges || customerChanged;
     if (isSensitive && hasSecurityPassword && !securityUnlocked) {
       setShowSecurityDialog(true);
       return;
