@@ -201,17 +201,6 @@ export default function AuthPage() {
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t('pages.auth.login')}
             </Button>
-            {!isSubdomainMode && (
-              <>
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-                  <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">{t('pages.auth.noAccount')}</span></div>
-                </div>
-                <Button variant="outline" className="w-full" asChild>
-                  <Link to="/register">{t('pages.auth.registerBusiness')}</Link>
-                </Button>
-              </>
-            )}
           </form>
           {!isSubdomainMode && (
             <>
