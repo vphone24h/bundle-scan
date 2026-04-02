@@ -299,7 +299,7 @@ export function ImportHistoricalOrdersSection() {
 
     updateImporting(true);
     updateProgress(0);
-    savePersistedState({ fileName, importing: true, progress: 0, results: null, startedAt: Date.now() });
+    savePersistedState(userId, { fileName, importing: true, progress: 0, results: null, startedAt: Date.now() });
 
     // Run in background
     (async () => {
