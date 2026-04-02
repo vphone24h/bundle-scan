@@ -193,7 +193,7 @@ export function DataManagementSection() {
     setPassword('');
   };
 
-      const handleUnlockSection = async () => {
+  const handleUnlockSection = async () => {
     if (!securityPw) {
       toast.error('Vui lòng nhập mật khẩu bảo mật');
       return;
