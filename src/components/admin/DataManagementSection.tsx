@@ -193,6 +193,29 @@ export function DataManagementSection() {
     setPassword('');
   };
 
+      const handleUnlockSection = async () => {
+    if (!securityPw) {
+      toast.error('Vui lòng nhập mật khẩu bảo mật');
+      return;
+    }
+    setIsVerifying(true);
+    try {
+      const result = await verifyPassword.mutateAsync(securityPw);
+      if (result.valid) {
+        setIsUnlocked(true);
+        setSecurityPw('');
+      } else {
+        toast.error('Mật khẩu bảo mật không đúng');
+      }
+    } catch {
+      toast.error('Mật khẩu bảo mật không đúng');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const needsUnlock = hasSecurityPassword && !isUnlocked;
+
   return (
     <div className="space-y-6">
       {/* Data Backup Section */}
