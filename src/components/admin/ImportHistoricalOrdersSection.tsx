@@ -336,7 +336,7 @@ export function ImportHistoricalOrdersSection() {
         });
       } catch (err: any) {
         updateImporting(false);
-        savePersistedState({ importing: false });
+        savePersistedState(userId, { importing: false });
         toast({
           title: 'Lỗi nhập dữ liệu',
           description: err.message || String(err),
