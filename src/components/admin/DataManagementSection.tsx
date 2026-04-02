@@ -214,11 +214,11 @@ export function DataManagementSection() {
                 <Eye className="h-5 w-5 text-primary" />
               )}
               <div>
-                <Label className="text-base font-medium">Nút Test</Label>
+                <Label className="text-base font-medium">Ẩn dữ liệu</Label>
                 <p className="text-sm text-muted-foreground">
                   {isHidden 
-                    ? 'Đang ẩn dữ liệu - Tất cả module hiển thị trống' 
-                    : 'Đang hiển thị dữ liệu bình thường'}
+                    ? 'Đang ẩn dữ liệu kho' 
+                    : 'Bật để ẩn dữ liệu kho, tắt sẽ hiện lại'}
                 </p>
                 {hasBackup && (
                   <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
