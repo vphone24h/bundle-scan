@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { useSecurityPasswordStatus, useVerifySecurityPassword } from '@/hooks/useSecurityPassword';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 import {
