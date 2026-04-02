@@ -329,7 +329,7 @@ export function ImportHistoricalOrdersSection() {
 
         updateResults(totalResult);
         updateImporting(false);
-        savePersistedState({ importing: false, progress: 100 });
+        savePersistedState(userId, { importing: false, progress: 100 });
         toast({
           title: '✅ Nhập dữ liệu thành công!',
           description: `Đã tạo ${totalResult.createdReceipts} phiếu bán, ${totalResult.createdItems} sản phẩm cho ${totalResult.customersCreated} khách hàng.`,
