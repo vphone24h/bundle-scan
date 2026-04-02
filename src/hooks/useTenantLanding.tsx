@@ -419,6 +419,8 @@ export function useUpdateTenantLandingSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tenant-landing-settings'] });
+      // Clear public landing localStorage cache so website reflects changes immediately
+      clearAllPublicLandingCache();
     },
   });
 }

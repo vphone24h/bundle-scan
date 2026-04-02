@@ -100,6 +100,20 @@ export function writePublicLandingCache(keys: string[], payload: PublicLandingCa
   }
 }
 
+export function clearAllPublicLandingCache() {
+  if (typeof window === 'undefined') return;
+  try {
+    const keys = Object.keys(window.localStorage).filter(
+      k => k.startsWith(PUBLIC_LANDING_CACHE_PREFIX)
+    );
+    for (const key of keys) {
+      window.localStorage.removeItem(key);
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 export function readLastSuccessfulPublicLandingCache(): PublicLandingCachePayload | null {
   if (typeof window === 'undefined') return null;
 
