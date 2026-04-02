@@ -457,6 +457,7 @@ export function DataManagementSection() {
           </Dialog>
 
         </CardContent>
+        )}
       </Card>
     </div>
   );
