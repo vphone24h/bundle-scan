@@ -209,12 +209,14 @@ const BATCH_SIZE = 500;
 
 export function ImportHistoricalOrdersSection() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const userId = user?.id;
   const fileRef = useRef<HTMLInputElement>(null);
   const [sourceId, setSourceId] = useState('backup');
   const [parsedOrders, setParsedOrders] = useState<ParsedOrder[]>([]);
   
-  // Restore persisted state on mount
-  const persisted = loadPersistedState();
+  // Restore persisted state on mount (scoped by user)
+  const persisted = useMemo(() => loadPersistedState(userId), [userId]);
   const [importing, setImporting] = useState(persisted.importing);
   const [progress, setProgress] = useState(persisted.progress);
   const [results, setResults] = useState<ImportResult | null>(persisted.results);
@@ -223,30 +225,29 @@ export function ImportHistoricalOrdersSection() {
   // Persist state changes
   const updateProgress = useCallback((value: number) => {
     setProgress(value);
-    savePersistedState({ progress: value });
-  }, []);
+    savePersistedState(userId, { progress: value });
+  }, [userId]);
 
   const updateImporting = useCallback((value: boolean) => {
     setImporting(value);
-    savePersistedState({ importing: value, startedAt: value ? Date.now() : null });
-  }, []);
+    savePersistedState(userId, { importing: value, startedAt: value ? Date.now() : null });
+  }, [userId]);
 
   const updateResults = useCallback((value: ImportResult | null) => {
     setResults(value);
-    savePersistedState({ results: value, importing: false, progress: 100 });
-  }, []);
+    savePersistedState(userId, { results: value, importing: false, progress: 100 });
+  }, [userId]);
 
   // Auto-expire stale imports (> 30 min) on mount
   useEffect(() => {
     if (persisted.importing && persisted.startedAt) {
       const elapsed = Date.now() - persisted.startedAt;
       if (elapsed > 30 * 60 * 1000) {
-        // Stale import, reset
         setImporting(false);
-        savePersistedState({ importing: false, progress: 0, startedAt: null });
+        savePersistedState(userId, { importing: false, progress: 0, startedAt: null });
       }
     }
-  }, []);
+  }, [userId]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
