@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { useSecurityPasswordStatus, useVerifySecurityPassword } from '@/hooks/useSecurityPassword';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 import {
@@ -23,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { EyeOff, Eye, Trash2, Loader2, AlertTriangle, ShieldAlert, Database } from 'lucide-react';
+import { EyeOff, Eye, Trash2, Loader2, AlertTriangle, ShieldAlert, Database, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useQueryClient } from '@tanstack/react-query';
@@ -36,10 +37,17 @@ import { CrossPlatformBackupSection } from './CrossPlatformBackupSection';
 export function DataManagementSection() {
   const { data: tenant, refetch: refetchTenant } = useCurrentTenant();
   const queryClient = useQueryClient();
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const verifyPassword = useVerifySecurityPassword();
   
   const [isHidden, setIsHidden] = useState(false);
   const [hasBackup, setHasBackup] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  
+  // Security password unlock state
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [securityPw, setSecurityPw] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
   
   // Toggle password dialog states
   const [showToggleDialog, setShowToggleDialog] = useState(false);
@@ -185,6 +193,29 @@ export function DataManagementSection() {
     setPassword('');
   };
 
+  const handleUnlockSection = async () => {
+    if (!securityPw) {
+      toast.error('Vui lòng nhập mật khẩu bảo mật');
+      return;
+    }
+    setIsVerifying(true);
+    try {
+      const result = await verifyPassword.mutateAsync(securityPw);
+      if (result.valid) {
+        setIsUnlocked(true);
+        setSecurityPw('');
+      } else {
+        toast.error('Mật khẩu bảo mật không đúng');
+      }
+    } catch {
+      toast.error('Mật khẩu bảo mật không đúng');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const needsUnlock = hasSecurityPassword && !isUnlocked;
+
   return (
     <div className="space-y-6">
       {/* Data Backup Section */}
@@ -196,14 +227,42 @@ export function DataManagementSection() {
       {/* Test Mode Section */}
       <Card className="border-orange-200 bg-orange-50/50">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-orange-700">
+          <CardTitle 
+            className={`flex items-center gap-2 text-orange-700 ${needsUnlock ? 'cursor-pointer' : ''}`}
+            onClick={() => needsUnlock && document.getElementById('security-pw-input')?.focus()}
+          >
             <Database className="h-5 w-5" />
             Quản lý dữ liệu Test
+            {needsUnlock && <Lock className="h-4 w-4 ml-auto text-muted-foreground" />}
           </CardTitle>
-          <CardDescription>
-            Bật chế độ Test để ẩn toàn bộ dữ liệu kho (giống như mới tạo). Dữ liệu thật sẽ được backup tự động.
-          </CardDescription>
+          {!needsUnlock && (
+            <CardDescription>
+              Bật chế độ Test để ẩn toàn bộ dữ liệu kho (giống như mới tạo). Dữ liệu thật sẽ được backup tự động.
+            </CardDescription>
+          )}
         </CardHeader>
+        {needsUnlock ? (
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <Input
+                id="security-pw-input"
+                type="password"
+                placeholder="Nhập mật khẩu bảo mật..."
+                value={securityPw}
+                onChange={(e) => setSecurityPw(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleUnlockSection()}
+                className="flex-1"
+              />
+              <Button 
+                onClick={handleUnlockSection} 
+                disabled={isVerifying || !securityPw}
+                size="sm"
+              >
+                {isVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Mở khoá'}
+              </Button>
+            </div>
+          </CardContent>
+        ) : (
         <CardContent className="space-y-6">
           {/* Toggle Data Visibility - Test Mode */}
           <div className="flex items-center justify-between p-4 border rounded-lg bg-white">
@@ -398,6 +457,7 @@ export function DataManagementSection() {
           </Dialog>
 
         </CardContent>
+        )}
       </Card>
     </div>
   );
