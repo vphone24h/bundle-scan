@@ -41,7 +41,11 @@ function isFlat(headerRow: any[]): boolean {
 }
 
 let autoOrderCounter = 0;
-const STORAGE_KEY = 'import-historical-orders-state';
+const STORAGE_KEY_PREFIX = 'import-historical-orders-state';
+
+function getStorageKey(userId: string | undefined): string {
+  return userId ? `${STORAGE_KEY_PREFIX}_${userId}` : STORAGE_KEY_PREFIX;
+}
 
 interface PersistedState {
   importing: boolean;
@@ -51,18 +55,18 @@ interface PersistedState {
   startedAt: number | null;
 }
 
-function loadPersistedState(): PersistedState {
+function loadPersistedState(userId: string | undefined): PersistedState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(getStorageKey(userId));
     if (raw) return JSON.parse(raw);
   } catch {}
   return { importing: false, progress: 0, fileName: '', results: null, startedAt: null };
 }
 
-function savePersistedState(state: Partial<PersistedState>) {
+function savePersistedState(userId: string | undefined, state: Partial<PersistedState>) {
   try {
-    const current = loadPersistedState();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...current, ...state }));
+    const current = loadPersistedState(userId);
+    localStorage.setItem(getStorageKey(userId), JSON.stringify({ ...current, ...state }));
   } catch {}
 }
 
