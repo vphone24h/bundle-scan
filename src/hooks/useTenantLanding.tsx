@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { NavItemConfig, HomeSection } from '@/lib/industryConfig';
 import {
+  clearAllPublicLandingCache,
   getPublicLandingCacheKeys,
   readLastSuccessfulPublicLandingCache,
   readPublicLandingCache,
@@ -419,6 +420,8 @@ export function useUpdateTenantLandingSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tenant-landing-settings'] });
+      // Clear public landing localStorage cache so website reflects changes immediately
+      clearAllPublicLandingCache();
     },
   });
 }
