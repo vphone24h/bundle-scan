@@ -37,10 +37,17 @@ import { CrossPlatformBackupSection } from './CrossPlatformBackupSection';
 export function DataManagementSection() {
   const { data: tenant, refetch: refetchTenant } = useCurrentTenant();
   const queryClient = useQueryClient();
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const verifyPassword = useVerifySecurityPassword();
   
   const [isHidden, setIsHidden] = useState(false);
   const [hasBackup, setHasBackup] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  
+  // Security password unlock state
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [securityPw, setSecurityPw] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
   
   // Toggle password dialog states
   const [showToggleDialog, setShowToggleDialog] = useState(false);
