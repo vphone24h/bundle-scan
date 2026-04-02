@@ -164,7 +164,7 @@ export function InstallmentCalculatorDialog({ open, onOpenChange }: InstallmentC
               
               <div className="flex items-center justify-between border-t pt-3">
                 <p className="text-sm font-semibold uppercase">Khách phải trả hằng tháng</p>
-                <p className="text-xl font-bold text-primary">{formatNumber(result.monthlyPayment)}đ</p>
+                <p className="text-xl font-bold text-primary whitespace-nowrap">{formatNumber(result.monthlyPayment)}đ</p>
               </div>
 
               <div className="text-xs text-muted-foreground space-y-1 border-t pt-2">
