@@ -493,7 +493,73 @@ Deno.serve(async (req) => {
         if (!(await ensureActionRateLimit())) {
           return jsonResponse({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' })
         }
-...
+
+        if (isHidden === true) {
+          const { data: products } = await supabaseAdmin.from('products').select('*').eq('tenant_id', callerTenantId)
+          if (products && products.length > 0) {
+            await supabaseAdmin.from('products_backup').delete().eq('tenant_id', callerTenantId)
+            await supabaseAdmin.from('products_backup').insert({ tenant_id: callerTenantId, data: products })
+          }
+
+          const { data: importReceipts } = await supabaseAdmin.from('import_receipts').select('*').eq('tenant_id', callerTenantId)
+          if (importReceipts && importReceipts.length > 0) {
+            await supabaseAdmin.from('import_receipts_backup').delete().eq('tenant_id', callerTenantId)
+            await supabaseAdmin.from('import_receipts_backup').insert({ tenant_id: callerTenantId, data: importReceipts })
+          }
+
+          const { data: exportReceipts } = await supabaseAdmin.from('export_receipts').select('*').eq('tenant_id', callerTenantId)
+          if (exportReceipts && exportReceipts.length > 0) {
+            await supabaseAdmin.from('export_receipts_backup').delete().eq('tenant_id', callerTenantId)
+            await supabaseAdmin.from('export_receipts_backup').insert({ tenant_id: callerTenantId, data: exportReceipts })
+          }
+
+          const { data: cashBook } = await supabaseAdmin.from('cash_book').select('*').eq('tenant_id', callerTenantId)
+          if (cashBook && cashBook.length > 0) {
+            await supabaseAdmin.from('cash_book_backup').delete().eq('tenant_id', callerTenantId)
+            await supabaseAdmin.from('cash_book_backup').insert({ tenant_id: callerTenantId, data: cashBook })
+          }
+
+          const { error: updateError } = await supabaseAdmin
+            .from('tenants')
+            .update({ is_data_hidden: true, has_data_backup: true })
+            .eq('id', callerTenantId)
+
+          if (updateError) {
+            return jsonResponse({ error: 'Không thể cập nhật trạng thái: ' + updateError.message })
+          }
+
+          await supabaseAdmin.from('audit_logs').insert({
+            tenant_id: callerTenantId,
+            user_id: caller.id,
+            action_type: 'ENABLE_TEST_MODE',
+            table_name: 'tenants',
+            description: 'Bật chế độ Test - Đã backup dữ liệu gốc',
+          })
+        } else {
+          const { error: updateError } = await supabaseAdmin
+            .from('tenants')
+            .update({ is_data_hidden: false })
+            .eq('id', callerTenantId)
+
+          if (updateError) {
+            return jsonResponse({ error: 'Không thể cập nhật trạng thái: ' + updateError.message })
+          }
+
+          await supabaseAdmin.from('audit_logs').insert({
+            tenant_id: callerTenantId,
+            user_id: caller.id,
+            action_type: 'DISABLE_TEST_MODE',
+            table_name: 'tenants',
+            description: 'Tắt chế độ Test',
+          })
+        }
+
+        return jsonResponse({
+          success: true,
+          message: isHidden ? 'Đã bật chế độ Test - Dữ liệu đã được backup' : 'Đã tắt chế độ Test',
+        })
+      }
+
       case 'stop_test_mode':
       case 'delete_all_data': {
         const normalizedConfirm = normalizeConfirmText(body.confirmText)
