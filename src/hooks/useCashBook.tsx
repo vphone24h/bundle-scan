@@ -8,6 +8,33 @@ import { useBranchFilter } from './useBranchFilter';
 
 type CashBookType = Database['public']['Enums']['cash_book_type'];
 
+/**
+ * Server-side balance calculation via RPC - fast aggregation without loading all rows
+ */
+export function useCashBookBalances(branchId?: string) {
+  const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
+  const { branchId: userBranchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+  
+  const effectiveBranchId = branchId || (shouldFilter ? userBranchId : undefined);
+
+  return useQuery({
+    queryKey: ['cash-book-balances', tenant?.id, effectiveBranchId],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_cash_book_balances' as any, {
+        p_tenant_id: tenant!.id,
+        p_branch_id: effectiveBranchId || null,
+      });
+      if (error) throw error;
+      return (data || {}) as Record<string, { income: number; expense: number }>;
+    },
+    enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
+    staleTime: 30 * 1000, // 30s cache
+    refetchOnWindowFocus: false,
+  });
+}
+
+type CashBookType = Database['public']['Enums']['cash_book_type'];
+
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
   const { data } = await supabase.rpc('get_user_tenant_id_secure');
