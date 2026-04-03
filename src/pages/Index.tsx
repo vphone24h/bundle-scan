@@ -1,10 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useDashboardStats, useTodaySoldProducts, useRecentProducts, useRecentImportReceipts } from '@/hooks/useDashboardStats';
-import { useReportStats } from '@/hooks/useReportStats';
 
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
