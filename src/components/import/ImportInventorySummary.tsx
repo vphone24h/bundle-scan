@@ -11,6 +11,7 @@ import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurit
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 import { useInventory } from '@/hooks/useInventory';
 import { formatCurrencyCompact } from '@/lib/formatNumber';
+import { useCurrentTenant } from '@/hooks/useTenant';
 
 interface ImportInventorySummaryProps {
   isFiltered?: boolean;
@@ -52,12 +53,14 @@ export function ImportInventorySummary({ isFiltered = false, filteredProducts }:
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
   const { unlocked, unlock } = useSecurityUnlock('dashboard_profit');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const { data: tenant } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden ?? false;
 
   const valueHidden = hasSecurityPassword && !unlocked;
 
   // Use inventory data for in-stock value (synced with inventory page)
   const inventoryInStockValue = useMemo(() => {
-    if (!inventory) return 0;
+    if (!inventory || isDataHidden) return 0;
     return inventory.reduce((sum, item) => sum + item.totalImportCost, 0);
   }, [inventory]);
 
@@ -100,6 +103,7 @@ export function ImportInventorySummary({ isFiltered = false, filteredProducts }:
     };
   }, [isFiltered, filteredProducts, serverStats, inventoryInStockValue, inventoryInStockQty]);
 
+  if (isDataHidden) return null;
   if (!stats && isLoading) return null;
   if (!stats) return null;
 
