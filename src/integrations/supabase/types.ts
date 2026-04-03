@@ -8134,6 +8134,10 @@ export type Database = {
       }
       update_overdue_care_schedules: { Args: never; Returns: undefined }
       user_belongs_to_tenant: { Args: { _tenant_id: string }; Returns: boolean }
+      verify_security_password_hash: {
+        Args: { p_hash: string }
+        Returns: boolean
+      }
     }
     Enums: {
       affiliate_status: "pending" | "active" | "blocked"

@@ -3,6 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useState, useCallback } from 'react';
 
+// Client-side SHA-256 hash matching edge function logic
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + "vkho_security_salt_2024");
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
 export function useSecurityPasswordStatus() {
   const { user } = useAuth();
   return useQuery({
@@ -54,12 +63,10 @@ export function useRemoveSecurityPassword() {
 export function useVerifySecurityPassword() {
   return useMutation({
     mutationFn: async (password: string) => {
-      const res = await supabase.functions.invoke('security-password', {
-        body: { action: 'verify_password', password },
-      });
-      if (res.error) throw new Error(res.error.message || 'Error');
-      if (res.data?.error) throw new Error(res.data.error);
-      return res.data as { valid: boolean };
+      const hashed = await hashPassword(password);
+      const { data, error } = await supabase.rpc('verify_security_password_hash' as any, { p_hash: hashed });
+      if (error) throw error;
+      return { valid: !!data };
     },
   });
 }
