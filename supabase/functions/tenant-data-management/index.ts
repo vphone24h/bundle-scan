@@ -469,56 +469,83 @@ async function deleteAllWarehouseData(supabaseAdmin: any, tenantId: string) {
     .eq('tenant_id', tenantId)
   const customerIds = customers?.map((c: any) => c.id) || []
 
-  // Delete data in order (respect foreign keys)
-  // 1. Delete IMEI histories
-  if (productIds.length > 0) {
-    await supabaseAdmin.from('imei_histories').delete().in('product_id', productIds)
-    // Delete product imports
-    await supabaseAdmin.from('product_imports').delete().in('product_id', productIds)
-  }
-
-  // 2. Delete export returns
-  await supabaseAdmin.from('export_returns').delete().eq('tenant_id', tenantId)
-
-  // 3. Delete import returns
-  await supabaseAdmin.from('import_returns').delete().eq('tenant_id', tenantId)
-
-  // 4. Delete return payments
-  try { await supabaseAdmin.from('return_payments').delete().eq('tenant_id', tenantId) } catch {}
-
-  // 5. Delete export receipt items & payments
+  // Get all export receipt IDs
   const { data: exportReceipts } = await supabaseAdmin
     .from('export_receipts')
     .select('id')
     .eq('tenant_id', tenantId)
-  
   const exportReceiptIds = exportReceipts?.map((r: any) => r.id) || []
-  
-  if (exportReceiptIds.length > 0) {
-    await supabaseAdmin.from('export_receipt_items').delete().in('receipt_id', exportReceiptIds)
-    await supabaseAdmin.from('export_receipt_payments').delete().in('receipt_id', exportReceiptIds)
-    try { await supabaseAdmin.from('receipt_payments').delete().in('receipt_id', exportReceiptIds) } catch {}
-  }
 
-  // 6. Delete export receipts
-  await supabaseAdmin.from('export_receipts').delete().eq('tenant_id', tenantId)
-
-  // 7. Delete import receipt payments
+  // Get all import receipt IDs
   const { data: importReceipts } = await supabaseAdmin
     .from('import_receipts')
     .select('id')
     .eq('tenant_id', tenantId)
-  
   const importReceiptIds = importReceipts?.map((r: any) => r.id) || []
-  
+
+  // Get stock count IDs
+  const { data: stockCounts } = await supabaseAdmin
+    .from('stock_counts')
+    .select('id')
+    .eq('tenant_id', tenantId)
+  const stockCountIds = stockCounts?.map((s: any) => s.id) || []
+
+  // Get einvoice IDs
+  const { data: einvoices } = await supabaseAdmin
+    .from('einvoices')
+    .select('id')
+    .eq('tenant_id', tenantId)
+  const einvoiceIds = einvoices?.map((e: any) => e.id) || []
+
+  // === DELETE IN CORRECT ORDER (children before parents) ===
+
+  // 1. Delete IMEI histories & product_imports (reference products)
+  if (productIds.length > 0) {
+    await supabaseAdmin.from('imei_histories').delete().in('product_id', productIds)
+    await supabaseAdmin.from('product_imports').delete().in('product_id', productIds)
+  }
+
+  // 2. Delete stock_count_items then stock_counts (references products, categories, import_receipts, export_receipts)
+  if (stockCountIds.length > 0) {
+    try { await supabaseAdmin.from('stock_count_items').delete().in('stock_count_id', stockCountIds) } catch {}
+  }
+  try { await supabaseAdmin.from('stock_counts').delete().eq('tenant_id', tenantId) } catch {}
+
+  // 3. Delete einvoice data (references export_receipts)
+  if (einvoiceIds.length > 0) {
+    try { await supabaseAdmin.from('einvoice_items').delete().in('einvoice_id', einvoiceIds) } catch {}
+  }
+  try { await supabaseAdmin.from('einvoice_logs').delete().eq('tenant_id', tenantId) } catch {}
+  try { await supabaseAdmin.from('einvoices').delete().eq('tenant_id', tenantId) } catch {}
+
+  // 4. Delete export_returns (references products, customers, export_receipts, import_receipts)
+  await supabaseAdmin.from('export_returns').delete().eq('tenant_id', tenantId)
+
+  // 5. Delete import_returns (references products, suppliers, import_receipts)
+  await supabaseAdmin.from('import_returns').delete().eq('tenant_id', tenantId)
+
+  // 6. Delete return_payments
+  try { await supabaseAdmin.from('return_payments').delete().eq('tenant_id', tenantId) } catch {}
+
+  // 7. Delete export receipt items & payments (CASCADE but let's be explicit)
+  if (exportReceiptIds.length > 0) {
+    await supabaseAdmin.from('export_receipt_items').delete().in('receipt_id', exportReceiptIds)
+    await supabaseAdmin.from('export_receipt_payments').delete().in('receipt_id', exportReceiptIds)
+  }
+
+  // 8. Delete export receipts
+  await supabaseAdmin.from('export_receipts').delete().eq('tenant_id', tenantId)
+
+  // 9. Delete receipt_payments for import receipts (CASCADE but explicit)
   if (importReceiptIds.length > 0) {
+    try { await supabaseAdmin.from('receipt_payments').delete().in('receipt_id', importReceiptIds) } catch {}
     try { await supabaseAdmin.from('import_receipt_payments').delete().in('receipt_id', importReceiptIds) } catch {}
   }
 
-  // 8. Delete import receipts
+  // 10. Delete import receipts
   await supabaseAdmin.from('import_receipts').delete().eq('tenant_id', tenantId)
 
-  // 9. Delete stock transfer items & requests
+  // 11. Delete stock transfer items & requests
   const { data: stockTransfers } = await supabaseAdmin
     .from('stock_transfer_requests')
     .select('id')
@@ -529,36 +556,26 @@ async function deleteAllWarehouseData(supabaseAdmin: any, tenantId: string) {
   }
   try { await supabaseAdmin.from('stock_transfer_requests').delete().eq('tenant_id', tenantId) } catch {}
 
-  // 10. Delete products & product groups
+  // 12. Delete products & product groups
   await supabaseAdmin.from('products').delete().eq('tenant_id', tenantId)
   try { await supabaseAdmin.from('product_groups').delete().eq('tenant_id', tenantId) } catch {}
 
-  // 11. Delete cash book & opening balances
+  // 13. Delete cash book & opening balances
   await supabaseAdmin.from('cash_book').delete().eq('tenant_id', tenantId)
   try { await supabaseAdmin.from('cash_book_opening_balances').delete().eq('tenant_id', tenantId) } catch {}
 
-  // 12. Delete debt data
+  // 14. Delete debt data
   await supabaseAdmin.from('debt_payments').delete().eq('tenant_id', tenantId)
   try { await supabaseAdmin.from('debt_offsets').delete().eq('tenant_id', tenantId) } catch {}
   try { await supabaseAdmin.from('debt_tag_assignments').delete().eq('tenant_id', tenantId) } catch {}
   try { await supabaseAdmin.from('debt_tags').delete().eq('tenant_id', tenantId) } catch {}
 
-  // 13. Delete stock counts
-  const { data: stockCounts } = await supabaseAdmin
-    .from('stock_counts')
-    .select('id')
-    .eq('tenant_id', tenantId)
-  const stockCountIds = stockCounts?.map((s: any) => s.id) || []
-  if (stockCountIds.length > 0) {
-    try { await supabaseAdmin.from('stock_count_items').delete().in('stock_count_id', stockCountIds) } catch {}
-  }
-  try { await supabaseAdmin.from('stock_counts').delete().eq('tenant_id', tenantId) } catch {}
-
-  // 14. Delete customer related data
+  // 15. Delete customer related data (email_automation_logs, care, vouchers, tags, etc.)
   if (customerIds.length > 0) {
     try { await supabaseAdmin.from('customer_tag_assignments').delete().in('customer_id', customerIds) } catch {}
     try { await supabaseAdmin.from('customer_contact_channels').delete().in('customer_id', customerIds) } catch {}
     try { await supabaseAdmin.from('point_transactions').delete().in('customer_id', customerIds) } catch {}
+    try { await supabaseAdmin.from('email_automation_logs').delete().in('customer_id', customerIds) } catch {}
   }
   try { await supabaseAdmin.from('customer_care_logs').delete().eq('tenant_id', tenantId) } catch {}
   try { await supabaseAdmin.from('care_reminders').delete().eq('tenant_id', tenantId) } catch {}
@@ -569,23 +586,11 @@ async function deleteAllWarehouseData(supabaseAdmin: any, tenantId: string) {
   try { await supabaseAdmin.from('crm_notifications').delete().eq('tenant_id', tenantId) } catch {}
   await supabaseAdmin.from('customers').delete().eq('tenant_id', tenantId)
 
-  // 15. Delete suppliers
+  // 16. Delete suppliers
   try { await supabaseAdmin.from('suppliers').delete().eq('tenant_id', tenantId) } catch {}
 
-  // 16. Delete categories
+  // 17. Delete categories (after products, export_receipt_items, product_groups, stock_counts)
   try { await supabaseAdmin.from('categories').delete().eq('tenant_id', tenantId) } catch {}
-
-  // 17. Delete e-invoice data
-  const { data: einvoices } = await supabaseAdmin
-    .from('einvoices')
-    .select('id')
-    .eq('tenant_id', tenantId)
-  const einvoiceIds = einvoices?.map((e: any) => e.id) || []
-  if (einvoiceIds.length > 0) {
-    try { await supabaseAdmin.from('einvoice_items').delete().in('einvoice_id', einvoiceIds) } catch {}
-  }
-  try { await supabaseAdmin.from('einvoice_logs').delete().eq('tenant_id', tenantId) } catch {}
-  try { await supabaseAdmin.from('einvoices').delete().eq('tenant_id', tenantId) } catch {}
 
   // 18. Delete reports & stats
   try { await supabaseAdmin.from('daily_stats').delete().eq('tenant_id', tenantId) } catch {}
