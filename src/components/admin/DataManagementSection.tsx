@@ -4,9 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import { useSecurityPasswordStatus, useVerifySecurityPassword } from '@/hooks/useSecurityPassword';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -27,50 +27,148 @@ import {
 import { EyeOff, Eye, Trash2, Loader2, AlertTriangle, ShieldAlert, Database, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from '@/hooks/useTenant';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { RestoreSupplierNoteSection } from './RestoreSupplierNoteSection';
-import { UpdateImportDatesSection } from './UpdateImportDatesSection';
 import { DataBackupSection } from './DataBackupSection';
 import { CrossPlatformBackupSection } from './CrossPlatformBackupSection';
+
+type DataManagementJob = {
+  id: string;
+  status: 'queued' | 'processing' | 'completed' | 'failed';
+  progress: number;
+  current_step: string | null;
+  error_message: string | null;
+  delete_mode: 'full' | 'keep_templates';
+  notify_email: string | null;
+  created_at: string;
+  completed_at: string | null;
+};
+
+const JOB_HANDLED_STORAGE_KEY = 'vkho_data_management_job_handled';
+
+function getJobStatusLabel(status?: DataManagementJob['status']) {
+  switch (status) {
+    case 'queued':
+      return 'Đang vào hàng chờ';
+    case 'processing':
+      return 'Đang xử lý';
+    case 'completed':
+      return 'Đã hoàn tất';
+    case 'failed':
+      return 'Đã thất bại';
+    default:
+      return 'Chưa có tác vụ';
+  }
+}
+
+function formatJobTime(value?: string | null) {
+  if (!value) return null;
+
+  try {
+    return new Date(value).toLocaleString('vi-VN');
+  } catch {
+    return value;
+  }
+}
 
 export function DataManagementSection() {
   const { data: tenant, refetch: refetchTenant } = useCurrentTenant();
   const queryClient = useQueryClient();
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
   const verifyPassword = useVerifySecurityPassword();
-  
+
   const [isHidden, setIsHidden] = useState(false);
   const [hasBackup, setHasBackup] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
-  
-  // Security password unlock state
+
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [securityPw, setSecurityPw] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
-  
-  // Toggle password dialog states
+
   const [showToggleDialog, setShowToggleDialog] = useState(false);
   const [togglePassword, setTogglePassword] = useState('');
   const [pendingToggleValue, setPendingToggleValue] = useState(false);
-  
-  // Stop test dialog states
+
   const [showStopTestDialog, setShowStopTestDialog] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [deleteMode, setDeleteMode] = useState<'full' | 'keep_templates'>('full');
-  
-  // Password confirmation dialog
+
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [password, setPassword] = useState('');
   const [isStopping, setIsStopping] = useState(false);
 
-  // Sync with tenant data
+  const { data: latestDeleteJob, refetch: refetchLatestDeleteJob } = useQuery({
+    queryKey: ['data-management-latest-job', tenant?.id],
+    enabled: !!tenant?.id,
+    queryFn: async () => {
+      if (!tenant?.id) return null;
+
+      const { data, error } = await supabase
+        .from('data_management_jobs' as any)
+        .select('id, status, progress, current_step, error_message, delete_mode, notify_email, created_at, completed_at')
+        .eq('tenant_id', tenant.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return (data as DataManagementJob | null) ?? null;
+    },
+    refetchInterval: (query) => {
+      const status = (query.state.data as DataManagementJob | null)?.status;
+      return status === 'queued' || status === 'processing' ? 2000 : false;
+    },
+  });
+
+  const hasActiveDeleteJob = latestDeleteJob?.status === 'queued' || latestDeleteJob?.status === 'processing';
+
   useEffect(() => {
     if (tenant) {
       setIsHidden(tenant.is_data_hidden || false);
       setHasBackup((tenant as any).has_data_backup || false);
     }
   }, [tenant]);
+
+  useEffect(() => {
+    if (!latestDeleteJob?.id || !latestDeleteJob?.status || typeof window === 'undefined') return;
+    if (latestDeleteJob.status !== 'completed' && latestDeleteJob.status !== 'failed') return;
+
+    const handledKey = `${latestDeleteJob.id}:${latestDeleteJob.status}`;
+    const lastHandledKey = window.sessionStorage.getItem(JOB_HANDLED_STORAGE_KEY);
+    if (lastHandledKey === handledKey) return;
+
+    window.sessionStorage.setItem(JOB_HANDLED_STORAGE_KEY, handledKey);
+
+    if (latestDeleteJob.status === 'failed') {
+      toast.error(latestDeleteJob.error_message || 'Không thể xoá dữ liệu.');
+      return;
+    }
+
+    setShowPasswordDialog(false);
+    setShowStopTestDialog(false);
+    setConfirmText('');
+    setPassword('');
+    setIsHidden(false);
+    setHasBackup(false);
+
+    clearPersistedQueryCache();
+
+    void Promise.all([
+      refetchTenant(),
+      queryClient.invalidateQueries({ refetchType: 'all' }),
+      queryClient.invalidateQueries({ queryKey: ['current-tenant-combined'], refetchType: 'all' }),
+    ]).finally(() => {
+      toast.success(
+        latestDeleteJob.delete_mode === 'keep_templates'
+          ? 'Đã xoá lịch sử ở nền và giữ lại sản phẩm mẫu.'
+          : 'Đã xoá toàn bộ dữ liệu ở nền thành công.',
+      );
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
+    });
+  }, [latestDeleteJob, queryClient, refetchTenant]);
 
   const clearPersistedQueryCache = () => {
     try {
@@ -112,13 +210,9 @@ export function DataManagementSection() {
       setShowToggleDialog(false);
       setTogglePassword('');
       await refetchTenant();
-      
-      // Invalidate all data queries to force refresh
       queryClient.invalidateQueries();
-      
-      toast.success(pendingToggleValue 
-        ? 'Đã bật chế độ Test - Dữ liệu gốc đã được backup' 
-        : 'Đã tắt chế độ Test');
+
+      toast.success(pendingToggleValue ? 'Đã bật chế độ Test - Dữ liệu gốc đã được backup' : 'Đã tắt chế độ Test');
     } catch (error) {
       console.error('Toggle visibility error:', error);
       toast.error('Không thể thay đổi trạng thái: ' + (error as Error).message);
@@ -133,6 +227,11 @@ export function DataManagementSection() {
   };
 
   const handleStopTestRequest = () => {
+    if (hasActiveDeleteJob) {
+      toast.info('Đang có một yêu cầu xoá dữ liệu chạy ở nền.');
+      return;
+    }
+
     setConfirmText('');
     setDeleteMode('full');
     setShowStopTestDialog(true);
@@ -160,7 +259,7 @@ export function DataManagementSection() {
       const { data, error } = await supabase.functions.invoke('tenant-data-management', {
         body: {
           action: 'stop_test_mode',
-          confirmText: confirmText.toLowerCase(),
+          confirmText: confirmText.normalize('NFC').toLowerCase().trim(),
           password,
           restoreOption: 'delete',
           deleteMode,
@@ -170,27 +269,22 @@ export function DataManagementSection() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      // Reset states
       setShowPasswordDialog(false);
+      setShowStopTestDialog(false);
       setConfirmText('');
       setPassword('');
-      setIsHidden(false);
-      setHasBackup(false);
-      
-      clearPersistedQueryCache();
-      await Promise.all([
-        refetchTenant(),
-        queryClient.invalidateQueries({ refetchType: 'all' }),
-        queryClient.invalidateQueries({ queryKey: ['current-tenant-combined'], refetchType: 'all' }),
-      ]);
-      
-      toast.success(deleteMode === 'keep_templates' 
-        ? 'Đã xoá lịch sử & reset tồn kho. Sản phẩm mẫu được giữ lại.'
-        : 'Đã xoá toàn bộ dữ liệu thành công. Không thể khôi phục.');
 
-      setTimeout(() => {
-        window.location.reload();
-      }, 300);
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem(JOB_HANDLED_STORAGE_KEY);
+      }
+
+      await Promise.all([refetchLatestDeleteJob(), refetchTenant()]);
+
+      toast.success(
+        data?.alreadyRunning
+          ? 'Hệ thống đang tiếp tục yêu cầu xoá dữ liệu trước đó.'
+          : 'Đã bắt đầu xoá dữ liệu ở nền. Khi xong hệ thống sẽ báo trong app và qua email nếu mail đã cấu hình.',
+      );
     } catch (error) {
       console.error('Stop test error:', error);
       toast.error('Không thể thực hiện: ' + (error as Error).message);
@@ -234,22 +328,18 @@ export function DataManagementSection() {
 
   return (
     <div className="space-y-6">
-      {/* Data Backup Section */}
       <DataBackupSection />
-
-      {/* Cross-platform Backup/Restore */}
       <CrossPlatformBackupSection />
 
-      {/* Test Mode Section */}
       <Card className="border-orange-200 bg-orange-50/50">
         <CardHeader>
-          <CardTitle 
+          <CardTitle
             className={`flex items-center gap-2 text-orange-700 ${needsUnlock ? 'cursor-pointer' : ''}`}
             onClick={() => needsUnlock && document.getElementById('security-pw-input')?.focus()}
           >
             <Database className="h-5 w-5" />
             Quản lý dữ liệu Test
-            {needsUnlock && <Lock className="h-4 w-4 ml-auto text-muted-foreground" />}
+            {needsUnlock && <Lock className="ml-auto h-4 w-4 text-muted-foreground" />}
           </CardTitle>
           {!needsUnlock && (
             <CardDescription>
@@ -257,6 +347,7 @@ export function DataManagementSection() {
             </CardDescription>
           )}
         </CardHeader>
+
         {needsUnlock ? (
           <CardContent>
             <div className="flex items-center gap-2">
@@ -269,210 +360,205 @@ export function DataManagementSection() {
                 onKeyDown={(e) => e.key === 'Enter' && handleUnlockSection()}
                 className="flex-1"
               />
-              <Button 
-                onClick={handleUnlockSection} 
-                disabled={isVerifying || !securityPw}
-                size="sm"
-              >
+              <Button onClick={handleUnlockSection} disabled={isVerifying || !securityPw} size="sm">
                 {isVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Mở khoá'}
               </Button>
             </div>
           </CardContent>
         ) : (
-        <CardContent className="space-y-6">
-          {/* Toggle Data Visibility - Test Mode */}
-          <div className="flex items-center justify-between p-4 border rounded-lg bg-white">
-            <div className="flex items-center gap-3">
-              {isHidden ? (
-                <EyeOff className="h-5 w-5 text-orange-500" />
-              ) : (
-                <Eye className="h-5 w-5 text-primary" />
-              )}
-              <div>
-                <Label className="text-base font-medium">Ẩn dữ liệu</Label>
-                <p className="text-sm text-muted-foreground">
-                  {isHidden 
-                    ? 'Đang ẩn dữ liệu kho' 
-                    : 'Bật để ẩn dữ liệu kho, tắt sẽ hiện lại'}
-                </p>
-                {hasBackup && (
-                  <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
-                    <Database className="h-3 w-3" />
-                    Có bản backup dữ liệu gốc
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {isToggling && <Loader2 className="h-4 w-4 animate-spin" />}
-              <Switch
-                checked={isHidden}
-                onCheckedChange={handleToggleRequest}
-                disabled={isToggling}
-              />
-            </div>
-          </div>
-
-          {/* Stop Test Button */}
-          <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-white">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              <div>
-                <Label className="text-base font-medium text-destructive">Nút Ngưng Test</Label>
-                <p className="text-sm text-muted-foreground">
-                  Xoá toàn bộ dữ liệu (sản phẩm, khách hàng, NCC, đơn hàng, báo cáo...). Không thể khôi phục.
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="destructive"
-              onClick={handleStopTestRequest}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Ngưng Test
-            </Button>
-          </div>
-
-          {/* Toggle Password Dialog */}
-          <AlertDialog open={showToggleDialog} onOpenChange={resetToggleDialog}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center gap-2">
-                  <ShieldAlert className="h-5 w-5" />
-                  {pendingToggleValue ? 'Bật chế độ Test' : 'Tắt chế độ Test'}
-                </AlertDialogTitle>
-                <AlertDialogDescription asChild>
-                  <div className="space-y-4">
-                    <p>
-                      {pendingToggleValue 
-                        ? 'Dữ liệu hiện tại sẽ được ẩn tạm thời. Khi tắt Test sẽ hiển thị lại bình thường, không mất dữ liệu.'
-                        : 'Dữ liệu sẽ được hiển thị lại bình thường.'}
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between rounded-lg border bg-background p-4">
+              <div className="flex items-center gap-3">
+                {isHidden ? <EyeOff className="h-5 w-5 text-orange-500" /> : <Eye className="h-5 w-5 text-primary" />}
+                <div>
+                  <Label className="text-base font-medium">Ẩn dữ liệu</Label>
+                  <p className="text-sm text-muted-foreground">{isHidden ? 'Đang ẩn dữ liệu kho' : 'Bật để ẩn dữ liệu kho, tắt sẽ hiện lại'}</p>
+                  {hasBackup && (
+                    <p className="mt-1 flex items-center gap-1 text-xs text-emerald-600">
+                      <Database className="h-3 w-3" />
+                      Có bản backup dữ liệu gốc
                     </p>
-                    <div className="space-y-2">
-                      <Label>Nhập mật khẩu Admin để xác nhận</Label>
-                      <Input
-                        type="password"
-                        placeholder="Mật khẩu..."
-                        value={togglePassword}
-                        onChange={(e) => setTogglePassword(e.target.value)}
-                        autoFocus
-                      />
-                    </div>
-                  </div>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={resetToggleDialog}>Huỷ</AlertDialogCancel>
-                <Button
-                  onClick={handleToggleVisibility}
-                  disabled={isToggling || !togglePassword}
-                >
-                  {isToggling && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Xác nhận
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-
-          {/* Stop Test Confirmation Dialog */}
-          <AlertDialog open={showStopTestDialog} onOpenChange={resetStopTestDialog}>
-            <AlertDialogContent className="max-w-md">
-              <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-                  <AlertTriangle className="h-5 w-5" />
-                  Xoá dữ liệu
-                </AlertDialogTitle>
-                <AlertDialogDescription asChild>
-                  <div className="space-y-4">
-                    <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 text-sm space-y-1">
-                      <p className="font-medium text-destructive">⚠️ Hành động này KHÔNG THỂ hoàn tác!</p>
-                    </div>
-
-                    {/* Delete mode selection */}
-                    <RadioGroup value={deleteMode} onValueChange={(v) => setDeleteMode(v as 'full' | 'keep_templates')} className="space-y-3">
-                      <label htmlFor="mode-full" className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${deleteMode === 'full' ? 'border-destructive bg-destructive/5' : 'border-border'}`}>
-                        <RadioGroupItem value="full" id="mode-full" className="mt-0.5" />
-                        <div className="space-y-1">
-                          <p className="font-medium text-sm text-foreground">Xoá toàn bộ dữ liệu</p>
-                          <p className="text-xs text-muted-foreground">Xoá tất cả: sản phẩm, tồn kho, IMEI, phiếu nhập/xuất, khách hàng, NCC, sổ quỹ, báo cáo</p>
-                        </div>
-                      </label>
-                      <label htmlFor="mode-keep" className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${deleteMode === 'keep_templates' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                        <RadioGroupItem value="keep_templates" id="mode-keep" className="mt-0.5" />
-                        <div className="space-y-1">
-                          <p className="font-medium text-sm text-foreground">Xoá lịch sử, giữ sản phẩm mẫu</p>
-                          <p className="text-xs text-muted-foreground">Xoá phiếu nhập/xuất, sổ quỹ, báo cáo. Giữ lại danh sách sản phẩm (tồn kho = 0) để nhập lại nhanh</p>
-                        </div>
-                      </label>
-                    </RadioGroup>
-
-                    <div className="space-y-2 pt-2">
-                      <Label>
-                        Nhập <span className="font-mono text-destructive">"tôi đồng ý xoá"</span> để xác nhận
-                      </Label>
-                      <Input
-                        placeholder="tôi đồng ý xoá"
-                        value={confirmText}
-                        onChange={(e) => setConfirmText(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={resetStopTestDialog}>Huỷ</AlertDialogCancel>
-                <Button
-                  variant="destructive"
-                  onClick={handleConfirmTextSubmit}
-                  disabled={(() => { const n = confirmText.normalize('NFC').toLowerCase().trim(); return n !== 'tôi đồng ý xoá' && n !== 'tôi đồng ý xóa'; })()}
-                >
-                  Tiếp tục
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-
-          {/* Password Confirmation Dialog */}
-          <Dialog open={showPasswordDialog} onOpenChange={resetPasswordDialog}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle className="text-destructive flex items-center gap-2">
-                  <ShieldAlert className="h-5 w-5" />
-                  Xác nhận mật khẩu Admin
-                </DialogTitle>
-                <DialogDescription>
-                  Toàn bộ dữ liệu sẽ bị xoá vĩnh viễn. Hành động này không thể hoàn tác.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Nhập mật khẩu Admin</Label>
-                  <Input
-                    type="password"
-                    placeholder="Mật khẩu..."
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoFocus
-                  />
+                  )}
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={resetPasswordDialog}>
-                  Huỷ
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleStopTest}
-                  disabled={isStopping || !password}
-                >
-                  {isStopping && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Xoá vĩnh viễn
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              <div className="flex items-center gap-2">
+                {isToggling && <Loader2 className="h-4 w-4 animate-spin" />}
+                <Switch checked={isHidden} onCheckedChange={handleToggleRequest} disabled={isToggling || hasActiveDeleteJob} />
+              </div>
+            </div>
 
-        </CardContent>
+            {latestDeleteJob && (
+              <div className="space-y-3 rounded-lg border bg-background p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-foreground">Tiến trình xoá dữ liệu</p>
+                    <p className="text-sm text-muted-foreground">{getJobStatusLabel(latestDeleteJob.status)}</p>
+                  </div>
+                  <p className="text-sm font-medium text-foreground">{latestDeleteJob.progress ?? 0}%</p>
+                </div>
+
+                <Progress value={latestDeleteJob.progress ?? 0} className="h-2" />
+
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <p>{latestDeleteJob.current_step || 'Đang chuẩn bị xử lý dữ liệu...'}</p>
+                  {latestDeleteJob.notify_email && (
+                    <p>Sẽ báo hoàn tất qua email: {latestDeleteJob.notify_email}</p>
+                  )}
+                  {latestDeleteJob.completed_at && (
+                    <p>Hoàn tất lúc: {formatJobTime(latestDeleteJob.completed_at)}</p>
+                  )}
+                </div>
+
+                {latestDeleteJob.status === 'failed' && latestDeleteJob.error_message && (
+                  <p className="text-sm text-destructive">{latestDeleteJob.error_message}</p>
+                )}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between rounded-lg border border-destructive/20 bg-background p-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                <div>
+                  <Label className="text-base font-medium text-destructive">Nút Ngưng Test</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Xoá toàn bộ dữ liệu (sản phẩm, khách hàng, NCC, đơn hàng, báo cáo...). Hệ thống sẽ chia nhỏ và xử lý ở nền.
+                  </p>
+                </div>
+              </div>
+              <Button variant="destructive" onClick={handleStopTestRequest} disabled={hasActiveDeleteJob}>
+                {hasActiveDeleteJob ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                {hasActiveDeleteJob ? 'Đang xử lý...' : 'Ngưng Test'}
+              </Button>
+            </div>
+
+            <AlertDialog open={showToggleDialog} onOpenChange={resetToggleDialog}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <ShieldAlert className="h-5 w-5" />
+                    {pendingToggleValue ? 'Bật chế độ Test' : 'Tắt chế độ Test'}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                    <div className="space-y-4">
+                      <p>
+                        {pendingToggleValue
+                          ? 'Dữ liệu hiện tại sẽ được ẩn tạm thời. Khi tắt Test sẽ hiển thị lại bình thường, không mất dữ liệu.'
+                          : 'Dữ liệu sẽ được hiển thị lại bình thường.'}
+                      </p>
+                      <div className="space-y-2">
+                        <Label>Nhập mật khẩu Admin để xác nhận</Label>
+                        <Input
+                          type="password"
+                          placeholder="Mật khẩu..."
+                          value={togglePassword}
+                          onChange={(e) => setTogglePassword(e.target.value)}
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={resetToggleDialog}>Huỷ</AlertDialogCancel>
+                  <Button onClick={handleToggleVisibility} disabled={isToggling || !togglePassword}>
+                    {isToggling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Xác nhận
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={showStopTestDialog} onOpenChange={resetStopTestDialog}>
+              <AlertDialogContent className="max-w-md">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="h-5 w-5" />
+                    Xoá dữ liệu
+                  </AlertDialogTitle>
+                  <AlertDialogDescription asChild>
+                    <div className="space-y-4">
+                      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                        <p className="font-medium text-destructive">⚠️ Hành động này KHÔNG THỂ hoàn tác!</p>
+                        <p className="mt-1 text-muted-foreground">Yêu cầu sẽ chạy nền theo từng đợt để tránh lỗi nghẽn khi dữ liệu lớn.</p>
+                      </div>
+
+                      <RadioGroup value={deleteMode} onValueChange={(v) => setDeleteMode(v as 'full' | 'keep_templates')} className="space-y-3">
+                        <label
+                          htmlFor="mode-full"
+                          className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${deleteMode === 'full' ? 'border-destructive bg-destructive/5' : 'border-border'}`}
+                        >
+                          <RadioGroupItem value="full" id="mode-full" className="mt-0.5" />
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-foreground">Xoá toàn bộ dữ liệu</p>
+                            <p className="text-xs text-muted-foreground">Xoá tất cả: sản phẩm, tồn kho, IMEI, phiếu nhập/xuất, khách hàng, NCC, sổ quỹ, báo cáo</p>
+                          </div>
+                        </label>
+                        <label
+                          htmlFor="mode-keep"
+                          className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${deleteMode === 'keep_templates' ? 'border-primary bg-primary/5' : 'border-border'}`}
+                        >
+                          <RadioGroupItem value="keep_templates" id="mode-keep" className="mt-0.5" />
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-foreground">Xoá lịch sử, giữ sản phẩm mẫu</p>
+                            <p className="text-xs text-muted-foreground">Xoá phiếu nhập/xuất, sổ quỹ, báo cáo. Giữ lại danh sách sản phẩm (tồn kho = 0) để nhập lại nhanh</p>
+                          </div>
+                        </label>
+                      </RadioGroup>
+
+                      <div className="space-y-2 pt-2">
+                        <Label>
+                          Nhập <span className="font-mono text-destructive">"tôi đồng ý xoá"</span> để xác nhận
+                        </Label>
+                        <Input placeholder="tôi đồng ý xoá" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} />
+                      </div>
+                    </div>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={resetStopTestDialog}>Huỷ</AlertDialogCancel>
+                  <Button
+                    variant="destructive"
+                    onClick={handleConfirmTextSubmit}
+                    disabled={(() => {
+                      const normalized = confirmText.normalize('NFC').toLowerCase().trim();
+                      return normalized !== 'tôi đồng ý xoá' && normalized !== 'tôi đồng ý xóa';
+                    })()}
+                  >
+                    Tiếp tục
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            <Dialog open={showPasswordDialog} onOpenChange={resetPasswordDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-destructive">
+                    <ShieldAlert className="h-5 w-5" />
+                    Xác nhận mật khẩu Admin
+                  </DialogTitle>
+                  <DialogDescription>
+                    Sau khi xác nhận, hệ thống sẽ chạy xoá dữ liệu ở nền theo từng đợt. Khi xong sẽ báo trong app và qua email nếu đã cấu hình mail.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Nhập mật khẩu Admin</Label>
+                    <Input type="password" placeholder="Mật khẩu..." value={password} onChange={(e) => setPassword(e.target.value)} autoFocus />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={resetPasswordDialog}>
+                    Huỷ
+                  </Button>
+                  <Button variant="destructive" onClick={handleStopTest} disabled={isStopping || !password}>
+                    {isStopping && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Bắt đầu xoá nền
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </CardContent>
         )}
       </Card>
     </div>
