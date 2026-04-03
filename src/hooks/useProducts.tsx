@@ -4,6 +4,7 @@ import { Database } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth';
 import { useBranchFilter } from './useBranchFilter';
 import { usePermissions } from './usePermissions';
+import { useCurrentTenant } from './useTenant';
 import { useState, useCallback } from 'react';
 
 type ProductStatus = Database['public']['Enums']['product_status'];
@@ -68,6 +69,8 @@ export function useProducts(filters?: ProductFilters) {
   const { data: permissions, isLoading: permissionsLoading } = usePermissions();
   const branchId = permissions?.branchId ?? null;
   const shouldFilter = !permissions?.canViewAllBranches;
+  const { data: tenant } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden ?? false;
 
   const page = filters?.page ?? 1;
   const pageSize = filters?.pageSize ?? 50;
@@ -79,6 +82,7 @@ export function useProducts(filters?: ProductFilters) {
       user?.id,
       branchId,
       shouldFilter,
+      isDataHidden,
       filters?.search ?? '',
       filters?.categoryId ?? '',
       filters?.supplierId ?? '',
@@ -91,6 +95,8 @@ export function useProducts(filters?: ProductFilters) {
       pageSize,
     ],
     queryFn: async () => {
+      if (isDataHidden) return { items: [] as Product[], totalCount: 0 };
+
       let query = supabase
         .from('products')
         .select(`
@@ -194,13 +200,17 @@ export function useAllProducts(filters?: {
 }) {
   const { user } = useAuth();
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+  const { data: tenant } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden ?? false;
 
   const page = filters?.page ?? 1;
   const pageSize = filters?.pageSize ?? 100;
 
   const result = useQuery({
-    queryKey: ['all-products', user?.id, branchId, filters],
+    queryKey: ['all-products', user?.id, branchId, isDataHidden, filters],
     queryFn: async () => {
+      if (isDataHidden) return { items: [], totalCount: 0 };
+
       let query = supabase
         .from('products')
         .select(`
