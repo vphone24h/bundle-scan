@@ -131,7 +131,7 @@ export function useTodaySoldProducts(enabled = true) {
       if (itemsError) throw itemsError;
       return soldItems || [];
     },
-    enabled: !isTenantLoading && !branchLoading,
+    enabled: enabled && !isTenantLoading && !branchLoading,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
