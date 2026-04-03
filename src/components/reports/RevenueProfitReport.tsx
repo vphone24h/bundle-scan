@@ -50,7 +50,7 @@ import { format, subDays, startOfWeek, startOfMonth, subMonths, subWeeks } from 
 import { vi } from 'date-fns/locale';
 import { useReportStats, useReportChartData } from '@/hooks/useReportStats';
 import { useReportDetails } from '@/hooks/useReportDetails';
-import { useDetailedProfitReport } from '@/hooks/useDetailedProfitReport';
+
 import { useBranches } from '@/hooks/useBranches';
 import { useCategories } from '@/hooks/useCategories';
 import { formatCurrency } from '@/lib/mockData';
