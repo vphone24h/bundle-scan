@@ -424,7 +424,7 @@ export function DataManagementSection() {
                 <Button
                   variant="destructive"
                   onClick={handleConfirmTextSubmit}
-                  disabled={confirmText.toLowerCase() !== 'tôi đồng ý xoá'}
+                  disabled={(() => { const n = confirmText.normalize('NFC').toLowerCase().trim(); return n !== 'tôi đồng ý xoá' && n !== 'tôi đồng ý xóa'; })()}
                 >
                   Tiếp tục
                 </Button>
