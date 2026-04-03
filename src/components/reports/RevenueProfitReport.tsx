@@ -143,64 +143,13 @@ export function RevenueProfitReport() {
 
   const { data: rawStats, isLoading: statsLoading } = useReportStats(filters);
   const { data: reportDetails, isLoading: detailsLoading } = useReportDetails(filters, !!detailType);
-  const { data: detailData, isLoading: detailLoading } = useDetailedProfitReport({
-    ...filters,
-    search: undefined,
-  });
   const { data: chartData, isLoading: chartLoading } = useReportChartData({
     ...filters,
     groupBy: chartGroupBy,
   });
 
-  // Nguồn chuẩn: đồng bộ số liệu thẻ tổng hợp theo bảng chi tiết lợi nhuận
-  const detailSyncedMetrics = useMemo(() => {
-    if (!detailData) return null;
-
-    let totalSalesRevenue = 0;
-    let totalReturnRevenue = 0;
-    let productsSold = 0;
-    let productsReturned = 0;
-    let salesCount = 0;
-    let returnCount = 0;
-
-    detailData.items.forEach((item) => {
-      if (item.status === 'sold') {
-        totalSalesRevenue += Number(item.salePrice || 0);
-        productsSold += Number(item.quantity || 0);
-        salesCount += 1;
-      } else {
-        totalReturnRevenue += Math.abs(Number(item.salePrice || 0));
-        productsReturned += Number(item.quantity || 0);
-        returnCount += 1;
-      }
-    });
-
-    return {
-      totalSalesRevenue,
-      totalReturnRevenue,
-      netRevenue: totalSalesRevenue - totalReturnRevenue,
-      businessProfit: Number(detailData.totals.totalProfit || 0),
-      productsSold,
-      productsReturned,
-      salesCount,
-      returnCount,
-    };
-  }, [detailData]);
-
-  const stats = rawStats
-    ? (() => {
-        const businessProfit = Number(detailSyncedMetrics?.businessProfit ?? rawStats.businessProfit ?? 0);
-        const totalExpenses = Number(rawStats.totalExpenses || 0);
-        const otherIncome = Number(rawStats.otherIncome || 0);
-
-        return {
-          ...rawStats,
-          ...(detailSyncedMetrics || {}),
-          businessProfit,
-          netProfit: businessProfit + otherIncome - totalExpenses,
-        };
-      })()
-    : rawStats;
+  // Use RPC stats directly - no need to load heavy detail data for stat cards
+  const stats = rawStats;
 
   const handleTimePreset = (preset: string) => {
     const now = new Date();
