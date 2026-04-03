@@ -273,6 +273,7 @@ export function useCreateCashBookEntry() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
     },
   });
@@ -377,6 +378,7 @@ export function useTransferFunds() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
       queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
     },
@@ -468,6 +470,7 @@ export function useTransferFundsBetweenBranches() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
       queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
     },
@@ -543,6 +546,7 @@ export function useUpdateCashBookEntry() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
       queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
     },
@@ -645,12 +649,14 @@ export function useDeleteCashBookEntry() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
       queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
     },
     onError: () => {
       // Rollback: refetch on error
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] });
     },
   });
 }
