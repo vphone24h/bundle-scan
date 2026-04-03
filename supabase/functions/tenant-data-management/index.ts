@@ -18,14 +18,14 @@ Deno.serve(async (req) => {
     const rlClient = createClient(supabaseUrlRL, supabaseServiceKeyRL, { auth: { autoRefreshToken: false, persistSession: false } })
     const { data: allowed } = await rlClient.rpc('check_rate_limit', { _function_name: 'tenant-data-management', _ip_address: clientIP, _max_requests: 5, _window_minutes: 60 })
     if (allowed === false) {
-      return new Response(JSON.stringify({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(
         JSON.stringify({ error: 'Không có quyền truy cập' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
     if (callerError || !caller) {
       return new Response(
         JSON.stringify({ error: 'Không thể xác thực người dùng' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     if (!action) {
       return new Response(
         JSON.stringify({ error: 'Thiếu action' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -82,14 +82,14 @@ Deno.serve(async (req) => {
     if (!isSupperAdmin && !isPlatformAdmin) {
       return new Response(
         JSON.stringify({ error: 'Chỉ Super Admin mới có quyền thực hiện' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     if (!callerTenantId) {
       return new Response(
         JSON.stringify({ error: 'Không tìm thấy thông tin cửa hàng' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -393,7 +393,7 @@ Deno.serve(async (req) => {
         if (confirmText !== 'tôi đồng ý xoá') {
           return new Response(
             JSON.stringify({ error: 'Văn bản xác nhận không đúng' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
 
@@ -401,7 +401,7 @@ Deno.serve(async (req) => {
         if (!password) {
           return new Response(
             JSON.stringify({ error: 'Vui lòng nhập mật khẩu' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
 
@@ -414,7 +414,7 @@ Deno.serve(async (req) => {
         if (signInError) {
           return new Response(
             JSON.stringify({ error: 'Mật khẩu không đúng' }),
-            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
 
@@ -441,7 +441,7 @@ Deno.serve(async (req) => {
       default:
         return new Response(
           JSON.stringify({ error: 'Hành động không hợp lệ' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
     }
 
