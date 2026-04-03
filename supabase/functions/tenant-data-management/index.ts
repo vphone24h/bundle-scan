@@ -415,16 +415,6 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
 
     const rlClient = createAdminClient(supabaseUrl, supabaseServiceKey)
-    const { data: allowed } = await rlClient.rpc('check_rate_limit', {
-      _function_name: 'tenant-data-management',
-      _ip_address: clientIP,
-      _max_requests: MAX_REQUESTS_PER_HOUR,
-      _window_minutes: RATE_LIMIT_WINDOW_MINUTES,
-    })
-
-    if (allowed === false) {
-      return jsonResponse({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' })
-    }
 
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
@@ -476,12 +466,32 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Không tìm thấy thông tin cửa hàng' })
     }
 
+    const rateLimitKey = `tenant-data-management:${action}:${callerTenantId}:${caller.id}`
+    const ensureActionRateLimit = async () => {
+      const { data: allowed, error: rateLimitError } = await rlClient.rpc('check_rate_limit', {
+        _function_name: rateLimitKey,
+        _ip_address: clientIP,
+        _max_requests: MAX_REQUESTS_PER_HOUR,
+        _window_minutes: RATE_LIMIT_WINDOW_MINUTES,
+      })
+
+      if (rateLimitError) {
+        throw new Error(`Không thể kiểm tra giới hạn yêu cầu: ${rateLimitError.message}`)
+      }
+
+      return allowed !== false
+    }
+
     switch (action) {
       case 'toggle_data_visibility': {
         const { isHidden, password } = body
         const passwordError = await verifyCallerPassword(supabaseAdmin, caller.email, password)
         if (passwordError) {
           return jsonResponse({ error: passwordError })
+        }
+
+        if (!(await ensureActionRateLimit())) {
+          return jsonResponse({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' })
         }
 
         if (isHidden === true) {
@@ -560,6 +570,10 @@ Deno.serve(async (req) => {
         const passwordError = await verifyCallerPassword(supabaseAdmin, caller.email, body.password)
         if (passwordError) {
           return jsonResponse({ error: passwordError })
+        }
+
+        if (!(await ensureActionRateLimit())) {
+          return jsonResponse({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' })
         }
 
         const activeJob = await getActiveDeleteJob(supabaseAdmin, callerTenantId)
