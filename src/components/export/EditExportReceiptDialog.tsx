@@ -42,6 +42,7 @@ interface EditableItem {
 
 export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExportReceiptDialogProps) {
   const queryClient = useQueryClient();
+  const { data: staffList } = useStaffList();
 
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
   const { unlocked: securityUnlocked, unlock: securityUnlock } = useSecurityUnlock('edit-export-receipt-full');
