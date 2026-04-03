@@ -112,7 +112,7 @@ export function DataManagementSection() {
         .maybeSingle();
 
       if (error) throw error;
-      return (data as DataManagementJob | null) ?? null;
+      return (data as unknown as DataManagementJob | null) ?? null;
     },
     refetchInterval: (query) => {
       const status = (query.state.data as DataManagementJob | null)?.status;
