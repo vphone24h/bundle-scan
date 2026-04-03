@@ -72,7 +72,7 @@ import {
 } from 'lucide-react';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useCashBook, useCashBookCategories, useCreateCashBookEntry, useUpdateCashBookEntry, useDeleteCashBookEntry, useCreateCashBookCategory, type CashBookEntry } from '@/hooks/useCashBook';
+import { useCashBook, useCashBookCategories, useCashBookBalances, useCreateCashBookEntry, useUpdateCashBookEntry, useDeleteCashBookEntry, useCreateCashBookCategory, type CashBookEntry } from '@/hooks/useCashBook';
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCashBookGuideUrl } from '@/hooks/useAppConfig';
@@ -325,6 +325,8 @@ export default function CashBookPage() {
   // Data hooks
   const { data: allEntries, isLoading } = useCashBook({
     branchId: viewMode === 'branch' && selectedBranchId ? selectedBranchId : undefined,
+    startDate: dateFrom || undefined,
+    endDate: dateTo || undefined,
   });
   const { data: expenseCategories } = useCashBookCategories('expense');
   const { data: incomeCategories } = useCashBookCategories('income');
@@ -334,6 +336,9 @@ export default function CashBookPage() {
   const updateEntry = useUpdateCashBookEntry();
   const deleteEntry = useDeleteCashBookEntry();
   const createCategory = useCreateCashBookCategory();
+  const { data: serverBalances } = useCashBookBalances(
+    viewMode === 'branch' && selectedBranchId ? selectedBranchId : undefined
+  );
   const isMobile = useIsMobile();
   const { data: latestOpeningBalances } = useLatestOpeningBalances();
   const { data: currentProfile } = useProfile();
@@ -439,22 +444,41 @@ export default function CashBookPage() {
       : 0;
   }, [latestOpeningBalances]);
 
-  const totalBalance = useMemo(() => {
-    if (!allEntries) return 0;
-    const income = allEntries.filter(e => e.type === 'income').reduce((sum, e) => sum + Number(e.amount), 0);
-    const expense = allEntries.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.amount), 0);
-    return openingTotal + income - expense;
-  }, [allEntries, openingTotal]);
+  // Calculate balance by payment source using SERVER-SIDE RPC (fast, no full data load)
+  const balanceBySource = useMemo(() => {
+    const result: Record<string, number> = {};
+    allPaymentSources.forEach(src => {
+      const openingBalance = latestOpeningBalances?.[src.id];
+      result[src.id] = openingBalance ? Number(openingBalance.amount) : 0;
+    });
+    
+    if (serverBalances) {
+      Object.entries(serverBalances).forEach(([source, data]) => {
+        const normalizedSource = normalizePaymentSource(source);
+        if (result[normalizedSource] === undefined) {
+          const openingBalance = latestOpeningBalances?.[normalizedSource];
+          result[normalizedSource] = openingBalance ? Number(openingBalance.amount) : 0;
+        }
+        const d = data as { income: number; expense: number };
+        result[normalizedSource] += Number(d.income) - Number(d.expense);
+      });
+    }
+    
+    return result;
+  }, [serverBalances, allPaymentSources, latestOpeningBalances]);
 
-  // Running balance per entry per payment source (computed chronologically, oldest first)
+  const totalBalance = useMemo(() => {
+    return Object.values(balanceBySource).reduce((sum, v) => sum + v, 0);
+  }, [balanceBySource]);
+
+  // Running balance per entry (for display only, computed from filtered entries)
   const runningBalanceMap = useMemo(() => {
     if (!allEntries?.length) return new Map<string, number>();
-    // allEntries is sorted desc, reverse for chronological order
     const chronological = [...allEntries].reverse();
     const map = new Map<string, number>();
-    // Track balance per payment source
     const sourceBalances: Record<string, number> = {};
-    // Initialize with opening balances per source
+    // Start from server-side balances minus the entries in current view
+    // to show accurate running balance within the filtered period
     allPaymentSources.forEach(src => {
       const openingBalance = latestOpeningBalances?.[src.id];
       sourceBalances[src.id] = openingBalance ? Number(openingBalance.amount) : 0;
@@ -470,35 +494,6 @@ export default function CashBookPage() {
       map.set(entry.id, sourceBalances[source]);
     });
     return map;
-  }, [allEntries, allPaymentSources, latestOpeningBalances]);
-
-  // Calculate balance by payment source (including custom sources)
-  const balanceBySource = useMemo(() => {
-    if (!allEntries) return {};
-    
-    // Initialize with all sources (built-in + custom)
-    const result: Record<string, number> = {};
-    allPaymentSources.forEach(src => {
-      // Bắt đầu từ số dư đầu kỳ (nếu có)
-      const openingBalance = latestOpeningBalances?.[src.id];
-      result[src.id] = openingBalance ? Number(openingBalance.amount) : 0;
-    });
-    
-    allEntries.forEach((entry) => {
-      const source = normalizePaymentSource(entry.payment_source);
-      const amount = Number(entry.amount);
-      if (result[source] === undefined) {
-        const openingBalance = latestOpeningBalances?.[source];
-        result[source] = openingBalance ? Number(openingBalance.amount) : 0;
-      }
-      if (entry.type === 'income') {
-        result[source] += amount;
-      } else {
-        result[source] -= amount;
-      }
-    });
-    
-    return result;
   }, [allEntries, allPaymentSources, latestOpeningBalances]);
 
   // Shared date range for summary + balance history

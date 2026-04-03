@@ -8,6 +8,32 @@ import { useBranchFilter } from './useBranchFilter';
 
 type CashBookType = Database['public']['Enums']['cash_book_type'];
 
+/**
+ * Server-side balance calculation via RPC - fast aggregation without loading all rows
+ */
+export function useCashBookBalances(branchId?: string) {
+  const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
+  const { branchId: userBranchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+  
+  const effectiveBranchId = branchId || (shouldFilter ? userBranchId : undefined);
+
+  return useQuery({
+    queryKey: ['cash-book-balances', tenant?.id, effectiveBranchId],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_cash_book_balances' as any, {
+        p_tenant_id: tenant!.id,
+        p_branch_id: effectiveBranchId || null,
+      });
+      if (error) throw error;
+      return (data || {}) as Record<string, { income: number; expense: number }>;
+    },
+    enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
+    staleTime: 30 * 1000, // 30s cache
+    refetchOnWindowFocus: false,
+  });
+}
+
+
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
   const { data } = await supabase.rpc('get_user_tenant_id_secure');
@@ -247,6 +273,7 @@ export function useCreateCashBookEntry() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
     },
   });
@@ -351,6 +378,7 @@ export function useTransferFunds() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
       queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
     },
@@ -442,6 +470,7 @@ export function useTransferFundsBetweenBranches() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
       queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
     },
@@ -517,6 +546,7 @@ export function useUpdateCashBookEntry() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
       queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
     },
@@ -601,10 +631,32 @@ export function useDeleteCashBookEntry() {
 
       return true;
     },
+    onMutate: async ({ entry }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['cash-book'] });
+      
+      // Optimistically remove the entry from all cash-book caches
+      queryClient.setQueriesData<{ items: CashBookEntry[]; totalCount: number }>(
+        { queryKey: ['cash-book'] },
+        (old) => {
+          if (!old) return old;
+          return {
+            items: old.items.filter(e => e.id !== entry.id),
+            totalCount: Math.max(0, old.totalCount - 1),
+          };
+        }
+      );
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
       queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
+    },
+    onError: () => {
+      // Rollback: refetch on error
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] });
     },
   });
 }
