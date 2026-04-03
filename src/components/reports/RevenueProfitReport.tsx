@@ -522,11 +522,12 @@ export function RevenueProfitReport() {
         open={!!detailType}
         onOpenChange={(open) => !open && setDetailType(null)}
         type={detailType || 'sales'}
-        salesDetails={stats?.salesDetails || []}
-        returnDetails={stats?.returnDetails || []}
-        expenseDetails={stats?.expenseDetails || []}
-        incomeDetails={stats?.incomeDetails || []}
+        salesDetails={reportDetails?.salesDetails || []}
+        returnDetails={reportDetails?.returnDetails || []}
+        expenseDetails={reportDetails?.expenseDetails || []}
+        incomeDetails={reportDetails?.incomeDetails || []}
         stats={stats || null}
+        isLoadingDetails={detailsLoading}
       />
       </div>
       )}
