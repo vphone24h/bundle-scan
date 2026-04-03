@@ -790,10 +790,10 @@ export default function CashBookPage() {
       return;
     }
 
-    if (viewMode === 'total' && !formData.branch_id) {
+    if (!formData.branch_id) {
       toast({
         title: 'Thiếu chi nhánh',
-        description: 'Vui lòng chọn chi nhánh khi thêm giao dịch ở tab Tổng sổ quỹ',
+        description: 'Vui lòng chọn chi nhánh',
         variant: 'destructive',
       });
       return;
