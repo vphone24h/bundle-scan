@@ -271,6 +271,7 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
         const actionType = [
           dateChanged && 'DATE',
           customerChanged && 'CUSTOMER',
+          staffChanged && 'STAFF',
           hasPriceChanges && 'PRICE',
         ].filter(Boolean).join('_');
 
