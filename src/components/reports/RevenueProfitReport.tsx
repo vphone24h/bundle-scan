@@ -142,6 +142,7 @@ export function RevenueProfitReport() {
   };
 
   const { data: rawStats, isLoading: statsLoading } = useReportStats(filters);
+  const { data: reportDetails, isLoading: detailsLoading } = useReportDetails(filters, !!detailType);
   const { data: detailData, isLoading: detailLoading } = useDetailedProfitReport({
     ...filters,
     search: undefined,
