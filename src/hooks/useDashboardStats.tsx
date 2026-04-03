@@ -132,7 +132,8 @@ export function useTodaySoldProducts() {
       return soldItems || [];
     },
     enabled: !isTenantLoading && !branchLoading,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
     placeholderData: (previous) => previous,
   });
