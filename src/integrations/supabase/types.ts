@@ -1857,6 +1857,68 @@ export type Database = {
           },
         ]
       }
+      data_management_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_step: string | null
+          delete_mode: string
+          error_message: string | null
+          id: string
+          metadata: Json
+          notify_email: string | null
+          progress: number
+          requested_by: string
+          requested_by_email: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["data_management_job_status"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: string | null
+          delete_mode?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          notify_email?: string | null
+          progress?: number
+          requested_by: string
+          requested_by_email?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["data_management_job_status"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: string | null
+          delete_mode?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          notify_email?: string | null
+          progress?: number
+          requested_by?: string
+          requested_by_email?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["data_management_job_status"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_management_jobs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       debt_offsets: {
         Row: {
           created_at: string
@@ -7463,6 +7525,10 @@ export type Database = {
         Returns: boolean
       }
       can_access_cash_book: { Args: { _user_id: string }; Returns: boolean }
+      can_access_data_management_jobs: {
+        Args: { _tenant_id: string }
+        Returns: boolean
+      }
       can_become_affiliate: { Args: { _tenant_id: string }; Returns: boolean }
       check_getting_started_status: { Args: never; Returns: Json }
       check_rate_limit: {
@@ -8076,6 +8142,11 @@ export type Database = {
       commission_status: "pending" | "approved" | "paid" | "cancelled"
       commission_type: "percentage" | "fixed"
       customer_status: "active" | "inactive"
+      data_management_job_status:
+        | "queued"
+        | "processing"
+        | "completed"
+        | "failed"
       einvoice_provider: "vnpt" | "viettel" | "fpt" | "misa" | "other"
       einvoice_status:
         | "draft"
@@ -8242,6 +8313,12 @@ export const Constants = {
       commission_status: ["pending", "approved", "paid", "cancelled"],
       commission_type: ["percentage", "fixed"],
       customer_status: ["active", "inactive"],
+      data_management_job_status: [
+        "queued",
+        "processing",
+        "completed",
+        "failed",
+      ],
       einvoice_provider: ["vnpt", "viettel", "fpt", "misa", "other"],
       einvoice_status: [
         "draft",
