@@ -68,6 +68,8 @@ export function useProducts(filters?: ProductFilters) {
   const { data: permissions, isLoading: permissionsLoading } = usePermissions();
   const branchId = permissions?.branchId ?? null;
   const shouldFilter = !permissions?.canViewAllBranches;
+  const { data: tenant } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden ?? false;
 
   const page = filters?.page ?? 1;
   const pageSize = filters?.pageSize ?? 50;
@@ -79,6 +81,7 @@ export function useProducts(filters?: ProductFilters) {
       user?.id,
       branchId,
       shouldFilter,
+      isDataHidden,
       filters?.search ?? '',
       filters?.categoryId ?? '',
       filters?.supplierId ?? '',
@@ -91,6 +94,8 @@ export function useProducts(filters?: ProductFilters) {
       pageSize,
     ],
     queryFn: async () => {
+      if (isDataHidden) return [] as any[];
+
       let query = supabase
         .from('products')
         .select(`
