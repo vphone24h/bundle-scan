@@ -7,6 +7,8 @@ import { formatCurrency } from '@/lib/mockData';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { getPaymentSourceLabel } from '@/lib/paymentSourceLabels';
 
 export interface SaleDetailItem {
   date: string;
@@ -193,7 +195,7 @@ function ReturnsTable({ items }: { items: ReturnDetailItem[] }) {
   );
 }
 
-function CashBookTable({ items, label }: { items: CashBookDetailItem[]; label: string }) {
+function CashBookTable({ items, label, customSources }: { items: CashBookDetailItem[]; label: string; customSources?: Array<{ id: string; name: string }> }) {
   const total = items.reduce((s, i) => s + i.amount, 0);
   return (
     <div>
@@ -212,7 +214,7 @@ function CashBookTable({ items, label }: { items: CashBookDetailItem[]; label: s
             </div>
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{formatDate(item.date)}</span>
-              <span>{item.paymentSource}</span>
+              <span>{getPaymentSourceLabel(item.paymentSource, customSources)}</span>
             </div>
           </div>
         ))}
@@ -235,7 +237,7 @@ function CashBookTable({ items, label }: { items: CashBookDetailItem[]; label: s
                 <TableCell className="text-sm">{item.description}</TableCell>
                 <TableCell><Badge variant="outline" className="text-xs">{item.category}</Badge></TableCell>
                 <TableCell className="text-right font-medium">{formatCurrency(item.amount)}</TableCell>
-                <TableCell className="text-xs">{item.paymentSource}</TableCell>
+                <TableCell className="text-xs">{getPaymentSourceLabel(item.paymentSource, customSources)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -273,7 +275,7 @@ function NetProfitSummary({ stats, salesDetails, returnDetails, expenseDetails, 
   );
 }
 
-function DetailContent({ type, salesDetails, returnDetails, expenseDetails, incomeDetails, stats }: Omit<Props, 'open' | 'onOpenChange'>) {
+function DetailContent({ type, salesDetails, returnDetails, expenseDetails, incomeDetails, stats, customSources }: Omit<Props, 'open' | 'onOpenChange'> & { customSources?: Array<{ id: string; name: string }> }) {
   switch (type) {
     case 'sales':
       return <SalesTable items={salesDetails} />;
@@ -312,9 +314,9 @@ function DetailContent({ type, salesDetails, returnDetails, expenseDetails, inco
       );
     }
     case 'expenses':
-      return <CashBookTable items={expenseDetails} label="khoản chi" />;
+      return <CashBookTable items={expenseDetails} label="khoản chi" customSources={customSources} />;
     case 'otherIncome':
-      return <CashBookTable items={incomeDetails} label="khoản thu" />;
+      return <CashBookTable items={incomeDetails} label="khoản thu" customSources={customSources} />;
     case 'netProfit':
       return <NetProfitSummary stats={stats} salesDetails={salesDetails} returnDetails={returnDetails} expenseDetails={expenseDetails} incomeDetails={incomeDetails} />;
     default:
@@ -324,7 +326,8 @@ function DetailContent({ type, salesDetails, returnDetails, expenseDetails, inco
 
 export function ReportStatDetailDialog({ open, onOpenChange, type, salesDetails, returnDetails, expenseDetails, incomeDetails, stats }: Props) {
   const isMobile = useIsMobile();
-  const content = <DetailContent type={type} salesDetails={salesDetails} returnDetails={returnDetails} expenseDetails={expenseDetails} incomeDetails={incomeDetails} stats={stats} />;
+  const { data: customSources } = useCustomPaymentSources();
+  const content = <DetailContent type={type} salesDetails={salesDetails} returnDetails={returnDetails} expenseDetails={expenseDetails} incomeDetails={incomeDetails} stats={stats} customSources={customSources} />;
 
   if (isMobile) {
     return (
