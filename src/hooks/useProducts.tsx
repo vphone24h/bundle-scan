@@ -95,7 +95,7 @@ export function useProducts(filters?: ProductFilters) {
       pageSize,
     ],
     queryFn: async () => {
-      if (isDataHidden) return [] as any[];
+      if (isDataHidden) return { items: [] as Product[], totalCount: 0 };
 
       let query = supabase
         .from('products')
