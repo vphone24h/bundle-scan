@@ -214,7 +214,7 @@ function CashBookTable({ items, label, customSources }: { items: CashBookDetailI
             </div>
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{formatDate(item.date)}</span>
-              <span>{item.paymentSource}</span>
+              <span>{getPaymentSourceLabel(item.paymentSource, customSources)}</span>
             </div>
           </div>
         ))}
