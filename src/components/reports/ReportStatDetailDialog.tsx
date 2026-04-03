@@ -275,7 +275,7 @@ function NetProfitSummary({ stats, salesDetails, returnDetails, expenseDetails, 
   );
 }
 
-function DetailContent({ type, salesDetails, returnDetails, expenseDetails, incomeDetails, stats }: Omit<Props, 'open' | 'onOpenChange'>) {
+function DetailContent({ type, salesDetails, returnDetails, expenseDetails, incomeDetails, stats, customSources }: Omit<Props, 'open' | 'onOpenChange'> & { customSources?: Array<{ id: string; name: string }> }) {
   switch (type) {
     case 'sales':
       return <SalesTable items={salesDetails} />;
