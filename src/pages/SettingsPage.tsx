@@ -219,6 +219,25 @@ export default function SettingsPage() {
 
       if (error) throw error;
 
+      // Đồng bộ email đăng nhập (auth) khi email cửa hàng thay đổi
+      const newEmail = storeEmail.trim();
+      if (newEmail && newEmail !== (tenant.email || '')) {
+        const { error: authError } = await supabase.auth.updateUser({ email: newEmail });
+        if (authError) {
+          console.warn('Could not update auth email:', authError.message);
+          toast({ 
+            title: 'Email cửa hàng đã lưu, nhưng email đăng nhập chưa cập nhật được', 
+            description: authError.message,
+            variant: 'destructive' 
+          });
+        } else {
+          toast({ 
+            title: 'Đã gửi email xác nhận', 
+            description: `Vui lòng kiểm tra hộp thư ${newEmail} để xác nhận thay đổi email đăng nhập.`,
+          });
+        }
+      }
+
       const normalizedSubdomain = storeSubdomain.trim().toLowerCase();
       const normalizedEmail = storeEmail.trim() || null;
 
