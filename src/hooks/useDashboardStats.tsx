@@ -95,7 +95,7 @@ export function useDashboardStats() {
 }
 
 // Hook để lấy danh sách sản phẩm đã bán hôm nay
-export function useTodaySoldProducts() {
+export function useTodaySoldProducts(enabled = true) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
