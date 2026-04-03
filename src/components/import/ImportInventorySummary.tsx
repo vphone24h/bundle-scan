@@ -56,8 +56,6 @@ export function ImportInventorySummary({ isFiltered = false, filteredProducts }:
   const { data: tenant } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
 
-  if (isDataHidden) return null;
-
   const valueHidden = hasSecurityPassword && !unlocked;
 
   // Use inventory data for in-stock value (synced with inventory page)
