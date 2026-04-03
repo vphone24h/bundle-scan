@@ -34,24 +34,8 @@ export function useDashboardStats() {
         } as DashboardStats;
       }
 
-      // Use browser local timezone for today's date
       const todayStr = getLocalDateString();
       const { startISO: todayStartUTC, endISO: todayEndUTC } = getLocalDateRangeISO(todayStr, todayStr);
-
-      // Single server-side RPC: counts + sums in one DB call
-      const { data: aggRaw } = await supabase.rpc('get_dashboard_aggregates', {
-        p_tenant_id: tenant!.id,
-        p_branch_id: shouldFilter && branchId ? branchId : null,
-      });
-
-      const agg = (aggRaw || {}) as Record<string, number>;
-      const inStockCount = agg.in_stock || 0;
-      const totalProducts = agg.total || 0;
-      const soldProducts = agg.sold || 0;
-      const totalImportValue = Number(agg.total_import_value || 0);
-      const pendingDebt = Number(agg.pending_debt || 0);
-      const totalStockQty = Number(agg.total_stock_qty || 0);
-
       const effectiveBranchId = shouldFilter && branchId ? branchId : null;
 
       let todayImportsQuery = supabase
@@ -65,8 +49,12 @@ export function useDashboardStats() {
         todayImportsQuery = todayImportsQuery.eq('branch_id', effectiveBranchId);
       }
 
-      // Sync Dashboard with Reports source of truth: no local recalculation
-      const [{ data: todayReportAgg, error: reportError }, { count: todayImportsCount, error: todayImportsError }] = await Promise.all([
+      // All 3 calls in parallel instead of sequential
+      const [{ data: aggRaw }, { data: todayReportAgg, error: reportError }, { count: todayImportsCount, error: todayImportsError }] = await Promise.all([
+        supabase.rpc('get_dashboard_aggregates', {
+          p_tenant_id: tenant!.id,
+          p_branch_id: effectiveBranchId,
+        }),
         supabase.rpc('get_report_stats_aggregated' as any, {
           p_tenant_id: tenant!.id,
           p_start_iso: todayStartUTC,
@@ -80,28 +68,25 @@ export function useDashboardStats() {
       if (reportError) throw reportError;
       if (todayImportsError) throw todayImportsError;
 
+      const agg = (aggRaw || {}) as Record<string, number>;
       const reportAgg = (todayReportAgg || {}) as Record<string, unknown>;
-      const todayRevenue = Number(reportAgg.netRevenue || 0);
-      // todayProfit sẽ được ghi đè bởi hook riêng tại Index.tsx để đồng bộ 100% với báo cáo
-      const todayProfit = Number(reportAgg.netProfit || 0);
-      const todaySold = Number(reportAgg.productsSold || 0);
-      const todayImports = todayImportsCount || 0;
 
       return {
-        totalProducts: totalProducts || 0,
-        inStockProducts: inStockCount || 0,
-        soldProducts: soldProducts || 0,
-        totalImportValue,
-        pendingDebt,
-        totalStockQty,
-        todayProfit,
-        todayRevenue,
-        todaySold,
-        todayImports,
+        totalProducts: agg.total || 0,
+        inStockProducts: agg.in_stock || 0,
+        soldProducts: agg.sold || 0,
+        totalImportValue: Number(agg.total_import_value || 0),
+        pendingDebt: Number(agg.pending_debt || 0),
+        totalStockQty: Number(agg.total_stock_qty || 0),
+        todayProfit: Number(reportAgg.netProfit || 0),
+        todayRevenue: Number(reportAgg.netRevenue || 0),
+        todaySold: Number(reportAgg.productsSold || 0),
+        todayImports: todayImportsCount || 0,
       } as DashboardStats;
     },
     enabled: !isTenantLoading && !branchLoading,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: true,
     refetchOnReconnect: false,
     refetchOnMount: true,
