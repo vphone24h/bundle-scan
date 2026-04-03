@@ -96,6 +96,9 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
       setCustomerSearch('');
       setShowCustomerDropdown(false);
       setShowEditCustomerDialog(false);
+      const staffId = (receipt as any).sales_staff_id || null;
+      setSelectedStaffId(staffId);
+      setOriginalStaffId(staffId);
     }
   }, [receipt]);
 
