@@ -53,6 +53,10 @@ export function ImportInventorySummary({ isFiltered = false, filteredProducts }:
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
   const { unlocked, unlock } = useSecurityUnlock('dashboard_profit');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const { data: tenant } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden ?? false;
+
+  if (isDataHidden) return null;
 
   const valueHidden = hasSecurityPassword && !unlocked;
 
