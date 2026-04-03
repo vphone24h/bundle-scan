@@ -314,9 +314,9 @@ function DetailContent({ type, salesDetails, returnDetails, expenseDetails, inco
       );
     }
     case 'expenses':
-      return <CashBookTable items={expenseDetails} label="khoản chi" />;
+      return <CashBookTable items={expenseDetails} label="khoản chi" customSources={customSources} />;
     case 'otherIncome':
-      return <CashBookTable items={incomeDetails} label="khoản thu" />;
+      return <CashBookTable items={incomeDetails} label="khoản thu" customSources={customSources} />;
     case 'netProfit':
       return <NetProfitSummary stats={stats} salesDetails={salesDetails} returnDetails={returnDetails} expenseDetails={expenseDetails} incomeDetails={incomeDetails} />;
     default:
