@@ -877,8 +877,8 @@ export function useSearchProductsByName() {
         .eq('status', 'in_stock');
 
       if (isImeiSearch) {
-        // Search by IMEI suffix (last 3-5 digits) since IMEIs share common prefixes
-        query = query.ilike('imei', `%${searchTerm.trim()}`);
+        // Search by partial IMEI
+        query = query.ilike('imei', `%${searchTerm.trim()}%`);
       } else {
         // Search by name
         query = query.ilike('name', `%${searchTerm}%`);
