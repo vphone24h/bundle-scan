@@ -194,7 +194,8 @@ export function useRecentImportReceipts(limit = 3) {
       return data || [];
     },
     enabled: !isTenantLoading && !branchLoading,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     placeholderData: (previous) => previous,
