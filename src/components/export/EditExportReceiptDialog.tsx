@@ -399,6 +399,37 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
                 )}
               </div>
 
+              {/* Sales Staff */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <UserCircle className="h-3.5 w-3.5" />
+                  Nhân viên bán hàng
+                </Label>
+                <Select
+                  value={selectedStaffId || '_none_'}
+                  onValueChange={(v) => setSelectedStaffId(v === '_none_' ? null : v)}
+                >
+                  <SelectTrigger className={cn(staffChanged && 'border-green-500 ring-1 ring-green-500/30')}>
+                    <SelectValue placeholder="Chọn nhân viên..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none_">Chưa gán</SelectItem>
+                    {staffList?.map((staff) => (
+                      <SelectItem key={staff.user_id} value={staff.user_id}>
+                        {staff.display_name || 'Nhân viên'}
+                        {staff.user_role === 'super_admin' && ' (Admin)'}
+                        {staff.user_role === 'branch_admin' && ' (QL)'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {staffChanged && (
+                  <p className="text-xs text-green-600 font-medium">
+                    ⚠ Nhân viên bán đã thay đổi
+                  </p>
+                )}
+              </div>
+
               {/* Items */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5">
