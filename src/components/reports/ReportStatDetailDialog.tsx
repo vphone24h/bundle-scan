@@ -237,7 +237,7 @@ function CashBookTable({ items, label, customSources }: { items: CashBookDetailI
                 <TableCell className="text-sm">{item.description}</TableCell>
                 <TableCell><Badge variant="outline" className="text-xs">{item.category}</Badge></TableCell>
                 <TableCell className="text-right font-medium">{formatCurrency(item.amount)}</TableCell>
-                <TableCell className="text-xs">{item.paymentSource}</TableCell>
+                <TableCell className="text-xs">{getPaymentSourceLabel(item.paymentSource, customSources)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
