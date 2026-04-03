@@ -63,12 +63,10 @@ export function useRemoveSecurityPassword() {
 export function useVerifySecurityPassword() {
   return useMutation({
     mutationFn: async (password: string) => {
-      const res = await supabase.functions.invoke('security-password', {
-        body: { action: 'verify_password', password },
-      });
-      if (res.error) throw new Error(res.error.message || 'Error');
-      if (res.data?.error) throw new Error(res.data.error);
-      return res.data as { valid: boolean };
+      const hashed = await hashPassword(password);
+      const { data, error } = await supabase.rpc('verify_security_password_hash' as any, { p_hash: hashed });
+      if (error) throw error;
+      return { valid: !!data };
     },
   });
 }
