@@ -59,6 +59,7 @@ interface Props {
     otherIncome: number;
     netProfit: number;
   } | null;
+  isLoadingDetails?: boolean;
 }
 
 const TITLES: Record<DetailType, string> = {
