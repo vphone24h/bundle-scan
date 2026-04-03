@@ -453,160 +453,162 @@ Deno.serve(async (req) => {
   }
 })
 
+function isMissingTableError(error: any) {
+  const message = String(error?.message || '').toLowerCase()
+  return message.includes('could not find the table') || message.includes('relation') && message.includes('does not exist')
+}
+
+async function assertMutation(label: string, operation: Promise<any>) {
+  const { error } = await operation
+  if (!error) return
+  console.error(`[tenant-data-management] ${label} failed:`, error)
+  throw new Error(`${label}: ${error.message}`)
+}
+
+async function assertOptionalMutation(label: string, operation: Promise<any>) {
+  const { error } = await operation
+  if (!error) return
+  if (isMissingTableError(error)) {
+    console.warn(`[tenant-data-management] ${label} skipped:`, error.message)
+    return
+  }
+  console.error(`[tenant-data-management] ${label} failed:`, error)
+  throw new Error(`${label}: ${error.message}`)
+}
+
+async function fetchIdsByTenant(supabaseAdmin: any, table: string, tenantId: string) {
+  const { data, error } = await supabaseAdmin
+    .from(table)
+    .select('id')
+    .eq('tenant_id', tenantId)
+
+  if (error) {
+    console.error(`[tenant-data-management] fetch ${table} failed:`, error)
+    throw new Error(`Không thể tải danh sách ${table}: ${error.message}`)
+  }
+
+  return (data || []).map((row: any) => row.id)
+}
+
+async function deleteByIdsInBatches(
+  supabaseAdmin: any,
+  table: string,
+  column: string,
+  ids: string[],
+  label: string,
+  optional = false,
+  batchSize = 200,
+) {
+  for (let index = 0; index < ids.length; index += batchSize) {
+    const batch = ids.slice(index, index + batchSize)
+    const operation = supabaseAdmin.from(table).delete().in(column, batch)
+    if (optional) {
+      await assertOptionalMutation(label, operation)
+    } else {
+      await assertMutation(label, operation)
+    }
+  }
+}
+
 async function deleteAllWarehouseData(supabaseAdmin: any, tenantId: string) {
-  // Get all product IDs for this tenant first
-  const { data: products } = await supabaseAdmin
-    .from('products')
-    .select('id')
-    .eq('tenant_id', tenantId)
-  
-  const productIds = products?.map((p: any) => p.id) || []
+  const [productIds, customerIds, supplierIds, exportReceiptIds, importReceiptIds, stockCountIds, einvoiceIds, landingOrderIds, stockTransferIds] = await Promise.all([
+    fetchIdsByTenant(supabaseAdmin, 'products', tenantId),
+    fetchIdsByTenant(supabaseAdmin, 'customers', tenantId),
+    fetchIdsByTenant(supabaseAdmin, 'suppliers', tenantId),
+    fetchIdsByTenant(supabaseAdmin, 'export_receipts', tenantId),
+    fetchIdsByTenant(supabaseAdmin, 'import_receipts', tenantId),
+    fetchIdsByTenant(supabaseAdmin, 'stock_counts', tenantId),
+    fetchIdsByTenant(supabaseAdmin, 'einvoices', tenantId),
+    fetchIdsByTenant(supabaseAdmin, 'landing_orders', tenantId),
+    fetchIdsByTenant(supabaseAdmin, 'stock_transfer_requests', tenantId),
+  ])
 
-  // Get all customer IDs
-  const { data: customers } = await supabaseAdmin
-    .from('customers')
-    .select('id')
-    .eq('tenant_id', tenantId)
-  const customerIds = customers?.map((c: any) => c.id) || []
-
-  // Get all export receipt IDs
-  const { data: exportReceipts } = await supabaseAdmin
-    .from('export_receipts')
-    .select('id')
-    .eq('tenant_id', tenantId)
-  const exportReceiptIds = exportReceipts?.map((r: any) => r.id) || []
-
-  // Get all import receipt IDs
-  const { data: importReceipts } = await supabaseAdmin
-    .from('import_receipts')
-    .select('id')
-    .eq('tenant_id', tenantId)
-  const importReceiptIds = importReceipts?.map((r: any) => r.id) || []
-
-  // Get stock count IDs
-  const { data: stockCounts } = await supabaseAdmin
-    .from('stock_counts')
-    .select('id')
-    .eq('tenant_id', tenantId)
-  const stockCountIds = stockCounts?.map((s: any) => s.id) || []
-
-  // Get einvoice IDs
-  const { data: einvoices } = await supabaseAdmin
-    .from('einvoices')
-    .select('id')
-    .eq('tenant_id', tenantId)
-  const einvoiceIds = einvoices?.map((e: any) => e.id) || []
-
-  // === DELETE IN CORRECT ORDER (children before parents) ===
-
-  // 1. Delete IMEI histories & product_imports (reference products)
   if (productIds.length > 0) {
-    await supabaseAdmin.from('imei_histories').delete().in('product_id', productIds)
-    await supabaseAdmin.from('product_imports').delete().in('product_id', productIds)
+    await deleteByIdsInBatches(supabaseAdmin, 'imei_histories', 'product_id', productIds, 'Xoá lịch sử IMEI')
+    await deleteByIdsInBatches(supabaseAdmin, 'product_imports', 'product_id', productIds, 'Xoá lịch sử nhập sản phẩm')
   }
 
-  // 2. Delete stock_count_items then stock_counts (references products, categories, import_receipts, export_receipts)
   if (stockCountIds.length > 0) {
-    try { await supabaseAdmin.from('stock_count_items').delete().in('stock_count_id', stockCountIds) } catch {}
+    await deleteByIdsInBatches(supabaseAdmin, 'stock_count_items', 'stock_count_id', stockCountIds, 'Xoá chi tiết kiểm kho', true)
   }
-  try { await supabaseAdmin.from('stock_counts').delete().eq('tenant_id', tenantId) } catch {}
+  await assertOptionalMutation('Xoá phiếu kiểm kho', supabaseAdmin.from('stock_counts').delete().eq('tenant_id', tenantId))
 
-  // 3. Delete einvoice data (references export_receipts)
   if (einvoiceIds.length > 0) {
-    try { await supabaseAdmin.from('einvoice_items').delete().in('einvoice_id', einvoiceIds) } catch {}
+    await deleteByIdsInBatches(supabaseAdmin, 'einvoice_items', 'einvoice_id', einvoiceIds, 'Xoá chi tiết hoá đơn điện tử', true)
   }
-  try { await supabaseAdmin.from('einvoice_logs').delete().eq('tenant_id', tenantId) } catch {}
-  try { await supabaseAdmin.from('einvoices').delete().eq('tenant_id', tenantId) } catch {}
+  await assertOptionalMutation('Xoá log hoá đơn điện tử', supabaseAdmin.from('einvoice_logs').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá hoá đơn điện tử', supabaseAdmin.from('einvoices').delete().eq('tenant_id', tenantId))
 
-  // 4. Delete export_returns (references products, customers, export_receipts, import_receipts)
-  await supabaseAdmin.from('export_returns').delete().eq('tenant_id', tenantId)
+  await assertMutation('Xoá phiếu trả hàng bán', supabaseAdmin.from('export_returns').delete().eq('tenant_id', tenantId))
+  await assertMutation('Xoá phiếu trả hàng nhập', supabaseAdmin.from('import_returns').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá thanh toán trả hàng', supabaseAdmin.from('return_payments').delete().eq('tenant_id', tenantId))
 
-  // 5. Delete import_returns (references products, suppliers, import_receipts)
-  await supabaseAdmin.from('import_returns').delete().eq('tenant_id', tenantId)
-
-  // 6. Delete return_payments
-  try { await supabaseAdmin.from('return_payments').delete().eq('tenant_id', tenantId) } catch {}
-
-  // 7. Delete export receipt items & payments (CASCADE but let's be explicit)
   if (exportReceiptIds.length > 0) {
-    await supabaseAdmin.from('export_receipt_items').delete().in('receipt_id', exportReceiptIds)
-    await supabaseAdmin.from('export_receipt_payments').delete().in('receipt_id', exportReceiptIds)
+    await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'receipt_id', exportReceiptIds, 'Xoá chi tiết phiếu xuất')
+    await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_payments', 'receipt_id', exportReceiptIds, 'Xoá thanh toán phiếu xuất')
   }
+  await assertMutation('Xoá phiếu xuất', supabaseAdmin.from('export_receipts').delete().eq('tenant_id', tenantId))
 
-  // 8. Delete export receipts
-  await supabaseAdmin.from('export_receipts').delete().eq('tenant_id', tenantId)
-
-  // 9. Delete receipt_payments for import receipts (CASCADE but explicit)
   if (importReceiptIds.length > 0) {
-    try { await supabaseAdmin.from('receipt_payments').delete().in('receipt_id', importReceiptIds) } catch {}
-    try { await supabaseAdmin.from('import_receipt_payments').delete().in('receipt_id', importReceiptIds) } catch {}
+    await deleteByIdsInBatches(supabaseAdmin, 'receipt_payments', 'receipt_id', importReceiptIds, 'Xoá thanh toán phiếu nhập', true)
+    await deleteByIdsInBatches(supabaseAdmin, 'import_receipt_payments', 'receipt_id', importReceiptIds, 'Xoá thanh toán phiếu nhập cũ', true)
   }
+  await assertMutation('Xoá phiếu nhập', supabaseAdmin.from('import_receipts').delete().eq('tenant_id', tenantId))
 
-  // 10. Delete import receipts
-  await supabaseAdmin.from('import_receipts').delete().eq('tenant_id', tenantId)
-
-  // 11. Delete stock transfer items & requests
-  const { data: stockTransfers } = await supabaseAdmin
-    .from('stock_transfer_requests')
-    .select('id')
-    .eq('tenant_id', tenantId)
-  const stockTransferIds = stockTransfers?.map((s: any) => s.id) || []
   if (stockTransferIds.length > 0) {
-    try { await supabaseAdmin.from('stock_transfer_items').delete().in('request_id', stockTransferIds) } catch {}
+    await deleteByIdsInBatches(supabaseAdmin, 'stock_transfer_items', 'transfer_request_id', stockTransferIds, 'Xoá chi tiết chuyển kho')
   }
-  try { await supabaseAdmin.from('stock_transfer_requests').delete().eq('tenant_id', tenantId) } catch {}
+  if (productIds.length > 0) {
+    await deleteByIdsInBatches(supabaseAdmin, 'stock_transfer_items', 'product_id', productIds, 'Xoá liên kết chuyển kho theo sản phẩm')
+  }
+  if (supplierIds.length > 0) {
+    await deleteByIdsInBatches(supabaseAdmin, 'stock_transfer_items', 'supplier_id', supplierIds, 'Xoá liên kết chuyển kho theo nhà cung cấp', true)
+  }
+  await assertOptionalMutation('Xoá phiếu chuyển kho', supabaseAdmin.from('stock_transfer_requests').delete().eq('tenant_id', tenantId))
 
-  // 12. Delete products & product groups
-  await supabaseAdmin.from('products').delete().eq('tenant_id', tenantId)
-  try { await supabaseAdmin.from('product_groups').delete().eq('tenant_id', tenantId) } catch {}
+  await assertMutation('Xoá sản phẩm', supabaseAdmin.from('products').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá nhóm sản phẩm', supabaseAdmin.from('product_groups').delete().eq('tenant_id', tenantId))
 
-  // 13. Delete cash book & opening balances
-  await supabaseAdmin.from('cash_book').delete().eq('tenant_id', tenantId)
-  try { await supabaseAdmin.from('cash_book_opening_balances').delete().eq('tenant_id', tenantId) } catch {}
+  await assertMutation('Xoá sổ quỹ', supabaseAdmin.from('cash_book').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá số dư đầu kỳ', supabaseAdmin.from('cash_book_opening_balances').delete().eq('tenant_id', tenantId))
 
-  // 14. Delete debt data
-  await supabaseAdmin.from('debt_payments').delete().eq('tenant_id', tenantId)
-  try { await supabaseAdmin.from('debt_offsets').delete().eq('tenant_id', tenantId) } catch {}
-  try { await supabaseAdmin.from('debt_tag_assignments').delete().eq('tenant_id', tenantId) } catch {}
-  try { await supabaseAdmin.from('debt_tags').delete().eq('tenant_id', tenantId) } catch {}
+  await assertMutation('Xoá thanh toán công nợ', supabaseAdmin.from('debt_payments').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá bù trừ công nợ', supabaseAdmin.from('debt_offsets').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá gán nhãn công nợ', supabaseAdmin.from('debt_tag_assignments').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá nhãn công nợ', supabaseAdmin.from('debt_tags').delete().eq('tenant_id', tenantId))
 
-  // 15. Delete customer related data (email_automation_logs, care, vouchers, tags, etc.)
   if (customerIds.length > 0) {
-    try { await supabaseAdmin.from('customer_tag_assignments').delete().in('customer_id', customerIds) } catch {}
-    try { await supabaseAdmin.from('customer_contact_channels').delete().in('customer_id', customerIds) } catch {}
-    try { await supabaseAdmin.from('point_transactions').delete().in('customer_id', customerIds) } catch {}
-    try { await supabaseAdmin.from('email_automation_logs').delete().in('customer_id', customerIds) } catch {}
+    await deleteByIdsInBatches(supabaseAdmin, 'customer_tag_assignments', 'customer_id', customerIds, 'Xoá gán tag khách hàng', true)
+    await deleteByIdsInBatches(supabaseAdmin, 'customer_contact_channels', 'customer_id', customerIds, 'Xoá kênh liên hệ khách hàng', true)
+    await deleteByIdsInBatches(supabaseAdmin, 'point_transactions', 'customer_id', customerIds, 'Xoá lịch sử điểm', true)
+    await deleteByIdsInBatches(supabaseAdmin, 'email_automation_logs', 'customer_id', customerIds, 'Xoá log email khách hàng', true)
   }
-  try { await supabaseAdmin.from('customer_care_logs').delete().eq('tenant_id', tenantId) } catch {}
-  try { await supabaseAdmin.from('care_reminders').delete().eq('tenant_id', tenantId) } catch {}
-  try { await supabaseAdmin.from('customer_care_schedules').delete().eq('tenant_id', tenantId) } catch {}
-  try { await supabaseAdmin.from('customer_vouchers').delete().eq('tenant_id', tenantId) } catch {}
-  try { await supabaseAdmin.from('customer_tags').delete().eq('tenant_id', tenantId) } catch {}
-  try { await supabaseAdmin.from('customer_sources').delete().eq('tenant_id', tenantId) } catch {}
-  try { await supabaseAdmin.from('crm_notifications').delete().eq('tenant_id', tenantId) } catch {}
-  await supabaseAdmin.from('customers').delete().eq('tenant_id', tenantId)
+  await assertOptionalMutation('Xoá log chăm sóc khách hàng', supabaseAdmin.from('customer_care_logs').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá nhắc lịch chăm sóc', supabaseAdmin.from('care_reminders').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá lịch chăm sóc', supabaseAdmin.from('customer_care_schedules').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá voucher khách hàng', supabaseAdmin.from('customer_vouchers').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá tag khách hàng', supabaseAdmin.from('customer_tags').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá nguồn khách hàng', supabaseAdmin.from('customer_sources').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá thông báo CRM', supabaseAdmin.from('crm_notifications').delete().eq('tenant_id', tenantId))
+  await assertMutation('Xoá khách hàng', supabaseAdmin.from('customers').delete().eq('tenant_id', tenantId))
 
-  // 16. Delete suppliers
-  try { await supabaseAdmin.from('suppliers').delete().eq('tenant_id', tenantId) } catch {}
+  await assertOptionalMutation('Xoá nhà cung cấp', supabaseAdmin.from('suppliers').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá danh mục', supabaseAdmin.from('categories').delete().eq('tenant_id', tenantId))
 
-  // 17. Delete categories (after products, export_receipt_items, product_groups, stock_counts)
-  try { await supabaseAdmin.from('categories').delete().eq('tenant_id', tenantId) } catch {}
+  await assertOptionalMutation('Xoá thống kê ngày', supabaseAdmin.from('daily_stats').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá snapshot giá trị kho', supabaseAdmin.from('warehouse_value_snapshots').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá snapshot hiệu suất nhân viên', supabaseAdmin.from('staff_performance_snapshots').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá đánh giá nhân viên', supabaseAdmin.from('staff_reviews').delete().eq('tenant_id', tenantId))
 
-  // 18. Delete reports & stats
-  try { await supabaseAdmin.from('daily_stats').delete().eq('tenant_id', tenantId) } catch {}
-  try { await supabaseAdmin.from('warehouse_value_snapshots').delete().eq('tenant_id', tenantId) } catch {}
-  try { await supabaseAdmin.from('staff_performance_snapshots').delete().eq('tenant_id', tenantId) } catch {}
-  try { await supabaseAdmin.from('staff_reviews').delete().eq('tenant_id', tenantId) } catch {}
+  await assertOptionalMutation('Xoá mẫu voucher', supabaseAdmin.from('voucher_templates').delete().eq('tenant_id', tenantId))
 
-  // 19. Delete voucher templates
-  try { await supabaseAdmin.from('voucher_templates').delete().eq('tenant_id', tenantId) } catch {}
+  if (landingOrderIds.length > 0) {
+    await deleteByIdsInBatches(supabaseAdmin, 'shop_ctv_orders', 'landing_order_id', landingOrderIds, 'Xoá đơn cộng tác viên', true)
+  }
+  await assertOptionalMutation('Xoá log email đơn landing', supabaseAdmin.from('landing_order_email_logs').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá đơn landing', supabaseAdmin.from('landing_orders').delete().eq('tenant_id', tenantId))
 
-  // 20. Delete landing orders
-  try { await supabaseAdmin.from('landing_order_email_logs').delete().eq('tenant_id', tenantId) } catch {}
-  try { await supabaseAdmin.from('landing_orders').delete().eq('tenant_id', tenantId) } catch {}
-
-  // 21. Delete audit logs
-  await supabaseAdmin.from('audit_logs').delete().eq('tenant_id', tenantId)
+  await assertMutation('Xoá nhật ký hệ thống', supabaseAdmin.from('audit_logs').delete().eq('tenant_id', tenantId))
 }
 
 async function deleteKeepTemplates(supabaseAdmin: any, tenantId: string) {

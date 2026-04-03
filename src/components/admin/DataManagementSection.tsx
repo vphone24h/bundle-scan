@@ -72,6 +72,14 @@ export function DataManagementSection() {
     }
   }, [tenant]);
 
+  const clearPersistedQueryCache = () => {
+    try {
+      localStorage.removeItem('vkho_query_cache_v1');
+    } catch (error) {
+      console.warn('Could not clear persisted query cache:', error);
+    }
+  };
+
   const handleToggleRequest = (newValue: boolean) => {
     setPendingToggleValue(newValue);
     setTogglePassword('');
@@ -168,13 +176,20 @@ export function DataManagementSection() {
       setIsHidden(false);
       setHasBackup(false);
       
-      // Invalidate all data queries
-      await refetchTenant();
-      queryClient.invalidateQueries();
+      clearPersistedQueryCache();
+      await Promise.all([
+        refetchTenant(),
+        queryClient.invalidateQueries({ refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['current-tenant-combined'], refetchType: 'all' }),
+      ]);
       
       toast.success(deleteMode === 'keep_templates' 
         ? 'Đã xoá lịch sử & reset tồn kho. Sản phẩm mẫu được giữ lại.'
         : 'Đã xoá toàn bộ dữ liệu thành công. Không thể khôi phục.');
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
     } catch (error) {
       console.error('Stop test error:', error);
       toast.error('Không thể thực hiện: ' + (error as Error).message);
