@@ -157,20 +157,16 @@ const Index = () => {
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const todayFilters = useMemo(() => ({ startDate: todayStr, endDate: todayStr }), [todayStr]);
   const { data: todayReportStats, isLoading: todayReportLoading } = useReportStats(todayFilters);
-  const { data: todayDetailData, isLoading: todayDetailLoading } = useDetailedProfitReport(todayFilters);
 
   const todayNetProfit = useMemo(() => {
     if (!todayReportStats) return null;
-    // Tính y hệt RevenueProfitReport: businessProfit từ bảng chi tiết
-    const businessProfit = todayDetailData
-      ? Number(todayDetailData.totals.totalProfit || 0)
-      : Number(todayReportStats.businessProfit || 0);
+    const businessProfit = Number(todayReportStats.businessProfit || 0);
     const totalExpenses = Number(todayReportStats.totalExpenses || 0);
     const otherIncome = Number(todayReportStats.otherIncome || 0);
     return businessProfit + otherIncome - totalExpenses;
-  }, [todayReportStats, todayDetailData]);
+  }, [todayReportStats]);
 
-  const isTodayProfitLoading = todayReportLoading || todayDetailLoading || todayNetProfit === null;
+  const isTodayProfitLoading = todayReportLoading || todayNetProfit === null;
 
   const { data: recentProductsData } = useRecentProducts(5);
   const { data: recentReceiptsData } = useRecentImportReceipts(3);
