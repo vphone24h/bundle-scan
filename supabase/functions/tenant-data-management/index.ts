@@ -413,7 +413,7 @@ Deno.serve(async (req) => {
 
         if (signInError) {
           return new Response(
-            JSON.stringify({ error: 'Mật khẩu không đúng' }),
+            JSON.stringify({ error: 'Sai mật khẩu' }),
             { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
