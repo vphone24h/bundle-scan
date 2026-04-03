@@ -292,6 +292,8 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
       queryClient.invalidateQueries({ queryKey: ['export-receipt-items'] });
       queryClient.invalidateQueries({ queryKey: ['export-receipt-detail'] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['staff-detail'] });
+      queryClient.invalidateQueries({ queryKey: ['staff-revenue'] });
     },
   });
 
