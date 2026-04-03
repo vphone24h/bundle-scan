@@ -152,21 +152,9 @@ const Index = () => {
   const isPlatformAdmin = platformUser?.platform_role === 'platform_admin';
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
 
-  // === LỢI NHUẬN THUẦN HÔM NAY: copy đúng con số từ báo cáo ===
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  const todayFilters = useMemo(() => ({ startDate: todayStr, endDate: todayStr }), [todayStr]);
-  const { data: todayReportStats, isLoading: todayReportLoading } = useReportStats(todayFilters);
-
-  const todayNetProfit = useMemo(() => {
-    if (!todayReportStats) return null;
-    const businessProfit = Number(todayReportStats.businessProfit || 0);
-    const totalExpenses = Number(todayReportStats.totalExpenses || 0);
-    const otherIncome = Number(todayReportStats.otherIncome || 0);
-    return businessProfit + otherIncome - totalExpenses;
-  }, [todayReportStats]);
-
-  const isTodayProfitLoading = todayReportLoading || todayNetProfit === null;
+  // === LỢI NHUẬN THUẦN HÔM NAY: lấy trực tiếp từ dashboard stats (đã gọi RPC) ===
+  const todayNetProfit = stats ? Number(stats.todayProfit || 0) : null;
+  const isTodayProfitLoading = statsLoading || todayNetProfit === null;
 
   const { data: recentProductsData } = useRecentProducts(5);
   const { data: recentReceiptsData } = useRecentImportReceipts(3);
