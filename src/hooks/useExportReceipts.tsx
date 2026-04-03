@@ -854,7 +854,10 @@ export function useCheckProductForSale() {
 export function useSearchProductsByName() {
   return useMutation({
     mutationFn: async (searchTerm: string) => {
-      const { data, error } = await supabase
+      // Check if search term looks like IMEI (digits only, 3+ chars)
+      const isImeiSearch = /^\d{3,}$/.test(searchTerm.trim());
+      
+      let query = supabase
         .from('products')
         .select(`
           id,
@@ -871,10 +874,17 @@ export function useSearchProductsByName() {
           categories(name),
           branches(name)
         `)
-        .eq('status', 'in_stock')
-        .ilike('name', `%${searchTerm}%`)
-        .limit(10);
+        .eq('status', 'in_stock');
 
+      if (isImeiSearch) {
+        // Search by partial IMEI
+        query = query.ilike('imei', `%${searchTerm.trim()}%`);
+      } else {
+        // Search by name
+        query = query.ilike('name', `%${searchTerm}%`);
+      }
+
+      const { data, error } = await query.limit(10);
       if (error) throw error;
       return data;
     },

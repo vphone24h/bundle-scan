@@ -1119,10 +1119,12 @@ export default function ExportNewPage() {
                     value={imeiSearch || nameSearch}
                     onChange={(e) => {
                       const val = e.target.value;
+                      // Only treat as pure IMEI (exact match) if 6+ digits
                       if (/^\d{6,}$/.test(val.trim())) {
                         setImeiSearch(val);
                         setNameSearch('');
                       } else {
+                        // For 3-5 digit inputs or text, use name search (which also searches partial IMEI)
                         setNameSearch(val);
                         setImeiSearch('');
                       }

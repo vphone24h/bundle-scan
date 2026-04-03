@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Save, CalendarIcon, Search, User, Package, Pencil } from 'lucide-react';
+import { Loader2, Save, CalendarIcon, Search, User, Package, Pencil, UserCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -14,6 +14,8 @@ import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDi
 import { PriceInput } from '@/components/ui/price-input';
 import type { ExportReceipt, ExportReceiptItemDetail } from '@/hooks/useExportReceipts';
 import { CustomerFormDialog } from '@/components/customers/CustomerFormDialog';
+import { useStaffList } from '@/hooks/useCRM';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface EditExportReceiptDialogProps {
   receipt: ExportReceipt | null;
@@ -40,6 +42,7 @@ interface EditableItem {
 
 export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExportReceiptDialogProps) {
   const queryClient = useQueryClient();
+  const { data: staffList } = useStaffList();
 
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
   const { unlocked: securityUnlocked, unlock: securityUnlock } = useSecurityUnlock('edit-export-receipt-full');
@@ -59,6 +62,9 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
   // Edit customer dialog
   const [showEditCustomerDialog, setShowEditCustomerDialog] = useState(false);
   const [editingCustomerData, setEditingCustomerData] = useState<any>(null);
+  // Sales staff
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [originalStaffId, setOriginalStaffId] = useState<string | null>(null);
   // Items
   const [editableItems, setEditableItems] = useState<EditableItem[]>([]);
 
@@ -90,6 +96,9 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
       setCustomerSearch('');
       setShowCustomerDropdown(false);
       setShowEditCustomerDialog(false);
+      const staffId = (receipt as any).sales_staff_id || null;
+      setSelectedStaffId(staffId);
+      setOriginalStaffId(staffId);
     }
   }, [receipt]);
 
@@ -178,10 +187,11 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
   // Computed
   const dateChanged = exportDate && exportDate !== originalExportDate;
   const customerChanged = selectedCustomerId !== originalCustomerId;
+  const staffChanged = selectedStaffId !== originalStaffId;
   const priceChanges = editableItems.filter(i => i.sale_price !== i.original_sale_price);
   const hasPriceChanges = priceChanges.length > 0;
   const newTotal = editableItems.reduce((sum, i) => sum + (i.sale_price * i.quantity), 0);
-  const hasChanges = dateChanged || customerChanged || hasPriceChanges;
+  const hasChanges = dateChanged || customerChanged || hasPriceChanges || staffChanged;
 
   const updateReceipt = useMutation({
     mutationFn: async () => {
@@ -222,8 +232,20 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
         changes.push(`Khách hàng: ${receipt.customers?.name || 'Khách lẻ'} → ${selectedCustomerName}`);
       }
 
+      // 2b. Update sales staff
+      if (staffChanged) {
+        const { error } = await supabase
+          .from('export_receipts')
+          .update({ sales_staff_id: selectedStaffId })
+          .eq('id', receipt.id);
+        if (error) throw error;
+        const oldStaffName = staffList?.find(s => s.user_id === originalStaffId)?.display_name || 'N/A';
+        const newStaffName = staffList?.find(s => s.user_id === selectedStaffId)?.display_name || 'N/A';
+        oldData.sales_staff_id = originalStaffId;
+        newData.sales_staff_id = selectedStaffId;
+        changes.push(`NV bán: ${oldStaffName} → ${newStaffName}`);
+      }
 
-      // 3. Update item prices
       if (hasPriceChanges) {
         for (const item of priceChanges) {
           const { error } = await supabase
@@ -249,6 +271,7 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
         const actionType = [
           dateChanged && 'DATE',
           customerChanged && 'CUSTOMER',
+          staffChanged && 'STAFF',
           hasPriceChanges && 'PRICE',
         ].filter(Boolean).join('_');
 
@@ -269,6 +292,8 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
       queryClient.invalidateQueries({ queryKey: ['export-receipt-items'] });
       queryClient.invalidateQueries({ queryKey: ['export-receipt-detail'] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['staff-detail'] });
+      queryClient.invalidateQueries({ queryKey: ['staff-revenue'] });
     },
   });
 
@@ -372,6 +397,37 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
                 {dateChanged && (
                   <p className="text-xs text-green-600 font-medium">
                     ⚠ Ngày bán đã thay đổi
+                  </p>
+                )}
+              </div>
+
+              {/* Sales Staff */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <UserCircle className="h-3.5 w-3.5" />
+                  Nhân viên bán hàng
+                </Label>
+                <Select
+                  value={selectedStaffId || '_none_'}
+                  onValueChange={(v) => setSelectedStaffId(v === '_none_' ? null : v)}
+                >
+                  <SelectTrigger className={cn(staffChanged && 'border-green-500 ring-1 ring-green-500/30')}>
+                    <SelectValue placeholder="Chọn nhân viên..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none_">Chưa gán</SelectItem>
+                    {staffList?.map((staff) => (
+                      <SelectItem key={staff.user_id} value={staff.user_id}>
+                        {staff.display_name || 'Nhân viên'}
+                        {staff.user_role === 'super_admin' && ' (Admin)'}
+                        {staff.user_role === 'branch_admin' && ' (QL)'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {staffChanged && (
+                  <p className="text-xs text-green-600 font-medium">
+                    ⚠ Nhân viên bán đã thay đổi
                   </p>
                 )}
               </div>
