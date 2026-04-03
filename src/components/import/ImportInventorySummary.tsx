@@ -103,6 +103,7 @@ export function ImportInventorySummary({ isFiltered = false, filteredProducts }:
     };
   }, [isFiltered, filteredProducts, serverStats, inventoryInStockValue, inventoryInStockQty]);
 
+  if (isDataHidden) return null;
   if (!stats && isLoading) return null;
   if (!stats) return null;
 
