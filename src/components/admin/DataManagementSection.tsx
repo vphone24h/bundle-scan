@@ -387,7 +387,7 @@ export function DataManagementSection() {
               </div>
             </div>
 
-            {latestDeleteJob && (
+            {latestDeleteJob && (latestDeleteJob.status === 'queued' || latestDeleteJob.status === 'processing') && (
               <div className="space-y-3 rounded-lg border bg-background p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
@@ -404,14 +404,7 @@ export function DataManagementSection() {
                   {latestDeleteJob.notify_email && (
                     <p>Sẽ báo hoàn tất qua email: {latestDeleteJob.notify_email}</p>
                   )}
-                  {latestDeleteJob.completed_at && (
-                    <p>Hoàn tất lúc: {formatJobTime(latestDeleteJob.completed_at)}</p>
-                  )}
                 </div>
-
-                {latestDeleteJob.status === 'failed' && latestDeleteJob.error_message && (
-                  <p className="text-sm text-destructive">{latestDeleteJob.error_message}</p>
-                )}
               </div>
             )}
 
