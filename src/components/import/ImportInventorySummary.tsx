@@ -11,6 +11,7 @@ import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurit
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 import { useInventory } from '@/hooks/useInventory';
 import { formatCurrencyCompact } from '@/lib/formatNumber';
+import { useCurrentTenant } from '@/hooks/useTenant';
 
 interface ImportInventorySummaryProps {
   isFiltered?: boolean;
