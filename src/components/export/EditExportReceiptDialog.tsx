@@ -232,8 +232,20 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
         changes.push(`Khách hàng: ${receipt.customers?.name || 'Khách lẻ'} → ${selectedCustomerName}`);
       }
 
+      // 2b. Update sales staff
+      if (staffChanged) {
+        const { error } = await supabase
+          .from('export_receipts')
+          .update({ sales_staff_id: selectedStaffId })
+          .eq('id', receipt.id);
+        if (error) throw error;
+        const oldStaffName = staffList?.find(s => s.user_id === originalStaffId)?.display_name || 'N/A';
+        const newStaffName = staffList?.find(s => s.user_id === selectedStaffId)?.display_name || 'N/A';
+        oldData.sales_staff_id = originalStaffId;
+        newData.sales_staff_id = selectedStaffId;
+        changes.push(`NV bán: ${oldStaffName} → ${newStaffName}`);
+      }
 
-      // 3. Update item prices
       if (hasPriceChanges) {
         for (const item of priceChanges) {
           const { error } = await supabase
