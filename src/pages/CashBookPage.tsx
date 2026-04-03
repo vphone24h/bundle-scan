@@ -444,67 +444,32 @@ export default function CashBookPage() {
       : 0;
   }, [latestOpeningBalances]);
 
-  const totalBalance = useMemo(() => {
-    if (!allEntries) return 0;
-    const income = allEntries.filter(e => e.type === 'income').reduce((sum, e) => sum + Number(e.amount), 0);
-    const expense = allEntries.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.amount), 0);
-    return openingTotal + income - expense;
-  }, [allEntries, openingTotal]);
-
-  // Running balance per entry per payment source (computed chronologically, oldest first)
-  const runningBalanceMap = useMemo(() => {
-    if (!allEntries?.length) return new Map<string, number>();
-    // allEntries is sorted desc, reverse for chronological order
-    const chronological = [...allEntries].reverse();
-    const map = new Map<string, number>();
-    // Track balance per payment source
-    const sourceBalances: Record<string, number> = {};
-    // Initialize with opening balances per source
-    allPaymentSources.forEach(src => {
-      const openingBalance = latestOpeningBalances?.[src.id];
-      sourceBalances[src.id] = openingBalance ? Number(openingBalance.amount) : 0;
-    });
-    chronological.forEach(entry => {
-      const source = normalizePaymentSource(entry.payment_source);
-      if (sourceBalances[source] === undefined) {
-        const openingBalance = latestOpeningBalances?.[source];
-        sourceBalances[source] = openingBalance ? Number(openingBalance.amount) : 0;
-      }
-      const amount = Number(entry.amount);
-      sourceBalances[source] += entry.type === 'income' ? amount : -amount;
-      map.set(entry.id, sourceBalances[source]);
-    });
-    return map;
-  }, [allEntries, allPaymentSources, latestOpeningBalances]);
-
-  // Calculate balance by payment source (including custom sources)
+  // Calculate balance by payment source using SERVER-SIDE RPC (fast, no full data load)
   const balanceBySource = useMemo(() => {
-    if (!allEntries) return {};
-    
-    // Initialize with all sources (built-in + custom)
     const result: Record<string, number> = {};
     allPaymentSources.forEach(src => {
-      // Bắt đầu từ số dư đầu kỳ (nếu có)
       const openingBalance = latestOpeningBalances?.[src.id];
       result[src.id] = openingBalance ? Number(openingBalance.amount) : 0;
     });
     
-    allEntries.forEach((entry) => {
-      const source = normalizePaymentSource(entry.payment_source);
-      const amount = Number(entry.amount);
-      if (result[source] === undefined) {
-        const openingBalance = latestOpeningBalances?.[source];
-        result[source] = openingBalance ? Number(openingBalance.amount) : 0;
-      }
-      if (entry.type === 'income') {
-        result[source] += amount;
-      } else {
-        result[source] -= amount;
-      }
-    });
+    if (serverBalances) {
+      Object.entries(serverBalances).forEach(([source, data]) => {
+        const normalizedSource = normalizePaymentSource(source);
+        if (result[normalizedSource] === undefined) {
+          const openingBalance = latestOpeningBalances?.[normalizedSource];
+          result[normalizedSource] = openingBalance ? Number(openingBalance.amount) : 0;
+        }
+        const d = data as { income: number; expense: number };
+        result[normalizedSource] += Number(d.income) - Number(d.expense);
+      });
+    }
     
     return result;
-  }, [allEntries, allPaymentSources, latestOpeningBalances]);
+  }, [serverBalances, allPaymentSources, latestOpeningBalances]);
+
+  const totalBalance = useMemo(() => {
+    return Object.values(balanceBySource).reduce((sum, v) => sum + v, 0);
+  }, [balanceBySource]);
 
   // Shared date range for summary + balance history
   const summaryDateRange = useMemo(() => {
