@@ -325,6 +325,8 @@ export default function CashBookPage() {
   // Data hooks
   const { data: allEntries, isLoading } = useCashBook({
     branchId: viewMode === 'branch' && selectedBranchId ? selectedBranchId : undefined,
+    startDate: dateFrom || undefined,
+    endDate: dateTo || undefined,
   });
   const { data: expenseCategories } = useCashBookCategories('expense');
   const { data: incomeCategories } = useCashBookCategories('income');

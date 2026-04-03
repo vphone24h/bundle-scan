@@ -601,10 +601,30 @@ export function useDeleteCashBookEntry() {
 
       return true;
     },
+    onMutate: async ({ entry }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['cash-book'] });
+      
+      // Optimistically remove the entry from all cash-book caches
+      queryClient.setQueriesData<{ items: CashBookEntry[]; totalCount: number }>(
+        { queryKey: ['cash-book'] },
+        (old) => {
+          if (!old) return old;
+          return {
+            items: old.items.filter(e => e.id !== entry.id),
+            totalCount: Math.max(0, old.totalCount - 1),
+          };
+        }
+      );
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
       queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
+    },
+    onError: () => {
+      // Rollback: refetch on error
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
     },
   });
 }
