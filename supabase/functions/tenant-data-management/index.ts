@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
         if (!togglePassword) {
           return new Response(
             JSON.stringify({ error: 'Vui lòng nhập mật khẩu' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
 
@@ -113,8 +113,8 @@ Deno.serve(async (req) => {
 
         if (signInError) {
           return new Response(
-            JSON.stringify({ error: 'Mật khẩu không đúng' }),
-            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            JSON.stringify({ error: 'Sai mật khẩu' }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
 
@@ -242,10 +242,11 @@ Deno.serve(async (req) => {
 
       case 'stop_test_mode': {
         // Validate confirmation text
-        if (confirmText !== 'tôi đồng ý xoá') {
+        const normalizedConfirm = confirmText?.normalize('NFC')?.toLowerCase()?.trim() || '';
+        if (normalizedConfirm !== 'tôi đồng ý xoá' && normalizedConfirm !== 'tôi đồng ý xóa') {
           return new Response(
             JSON.stringify({ error: 'Văn bản xác nhận không đúng' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
 
@@ -253,7 +254,7 @@ Deno.serve(async (req) => {
         if (!password) {
           return new Response(
             JSON.stringify({ error: 'Vui lòng nhập mật khẩu' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
 
@@ -265,8 +266,8 @@ Deno.serve(async (req) => {
 
         if (signInError) {
           return new Response(
-            JSON.stringify({ error: 'Mật khẩu không đúng' }),
-            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            JSON.stringify({ error: 'Sai mật khẩu' }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
 

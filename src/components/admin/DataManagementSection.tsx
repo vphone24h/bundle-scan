@@ -139,7 +139,8 @@ export function DataManagementSection() {
   };
 
   const handleConfirmTextSubmit = () => {
-    if (confirmText.toLowerCase() !== 'tôi đồng ý xoá') {
+    const normalized = confirmText.normalize('NFC').toLowerCase().trim();
+    if (normalized !== 'tôi đồng ý xoá' && normalized !== 'tôi đồng ý xóa') {
       toast.error('Vui lòng nhập đúng "tôi đồng ý xoá"');
       return;
     }
@@ -423,7 +424,7 @@ export function DataManagementSection() {
                 <Button
                   variant="destructive"
                   onClick={handleConfirmTextSubmit}
-                  disabled={confirmText.toLowerCase() !== 'tôi đồng ý xoá'}
+                  disabled={(() => { const n = confirmText.normalize('NFC').toLowerCase().trim(); return n !== 'tôi đồng ý xoá' && n !== 'tôi đồng ý xóa'; })()}
                 >
                   Tiếp tục
                 </Button>
