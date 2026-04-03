@@ -157,7 +157,8 @@ const Index = () => {
 
   const { data: recentProductsData } = useRecentProducts(5);
   const { data: recentReceiptsData } = useRecentImportReceipts(3);
-  const { data: todaySoldProducts, isLoading: soldLoading } = useTodaySoldProducts();
+  // Lazy: only fetch sold products when user switches to "sold" tab
+  const { data: todaySoldProducts, isLoading: soldLoading } = useTodaySoldProducts(productTab === 'sold');
   const { data: pendingOrderCount } = usePendingOrderCount();
   const userGuideUrl = useUserGuideUrl();
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
