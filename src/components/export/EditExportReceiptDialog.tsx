@@ -62,6 +62,9 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
   // Edit customer dialog
   const [showEditCustomerDialog, setShowEditCustomerDialog] = useState(false);
   const [editingCustomerData, setEditingCustomerData] = useState<any>(null);
+  // Sales staff
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [originalStaffId, setOriginalStaffId] = useState<string | null>(null);
   // Items
   const [editableItems, setEditableItems] = useState<EditableItem[]>([]);
 
