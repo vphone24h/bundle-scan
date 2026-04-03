@@ -471,6 +471,31 @@ export default function CashBookPage() {
     return Object.values(balanceBySource).reduce((sum, v) => sum + v, 0);
   }, [balanceBySource]);
 
+  // Running balance per entry (for display only, computed from filtered entries)
+  const runningBalanceMap = useMemo(() => {
+    if (!allEntries?.length) return new Map<string, number>();
+    const chronological = [...allEntries].reverse();
+    const map = new Map<string, number>();
+    const sourceBalances: Record<string, number> = {};
+    // Start from server-side balances minus the entries in current view
+    // to show accurate running balance within the filtered period
+    allPaymentSources.forEach(src => {
+      const openingBalance = latestOpeningBalances?.[src.id];
+      sourceBalances[src.id] = openingBalance ? Number(openingBalance.amount) : 0;
+    });
+    chronological.forEach(entry => {
+      const source = normalizePaymentSource(entry.payment_source);
+      if (sourceBalances[source] === undefined) {
+        const openingBalance = latestOpeningBalances?.[source];
+        sourceBalances[source] = openingBalance ? Number(openingBalance.amount) : 0;
+      }
+      const amount = Number(entry.amount);
+      sourceBalances[source] += entry.type === 'income' ? amount : -amount;
+      map.set(entry.id, sourceBalances[source]);
+    });
+    return map;
+  }, [allEntries, allPaymentSources, latestOpeningBalances]);
+
   // Shared date range for summary + balance history
   const summaryDateRange = useMemo(() => {
     if (summaryTimePreset === 'custom' && summaryCustomFrom && summaryCustomTo) {
