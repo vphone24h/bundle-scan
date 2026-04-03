@@ -72,7 +72,7 @@ import {
 } from 'lucide-react';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useCashBook, useCashBookCategories, useCreateCashBookEntry, useUpdateCashBookEntry, useDeleteCashBookEntry, useCreateCashBookCategory, type CashBookEntry } from '@/hooks/useCashBook';
+import { useCashBook, useCashBookCategories, useCashBookBalances, useCreateCashBookEntry, useUpdateCashBookEntry, useDeleteCashBookEntry, useCreateCashBookCategory, type CashBookEntry } from '@/hooks/useCashBook';
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCashBookGuideUrl } from '@/hooks/useAppConfig';
