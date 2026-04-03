@@ -223,7 +223,7 @@ export function RevenueProfitReport() {
     value,
   })).sort((a, b) => b.value - a.value) : [];
 
-  const isInitialLoad = (statsLoading || detailLoading) && !detailSyncedMetrics;
+  const isInitialLoad = statsLoading;
 
   return (
     <div className="space-y-6">
