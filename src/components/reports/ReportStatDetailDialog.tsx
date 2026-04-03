@@ -9,6 +9,7 @@ import { vi } from 'date-fns/locale';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { getPaymentSourceLabel } from '@/lib/paymentSourceLabels';
+import { Loader2 } from 'lucide-react';
 
 export interface SaleDetailItem {
   date: string;
