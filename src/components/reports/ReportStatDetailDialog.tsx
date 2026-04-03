@@ -195,7 +195,7 @@ function ReturnsTable({ items }: { items: ReturnDetailItem[] }) {
   );
 }
 
-function CashBookTable({ items, label }: { items: CashBookDetailItem[]; label: string }) {
+function CashBookTable({ items, label, customSources }: { items: CashBookDetailItem[]; label: string; customSources?: Array<{ id: string; name: string }> }) {
   const total = items.reduce((s, i) => s + i.amount, 0);
   return (
     <div>
