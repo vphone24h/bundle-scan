@@ -2027,7 +2027,7 @@ export default function CashBookPage() {
             </div>
 
             <div>
-              <Label>Chi nhánh</Label>
+              <Label>Chi nhánh {isSuperAdmin && '*'}</Label>
               {isSuperAdmin ? (
                 <Select
                   value={formData.branch_id}
