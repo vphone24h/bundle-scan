@@ -49,6 +49,7 @@ import {
 import { format, subDays, startOfWeek, startOfMonth, subMonths, subWeeks } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useReportStats, useReportChartData } from '@/hooks/useReportStats';
+import { useReportDetails } from '@/hooks/useReportDetails';
 import { useDetailedProfitReport } from '@/hooks/useDetailedProfitReport';
 import { useBranches } from '@/hooks/useBranches';
 import { useCategories } from '@/hooks/useCategories';
@@ -141,6 +142,7 @@ export function RevenueProfitReport() {
   };
 
   const { data: rawStats, isLoading: statsLoading } = useReportStats(filters);
+  const { data: reportDetails, isLoading: detailsLoading } = useReportDetails(filters, !!detailType);
   const { data: detailData, isLoading: detailLoading } = useDetailedProfitReport({
     ...filters,
     search: undefined,
@@ -520,11 +522,12 @@ export function RevenueProfitReport() {
         open={!!detailType}
         onOpenChange={(open) => !open && setDetailType(null)}
         type={detailType || 'sales'}
-        salesDetails={stats?.salesDetails || []}
-        returnDetails={stats?.returnDetails || []}
-        expenseDetails={stats?.expenseDetails || []}
-        incomeDetails={stats?.incomeDetails || []}
+        salesDetails={reportDetails?.salesDetails || []}
+        returnDetails={reportDetails?.returnDetails || []}
+        expenseDetails={reportDetails?.expenseDetails || []}
+        incomeDetails={reportDetails?.incomeDetails || []}
         stats={stats || null}
+        isLoadingDetails={detailsLoading}
       />
       </div>
       )}

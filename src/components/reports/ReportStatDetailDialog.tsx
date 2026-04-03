@@ -9,6 +9,7 @@ import { vi } from 'date-fns/locale';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { getPaymentSourceLabel } from '@/lib/paymentSourceLabels';
+import { Loader2 } from 'lucide-react';
 
 export interface SaleDetailItem {
   date: string;
@@ -59,6 +60,7 @@ interface Props {
     otherIncome: number;
     netProfit: number;
   } | null;
+  isLoadingDetails?: boolean;
 }
 
 const TITLES: Record<DetailType, string> = {
@@ -324,10 +326,18 @@ function DetailContent({ type, salesDetails, returnDetails, expenseDetails, inco
   }
 }
 
-export function ReportStatDetailDialog({ open, onOpenChange, type, salesDetails, returnDetails, expenseDetails, incomeDetails, stats }: Props) {
+export function ReportStatDetailDialog({ open, onOpenChange, type, salesDetails, returnDetails, expenseDetails, incomeDetails, stats, isLoadingDetails }: Props) {
   const isMobile = useIsMobile();
   const { data: customSources } = useCustomPaymentSources();
-  const content = <DetailContent type={type} salesDetails={salesDetails} returnDetails={returnDetails} expenseDetails={expenseDetails} incomeDetails={incomeDetails} stats={stats} customSources={customSources} />;
+  
+  const content = isLoadingDetails ? (
+    <div className="flex items-center justify-center py-12">
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <span className="ml-2 text-sm text-muted-foreground">Đang tải chi tiết...</span>
+    </div>
+  ) : (
+    <DetailContent type={type} salesDetails={salesDetails} returnDetails={returnDetails} expenseDetails={expenseDetails} incomeDetails={incomeDetails} stats={stats} customSources={customSources} />
+  );
 
   if (isMobile) {
     return (
