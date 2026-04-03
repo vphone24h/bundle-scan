@@ -326,7 +326,8 @@ function DetailContent({ type, salesDetails, returnDetails, expenseDetails, inco
 
 export function ReportStatDetailDialog({ open, onOpenChange, type, salesDetails, returnDetails, expenseDetails, incomeDetails, stats }: Props) {
   const isMobile = useIsMobile();
-  const content = <DetailContent type={type} salesDetails={salesDetails} returnDetails={returnDetails} expenseDetails={expenseDetails} incomeDetails={incomeDetails} stats={stats} />;
+  const { data: customSources } = useCustomPaymentSources();
+  const content = <DetailContent type={type} salesDetails={salesDetails} returnDetails={returnDetails} expenseDetails={expenseDetails} incomeDetails={incomeDetails} stats={stats} customSources={customSources} />;
 
   if (isMobile) {
     return (
