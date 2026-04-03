@@ -7,6 +7,8 @@ import { formatCurrency } from '@/lib/mockData';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { getPaymentSourceLabel } from '@/lib/paymentSourceLabels';
 
 export interface SaleDetailItem {
   date: string;
