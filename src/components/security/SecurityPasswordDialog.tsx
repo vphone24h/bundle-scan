@@ -28,13 +28,13 @@ export function SecurityPasswordDialog({ open, onOpenChange, onSuccess, title, d
 
   const handleVerify = async () => {
     if (!password.trim()) return;
+    // Close immediately for fast UX
+    const pwd = password;
+    onOpenChange(false);
+    setPassword('');
     try {
-      const result = await verify.mutateAsync(password);
+      const result = await verify.mutateAsync(pwd);
       if (result.valid) {
-        // Close immediately for fast UX
-        onOpenChange(false);
-        setPassword('');
-        // Call onSuccess after closing
         onSuccess();
       } else {
         toast.error('Mật khẩu không đúng');
