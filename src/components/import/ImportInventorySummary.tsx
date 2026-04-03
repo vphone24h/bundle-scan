@@ -60,7 +60,7 @@ export function ImportInventorySummary({ isFiltered = false, filteredProducts }:
 
   // Use inventory data for in-stock value (synced with inventory page)
   const inventoryInStockValue = useMemo(() => {
-    if (!inventory) return 0;
+    if (!inventory || isDataHidden) return 0;
     return inventory.reduce((sum, item) => sum + item.totalImportCost, 0);
   }, [inventory]);
 
