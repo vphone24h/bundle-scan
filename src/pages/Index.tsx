@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useDashboardStats, useTodaySoldProducts, useRecentProducts, useRecentImportReceipts } from '@/hooks/useDashboardStats';
 import { useReportStats } from '@/hooks/useReportStats';
-import { useDetailedProfitReport } from '@/hooks/useDetailedProfitReport';
+
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
