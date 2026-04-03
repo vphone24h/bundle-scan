@@ -1,11 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useDashboardStats, useTodaySoldProducts, useRecentProducts, useRecentImportReceipts } from '@/hooks/useDashboardStats';
-import { useReportStats } from '@/hooks/useReportStats';
-import { useDetailedProfitReport } from '@/hooks/useDetailedProfitReport';
+
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
@@ -152,25 +151,9 @@ const Index = () => {
   const isPlatformAdmin = platformUser?.platform_role === 'platform_admin';
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
 
-  // === LỢI NHUẬN THUẦN HÔM NAY: copy đúng con số từ báo cáo ===
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  const todayFilters = useMemo(() => ({ startDate: todayStr, endDate: todayStr }), [todayStr]);
-  const { data: todayReportStats, isLoading: todayReportLoading } = useReportStats(todayFilters);
-  const { data: todayDetailData, isLoading: todayDetailLoading } = useDetailedProfitReport(todayFilters);
-
-  const todayNetProfit = useMemo(() => {
-    if (!todayReportStats) return null;
-    // Tính y hệt RevenueProfitReport: businessProfit từ bảng chi tiết
-    const businessProfit = todayDetailData
-      ? Number(todayDetailData.totals.totalProfit || 0)
-      : Number(todayReportStats.businessProfit || 0);
-    const totalExpenses = Number(todayReportStats.totalExpenses || 0);
-    const otherIncome = Number(todayReportStats.otherIncome || 0);
-    return businessProfit + otherIncome - totalExpenses;
-  }, [todayReportStats, todayDetailData]);
-
-  const isTodayProfitLoading = todayReportLoading || todayDetailLoading || todayNetProfit === null;
+  // === LỢI NHUẬN THUẦN HÔM NAY: lấy trực tiếp từ dashboard stats (đã gọi RPC) ===
+  const todayNetProfit = stats ? Number(stats.todayProfit || 0) : null;
+  const isTodayProfitLoading = statsLoading || todayNetProfit === null;
 
   const { data: recentProductsData } = useRecentProducts(5);
   const { data: recentReceiptsData } = useRecentImportReceipts(3);
