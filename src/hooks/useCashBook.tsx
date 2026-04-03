@@ -33,7 +33,6 @@ export function useCashBookBalances(branchId?: string) {
   });
 }
 
-type CashBookType = Database['public']['Enums']['cash_book_type'];
 
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
