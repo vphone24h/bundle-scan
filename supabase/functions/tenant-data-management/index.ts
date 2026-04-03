@@ -589,14 +589,26 @@ Deno.serve(async (req) => {
 
         const deleteMode = normalizeDeleteMode(body.deleteMode)
         const restoreOption = normalizeRestoreOption(body.restoreOption)
-        const notifyEmail = caller.email ?? null
+
+        // Lấy email từ bảng tenants (email cửa hàng đã cập nhật) thay vì auth user
+        let notifyEmail = caller.email ?? null
+        try {
+          const { data: tenantData } = await supabaseAdmin
+            .from('tenants')
+            .select('email')
+            .eq('id', callerTenantId)
+            .single()
+          if (tenantData?.email) {
+            notifyEmail = tenantData.email
+          }
+        } catch (_) { /* fallback to caller.email */ }
 
         const { data: createdJob, error: createJobError } = await supabaseAdmin
           .from('data_management_jobs')
           .insert({
             tenant_id: callerTenantId,
             requested_by: caller.id,
-            requested_by_email: caller.email ?? null,
+            requested_by_email: notifyEmail,
             delete_mode: deleteMode,
             status: 'queued',
             progress: 0,
