@@ -510,15 +510,37 @@ Deno.serve(async (req) => {
       return jsonResponse(401, { error: 'Unauthorized' })
     }
 
-    const { data: tenantData, error: tenantError } = await adminClient
-      .from('platform_users')
-      .select('tenant_id')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .maybeSingle()
+    const requestedTenantId = typeof body?.tenantId === 'string' && body.tenantId.trim()
+      ? body.tenantId.trim()
+      : null
 
-    if (tenantError || !tenantData?.tenant_id) {
-      return jsonResponse(404, { error: 'Tenant not found' })
+    let tenantId = requestedTenantId
+
+    if (requestedTenantId) {
+      const { data: membership, error: membershipError } = await adminClient
+        .from('platform_users')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .eq('tenant_id', requestedTenantId)
+        .eq('is_active', true)
+        .maybeSingle()
+
+      if (membershipError || !membership?.tenant_id) {
+        return jsonResponse(403, { error: 'Bạn không có quyền khôi phục vào cửa hàng hiện tại' })
+      }
+    } else {
+      const { data: tenantData, error: tenantError } = await adminClient
+        .from('platform_users')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle()
+
+      if (tenantError || !tenantData?.tenant_id) {
+        return jsonResponse(404, { error: 'Tenant not found' })
+      }
+
+      tenantId = tenantData.tenant_id
     }
 
     const { data: roleData } = await adminClient
@@ -542,7 +564,7 @@ Deno.serve(async (req) => {
     const { data: activeJob, error: activeJobError } = await adminClient
       .from('data_management_jobs')
       .select('id, status, progress, current_step, job_type, created_at')
-      .eq('tenant_id', tenantData.tenant_id)
+      .eq('tenant_id', tenantId)
       .in('status', activeStatuses)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -576,7 +598,7 @@ Deno.serve(async (req) => {
     const { data: createdJob, error: createJobError } = await adminClient
       .from('data_management_jobs')
       .insert({
-        tenant_id: tenantData.tenant_id,
+         tenant_id: tenantId,
         requested_by: user.id,
         requested_by_email: user.email ?? null,
         delete_mode: restoreMode === 'overwrite' ? 'full' : 'merge',
@@ -600,7 +622,7 @@ Deno.serve(async (req) => {
       return jsonResponse(500, { error: createJobError?.message || 'Không thể tạo job khôi phục' })
     }
 
-    const sourcePath = `${tenantData.tenant_id}/restore-jobs/${createdJob.id}.json`
+     const sourcePath = `${tenantId}/restore-jobs/${createdJob.id}.json`
     const backupBlob = new Blob([JSON.stringify(importData)], { type: 'application/json' })
 
     const { error: uploadError } = await adminClient.storage
