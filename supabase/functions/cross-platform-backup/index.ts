@@ -273,7 +273,7 @@ Deno.serve(async (req) => {
         const [
           custom_payment_sources, invoice_templates, voucher_templates,
           einvoice_configs, notification_automations, custom_domains,
-          user_branch_access, user_roles, security_passwords, payment_config,
+          user_branch_access, user_roles, security_passwords,
         ] = await Promise.all([
           fetchAll('custom_payment_sources', 'tenant_id', tenantId),
           fetchAll('invoice_templates', 'tenant_id', tenantId),
@@ -284,12 +284,11 @@ Deno.serve(async (req) => {
           fetchAll('user_branch_access', 'tenant_id', tenantId),
           fetchAll('user_roles', 'tenant_id', tenantId),
           fetchAll('security_passwords', 'tenant_id', tenantId),
-          fetchAll('payment_config', 'tenant_id', tenantId),
         ])
         return ok({
           custom_payment_sources, invoice_templates, voucher_templates,
           einvoice_configs, notification_automations, custom_domains,
-          user_branch_access, user_roles_backup: user_roles, security_passwords, payment_config,
+          user_branch_access, user_roles_backup: user_roles, security_passwords,
         })
       }
 
