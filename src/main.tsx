@@ -36,9 +36,15 @@ root.render(<App />);
 // For non-store pages, hide preloader after first React paint
 // For store pages, delay — let StoreLandingPage control it
 if (!prefetch?.storeId) {
-  requestAnimationFrame(() => {
+  // If user has cached auth, hide preloader immediately — React will render real content
+  const hasAuth = !!localStorage.getItem('sb-rodpbhesrwykmpywiiyd-auth-token');
+  if (hasAuth) {
     requestAnimationFrame(hidePreloader);
-  });
+  } else {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(hidePreloader);
+    });
+  }
 } else {
   // Safety net: hide preloader after 4s max even if store page hasn't signaled
   setTimeout(hidePreloader, 4000);
