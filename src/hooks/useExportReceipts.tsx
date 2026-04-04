@@ -854,39 +854,31 @@ export function useCheckProductForSale() {
 export function useSearchProductsByName() {
   return useMutation({
     mutationFn: async (searchTerm: string) => {
-      // Check if search term looks like IMEI (digits only, 3+ chars)
-      const isImeiSearch = /^\d{3,}$/.test(searchTerm.trim());
-      
-      let query = supabase
-        .from('products')
-        .select(`
-          id,
-          name,
-          sku,
-          imei,
-          import_price,
-          sale_price,
-          status,
-          category_id,
-          branch_id,
-          unit,
-          quantity,
-          categories(name),
-          branches(name)
-        `)
-        .eq('status', 'in_stock');
+      const term = searchTerm.trim();
+      if (!term) return [];
 
-      if (isImeiSearch) {
-        // Search by partial IMEI
-        query = query.ilike('imei', `%${searchTerm.trim()}%`);
-      } else {
-        // Search by name
-        query = query.ilike('name', `%${searchTerm}%`);
-      }
-
-      const { data, error } = await query.limit(10);
+      const { data, error } = await supabase.rpc('search_products_for_sale', {
+        p_search: term,
+        p_limit: 15,
+      });
       if (error) throw error;
-      return data;
+
+      // Map RPC result to match expected shape
+      return (data || []).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        imei: p.imei,
+        import_price: p.import_price,
+        sale_price: p.sale_price,
+        status: p.status,
+        category_id: p.category_id,
+        branch_id: p.branch_id,
+        unit: p.unit,
+        quantity: p.quantity,
+        categories: p.category_name ? { name: p.category_name } : null,
+        branches: p.branch_name ? { name: p.branch_name } : null,
+      }));
     },
   });
 }

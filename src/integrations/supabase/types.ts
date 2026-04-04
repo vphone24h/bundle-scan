@@ -8120,6 +8120,24 @@ export type Database = {
           product_sku: string
         }[]
       }
+      search_products_for_sale: {
+        Args: { p_limit?: number; p_search: string }
+        Returns: {
+          branch_id: string
+          branch_name: string
+          category_id: string
+          category_name: string
+          id: string
+          imei: string
+          import_price: number
+          name: string
+          quantity: number
+          sale_price: number
+          sku: string
+          status: string
+          unit: string
+        }[]
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       submit_staff_review: {

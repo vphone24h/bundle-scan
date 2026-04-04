@@ -634,7 +634,7 @@ export default function ExportNewPage() {
           return true;
         });
         setProductSuggestions(filtered);
-      }, 300);
+      }, 150);
       return () => clearTimeout(timer);
     } else {
       setProductSuggestions([]);
