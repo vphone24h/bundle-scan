@@ -849,6 +849,103 @@ export default function ImportHistoryPage() {
                 {isExporting ? 'Đang tải dữ liệu...' : 'Xuất Excel'}
               </Button>
             </div>
+            {/* Mobile Card View */}
+            <div className="sm:hidden space-y-3">
+              {receiptsPagination.paginatedData.map((receipt) => {
+                const isReceiptToday = isToday(new Date(receipt.import_date));
+                const returnStatus = getReceiptReturnStatus(receipt);
+                return (
+                  <div key={receipt.id} className={cn(
+                    "p-3 border rounded-lg bg-card space-y-2",
+                    (receipt as any).import_date_modified && 'bg-green-50 dark:bg-green-950/20',
+                    isReceiptToday && !(receipt as any).import_date_modified && 'border-destructive/30'
+                  )}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-primary text-sm cursor-pointer hover:underline"
+                          onClick={() => handleView(receipt)}>
+                          {receipt.code}
+                        </div>
+                        <div className={cn("text-xs mt-0.5", isReceiptToday ? 'text-destructive' : 'text-muted-foreground')}>
+                          {formatDate(new Date(receipt.import_date))}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <Badge className={cn(
+                          returnStatus === 'completed' ? 'status-in-stock'
+                            : 'bg-destructive/10 text-destructive border-destructive/20'
+                        )}>
+                          {returnStatus === 'completed' ? 'Hoàn tất' : returnStatus === 'full_return' ? 'Đã trả' : 'Đã huỷ'}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">NCC: </span>
+                      <span className="font-medium">{receipt.suppliers?.name || '-'}</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pt-1 border-t">
+                      {canViewImportHistoryPrice && (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Tổng tiền:</span>
+                            <span className="font-medium">{formatCurrency(Number(receipt.total_amount))}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Đã TT:</span>
+                            <span className="text-green-600">{formatCurrency(Number(receipt.paid_amount))}</span>
+                          </div>
+                          {Number(receipt.debt_amount) > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Còn nợ:</span>
+                              <span className="text-destructive font-medium">{formatCurrency(Number(receipt.debt_amount))}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">CN:</span>
+                        <span className="truncate ml-1">{receipt.branches?.name || '-'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">NV:</span>
+                        <span className="truncate ml-1">{receipt.created_by ? (staffNameMap.get(receipt.created_by) || '-') : '-'}</span>
+                      </div>
+                      {receipt.note && (
+                        <div className="flex justify-between col-span-2">
+                          <span className="text-muted-foreground flex items-center gap-0.5"><StickyNote className="h-3 w-3" /> Ghi chú:</span>
+                          <span className="truncate ml-1 max-w-[60%]">{receipt.note}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-1 pt-1 border-t justify-end">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleView(receipt)} title="Xem">
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(receipt)} title="Sửa">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleReturn(receipt)} title="Trả hàng">
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteReceipt(receipt)} title="Xóa">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+              {filteredReceipts.length === 0 && (
+                <div className="py-12 text-center text-muted-foreground">
+                  {hasActiveFilters ? 'Không tìm thấy phiếu nhập phù hợp' : 'Chưa có phiếu nhập nào'}
+                </div>
+              )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden sm:block">
             <ScrollableTableWrapper className="rounded-lg border bg-card">
               <table className="data-table">
                 <thead>
@@ -968,6 +1065,7 @@ export default function ImportHistoryPage() {
                 </div>
               )}
             </ScrollableTableWrapper>
+            </div>
             {filteredReceipts.length > 0 && (
               <TablePagination
                 currentPage={receiptsPagination.currentPage}
