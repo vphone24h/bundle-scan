@@ -86,48 +86,70 @@ export function IMEIDetailDialog({
               <p className="text-muted-foreground">Không có IMEI nào trong kho</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]">#</TableHead>
-                  <TableHead>IMEI</TableHead>
-                  <TableHead>Tên sản phẩm</TableHead>
-                  {canViewImportPrice && <TableHead className="text-right">Giá nhập</TableHead>}
-                  <TableHead>Ngày nhập</TableHead>
-                  <TableHead>Nhà cung cấp</TableHead>
-                  <TableHead>Ghi chú</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile: Card layout */}
+              <div className="sm:hidden space-y-3">
                 {inStockProducts.map((product: any, index: number) => (
-                  <TableRow key={product.id}>
-                    <TableCell className="text-muted-foreground">
-                      {index + 1}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="font-mono">
-                        {product.imei}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    {canViewImportPrice && (
-                      <TableCell className="text-right font-medium">
-                        {formatCurrencyWithSpaces(product.import_price)}
-                      </TableCell>
-                    )}
-                    <TableCell>
-                      {format(new Date(product.import_date), 'dd/MM/yyyy', {
-                        locale: vi,
-                      })}
-                    </TableCell>
-                    <TableCell>{product.suppliers?.name || '-'}</TableCell>
-                    <TableCell className="max-w-[200px] truncate" title={product.note || ''}>
-                      {product.note || '-'}
-                    </TableCell>
-                  </TableRow>
+                  <div key={product.id} className="p-3 border rounded-lg bg-card space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm line-clamp-2">{product.name}</p>
+                        <Badge variant="outline" className="font-mono text-xs mt-1">{product.imei}</Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground shrink-0">#{index + 1}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs border-t pt-2">
+                      {canViewImportPrice && (
+                        <>
+                          <span className="text-muted-foreground">Giá nhập</span>
+                          <span className="text-right font-medium">{formatCurrencyWithSpaces(product.import_price)}</span>
+                        </>
+                      )}
+                      <span className="text-muted-foreground">Ngày nhập</span>
+                      <span className="text-right">{format(new Date(product.import_date), 'dd/MM/yyyy', { locale: vi })}</span>
+                      <span className="text-muted-foreground">NCC</span>
+                      <span className="text-right truncate">{product.suppliers?.name || '-'}</span>
+                      {product.note && (
+                        <>
+                          <span className="text-muted-foreground">Ghi chú</span>
+                          <span className="text-right truncate">{product.note}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Desktop: Table layout */}
+              <div className="hidden sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[50px]">#</TableHead>
+                      <TableHead>IMEI</TableHead>
+                      <TableHead>Tên sản phẩm</TableHead>
+                      {canViewImportPrice && <TableHead className="text-right">Giá nhập</TableHead>}
+                      <TableHead>Ngày nhập</TableHead>
+                      <TableHead>Nhà cung cấp</TableHead>
+                      <TableHead>Ghi chú</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {inStockProducts.map((product: any, index: number) => (
+                      <TableRow key={product.id}>
+                        <TableCell className="text-muted-foreground">{index + 1}</TableCell>
+                        <TableCell><Badge variant="outline" className="font-mono">{product.imei}</Badge></TableCell>
+                        <TableCell className="font-medium">{product.name}</TableCell>
+                        {canViewImportPrice && <TableCell className="text-right font-medium">{formatCurrencyWithSpaces(product.import_price)}</TableCell>}
+                        <TableCell>{format(new Date(product.import_date), 'dd/MM/yyyy', { locale: vi })}</TableCell>
+                        <TableCell>{product.suppliers?.name || '-'}</TableCell>
+                        <TableCell className="max-w-[200px] truncate" title={product.note || ''}>{product.note || '-'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </div>
 

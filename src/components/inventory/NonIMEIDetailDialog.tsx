@@ -104,56 +104,76 @@ export function NonIMEIDetailDialog({
               <p className="text-muted-foreground">Không còn phiếu nhập nào có hàng tồn</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]">#</TableHead>
-                  <TableHead>Ngày nhập</TableHead>
-                  <TableHead>Mã phiếu</TableHead>
-                  {canViewImportPrice && <TableHead className="text-right">Giá nhập</TableHead>}
-                  <TableHead className="text-center">Tổng nhập</TableHead>
-                  <TableHead className="text-center">Tồn kho</TableHead>
-                  {canViewImportPrice && <TableHead className="text-right">Giá trị tồn</TableHead>}
-                  <TableHead>Nhà cung cấp</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile: Card layout */}
+              <div className="sm:hidden space-y-3">
                 {fifoHistory.map((item, index) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="text-muted-foreground">
-                      {index + 1}
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(item.import_date), 'dd/MM/yyyy', {
-                        locale: vi,
-                      })}
-                    </TableCell>
-                    <TableCell className="font-mono text-primary">
-                      {item.import_receipts?.code || '-'}
-                    </TableCell>
-                    {canViewImportPrice && (
-                      <TableCell className="text-right font-medium">
-                        {formatCurrencyWithSpaces(item.import_price)}
-                      </TableCell>
-                    )}
-                    <TableCell className="text-center text-muted-foreground">
-                      {item.quantity}{unit !== 'cái' ? ` ${unit}` : ''}
-                    </TableCell>
-                    <TableCell className="text-center">
+                  <div key={item.id} className="p-3 border rounded-lg bg-card space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-mono text-sm text-primary">{item.import_receipts?.code || '-'}</p>
+                        <p className="text-xs text-muted-foreground">{format(new Date(item.import_date), 'dd/MM/yyyy', { locale: vi })}</p>
+                      </div>
                       <Badge variant={item.remainingQty === item.quantity ? 'default' : 'secondary'}>
                         {item.remainingQty}{unit !== 'cái' ? ` ${unit}` : ''}
                       </Badge>
-                    </TableCell>
-                    {canViewImportPrice && (
-                      <TableCell className="text-right">
-                        {formatCurrencyWithSpaces(item.import_price * item.remainingQty)}
-                      </TableCell>
-                    )}
-                    <TableCell>{item.suppliers?.name || '-'}</TableCell>
-                  </TableRow>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs border-t pt-2">
+                      {canViewImportPrice && (
+                        <>
+                          <span className="text-muted-foreground">Giá nhập</span>
+                          <span className="text-right font-medium">{formatCurrencyWithSpaces(item.import_price)}</span>
+                        </>
+                      )}
+                      <span className="text-muted-foreground">Tổng nhập</span>
+                      <span className="text-right">{item.quantity}{unit !== 'cái' ? ` ${unit}` : ''}</span>
+                      {canViewImportPrice && (
+                        <>
+                          <span className="text-muted-foreground">Giá trị tồn</span>
+                          <span className="text-right font-medium">{formatCurrencyWithSpaces(item.import_price * item.remainingQty)}</span>
+                        </>
+                      )}
+                      <span className="text-muted-foreground">NCC</span>
+                      <span className="text-right truncate">{item.suppliers?.name || '-'}</span>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Desktop: Table layout */}
+              <div className="hidden sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[50px]">#</TableHead>
+                      <TableHead>Ngày nhập</TableHead>
+                      <TableHead>Mã phiếu</TableHead>
+                      {canViewImportPrice && <TableHead className="text-right">Giá nhập</TableHead>}
+                      <TableHead className="text-center">Tổng nhập</TableHead>
+                      <TableHead className="text-center">Tồn kho</TableHead>
+                      {canViewImportPrice && <TableHead className="text-right">Giá trị tồn</TableHead>}
+                      <TableHead>Nhà cung cấp</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {fifoHistory.map((item, index) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="text-muted-foreground">{index + 1}</TableCell>
+                        <TableCell>{format(new Date(item.import_date), 'dd/MM/yyyy', { locale: vi })}</TableCell>
+                        <TableCell className="font-mono text-primary">{item.import_receipts?.code || '-'}</TableCell>
+                        {canViewImportPrice && <TableCell className="text-right font-medium">{formatCurrencyWithSpaces(item.import_price)}</TableCell>}
+                        <TableCell className="text-center text-muted-foreground">{item.quantity}{unit !== 'cái' ? ` ${unit}` : ''}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={item.remainingQty === item.quantity ? 'default' : 'secondary'}>{item.remainingQty}{unit !== 'cái' ? ` ${unit}` : ''}</Badge>
+                        </TableCell>
+                        {canViewImportPrice && <TableCell className="text-right">{formatCurrencyWithSpaces(item.import_price * item.remainingQty)}</TableCell>}
+                        <TableCell>{item.suppliers?.name || '-'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </div>
 
