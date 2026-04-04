@@ -1548,6 +1548,49 @@ export default function ImportHistoryPage() {
         />
       )}
 
+      {/* Delete Import Receipt Confirmation */}
+      <AlertDialog open={!!deleteReceipt && !showDeleteSecurityDialog} onOpenChange={(open) => !open && setDeleteReceipt(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Xóa phiếu nhập
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc muốn xóa phiếu <strong>{deleteReceipt?.code}</strong>?
+              <br />Toàn bộ sản phẩm, sổ quỹ và công nợ liên quan sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteReceipt}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteImportReceipt.isPending}
+            >
+              {deleteImportReceipt.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              Xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Security Password for Delete */}
+      <SecurityPasswordDialog
+        open={showDeleteSecurityDialog}
+        onOpenChange={(open) => {
+          setShowDeleteSecurityDialog(open);
+          if (!open) setDeleteReceipt(null);
+        }}
+        onSuccess={() => {
+          deleteSecurityUnlock();
+          setShowDeleteSecurityDialog(false);
+          // deleteReceipt is already set, will show confirmation dialog
+        }}
+        title="Xác nhận xóa phiếu nhập"
+        description="Nhập mật khẩu bảo mật để xóa phiếu nhập"
+      />
+
       {/* Warranty Note Dialog */}
       <WarrantyNoteDialog
         open={!!warrantyProduct}
