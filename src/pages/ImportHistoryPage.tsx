@@ -263,9 +263,11 @@ export default function ImportHistoryPage() {
   // Warranty note dialog state
   const [warrantyProduct, setWarrantyProduct] = useState<Product | null>(null);
 
-  // Dialog states for edit and return
+  // Dialog states for edit, return, delete
   const [editReceipt, setEditReceipt] = useState<ImportReceipt | null>(null);
   const [returnReceipt, setReturnReceipt] = useState<ImportReceipt | null>(null);
+  const [deleteReceipt, setDeleteReceipt] = useState<ImportReceipt | null>(null);
+  const [showDeleteSecurityDialog, setShowDeleteSecurityDialog] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const [adjustProduct, setAdjustProduct] = useState<Product | null>(null);
