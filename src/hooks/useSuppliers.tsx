@@ -39,7 +39,8 @@ export function useSuppliers() {
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    // Always refresh on page open so restored data is not hidden by persisted cache
+    refetchOnMount: 'always',
   });
 }
 
@@ -61,7 +62,7 @@ export function useSupplierOptions() {
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: 'always',
   });
 }
 
@@ -83,6 +84,7 @@ export function useSuppliersByBranch(branchId: string | undefined) {
       return data as Supplier[];
     },
     enabled: !!user?.id && !!branchId,
+    refetchOnMount: 'always',
   });
 }
 
