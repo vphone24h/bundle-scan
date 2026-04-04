@@ -1668,8 +1668,21 @@ export default function ExportNewPage() {
                     <p className="text-xs text-muted-foreground">Để trống = tự động lấy thời điểm hiện tại</p>
                   )}
                 </div>
-             </CardContent>
-           </Card>
+
+                {/* Receipt Note */}
+                <div className="space-y-1.5 pt-2 border-t">
+                  <Label className="flex items-center gap-1.5 text-sm">
+                    <FileText className="h-3.5 w-3.5" />
+                    Ghi chú phiếu
+                  </Label>
+                  <Input
+                    placeholder="Ghi chú cho cả phiếu xuất (tuỳ chọn)"
+                    value={receiptNote}
+                    onChange={(e) => setReceiptNote(e.target.value)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
           {/* Payment summary */}
           <Card>
