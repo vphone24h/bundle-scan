@@ -4,6 +4,7 @@ import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
 import { sendBusinessPush, formatVND } from '@/lib/pushNotify';
 import { sendActivityAlert } from '@/lib/activityAlert';
+import { createProductSearchCandidates } from '@/lib/normalizeSearch';
 
 // fetchAllRows removed - using server-side pagination
 
@@ -857,28 +858,41 @@ export function useSearchProductsByName() {
       const term = searchTerm.trim();
       if (!term) return [];
 
-      const { data, error } = await supabase.rpc('search_products_for_sale', {
-        p_search: term,
-        p_limit: 15,
-      });
-      if (error) throw error;
+      const candidates = createProductSearchCandidates(term);
+      const mergedResults: any[] = [];
+      const seenIds = new Set<string>();
 
-      // Map RPC result to match expected shape
-      return (data || []).map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        sku: p.sku,
-        imei: p.imei,
-        import_price: p.import_price,
-        sale_price: p.sale_price,
-        status: p.status,
-        category_id: p.category_id,
-        branch_id: p.branch_id,
-        unit: p.unit,
-        quantity: p.quantity,
-        categories: p.category_name ? { name: p.category_name } : null,
-        branches: p.branch_name ? { name: p.branch_name } : null,
-      }));
+      for (const candidate of candidates) {
+        const { data, error } = await supabase.rpc('search_products_for_sale', {
+          p_search: candidate,
+          p_limit: 15,
+        });
+        if (error) throw error;
+
+        for (const p of data || []) {
+          if (!p?.id || seenIds.has(p.id)) continue;
+          seenIds.add(p.id);
+          mergedResults.push({
+            id: p.id,
+            name: p.name,
+            sku: p.sku,
+            imei: p.imei,
+            import_price: p.import_price,
+            sale_price: p.sale_price,
+            status: p.status,
+            category_id: p.category_id,
+            branch_id: p.branch_id,
+            unit: p.unit,
+            quantity: p.quantity,
+            categories: p.category_name ? { name: p.category_name } : null,
+            branches: p.branch_name ? { name: p.branch_name } : null,
+          });
+        }
+
+        if (mergedResults.length >= 15) break;
+      }
+
+      return mergedResults.slice(0, 15);
     },
   });
 }
