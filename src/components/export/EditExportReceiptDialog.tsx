@@ -67,6 +67,9 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
   const [originalStaffId, setOriginalStaffId] = useState<string | null>(null);
   // Items
   const [editableItems, setEditableItems] = useState<EditableItem[]>([]);
+  // Receipt note
+  const [receiptNote, setReceiptNote] = useState('');
+  const [originalReceiptNote, setOriginalReceiptNote] = useState('');
 
   // Fetch receipt items
   const { data: receiptItems } = useQuery({
