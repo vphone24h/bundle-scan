@@ -465,7 +465,8 @@ export function CrossPlatformBackupSection() {
       setExportStatus('Hoàn tất!');
 
       const meta = exportJson._metadata;
-      toast.success(`Đã xuất: ${meta.total_products} SP, ${meta.total_customers} KH, ${meta.total_suppliers} NCC, ${meta.total_import_receipts} PN, ${meta.total_export_receipts} PX`);
+      const totalRecords = Object.entries(exportJson).filter(([k]) => Array.isArray(exportJson[k as keyof typeof exportJson])).reduce((sum, [, v]) => sum + (v as any[]).length, 0);
+      toast.success(`Sao lưu hoàn tất! ${totalRecords.toLocaleString()} bản ghi từ ${meta.total_tables} bảng dữ liệu`);
     } catch (error) {
       console.error('Export error:', error);
       toast.error('Lỗi xuất dữ liệu: ' + (error as Error).message);
