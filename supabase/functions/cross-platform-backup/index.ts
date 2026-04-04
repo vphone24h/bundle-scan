@@ -184,12 +184,17 @@ Deno.serve(async (req) => {
       }
 
       case 'stock': {
-        const [stock_counts, stock_count_items, stock_transfer_requests, stock_transfer_items] = await Promise.all([
+        const [stock_counts, stock_transfer_requests] = await Promise.all([
           fetchAll('stock_counts', 'tenant_id', tenantId),
-          fetchAll('stock_count_items', 'tenant_id', tenantId),
           fetchAll('stock_transfer_requests', 'tenant_id', tenantId),
-          fetchAll('stock_transfer_items', 'tenant_id', tenantId),
         ])
+        // child tables don't have tenant_id
+        const scIds = stock_counts.map((s: any) => s.id)
+        const stIds = stock_transfer_requests.map((s: any) => s.id)
+        let stock_count_items: any[] = []
+        let stock_transfer_items: any[] = []
+        if (scIds.length > 0) stock_count_items = await fetchByIds('stock_count_items', 'stock_count_id', scIds)
+        if (stIds.length > 0) stock_transfer_items = await fetchByIds('stock_transfer_items', 'transfer_request_id', stIds)
         return ok({ stock_counts, stock_count_items, stock_transfer_requests, stock_transfer_items })
       }
 
