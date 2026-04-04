@@ -452,7 +452,25 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
                 )}
               </div>
 
-              {/* Items */}
+              {/* Receipt Note */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5" />
+                  Ghi chú phiếu
+                </Label>
+                <Input
+                  placeholder="Ghi chú cho cả phiếu xuất (tuỳ chọn)"
+                  value={receiptNote}
+                  onChange={(e) => setReceiptNote(e.target.value)}
+                  className={cn(noteChanged && 'border-green-500 ring-1 ring-green-500/30')}
+                />
+                {noteChanged && (
+                  <p className="text-xs text-green-600 font-medium">
+                    ⚠ Ghi chú đã thay đổi
+                  </p>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5">
                   <Package className="h-3.5 w-3.5" />
