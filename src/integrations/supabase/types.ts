@@ -7698,6 +7698,10 @@ export type Database = {
           warranty: string
         }[]
       }
+      get_import_receipt_details: {
+        Args: { _receipt_id: string }
+        Returns: Json
+      }
       get_import_summary_stats: {
         Args: { _branch_id?: string; _tenant_id: string }
         Returns: Json
