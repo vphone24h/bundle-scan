@@ -867,6 +867,8 @@ export default function ImportHistoryPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-primary text-sm cursor-pointer hover:underline"
+                          onTouchStart={() => handlePrefetch(receipt.id)}
+                          onMouseEnter={() => handlePrefetch(receipt.id)}
                           onClick={() => handleView(receipt)}>
                           {receipt.code}
                         </div>
