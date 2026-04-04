@@ -265,6 +265,7 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
         changes.push(`Ghi chú: "${originalReceiptNote || '(trống)'}" → "${receiptNote || '(trống)'}"`);
       }
 
+      if (hasPriceChanges) {
         for (const item of priceChanges) {
           const { error } = await supabase
             .from('export_receipt_items')
