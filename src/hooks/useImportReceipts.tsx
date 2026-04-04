@@ -115,51 +115,36 @@ export function useImportReceiptDetails(receiptId: string | null) {
     queryFn: async () => {
       if (!receiptId) return null;
 
-      const { data: receipt, error: receiptError } = await supabase
-        .from('import_receipts')
-        .select(`
-          *,
-          suppliers(name),
-          branches(name)
-        `)
-        .eq('id', receiptId)
-        .single();
+      // Run all queries in parallel for maximum speed
+      const [receiptRes, paymentsRes, piRes, productsRes] = await Promise.all([
+        supabase
+          .from('import_receipts')
+          .select(`*, suppliers(name), branches(name)`)
+          .eq('id', receiptId)
+          .single(),
+        supabase
+          .from('receipt_payments')
+          .select('*')
+          .eq('receipt_id', receiptId),
+        supabase
+          .from('product_imports')
+          .select('id, product_id, import_price, quantity')
+          .eq('import_receipt_id', receiptId),
+        supabase
+          .from('products')
+          .select(`id, name, sku, imei, import_price, quantity, unit, status, category_id, categories(name)`)
+          .eq('import_receipt_id', receiptId),
+      ]);
 
-      if (receiptError) throw receiptError;
+      if (receiptRes.error) throw receiptRes.error;
+      if (paymentsRes.error) throw paymentsRes.error;
+      if (piRes.error) throw piRes.error;
+      if (productsRes.error) throw productsRes.error;
 
-      const { data: payments, error: paymentsError } = await supabase
-        .from('receipt_payments')
-        .select('*')
-        .eq('receipt_id', receiptId);
-
-      if (paymentsError) throw paymentsError;
-
-      // Lấy product_imports để có số lượng gốc khi nhập
-      const { data: piData, error: piError } = await supabase
-        .from('product_imports')
-        .select('id, product_id, import_price, quantity')
-        .eq('import_receipt_id', receiptId);
-
-      if (piError) throw piError;
-
-      // Lấy sản phẩm trực tiếp từ bảng products (có import_receipt_id)
-      const { data: products, error: productsError } = await supabase
-        .from('products')
-        .select(`
-          id,
-          name,
-          sku,
-          imei,
-          import_price,
-          quantity,
-          unit,
-          status,
-          category_id,
-          categories(name)
-        `)
-        .eq('import_receipt_id', receiptId);
-
-      if (productsError) throw productsError;
+      const receipt = receiptRes.data;
+      const payments = paymentsRes.data;
+      const piData = piRes.data;
+      const products = productsRes.data;
 
       // Build map: product_id -> original imported quantity from product_imports
       const piMap = new Map<string, { quantity: number; import_price: number }>();
@@ -172,12 +157,8 @@ export function useImportReceiptDetails(receiptId: string | null) {
         }
       });
 
-      // Chuyển đổi thành định dạng tương thích với UI
-      // Dùng số lượng gốc từ product_imports thay vì quantity hiện tại trong products
       const productItems = (products || []).map(p => {
         const piInfo = piMap.get(p.id);
-        // Với hàng IMEI: quantity luôn là 1, dùng từ products
-        // Với hàng không IMEI: dùng số lượng gốc từ product_imports
         const originalQty = p.imei ? p.quantity : (piInfo?.quantity ?? p.quantity);
         return {
           id: p.id,
@@ -204,6 +185,8 @@ export function useImportReceiptDetails(receiptId: string | null) {
       };
     },
     enabled: !!receiptId,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
   });
 }
 
