@@ -945,6 +945,13 @@ export default function ImportHistoryPage() {
                               <RotateCcw className="mr-2 h-4 w-4" />
                               Trả hàng
                             </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteReceipt(receipt)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Xóa phiếu nhập
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </td>
