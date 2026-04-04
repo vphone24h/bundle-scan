@@ -231,6 +231,22 @@ export default function ImportHistoryPage() {
     return map;
   }, [staffProfiles]);
 
+  // Import history stats
+  const { data: importStats, isLoading: importStatsLoading } = useQuery({
+    queryKey: ['import-history-stats', dateFrom, dateTo, branchFilter, supplierFilter],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_import_history_stats', {
+        _date_from: dateFrom || null,
+        _date_to: dateTo || null,
+        _branch_id: branchFilter !== '_all_' ? branchFilter : null,
+        _supplier_id: supplierFilter !== '_all_' ? supplierFilter : null,
+      });
+      if (error) throw error;
+      return data as { receipt_count: number; product_count: number; imei_count: number; non_imei_count: number };
+    },
+    staleTime: 30_000,
+  });
+
   const getStaffName = (product: Product) => {
     if (!product.import_receipt_id) return '-';
     const createdBy = receiptCreatorMap.get(product.import_receipt_id);
