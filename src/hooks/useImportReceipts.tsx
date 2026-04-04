@@ -115,26 +115,49 @@ export function useImportReceiptDetails(receiptId: string | null) {
     queryFn: async () => {
       if (!receiptId) return null;
 
-      const { data, error } = await supabase.rpc('get_import_receipt_details', {
-        _receipt_id: receiptId,
-      });
+      // Run all queries in parallel for maximum speed
+      const [receiptRes, paymentsRes, piRes, productsRes] = await Promise.all([
+        supabase
+          .from('import_receipts')
+          .select(`*, suppliers(name), branches(name)`)
+          .eq('id', receiptId)
+          .single(),
+        supabase
+          .from('receipt_payments')
+          .select('*')
+          .eq('receipt_id', receiptId),
+        supabase
+          .from('product_imports')
+          .select('id, product_id, import_price, quantity')
+          .eq('import_receipt_id', receiptId),
+        supabase
+          .from('products')
+          .select(`id, name, sku, imei, import_price, quantity, unit, status, category_id, categories(name)`)
+          .eq('import_receipt_id', receiptId),
+      ]);
 
-      if (error) throw error;
-      const result = data as any;
-      if (!result?.receipt) return null;
+      if (receiptRes.error) throw receiptRes.error;
+      if (paymentsRes.error) throw paymentsRes.error;
+      if (piRes.error) throw piRes.error;
+      if (productsRes.error) throw productsRes.error;
 
-      // Build piMap from product_imports
+      const receipt = receiptRes.data;
+      const payments = paymentsRes.data;
+      const piData = piRes.data;
+      const products = productsRes.data;
+
+      // Build map: product_id -> original imported quantity from product_imports
       const piMap = new Map<string, { quantity: number; import_price: number }>();
-      (result.product_imports || []).forEach((pi: any) => {
+      (piData || []).forEach(pi => {
         const existing = piMap.get(pi.product_id);
         if (existing) {
-          existing.quantity += pi.pi_quantity;
+          existing.quantity += pi.quantity;
         } else {
-          piMap.set(pi.product_id, { quantity: pi.pi_quantity, import_price: pi.pi_import_price });
+          piMap.set(pi.product_id, { quantity: pi.quantity, import_price: pi.import_price });
         }
       });
 
-      const productItems = (result.products || []).map((p: any) => {
+      const productItems = (products || []).map(p => {
         const piInfo = piMap.get(p.id);
         const originalQty = p.imei ? p.quantity : (piInfo?.quantity ?? p.quantity);
         return {
@@ -156,8 +179,8 @@ export function useImportReceiptDetails(receiptId: string | null) {
       });
 
       return {
-        receipt: result.receipt,
-        payments: result.payments as ReceiptPayment[],
+        receipt,
+        payments: payments as ReceiptPayment[],
         productImports: productItems,
       };
     },
@@ -165,57 +188,6 @@ export function useImportReceiptDetails(receiptId: string | null) {
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
   });
-}
-
-// Prefetch import receipt details on hover
-export function usePrefetchImportReceipt() {
-  const queryClient = useQueryClient();
-  return (receiptId: string) => {
-    queryClient.prefetchQuery({
-      queryKey: ['import-receipt', receiptId],
-      queryFn: async () => {
-        const { data, error } = await supabase.rpc('get_import_receipt_details', {
-          _receipt_id: receiptId,
-        });
-        if (error) throw error;
-        const result = data as any;
-        if (!result?.receipt) return null;
-
-        const piMap = new Map<string, { quantity: number; import_price: number }>();
-        (result.product_imports || []).forEach((pi: any) => {
-          const existing = piMap.get(pi.product_id);
-          if (existing) {
-            existing.quantity += pi.pi_quantity;
-          } else {
-            piMap.set(pi.product_id, { quantity: pi.pi_quantity, import_price: pi.pi_import_price });
-          }
-        });
-
-        const productItems = (result.products || []).map((p: any) => {
-          const piInfo = piMap.get(p.id);
-          const originalQty = p.imei ? p.quantity : (piInfo?.quantity ?? p.quantity);
-          return {
-            id: p.id,
-            import_price: (!p.imei && piInfo) ? piInfo.import_price : p.import_price,
-            quantity: originalQty,
-            original_import_quantity: originalQty,
-            unit: p.unit,
-            products: {
-              id: p.id, name: p.name, sku: p.sku, imei: p.imei,
-              status: p.status, category_id: p.category_id, categories: p.categories
-            }
-          };
-        });
-
-        return {
-          receipt: result.receipt,
-          payments: result.payments as ReceiptPayment[],
-          productImports: productItems,
-        };
-      },
-      staleTime: 1000 * 60 * 5,
-    });
-  };
 }
 
 export function useCreateImportReceipt() {

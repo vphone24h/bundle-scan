@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { useImportReceipts, useImportReceiptDetails, usePrefetchImportReceipt, ImportReceipt, useDeleteImportReceipt } from '@/hooks/useImportReceipts';
+import { useImportReceipts, useImportReceiptDetails, ImportReceipt, useDeleteImportReceipt } from '@/hooks/useImportReceipts';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 import {
@@ -325,12 +325,8 @@ export default function ImportHistoryPage() {
     endIndex: Math.min(productPage * productPageSize, productsTotalCount),
   };
 
-  const prefetchImport = usePrefetchImportReceipt();
   const handleView = (receipt: ImportReceipt) => {
     setSelectedReceiptId(receipt.id);
-  };
-  const handlePrefetch = (receiptId: string) => {
-    prefetchImport(receiptId);
   };
 
   const handleEdit = (receipt: ImportReceipt) => {
@@ -867,8 +863,6 @@ export default function ImportHistoryPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-primary text-sm cursor-pointer hover:underline"
-                          onTouchStart={() => handlePrefetch(receipt.id)}
-                          onMouseEnter={() => handlePrefetch(receipt.id)}
                           onClick={() => handleView(receipt)}>
                           {receipt.code}
                         </div>
@@ -927,7 +921,7 @@ export default function ImportHistoryPage() {
                     </div>
 
                     <div className="flex gap-1 pt-1 border-t justify-end">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleView(receipt)} onTouchStart={() => handlePrefetch(receipt.id)} onMouseEnter={() => handlePrefetch(receipt.id)} title="Xem">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleView(receipt)} title="Xem">
                         <Eye className="h-3.5 w-3.5" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(receipt)} title="Sửa">

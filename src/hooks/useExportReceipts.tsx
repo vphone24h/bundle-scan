@@ -174,26 +174,6 @@ export function useExportReceiptDetail(receiptId: string | null) {
   });
 }
 
-// Prefetch export receipt detail on hover
-export function usePrefetchExportReceipt() {
-  const queryClient = useQueryClient();
-  return (receiptId: string) => {
-    queryClient.prefetchQuery({
-      queryKey: ['export-receipt-detail', receiptId],
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from('export_receipt_items')
-          .select('*')
-          .eq('receipt_id', receiptId)
-          .order('created_at', { ascending: true });
-        if (error) throw error;
-        return data as ExportReceiptItemDetail[];
-      },
-      staleTime: 1000 * 60 * 5,
-    });
-  };
-}
-
 export function useExportReceiptItems(enabled = true, filters?: { page?: number; pageSize?: number; search?: string; categoryId?: string; branchId?: string }) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;

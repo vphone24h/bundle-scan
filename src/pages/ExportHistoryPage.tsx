@@ -63,7 +63,6 @@ import {
   useExportReceipts, 
   useExportReceiptItems, 
   useExportReceiptDetail,
-  usePrefetchExportReceipt,
   useReturnProduct,
   useDeleteExportReceipt,
   type ExportReceipt,
@@ -349,13 +348,9 @@ export default function ExportHistoryPage() {
   // No totalCount — use hasMore for next/prev navigation
 
   // Handle view detail
-  const prefetchExport = usePrefetchExportReceipt();
   const handleViewDetail = (receipt: ExportReceipt) => {
     setSelectedReceipt(receipt);
     setShowDetailDialog(true);
-  };
-  const handlePrefetchExport = (receiptId: string) => {
-    prefetchExport(receiptId);
   };
 
   // Handle print
@@ -933,8 +928,6 @@ export default function ExportHistoryPage() {
                           <div className="flex-1 min-w-0">
                             <div
                               className="font-medium text-primary text-sm cursor-pointer hover:underline"
-                              onTouchStart={() => handlePrefetchExport(receipt.id)}
-                              onMouseEnter={() => handlePrefetchExport(receipt.id)}
                               onClick={() => handleViewDetail(receipt)}
                             >
                               {receipt.code}
@@ -985,7 +978,7 @@ export default function ExportHistoryPage() {
                         </div>
 
                         <div className="flex gap-1 pt-1 border-t justify-end" data-tour="export-receipt-actions">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleViewDetail(receipt)} onTouchStart={() => handlePrefetchExport(receipt.id)} onMouseEnter={() => handlePrefetchExport(receipt.id)} title="Xem">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleViewDetail(receipt)} title="Xem">
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handlePrint(receipt)} title="In">
