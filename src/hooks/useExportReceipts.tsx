@@ -897,3 +897,117 @@ export function useSearchProductsByName() {
     },
   });
 }
+
+// Hook xóa toàn bộ phiếu xuất (receipt + items + cash_book + debt_payments)
+export function useDeleteExportReceipt() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ receiptId, deleteCashBook = true, deleteDebt = true }: { receiptId: string; deleteCashBook?: boolean; deleteDebt?: boolean }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Chưa đăng nhập');
+
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) throw new Error('Không tìm thấy doanh nghiệp');
+
+      // 1. Fetch receipt info for audit log
+      const { data: receipt, error: receiptError } = await supabase
+        .from('export_receipts')
+        .select('*, customers(name, phone), branches(name)')
+        .eq('id', receiptId)
+        .single();
+      if (receiptError || !receipt) throw new Error('Không tìm thấy phiếu xuất');
+
+      // 2. Fetch items in this receipt
+      const { data: items } = await supabase
+        .from('export_receipt_items')
+        .select('id, product_id, product_name, sku, imei, sale_price, quantity, status')
+        .eq('receipt_id', receiptId);
+
+      const itemIds = (items || []).map(i => i.id);
+      const productIds = (items || []).map(i => i.product_id).filter(Boolean) as string[];
+      
+      const oldData = {
+        code: receipt.code,
+        export_date: receipt.export_date,
+        total_amount: receipt.total_amount,
+        paid_amount: receipt.paid_amount,
+        debt_amount: receipt.debt_amount,
+        customer: (receipt.customers as any)?.name || null,
+        branch: (receipt.branches as any)?.name || null,
+        items_count: itemIds.length,
+        delete_cash_book: deleteCashBook,
+        delete_debt: deleteDebt,
+        items: (items || []).map(i => ({
+          name: i.product_name, sku: i.sku, imei: i.imei,
+          price: i.sale_price, qty: i.quantity, status: i.status,
+        })),
+      };
+
+      // 3. Restore products to in_stock (for sold items)
+      if (productIds.length > 0) {
+        await supabase
+          .from('products')
+          .update({ status: 'in_stock' })
+          .in('id', productIds)
+          .in('status', ['sold']);
+      }
+
+      // 4. Delete cash_book entries (optional)
+      if (deleteCashBook) {
+        await supabase.from('cash_book').delete()
+          .eq('reference_id', receiptId)
+          .eq('reference_type', 'export_receipt');
+      }
+
+      // 5. Delete debt_payments (optional)
+      if (deleteDebt && receipt.customer_id) {
+        await (supabase.from('debt_payments').delete() as any)
+          .eq('entity_id', receipt.customer_id)
+          .eq('entity_type', 'customer')
+          .eq('description', `Thanh toán phiếu xuất ${receipt.code}`);
+      }
+
+      // 6. Delete receipt items
+      if (itemIds.length > 0) {
+        await supabase.from('export_receipt_items').delete().in('id', itemIds);
+      }
+
+      // 7. Delete receipt payments
+      await supabase.from('export_receipt_payments').delete().eq('receipt_id', receiptId);
+
+      // 8. Delete receipt
+      const { error: deleteError } = await supabase
+        .from('export_receipts')
+        .delete()
+        .eq('id', receiptId);
+      if (deleteError) throw deleteError;
+
+      // 9. Audit log
+      await supabase.from('audit_logs').insert([{
+        user_id: user.id,
+        action_type: 'DELETE_EXPORT_RECEIPT',
+        table_name: 'export_receipts',
+        record_id: receiptId,
+        branch_id: receipt.branch_id,
+        tenant_id: tenantId,
+        old_data: oldData,
+        description: `Xóa phiếu xuất ${receipt.code} - ${itemIds.length} sản phẩm - Tổng: ${Number(receipt.total_amount).toLocaleString('vi-VN')}đ`,
+      }]);
+
+      return { code: receipt.code, itemsDeleted: itemIds.length, productsRestored: productIds.length };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['export-receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['export-receipt-items'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['all-products'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['report-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
+    },
+  });
+}
