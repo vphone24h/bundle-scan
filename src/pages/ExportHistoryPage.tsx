@@ -231,6 +231,15 @@ export default function ExportHistoryPage() {
   // Edit receipt date dialog
   const [editReceiptDate, setEditReceiptDate] = useState<ExportReceipt | null>(null);
 
+  // Delete receipt
+  const [deleteReceipt, setDeleteReceipt] = useState<ExportReceipt | null>(null);
+  const [showDeleteSecurityDialog, setShowDeleteSecurityDialog] = useState(false);
+  const [deleteCashBook, setDeleteCashBook] = useState(true);
+  const [deleteDebt, setDeleteDebt] = useState(true);
+  const deleteExportReceipt = useDeleteExportReceipt();
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked: deleteSecurityUnlocked, unlock: deleteSecurityUnlock } = useSecurityUnlock('delete-export-receipt');
+
   // Hooks
   const { data: receipts, isLoading: receiptsLoading, isFetching: receiptsFetching, hasMore: receiptsHasMore } = useExportReceipts({
     search: activeTab === 'receipts' ? (debouncedSearch || undefined) : undefined,
