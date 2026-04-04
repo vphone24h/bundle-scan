@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { 
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle 
 } from '@/components/ui/dialog';
@@ -120,6 +121,9 @@ const IMPORT_STAGES: ImportStage[] = [
   { label: 'Cấu hình web', sections: ['web_config'] },
 ];
 
+const CHUNK_SIZE = 150; // Items per chunk to avoid timeout
+const MAX_RETRIES = 3;
+
 const sectionHasData = (importData: any, section: ImportSectionKey) => {
   if (section === 'web_config') return !!importData?.web_config;
   return Array.isArray(importData?.[section]) && importData[section].length > 0;
@@ -136,7 +140,6 @@ const mergeImportResponses = (responses: any[]) => {
       if (!mergedStats[key]) {
         mergedStats[key] = { total: 0, success: 0, skipped: 0, error: 0 };
       }
-
       mergedStats[key].total += toNumber(next.total);
       mergedStats[key].success += toNumber(next.success);
       mergedStats[key].skipped += toNumber(next.skipped);
@@ -156,6 +159,94 @@ const mergeImportResponses = (responses: any[]) => {
   };
 };
 
+/** Split large arrays in importData into chunks for a given stage */
+function buildChunkedPayloads(importData: any, stage: ImportStage): any[] {
+  // Collect all section arrays for this stage
+  const sectionArrays: { key: ImportSectionKey; items: any[] }[] = [];
+  let totalItems = 0;
+
+  for (const section of stage.sections) {
+    if (section === 'web_config') continue; // web_config is not an array
+    if (Array.isArray(importData?.[section]) && importData[section].length > 0) {
+      sectionArrays.push({ key: section, items: importData[section] });
+      totalItems += importData[section].length;
+    }
+  }
+
+  // If small enough or no arrays, send as single payload
+  if (totalItems <= CHUNK_SIZE) {
+    return [importData]; // single payload with full data
+  }
+
+  // Find the largest section to chunk
+  const largestSection = sectionArrays.reduce((a, b) => a.items.length > b.items.length ? a : b);
+  
+  if (largestSection.items.length <= CHUNK_SIZE) {
+    return [importData]; // no section large enough to chunk
+  }
+
+  // Chunk the largest section, keep others only in first chunk
+  const chunks: any[] = [];
+  const arr = largestSection.items;
+  
+  for (let i = 0; i < arr.length; i += CHUNK_SIZE) {
+    const slice = arr.slice(i, i + CHUNK_SIZE);
+    const payload: any = {
+      ...importData,
+      [largestSection.key]: slice,
+    };
+    
+    // For subsequent chunks, remove other section data (already imported in first chunk)
+    if (i > 0) {
+      for (const sa of sectionArrays) {
+        if (sa.key !== largestSection.key) {
+          payload[sa.key] = [];
+        }
+      }
+    }
+    
+    chunks.push(payload);
+  }
+
+  return chunks;
+}
+
+async function invokeWithRetry(
+  importData: any,
+  mode: string,
+  sections: ImportSectionKey[],
+  retries = MAX_RETRIES,
+): Promise<any> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const { data, error } = await supabase.functions.invoke('cross-platform-restore', {
+        body: { importData, mode, sections },
+      });
+
+      if (error) {
+        const msg = error.message || '';
+        const isTimeout = /(Failed to send a request|non-2xx status code|CPU Time exceeded|AbortError|timeout)/i.test(msg);
+        if (isTimeout && attempt < retries) {
+          console.warn(`Retry ${attempt}/${retries} for sections ${sections.join(',')}:`, msg);
+          await new Promise(r => setTimeout(r, 2000 * attempt));
+          continue;
+        }
+        throw error;
+      }
+
+      if (data?.error) throw new Error(data.error);
+      return data;
+    } catch (err) {
+      if (attempt >= retries) throw err;
+      const msg = (err as Error).message || '';
+      const isTimeout = /(Failed to send a request|non-2xx status code|CPU Time exceeded|AbortError|timeout)/i.test(msg);
+      if (!isTimeout) throw err;
+      console.warn(`Retry ${attempt}/${retries}:`, msg);
+      await new Promise(r => setTimeout(r, 2000 * attempt));
+    }
+  }
+}
+
 export function CrossPlatformBackupSection() {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -166,6 +257,8 @@ export function CrossPlatformBackupSection() {
   const [importPreview, setImportPreview] = useState<any>(null);
   const [importResult, setImportResult] = useState<any>(null);
   const [showResultDialog, setShowResultDialog] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importStatus, setImportStatus] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
@@ -221,12 +314,15 @@ export function CrossPlatformBackupSection() {
     if (fileRef.current) fileRef.current.value = '';
   };
 
-  const handleImport = async () => {
+  const handleImport = useCallback(async () => {
     if (!importFile) return;
     setShowConfirmDialog(false);
     setIsImporting(true);
+    setImportProgress(0);
+    setImportStatus('Đang chuẩn bị...');
     
     try {
+      // Calculate total work units (chunks across all stages)
       const runnableStages = IMPORT_STAGES.filter((stage) =>
         stage.sections.some((section) => sectionHasData(importFile, section))
       );
@@ -235,29 +331,44 @@ export function CrossPlatformBackupSection() {
         throw new Error('File không có dữ liệu để import');
       }
 
+      // Pre-calculate all chunks for progress tracking
+      const allWork: { stage: ImportStage; chunks: any[]; stageIndex: number }[] = [];
+      let totalChunks = 0;
+
+      for (let si = 0; si < runnableStages.length; si++) {
+        const stage = runnableStages[si];
+        const chunks = buildChunkedPayloads(importFile, stage);
+        allWork.push({ stage, chunks, stageIndex: si });
+        totalChunks += chunks.length;
+      }
+
       const stageResponses: any[] = [];
+      let completedChunks = 0;
 
-      for (let i = 0; i < runnableStages.length; i++) {
-        const stage = runnableStages[i];
-        const stageMode = i === 0 ? importMode : 'merge';
+      for (const { stage, chunks, stageIndex } of allWork) {
+        for (let ci = 0; ci < chunks.length; ci++) {
+          const chunkData = chunks[ci];
+          const stageMode = stageIndex === 0 && ci === 0 ? importMode : 'merge';
 
-        const { data, error } = await supabase.functions.invoke('cross-platform-restore', {
-          body: {
-            importData: importFile,
-            mode: stageMode,
-            sections: stage.sections,
-          },
-        });
+          const chunkLabel = chunks.length > 1
+            ? `${stage.label} (${ci + 1}/${chunks.length})`
+            : stage.label;
+          
+          setImportStatus(`Đang xử lý: ${chunkLabel}...`);
 
-        if (error) throw new Error(`${stage.label}: ${error.message}`);
-        if (!data) throw new Error(`${stage.label}: Không nhận được phản hồi từ hệ thống`);
-        if (data?.error) throw new Error(`${stage.label}: ${data.error}`);
+          const data = await invokeWithRetry(chunkData, stageMode, stage.sections);
+          stageResponses.push(data);
 
-        stageResponses.push(data);
+          completedChunks++;
+          const pct = Math.round((completedChunks / totalChunks) * 100);
+          setImportProgress(pct);
+        }
       }
 
       const normalized = mergeImportResponses(stageResponses);
       setImportResult(normalized);
+      setImportStatus('Hoàn tất!');
+      setImportProgress(100);
       setShowResultDialog(true);
       setImportFile(null);
       setImportPreview(null);
@@ -278,7 +389,7 @@ export function CrossPlatformBackupSection() {
       console.error('Import error:', error);
       const rawMessage = (error as Error).message || 'Lỗi không xác định';
       const message = /(Failed to send a request to the Edge Function|Edge Function returned a non-2xx status code|CPU Time exceeded)/i.test(rawMessage)
-        ? 'Import bị quá thời gian xử lý trên máy chủ (file lớn). Vui lòng thử lại; nếu vẫn lỗi, hãy chia nhỏ dữ liệu và import theo từng phần.'
+        ? 'Import bị quá thời gian xử lý trên máy chủ. Vui lòng thử lại.'
         : rawMessage;
       setImportResult({
         stats: {},
@@ -296,7 +407,7 @@ export function CrossPlatformBackupSection() {
     } finally {
       setIsImporting(false);
     }
-  };
+  }, [importFile, importMode]);
 
   return (
     <>
@@ -324,12 +435,29 @@ export function CrossPlatformBackupSection() {
             </ul>
           </div>
 
+          {/* Progress bar during import */}
+          {isImporting && (
+            <div className="space-y-2 p-3 rounded-lg bg-blue-50 border border-blue-200">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-blue-700 font-medium flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {importStatus}
+                </span>
+                <span className="text-blue-600 font-bold">{importProgress}%</span>
+              </div>
+              <Progress value={importProgress} className="h-2" />
+              <p className="text-xs text-blue-600">
+                Đang chạy ngầm, vui lòng không đóng trang...
+              </p>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button onClick={handleExport} disabled={isExporting} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
+            <Button onClick={handleExport} disabled={isExporting || isImporting} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
               {isExporting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Đang xuất...</> : <><ArrowDownToLine className="h-4 w-4 mr-2" />Sao lưu (Export JSON)</>}
             </Button>
-            <Button onClick={() => fileRef.current?.click()} disabled={isImporting} variant="outline" className="flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50">
-              {isImporting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Đang nhập...</> : <><ArrowUpFromLine className="h-4 w-4 mr-2" />Khôi phục (Import JSON)</>}
+            <Button onClick={() => fileRef.current?.click()} disabled={isImporting || isExporting} variant="outline" className="flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+              {isImporting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Đang nhập {importProgress}%</> : <><ArrowUpFromLine className="h-4 w-4 mr-2" />Khôi phục (Import JSON)</>}
             </Button>
           </div>
 
