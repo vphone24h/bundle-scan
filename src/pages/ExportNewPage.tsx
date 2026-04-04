@@ -1009,6 +1009,7 @@ export default function ExportNewPage() {
         salesStaffId: savedSalesStaffId,
         skipCashBook,
         exportDate: savedExportDate ? new Date(savedExportDate).toISOString() : undefined,
+        note: savedReceiptNote || undefined,
       });
 
       // Update receipt with real data (code from server)
