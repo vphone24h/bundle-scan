@@ -102,6 +102,9 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
       const staffId = (receipt as any).sales_staff_id || null;
       setSelectedStaffId(staffId);
       setOriginalStaffId(staffId);
+      const note = (receipt as any).note || '';
+      setReceiptNote(note);
+      setOriginalReceiptNote(note);
     }
   }, [receipt]);
 
