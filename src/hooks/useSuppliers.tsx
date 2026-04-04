@@ -75,7 +75,8 @@ export function useSuppliersByBranch(branchId: string | undefined) {
       const { data, error } = await supabase
         .from('suppliers')
         .select('*')
-        .eq('branch_id', branchId)
+        // Include shared suppliers restored from legacy backups without branch assignment
+        .or(`branch_id.eq.${branchId},branch_id.is.null`)
         .order('name');
 
       if (error) throw error;

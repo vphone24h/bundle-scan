@@ -108,9 +108,13 @@ export default function SuppliersPage() {
   const filteredSuppliers = useMemo(() => {
     let suppliers = allSuppliers || [];
     if (!isSuperAdmin && permissions?.branchId) {
-      suppliers = suppliers.filter(s => s.branch_id === permissions.branchId);
+      suppliers = suppliers.filter(
+        (s) => s.branch_id === permissions.branchId || s.branch_id === null
+      );
     } else if (branchId) {
-      suppliers = suppliers.filter(s => s.branch_id === branchId);
+      suppliers = suppliers.filter(
+        (s) => s.branch_id === branchId || s.branch_id === null
+      );
     }
 
     let result = suppliers.filter(
