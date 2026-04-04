@@ -1126,6 +1126,134 @@ export default function ImportHistoryPage() {
                 {isExporting ? 'Đang tải dữ liệu...' : 'Xuất Excel'}
               </Button>
             </div>
+            {/* Mobile Card View */}
+            <div className="sm:hidden space-y-3">
+              {productsPagination.paginatedData.map((product) => {
+                const isProductToday = isToday(new Date(product.import_date));
+                const statusLabel = product.status === 'deleted' ? 'Đã xóa'
+                  : product.status === 'in_stock' ? (!product.imei && product.quantity === 0 ? 'Hết hàng' : 'Tồn kho')
+                  : product.status === 'sold' ? 'Đã bán' : 'Đã trả';
+                const statusClass = product.status === 'deleted' ? 'bg-destructive/10 text-destructive border-destructive/20'
+                  : product.status === 'in_stock' ? (!product.imei && product.quantity === 0 ? 'bg-muted text-muted-foreground' : 'status-in-stock')
+                  : product.status === 'sold' ? 'status-sold' : 'status-pending';
+                const currentStock = !product.imei
+                  ? ((product as any).current_stock != null ? (product as any).current_stock : product.quantity)
+                  : (product.status === 'in_stock' ? 1 : 0);
+                return (
+                  <div key={product.id} className={cn(
+                    "p-3 border rounded-lg bg-card space-y-2",
+                    (product as any).import_date_modified && 'bg-green-50 dark:bg-green-950/20',
+                    isProductToday && !(product as any).import_date_modified && 'border-destructive/30',
+                    canTransferStock && selectedProductIds.has(product.id) && 'ring-1 ring-primary'
+                  )}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2 flex-1 min-w-0">
+                        {canTransferStock && product.status === 'in_stock' && (
+                          <Checkbox
+                            checked={selectedProductIds.has(product.id)}
+                            onCheckedChange={() => toggleProductSelect(product.id)}
+                            className="mt-0.5"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm">{product.name}</div>
+                          <div className="text-xs text-muted-foreground">SKU: {product.sku}</div>
+                          {product.imei && <div className="text-xs text-muted-foreground font-mono">IMEI: {product.imei}</div>}
+                        </div>
+                      </div>
+                      <Badge className={cn(statusClass, 'text-xs flex-shrink-0')}>{statusLabel}</Badge>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pt-1 border-t">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Danh mục:</span>
+                        <span className="truncate ml-1">{product.categories?.name || '-'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Tồn kho:</span>
+                        <span className={cn("font-medium", !product.imei && (product as any).current_stock != null && (product as any).current_stock <= 2 && 'text-destructive')}>
+                          {currentStock}{product.unit && product.unit !== 'cái' ? ` ${product.unit}` : ''}
+                        </span>
+                      </div>
+                      {canViewImportHistoryPrice && (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Giá nhập:</span>
+                            <span className="font-medium">{formatCurrency(Number(product.import_price))}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Thành tiền:</span>
+                            <span className="font-medium text-primary">{formatCurrency(Number(product.import_price) * product.quantity)}</span>
+                          </div>
+                        </>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Ngày nhập:</span>
+                        <span>{formatDate(new Date(product.import_date))}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">NCC:</span>
+                        <span className="truncate ml-1">{product.suppliers?.name || '-'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">CN:</span>
+                        <span className="truncate ml-1">{product.branches?.name || '-'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">NV:</span>
+                        <span className="truncate ml-1">{getStaffName(product)}</span>
+                      </div>
+                    </div>
+
+                    {product.status === 'in_stock' && (
+                      <div className="flex gap-1 pt-1 border-t justify-end flex-wrap" data-tour="import-product-actions">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditProduct(product)} title="Sửa">
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleReturnProduct(product)}>
+                          <RotateCcw className="mr-1 h-3 w-3" /> Trả
+                        </Button>
+                        {product.imei && (
+                          warrantyMarkedIds.has(product.id) ? (
+                            <span className="text-xs text-destructive opacity-60 font-medium self-center">Đã BH</span>
+                          ) : (
+                            <Button variant="outline" size="sm" className="h-7 text-xs gap-1"
+                              onClick={() => setWarrantyProduct(product)} disabled={markWarranty.isPending}>
+                              <Wrench className="h-3 w-3" /> BH
+                            </Button>
+                          )
+                        )}
+                        {!product.imei && permissions?.canAdjustProductQuantity && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setAdjustProduct(product)} title="Điều chỉnh SL">
+                            <Settings2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                        {canTransferStock && (
+                          <Button variant="outline" size="sm" className="h-7 text-xs gap-1"
+                            onClick={() => { setSelectedProductIds(new Set([product.id])); setTimeout(() => setShowTransferDialog(true), 0); }}>
+                            <ArrowRightLeft className="h-3 w-3" /> Chuyển
+                          </Button>
+                        )}
+                        {product.imei && permissions?.canDeleteIMEIProducts && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                            onClick={() => setDeleteProduct(product)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {filteredProducts.length === 0 && (
+                <div className="py-12 text-center text-muted-foreground">
+                  {hasActiveFilters ? 'Không tìm thấy sản phẩm phù hợp' : 'Không có sản phẩm nào'}
+                </div>
+              )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden sm:block">
             <ScrollableTableWrapper className="rounded-lg border bg-card">
               <table className="data-table">
                 <thead>
@@ -1249,92 +1377,46 @@ export default function ImportHistoryPage() {
                         <div className="flex gap-1" data-tour="import-product-actions">
                           {product.status === 'in_stock' && (
                             <>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => setEditProduct(product)}
-                                className="h-7 w-7"
-                                title="Sửa thông tin"
-                              >
+                              <Button variant="ghost" size="icon" onClick={() => setEditProduct(product)} className="h-7 w-7" title="Sửa thông tin">
                                 <Pencil className="h-3 w-3" />
                               </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleReturnProduct(product)}
-                                className="h-7 text-xs"
-                              >
-                                <RotateCcw className="mr-1 h-3 w-3" />
-                                Trả
+                              <Button variant="outline" size="sm" onClick={() => handleReturnProduct(product)} className="h-7 text-xs">
+                                <RotateCcw className="mr-1 h-3 w-3" /> Trả
                               </Button>
-                               {/* Warranty button - only for IMEI products */}
-                               {product.imei && (
-                                 <>
-                                   {warrantyMarkedIds.has(product.id) ? (
-                                     <span className="text-xs text-destructive opacity-60 font-medium">
-                                       Đã BH
-                                     </span>
-                                   ) : (
-                                     <Button 
-                                       variant="outline" 
-                                       size="sm"
-                                       onClick={() => setWarrantyProduct(product)}
-                                       disabled={markWarranty.isPending}
-                                       className="h-7 text-xs gap-1"
-                                       title="Chuyển sang bảo hành"
-                                     >
-                                       <Wrench className="h-3 w-3" />
-                                       BH
-                                     </Button>
-                                   )}
-                                 </>
-                               )}
-                              {/* Adjust quantity - only for non-IMEI products and super_admin */}
+                              {product.imei && (
+                                <>
+                                  {warrantyMarkedIds.has(product.id) ? (
+                                    <span className="text-xs text-destructive opacity-60 font-medium">Đã BH</span>
+                                  ) : (
+                                    <Button variant="outline" size="sm" onClick={() => setWarrantyProduct(product)}
+                                      disabled={markWarranty.isPending} className="h-7 text-xs gap-1" title="Chuyển sang bảo hành">
+                                      <Wrench className="h-3 w-3" /> BH
+                                    </Button>
+                                  )}
+                                </>
+                              )}
                               {!product.imei && permissions?.canAdjustProductQuantity && (
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  onClick={() => setAdjustProduct(product)}
-                                  className="h-7 w-7"
-                                  title="Điều chỉnh số lượng"
-                                >
+                                <Button variant="ghost" size="icon" onClick={() => setAdjustProduct(product)} className="h-7 w-7" title="Điều chỉnh số lượng">
                                   <Settings2 className="h-3 w-3" />
                                 </Button>
                               )}
-                              {/* Transfer button - for admin roles */}
                               {canTransferStock && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedProductIds(new Set([product.id]));
-                                    setTimeout(() => setShowTransferDialog(true), 0);
-                                  }}
-                                  className="h-7 text-xs gap-1"
-                                  title="Chuyển sang chi nhánh khác"
-                                >
-                                  <ArrowRightLeft className="h-3 w-3" />
-                                  Chuyển
+                                <Button variant="outline" size="sm"
+                                  onClick={() => { setSelectedProductIds(new Set([product.id])); setTimeout(() => setShowTransferDialog(true), 0); }}
+                                  className="h-7 text-xs gap-1" title="Chuyển sang chi nhánh khác">
+                                  <ArrowRightLeft className="h-3 w-3" /> Chuyển
                                 </Button>
                               )}
-                               {/* Delete button - only for IMEI products and super_admin */}
                               {product.imei && permissions?.canDeleteIMEIProducts && (
-                                 <Button 
-                                   variant="ghost" 
-                                   size="icon"
-                                   onClick={() => setDeleteProduct(product)}
-                                   className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                   title="Xóa sản phẩm"
-                                 >
-                                   <Trash2 className="h-3 w-3" />
-                                 </Button>
-                               )}
+                                <Button variant="ghost" size="icon" onClick={() => setDeleteProduct(product)}
+                                  className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10" title="Xóa sản phẩm">
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              )}
                             </>
                           )}
                           {(product.status === 'warranty' || warrantyMarkedIds.has(product.id)) && product.status !== 'in_stock' && (
-                            <span className="text-xs text-destructive opacity-60 font-medium">
-                              Đã BH
-                            </span>
+                            <span className="text-xs text-destructive opacity-60 font-medium">Đã BH</span>
                           )}
                           {product.status !== 'in_stock' && product.status !== 'warranty' && !warrantyMarkedIds.has(product.id) && (
                             <span className="text-xs text-muted-foreground">-</span>
@@ -1352,6 +1434,7 @@ export default function ImportHistoryPage() {
                 </div>
               )}
             </ScrollableTableWrapper>
+            </div>
             {filteredProducts.length > 0 && (
               <TablePagination
                 currentPage={productsPagination.currentPage}
