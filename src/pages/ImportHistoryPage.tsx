@@ -145,8 +145,9 @@ export default function ImportHistoryPage() {
 
   // Search & filter states (moved up for use in receipts query)
   const [searchTerm, setSearchTerm] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const [dateFrom, setDateFrom] = useState(todayStr);
+  const [dateTo, setDateTo] = useState(todayStr);
   const [categoryFilter, setCategoryFilter] = useState('_all_');
   const [supplierFilter, setSupplierFilter] = useState('_all_');
   const [statusFilter, setStatusFilter] = useState('_all_');
@@ -229,6 +230,22 @@ export default function ImportHistoryPage() {
     });
     return map;
   }, [staffProfiles]);
+
+  // Import history stats
+  const { data: importStats, isLoading: importStatsLoading } = useQuery({
+    queryKey: ['import-history-stats', dateFrom, dateTo, branchFilter, supplierFilter],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_import_history_stats', {
+        _date_from: dateFrom || null,
+        _date_to: dateTo || null,
+        _branch_id: branchFilter !== '_all_' ? branchFilter : null,
+        _supplier_id: supplierFilter !== '_all_' ? supplierFilter : null,
+      });
+      if (error) throw error;
+      return data as { receipt_count: number; product_count: number; imei_count: number; non_imei_count: number };
+    },
+    staleTime: 30_000,
+  });
 
   const getStaffName = (product: Product) => {
     if (!product.import_receipt_id) return '-';
@@ -843,6 +860,25 @@ export default function ImportHistoryPage() {
           </div>
 
           <TabsContent value="receipts">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              <div className="rounded-lg border bg-card p-3">
+                <p className="text-xs text-muted-foreground">Số phiếu nhập</p>
+                <p className="text-lg font-bold text-foreground">{importStatsLoading ? '...' : (importStats?.receipt_count ?? 0).toLocaleString()}</p>
+              </div>
+              <div className="rounded-lg border bg-card p-3">
+                <p className="text-xs text-muted-foreground">Số SP nhập</p>
+                <p className="text-lg font-bold text-primary">{importStatsLoading ? '...' : (importStats?.product_count ?? 0).toLocaleString()}</p>
+              </div>
+              <div className="rounded-lg border bg-card p-3">
+                <p className="text-xs text-muted-foreground">SP có IMEI</p>
+                <p className="text-lg font-bold text-primary">{importStatsLoading ? '...' : (importStats?.imei_count ?? 0).toLocaleString()}</p>
+              </div>
+              <div className="rounded-lg border bg-card p-3">
+                <p className="text-xs text-muted-foreground">SP không IMEI</p>
+                <p className="text-lg font-bold text-orange-500">{importStatsLoading ? '...' : (importStats?.non_imei_count ?? 0).toLocaleString()}</p>
+              </div>
+            </div>
             <div className="flex justify-end mb-4">
               <Button variant="outline" onClick={handleExportAll} disabled={isExporting}>
                 {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
