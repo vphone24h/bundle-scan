@@ -985,7 +985,7 @@ export default function ExportHistoryPage() {
                         </div>
 
                         <div className="flex gap-1 pt-1 border-t justify-end" data-tour="export-receipt-actions">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleViewDetail(receipt)} title="Xem">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleViewDetail(receipt)} onTouchStart={() => handlePrefetchExport(receipt.id)} onMouseEnter={() => handlePrefetchExport(receipt.id)} title="Xem">
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handlePrint(receipt)} title="In">
