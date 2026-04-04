@@ -333,6 +333,9 @@ export function CrossPlatformBackupSection() {
         } else if (step.section === 'imei_histories') {
           const productIds = (rawData.products || []).map((p: any) => p.id);
           body = { parentIds: productIds };
+        } else if (step.section === 'crm') {
+          const customerIds = (rawData.customers || []).map((c: any) => c.id);
+          body = { parentIds: customerIds };
         }
 
         const data = await invokeBackupSection(step.section, body);
