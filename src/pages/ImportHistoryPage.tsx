@@ -844,6 +844,25 @@ export default function ImportHistoryPage() {
           </div>
 
           <TabsContent value="receipts">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              <div className="rounded-lg border bg-card p-3">
+                <p className="text-xs text-muted-foreground">Số phiếu nhập</p>
+                <p className="text-lg font-bold text-foreground">{importStatsLoading ? '...' : (importStats?.receipt_count ?? 0).toLocaleString()}</p>
+              </div>
+              <div className="rounded-lg border bg-card p-3">
+                <p className="text-xs text-muted-foreground">Số SP nhập</p>
+                <p className="text-lg font-bold text-primary">{importStatsLoading ? '...' : (importStats?.product_count ?? 0).toLocaleString()}</p>
+              </div>
+              <div className="rounded-lg border bg-card p-3">
+                <p className="text-xs text-muted-foreground">SP có IMEI</p>
+                <p className="text-lg font-bold text-primary">{importStatsLoading ? '...' : (importStats?.imei_count ?? 0).toLocaleString()}</p>
+              </div>
+              <div className="rounded-lg border bg-card p-3">
+                <p className="text-xs text-muted-foreground">SP không IMEI</p>
+                <p className="text-lg font-bold text-orange-500">{importStatsLoading ? '...' : (importStats?.non_imei_count ?? 0).toLocaleString()}</p>
+              </div>
+            </div>
             <div className="flex justify-end mb-4">
               <Button variant="outline" onClick={handleExportAll} disabled={isExporting}>
                 {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
