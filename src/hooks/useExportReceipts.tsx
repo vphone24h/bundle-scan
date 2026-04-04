@@ -235,7 +235,6 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
           created_by: r.receipt_created_by,
           status: r.receipt_status,
           sales_staff_id: r.receipt_sales_staff_id,
-          note: r.receipt_note || null,
           customers: r.customer_name ? { name: r.customer_name, phone: r.customer_phone } : null,
           branches: r.branch_name ? { name: r.branch_name } : null,
         },

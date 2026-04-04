@@ -176,7 +176,7 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
         <TableCell className="text-center hidden lg:table-cell"><Badge variant="secondary">{item.totalSold}{item.unit !== 'cái' ? ` ${item.unit}` : ''}</Badge></TableCell>
         <TableCell className="text-center"><Badge className={cn('min-w-[40px]', getStockBadgeClass(item.stock))}>{item.stock}{item.unit !== 'cái' ? ` ${item.unit}` : ''}</Badge></TableCell>
         {canViewImportPrice && <TableCell className="text-right hidden md:table-cell font-medium">{formatCurrencyWithSpaces(item.avgImportPrice)}</TableCell>}
-        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+        <TableCell className="text-right">
           <Button variant="outline" size="sm" onClick={() => handleViewDetail(item)}
             className="flex-col gap-0.5 h-auto py-1.5 px-2 sm:flex-row sm:gap-2 sm:py-2 sm:px-3 text-xs"
           >
@@ -199,11 +199,12 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
       <>
         <TableRow 
           key={`group-${groupKey}`} 
-          className="hover:bg-accent/50 transition-colors"
+          className="cursor-pointer hover:bg-accent/50 transition-colors"
+          onClick={() => toggleGroup(groupKey)}
         >
           <TableCell className="text-muted-foreground">{index}</TableCell>
           <TableCell>
-            <div className="flex flex-col gap-1 cursor-pointer" onClick={() => toggleGroup(groupKey)}>
+            <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 {isExpanded ? <ChevronDown className="h-4 w-4 text-primary shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
                 <Layers className="h-4 w-4 text-primary shrink-0" />
@@ -233,7 +234,7 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
           </TableCell>
           {canViewImportPrice && <TableCell className="text-right hidden md:table-cell font-medium">{formatCurrencyWithSpaces(group.avgImportPrice)}</TableCell>}
           <TableCell className="text-right">
-            <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => toggleGroup(groupKey)}>
+            <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={(e) => { e.stopPropagation(); toggleGroup(groupKey); }}>
               {isExpanded ? 'Thu gọn' : 'Xem'}
             </Button>
           </TableCell>

@@ -8,15 +8,6 @@ const corsHeaders = {
 const INTERNAL_JOB_HEADER = 'x-job-internal-key'
 const DEFAULT_CHUNK_SIZE = 100
 
-// Tables with unique constraints beyond just 'id'
-// Map: table_name -> onConflict columns for fallback upsert
-const UNIQUE_CONSTRAINT_TABLES: Record<string, string> = {
-  customers: 'tenant_id,phone',
-  suppliers: 'tenant_id,name',
-  categories: 'id', // has complex unique, just use id with ignore
-  branches: 'id',
-}
-
 type RestoreMode = 'merge' | 'overwrite'
 type StatBucket = { total: number; success: number; skipped: number; error: number }
 type RestoreSummary = {
@@ -396,65 +387,19 @@ async function processJob(jobId: string) {
     const payload = prepareRows(chunkRows, job.tenant_id)
 
     if (payload.length > 0) {
-      const tableName = operation.table!
-      let chunkSuccess = 0
-      let chunkSkipped = 0
-      let chunkError = 0
+      const { error } = await adminClient
+        .from(operation.table!)
+        .upsert(payload, { onConflict: 'id' })
 
-      // Try batch upsert first
-      const { error: batchError } = await adminClient
-        .from(tableName)
-        .upsert(payload, { onConflict: 'id', ignoreDuplicates: false })
-
-      if (batchError) {
-        // If unique constraint error, fallback to row-by-row with conflict handling
-        if (batchError.message?.includes('duplicate key value violates unique constraint') ||
-            batchError.message?.includes('unique constraint') ||
-            batchError.code === '23505') {
-          console.log(`[restore-v3] ${tableName}: batch failed with unique constraint, falling back to row-by-row`)
-
-          for (const row of payload) {
-            try {
-              // Try upsert by id first
-              const { error: rowError } = await adminClient
-                .from(tableName)
-                .upsert(row, { onConflict: 'id', ignoreDuplicates: true })
-
-              if (rowError) {
-                // If still fails (different id, same unique key), try to find & update existing
-                if (rowError.message?.includes('unique constraint') || rowError.code === '23505') {
-                  // Skip this duplicate row - the existing record takes priority
-                  chunkSkipped++
-                  console.log(`[restore-v3] ${tableName}: skipped duplicate row ${row.id}`)
-                } else {
-                  chunkError++
-                  result.errors.push(`${operation.label}: ${rowError.message} (row ${row.id})`)
-                }
-              } else {
-                chunkSuccess++
-              }
-            } catch (e) {
-              chunkError++
-              result.errors.push(`${operation.label}: ${(e as Error).message} (row ${row.id})`)
-            }
-          }
-        } else {
-          // Non-unique error: still don't crash the whole job, record and continue
-          chunkError += payload.length
-          result.errors.push(`${operation.label}: ${batchError.message}`)
-          console.error(`[restore-v3] ${tableName}: non-unique batch error: ${batchError.message}`)
-        }
-      } else {
-        chunkSuccess = payload.length
+      if (error) {
+        throw new Error(`${operation.label}: ${error.message}`)
       }
-
-      if (!result.stats[operation.key]) {
-        result.stats[operation.key] = createBucket(sourceRows.length)
-      }
-      result.stats[operation.key].success += chunkSuccess
-      result.stats[operation.key].skipped += chunkSkipped
-      result.stats[operation.key].error += chunkError
     }
+
+    if (!result.stats[operation.key]) {
+      result.stats[operation.key] = createBucket(sourceRows.length)
+    }
+    result.stats[operation.key].success += payload.length
   }
 
   result.summary = summarize(result.stats)
