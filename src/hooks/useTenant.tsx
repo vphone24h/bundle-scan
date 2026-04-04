@@ -121,10 +121,10 @@ export function useCurrentTenant() {
       return data.tenants as unknown as Tenant;
     },
     enabled: !!user?.id,
-    staleTime: 0,
+    staleTime: 1000 * 30, // 30s — use persisted cache on startup, refetch in background
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: true,
-    refetchOnMount: 'always',
+    refetchOnMount: true, // refetch but don't block if cache exists
     refetchOnReconnect: true,
     placeholderData: (previous) => previous,
   });

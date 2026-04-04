@@ -19,10 +19,29 @@ const CURRENT_STORE_ID_KEY = 'current_store_id';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Try to read cached session synchronously from localStorage for instant startup
+function getCachedSession(): { user: User; session: Session } | null {
+  try {
+    const key = `sb-rodpbhesrwykmpywiiyd-auth-token`;
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Supabase stores { access_token, refresh_token, user, ... } or wrapped in currentSession
+    const sess = parsed?.currentSession || parsed;
+    if (sess?.access_token && sess?.user?.id) {
+      return { user: sess.user as User, session: sess as Session };
+    }
+  } catch {}
+  return null;
+}
+
+const cachedAuth = getCachedSession();
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Start with cached session so UI renders instantly without waiting for async getSession()
+  const [user, setUser] = useState<User | null>(cachedAuth?.user ?? null);
+  const [session, setSession] = useState<Session | null>(cachedAuth?.session ?? null);
+  const [loading, setLoading] = useState(!cachedAuth); // Skip loading if we have cached session
   const queryClient = useQueryClient();
 
   // Debounce guard: prevent multiple simultaneous refresh calls across tabs
