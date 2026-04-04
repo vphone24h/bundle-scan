@@ -944,7 +944,7 @@ Deno.serve(async (req) => {
       if (hasSection('cash_book') && Array.isArray(importData.cash_book) && importData.cash_book.length > 0) {
         stats.cash_book.total = importData.cash_book.length
 
-        await processInBatches<any>(importData.cash_book as any[], 30, async (cb) => {
+        await processInBatches<any>(importData.cash_book as any[], 5, async (cb) => {
           const { error } = await adminClient
             .from('cash_book')
             .insert({
