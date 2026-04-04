@@ -314,14 +314,13 @@ Deno.serve(async (req) => {
       }
 
       case 'shop_ctv': {
-        const [shop_collaborators, shop_ctv_orders, shop_ctv_settings, shop_ctv_withdrawals, ctv_product_commissions] = await Promise.all([
+        const [shop_collaborators, shop_ctv_orders, shop_ctv_settings, shop_ctv_withdrawals] = await Promise.all([
           fetchAll('shop_collaborators', 'tenant_id', tenantId),
           fetchAll('shop_ctv_orders', 'tenant_id', tenantId),
           fetchAll('shop_ctv_settings', 'tenant_id', tenantId),
           fetchAll('shop_ctv_withdrawals', 'tenant_id', tenantId),
-          fetchAll('ctv_product_commissions', 'tenant_id', tenantId),
         ])
-        return ok({ shop_collaborators, shop_ctv_orders, shop_ctv_settings, shop_ctv_withdrawals, ctv_product_commissions })
+        return ok({ shop_collaborators, shop_ctv_orders, shop_ctv_settings, shop_ctv_withdrawals })
       }
 
       case 'email_zalo': {
