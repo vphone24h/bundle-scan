@@ -1021,6 +1021,15 @@ export default function ExportHistoryPage() {
                             >
                               <RotateCcw className="h-4 w-4" />
                             </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteReceipt(receipt)}
+                              title="Xóa phiếu xuất"
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
