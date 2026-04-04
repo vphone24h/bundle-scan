@@ -132,7 +132,8 @@ export default function ExportNewPage() {
   const [taxRate, setTaxRate] = useState<number | null>(null);
   const [customTaxRate, setCustomTaxRate] = useState('');
   // Export date (default = now)
-  const [exportDate, setExportDate] = useState('');
+   const [exportDate, setExportDate] = useState('');
+  const [receiptNote, setReceiptNote] = useState('');
 
   // Customer info
   const [customerName, setCustomerName] = useState('');
