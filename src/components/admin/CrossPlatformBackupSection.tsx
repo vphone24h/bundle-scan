@@ -484,7 +484,7 @@ export function CrossPlatformBackupSection() {
     reader.onload = (ev) => {
       try {
         const data = JSON.parse(ev.target?.result as string);
-        if (!data.version || data.version !== '1.0') {
+        if (!data.version || !['1.0', '2.0', '3.0'].includes(data.version)) {
           toast.error('File không hợp lệ hoặc version không hỗ trợ');
           return;
         }
