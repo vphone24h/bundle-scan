@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Save, CalendarIcon, Search, User, Package, Pencil, UserCircle } from 'lucide-react';
+import { Loader2, Save, CalendarIcon, Search, User, Package, Pencil, UserCircle, FileText } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -67,6 +67,9 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
   const [originalStaffId, setOriginalStaffId] = useState<string | null>(null);
   // Items
   const [editableItems, setEditableItems] = useState<EditableItem[]>([]);
+  // Receipt note
+  const [receiptNote, setReceiptNote] = useState('');
+  const [originalReceiptNote, setOriginalReceiptNote] = useState('');
 
   // Fetch receipt items
   const { data: receiptItems } = useQuery({
@@ -99,6 +102,9 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
       const staffId = (receipt as any).sales_staff_id || null;
       setSelectedStaffId(staffId);
       setOriginalStaffId(staffId);
+      const note = (receipt as any).note || '';
+      setReceiptNote(note);
+      setOriginalReceiptNote(note);
     }
   }, [receipt]);
 
@@ -191,7 +197,8 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
   const priceChanges = editableItems.filter(i => i.sale_price !== i.original_sale_price);
   const hasPriceChanges = priceChanges.length > 0;
   const newTotal = editableItems.reduce((sum, i) => sum + (i.sale_price * i.quantity), 0);
-  const hasChanges = dateChanged || customerChanged || hasPriceChanges || staffChanged;
+  const noteChanged = receiptNote !== originalReceiptNote;
+  const hasChanges = dateChanged || customerChanged || hasPriceChanges || staffChanged || noteChanged;
 
   const updateReceipt = useMutation({
     mutationFn: async () => {
@@ -246,6 +253,18 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
         changes.push(`NV bán: ${oldStaffName} → ${newStaffName}`);
       }
 
+      // 3. Update note
+      if (noteChanged) {
+        const { error } = await supabase
+          .from('export_receipts')
+          .update({ note: receiptNote || null })
+          .eq('id', receipt.id);
+        if (error) throw error;
+        oldData.note = originalReceiptNote || null;
+        newData.note = receiptNote || null;
+        changes.push(`Ghi chú: "${originalReceiptNote || '(trống)'}" → "${receiptNote || '(trống)'}"`);
+      }
+
       if (hasPriceChanges) {
         for (const item of priceChanges) {
           const { error } = await supabase
@@ -273,6 +292,7 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
           customerChanged && 'CUSTOMER',
           staffChanged && 'STAFF',
           hasPriceChanges && 'PRICE',
+          noteChanged && 'NOTE',
         ].filter(Boolean).join('_');
 
         await supabase.from('audit_logs').insert({
@@ -432,7 +452,25 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
                 )}
               </div>
 
-              {/* Items */}
+              {/* Receipt Note */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5" />
+                  Ghi chú phiếu
+                </Label>
+                <Input
+                  placeholder="Ghi chú cho cả phiếu xuất (tuỳ chọn)"
+                  value={receiptNote}
+                  onChange={(e) => setReceiptNote(e.target.value)}
+                  className={cn(noteChanged && 'border-green-500 ring-1 ring-green-500/30')}
+                />
+                {noteChanged && (
+                  <p className="text-xs text-green-600 font-medium">
+                    ⚠ Ghi chú đã thay đổi
+                  </p>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5">
                   <Package className="h-3.5 w-3.5" />

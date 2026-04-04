@@ -1027,7 +1027,8 @@ export default function ExportHistoryPage() {
                       <TableHead className="text-right">Đơn giá</TableHead>
                       <TableHead className="text-right">Thành tiền</TableHead>
                       <TableHead>Bảo hành</TableHead>
-                      <TableHead>Ghi chú</TableHead>
+                      <TableHead>Ghi chú phiếu</TableHead>
+                      <TableHead>Ghi chú SP</TableHead>
                       {permissions?.canViewExportCustomerInfo !== false && <TableHead>Khách hàng</TableHead>}
                       <TableHead>Nhân viên</TableHead>
                       <TableHead>Ngày bán</TableHead>
@@ -1079,8 +1080,13 @@ export default function ExportHistoryPage() {
                             {item.warranty || '-'}
                           </TableCell>
                           <TableCell>
+                            <div className="max-w-[150px] truncate text-sm" title={(item.export_receipts as any)?.note || ''}>
+                              {(item.export_receipts as any)?.note || '-'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
                             <div className="max-w-[150px] truncate text-sm" title={item.note || ''}>
-                              {item.note || '-'}
+                              {item.note || (item.export_receipts as any)?.note || '-'}
                             </div>
                           </TableCell>
                           {permissions?.canViewExportCustomerInfo !== false && (

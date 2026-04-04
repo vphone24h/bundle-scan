@@ -7662,8 +7662,8 @@ export type Database = {
         Args: {
           _branch_id?: string
           _category_id?: string
-          _page?: number
-          _page_size?: number
+          _page: number
+          _page_size: number
           _search?: string
         }
         Returns: {
@@ -7687,6 +7687,7 @@ export type Database = {
           receipt_created_by: string
           receipt_customer_id: string
           receipt_id: string
+          receipt_note: string
           receipt_sales_staff_id: string
           receipt_status: string
           sale_price: number

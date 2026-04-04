@@ -1180,3 +1180,109 @@ export function useReturnImportReceipt() {
     },
   });
 }
+
+// Hook xóa toàn bộ phiếu nhập (receipt + products + cash_book + product_imports + debt_payments)
+export function useDeleteImportReceipt() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ receiptId, deleteCashBook = true, deleteDebt = true }: { receiptId: string; deleteCashBook?: boolean; deleteDebt?: boolean }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Chưa đăng nhập');
+
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) throw new Error('Không tìm thấy doanh nghiệp');
+
+      // 1. Fetch receipt info for audit log
+      const { data: receipt, error: receiptError } = await supabase
+        .from('import_receipts')
+        .select('*, suppliers(name), branches(name)')
+        .eq('id', receiptId)
+        .single();
+      if (receiptError || !receipt) throw new Error('Không tìm thấy phiếu nhập');
+
+      // 2. Fetch products in this receipt
+      const { data: products } = await supabase
+        .from('products')
+        .select('id, name, sku, imei, import_price, quantity, status')
+        .eq('import_receipt_id', receiptId);
+
+      const productIds = (products || []).map(p => p.id);
+      const oldData = {
+        code: receipt.code,
+        import_date: receipt.import_date,
+        total_amount: receipt.total_amount,
+        paid_amount: receipt.paid_amount,
+        debt_amount: receipt.debt_amount,
+        supplier: (receipt.suppliers as any)?.name || null,
+        branch: (receipt.branches as any)?.name || null,
+        products_count: productIds.length,
+        delete_cash_book: deleteCashBook,
+        delete_debt: deleteDebt,
+        products: (products || []).map(p => ({
+          name: p.name, sku: p.sku, imei: p.imei,
+          price: p.import_price, qty: p.quantity, status: p.status,
+        })),
+      };
+
+      // 3. Delete related records in correct order
+      // product_imports
+      if (productIds.length > 0) {
+        await supabase.from('product_imports').delete().in('product_id', productIds);
+      }
+
+      // cash_book entries linked to this receipt (optional)
+      if (deleteCashBook) {
+        await supabase.from('cash_book').delete()
+          .eq('reference_id', receiptId)
+          .eq('reference_type', 'import_receipt');
+      }
+
+      // debt_payments linked to this receipt (optional)
+      if (deleteDebt && receipt.supplier_id) {
+        await (supabase.from('debt_payments').delete() as any)
+          .eq('entity_id', receipt.supplier_id)
+          .eq('entity_type', 'supplier')
+          .eq('description', `Thanh toán phiếu nhập ${receipt.code}`);
+      }
+
+      // products
+      if (productIds.length > 0) {
+        await supabase.from('products').delete().in('id', productIds);
+      }
+
+      // import_receipt itself
+      const { error: deleteError } = await supabase
+        .from('import_receipts')
+        .delete()
+        .eq('id', receiptId);
+      if (deleteError) throw deleteError;
+
+      // 4. Audit log
+      await supabase.from('audit_logs').insert([{
+        user_id: user.id,
+        action_type: 'DELETE_IMPORT_RECEIPT',
+        table_name: 'import_receipts',
+        record_id: receiptId,
+        branch_id: receipt.branch_id,
+        tenant_id: tenantId,
+        old_data: oldData,
+        description: `Xóa phiếu nhập ${receipt.code} - ${productIds.length} sản phẩm - Tổng: ${Number(receipt.total_amount).toLocaleString('vi-VN')}đ`,
+      }]);
+
+      return { code: receipt.code, productsDeleted: productIds.length };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['import-receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['all-products'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['report-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
+    },
+  });
+}
