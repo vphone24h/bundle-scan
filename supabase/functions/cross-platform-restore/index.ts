@@ -602,7 +602,7 @@ Deno.serve(async (req) => {
       if (hasSection('customers') && Array.isArray(importData.customers) && importData.customers.length > 0) {
         stats.customers.total = importData.customers.length
 
-        await processInBatches<any>(importData.customers as any[], 20, async (c, index) => {
+        await processInBatches<any>(importData.customers as any[], 10, async (c, index) => {
           const extId = typeof c.external_id === 'string' && c.external_id ? c.external_id : `cus_${index + 1}`
           const name = typeof c.name === 'string' ? c.name.trim() : ''
           const phone = typeof c.phone === 'string' ? c.phone.trim() : ''
