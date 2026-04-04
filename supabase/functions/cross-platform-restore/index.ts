@@ -1068,7 +1068,7 @@ Deno.serve(async (req) => {
         user_id: user.id,
         action_type: 'CROSS_PLATFORM_IMPORT',
         table_name: 'ALL',
-        description: `Import JSON v1.0 (${mode}). Summary: ${JSON.stringify(summary)}`,
+        description: `Import JSON v${importData.version} (${mode}). Summary: ${JSON.stringify(summary)}`,
       })
     } catch (auditErr) {
       console.warn('Audit log error:', (auditErr as Error).message)
