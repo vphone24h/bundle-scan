@@ -35,7 +35,6 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey)
 
-    // Get tenant
     const { data: tenantData } = await adminClient
       .from('platform_users')
       .select('tenant_id')
@@ -49,7 +48,6 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Check admin role
     const { data: roleData } = await adminClient
       .from('user_roles')
       .select('user_role')
@@ -64,7 +62,16 @@ Deno.serve(async (req) => {
 
     const tenantId = tenantData.tenant_id
 
-    // Helper to fetch all rows
+    // Parse section from body
+    let section = 'all'
+    let parentIds: string[] = []
+    try {
+      const body = await req.json()
+      section = body?.section || 'all'
+      parentIds = body?.parentIds || []
+    } catch { /* no body = fetch all (legacy) */ }
+
+    // Helper to fetch all rows with pagination
     async function fetchAll(table: string, filterCol: string, filterVal: string, select = '*') {
       const allRows: any[] = []
       let from = 0
@@ -84,341 +91,124 @@ Deno.serve(async (req) => {
       return allRows
     }
 
-    // Get tenant info
-    const { data: tenant } = await adminClient
-      .from('tenants')
-      .select('*')
-      .eq('id', tenantId)
-      .single()
-
-    // Fetch all data
-    const [suppliers, customers, categories, branches, products, importReceipts, exportReceipts, cashBook, debtPayments] = await Promise.all([
-      fetchAll('suppliers', 'tenant_id', tenantId),
-      fetchAll('customers', 'tenant_id', tenantId),
-      fetchAll('categories', 'tenant_id', tenantId),
-      fetchAll('branches', 'tenant_id', tenantId),
-      fetchAll('products', 'tenant_id', tenantId),
-      fetchAll('import_receipts', 'tenant_id', tenantId),
-      fetchAll('export_receipts', 'tenant_id', tenantId),
-      fetchAll('cash_book', 'tenant_id', tenantId),
-      fetchAll('debt_payments', 'tenant_id', tenantId),
-    ])
-
-    // Fetch child records
-    const importReceiptIds = importReceipts.map((r: any) => r.id)
-    const exportReceiptIds = exportReceipts.map((r: any) => r.id)
-    const productIds = products.map((p: any) => p.id)
-
-    let importReceiptItems: any[] = []
-    let exportReceiptItems: any[] = []
-    let exportReceiptPayments: any[] = []
-    let imeiHistories: any[] = []
-
-    // Batch fetch child records
-    if (importReceiptIds.length > 0) {
-      // Fetch in batches of 100 IDs
-      for (let i = 0; i < importReceiptIds.length; i += 100) {
-        const batch = importReceiptIds.slice(i, i + 100)
-        const { data } = await adminClient
-          .from('import_receipts')
-          .select('id, items:import_receipts(*)') // not available - fetch differently
-          .in('id', batch)
-        // Actually fetch import receipt items if table exists
+    async function fetchByIds(table: string, filterCol: string, ids: string[], select = '*') {
+      const allRows: any[] = []
+      for (let i = 0; i < ids.length; i += 100) {
+        const batch = ids.slice(i, i + 100)
+        const { data, error } = await adminClient
+          .from(table)
+          .select(select)
+          .in(filterCol, batch)
+        if (error) throw error
+        if (data) allRows.push(...data)
       }
+      return allRows
     }
 
-    // Fetch export receipt items & payments
-    if (exportReceiptIds.length > 0) {
-      for (let i = 0; i < exportReceiptIds.length; i += 100) {
-        const batch = exportReceiptIds.slice(i, i + 100)
-        const { data: items } = await adminClient
-          .from('export_receipt_items')
-          .select('*')
-          .in('receipt_id', batch)
-        if (items) exportReceiptItems.push(...items)
-
-        const { data: payments } = await adminClient
-          .from('export_receipt_payments')
-          .select('*')
-          .in('receipt_id', batch)
-        if (payments) exportReceiptPayments.push(...payments)
-      }
-    }
-
-    // Fetch IMEI histories
-    if (productIds.length > 0) {
-      for (let i = 0; i < productIds.length; i += 100) {
-        const batch = productIds.slice(i, i + 100)
-        const { data } = await adminClient
-          .from('imei_histories')
-          .select('*')
-          .in('product_id', batch)
-        if (data) imeiHistories.push(...data)
-      }
-    }
-
-    // Fetch landing settings
-    const { data: landingSettings } = await adminClient
-      .from('tenant_landing_settings')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .maybeSingle()
-
-    // Build ID maps with external_ids
-    const supplierIdMap: Record<string, string> = {}
-    const customerIdMap: Record<string, string> = {}
-    const categoryIdMap: Record<string, string> = {}
-    const branchIdMap: Record<string, string> = {}
-    const productIdMap: Record<string, string> = {}
-    const importReceiptIdMap: Record<string, string> = {}
-    const exportReceiptIdMap: Record<string, string> = {}
-
-    suppliers.forEach((s: any, i: number) => { supplierIdMap[s.id] = `sup_${String(i + 1).padStart(4, '0')}` })
-    customers.forEach((c: any, i: number) => { customerIdMap[c.id] = `cus_${String(i + 1).padStart(4, '0')}` })
-    categories.forEach((c: any, i: number) => { categoryIdMap[c.id] = `cat_${String(i + 1).padStart(4, '0')}` })
-    branches.forEach((b: any, i: number) => { branchIdMap[b.id] = `br_${String(i + 1).padStart(4, '0')}` })
-    products.forEach((p: any, i: number) => { productIdMap[p.id] = `prod_${String(i + 1).padStart(4, '0')}` })
-    importReceipts.forEach((r: any, i: number) => { importReceiptIdMap[r.id] = `imp_${String(i + 1).padStart(4, '0')}` })
-    exportReceipts.forEach((r: any, i: number) => { exportReceiptIdMap[r.id] = `exp_${String(i + 1).padStart(4, '0')}` })
-
-    // Helper to strip internal IDs and map references
-    const mapRef = (id: string | null, map: Record<string, string>) => id ? (map[id] || null) : null
-
-    // Build export data
-    const exportJson = {
-      version: '1.0',
-      exported_at: new Date().toISOString(),
-      tenant_name: tenant?.store_name || tenant?.business_name || '',
-      
-      tenant: tenant ? {
-        store_name: tenant.store_name,
-        business_name: tenant.business_name,
-        business_type: tenant.business_type,
-        phone: tenant.phone,
-        address: tenant.address,
-        logo_url: tenant.logo_url,
-      } : null,
-
-      branches: branches.map((b: any) => ({
-        external_id: branchIdMap[b.id],
-        name: b.name,
-        address: b.address,
-        phone: b.phone,
-        is_default: b.is_default,
-        note: b.note,
-        created_at: b.created_at,
-      })),
-
-      categories: categories.map((c: any) => ({
-        external_id: categoryIdMap[c.id],
-        name: c.name,
-        parent_external_id: mapRef(c.parent_id, categoryIdMap),
-        created_at: c.created_at,
-      })),
-
-      suppliers: suppliers.map((s: any) => ({
-        external_id: supplierIdMap[s.id],
-        name: s.name,
-        phone: s.phone,
-        email: s.email,
-        address: s.address,
-        tax_code: s.tax_code,
-        debt_amount: s.debt_amount,
-        note: s.note,
-        entity_code: s.entity_code,
-        created_at: s.created_at,
-      })),
-
-      customers: customers.map((c: any) => ({
-        external_id: customerIdMap[c.id],
-        name: c.name,
-        phone: c.phone,
-        email: c.email,
-        address: c.address,
-        birthday: c.birthday,
-        entity_code: c.entity_code,
-        source: c.source,
-        note: c.note,
-        total_spent: c.total_spent,
-        current_points: c.current_points,
-        pending_points: c.pending_points,
-        total_points_earned: c.total_points_earned,
-        total_points_used: c.total_points_used,
-        membership_tier: c.membership_tier,
-        status: c.status,
-        debt_due_days: c.debt_due_days,
-        last_purchase_date: c.last_purchase_date,
-        preferred_branch_external_id: mapRef(c.preferred_branch_id, branchIdMap),
-        created_at: c.created_at,
-      })),
-
-      products: products.map((p: any) => ({
-        external_id: productIdMap[p.id],
-        name: p.name,
-        sku: p.sku,
-        imei: p.imei,
-        barcode: p.barcode,
-        import_price: p.import_price,
-        sale_price: p.sale_price,
-        quantity: p.quantity,
-        status: p.status,
-        warranty: p.warranty,
-        warranty_package: p.warranty_package,
-        warranty_start_date: p.warranty_start_date,
-        warranty_end_date: p.warranty_end_date,
-        note: p.note,
-        image_url: p.image_url,
-        supplier_name: p.supplier_name,
-        supplier_external_id: mapRef(p.supplier_id, supplierIdMap),
-        category_external_id: mapRef(p.category_id, categoryIdMap),
-        branch_external_id: mapRef(p.branch_id, branchIdMap),
-        group_id: p.group_id,
-        version_name: p.version_name,
-        version_value: p.version_value,
-        color: p.color,
-        created_at: p.created_at,
-      })),
-
-      import_receipts: importReceipts.map((r: any) => ({
-        external_id: importReceiptIdMap[r.id],
-        code: r.code,
-        supplier_external_id: mapRef(r.supplier_id, supplierIdMap),
-        branch_external_id: mapRef(r.branch_id, branchIdMap),
-        total_amount: r.total_amount,
-        paid_amount: r.paid_amount,
-        payment_source: r.payment_source,
-        import_date: r.import_date,
-        note: r.note,
-        status: r.status,
-        created_at: r.created_at,
-      })),
-
-      export_receipts: exportReceipts.map((r: any) => ({
-        external_id: exportReceiptIdMap[r.id],
-        code: r.code,
-        customer_external_id: mapRef(r.customer_id, customerIdMap),
-        branch_external_id: mapRef(r.branch_id, branchIdMap),
-        total_amount: r.total_amount,
-        paid_amount: r.paid_amount,
-        discount_amount: r.discount_amount,
-        voucher_discount: r.voucher_discount,
-        points_discount: r.points_discount,
-        payment_source: r.payment_source,
-        export_date: r.export_date,
-        note: r.note,
-        status: r.status,
-        customer_name: r.customer_name,
-        customer_phone: r.customer_phone,
-        created_by_name: r.created_by_name,
-        created_at: r.created_at,
-      })),
-
-      export_receipt_items: exportReceiptItems.map((item: any) => ({
-        receipt_external_id: mapRef(item.receipt_id, exportReceiptIdMap),
-        product_external_id: mapRef(item.product_id, productIdMap),
-        product_name: item.product_name,
-        imei: item.imei,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total_price: item.total_price,
-        warranty: item.warranty,
-        warranty_package: item.warranty_package,
-      })),
-
-      export_receipt_payments: exportReceiptPayments.map((p: any) => ({
-        receipt_external_id: mapRef(p.receipt_id, exportReceiptIdMap),
-        amount: p.amount,
-        payment_source: p.payment_source,
-        payment_date: p.payment_date,
-        note: p.note,
-      })),
-
-      cash_book: cashBook.map((cb: any) => ({
-        type: cb.type,
-        category: cb.category,
-        description: cb.description,
-        amount: cb.amount,
-        payment_source: cb.payment_source,
-        transaction_date: cb.transaction_date,
-        note: cb.note,
-        recipient_name: cb.recipient_name,
-        recipient_phone: cb.recipient_phone,
-        reference_type: cb.reference_type,
-        is_business_accounting: cb.is_business_accounting,
-        branch_external_id: mapRef(cb.branch_id, branchIdMap),
-        created_by_name: cb.created_by_name,
-        created_at: cb.created_at,
-      })),
-
-      debt_payments: debtPayments.map((dp: any) => ({
-        entity_id: dp.entity_id,
-        entity_type: dp.entity_type,
-        payment_type: dp.payment_type,
-        amount: dp.amount,
-        allocated_amount: dp.allocated_amount,
-        balance_after: dp.balance_after,
-        description: dp.description,
-        payment_source: dp.payment_source,
-        branch_external_id: mapRef(dp.branch_id, branchIdMap),
-        created_at: dp.created_at,
-      })),
-
-      imei_histories: imeiHistories.map((h: any) => ({
-        product_external_id: mapRef(h.product_id, productIdMap),
-        action: h.action,
-        old_imei: h.old_imei,
-        new_imei: h.new_imei,
-        note: h.note,
-        created_at: h.created_at,
-      })),
-
-      web_config: landingSettings ? {
-        store_name: landingSettings.store_name,
-        store_description: landingSettings.store_description,
-        store_phone: landingSettings.store_phone,
-        store_email: landingSettings.store_email,
-        store_address: landingSettings.store_address,
-        additional_addresses: landingSettings.additional_addresses,
-        logo_url: landingSettings.logo_url,
-        banner_url: landingSettings.banner_url,
-        primary_color: landingSettings.primary_color,
-        secondary_color: landingSettings.secondary_color,
-        facebook_url: landingSettings.facebook_url,
-        zalo_url: landingSettings.zalo_url,
-        youtube_url: landingSettings.youtube_url,
-        tiktok_url: landingSettings.tiktok_url,
-        template_id: (landingSettings as any).template_id,
-        custom_domain: (landingSettings as any).custom_domain,
-      } : null,
-
-      _metadata: {
-        total_suppliers: suppliers.length,
-        total_customers: customers.length,
-        total_categories: categories.length,
-        total_branches: branches.length,
-        total_products: products.length,
-        total_import_receipts: importReceipts.length,
-        total_export_receipts: exportReceipts.length,
-        total_export_receipt_items: exportReceiptItems.length,
-        total_cash_book: cashBook.length,
-        total_debt_payments: debtPayments.length,
-        total_imei_histories: imeiHistories.length,
-      },
-    }
-
-    // Log
-    await adminClient.from('audit_logs').insert({
-      tenant_id: tenantId,
-      user_id: user.id,
-      action_type: 'CROSS_PLATFORM_EXPORT',
-      table_name: 'ALL',
-      description: `Xuất dữ liệu cross-platform JSON v1.0`,
-    })
-
-    return new Response(JSON.stringify(exportJson), {
+    const ok = (data: any) => new Response(JSON.stringify(data), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
+
+    // Section-based export
+    switch (section) {
+      case 'init': {
+        const { data: tenant } = await adminClient
+          .from('tenants')
+          .select('*')
+          .eq('id', tenantId)
+          .single()
+
+        const [branches, categories] = await Promise.all([
+          fetchAll('branches', 'tenant_id', tenantId),
+          fetchAll('categories', 'tenant_id', tenantId),
+        ])
+
+        return ok({ tenant, branches, categories })
+      }
+
+      case 'suppliers': {
+        const data = await fetchAll('suppliers', 'tenant_id', tenantId)
+        return ok({ suppliers: data })
+      }
+
+      case 'customers': {
+        const data = await fetchAll('customers', 'tenant_id', tenantId)
+        return ok({ customers: data })
+      }
+
+      case 'products': {
+        const data = await fetchAll('products', 'tenant_id', tenantId)
+        return ok({ products: data })
+      }
+
+      case 'import_receipts': {
+        const data = await fetchAll('import_receipts', 'tenant_id', tenantId)
+        return ok({ import_receipts: data })
+      }
+
+      case 'export_receipts': {
+        const data = await fetchAll('export_receipts', 'tenant_id', tenantId)
+        return ok({ export_receipts: data })
+      }
+
+      case 'export_child_records': {
+        // parentIds = export receipt IDs
+        let items: any[] = []
+        let payments: any[] = []
+        if (parentIds.length > 0) {
+          items = await fetchByIds('export_receipt_items', 'receipt_id', parentIds)
+          payments = await fetchByIds('export_receipt_payments', 'receipt_id', parentIds)
+        }
+        return ok({ export_receipt_items: items, export_receipt_payments: payments })
+      }
+
+      case 'imei_histories': {
+        // parentIds = product IDs
+        let data: any[] = []
+        if (parentIds.length > 0) {
+          data = await fetchByIds('imei_histories', 'product_id', parentIds)
+        }
+        return ok({ imei_histories: data })
+      }
+
+      case 'cash_debt': {
+        const [cashBook, debtPayments] = await Promise.all([
+          fetchAll('cash_book', 'tenant_id', tenantId),
+          fetchAll('debt_payments', 'tenant_id', tenantId),
+        ])
+        return ok({ cash_book: cashBook, debt_payments: debtPayments })
+      }
+
+      case 'web_config': {
+        const { data: landingSettings } = await adminClient
+          .from('tenant_landing_settings')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .maybeSingle()
+        return ok({ web_config: landingSettings })
+      }
+
+      case 'finalize': {
+        // Log the export
+        await adminClient.from('audit_logs').insert({
+          tenant_id: tenantId,
+          user_id: user.id,
+          action_type: 'CROSS_PLATFORM_EXPORT',
+          table_name: 'ALL',
+          description: `Xuất dữ liệu cross-platform JSON v2.0 (chunked)`,
+        })
+        return ok({ success: true })
+      }
+
+      default: {
+        // Legacy: fetch all at once (backward compat)
+        // Not recommended for large data
+        return new Response(JSON.stringify({ error: 'Invalid section. Use: init, suppliers, customers, products, import_receipts, export_receipts, export_child_records, imei_histories, cash_debt, web_config, finalize' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+    }
 
   } catch (error) {
     console.error('Cross-platform export error:', error)
