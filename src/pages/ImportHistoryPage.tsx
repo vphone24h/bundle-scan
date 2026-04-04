@@ -1551,16 +1551,32 @@ export default function ImportHistoryPage() {
       )}
 
       {/* Delete Import Receipt Confirmation */}
-      <AlertDialog open={!!deleteReceipt && !showDeleteSecurityDialog} onOpenChange={(open) => !open && setDeleteReceipt(null)}>
+      <AlertDialog open={!!deleteReceipt && !showDeleteSecurityDialog} onOpenChange={(open) => { 
+        if (!open) { setDeleteReceipt(null); setDeleteCashBook(true); setDeleteDebt(true); }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
               Xóa phiếu nhập
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Bạn có chắc muốn xóa phiếu <strong>{deleteReceipt?.code}</strong>?
-              <br />Toàn bộ sản phẩm, sổ quỹ và công nợ liên quan sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác.
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Bạn có chắc muốn xóa phiếu <strong>{deleteReceipt?.code}</strong>?
+                  <br />Toàn bộ sản phẩm liên quan sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác.
+                </p>
+                <div className="space-y-2 rounded-md border p-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox checked={deleteCashBook} onCheckedChange={(v) => setDeleteCashBook(!!v)} />
+                    <span className="text-sm">Xóa dòng tiền trong sổ quỹ</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox checked={deleteDebt} onCheckedChange={(v) => setDeleteDebt(!!v)} />
+                    <span className="text-sm">Xóa công nợ liên quan</span>
+                  </label>
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
