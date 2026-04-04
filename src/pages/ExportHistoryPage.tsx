@@ -278,11 +278,11 @@ export default function ExportHistoryPage() {
 
   // Export history stats
   const { data: exportStats, isLoading: statsLoading } = useQuery({
-    queryKey: ['export-history-stats', dateFromFilter, dateToFilter, branchFilter, statusFilter],
+    queryKey: ['export-history-stats', statsDateFrom, statsDateTo, branchFilter, statusFilter],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_export_history_stats' as any, {
-        _date_from: dateFromFilter || null,
-        _date_to: dateToFilter || null,
+        _date_from: statsDateFrom,
+        _date_to: statsDateTo,
         _branch_id: branchFilter !== '_all_' ? branchFilter : null,
         _status: statusFilter !== '_all_' ? statusFilter : null,
       });
