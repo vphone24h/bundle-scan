@@ -143,11 +143,17 @@ Deno.serve(async (req) => {
       }
 
       case 'import_receipts': {
-        const [import_receipts, receipt_payments, product_imports] = await Promise.all([
-          fetchAll('import_receipts', 'tenant_id', tenantId),
-          fetchAll('receipt_payments', 'tenant_id', tenantId),
-          fetchAll('product_imports', 'tenant_id', tenantId),
-        ])
+        const import_receipts = await fetchAll('import_receipts', 'tenant_id', tenantId)
+        // receipt_payments and product_imports don't have tenant_id, fetch by parent IDs
+        const receiptIds = import_receipts.map((r: any) => r.id)
+        let receipt_payments: any[] = []
+        let product_imports: any[] = []
+        if (receiptIds.length > 0) {
+          ;[receipt_payments, product_imports] = await Promise.all([
+            fetchByIds('receipt_payments', 'receipt_id', receiptIds),
+            fetchByIds('product_imports', 'import_receipt_id', receiptIds),
+          ])
+        }
         return ok({ import_receipts, receipt_payments, product_imports })
       }
 
