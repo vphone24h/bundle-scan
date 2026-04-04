@@ -420,7 +420,7 @@ export function CrossPlatformBackupSection() {
         shop_ctv_orders: rawData.shop_ctv_orders || [],
         shop_ctv_settings: rawData.shop_ctv_settings || [],
         shop_ctv_withdrawals: rawData.shop_ctv_withdrawals || [],
-        ctv_product_commissions: rawData.ctv_product_commissions || [],
+        
         email_automations: rawData.email_automations || [],
         email_automation_blocks: rawData.email_automation_blocks || [],
         zalo_message_logs: rawData.zalo_message_logs || [],
