@@ -324,9 +324,14 @@ Deno.serve(async (req) => {
       }
 
       case 'email_zalo': {
-        const [email_automations, email_automation_blocks, zalo_message_logs, zalo_oa_followers] = await Promise.all([
-          fetchAll('email_automations', 'tenant_id', tenantId),
-          fetchAll('email_automation_blocks', 'tenant_id', tenantId),
+        const email_automations = await fetchAll('email_automations', 'tenant_id', tenantId)
+        // email_automation_blocks don't have tenant_id, fetch by automation IDs
+        const autoIds = email_automations.map((a: any) => a.id)
+        let email_automation_blocks: any[] = []
+        if (autoIds.length > 0) {
+          email_automation_blocks = await fetchByIds('email_automation_blocks', 'automation_id', autoIds)
+        }
+        const [zalo_message_logs, zalo_oa_followers] = await Promise.all([
           fetchAll('zalo_message_logs', 'tenant_id', tenantId),
           fetchAll('zalo_oa_followers', 'tenant_id', tenantId),
         ])
