@@ -64,6 +64,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { formatNumber, parseFormattedNumber, formatInputNumber } from '@/lib/formatNumber';
 import { PriceInput } from '@/components/ui/price-input';
 import { cn } from '@/lib/utils';
+import { normalizeLooseSearchValue } from '@/lib/normalizeSearch';
 
 interface SelectedCustomer {
   id: string;
@@ -577,10 +578,11 @@ export default function ExportNewPage() {
   };
 
   // Search by IMEI (manual) - shows form with warranty input instead of auto-add
-  const handleImeiSearch = async () => {
-    if (!imeiSearch.trim()) return;
-    const code = imeiSearch.trim();
+  const handleImeiSearch = async (searchValue?: string) => {
+    const code = (searchValue ?? imeiSearch).trim();
+    if (!code) return;
     setImeiSearch('');
+    setNameSearch('');
     
     const result = await checkProduct.mutateAsync(code);
     if (!result) {
@@ -619,22 +621,76 @@ export default function ExportNewPage() {
     });
   };
 
+  const filterProductResults = (results: any[]) => {
+    const cartImeis = new Set(cart.filter(c => c.imei).map(c => c.imei));
+    const cartProductIds = new Set(cart.filter(c => c.imei).map(c => c.product_id));
+
+    return (results || []).filter((p: any) => {
+      if (p.imei) {
+        return !cartImeis.has(p.imei) && !cartProductIds.has(p.id);
+      }
+      return true;
+    });
+  };
+
+  const findBestProductMatch = (searchTerm: string, results: any[]) => {
+    const normalizedTerm = normalizeLooseSearchValue(searchTerm);
+
+    return results.find((product: any) => {
+      const candidates = [product.name, product.sku, product.imei].filter(Boolean);
+      return candidates.some((value) => normalizeLooseSearchValue(String(value)) === normalizedTerm);
+    }) || null;
+  };
+
+  const runProductNameSearch = async (searchTerm: string) => {
+    const term = searchTerm.trim();
+    if (!term) {
+      setProductSuggestions([]);
+      return [];
+    }
+
+    const results = await searchProducts.mutateAsync(term);
+    const filtered = filterProductResults(results || []);
+    setProductSuggestions(filtered);
+    return filtered;
+  };
+
+  const handleManualSearch = async () => {
+    const rawValue = (imeiSearch || nameSearch).trim();
+    if (!rawValue) return;
+
+    if (/^\d{6,}$/.test(rawValue)) {
+      await handleImeiSearch(rawValue);
+      return;
+    }
+
+    const results = await runProductNameSearch(rawValue);
+    if (results.length === 0) {
+      toast({
+        title: t('pages.exportNew.notFound'),
+        description: `"${rawValue}" ${t('pages.exportNew.productNotInStock')}`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const bestMatch = findBestProductMatch(rawValue, results);
+    if (bestMatch) {
+      handleSelectProduct(bestMatch);
+      return;
+    }
+
+    if (results.length === 1) {
+      handleSelectProduct(results[0]);
+    }
+  };
+
   // Search by name (debounced)
   useEffect(() => {
-    if (nameSearch.length >= 1) {
+    if (nameSearch.trim().length >= 1) {
       const timer = setTimeout(async () => {
-        const results = await searchProducts.mutateAsync(nameSearch);
-        // Filter out IMEI products already in cart
-        const cartImeis = new Set(cart.filter(c => c.imei).map(c => c.imei));
-        const cartProductIds = new Set(cart.filter(c => c.imei).map(c => c.product_id));
-        const filtered = (results || []).filter((p: any) => {
-          if (p.imei) {
-            return !cartImeis.has(p.imei) && !cartProductIds.has(p.id);
-          }
-          return true;
-        });
-        setProductSuggestions(filtered);
-      }, 150);
+        await runProductNameSearch(nameSearch);
+      }, 120);
       return () => clearTimeout(timer);
     } else {
       setProductSuggestions([]);
@@ -1131,12 +1187,8 @@ export default function ExportNewPage() {
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
-                        const val = (imeiSearch || nameSearch).trim();
-                        if (val) {
-                          setImeiSearch(val);
-                          setNameSearch('');
-                          handleImeiSearch();
-                        }
+                        e.preventDefault();
+                        void handleManualSearch();
                       }
                     }}
                     className="search-input-highlight"
@@ -1161,15 +1213,8 @@ export default function ExportNewPage() {
                   )}
                 </div>
                 <Button 
-                  onClick={() => {
-                    const val = (imeiSearch || nameSearch).trim();
-                    if (val) {
-                      setImeiSearch(val);
-                      setNameSearch('');
-                      handleImeiSearch();
-                    }
-                  }}
-                  disabled={checkProduct.isPending}
+                  onClick={() => void handleManualSearch()}
+                  disabled={checkProduct.isPending || searchProducts.isPending}
                 >
                   {t('tours.exportNew.findBtn')}
                 </Button>
