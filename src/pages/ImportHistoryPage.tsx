@@ -191,6 +191,9 @@ export default function ImportHistoryPage() {
   const { data: branches } = useBranches();
   const { data: permissions } = usePermissions();
   const markWarranty = useMarkProductWarranty();
+  const deleteImportReceipt = useDeleteImportReceipt();
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked: deleteSecurityUnlocked, unlock: deleteSecurityUnlock } = useSecurityUnlock('delete-import-receipt');
   // Fetch staff profiles from import receipts' created_by
   const staffUserIds = useMemo(() => {
     if (!receipts) return [];
