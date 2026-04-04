@@ -247,6 +247,16 @@ Deno.serve(async (req) => {
       await clearTenantData(adminClient, tenantId, errors)
     }
 
+    // Only load existing data for sections being processed
+    const needsBranches = hasSection('branches') || hasSection('suppliers') || hasSection('products') || hasSection('import_receipts') || hasSection('export_receipts') || hasSection('cash_book') || hasSection('debt_payments')
+    const needsCategories = hasSection('categories') || hasSection('products') || hasSection('export_receipt_items')
+    const needsSuppliers = hasSection('suppliers') || hasSection('import_receipts')
+    const needsCustomers = hasSection('customers') || hasSection('export_receipts') || hasSection('debt_payments')
+    const needsProducts = hasSection('products') || hasSection('export_receipt_items')
+    const needsImportReceipts = hasSection('import_receipts')
+    const needsExportReceipts = hasSection('export_receipts') || hasSection('export_receipt_items') || hasSection('export_receipt_payments')
+
+    const emptyRes = { data: [], error: null }
     const [
       existingBranchesRes,
       existingCategoriesRes,
@@ -256,13 +266,13 @@ Deno.serve(async (req) => {
       existingImportReceiptsRes,
       existingExportReceiptsRes,
     ] = await Promise.all([
-      adminClient.from('branches').select('id,name,is_default').eq('tenant_id', tenantId),
-      adminClient.from('categories').select('id,name').eq('tenant_id', tenantId),
-      adminClient.from('suppliers').select('id,name,phone').eq('tenant_id', tenantId),
-      adminClient.from('customers').select('id,phone').eq('tenant_id', tenantId),
-      adminClient.from('products').select('id,sku,imei').eq('tenant_id', tenantId),
-      adminClient.from('import_receipts').select('id,code').eq('tenant_id', tenantId),
-      adminClient.from('export_receipts').select('id,code').eq('tenant_id', tenantId),
+      needsBranches ? adminClient.from('branches').select('id,name,is_default').eq('tenant_id', tenantId) : emptyRes,
+      needsCategories ? adminClient.from('categories').select('id,name').eq('tenant_id', tenantId) : emptyRes,
+      needsSuppliers ? adminClient.from('suppliers').select('id,name,phone').eq('tenant_id', tenantId) : emptyRes,
+      needsCustomers ? adminClient.from('customers').select('id,phone').eq('tenant_id', tenantId) : emptyRes,
+      needsProducts ? adminClient.from('products').select('id,sku,imei').eq('tenant_id', tenantId) : emptyRes,
+      needsImportReceipts ? adminClient.from('import_receipts').select('id,code').eq('tenant_id', tenantId) : emptyRes,
+      needsExportReceipts ? adminClient.from('export_receipts').select('id,code').eq('tenant_id', tenantId) : emptyRes,
     ])
 
     const preloadErrors = [
@@ -592,7 +602,7 @@ Deno.serve(async (req) => {
       if (hasSection('customers') && Array.isArray(importData.customers) && importData.customers.length > 0) {
         stats.customers.total = importData.customers.length
 
-        await processInBatches<any>(importData.customers as any[], 20, async (c, index) => {
+        await processInBatches<any>(importData.customers as any[], 10, async (c, index) => {
           const extId = typeof c.external_id === 'string' && c.external_id ? c.external_id : `cus_${index + 1}`
           const name = typeof c.name === 'string' ? c.name.trim() : ''
           const phone = typeof c.phone === 'string' ? c.phone.trim() : ''
@@ -658,7 +668,7 @@ Deno.serve(async (req) => {
       if (hasSection('products') && Array.isArray(importData.products) && importData.products.length > 0) {
         stats.products.total = importData.products.length
 
-        await processInBatches<any>(importData.products as any[], 15, async (p, index) => {
+        await processInBatches<any>(importData.products as any[], 8, async (p, index) => {
           const extId = typeof p.external_id === 'string' && p.external_id ? p.external_id : `prod_${index + 1}`
           const name = typeof p.name === 'string' ? p.name.trim() : ''
           const sku = typeof p.sku === 'string' && p.sku.trim() ? p.sku.trim() : `AUTO-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`

@@ -121,7 +121,7 @@ const IMPORT_STAGES: ImportStage[] = [
   { label: 'Cấu hình web', sections: ['web_config'] },
 ];
 
-const CHUNK_SIZE = 150; // Items per chunk to avoid timeout
+const CHUNK_SIZE = 80; // Items per chunk to avoid timeout
 const MAX_RETRIES = 3;
 
 const sectionHasData = (importData: any, section: ImportSectionKey) => {
@@ -159,30 +159,46 @@ const mergeImportResponses = (responses: any[]) => {
   };
 };
 
-/** Split large arrays in importData into chunks for a given stage */
+/** Build minimal payloads containing only relevant section data, chunked to avoid timeout */
 function buildChunkedPayloads(importData: any, stage: ImportStage): any[] {
+  // Build a slim payload with only the sections needed for this stage
+  const buildSlimPayload = (overrides: Record<string, any> = {}): any => {
+    const slim: any = { version: importData.version };
+    // Only include sections relevant to this stage
+    for (const section of stage.sections) {
+      if (section === 'web_config') {
+        slim.web_config = importData.web_config;
+      } else if (Array.isArray(importData?.[section])) {
+        slim[section] = importData[section];
+      }
+    }
+    // Apply overrides (for chunked sections)
+    Object.assign(slim, overrides);
+    return slim;
+  };
+
   // Collect all section arrays for this stage
   const sectionArrays: { key: ImportSectionKey; items: any[] }[] = [];
   let totalItems = 0;
 
   for (const section of stage.sections) {
-    if (section === 'web_config') continue; // web_config is not an array
+    if (section === 'web_config') continue;
     if (Array.isArray(importData?.[section]) && importData[section].length > 0) {
       sectionArrays.push({ key: section, items: importData[section] });
       totalItems += importData[section].length;
     }
   }
 
-  // If small enough or no arrays, send as single payload
+  // If small enough or no arrays, send as single slim payload
   if (totalItems <= CHUNK_SIZE) {
-    return [importData]; // single payload with full data
+    return [buildSlimPayload()];
   }
 
   // Find the largest section to chunk
   const largestSection = sectionArrays.reduce((a, b) => a.items.length > b.items.length ? a : b);
   
   if (largestSection.items.length <= CHUNK_SIZE) {
-    return [importData]; // no section large enough to chunk
+    return [buildSlimPayload()];
   }
 
   // Chunk the largest section, keep others only in first chunk
@@ -191,21 +207,18 @@ function buildChunkedPayloads(importData: any, stage: ImportStage): any[] {
   
   for (let i = 0; i < arr.length; i += CHUNK_SIZE) {
     const slice = arr.slice(i, i + CHUNK_SIZE);
-    const payload: any = {
-      ...importData,
-      [largestSection.key]: slice,
-    };
+    const overrides: Record<string, any> = { [largestSection.key]: slice };
     
     // For subsequent chunks, remove other section data (already imported in first chunk)
     if (i > 0) {
       for (const sa of sectionArrays) {
         if (sa.key !== largestSection.key) {
-          payload[sa.key] = [];
+          overrides[sa.key] = [];
         }
       }
     }
     
-    chunks.push(payload);
+    chunks.push(buildSlimPayload(overrides));
   }
 
   return chunks;
