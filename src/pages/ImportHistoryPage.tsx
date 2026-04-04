@@ -348,7 +348,7 @@ export default function ImportHistoryPage() {
 
   const confirmDeleteReceipt = () => {
     if (!deleteReceipt) return;
-    deleteImportReceipt.mutate({ receiptId: deleteReceipt.id }, {
+    deleteImportReceipt.mutate({ receiptId: deleteReceipt.id, deleteCashBook, deleteDebt }, {
       onSuccess: (result) => {
         toast({
           title: 'Đã xóa phiếu nhập',
