@@ -560,6 +560,23 @@ export function CrossPlatformBackupSection() {
             </ul>
           </div>
 
+          {/* Progress bar during export */}
+          {isExporting && (
+            <div className="space-y-2 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-emerald-700 font-medium flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {exportStatus}
+                </span>
+                <span className="text-emerald-600 font-bold">{exportProgress}%</span>
+              </div>
+              <Progress value={exportProgress} className="h-2" />
+              <p className="text-xs text-emerald-600">
+                Đang sao lưu từng phần, vui lòng không đóng trang...
+              </p>
+            </div>
+          )}
+
           {/* Progress bar during import */}
           {isImporting && (
             <div className="space-y-2 p-3 rounded-lg bg-blue-50 border border-blue-200">
