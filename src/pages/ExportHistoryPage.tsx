@@ -271,7 +271,23 @@ export default function ExportHistoryPage() {
   const { data: permissions } = usePermissions();
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
   const isSuperAdmin = permissions?.canViewAllBranches === true;
-  
+
+  // Export history stats
+  const { data: exportStats, isLoading: statsLoading } = useQuery({
+    queryKey: ['export-history-stats', dateFromFilter, dateToFilter, branchFilter, statusFilter],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_export_history_stats' as any, {
+        _date_from: dateFromFilter || null,
+        _date_to: dateToFilter || null,
+        _branch_id: branchFilter !== '_all_' ? branchFilter : null,
+        _status: statusFilter !== '_all_' ? statusFilter : null,
+      });
+      if (error) throw error;
+      return data as { receipt_count: number; total_revenue: number; return_revenue: number; product_count: number };
+    },
+    staleTime: 30_000,
+  });
+
   // Get template based on the print receipt's branch
   const printBranchId = printReceipt?.branch_id || null;
   const { data: template } = useInvoiceTemplateByBranch(printBranchId);
