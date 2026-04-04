@@ -121,7 +121,7 @@ const IMPORT_STAGES: ImportStage[] = [
   { label: 'Cấu hình web', sections: ['web_config'] },
 ];
 
-const CHUNK_SIZE = 150; // Items per chunk to avoid timeout
+const CHUNK_SIZE = 80; // Items per chunk to avoid timeout
 const MAX_RETRIES = 3;
 
 const sectionHasData = (importData: any, section: ImportSectionKey) => {
