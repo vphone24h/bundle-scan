@@ -1234,10 +1234,11 @@ export function useDeleteImportReceipt() {
         .eq('reference_id', receiptId)
         .eq('reference_type', 'import_receipt');
 
-      // debt_payments linked to this receipt's supplier
-      await supabase.from('debt_payments').delete()
-        .eq('reference_id', receiptId)
-        .eq('reference_type', 'import_receipt');
+      // debt_payments linked to this receipt
+      await (supabase.from('debt_payments').delete() as any)
+        .eq('entity_id', receipt.supplier_id)
+        .eq('entity_type', 'supplier')
+        .eq('description', `Thanh toán phiếu nhập ${receipt.code}`);
 
       // products
       if (productIds.length > 0) {
