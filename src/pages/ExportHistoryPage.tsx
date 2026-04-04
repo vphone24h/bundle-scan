@@ -182,8 +182,11 @@ export default function ExportHistoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const [dateFilter, setDateFilter] = useState('');
-  const [dateFromFilter, setDateFromFilter] = useState(todayStr);
-  const [dateToFilter, setDateToFilter] = useState(todayStr);
+  const [dateFromFilter, setDateFromFilter] = useState('');
+  const [dateToFilter, setDateToFilter] = useState('');
+  // Stats cards always default to today, sync with filters when user applies them
+  const statsDateFrom = dateFromFilter || todayStr;
+  const statsDateTo = dateToFilter || todayStr;
   const [statusFilter, setStatusFilter] = useState('_all_');
   const [branchFilter, setBranchFilter] = useState('_all_');
   const [paymentSourceFilter, setPaymentSourceFilter] = useState('_all_');
