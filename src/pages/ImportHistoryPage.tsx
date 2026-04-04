@@ -325,8 +325,12 @@ export default function ImportHistoryPage() {
     endIndex: Math.min(productPage * productPageSize, productsTotalCount),
   };
 
+  const prefetchImport = usePrefetchImportReceipt();
   const handleView = (receipt: ImportReceipt) => {
     setSelectedReceiptId(receipt.id);
+  };
+  const handlePrefetch = (receiptId: string) => {
+    prefetchImport(receiptId);
   };
 
   const handleEdit = (receipt: ImportReceipt) => {
