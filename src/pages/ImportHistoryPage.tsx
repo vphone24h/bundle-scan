@@ -271,6 +271,8 @@ export default function ImportHistoryPage() {
   const [returnReceipt, setReturnReceipt] = useState<ImportReceipt | null>(null);
   const [deleteReceipt, setDeleteReceipt] = useState<ImportReceipt | null>(null);
   const [showDeleteSecurityDialog, setShowDeleteSecurityDialog] = useState(false);
+  const [deleteCashBook, setDeleteCashBook] = useState(true);
+  const [deleteDebt, setDeleteDebt] = useState(true);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const [adjustProduct, setAdjustProduct] = useState<Product | null>(null);
