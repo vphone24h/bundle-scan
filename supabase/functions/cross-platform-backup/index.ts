@@ -224,7 +224,7 @@ Deno.serve(async (req) => {
         const [
           customer_care_schedules, customer_care_logs, care_reminders, care_schedule_types,
           customer_tags, customer_sources, customer_vouchers,
-          point_settings, point_transactions, membership_tier_settings,
+          point_settings, membership_tier_settings,
           crm_notifications,
         ] = await Promise.all([
           fetchAll('customer_care_schedules', 'tenant_id', tenantId),
@@ -235,19 +235,19 @@ Deno.serve(async (req) => {
           fetchAll('customer_sources', 'tenant_id', tenantId),
           fetchAll('customer_vouchers', 'tenant_id', tenantId),
           fetchAll('point_settings', 'tenant_id', tenantId),
-          fetchAll('point_transactions', 'tenant_id', tenantId),
           fetchAll('membership_tier_settings', 'tenant_id', tenantId),
           fetchAll('crm_notifications', 'tenant_id', tenantId),
         ])
 
-        // customer_tag_assignments & customer_contact_channels don't have tenant_id
-        // Fetch via customer IDs from parentIds (passed from frontend)
+        // Tables without tenant_id - fetch via customer IDs from parentIds
         let customer_tag_assignments: any[] = []
         let customer_contact_channels: any[] = []
+        let point_transactions: any[] = []
         if (parentIds.length > 0) {
-          ;[customer_tag_assignments, customer_contact_channels] = await Promise.all([
+          ;[customer_tag_assignments, customer_contact_channels, point_transactions] = await Promise.all([
             fetchByIds('customer_tag_assignments', 'customer_id', parentIds),
             fetchByIds('customer_contact_channels', 'customer_id', parentIds),
+            fetchByIds('point_transactions', 'customer_id', parentIds),
           ])
         }
 
