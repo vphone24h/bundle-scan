@@ -927,7 +927,7 @@ export default function ImportHistoryPage() {
                     </div>
 
                     <div className="flex gap-1 pt-1 border-t justify-end">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleView(receipt)} title="Xem">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleView(receipt)} onTouchStart={() => handlePrefetch(receipt.id)} onMouseEnter={() => handlePrefetch(receipt.id)} title="Xem">
                         <Eye className="h-3.5 w-3.5" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(receipt)} title="Sửa">
