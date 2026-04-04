@@ -284,7 +284,7 @@ export default function ExportHistoryPage() {
         _status: statusFilter !== '_all_' ? statusFilter : null,
       });
       if (error) throw error;
-      return data as { receipt_count: number; total_revenue: number; return_revenue: number; product_count: number };
+      return data as { receipt_count: number; total_revenue: number; return_revenue: number; product_count: number; imei_count: number; non_imei_count: number };
     },
     staleTime: 30_000,
   });
