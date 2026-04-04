@@ -245,16 +245,107 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
     );
   };
 
+  // Mobile card renderers
+  const renderMobileItemCard = (item: InventoryItem, index: number, isVariantChild = false) => (
+    <div
+      key={`m-${item.productName}-${item.sku}-${item.branchId}`}
+      className={cn('p-3 border rounded-lg bg-card', isVariantChild && 'ml-4 border-dashed')}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          {isVariantChild ? (
+            <p className="font-medium text-sm line-clamp-2">↳ {getVariantLabel(item)}</p>
+          ) : (
+            <>
+              <p className="font-medium line-clamp-2">{item.productName}</p>
+              <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
+            </>
+          )}
+          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+            {!isVariantChild && item.categoryName && <Badge variant="outline" className="text-xs">{item.categoryName}</Badge>}
+            {item.hasImei ? (
+              <Badge variant="secondary" className="gap-1 text-xs"><Smartphone className="h-3 w-3" />IMEI</Badge>
+            ) : (
+              <Badge variant="outline" className="text-xs">{t('tours.inventory.normalType')}</Badge>
+            )}
+            {!isVariantChild && <span className="text-xs text-muted-foreground">{item.branchName || '-'}</span>}
+          </div>
+        </div>
+        <Badge className={cn('min-w-[40px] shrink-0', getStockBadgeClass(item.stock))}>
+          {item.stock}{item.unit !== 'cái' ? ` ${item.unit}` : ''}
+        </Badge>
+      </div>
+      <div className="flex items-center justify-between mt-2 pt-2 border-t">
+        <div className="flex gap-3 text-xs text-muted-foreground">
+          <span>Nhập: {item.totalImported}{item.unit !== 'cái' ? ` ${item.unit}` : ''}</span>
+          <span>Bán: {item.totalSold}{item.unit !== 'cái' ? ` ${item.unit}` : ''}</span>
+          {canViewImportPrice && <span>{formatCurrencyWithSpaces(item.avgImportPrice)}</span>}
+        </div>
+        <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={() => handleViewDetail(item)}>
+          {item.hasImei ? <><Smartphone className="h-3.5 w-3.5 mr-1" />IMEI</> : <><FileText className="h-3.5 w-3.5 mr-1" />{t('tours.inventory.detailBtn')}</>}
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderMobileGroupCard = (group: VariantGroup, index: number) => {
+    const groupKey = `${group.groupId}|${group.branchId || 'no-branch'}`;
+    const isExpanded = expandedGroups.has(groupKey);
+
+    return (
+      <div key={`mg-${groupKey}`} className="space-y-2">
+        <div className="p-3 border rounded-lg bg-card" onClick={() => toggleGroup(groupKey)}>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                {isExpanded ? <ChevronDown className="h-4 w-4 text-primary shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+                <Layers className="h-4 w-4 text-primary shrink-0" />
+                <span className="font-semibold line-clamp-2">{group.groupName}</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 mt-1 pl-6">
+                <Badge variant="secondary" className="text-xs">{group.variants.length} biến thể</Badge>
+                {group.categoryName && <Badge variant="outline" className="text-xs">{group.categoryName}</Badge>}
+                <span className="text-xs text-muted-foreground">{group.branchName || '-'}</span>
+              </div>
+            </div>
+            <Badge className={cn('min-w-[40px] shrink-0', getStockBadgeClass(group.totalStock))}>
+              {group.totalStock}
+            </Badge>
+          </div>
+          {canViewImportPrice && (
+            <p className="text-xs text-muted-foreground mt-1 pl-6">TB: {formatCurrencyWithSpaces(group.avgImportPrice)}</p>
+          )}
+        </div>
+        {isExpanded && group.variants.map((variant, vi) => renderMobileItemCard(variant, vi, true))}
+      </div>
+    );
+  };
+
+  let mobileIndex = 0;
+
   return (
     <>
-      <div className="rounded-lg border bg-card overflow-x-auto" data-tour="inventory-table">
+      {/* Mobile: Card layout */}
+      <div className="sm:hidden space-y-3" data-tour="inventory-table">
+        {groups.map((group) => {
+          mobileIndex++;
+          return renderMobileGroupCard(group, mobileIndex);
+        })}
+        {ungrouped.map((item) => {
+          mobileIndex++;
+          return renderMobileItemCard(item, mobileIndex);
+        })}
+      </div>
+
+      {/* Desktop: Table layout */}
+      <div className="hidden sm:block rounded-lg border bg-card overflow-x-auto" data-tour="inventory-table">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[50px] whitespace-nowrap">#</TableHead>
               <TableHead className="min-w-[200px]">{t('tours.inventory.productCol')}</TableHead>
               <TableHead className="whitespace-nowrap hidden md:table-cell">{t('tours.inventory.branchCol')}</TableHead>
-              <TableHead className="text-center whitespace-nowrap hidden sm:table-cell">{t('tours.inventory.typeCol')}</TableHead>
+              <TableHead className="text-center whitespace-nowrap">{t('tours.inventory.typeCol')}</TableHead>
               <TableHead className="text-center whitespace-nowrap hidden lg:table-cell">{t('tours.inventory.totalImportedCol')}</TableHead>
               <TableHead className="text-center whitespace-nowrap hidden lg:table-cell">{t('tours.inventory.soldCol')}</TableHead>
               <TableHead className="text-center whitespace-nowrap">{t('tours.inventory.stockCol')}</TableHead>
@@ -263,12 +354,10 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {/* Render grouped variant items first */}
             {groups.map((group) => {
               rowIndex++;
               return renderGroupRow(group, rowIndex);
             })}
-            {/* Render ungrouped items */}
             {ungrouped.map((item) => {
               rowIndex++;
               return renderItemRow(item, rowIndex);
