@@ -468,7 +468,12 @@ export function CrossPlatformBackupSection() {
     try {
       // Use v3 background restore for version 3.0
       const { data, error } = await supabase.functions.invoke('cross-platform-restore-v3', {
-        body: { importData: importFile, mode: importMode },
+        body: {
+          importData: importFile,
+          mode: importMode,
+          tenantId: tenant?.id,
+          tenantSubdomain: tenant?.subdomain ?? null,
+        },
       });
 
       if (error) throw error;
@@ -503,7 +508,7 @@ export function CrossPlatformBackupSection() {
       });
       setShowResultDialog(true);
     }
-  }, [importFile, importMode, refetchRestoreJob]);
+  }, [importFile, importMode, refetchRestoreJob, tenant?.id, tenant?.subdomain]);
 
   const isAnyRunning = isExporting || isImporting || isRestoreRunning;
 
