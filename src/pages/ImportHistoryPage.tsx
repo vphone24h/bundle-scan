@@ -335,6 +335,35 @@ export default function ImportHistoryPage() {
     setReturnReceipt(receipt);
   };
 
+  const handleDeleteReceipt = (receipt: ImportReceipt) => {
+    if (hasSecurityPassword && !deleteSecurityUnlocked) {
+      setDeleteReceipt(receipt);
+      setShowDeleteSecurityDialog(true);
+      return;
+    }
+    setDeleteReceipt(receipt);
+  };
+
+  const confirmDeleteReceipt = () => {
+    if (!deleteReceipt) return;
+    deleteImportReceipt.mutate({ receiptId: deleteReceipt.id }, {
+      onSuccess: (result) => {
+        toast({
+          title: 'Đã xóa phiếu nhập',
+          description: `Phiếu ${result.code} và ${result.productsDeleted} sản phẩm đã được xóa`,
+        });
+        setDeleteReceipt(null);
+      },
+      onError: (error: any) => {
+        toast({
+          title: 'Lỗi xóa phiếu nhập',
+          description: error.message || 'Không thể xóa phiếu nhập',
+          variant: 'destructive',
+        });
+      },
+    });
+  };
+
   const handleReturnProduct = (product: Product) => {
     if (product.status !== 'in_stock') {
       toast({
