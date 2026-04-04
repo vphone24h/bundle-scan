@@ -281,7 +281,7 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
           <span>Bán: {item.totalSold}{item.unit !== 'cái' ? ` ${item.unit}` : ''}</span>
           {canViewImportPrice && <span>{formatCurrencyWithSpaces(item.avgImportPrice)}</span>}
         </div>
-        <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={() => handleViewDetail(item)}>
+        <Button variant="default" size="sm" className="h-7 px-2 text-xs bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => handleViewDetail(item)}>
           {item.hasImei ? <><Smartphone className="h-3.5 w-3.5 mr-1" />IMEI</> : <><FileText className="h-3.5 w-3.5 mr-1" />{t('tours.inventory.detailBtn')}</>}
         </Button>
       </div>
