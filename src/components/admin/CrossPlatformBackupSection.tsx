@@ -259,34 +259,159 @@ export function CrossPlatformBackupSection() {
   const [showResultDialog, setShowResultDialog] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [importStatus, setImportStatus] = useState('');
+  const [exportProgress, setExportProgress] = useState(0);
+  const [exportStatus, setExportStatus] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const invokeBackupSection = async (section: string, body?: any, retries = 3): Promise<any> => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const { data, error } = await supabase.functions.invoke('cross-platform-backup', {
+          body: { section, ...body },
+        });
+        if (error) {
+          const msg = error.message || '';
+          const isTimeout = /(Failed to send|non-2xx|CPU Time|AbortError|timeout)/i.test(msg);
+          if (isTimeout && attempt < retries) {
+            await new Promise(r => setTimeout(r, 2000 * attempt));
+            continue;
+          }
+          throw error;
+        }
+        if (data?.error) throw new Error(data.error);
+        return data;
+      } catch (err) {
+        if (attempt >= retries) throw err;
+        const msg = (err as Error).message || '';
+        if (!/(Failed to send|non-2xx|CPU Time|AbortError|timeout)/i.test(msg)) throw err;
+        await new Promise(r => setTimeout(r, 2000 * attempt));
+      }
+    }
+  };
 
   const handleExport = async () => {
     setIsExporting(true);
+    setExportProgress(0);
+    setExportStatus('Đang tải thông tin cửa hàng...');
     try {
-      const { data, error } = await supabase.functions.invoke('cross-platform-backup');
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      const EXPORT_STEPS = [
+        { section: 'init', label: 'Cửa hàng, chi nhánh, danh mục' },
+        { section: 'suppliers', label: 'Nhà cung cấp' },
+        { section: 'customers', label: 'Khách hàng' },
+        { section: 'products', label: 'Sản phẩm' },
+        { section: 'import_receipts', label: 'Phiếu nhập' },
+        { section: 'export_receipts', label: 'Phiếu xuất' },
+        { section: 'export_child_records', label: 'Chi tiết phiếu xuất' },
+        { section: 'imei_histories', label: 'Lịch sử IMEI' },
+        { section: 'cash_debt', label: 'Sổ quỹ & công nợ' },
+        { section: 'web_config', label: 'Cấu hình web' },
+        { section: 'finalize', label: 'Hoàn tất' },
+      ];
 
-      const jsonStr = JSON.stringify(data, null, 2);
+      const rawData: any = {};
+      const totalSteps = EXPORT_STEPS.length;
+
+      for (let i = 0; i < EXPORT_STEPS.length; i++) {
+        const step = EXPORT_STEPS[i];
+        setExportStatus(`Đang tải: ${step.label}...`);
+        setExportProgress(Math.round(((i) / totalSteps) * 100));
+
+        let body: any = undefined;
+        if (step.section === 'export_child_records') {
+          const receiptIds = (rawData.export_receipts || []).map((r: any) => r.id);
+          body = { parentIds: receiptIds };
+        } else if (step.section === 'imei_histories') {
+          const productIds = (rawData.products || []).map((p: any) => p.id);
+          body = { parentIds: productIds };
+        }
+
+        const data = await invokeBackupSection(step.section, body);
+        Object.assign(rawData, data);
+      }
+
+      setExportStatus('Đang tạo file...');
+      setExportProgress(95);
+
+      // Build ID maps
+      const supplierIdMap: Record<string, string> = {};
+      const customerIdMap: Record<string, string> = {};
+      const categoryIdMap: Record<string, string> = {};
+      const branchIdMap: Record<string, string> = {};
+      const productIdMap: Record<string, string> = {};
+      const importReceiptIdMap: Record<string, string> = {};
+      const exportReceiptIdMap: Record<string, string> = {};
+
+      const suppliers = rawData.suppliers || [];
+      const customers = rawData.customers || [];
+      const categories = rawData.categories || [];
+      const branches = rawData.branches || [];
+      const products = rawData.products || [];
+      const importReceipts = rawData.import_receipts || [];
+      const exportReceipts = rawData.export_receipts || [];
+      const exportReceiptItems = rawData.export_receipt_items || [];
+      const exportReceiptPayments = rawData.export_receipt_payments || [];
+      const cashBook = rawData.cash_book || [];
+      const debtPayments = rawData.debt_payments || [];
+      const imeiHistories = rawData.imei_histories || [];
+      const tenant = rawData.tenant;
+      const webConfig = rawData.web_config;
+
+      suppliers.forEach((s: any, i: number) => { supplierIdMap[s.id] = `sup_${String(i + 1).padStart(4, '0')}`; });
+      customers.forEach((c: any, i: number) => { customerIdMap[c.id] = `cus_${String(i + 1).padStart(4, '0')}`; });
+      categories.forEach((c: any, i: number) => { categoryIdMap[c.id] = `cat_${String(i + 1).padStart(4, '0')}`; });
+      branches.forEach((b: any, i: number) => { branchIdMap[b.id] = `br_${String(i + 1).padStart(4, '0')}`; });
+      products.forEach((p: any, i: number) => { productIdMap[p.id] = `prod_${String(i + 1).padStart(4, '0')}`; });
+      importReceipts.forEach((r: any, i: number) => { importReceiptIdMap[r.id] = `imp_${String(i + 1).padStart(4, '0')}`; });
+      exportReceipts.forEach((r: any, i: number) => { exportReceiptIdMap[r.id] = `exp_${String(i + 1).padStart(4, '0')}`; });
+
+      const mapRef = (id: string | null, map: Record<string, string>) => id ? (map[id] || null) : null;
+
+      const exportJson = {
+        version: '1.0',
+        exported_at: new Date().toISOString(),
+        tenant_name: tenant?.store_name || tenant?.business_name || '',
+        tenant: tenant ? { store_name: tenant.store_name, business_name: tenant.business_name, business_type: tenant.business_type, phone: tenant.phone, address: tenant.address, logo_url: tenant.logo_url } : null,
+        branches: branches.map((b: any) => ({ external_id: branchIdMap[b.id], name: b.name, address: b.address, phone: b.phone, is_default: b.is_default, note: b.note, created_at: b.created_at })),
+        categories: categories.map((c: any) => ({ external_id: categoryIdMap[c.id], name: c.name, parent_external_id: mapRef(c.parent_id, categoryIdMap), created_at: c.created_at })),
+        suppliers: suppliers.map((s: any) => ({ external_id: supplierIdMap[s.id], name: s.name, phone: s.phone, email: s.email, address: s.address, tax_code: s.tax_code, debt_amount: s.debt_amount, note: s.note, entity_code: s.entity_code, created_at: s.created_at })),
+        customers: customers.map((c: any) => ({ external_id: customerIdMap[c.id], name: c.name, phone: c.phone, email: c.email, address: c.address, birthday: c.birthday, entity_code: c.entity_code, source: c.source, note: c.note, total_spent: c.total_spent, current_points: c.current_points, pending_points: c.pending_points, total_points_earned: c.total_points_earned, total_points_used: c.total_points_used, membership_tier: c.membership_tier, status: c.status, debt_due_days: c.debt_due_days, last_purchase_date: c.last_purchase_date, preferred_branch_external_id: mapRef(c.preferred_branch_id, branchIdMap), created_at: c.created_at })),
+        products: products.map((p: any) => ({ external_id: productIdMap[p.id], name: p.name, sku: p.sku, imei: p.imei, barcode: p.barcode, import_price: p.import_price, sale_price: p.sale_price, quantity: p.quantity, status: p.status, warranty: p.warranty, warranty_package: p.warranty_package, warranty_start_date: p.warranty_start_date, warranty_end_date: p.warranty_end_date, note: p.note, image_url: p.image_url, supplier_name: p.supplier_name, supplier_external_id: mapRef(p.supplier_id, supplierIdMap), category_external_id: mapRef(p.category_id, categoryIdMap), branch_external_id: mapRef(p.branch_id, branchIdMap), group_id: p.group_id, version_name: p.version_name, version_value: p.version_value, color: p.color, created_at: p.created_at })),
+        import_receipts: importReceipts.map((r: any) => ({ external_id: importReceiptIdMap[r.id], code: r.code, supplier_external_id: mapRef(r.supplier_id, supplierIdMap), branch_external_id: mapRef(r.branch_id, branchIdMap), total_amount: r.total_amount, paid_amount: r.paid_amount, payment_source: r.payment_source, import_date: r.import_date, note: r.note, status: r.status, created_at: r.created_at })),
+        export_receipts: exportReceipts.map((r: any) => ({ external_id: exportReceiptIdMap[r.id], code: r.code, customer_external_id: mapRef(r.customer_id, customerIdMap), branch_external_id: mapRef(r.branch_id, branchIdMap), total_amount: r.total_amount, paid_amount: r.paid_amount, discount_amount: r.discount_amount, voucher_discount: r.voucher_discount, points_discount: r.points_discount, payment_source: r.payment_source, export_date: r.export_date, note: r.note, status: r.status, customer_name: r.customer_name, customer_phone: r.customer_phone, created_by_name: r.created_by_name, created_at: r.created_at })),
+        export_receipt_items: exportReceiptItems.map((item: any) => ({ receipt_external_id: mapRef(item.receipt_id, exportReceiptIdMap), product_external_id: mapRef(item.product_id, productIdMap), product_name: item.product_name, imei: item.imei, quantity: item.quantity, unit_price: item.unit_price, total_price: item.total_price, warranty: item.warranty, warranty_package: item.warranty_package })),
+        export_receipt_payments: exportReceiptPayments.map((p: any) => ({ receipt_external_id: mapRef(p.receipt_id, exportReceiptIdMap), amount: p.amount, payment_source: p.payment_source, payment_date: p.payment_date, note: p.note })),
+        cash_book: cashBook.map((cb: any) => ({ type: cb.type, category: cb.category, description: cb.description, amount: cb.amount, payment_source: cb.payment_source, transaction_date: cb.transaction_date, note: cb.note, recipient_name: cb.recipient_name, recipient_phone: cb.recipient_phone, reference_type: cb.reference_type, is_business_accounting: cb.is_business_accounting, branch_external_id: mapRef(cb.branch_id, branchIdMap), created_by_name: cb.created_by_name, created_at: cb.created_at })),
+        debt_payments: debtPayments.map((dp: any) => ({ entity_id: dp.entity_id, entity_type: dp.entity_type, payment_type: dp.payment_type, amount: dp.amount, allocated_amount: dp.allocated_amount, balance_after: dp.balance_after, description: dp.description, payment_source: dp.payment_source, branch_external_id: mapRef(dp.branch_id, branchIdMap), created_at: dp.created_at })),
+        imei_histories: imeiHistories.map((h: any) => ({ product_external_id: mapRef(h.product_id, productIdMap), action: h.action, old_imei: h.old_imei, new_imei: h.new_imei, note: h.note, created_at: h.created_at })),
+        web_config: webConfig ? { store_name: webConfig.store_name, store_description: webConfig.store_description, store_phone: webConfig.store_phone, store_email: webConfig.store_email, store_address: webConfig.store_address, additional_addresses: webConfig.additional_addresses, logo_url: webConfig.logo_url, banner_url: webConfig.banner_url, primary_color: webConfig.primary_color, secondary_color: webConfig.secondary_color, facebook_url: webConfig.facebook_url, zalo_url: webConfig.zalo_url, youtube_url: webConfig.youtube_url, tiktok_url: webConfig.tiktok_url, template_id: webConfig.template_id, custom_domain: webConfig.custom_domain } : null,
+        _metadata: {
+          total_suppliers: suppliers.length, total_customers: customers.length, total_categories: categories.length, total_branches: branches.length, total_products: products.length, total_import_receipts: importReceipts.length, total_export_receipts: exportReceipts.length, total_export_receipt_items: exportReceiptItems.length, total_cash_book: cashBook.length, total_debt_payments: debtPayments.length, total_imei_histories: imeiHistories.length,
+        },
+      };
+
+      const jsonStr = JSON.stringify(exportJson, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       a.href = url;
-      a.download = `VKHO_backup_${data.tenant_name || 'store'}_${dateStr}.json`;
+      a.download = `VKHO_backup_${exportJson.tenant_name || 'store'}_${dateStr}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      const meta = data._metadata || {};
-      toast.success(`Đã xuất: ${meta.total_products || 0} SP, ${meta.total_customers || 0} KH, ${meta.total_suppliers || 0} NCC`);
+      setExportProgress(100);
+      setExportStatus('Hoàn tất!');
+
+      const meta = exportJson._metadata;
+      toast.success(`Đã xuất: ${meta.total_products} SP, ${meta.total_customers} KH, ${meta.total_suppliers} NCC, ${meta.total_import_receipts} PN, ${meta.total_export_receipts} PX`);
     } catch (error) {
       console.error('Export error:', error);
       toast.error('Lỗi xuất dữ liệu: ' + (error as Error).message);
     } finally {
       setIsExporting(false);
+      setTimeout(() => { setExportProgress(0); setExportStatus(''); }, 3000);
     }
   };
 
