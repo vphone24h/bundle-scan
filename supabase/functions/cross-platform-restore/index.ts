@@ -746,7 +746,7 @@ Deno.serve(async (req) => {
       if (hasSection('import_receipts') && Array.isArray(importData.import_receipts) && importData.import_receipts.length > 0) {
         stats.import_receipts.total = importData.import_receipts.length
 
-        await processInBatches<any>(importData.import_receipts as any[], 20, async (r, index) => {
+        await processInBatches<any>(importData.import_receipts as any[], 4, async (r, index) => {
           const extId = typeof r.external_id === 'string' && r.external_id ? r.external_id : `imp_${index + 1}`
           const code = typeof r.code === 'string' ? r.code.trim() : ''
 
