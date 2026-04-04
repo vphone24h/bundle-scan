@@ -408,7 +408,7 @@ export function CrossPlatformBackupSection() {
         user_branch_access: rawData.user_branch_access || [],
         user_roles_backup: rawData.user_roles_backup || [],
         security_passwords: rawData.security_passwords || [],
-        payment_config: rawData.payment_config || [],
+        
         landing_products: rawData.landing_products || [],
         landing_product_categories: rawData.landing_product_categories || [],
         landing_orders: rawData.landing_orders || [],
