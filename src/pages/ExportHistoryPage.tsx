@@ -933,6 +933,8 @@ export default function ExportHistoryPage() {
                           <div className="flex-1 min-w-0">
                             <div
                               className="font-medium text-primary text-sm cursor-pointer hover:underline"
+                              onTouchStart={() => handlePrefetchExport(receipt.id)}
+                              onMouseEnter={() => handlePrefetchExport(receipt.id)}
                               onClick={() => handleViewDetail(receipt)}
                             >
                               {receipt.code}
