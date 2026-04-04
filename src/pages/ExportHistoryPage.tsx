@@ -908,6 +908,25 @@ export default function ExportHistoryPage() {
 
         {/* Tab 1: By Receipt */}
         <TabsContent value="receipts">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div className="rounded-lg border bg-card p-3">
+              <p className="text-xs text-muted-foreground">Số phiếu bán</p>
+              <p className="text-lg font-bold text-foreground">{statsLoading ? '...' : (exportStats?.receipt_count ?? 0).toLocaleString()}</p>
+            </div>
+            <div className="rounded-lg border bg-card p-3">
+              <p className="text-xs text-muted-foreground">Doanh thu</p>
+              <p className="text-lg font-bold text-primary">{statsLoading ? '...' : (exportStats?.total_revenue ?? 0).toLocaleString()}đ</p>
+            </div>
+            <div className="rounded-lg border bg-card p-3">
+              <p className="text-xs text-muted-foreground">DT trả hàng</p>
+              <p className="text-lg font-bold text-destructive">{statsLoading ? '...' : (exportStats?.return_revenue ?? 0).toLocaleString()}đ</p>
+            </div>
+            <div className="rounded-lg border bg-card p-3">
+              <p className="text-xs text-muted-foreground">Doanh thu thực</p>
+              <p className="text-lg font-bold text-foreground">{statsLoading ? '...' : ((exportStats?.total_revenue ?? 0) - (exportStats?.return_revenue ?? 0)).toLocaleString()}đ</p>
+            </div>
+          </div>
           <Card>
              <CardContent className="pt-6">
               {receiptsLoading && !receipts?.length ? (
