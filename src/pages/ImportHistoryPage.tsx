@@ -146,8 +146,10 @@ export default function ImportHistoryPage() {
   // Search & filter states (moved up for use in receipts query)
   const [searchTerm, setSearchTerm] = useState('');
   const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const [dateFrom, setDateFrom] = useState(todayStr);
-  const [dateTo, setDateTo] = useState(todayStr);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const statsDateFrom = dateFrom || todayStr;
+  const statsDateTo = dateTo || todayStr;
   const [categoryFilter, setCategoryFilter] = useState('_all_');
   const [supplierFilter, setSupplierFilter] = useState('_all_');
   const [statusFilter, setStatusFilter] = useState('_all_');
@@ -233,11 +235,11 @@ export default function ImportHistoryPage() {
 
   // Import history stats
   const { data: importStats, isLoading: importStatsLoading } = useQuery({
-    queryKey: ['import-history-stats', dateFrom, dateTo, branchFilter, supplierFilter],
+    queryKey: ['import-history-stats', statsDateFrom, statsDateTo, branchFilter, supplierFilter],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_import_history_stats', {
-        _date_from: dateFrom || null,
-        _date_to: dateTo || null,
+        _date_from: statsDateFrom,
+        _date_to: statsDateTo,
         _branch_id: branchFilter !== '_all_' ? branchFilter : null,
         _supplier_id: supplierFilter !== '_all_' ? supplierFilter : null,
       });
