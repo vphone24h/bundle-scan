@@ -199,12 +199,11 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
       <>
         <TableRow 
           key={`group-${groupKey}`} 
-          className="cursor-pointer hover:bg-accent/50 transition-colors"
-          onClick={() => toggleGroup(groupKey)}
+          className="hover:bg-accent/50 transition-colors"
         >
           <TableCell className="text-muted-foreground">{index}</TableCell>
           <TableCell>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 cursor-pointer" onClick={() => toggleGroup(groupKey)}>
               <div className="flex items-center gap-2">
                 {isExpanded ? <ChevronDown className="h-4 w-4 text-primary shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
                 <Layers className="h-4 w-4 text-primary shrink-0" />
@@ -234,7 +233,7 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
           </TableCell>
           {canViewImportPrice && <TableCell className="text-right hidden md:table-cell font-medium">{formatCurrencyWithSpaces(group.avgImportPrice)}</TableCell>}
           <TableCell className="text-right">
-            <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={(e) => { e.stopPropagation(); toggleGroup(groupKey); }}>
+            <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => toggleGroup(groupKey)}>
               {isExpanded ? 'Thu gọn' : 'Xem'}
             </Button>
           </TableCell>
