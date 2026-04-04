@@ -298,12 +298,22 @@ export function CrossPlatformBackupSection() {
         { section: 'init', label: 'Cửa hàng, chi nhánh, danh mục' },
         { section: 'suppliers', label: 'Nhà cung cấp' },
         { section: 'customers', label: 'Khách hàng' },
-        { section: 'products', label: 'Sản phẩm' },
-        { section: 'import_receipts', label: 'Phiếu nhập' },
+        { section: 'products', label: 'Sản phẩm & nhóm SP' },
+        { section: 'import_receipts', label: 'Phiếu nhập & thanh toán' },
         { section: 'export_receipts', label: 'Phiếu xuất' },
         { section: 'export_child_records', label: 'Chi tiết phiếu xuất' },
+        { section: 'returns', label: 'Trả hàng' },
+        { section: 'stock', label: 'Kiểm kho & chuyển kho' },
         { section: 'imei_histories', label: 'Lịch sử IMEI' },
         { section: 'cash_debt', label: 'Sổ quỹ & công nợ' },
+        { section: 'crm', label: 'CRM & chăm sóc KH' },
+        { section: 'staff', label: 'Nhân viên & KPI' },
+        { section: 'settings', label: 'Cài đặt & cấu hình' },
+        { section: 'landing', label: 'Landing page' },
+        { section: 'shop_ctv', label: 'CTV & cộng tác viên' },
+        { section: 'email_zalo', label: 'Email & Zalo' },
+        { section: 'einvoices', label: 'Hóa đơn điện tử' },
+        { section: 'misc', label: 'Dữ liệu khác' },
         { section: 'web_config', label: 'Cấu hình web' },
         { section: 'finalize', label: 'Hoàn tất' },
       ];
@@ -313,7 +323,7 @@ export function CrossPlatformBackupSection() {
 
       for (let i = 0; i < EXPORT_STEPS.length; i++) {
         const step = EXPORT_STEPS[i];
-        setExportStatus(`Đang tải: ${step.label}...`);
+        setExportStatus(`Đang tải: ${step.label} (${i + 1}/${totalSteps})...`);
         setExportProgress(Math.round(((i) / totalSteps) * 100));
 
         let body: any = undefined;
@@ -332,60 +342,110 @@ export function CrossPlatformBackupSection() {
       setExportStatus('Đang tạo file...');
       setExportProgress(95);
 
-      // Build ID maps
-      const supplierIdMap: Record<string, string> = {};
-      const customerIdMap: Record<string, string> = {};
-      const categoryIdMap: Record<string, string> = {};
-      const branchIdMap: Record<string, string> = {};
-      const productIdMap: Record<string, string> = {};
-      const importReceiptIdMap: Record<string, string> = {};
-      const exportReceiptIdMap: Record<string, string> = {};
-
-      const suppliers = rawData.suppliers || [];
-      const customers = rawData.customers || [];
-      const categories = rawData.categories || [];
-      const branches = rawData.branches || [];
-      const products = rawData.products || [];
-      const importReceipts = rawData.import_receipts || [];
-      const exportReceipts = rawData.export_receipts || [];
-      const exportReceiptItems = rawData.export_receipt_items || [];
-      const exportReceiptPayments = rawData.export_receipt_payments || [];
-      const cashBook = rawData.cash_book || [];
-      const debtPayments = rawData.debt_payments || [];
-      const imeiHistories = rawData.imei_histories || [];
+      // Build the full backup JSON with ALL raw data
       const tenant = rawData.tenant;
-      const webConfig = rawData.web_config;
-
-      suppliers.forEach((s: any, i: number) => { supplierIdMap[s.id] = `sup_${String(i + 1).padStart(4, '0')}`; });
-      customers.forEach((c: any, i: number) => { customerIdMap[c.id] = `cus_${String(i + 1).padStart(4, '0')}`; });
-      categories.forEach((c: any, i: number) => { categoryIdMap[c.id] = `cat_${String(i + 1).padStart(4, '0')}`; });
-      branches.forEach((b: any, i: number) => { branchIdMap[b.id] = `br_${String(i + 1).padStart(4, '0')}`; });
-      products.forEach((p: any, i: number) => { productIdMap[p.id] = `prod_${String(i + 1).padStart(4, '0')}`; });
-      importReceipts.forEach((r: any, i: number) => { importReceiptIdMap[r.id] = `imp_${String(i + 1).padStart(4, '0')}`; });
-      exportReceipts.forEach((r: any, i: number) => { exportReceiptIdMap[r.id] = `exp_${String(i + 1).padStart(4, '0')}`; });
-
-      const mapRef = (id: string | null, map: Record<string, string>) => id ? (map[id] || null) : null;
-
       const exportJson = {
-        version: '1.0',
+        version: '3.0',
         exported_at: new Date().toISOString(),
         tenant_name: tenant?.store_name || tenant?.business_name || '',
-        tenant: tenant ? { store_name: tenant.store_name, business_name: tenant.business_name, business_type: tenant.business_type, phone: tenant.phone, address: tenant.address, logo_url: tenant.logo_url } : null,
-        branches: branches.map((b: any) => ({ external_id: branchIdMap[b.id], name: b.name, address: b.address, phone: b.phone, is_default: b.is_default, note: b.note, created_at: b.created_at })),
-        categories: categories.map((c: any) => ({ external_id: categoryIdMap[c.id], name: c.name, parent_external_id: mapRef(c.parent_id, categoryIdMap), created_at: c.created_at })),
-        suppliers: suppliers.map((s: any) => ({ external_id: supplierIdMap[s.id], name: s.name, phone: s.phone, email: s.email, address: s.address, tax_code: s.tax_code, debt_amount: s.debt_amount, note: s.note, entity_code: s.entity_code, created_at: s.created_at })),
-        customers: customers.map((c: any) => ({ external_id: customerIdMap[c.id], name: c.name, phone: c.phone, email: c.email, address: c.address, birthday: c.birthday, entity_code: c.entity_code, source: c.source, note: c.note, total_spent: c.total_spent, current_points: c.current_points, pending_points: c.pending_points, total_points_earned: c.total_points_earned, total_points_used: c.total_points_used, membership_tier: c.membership_tier, status: c.status, debt_due_days: c.debt_due_days, last_purchase_date: c.last_purchase_date, preferred_branch_external_id: mapRef(c.preferred_branch_id, branchIdMap), created_at: c.created_at })),
-        products: products.map((p: any) => ({ external_id: productIdMap[p.id], name: p.name, sku: p.sku, imei: p.imei, barcode: p.barcode, import_price: p.import_price, sale_price: p.sale_price, quantity: p.quantity, status: p.status, warranty: p.warranty, warranty_package: p.warranty_package, warranty_start_date: p.warranty_start_date, warranty_end_date: p.warranty_end_date, note: p.note, image_url: p.image_url, supplier_name: p.supplier_name, supplier_external_id: mapRef(p.supplier_id, supplierIdMap), category_external_id: mapRef(p.category_id, categoryIdMap), branch_external_id: mapRef(p.branch_id, branchIdMap), group_id: p.group_id, version_name: p.version_name, version_value: p.version_value, color: p.color, created_at: p.created_at })),
-        import_receipts: importReceipts.map((r: any) => ({ external_id: importReceiptIdMap[r.id], code: r.code, supplier_external_id: mapRef(r.supplier_id, supplierIdMap), branch_external_id: mapRef(r.branch_id, branchIdMap), total_amount: r.total_amount, paid_amount: r.paid_amount, payment_source: r.payment_source, import_date: r.import_date, note: r.note, status: r.status, created_at: r.created_at })),
-        export_receipts: exportReceipts.map((r: any) => ({ external_id: exportReceiptIdMap[r.id], code: r.code, customer_external_id: mapRef(r.customer_id, customerIdMap), branch_external_id: mapRef(r.branch_id, branchIdMap), total_amount: r.total_amount, paid_amount: r.paid_amount, discount_amount: r.discount_amount, voucher_discount: r.voucher_discount, points_discount: r.points_discount, payment_source: r.payment_source, export_date: r.export_date, note: r.note, status: r.status, customer_name: r.customer_name, customer_phone: r.customer_phone, created_by_name: r.created_by_name, created_at: r.created_at })),
-        export_receipt_items: exportReceiptItems.map((item: any) => ({ receipt_external_id: mapRef(item.receipt_id, exportReceiptIdMap), product_external_id: mapRef(item.product_id, productIdMap), product_name: item.product_name, imei: item.imei, quantity: item.quantity, unit_price: item.unit_price, total_price: item.total_price, warranty: item.warranty, warranty_package: item.warranty_package })),
-        export_receipt_payments: exportReceiptPayments.map((p: any) => ({ receipt_external_id: mapRef(p.receipt_id, exportReceiptIdMap), amount: p.amount, payment_source: p.payment_source, payment_date: p.payment_date, note: p.note })),
-        cash_book: cashBook.map((cb: any) => ({ type: cb.type, category: cb.category, description: cb.description, amount: cb.amount, payment_source: cb.payment_source, transaction_date: cb.transaction_date, note: cb.note, recipient_name: cb.recipient_name, recipient_phone: cb.recipient_phone, reference_type: cb.reference_type, is_business_accounting: cb.is_business_accounting, branch_external_id: mapRef(cb.branch_id, branchIdMap), created_by_name: cb.created_by_name, created_at: cb.created_at })),
-        debt_payments: debtPayments.map((dp: any) => ({ entity_id: dp.entity_id, entity_type: dp.entity_type, payment_type: dp.payment_type, amount: dp.amount, allocated_amount: dp.allocated_amount, balance_after: dp.balance_after, description: dp.description, payment_source: dp.payment_source, branch_external_id: mapRef(dp.branch_id, branchIdMap), created_at: dp.created_at })),
-        imei_histories: imeiHistories.map((h: any) => ({ product_external_id: mapRef(h.product_id, productIdMap), action: h.action, old_imei: h.old_imei, new_imei: h.new_imei, note: h.note, created_at: h.created_at })),
-        web_config: webConfig ? { store_name: webConfig.store_name, store_description: webConfig.store_description, store_phone: webConfig.store_phone, store_email: webConfig.store_email, store_address: webConfig.store_address, additional_addresses: webConfig.additional_addresses, logo_url: webConfig.logo_url, banner_url: webConfig.banner_url, primary_color: webConfig.primary_color, secondary_color: webConfig.secondary_color, facebook_url: webConfig.facebook_url, zalo_url: webConfig.zalo_url, youtube_url: webConfig.youtube_url, tiktok_url: webConfig.tiktok_url, template_id: webConfig.template_id, custom_domain: webConfig.custom_domain } : null,
+        // Raw data - keep all fields for full restore
+        tenant,
+        branches: rawData.branches || [],
+        categories: rawData.categories || [],
+        suppliers: rawData.suppliers || [],
+        customers: rawData.customers || [],
+        products: rawData.products || [],
+        product_groups: rawData.product_groups || [],
+        import_receipts: rawData.import_receipts || [],
+        receipt_payments: rawData.receipt_payments || [],
+        product_imports: rawData.product_imports || [],
+        export_receipts: rawData.export_receipts || [],
+        export_receipt_items: rawData.export_receipt_items || [],
+        export_receipt_payments: rawData.export_receipt_payments || [],
+        export_returns: rawData.export_returns || [],
+        import_returns: rawData.import_returns || [],
+        return_payments: rawData.return_payments || [],
+        stock_counts: rawData.stock_counts || [],
+        stock_count_items: rawData.stock_count_items || [],
+        stock_transfer_requests: rawData.stock_transfer_requests || [],
+        stock_transfer_items: rawData.stock_transfer_items || [],
+        imei_histories: rawData.imei_histories || [],
+        cash_book: rawData.cash_book || [],
+        cash_book_opening_balances: rawData.cash_book_opening_balances || [],
+        debt_payments: rawData.debt_payments || [],
+        debt_offsets: rawData.debt_offsets || [],
+        debt_settings: rawData.debt_settings || [],
+        debt_tags: rawData.debt_tags || [],
+        debt_tag_assignments: rawData.debt_tag_assignments || [],
+        customer_care_schedules: rawData.customer_care_schedules || [],
+        customer_care_logs: rawData.customer_care_logs || [],
+        care_reminders: rawData.care_reminders || [],
+        care_schedule_types: rawData.care_schedule_types || [],
+        customer_tags: rawData.customer_tags || [],
+        customer_tag_assignments: rawData.customer_tag_assignments || [],
+        customer_sources: rawData.customer_sources || [],
+        customer_contact_channels: rawData.customer_contact_channels || [],
+        customer_vouchers: rawData.customer_vouchers || [],
+        point_settings: rawData.point_settings || [],
+        point_transactions: rawData.point_transactions || [],
+        membership_tier_settings: rawData.membership_tier_settings || [],
+        crm_notifications: rawData.crm_notifications || [],
+        staff_reviews: rawData.staff_reviews || [],
+        staff_kpi_settings: rawData.staff_kpi_settings || [],
+        staff_performance_snapshots: rawData.staff_performance_snapshots || [],
+        custom_payment_sources: rawData.custom_payment_sources || [],
+        invoice_templates: rawData.invoice_templates || [],
+        voucher_templates: rawData.voucher_templates || [],
+        einvoice_configs: rawData.einvoice_configs || [],
+        einvoices: rawData.einvoices || [],
+        einvoice_items: rawData.einvoice_items || [],
+        einvoice_logs: rawData.einvoice_logs || [],
+        notification_automations: rawData.notification_automations || [],
+        custom_domains: rawData.custom_domains || [],
+        user_branch_access: rawData.user_branch_access || [],
+        user_roles_backup: rawData.user_roles_backup || [],
+        security_passwords: rawData.security_passwords || [],
+        payment_config: rawData.payment_config || [],
+        landing_products: rawData.landing_products || [],
+        landing_product_categories: rawData.landing_product_categories || [],
+        landing_orders: rawData.landing_orders || [],
+        landing_articles: rawData.landing_articles || [],
+        landing_article_categories: rawData.landing_article_categories || [],
+        landing_product_blocked_dates: rawData.landing_product_blocked_dates || [],
+        landing_order_email_logs: rawData.landing_order_email_logs || [],
+        shop_collaborators: rawData.shop_collaborators || [],
+        shop_ctv_orders: rawData.shop_ctv_orders || [],
+        shop_ctv_settings: rawData.shop_ctv_settings || [],
+        shop_ctv_withdrawals: rawData.shop_ctv_withdrawals || [],
+        ctv_product_commissions: rawData.ctv_product_commissions || [],
+        email_automations: rawData.email_automations || [],
+        email_automation_blocks: rawData.email_automation_blocks || [],
+        zalo_message_logs: rawData.zalo_message_logs || [],
+        zalo_oa_followers: rawData.zalo_oa_followers || [],
+        warehouse_value_snapshots: rawData.warehouse_value_snapshots || [],
+        onboarding_tours: rawData.onboarding_tours || [],
+        web_config: rawData.web_config,
         _metadata: {
-          total_suppliers: suppliers.length, total_customers: customers.length, total_categories: categories.length, total_branches: branches.length, total_products: products.length, total_import_receipts: importReceipts.length, total_export_receipts: exportReceipts.length, total_export_receipt_items: exportReceiptItems.length, total_cash_book: cashBook.length, total_debt_payments: debtPayments.length, total_imei_histories: imeiHistories.length,
+          total_tables: 60,
+          total_suppliers: (rawData.suppliers || []).length,
+          total_customers: (rawData.customers || []).length,
+          total_categories: (rawData.categories || []).length,
+          total_branches: (rawData.branches || []).length,
+          total_products: (rawData.products || []).length,
+          total_import_receipts: (rawData.import_receipts || []).length,
+          total_export_receipts: (rawData.export_receipts || []).length,
+          total_export_receipt_items: (rawData.export_receipt_items || []).length,
+          total_cash_book: (rawData.cash_book || []).length,
+          total_debt_payments: (rawData.debt_payments || []).length,
+          total_imei_histories: (rawData.imei_histories || []).length,
+          total_export_returns: (rawData.export_returns || []).length,
+          total_import_returns: (rawData.import_returns || []).length,
+          total_stock_counts: (rawData.stock_counts || []).length,
+          total_customer_care: (rawData.customer_care_schedules || []).length,
+          total_point_transactions: (rawData.point_transactions || []).length,
+          total_landing_products: (rawData.landing_products || []).length,
+          total_landing_orders: (rawData.landing_orders || []).length,
+          total_einvoices: (rawData.einvoices || []).length,
         },
       };
 
