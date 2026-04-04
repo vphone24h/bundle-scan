@@ -7658,6 +7658,15 @@ export type Database = {
         Args: { p_branch_id?: string; p_tenant_id: string }
         Returns: Json
       }
+      get_export_history_stats: {
+        Args: {
+          _branch_id?: string
+          _date_from?: string
+          _date_to?: string
+          _status?: string
+        }
+        Returns: Json
+      }
       get_export_receipt_items_paginated: {
         Args: {
           _branch_id?: string

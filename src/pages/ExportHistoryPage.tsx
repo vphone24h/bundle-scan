@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
@@ -56,7 +57,7 @@ import {
   Trash2,
   AlertTriangle,
 } from 'lucide-react';
-import { format, isToday } from 'date-fns';
+import { format, isToday, startOfDay } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useBranches } from '@/hooks/useBranches';
 import { 
@@ -179,9 +180,10 @@ export default function ExportHistoryPage() {
 
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
   const [dateFilter, setDateFilter] = useState('');
-  const [dateFromFilter, setDateFromFilter] = useState('');
-  const [dateToFilter, setDateToFilter] = useState('');
+  const [dateFromFilter, setDateFromFilter] = useState(todayStr);
+  const [dateToFilter, setDateToFilter] = useState(todayStr);
   const [statusFilter, setStatusFilter] = useState('_all_');
   const [branchFilter, setBranchFilter] = useState('_all_');
   const [paymentSourceFilter, setPaymentSourceFilter] = useState('_all_');
@@ -270,7 +272,23 @@ export default function ExportHistoryPage() {
   const { data: permissions } = usePermissions();
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
   const isSuperAdmin = permissions?.canViewAllBranches === true;
-  
+
+  // Export history stats
+  const { data: exportStats, isLoading: statsLoading } = useQuery({
+    queryKey: ['export-history-stats', dateFromFilter, dateToFilter, branchFilter, statusFilter],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_export_history_stats' as any, {
+        _date_from: dateFromFilter || null,
+        _date_to: dateToFilter || null,
+        _branch_id: branchFilter !== '_all_' ? branchFilter : null,
+        _status: statusFilter !== '_all_' ? statusFilter : null,
+      });
+      if (error) throw error;
+      return data as { receipt_count: number; total_revenue: number; return_revenue: number; product_count: number };
+    },
+    staleTime: 30_000,
+  });
+
   // Get template based on the print receipt's branch
   const printBranchId = printReceipt?.branch_id || null;
   const { data: template } = useInvoiceTemplateByBranch(printBranchId);
@@ -890,6 +908,25 @@ export default function ExportHistoryPage() {
 
         {/* Tab 1: By Receipt */}
         <TabsContent value="receipts">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div className="rounded-lg border bg-card p-3">
+              <p className="text-xs text-muted-foreground">Số phiếu bán</p>
+              <p className="text-lg font-bold text-foreground">{statsLoading ? '...' : (exportStats?.receipt_count ?? 0).toLocaleString()}</p>
+            </div>
+            <div className="rounded-lg border bg-card p-3">
+              <p className="text-xs text-muted-foreground">Doanh thu</p>
+              <p className="text-lg font-bold text-primary">{statsLoading ? '...' : (exportStats?.total_revenue ?? 0).toLocaleString()}đ</p>
+            </div>
+            <div className="rounded-lg border bg-card p-3">
+              <p className="text-xs text-muted-foreground">DT trả hàng</p>
+              <p className="text-lg font-bold text-destructive">{statsLoading ? '...' : (exportStats?.return_revenue ?? 0).toLocaleString()}đ</p>
+            </div>
+            <div className="rounded-lg border bg-card p-3">
+              <p className="text-xs text-muted-foreground">Doanh thu thực</p>
+              <p className="text-lg font-bold text-foreground">{statsLoading ? '...' : ((exportStats?.total_revenue ?? 0) - (exportStats?.return_revenue ?? 0)).toLocaleString()}đ</p>
+            </div>
+          </div>
           <Card>
              <CardContent className="pt-6">
               {receiptsLoading && !receipts?.length ? (
@@ -1152,6 +1189,25 @@ export default function ExportHistoryPage() {
 
         {/* Tab 2: By Item */}
         <TabsContent value="items">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div className="rounded-lg border bg-card p-3">
+              <p className="text-xs text-muted-foreground">Số SP bán</p>
+              <p className="text-lg font-bold text-foreground">{statsLoading ? '...' : (exportStats?.product_count ?? 0).toLocaleString()}</p>
+            </div>
+            <div className="rounded-lg border bg-card p-3">
+              <p className="text-xs text-muted-foreground">Doanh thu</p>
+              <p className="text-lg font-bold text-primary">{statsLoading ? '...' : (exportStats?.total_revenue ?? 0).toLocaleString()}đ</p>
+            </div>
+            <div className="rounded-lg border bg-card p-3">
+              <p className="text-xs text-muted-foreground">DT trả hàng</p>
+              <p className="text-lg font-bold text-destructive">{statsLoading ? '...' : (exportStats?.return_revenue ?? 0).toLocaleString()}đ</p>
+            </div>
+            <div className="rounded-lg border bg-card p-3">
+              <p className="text-xs text-muted-foreground">Doanh thu thực</p>
+              <p className="text-lg font-bold text-foreground">{statsLoading ? '...' : ((exportStats?.total_revenue ?? 0) - (exportStats?.return_revenue ?? 0)).toLocaleString()}đ</p>
+            </div>
+          </div>
           <Card>
             <CardContent className="pt-6">
               {itemsLoading && !items?.length ? (
