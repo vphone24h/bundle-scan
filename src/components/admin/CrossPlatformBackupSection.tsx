@@ -112,17 +112,22 @@ type ImportStage = {
 };
 
 const IMPORT_STAGES: ImportStage[] = [
-  { label: 'Nền tảng', sections: ['branches', 'categories', 'suppliers'] },
+  { label: 'Chi nhánh', sections: ['branches'] },
+  { label: 'Danh mục', sections: ['categories'] },
+  { label: 'Nhà cung cấp', sections: ['suppliers'] },
   { label: 'Khách hàng', sections: ['customers'] },
   { label: 'Sản phẩm', sections: ['products'] },
-  { label: 'Phiếu nhập/xuất', sections: ['import_receipts', 'export_receipts'] },
-  { label: 'Chi tiết & thanh toán phiếu xuất', sections: ['export_receipt_items', 'export_receipt_payments'] },
-  { label: 'Sổ quỹ & công nợ', sections: ['cash_book', 'debt_payments'] },
+  { label: 'Phiếu nhập', sections: ['import_receipts'] },
+  { label: 'Phiếu xuất', sections: ['export_receipts'] },
+  { label: 'Chi tiết phiếu xuất', sections: ['export_receipt_items'] },
+  { label: 'Thanh toán phiếu xuất', sections: ['export_receipt_payments'] },
+  { label: 'Sổ quỹ', sections: ['cash_book'] },
+  { label: 'Thanh toán công nợ', sections: ['debt_payments'] },
   { label: 'Cấu hình web', sections: ['web_config'] },
 ];
 
-const CHUNK_SIZE = 80; // Items per chunk to avoid timeout
-const MAX_RETRIES = 3;
+const CHUNK_SIZE = 25; // Smaller chunks to avoid Edge Function timeout
+const MAX_RETRIES = 5;
 
 const sectionHasData = (importData: any, section: ImportSectionKey) => {
   if (section === 'web_config') return !!importData?.web_config;

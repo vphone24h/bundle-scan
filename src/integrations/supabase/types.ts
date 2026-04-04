@@ -1865,11 +1865,15 @@ export type Database = {
           delete_mode: string
           error_message: string | null
           id: string
+          job_type: string
           metadata: Json
           notify_email: string | null
           progress: number
           requested_by: string
           requested_by_email: string | null
+          result_summary: Json
+          source_bucket: string | null
+          source_path: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["data_management_job_status"]
           tenant_id: string
@@ -1882,11 +1886,15 @@ export type Database = {
           delete_mode?: string
           error_message?: string | null
           id?: string
+          job_type?: string
           metadata?: Json
           notify_email?: string | null
           progress?: number
           requested_by: string
           requested_by_email?: string | null
+          result_summary?: Json
+          source_bucket?: string | null
+          source_path?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["data_management_job_status"]
           tenant_id: string
@@ -1899,11 +1907,15 @@ export type Database = {
           delete_mode?: string
           error_message?: string | null
           id?: string
+          job_type?: string
           metadata?: Json
           notify_email?: string | null
           progress?: number
           requested_by?: string
           requested_by_email?: string | null
+          result_summary?: Json
+          source_bucket?: string | null
+          source_path?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["data_management_job_status"]
           tenant_id?: string

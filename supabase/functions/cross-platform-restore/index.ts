@@ -602,7 +602,7 @@ Deno.serve(async (req) => {
       if (hasSection('customers') && Array.isArray(importData.customers) && importData.customers.length > 0) {
         stats.customers.total = importData.customers.length
 
-        await processInBatches<any>(importData.customers as any[], 10, async (c, index) => {
+        await processInBatches<any>(importData.customers as any[], 4, async (c, index) => {
           const extId = typeof c.external_id === 'string' && c.external_id ? c.external_id : `cus_${index + 1}`
           const name = typeof c.name === 'string' ? c.name.trim() : ''
           const phone = typeof c.phone === 'string' ? c.phone.trim() : ''
@@ -668,7 +668,7 @@ Deno.serve(async (req) => {
       if (hasSection('products') && Array.isArray(importData.products) && importData.products.length > 0) {
         stats.products.total = importData.products.length
 
-        await processInBatches<any>(importData.products as any[], 8, async (p, index) => {
+        await processInBatches<any>(importData.products as any[], 3, async (p, index) => {
           const extId = typeof p.external_id === 'string' && p.external_id ? p.external_id : `prod_${index + 1}`
           const name = typeof p.name === 'string' ? p.name.trim() : ''
           const sku = typeof p.sku === 'string' && p.sku.trim() ? p.sku.trim() : `AUTO-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -746,7 +746,7 @@ Deno.serve(async (req) => {
       if (hasSection('import_receipts') && Array.isArray(importData.import_receipts) && importData.import_receipts.length > 0) {
         stats.import_receipts.total = importData.import_receipts.length
 
-        await processInBatches<any>(importData.import_receipts as any[], 20, async (r, index) => {
+        await processInBatches<any>(importData.import_receipts as any[], 4, async (r, index) => {
           const extId = typeof r.external_id === 'string' && r.external_id ? r.external_id : `imp_${index + 1}`
           const code = typeof r.code === 'string' ? r.code.trim() : ''
 
@@ -803,7 +803,7 @@ Deno.serve(async (req) => {
       if (hasSection('export_receipts') && Array.isArray(importData.export_receipts) && importData.export_receipts.length > 0) {
         stats.export_receipts.total = importData.export_receipts.length
 
-        await processInBatches<any>(importData.export_receipts as any[], 20, async (r, index) => {
+        await processInBatches<any>(importData.export_receipts as any[], 4, async (r, index) => {
           const extId = typeof r.external_id === 'string' && r.external_id ? r.external_id : `exp_${index + 1}`
           const code = typeof r.code === 'string' ? r.code.trim() : ''
 
@@ -861,7 +861,7 @@ Deno.serve(async (req) => {
       if (hasSection('export_receipt_items') && Array.isArray(importData.export_receipt_items) && importData.export_receipt_items.length > 0) {
         stats.export_receipt_items.total = importData.export_receipt_items.length
 
-        await processInBatches<any>(importData.export_receipt_items as any[], 30, async (item) => {
+        await processInBatches<any>(importData.export_receipt_items as any[], 5, async (item) => {
           const receiptId = mapRef(item.receipt_external_id, exportReceiptMap)
           if (!receiptId) {
             stats.export_receipt_items.skipped++
@@ -910,7 +910,7 @@ Deno.serve(async (req) => {
       if (hasSection('export_receipt_payments') && Array.isArray(importData.export_receipt_payments) && importData.export_receipt_payments.length > 0) {
         stats.export_receipt_payments.total = importData.export_receipt_payments.length
 
-        await processInBatches<any>(importData.export_receipt_payments as any[], 30, async (p) => {
+        await processInBatches<any>(importData.export_receipt_payments as any[], 5, async (p) => {
           const receiptId = mapRef(p.receipt_external_id, exportReceiptMap)
           if (!receiptId) {
             stats.export_receipt_payments.skipped++
@@ -944,7 +944,7 @@ Deno.serve(async (req) => {
       if (hasSection('cash_book') && Array.isArray(importData.cash_book) && importData.cash_book.length > 0) {
         stats.cash_book.total = importData.cash_book.length
 
-        await processInBatches<any>(importData.cash_book as any[], 30, async (cb) => {
+        await processInBatches<any>(importData.cash_book as any[], 5, async (cb) => {
           const { error } = await adminClient
             .from('cash_book')
             .insert({
@@ -979,7 +979,7 @@ Deno.serve(async (req) => {
       if (hasSection('debt_payments') && Array.isArray(importData.debt_payments) && importData.debt_payments.length > 0) {
         stats.debt_payments.total = importData.debt_payments.length
 
-        await processInBatches<any>(importData.debt_payments as any[], 30, async (dp) => {
+        await processInBatches<any>(importData.debt_payments as any[], 5, async (dp) => {
           const entityType = typeof dp.entity_type === 'string' && dp.entity_type ? dp.entity_type : 'customer'
           let entityId: string | null = null
 
