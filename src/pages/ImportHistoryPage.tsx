@@ -5,7 +5,19 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { useImportReceipts, useImportReceiptDetails, ImportReceipt } from '@/hooks/useImportReceipts';
+import { useImportReceipts, useImportReceiptDetails, ImportReceipt, useDeleteImportReceipt } from '@/hooks/useImportReceipts';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useAllProducts } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useSuppliers } from '@/hooks/useSuppliers';
@@ -179,6 +191,9 @@ export default function ImportHistoryPage() {
   const { data: branches } = useBranches();
   const { data: permissions } = usePermissions();
   const markWarranty = useMarkProductWarranty();
+  const deleteImportReceipt = useDeleteImportReceipt();
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked: deleteSecurityUnlocked, unlock: deleteSecurityUnlock } = useSecurityUnlock('delete-import-receipt');
   // Fetch staff profiles from import receipts' created_by
   const staffUserIds = useMemo(() => {
     if (!receipts) return [];
@@ -251,9 +266,11 @@ export default function ImportHistoryPage() {
   // Warranty note dialog state
   const [warrantyProduct, setWarrantyProduct] = useState<Product | null>(null);
 
-  // Dialog states for edit and return
+  // Dialog states for edit, return, delete
   const [editReceipt, setEditReceipt] = useState<ImportReceipt | null>(null);
   const [returnReceipt, setReturnReceipt] = useState<ImportReceipt | null>(null);
+  const [deleteReceipt, setDeleteReceipt] = useState<ImportReceipt | null>(null);
+  const [showDeleteSecurityDialog, setShowDeleteSecurityDialog] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const [adjustProduct, setAdjustProduct] = useState<Product | null>(null);
@@ -316,6 +333,35 @@ export default function ImportHistoryPage() {
 
   const handleReturn = (receipt: ImportReceipt) => {
     setReturnReceipt(receipt);
+  };
+
+  const handleDeleteReceipt = (receipt: ImportReceipt) => {
+    if (hasSecurityPassword && !deleteSecurityUnlocked) {
+      setDeleteReceipt(receipt);
+      setShowDeleteSecurityDialog(true);
+      return;
+    }
+    setDeleteReceipt(receipt);
+  };
+
+  const confirmDeleteReceipt = () => {
+    if (!deleteReceipt) return;
+    deleteImportReceipt.mutate({ receiptId: deleteReceipt.id }, {
+      onSuccess: (result) => {
+        toast({
+          title: 'Đã xóa phiếu nhập',
+          description: `Phiếu ${result.code} và ${result.productsDeleted} sản phẩm đã được xóa`,
+        });
+        setDeleteReceipt(null);
+      },
+      onError: (error: any) => {
+        toast({
+          title: 'Lỗi xóa phiếu nhập',
+          description: error.message || 'Không thể xóa phiếu nhập',
+          variant: 'destructive',
+        });
+      },
+    });
   };
 
   const handleReturnProduct = (product: Product) => {
@@ -898,6 +944,13 @@ export default function ImportHistoryPage() {
                             <DropdownMenuItem onClick={() => handleReturn(receipt)}>
                               <RotateCcw className="mr-2 h-4 w-4" />
                               Trả hàng
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteReceipt(receipt)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Xóa phiếu nhập
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -1494,6 +1547,49 @@ export default function ImportHistoryPage() {
           imei={deleteProduct.imei}
         />
       )}
+
+      {/* Delete Import Receipt Confirmation */}
+      <AlertDialog open={!!deleteReceipt && !showDeleteSecurityDialog} onOpenChange={(open) => !open && setDeleteReceipt(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Xóa phiếu nhập
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc muốn xóa phiếu <strong>{deleteReceipt?.code}</strong>?
+              <br />Toàn bộ sản phẩm, sổ quỹ và công nợ liên quan sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteReceipt}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteImportReceipt.isPending}
+            >
+              {deleteImportReceipt.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              Xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Security Password for Delete */}
+      <SecurityPasswordDialog
+        open={showDeleteSecurityDialog}
+        onOpenChange={(open) => {
+          setShowDeleteSecurityDialog(open);
+          if (!open) setDeleteReceipt(null);
+        }}
+        onSuccess={() => {
+          deleteSecurityUnlock();
+          setShowDeleteSecurityDialog(false);
+          // deleteReceipt is already set, will show confirmation dialog
+        }}
+        title="Xác nhận xóa phiếu nhập"
+        description="Nhập mật khẩu bảo mật để xóa phiếu nhập"
+      />
 
       {/* Warranty Note Dialog */}
       <WarrantyNoteDialog
