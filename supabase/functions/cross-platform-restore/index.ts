@@ -861,7 +861,7 @@ Deno.serve(async (req) => {
       if (hasSection('export_receipt_items') && Array.isArray(importData.export_receipt_items) && importData.export_receipt_items.length > 0) {
         stats.export_receipt_items.total = importData.export_receipt_items.length
 
-        await processInBatches<any>(importData.export_receipt_items as any[], 30, async (item) => {
+        await processInBatches<any>(importData.export_receipt_items as any[], 5, async (item) => {
           const receiptId = mapRef(item.receipt_external_id, exportReceiptMap)
           if (!receiptId) {
             stats.export_receipt_items.skipped++
