@@ -394,6 +394,36 @@ export default function ExportHistoryPage() {
     setShowReturnDialog(true);
   };
 
+  // Handle delete receipt
+  const handleDeleteReceipt = (receipt: ExportReceipt) => {
+    if (hasSecurityPassword && !deleteSecurityUnlocked) {
+      setDeleteReceipt(receipt);
+      setShowDeleteSecurityDialog(true);
+      return;
+    }
+    setDeleteReceipt(receipt);
+  };
+
+  const confirmDeleteReceipt = () => {
+    if (!deleteReceipt) return;
+    deleteExportReceipt.mutate({ receiptId: deleteReceipt.id, deleteCashBook, deleteDebt }, {
+      onSuccess: (result) => {
+        toast({
+          title: 'Đã xóa phiếu xuất',
+          description: `Phiếu ${result.code} - ${result.itemsDeleted} sản phẩm đã xóa, ${result.productsRestored} sản phẩm đã khôi phục tồn kho`,
+        });
+        setDeleteReceipt(null);
+      },
+      onError: (error: any) => {
+        toast({
+          title: 'Lỗi xóa phiếu xuất',
+          description: error.message || 'Không thể xóa phiếu xuất',
+          variant: 'destructive',
+        });
+      },
+    });
+  };
+
   const CHUNK_SIZE = 5000;
 
   // Helper: fetch receipts page by page (500 per page, NO joins) to avoid timeout
