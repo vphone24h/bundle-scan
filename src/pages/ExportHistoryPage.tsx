@@ -82,6 +82,19 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { ScrollableTableWrapper } from '@/components/ui/scrollable-table-wrapper';
 import { useTranslation } from 'react-i18next';
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ShoppingBag } from 'lucide-react';
 
 const LandingOrdersTab = lazy(() => import('@/components/admin/LandingOrdersTab').then(m => ({ default: m.LandingOrdersTab })));
