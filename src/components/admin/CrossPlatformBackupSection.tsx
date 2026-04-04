@@ -127,6 +127,20 @@ export function CrossPlatformBackupSection() {
   const [exportStatus, setExportStatus] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const clearRestoredDataCache = useCallback(() => {
+    try {
+      localStorage.removeItem('vkho_query_cache_v1');
+    } catch (error) {
+      console.warn('Could not clear persisted query cache after restore:', error);
+    }
+
+    queryClient.removeQueries({ queryKey: ['suppliers'] });
+    queryClient.removeQueries({ queryKey: ['supplier-options'] });
+    queryClient.removeQueries({ queryKey: ['branches'] });
+    queryClient.removeQueries({ queryKey: ['user-permissions'] });
+    queryClient.removeQueries({ queryKey: ['my-branch-access'] });
+  }, [queryClient]);
+
   // ─── Poll restore job progress ───
   const { data: restoreJob, refetch: refetchRestoreJob } = useQuery({
     queryKey: ['restore-job-v3', tenant?.id],
@@ -186,6 +200,7 @@ export function CrossPlatformBackupSection() {
 
     // completed
     const result = restoreJob.result_summary || {};
+    clearRestoredDataCache();
     setImportResult(result);
     setImportProgress(100);
     setImportStatus('Hoàn tất!');
@@ -203,7 +218,7 @@ export function CrossPlatformBackupSection() {
     }
 
     queryClient.invalidateQueries({ refetchType: 'all' });
-  }, [restoreJob?.id, restoreJob?.status, restoreJob?.error_message, restoreJob?.result_summary, queryClient]);
+  }, [restoreJob?.id, restoreJob?.status, restoreJob?.error_message, restoreJob?.result_summary, queryClient, clearRestoredDataCache]);
 
   // ─── Export (unchanged) ───
   const invokeBackupSection = async (section: string, body?: any, retries = 3): Promise<any> => {
