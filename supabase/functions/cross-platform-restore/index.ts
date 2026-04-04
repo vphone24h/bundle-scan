@@ -247,6 +247,16 @@ Deno.serve(async (req) => {
       await clearTenantData(adminClient, tenantId, errors)
     }
 
+    // Only load existing data for sections being processed
+    const needsBranches = hasSection('branches') || hasSection('suppliers') || hasSection('products') || hasSection('import_receipts') || hasSection('export_receipts') || hasSection('cash_book') || hasSection('debt_payments')
+    const needsCategories = hasSection('categories') || hasSection('products') || hasSection('export_receipt_items')
+    const needsSuppliers = hasSection('suppliers') || hasSection('import_receipts')
+    const needsCustomers = hasSection('customers') || hasSection('export_receipts') || hasSection('debt_payments')
+    const needsProducts = hasSection('products') || hasSection('export_receipt_items')
+    const needsImportReceipts = hasSection('import_receipts')
+    const needsExportReceipts = hasSection('export_receipts') || hasSection('export_receipt_items') || hasSection('export_receipt_payments')
+
+    const emptyRes = { data: [], error: null }
     const [
       existingBranchesRes,
       existingCategoriesRes,
@@ -256,13 +266,13 @@ Deno.serve(async (req) => {
       existingImportReceiptsRes,
       existingExportReceiptsRes,
     ] = await Promise.all([
-      adminClient.from('branches').select('id,name,is_default').eq('tenant_id', tenantId),
-      adminClient.from('categories').select('id,name').eq('tenant_id', tenantId),
-      adminClient.from('suppliers').select('id,name,phone').eq('tenant_id', tenantId),
-      adminClient.from('customers').select('id,phone').eq('tenant_id', tenantId),
-      adminClient.from('products').select('id,sku,imei').eq('tenant_id', tenantId),
-      adminClient.from('import_receipts').select('id,code').eq('tenant_id', tenantId),
-      adminClient.from('export_receipts').select('id,code').eq('tenant_id', tenantId),
+      needsBranches ? adminClient.from('branches').select('id,name,is_default').eq('tenant_id', tenantId) : emptyRes,
+      needsCategories ? adminClient.from('categories').select('id,name').eq('tenant_id', tenantId) : emptyRes,
+      needsSuppliers ? adminClient.from('suppliers').select('id,name,phone').eq('tenant_id', tenantId) : emptyRes,
+      needsCustomers ? adminClient.from('customers').select('id,phone').eq('tenant_id', tenantId) : emptyRes,
+      needsProducts ? adminClient.from('products').select('id,sku,imei').eq('tenant_id', tenantId) : emptyRes,
+      needsImportReceipts ? adminClient.from('import_receipts').select('id,code').eq('tenant_id', tenantId) : emptyRes,
+      needsExportReceipts ? adminClient.from('export_receipts').select('id,code').eq('tenant_id', tenantId) : emptyRes,
     ])
 
     const preloadErrors = [
