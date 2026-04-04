@@ -912,6 +912,96 @@ export default function ExportHistoryPage() {
                 </div>
               ) : (
                 <div className={receiptsFetching ? 'opacity-60' : ''}>
+                {/* Mobile Card View */}
+                <div className="sm:hidden space-y-3">
+                  {(filteredReceipts || []).map((receipt) => {
+                    const isReceiptToday = isToday(new Date(receipt.export_date));
+                    const staffId = (receipt as any).sales_staff_id || receipt.created_by;
+                    const staffName = staffId ? (staffNames[staffId] || '-') : '-';
+                    return (
+                      <div key={receipt.id} className={cn(
+                        "p-3 border rounded-lg bg-card space-y-2",
+                        (receipt as any).export_date_modified && 'bg-green-50 dark:bg-green-950/20',
+                        isReceiptToday && !(receipt as any).export_date_modified && 'border-destructive/30'
+                      )}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div
+                              className="font-medium text-primary text-sm cursor-pointer hover:underline"
+                              onClick={() => handleViewDetail(receipt)}
+                            >
+                              {receipt.code}
+                            </div>
+                            <div className={cn("text-xs mt-0.5", isReceiptToday ? 'text-destructive' : 'text-muted-foreground')}>
+                              {format(new Date(receipt.export_date), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                            </div>
+                          </div>
+                          <Badge variant={statusLabels[receipt.status]?.variant || 'default'} className="text-xs flex-shrink-0">
+                            {statusLabels[receipt.status]?.label || receipt.status}
+                          </Badge>
+                        </div>
+
+                        {permissions?.canViewExportCustomerInfo !== false && receipt.customers && (
+                          <div className="text-sm">
+                            <span className="text-primary font-medium">{receipt.customers.name}</span>
+                            <span className="text-muted-foreground ml-1 text-xs">{receipt.customers.phone}</span>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pt-1 border-t">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Số SP:</span>
+                            <span className="font-medium">{(receipt as any).item_count || '-'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Thuế:</span>
+                            <span>{receipt.vat_rate || 0}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Tổng tiền:</span>
+                            <span className="font-medium">{receipt.total_amount.toLocaleString('vi-VN')}đ</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Đã TT:</span>
+                            <span className="text-green-600">{receipt.paid_amount.toLocaleString('vi-VN')}đ</span>
+                          </div>
+                          {receipt.debt_amount > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Công nợ:</span>
+                              <span className="text-destructive font-medium">{receipt.debt_amount.toLocaleString('vi-VN')}đ</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">NV:</span>
+                            <span className="truncate ml-1">{staffName}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-1 pt-1 border-t justify-end" data-tour="export-receipt-actions">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleViewDetail(receipt)} title="Xem">
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handlePrint(receipt)} title="In">
+                            <Printer className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditReceiptDate(receipt)} title="Sửa">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleReturnReceipt(receipt)} title="Trả hàng"
+                            disabled={receipt.status === 'full_return' || receipt.status === 'cancelled'}>
+                            <RotateCcw className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteReceipt(receipt)} title="Xóa">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden sm:block">
                 <ScrollableTableWrapper className="rounded-lg border bg-card">
                 <Table wrapperClassName="overflow-visible">
                   <TableHeader>
@@ -1038,6 +1128,7 @@ export default function ExportHistoryPage() {
                   </TableBody>
                 </Table>
                 </ScrollableTableWrapper>
+                </div>
                 </div>
               )}
               {(receipts?.length || 0) > 0 && (() => {
