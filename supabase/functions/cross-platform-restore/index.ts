@@ -979,7 +979,7 @@ Deno.serve(async (req) => {
       if (hasSection('debt_payments') && Array.isArray(importData.debt_payments) && importData.debt_payments.length > 0) {
         stats.debt_payments.total = importData.debt_payments.length
 
-        await processInBatches<any>(importData.debt_payments as any[], 30, async (dp) => {
+        await processInBatches<any>(importData.debt_payments as any[], 5, async (dp) => {
           const entityType = typeof dp.entity_type === 'string' && dp.entity_type ? dp.entity_type : 'customer'
           let entityId: string | null = null
 
