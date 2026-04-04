@@ -53,6 +53,8 @@ import {
   Pencil,
   PlayCircle,
   Loader2,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { format, isToday } from 'date-fns';
 import { vi } from 'date-fns/locale';
