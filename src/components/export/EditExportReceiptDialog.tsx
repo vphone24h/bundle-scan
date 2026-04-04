@@ -253,7 +253,18 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
         changes.push(`NV bán: ${oldStaffName} → ${newStaffName}`);
       }
 
-      if (hasPriceChanges) {
+      // 3. Update note
+      if (noteChanged) {
+        const { error } = await supabase
+          .from('export_receipts')
+          .update({ note: receiptNote || null })
+          .eq('id', receipt.id);
+        if (error) throw error;
+        oldData.note = originalReceiptNote || null;
+        newData.note = receiptNote || null;
+        changes.push(`Ghi chú: "${originalReceiptNote || '(trống)'}" → "${receiptNote || '(trống)'}"`);
+      }
+
         for (const item of priceChanges) {
           const { error } = await supabase
             .from('export_receipt_items')
