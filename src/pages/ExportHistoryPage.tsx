@@ -1200,12 +1200,12 @@ export default function ExportHistoryPage() {
               <p className="text-lg font-bold text-primary">{statsLoading ? '...' : (exportStats?.total_revenue ?? 0).toLocaleString()}đ</p>
             </div>
             <div className="rounded-lg border bg-card p-3">
-              <p className="text-xs text-muted-foreground">DT trả hàng</p>
-              <p className="text-lg font-bold text-destructive">{statsLoading ? '...' : (exportStats?.return_revenue ?? 0).toLocaleString()}đ</p>
+              <p className="text-xs text-muted-foreground">SP không IMEI</p>
+              <p className="text-lg font-bold text-orange-500">{statsLoading ? '...' : (exportStats?.non_imei_count ?? 0).toLocaleString()}</p>
             </div>
             <div className="rounded-lg border bg-card p-3">
-              <p className="text-xs text-muted-foreground">Doanh thu thực</p>
-              <p className="text-lg font-bold text-foreground">{statsLoading ? '...' : ((exportStats?.total_revenue ?? 0) - (exportStats?.return_revenue ?? 0)).toLocaleString()}đ</p>
+              <p className="text-xs text-muted-foreground">SP có IMEI</p>
+              <p className="text-lg font-bold text-primary">{statsLoading ? '...' : (exportStats?.imei_count ?? 0).toLocaleString()}</p>
             </div>
           </div>
           <Card>
