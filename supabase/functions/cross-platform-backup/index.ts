@@ -272,22 +272,23 @@ Deno.serve(async (req) => {
       case 'settings': {
         const [
           custom_payment_sources, invoice_templates, voucher_templates,
-          einvoice_configs, notification_automations, custom_domains,
+          einvoice_configs, custom_domains,
           user_branch_access, user_roles, security_passwords,
         ] = await Promise.all([
           fetchAll('custom_payment_sources', 'tenant_id', tenantId),
           fetchAll('invoice_templates', 'tenant_id', tenantId),
           fetchAll('voucher_templates', 'tenant_id', tenantId),
           fetchAll('einvoice_configs', 'tenant_id', tenantId),
-          fetchAll('notification_automations', 'tenant_id', tenantId),
           fetchAll('custom_domains', 'tenant_id', tenantId),
           fetchAll('user_branch_access', 'tenant_id', tenantId),
           fetchAll('user_roles', 'tenant_id', tenantId),
           fetchAll('security_passwords', 'tenant_id', tenantId),
         ])
+        // notification_automations is a global config table (no tenant_id), fetch all
+        const { data: notification_automations } = await adminClient.from('notification_automations').select('*')
         return ok({
           custom_payment_sources, invoice_templates, voucher_templates,
-          einvoice_configs, notification_automations, custom_domains,
+          einvoice_configs, notification_automations: notification_automations || [], custom_domains,
           user_branch_access, user_roles_backup: user_roles, security_passwords,
         })
       }
