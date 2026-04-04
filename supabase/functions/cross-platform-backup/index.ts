@@ -220,10 +220,10 @@ Deno.serve(async (req) => {
       }
 
       case 'crm': {
+        // Tables with tenant_id
         const [
           customer_care_schedules, customer_care_logs, care_reminders, care_schedule_types,
-          customer_tags, customer_tag_assignments, customer_sources,
-          customer_contact_channels, customer_vouchers,
+          customer_tags, customer_sources, customer_vouchers,
           point_settings, point_transactions, membership_tier_settings,
           crm_notifications,
         ] = await Promise.all([
@@ -232,15 +232,25 @@ Deno.serve(async (req) => {
           fetchAll('care_reminders', 'tenant_id', tenantId),
           fetchAll('care_schedule_types', 'tenant_id', tenantId),
           fetchAll('customer_tags', 'tenant_id', tenantId),
-          fetchAll('customer_tag_assignments', 'tenant_id', tenantId),
           fetchAll('customer_sources', 'tenant_id', tenantId),
-          fetchAll('customer_contact_channels', 'tenant_id', tenantId),
           fetchAll('customer_vouchers', 'tenant_id', tenantId),
           fetchAll('point_settings', 'tenant_id', tenantId),
           fetchAll('point_transactions', 'tenant_id', tenantId),
           fetchAll('membership_tier_settings', 'tenant_id', tenantId),
           fetchAll('crm_notifications', 'tenant_id', tenantId),
         ])
+
+        // customer_tag_assignments & customer_contact_channels don't have tenant_id
+        // Fetch via customer IDs from parentIds (passed from frontend)
+        let customer_tag_assignments: any[] = []
+        let customer_contact_channels: any[] = []
+        if (parentIds.length > 0) {
+          ;[customer_tag_assignments, customer_contact_channels] = await Promise.all([
+            fetchByIds('customer_tag_assignments', 'customer_id', parentIds),
+            fetchByIds('customer_contact_channels', 'customer_id', parentIds),
+          ])
+        }
+
         return ok({
           customer_care_schedules, customer_care_logs, care_reminders, care_schedule_types,
           customer_tags, customer_tag_assignments, customer_sources,
