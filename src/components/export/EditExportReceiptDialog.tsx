@@ -292,6 +292,7 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
           customerChanged && 'CUSTOMER',
           staffChanged && 'STAFF',
           hasPriceChanges && 'PRICE',
+          noteChanged && 'NOTE',
         ].filter(Boolean).join('_');
 
         await supabase.from('audit_logs').insert({
