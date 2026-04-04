@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useCurrentTenant } from '@/hooks/useTenant';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const LABEL_MAP: Record<string, string> = {
   branches: 'Chi nhánh',
@@ -25,247 +27,91 @@ const LABEL_MAP: Record<string, string> = {
   suppliers: 'Nhà cung cấp',
   customers: 'Khách hàng',
   products: 'Sản phẩm',
+  product_groups: 'Nhóm sản phẩm',
   import_receipts: 'Phiếu nhập',
+  receipt_payments: 'Thanh toán PN',
+  product_imports: 'Lịch sử nhập SP',
   export_receipts: 'Phiếu xuất',
   export_receipt_items: 'Chi tiết PX',
   export_receipt_payments: 'Thanh toán PX',
+  export_returns: 'Trả hàng bán',
+  import_returns: 'Trả hàng nhập',
+  return_payments: 'Thanh toán trả hàng',
+  stock_counts: 'Kiểm kho',
+  stock_count_items: 'Chi tiết kiểm kho',
+  stock_transfer_requests: 'Chuyển kho',
+  stock_transfer_items: 'Chi tiết chuyển kho',
+  imei_histories: 'Lịch sử IMEI',
   cash_book: 'Sổ quỹ',
+  cash_book_opening_balances: 'Số dư đầu kỳ',
   debt_payments: 'Thanh toán nợ',
+  debt_offsets: 'Bù trừ nợ',
+  debt_settings: 'Cấu hình nợ',
+  debt_tags: 'Nhãn nợ',
+  debt_tag_assignments: 'Gán nhãn nợ',
+  customer_care_schedules: 'Lịch chăm sóc',
+  customer_care_logs: 'Nhật ký CS',
+  care_reminders: 'Nhắc lịch CS',
+  care_schedule_types: 'Loại lịch CS',
+  customer_tags: 'Tag KH',
+  customer_tag_assignments: 'Gán tag KH',
+  customer_sources: 'Nguồn KH',
+  customer_contact_channels: 'Kênh liên hệ KH',
+  customer_vouchers: 'Voucher KH',
+  point_settings: 'Tích điểm',
+  point_transactions: 'Lịch sử điểm',
+  membership_tier_settings: 'Hạng thành viên',
+  crm_notifications: 'Thông báo CRM',
+  staff_reviews: 'Đánh giá NV',
+  staff_kpi_settings: 'Cấu hình KPI',
+  staff_performance_snapshots: 'Ảnh chụp KPI',
+  custom_payment_sources: 'Nguồn tiền',
+  invoice_templates: 'Mẫu hoá đơn',
+  voucher_templates: 'Mẫu voucher',
+  einvoice_configs: 'Cấu hình HĐĐT',
+  einvoices: 'Hoá đơn ĐT',
+  einvoice_items: 'Chi tiết HĐĐT',
+  einvoice_logs: 'Log HĐĐT',
+  custom_domains: 'Tên miền',
+  security_passwords: 'Mật khẩu',
+  landing_products: 'SP Landing',
+  landing_product_categories: 'DM Landing',
+  landing_orders: 'Đơn Landing',
+  landing_articles: 'Bài viết',
+  landing_article_categories: 'DM bài viết',
+  landing_product_blocked_dates: 'Ngày chặn',
+  landing_order_email_logs: 'Log email ĐH',
+  shop_collaborators: 'CTV Shop',
+  shop_ctv_orders: 'Đơn CTV',
+  shop_ctv_settings: 'Cấu hình CTV',
+  shop_ctv_withdrawals: 'Rút tiền CTV',
+  email_automations: 'Tự động email',
+  email_automation_blocks: 'Block email',
+  zalo_message_logs: 'Log Zalo',
+  zalo_oa_followers: 'Follower Zalo',
+  warehouse_value_snapshots: 'Giá trị kho',
+  onboarding_tours: 'Onboarding',
   web_config: 'Cấu hình web',
 };
 
-type ImportStat = { total: number; success: number; skipped: number; error: number };
-type ImportStats = Record<string, ImportStat>;
-
-const toNumber = (value: unknown, fallback = 0) => {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string' && value.trim() !== '') {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : fallback;
-  }
-  return fallback;
+type RestoreJob = {
+  id: string;
+  status: 'queued' | 'processing' | 'completed' | 'failed';
+  progress: number;
+  current_step: string | null;
+  error_message: string | null;
+  job_type: string;
+  created_at: string;
+  completed_at: string | null;
+  result_summary: any;
 };
 
-const normalizeStats = (stats: any): ImportStats => {
-  if (!stats || typeof stats !== 'object') return {};
-  const result: ImportStats = {};
-  for (const [key, value] of Object.entries(stats)) {
-    const s = value as any;
-    result[key] = {
-      total: toNumber(s?.total),
-      success: toNumber(s?.success),
-      skipped: toNumber(s?.skipped),
-      error: toNumber(s?.error),
-    };
-  }
-  return result;
-};
-
-const buildSummaryFromStats = (stats: ImportStats) => ({
-  total_records: Object.values(stats).reduce((a, s) => a + s.total, 0),
-  total_success: Object.values(stats).reduce((a, s) => a + s.success, 0),
-  total_skipped: Object.values(stats).reduce((a, s) => a + s.skipped, 0),
-  total_failed: Object.values(stats).reduce((a, s) => a + s.error, 0),
-});
-
-const normalizeImportResponse = (raw: any) => {
-  const stats = normalizeStats(raw?.stats);
-  const summary = raw?.summary
-    ? {
-        total_records: toNumber(raw.summary.total_records),
-        total_success: toNumber(raw.summary.total_success),
-        total_skipped: toNumber(raw.summary.total_skipped),
-        total_failed: toNumber(raw.summary.total_failed),
-      }
-    : buildSummaryFromStats(stats);
-
-  const normalizedErrors = Array.isArray(raw?.errors)
-    ? raw.errors.filter((x: unknown) => typeof x === 'string')
-    : [];
-
-  return {
-    ...raw,
-    stats,
-    summary,
-    errors: normalizedErrors,
-    total_errors: toNumber(raw?.total_errors, normalizedErrors.length),
-  };
-};
-
-type ImportSectionKey =
-  | 'branches'
-  | 'categories'
-  | 'suppliers'
-  | 'customers'
-  | 'products'
-  | 'import_receipts'
-  | 'export_receipts'
-  | 'export_receipt_items'
-  | 'export_receipt_payments'
-  | 'cash_book'
-  | 'debt_payments'
-  | 'web_config';
-
-type ImportStage = {
-  label: string;
-  sections: ImportSectionKey[];
-};
-
-const IMPORT_STAGES: ImportStage[] = [
-  { label: 'Chi nhánh', sections: ['branches'] },
-  { label: 'Danh mục', sections: ['categories'] },
-  { label: 'Nhà cung cấp', sections: ['suppliers'] },
-  { label: 'Khách hàng', sections: ['customers'] },
-  { label: 'Sản phẩm', sections: ['products'] },
-  { label: 'Phiếu nhập', sections: ['import_receipts'] },
-  { label: 'Phiếu xuất', sections: ['export_receipts'] },
-  { label: 'Chi tiết phiếu xuất', sections: ['export_receipt_items'] },
-  { label: 'Thanh toán phiếu xuất', sections: ['export_receipt_payments'] },
-  { label: 'Sổ quỹ', sections: ['cash_book'] },
-  { label: 'Thanh toán công nợ', sections: ['debt_payments'] },
-  { label: 'Cấu hình web', sections: ['web_config'] },
-];
-
-const CHUNK_SIZE = 25; // Smaller chunks to avoid Edge Function timeout
-const MAX_RETRIES = 5;
-
-const sectionHasData = (importData: any, section: ImportSectionKey) => {
-  if (section === 'web_config') return !!importData?.web_config;
-  return Array.isArray(importData?.[section]) && importData[section].length > 0;
-};
-
-const mergeImportResponses = (responses: any[]) => {
-  const mergedStats: ImportStats = {};
-  const mergedErrors: string[] = [];
-
-  for (const response of responses) {
-    const normalized = normalizeImportResponse(response);
-    for (const [key, stat] of Object.entries(normalized.stats || {})) {
-      const next = stat as ImportStat;
-      if (!mergedStats[key]) {
-        mergedStats[key] = { total: 0, success: 0, skipped: 0, error: 0 };
-      }
-      mergedStats[key].total += toNumber(next.total);
-      mergedStats[key].success += toNumber(next.success);
-      mergedStats[key].skipped += toNumber(next.skipped);
-      mergedStats[key].error += toNumber(next.error);
-    }
-
-    if (Array.isArray(normalized.errors)) {
-      mergedErrors.push(...normalized.errors);
-    }
-  }
-
-  return {
-    stats: mergedStats,
-    summary: buildSummaryFromStats(mergedStats),
-    errors: mergedErrors.slice(0, 200),
-    total_errors: mergedErrors.length,
-  };
-};
-
-/** Build minimal payloads containing only relevant section data, chunked to avoid timeout */
-function buildChunkedPayloads(importData: any, stage: ImportStage): any[] {
-  // Build a slim payload with only the sections needed for this stage
-  const buildSlimPayload = (overrides: Record<string, any> = {}): any => {
-    const slim: any = { version: importData.version };
-    // Only include sections relevant to this stage
-    for (const section of stage.sections) {
-      if (section === 'web_config') {
-        slim.web_config = importData.web_config;
-      } else if (Array.isArray(importData?.[section])) {
-        slim[section] = importData[section];
-      }
-    }
-    // Apply overrides (for chunked sections)
-    Object.assign(slim, overrides);
-    return slim;
-  };
-
-  // Collect all section arrays for this stage
-  const sectionArrays: { key: ImportSectionKey; items: any[] }[] = [];
-  let totalItems = 0;
-
-  for (const section of stage.sections) {
-    if (section === 'web_config') continue;
-    if (Array.isArray(importData?.[section]) && importData[section].length > 0) {
-      sectionArrays.push({ key: section, items: importData[section] });
-      totalItems += importData[section].length;
-    }
-  }
-
-  // If small enough or no arrays, send as single slim payload
-  if (totalItems <= CHUNK_SIZE) {
-    return [buildSlimPayload()];
-  }
-
-  // Find the largest section to chunk
-  const largestSection = sectionArrays.reduce((a, b) => a.items.length > b.items.length ? a : b);
-  
-  if (largestSection.items.length <= CHUNK_SIZE) {
-    return [buildSlimPayload()];
-  }
-
-  // Chunk the largest section, keep others only in first chunk
-  const chunks: any[] = [];
-  const arr = largestSection.items;
-  
-  for (let i = 0; i < arr.length; i += CHUNK_SIZE) {
-    const slice = arr.slice(i, i + CHUNK_SIZE);
-    const overrides: Record<string, any> = { [largestSection.key]: slice };
-    
-    // For subsequent chunks, remove other section data (already imported in first chunk)
-    if (i > 0) {
-      for (const sa of sectionArrays) {
-        if (sa.key !== largestSection.key) {
-          overrides[sa.key] = [];
-        }
-      }
-    }
-    
-    chunks.push(buildSlimPayload(overrides));
-  }
-
-  return chunks;
-}
-
-async function invokeWithRetry(
-  importData: any,
-  mode: string,
-  sections: ImportSectionKey[],
-  retries = MAX_RETRIES,
-): Promise<any> {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const { data, error } = await supabase.functions.invoke('cross-platform-restore', {
-        body: { importData, mode, sections },
-      });
-
-      if (error) {
-        const msg = error.message || '';
-        const isTimeout = /(Failed to send a request|non-2xx status code|CPU Time exceeded|AbortError|timeout)/i.test(msg);
-        if (isTimeout && attempt < retries) {
-          console.warn(`Retry ${attempt}/${retries} for sections ${sections.join(',')}:`, msg);
-          await new Promise(r => setTimeout(r, 2000 * attempt));
-          continue;
-        }
-        throw error;
-      }
-
-      if (data?.error) throw new Error(data.error);
-      return data;
-    } catch (err) {
-      if (attempt >= retries) throw err;
-      const msg = (err as Error).message || '';
-      const isTimeout = /(Failed to send a request|non-2xx status code|CPU Time exceeded|AbortError|timeout)/i.test(msg);
-      if (!isTimeout) throw err;
-      console.warn(`Retry ${attempt}/${retries}:`, msg);
-      await new Promise(r => setTimeout(r, 2000 * attempt));
-    }
-  }
-}
+const RESTORE_JOB_HANDLED_KEY = 'vkho_restore_job_handled';
 
 export function CrossPlatformBackupSection() {
+  const { data: tenant } = useCurrentTenant();
+  const queryClient = useQueryClient();
+
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importMode, setImportMode] = useState<'merge' | 'overwrite'>('merge');
@@ -281,6 +127,85 @@ export function CrossPlatformBackupSection() {
   const [exportStatus, setExportStatus] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // ─── Poll restore job progress ───
+  const { data: restoreJob, refetch: refetchRestoreJob } = useQuery({
+    queryKey: ['restore-job-v3', tenant?.id],
+    enabled: !!tenant?.id,
+    queryFn: async () => {
+      if (!tenant?.id) return null;
+      const { data, error } = await supabase
+        .from('data_management_jobs' as any)
+        .select('id, status, progress, current_step, error_message, job_type, created_at, completed_at, result_summary')
+        .eq('tenant_id', tenant.id)
+        .eq('job_type', 'cross_platform_restore_v3')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as unknown as RestoreJob | null) ?? null;
+    },
+    refetchInterval: (query) => {
+      const status = (query.state.data as RestoreJob | null)?.status;
+      return status === 'queued' || status === 'processing' ? 2000 : false;
+    },
+  });
+
+  const isRestoreRunning = restoreJob?.status === 'queued' || restoreJob?.status === 'processing';
+
+  // Update local progress from polling
+  useEffect(() => {
+    if (!isRestoreRunning) return;
+    setIsImporting(true);
+    setImportProgress(restoreJob?.progress ?? 0);
+    setImportStatus(restoreJob?.current_step || 'Đang xử lý...');
+  }, [isRestoreRunning, restoreJob?.progress, restoreJob?.current_step]);
+
+  // Handle job completion
+  useEffect(() => {
+    if (!restoreJob?.id || !restoreJob?.status) return;
+    if (restoreJob.status !== 'completed' && restoreJob.status !== 'failed') return;
+
+    const handledKey = `${restoreJob.id}:${restoreJob.status}`;
+    const lastHandled = sessionStorage.getItem(RESTORE_JOB_HANDLED_KEY);
+    if (lastHandled === handledKey) return;
+    sessionStorage.setItem(RESTORE_JOB_HANDLED_KEY, handledKey);
+
+    setIsImporting(false);
+
+    if (restoreJob.status === 'failed') {
+      toast.error(restoreJob.error_message || 'Khôi phục thất bại');
+      setImportResult(restoreJob.result_summary || {
+        stats: {},
+        summary: { total_records: 0, total_success: 0, total_skipped: 0, total_failed: 1 },
+        errors: [restoreJob.error_message || 'Lỗi không xác định'],
+        total_errors: 1,
+      });
+      setShowResultDialog(true);
+      return;
+    }
+
+    // completed
+    const result = restoreJob.result_summary || {};
+    setImportResult(result);
+    setImportProgress(100);
+    setImportStatus('Hoàn tất!');
+    setShowResultDialog(true);
+    setImportFile(null);
+    setImportPreview(null);
+
+    const s = result.summary;
+    if (s) {
+      const msg = `Khôi phục hoàn tất: ${s.total_success || 0} thành công, ${s.total_skipped || 0} bỏ qua, ${s.total_failed || 0} lỗi`;
+      if ((s.total_failed || 0) > 0) toast.warning(msg);
+      else toast.success(msg);
+    } else {
+      toast.success('Khôi phục dữ liệu hoàn tất!');
+    }
+
+    queryClient.invalidateQueries({ refetchType: 'all' });
+  }, [restoreJob?.id, restoreJob?.status, restoreJob?.error_message, restoreJob?.result_summary, queryClient]);
+
+  // ─── Export (unchanged) ───
   const invokeBackupSection = async (section: string, body?: any, retries = 3): Promise<any> => {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
@@ -363,13 +288,11 @@ export function CrossPlatformBackupSection() {
       setExportStatus('Đang tạo file...');
       setExportProgress(95);
 
-      // Build the full backup JSON with ALL raw data
       const tenant = rawData.tenant;
       const exportJson = {
         version: '3.0',
         exported_at: new Date().toISOString(),
         tenant_name: tenant?.store_name || tenant?.business_name || '',
-        // Raw data - keep all fields for full restore
         tenant,
         branches: rawData.branches || [],
         categories: rawData.categories || [],
@@ -426,7 +349,6 @@ export function CrossPlatformBackupSection() {
         user_branch_access: rawData.user_branch_access || [],
         user_roles_backup: rawData.user_roles_backup || [],
         security_passwords: rawData.security_passwords || [],
-        
         landing_products: rawData.landing_products || [],
         landing_product_categories: rawData.landing_product_categories || [],
         landing_orders: rawData.landing_orders || [],
@@ -438,7 +360,6 @@ export function CrossPlatformBackupSection() {
         shop_ctv_orders: rawData.shop_ctv_orders || [],
         shop_ctv_settings: rawData.shop_ctv_settings || [],
         shop_ctv_withdrawals: rawData.shop_ctv_withdrawals || [],
-        
         email_automations: rawData.email_automations || [],
         email_automation_blocks: rawData.email_automation_blocks || [],
         zalo_message_logs: rawData.zalo_message_logs || [],
@@ -497,6 +418,7 @@ export function CrossPlatformBackupSection() {
     }
   };
 
+  // ─── Import v3 (background job) ───
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -526,95 +448,49 @@ export function CrossPlatformBackupSection() {
     setShowConfirmDialog(false);
     setIsImporting(true);
     setImportProgress(0);
-    setImportStatus('Đang chuẩn bị...');
-    
+    setImportStatus('Đang tải file lên hệ thống...');
+
     try {
-      // Calculate total work units (chunks across all stages)
-      const runnableStages = IMPORT_STAGES.filter((stage) =>
-        stage.sections.some((section) => sectionHasData(importFile, section))
-      );
+      // Use v3 background restore for version 3.0
+      const { data, error } = await supabase.functions.invoke('cross-platform-restore-v3', {
+        body: { importData: importFile, mode: importMode },
+      });
 
-      if (runnableStages.length === 0) {
-        throw new Error('File không có dữ liệu để import');
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      if (data?.alreadyRunning) {
+        toast.info('Hệ thống đang chạy tác vụ khôi phục trước đó. Vui lòng chờ hoàn tất.');
+        return;
       }
 
-      // Pre-calculate all chunks for progress tracking
-      const allWork: { stage: ImportStage; chunks: any[]; stageIndex: number }[] = [];
-      let totalChunks = 0;
-
-      for (let si = 0; si < runnableStages.length; si++) {
-        const stage = runnableStages[si];
-        const chunks = buildChunkedPayloads(importFile, stage);
-        allWork.push({ stage, chunks, stageIndex: si });
-        totalChunks += chunks.length;
-      }
-
-      const stageResponses: any[] = [];
-      let completedChunks = 0;
-
-      for (const { stage, chunks, stageIndex } of allWork) {
-        for (let ci = 0; ci < chunks.length; ci++) {
-          const chunkData = chunks[ci];
-          const stageMode = stageIndex === 0 && ci === 0 ? importMode : 'merge';
-
-          const chunkLabel = chunks.length > 1
-            ? `${stage.label} (${ci + 1}/${chunks.length})`
-            : stage.label;
-          
-          setImportStatus(`Đang xử lý: ${chunkLabel}...`);
-
-          const data = await invokeWithRetry(chunkData, stageMode, stage.sections);
-          stageResponses.push(data);
-
-          completedChunks++;
-          const pct = Math.round((completedChunks / totalChunks) * 100);
-          setImportProgress(pct);
-        }
-      }
-
-      const normalized = mergeImportResponses(stageResponses);
-      setImportResult(normalized);
-      setImportStatus('Hoàn tất!');
-      setImportProgress(100);
-      setShowResultDialog(true);
-      setImportFile(null);
-      setImportPreview(null);
-      
-      const s = normalized.summary;
-      if (s) {
-        const suppliers = normalized.stats?.suppliers || { total: 0, success: 0 };
-        const customers = normalized.stats?.customers || { total: 0, success: 0 };
-        const importOrders = normalized.stats?.import_receipts || { total: 0, success: 0 };
-        const exportOrders = normalized.stats?.export_receipts || { total: 0, success: 0 };
-        const totalOrders = importOrders.total + exportOrders.total;
-        const successOrders = importOrders.success + exportOrders.success;
-        const msg = `Import: ${s.total_success} OK, ${s.total_skipped} bỏ qua, ${s.total_failed} lỗi • NCC ${suppliers.success}/${suppliers.total}, KH ${customers.success}/${customers.total}, Đơn ${successOrders}/${totalOrders}`;
-        if (s.total_failed > 0) toast.warning(msg);
-        else toast.success(msg);
+      if (data?.jobId) {
+        toast.success('Đã bắt đầu khôi phục nền! Tiến độ sẽ cập nhật tự động.');
+        setImportStatus('Đã đưa vào hàng chờ...');
+        // Clear handled key so completion will trigger
+        sessionStorage.removeItem(RESTORE_JOB_HANDLED_KEY);
+        // Refetch to start polling
+        setTimeout(() => refetchRestoreJob(), 1000);
       }
     } catch (error) {
       console.error('Import error:', error);
+      setIsImporting(false);
       const rawMessage = (error as Error).message || 'Lỗi không xác định';
-      const message = /(Failed to send a request to the Edge Function|Edge Function returned a non-2xx status code|CPU Time exceeded)/i.test(rawMessage)
-        ? 'Import bị quá thời gian xử lý trên máy chủ. Vui lòng thử lại.'
+      const message = /(Failed to send a request|non-2xx status code|CPU Time exceeded)/i.test(rawMessage)
+        ? 'Import bị quá thời gian xử lý. Vui lòng thử lại.'
         : rawMessage;
+      toast.error('Lỗi import: ' + message);
       setImportResult({
         stats: {},
         errors: [message],
         total_errors: 1,
-        summary: {
-          total_records: 0,
-          total_success: 0,
-          total_skipped: 0,
-          total_failed: 1,
-        },
+        summary: { total_records: 0, total_success: 0, total_skipped: 0, total_failed: 1 },
       });
       setShowResultDialog(true);
-      toast.error('Lỗi import: ' + message);
-    } finally {
-      setIsImporting(false);
     }
-  }, [importFile, importMode]);
+  }, [importFile, importMode, refetchRestoreJob]);
+
+  const isAnyRunning = isExporting || isImporting || isRestoreRunning;
 
   return (
     <>
@@ -635,10 +511,10 @@ export function CrossPlatformBackupSection() {
               Tính năng chính
             </div>
             <ul className="list-disc list-inside text-emerald-700 space-y-0.5 ml-1 text-xs">
-              <li>Sử dụng external_id thay vì UUID - tương thích mọi database</li>
-              <li>Giữ nguyên liên kết: NCC ↔ Phiếu nhập, KH ↔ Phiếu xuất</li>
-              <li>Tự động bỏ qua dữ liệu trùng (KH trùng SĐT, SP trùng SKU/IMEI)</li>
-              <li>Version 1.0 - đảm bảo tương thích giữa các phiên bản</li>
+              <li>Sao lưu toàn bộ 60+ bảng dữ liệu dưới dạng JSON</li>
+              <li>Khôi phục chạy nền — không giới hạn kích thước dữ liệu</li>
+              <li>Hiển thị tiến độ % thời gian thực</li>
+              <li>Tự động chia nhỏ từng phần để đảm bảo ổn định</li>
             </ul>
           </div>
 
@@ -659,29 +535,33 @@ export function CrossPlatformBackupSection() {
             </div>
           )}
 
-          {/* Progress bar during import */}
-          {isImporting && (
+          {/* Progress bar during import (polling from job) */}
+          {(isImporting || isRestoreRunning) && (
             <div className="space-y-2 p-3 rounded-lg bg-blue-50 border border-blue-200">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-blue-700 font-medium flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  {importStatus}
+                  {importStatus || restoreJob?.current_step || 'Đang xử lý...'}
                 </span>
-                <span className="text-blue-600 font-bold">{importProgress}%</span>
+                <span className="text-blue-600 font-bold">{importProgress || restoreJob?.progress || 0}%</span>
               </div>
-              <Progress value={importProgress} className="h-2" />
+              <Progress value={importProgress || restoreJob?.progress || 0} className="h-2" />
               <p className="text-xs text-blue-600">
-                Đang chạy ngầm, vui lòng không đóng trang...
+                Đang chạy ngầm trên server — bạn có thể đóng trang và quay lại sau, tiến trình sẽ tiếp tục.
               </p>
             </div>
           )}
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button onClick={handleExport} disabled={isExporting || isImporting} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
+            <Button onClick={handleExport} disabled={isAnyRunning} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
               {isExporting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Đang xuất...</> : <><ArrowDownToLine className="h-4 w-4 mr-2" />Sao lưu (Export JSON)</>}
             </Button>
-            <Button onClick={() => fileRef.current?.click()} disabled={isImporting || isExporting} variant="outline" className="flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50">
-              {isImporting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Đang nhập {importProgress}%</> : <><ArrowUpFromLine className="h-4 w-4 mr-2" />Khôi phục (Import JSON)</>}
+            <Button onClick={() => fileRef.current?.click()} disabled={isAnyRunning} variant="outline" className="flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+              {(isImporting || isRestoreRunning) ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Đang khôi phục {importProgress || restoreJob?.progress || 0}%</>
+              ) : (
+                <><ArrowUpFromLine className="h-4 w-4 mr-2" />Khôi phục (Import JSON)</>
+              )}
             </Button>
           </div>
 
@@ -710,6 +590,10 @@ export function CrossPlatformBackupSection() {
                 <span className="text-muted-foreground">Xuất lúc:</span>
                 <span className="font-medium">{importFile?.exported_at ? new Date(importFile.exported_at).toLocaleString('vi-VN') : 'N/A'}</span>
               </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Phiên bản:</span>
+                <Badge variant="secondary">v{importFile?.version}</Badge>
+              </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 {[
                   ['Chi nhánh', importPreview.total_branches],
@@ -719,7 +603,18 @@ export function CrossPlatformBackupSection() {
                   ['Sản phẩm', importPreview.total_products],
                   ['Phiếu nhập', importPreview.total_import_receipts],
                   ['Phiếu xuất', importPreview.total_export_receipts],
+                  ['Chi tiết PX', importPreview.total_export_receipt_items],
                   ['Sổ quỹ', importPreview.total_cash_book],
+                  ['Thanh toán nợ', importPreview.total_debt_payments],
+                  ['IMEI', importPreview.total_imei_histories],
+                  ['Trả hàng bán', importPreview.total_export_returns],
+                  ['Trả hàng nhập', importPreview.total_import_returns],
+                  ['Kiểm kho', importPreview.total_stock_counts],
+                  ['Chăm sóc KH', importPreview.total_customer_care],
+                  ['Tích điểm', importPreview.total_point_transactions],
+                  ['SP Landing', importPreview.total_landing_products],
+                  ['Đơn Landing', importPreview.total_landing_orders],
+                  ['HĐĐT', importPreview.total_einvoices],
                 ].filter(([, v]) => (v as number) > 0).map(([label, count]) => (
                   <div key={label as string} className="flex justify-between p-2 rounded bg-muted/50">
                     <span className="text-muted-foreground">{label}</span>
@@ -733,8 +628,8 @@ export function CrossPlatformBackupSection() {
                   <div className="flex items-start gap-2">
                     <RadioGroupItem value="merge" id="merge" className="mt-1" />
                     <div>
-                      <Label htmlFor="merge" className="text-sm font-medium">Gộp dữ liệu</Label>
-                      <p className="text-xs text-muted-foreground">Thêm mới, bỏ qua trùng (SĐT, SKU)</p>
+                      <Label htmlFor="merge" className="text-sm font-medium">Gộp dữ liệu (upsert)</Label>
+                      <p className="text-xs text-muted-foreground">Thêm mới & cập nhật dữ liệu trùng ID</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
@@ -768,7 +663,7 @@ export function CrossPlatformBackupSection() {
             <AlertDialogDescription>
               {importMode === 'overwrite' 
                 ? 'Toàn bộ dữ liệu hiện tại sẽ bị XÓA và thay thế. Không thể hoàn tác!'
-                : 'Dữ liệu mới sẽ được thêm vào. Bản ghi trùng SĐT/SKU sẽ được bỏ qua.'}
+                : 'Dữ liệu sẽ được gộp (upsert). Bản ghi trùng ID sẽ được cập nhật.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
