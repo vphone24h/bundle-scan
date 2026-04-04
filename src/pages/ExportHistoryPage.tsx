@@ -1080,8 +1080,13 @@ export default function ExportHistoryPage() {
                             {item.warranty || '-'}
                           </TableCell>
                           <TableCell>
+                            <div className="max-w-[150px] truncate text-sm" title={(item.export_receipts as any)?.note || ''}>
+                              {(item.export_receipts as any)?.note || '-'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
                             <div className="max-w-[150px] truncate text-sm" title={item.note || ''}>
-                              {item.note || '-'}
+                              {item.note || (item.export_receipts as any)?.note || '-'}
                             </div>
                           </TableCell>
                           {permissions?.canViewExportCustomerInfo !== false && (
