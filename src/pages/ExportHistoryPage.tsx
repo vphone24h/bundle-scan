@@ -62,6 +62,7 @@ import {
   useExportReceiptItems, 
   useExportReceiptDetail,
   useReturnProduct,
+  useDeleteExportReceipt,
   type ExportReceipt,
   type ExportReceiptItemDetail 
 } from '@/hooks/useExportReceipts';
