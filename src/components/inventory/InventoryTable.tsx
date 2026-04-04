@@ -177,7 +177,7 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
         <TableCell className="text-center"><Badge className={cn('min-w-[40px]', getStockBadgeClass(item.stock))}>{item.stock}{item.unit !== 'cái' ? ` ${item.unit}` : ''}</Badge></TableCell>
         {canViewImportPrice && <TableCell className="text-right hidden md:table-cell font-medium">{formatCurrencyWithSpaces(item.avgImportPrice)}</TableCell>}
         <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-          <Button variant="outline" size="sm" onClick={() => handleViewDetail(item)}
+          <Button variant="default" size="sm" onClick={() => handleViewDetail(item)}
             className="flex-col gap-0.5 h-auto py-1.5 px-2 sm:flex-row sm:gap-2 sm:py-2 sm:px-3 text-xs"
           >
             {item.hasImei ? (
