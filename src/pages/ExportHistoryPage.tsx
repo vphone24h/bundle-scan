@@ -1460,6 +1460,64 @@ export default function ExportHistoryPage() {
         open={!!editReceiptDate}
         onOpenChange={(open) => !open && setEditReceiptDate(null)}
       />
+
+      {/* Delete Export Receipt Confirmation */}
+      <AlertDialog open={!!deleteReceipt && !showDeleteSecurityDialog} onOpenChange={(open) => { 
+        if (!open) { setDeleteReceipt(null); setDeleteCashBook(true); setDeleteDebt(true); }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Xóa phiếu xuất
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Bạn có chắc muốn xóa phiếu <strong>{deleteReceipt?.code}</strong>?
+                  <br />Các sản phẩm đã bán sẽ được khôi phục về tồn kho. Hành động này không thể hoàn tác.
+                </p>
+                <div className="space-y-2 rounded-md border p-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox checked={deleteCashBook} onCheckedChange={(v) => setDeleteCashBook(!!v)} />
+                    <span className="text-sm">Xóa dòng tiền trong sổ quỹ</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox checked={deleteDebt} onCheckedChange={(v) => setDeleteDebt(!!v)} />
+                    <span className="text-sm">Xóa công nợ liên quan</span>
+                  </label>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteReceipt}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteExportReceipt.isPending}
+            >
+              {deleteExportReceipt.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              Xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Security Password for Delete Export */}
+      <SecurityPasswordDialog
+        open={showDeleteSecurityDialog}
+        onOpenChange={(open) => {
+          setShowDeleteSecurityDialog(open);
+          if (!open) setDeleteReceipt(null);
+        }}
+        onSuccess={() => {
+          deleteSecurityUnlock();
+          setShowDeleteSecurityDialog(false);
+        }}
+        title="Xác nhận xóa phiếu xuất"
+        description="Nhập mật khẩu bảo mật để xóa phiếu xuất"
+      />
       <OnboardingTourOverlay
         steps={(receipts?.length ?? 0) > 0 ? receiptTour : receiptTourInfo}
         isActive={activeTour === 'receipt-tab' || (manualTourActive && activeTab === 'receipts')}
