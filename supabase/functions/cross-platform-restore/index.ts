@@ -233,7 +233,8 @@ Deno.serve(async (req) => {
     )
     const tenantId = tenantData.tenant_id
 
-    if (!importData?.version || importData.version !== '1.0') {
+    const SUPPORTED_VERSIONS = new Set(['1.0', '2.0', '3.0'])
+    if (!importData?.version || !SUPPORTED_VERSIONS.has(importData.version)) {
       return jsonResponse(400, { error: 'File JSON không hợp lệ hoặc version không hỗ trợ' })
     }
 
@@ -1067,7 +1068,7 @@ Deno.serve(async (req) => {
         user_id: user.id,
         action_type: 'CROSS_PLATFORM_IMPORT',
         table_name: 'ALL',
-        description: `Import JSON v1.0 (${mode}). Summary: ${JSON.stringify(summary)}`,
+        description: `Import JSON v${importData.version} (${mode}). Summary: ${JSON.stringify(summary)}`,
       })
     } catch (auditErr) {
       console.warn('Audit log error:', (auditErr as Error).message)
