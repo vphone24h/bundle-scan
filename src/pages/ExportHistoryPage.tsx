@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
