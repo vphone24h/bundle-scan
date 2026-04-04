@@ -1027,7 +1027,8 @@ export default function ExportHistoryPage() {
                       <TableHead className="text-right">Đơn giá</TableHead>
                       <TableHead className="text-right">Thành tiền</TableHead>
                       <TableHead>Bảo hành</TableHead>
-                      <TableHead>Ghi chú</TableHead>
+                      <TableHead>Ghi chú phiếu</TableHead>
+                      <TableHead>Ghi chú SP</TableHead>
                       {permissions?.canViewExportCustomerInfo !== false && <TableHead>Khách hàng</TableHead>}
                       <TableHead>Nhân viên</TableHead>
                       <TableHead>Ngày bán</TableHead>
