@@ -179,9 +179,10 @@ export default function ExportHistoryPage() {
 
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
   const [dateFilter, setDateFilter] = useState('');
-  const [dateFromFilter, setDateFromFilter] = useState('');
-  const [dateToFilter, setDateToFilter] = useState('');
+  const [dateFromFilter, setDateFromFilter] = useState(todayStr);
+  const [dateToFilter, setDateToFilter] = useState(todayStr);
   const [statusFilter, setStatusFilter] = useState('_all_');
   const [branchFilter, setBranchFilter] = useState('_all_');
   const [paymentSourceFilter, setPaymentSourceFilter] = useState('_all_');
