@@ -63,6 +63,7 @@ import {
   useExportReceipts, 
   useExportReceiptItems, 
   useExportReceiptDetail,
+  usePrefetchExportReceipt,
   useReturnProduct,
   useDeleteExportReceipt,
   type ExportReceipt,
