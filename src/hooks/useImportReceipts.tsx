@@ -1186,7 +1186,7 @@ export function useDeleteImportReceipt() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ receiptId }: { receiptId: string }) => {
+    mutationFn: async ({ receiptId, deleteCashBook = true, deleteDebt = true }: { receiptId: string; deleteCashBook?: boolean; deleteDebt?: boolean }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Chưa đăng nhập');
 
@@ -1217,6 +1217,8 @@ export function useDeleteImportReceipt() {
         supplier: (receipt.suppliers as any)?.name || null,
         branch: (receipt.branches as any)?.name || null,
         products_count: productIds.length,
+        delete_cash_book: deleteCashBook,
+        delete_debt: deleteDebt,
         products: (products || []).map(p => ({
           name: p.name, sku: p.sku, imei: p.imei,
           price: p.import_price, qty: p.quantity, status: p.status,
@@ -1229,16 +1231,20 @@ export function useDeleteImportReceipt() {
         await supabase.from('product_imports').delete().in('product_id', productIds);
       }
 
-      // cash_book entries linked to this receipt
-      await supabase.from('cash_book').delete()
-        .eq('reference_id', receiptId)
-        .eq('reference_type', 'import_receipt');
+      // cash_book entries linked to this receipt (optional)
+      if (deleteCashBook) {
+        await supabase.from('cash_book').delete()
+          .eq('reference_id', receiptId)
+          .eq('reference_type', 'import_receipt');
+      }
 
-      // debt_payments linked to this receipt
-      await (supabase.from('debt_payments').delete() as any)
-        .eq('entity_id', receipt.supplier_id)
-        .eq('entity_type', 'supplier')
-        .eq('description', `Thanh toán phiếu nhập ${receipt.code}`);
+      // debt_payments linked to this receipt (optional)
+      if (deleteDebt && receipt.supplier_id) {
+        await (supabase.from('debt_payments').delete() as any)
+          .eq('entity_id', receipt.supplier_id)
+          .eq('entity_type', 'supplier')
+          .eq('description', `Thanh toán phiếu nhập ${receipt.code}`);
+      }
 
       // products
       if (productIds.length > 0) {
