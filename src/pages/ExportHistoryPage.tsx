@@ -53,6 +53,8 @@ import {
   Pencil,
   PlayCircle,
   Loader2,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { format, isToday } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -62,6 +64,7 @@ import {
   useExportReceiptItems, 
   useExportReceiptDetail,
   useReturnProduct,
+  useDeleteExportReceipt,
   type ExportReceipt,
   type ExportReceiptItemDetail 
 } from '@/hooks/useExportReceipts';
@@ -79,6 +82,19 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { ScrollableTableWrapper } from '@/components/ui/scrollable-table-wrapper';
 import { useTranslation } from 'react-i18next';
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ShoppingBag } from 'lucide-react';
 
 const LandingOrdersTab = lazy(() => import('@/components/admin/LandingOrdersTab').then(m => ({ default: m.LandingOrdersTab })));
@@ -214,6 +230,15 @@ export default function ExportHistoryPage() {
   
   // Edit receipt date dialog
   const [editReceiptDate, setEditReceiptDate] = useState<ExportReceipt | null>(null);
+
+  // Delete receipt
+  const [deleteReceipt, setDeleteReceipt] = useState<ExportReceipt | null>(null);
+  const [showDeleteSecurityDialog, setShowDeleteSecurityDialog] = useState(false);
+  const [deleteCashBook, setDeleteCashBook] = useState(true);
+  const [deleteDebt, setDeleteDebt] = useState(true);
+  const deleteExportReceipt = useDeleteExportReceipt();
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked: deleteSecurityUnlocked, unlock: deleteSecurityUnlock } = useSecurityUnlock('delete-export-receipt');
 
   // Hooks
   const { data: receipts, isLoading: receiptsLoading, isFetching: receiptsFetching, hasMore: receiptsHasMore } = useExportReceipts({
@@ -367,6 +392,36 @@ export default function ExportHistoryPage() {
     setSelectedReceipt(receipt); // trigger detailItems loading
     setReturnReceipt(receipt);
     setShowReturnDialog(true);
+  };
+
+  // Handle delete receipt
+  const handleDeleteReceipt = (receipt: ExportReceipt) => {
+    if (hasSecurityPassword && !deleteSecurityUnlocked) {
+      setDeleteReceipt(receipt);
+      setShowDeleteSecurityDialog(true);
+      return;
+    }
+    setDeleteReceipt(receipt);
+  };
+
+  const confirmDeleteReceipt = () => {
+    if (!deleteReceipt) return;
+    deleteExportReceipt.mutate({ receiptId: deleteReceipt.id, deleteCashBook, deleteDebt }, {
+      onSuccess: (result) => {
+        toast({
+          title: 'Đã xóa phiếu xuất',
+          description: `Phiếu ${result.code} - ${result.itemsDeleted} sản phẩm đã xóa, ${result.productsRestored} sản phẩm đã khôi phục tồn kho`,
+        });
+        setDeleteReceipt(null);
+      },
+      onError: (error: any) => {
+        toast({
+          title: 'Lỗi xóa phiếu xuất',
+          description: error.message || 'Không thể xóa phiếu xuất',
+          variant: 'destructive',
+        });
+      },
+    });
   };
 
   const CHUNK_SIZE = 5000;
@@ -966,6 +1021,15 @@ export default function ExportHistoryPage() {
                             >
                               <RotateCcw className="h-4 w-4" />
                             </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteReceipt(receipt)}
+                              title="Xóa phiếu xuất"
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1395,6 +1459,64 @@ export default function ExportHistoryPage() {
         receipt={editReceiptDate}
         open={!!editReceiptDate}
         onOpenChange={(open) => !open && setEditReceiptDate(null)}
+      />
+
+      {/* Delete Export Receipt Confirmation */}
+      <AlertDialog open={!!deleteReceipt && !showDeleteSecurityDialog} onOpenChange={(open) => { 
+        if (!open) { setDeleteReceipt(null); setDeleteCashBook(true); setDeleteDebt(true); }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Xóa phiếu xuất
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Bạn có chắc muốn xóa phiếu <strong>{deleteReceipt?.code}</strong>?
+                  <br />Các sản phẩm đã bán sẽ được khôi phục về tồn kho. Hành động này không thể hoàn tác.
+                </p>
+                <div className="space-y-2 rounded-md border p-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox checked={deleteCashBook} onCheckedChange={(v) => setDeleteCashBook(!!v)} />
+                    <span className="text-sm">Xóa dòng tiền trong sổ quỹ</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox checked={deleteDebt} onCheckedChange={(v) => setDeleteDebt(!!v)} />
+                    <span className="text-sm">Xóa công nợ liên quan</span>
+                  </label>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteReceipt}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteExportReceipt.isPending}
+            >
+              {deleteExportReceipt.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              Xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Security Password for Delete Export */}
+      <SecurityPasswordDialog
+        open={showDeleteSecurityDialog}
+        onOpenChange={(open) => {
+          setShowDeleteSecurityDialog(open);
+          if (!open) setDeleteReceipt(null);
+        }}
+        onSuccess={() => {
+          deleteSecurityUnlock();
+          setShowDeleteSecurityDialog(false);
+        }}
+        title="Xác nhận xóa phiếu xuất"
+        description="Nhập mật khẩu bảo mật để xóa phiếu xuất"
       />
       <OnboardingTourOverlay
         steps={(receipts?.length ?? 0) > 0 ? receiptTour : receiptTourInfo}
