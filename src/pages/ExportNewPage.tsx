@@ -40,6 +40,7 @@ import {
   Mail,
   MessageCircle,
   Calendar,
+  FileText,
 } from 'lucide-react';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { useCheckProductForSale, useSearchProductsByName, useCreateExportReceipt, type ExportReceiptItem, type ExportPayment } from '@/hooks/useExportReceipts';
@@ -132,7 +133,8 @@ export default function ExportNewPage() {
   const [taxRate, setTaxRate] = useState<number | null>(null);
   const [customTaxRate, setCustomTaxRate] = useState('');
   // Export date (default = now)
-  const [exportDate, setExportDate] = useState('');
+   const [exportDate, setExportDate] = useState('');
+  const [receiptNote, setReceiptNote] = useState('');
 
   // Customer info
   const [customerName, setCustomerName] = useState('');
@@ -963,6 +965,7 @@ export default function ExportNewPage() {
     const savedSubtotalAmount = subtotalAmount;
     const savedSalesStaffId = isSuperAdmin ? salesStaffId : user?.id || null;
     const savedExportDate = exportDate || null;
+    const savedReceiptNote = receiptNote || null;
 
     setCart([]);
     exportDraft.clearDraft();
@@ -978,6 +981,7 @@ export default function ExportNewPage() {
     setTaxRate(null);
     setCustomTaxRate('');
     setExportDate('');
+    setReceiptNote('');
 
     // Process in background
     try {
@@ -1005,6 +1009,7 @@ export default function ExportNewPage() {
         salesStaffId: savedSalesStaffId,
         skipCashBook,
         exportDate: savedExportDate ? new Date(savedExportDate).toISOString() : undefined,
+        note: savedReceiptNote || undefined,
       });
 
       // Update receipt with real data (code from server)
@@ -1667,8 +1672,21 @@ export default function ExportNewPage() {
                     <p className="text-xs text-muted-foreground">Để trống = tự động lấy thời điểm hiện tại</p>
                   )}
                 </div>
-             </CardContent>
-           </Card>
+
+                {/* Receipt Note */}
+                <div className="space-y-1.5 pt-2 border-t">
+                  <Label className="flex items-center gap-1.5 text-sm">
+                    <FileText className="h-3.5 w-3.5" />
+                    Ghi chú phiếu
+                  </Label>
+                  <Input
+                    placeholder="Ghi chú cho cả phiếu xuất (tuỳ chọn)"
+                    value={receiptNote}
+                    onChange={(e) => setReceiptNote(e.target.value)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
           {/* Payment summary */}
           <Card>
