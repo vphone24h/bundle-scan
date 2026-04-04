@@ -333,6 +333,9 @@ export function CrossPlatformBackupSection() {
         } else if (step.section === 'imei_histories') {
           const productIds = (rawData.products || []).map((p: any) => p.id);
           body = { parentIds: productIds };
+        } else if (step.section === 'crm') {
+          const customerIds = (rawData.customers || []).map((c: any) => c.id);
+          body = { parentIds: customerIds };
         }
 
         const data = await invokeBackupSection(step.section, body);
@@ -405,7 +408,7 @@ export function CrossPlatformBackupSection() {
         user_branch_access: rawData.user_branch_access || [],
         user_roles_backup: rawData.user_roles_backup || [],
         security_passwords: rawData.security_passwords || [],
-        payment_config: rawData.payment_config || [],
+        
         landing_products: rawData.landing_products || [],
         landing_product_categories: rawData.landing_product_categories || [],
         landing_orders: rawData.landing_orders || [],
@@ -417,7 +420,7 @@ export function CrossPlatformBackupSection() {
         shop_ctv_orders: rawData.shop_ctv_orders || [],
         shop_ctv_settings: rawData.shop_ctv_settings || [],
         shop_ctv_withdrawals: rawData.shop_ctv_withdrawals || [],
-        ctv_product_commissions: rawData.ctv_product_commissions || [],
+        
         email_automations: rawData.email_automations || [],
         email_automation_blocks: rawData.email_automation_blocks || [],
         zalo_message_logs: rawData.zalo_message_logs || [],

@@ -143,11 +143,17 @@ Deno.serve(async (req) => {
       }
 
       case 'import_receipts': {
-        const [import_receipts, receipt_payments, product_imports] = await Promise.all([
-          fetchAll('import_receipts', 'tenant_id', tenantId),
-          fetchAll('receipt_payments', 'tenant_id', tenantId),
-          fetchAll('product_imports', 'tenant_id', tenantId),
-        ])
+        const import_receipts = await fetchAll('import_receipts', 'tenant_id', tenantId)
+        // receipt_payments and product_imports don't have tenant_id, fetch by parent IDs
+        const receiptIds = import_receipts.map((r: any) => r.id)
+        let receipt_payments: any[] = []
+        let product_imports: any[] = []
+        if (receiptIds.length > 0) {
+          ;[receipt_payments, product_imports] = await Promise.all([
+            fetchByIds('receipt_payments', 'receipt_id', receiptIds),
+            fetchByIds('product_imports', 'import_receipt_id', receiptIds),
+          ])
+        }
         return ok({ import_receipts, receipt_payments, product_imports })
       }
 
@@ -178,12 +184,17 @@ Deno.serve(async (req) => {
       }
 
       case 'stock': {
-        const [stock_counts, stock_count_items, stock_transfer_requests, stock_transfer_items] = await Promise.all([
+        const [stock_counts, stock_transfer_requests] = await Promise.all([
           fetchAll('stock_counts', 'tenant_id', tenantId),
-          fetchAll('stock_count_items', 'tenant_id', tenantId),
           fetchAll('stock_transfer_requests', 'tenant_id', tenantId),
-          fetchAll('stock_transfer_items', 'tenant_id', tenantId),
         ])
+        // child tables don't have tenant_id
+        const scIds = stock_counts.map((s: any) => s.id)
+        const stIds = stock_transfer_requests.map((s: any) => s.id)
+        let stock_count_items: any[] = []
+        let stock_transfer_items: any[] = []
+        if (scIds.length > 0) stock_count_items = await fetchByIds('stock_count_items', 'stock_count_id', scIds)
+        if (stIds.length > 0) stock_transfer_items = await fetchByIds('stock_transfer_items', 'transfer_request_id', stIds)
         return ok({ stock_counts, stock_count_items, stock_transfer_requests, stock_transfer_items })
       }
 
@@ -209,10 +220,10 @@ Deno.serve(async (req) => {
       }
 
       case 'crm': {
+        // Tables with tenant_id
         const [
           customer_care_schedules, customer_care_logs, care_reminders, care_schedule_types,
-          customer_tags, customer_tag_assignments, customer_sources,
-          customer_contact_channels, customer_vouchers,
+          customer_tags, customer_sources, customer_vouchers,
           point_settings, point_transactions, membership_tier_settings,
           crm_notifications,
         ] = await Promise.all([
@@ -221,15 +232,25 @@ Deno.serve(async (req) => {
           fetchAll('care_reminders', 'tenant_id', tenantId),
           fetchAll('care_schedule_types', 'tenant_id', tenantId),
           fetchAll('customer_tags', 'tenant_id', tenantId),
-          fetchAll('customer_tag_assignments', 'tenant_id', tenantId),
           fetchAll('customer_sources', 'tenant_id', tenantId),
-          fetchAll('customer_contact_channels', 'tenant_id', tenantId),
           fetchAll('customer_vouchers', 'tenant_id', tenantId),
           fetchAll('point_settings', 'tenant_id', tenantId),
           fetchAll('point_transactions', 'tenant_id', tenantId),
           fetchAll('membership_tier_settings', 'tenant_id', tenantId),
           fetchAll('crm_notifications', 'tenant_id', tenantId),
         ])
+
+        // customer_tag_assignments & customer_contact_channels don't have tenant_id
+        // Fetch via customer IDs from parentIds (passed from frontend)
+        let customer_tag_assignments: any[] = []
+        let customer_contact_channels: any[] = []
+        if (parentIds.length > 0) {
+          ;[customer_tag_assignments, customer_contact_channels] = await Promise.all([
+            fetchByIds('customer_tag_assignments', 'customer_id', parentIds),
+            fetchByIds('customer_contact_channels', 'customer_id', parentIds),
+          ])
+        }
+
         return ok({
           customer_care_schedules, customer_care_logs, care_reminders, care_schedule_types,
           customer_tags, customer_tag_assignments, customer_sources,
@@ -252,7 +273,7 @@ Deno.serve(async (req) => {
         const [
           custom_payment_sources, invoice_templates, voucher_templates,
           einvoice_configs, notification_automations, custom_domains,
-          user_branch_access, user_roles, security_passwords, payment_config,
+          user_branch_access, user_roles, security_passwords,
         ] = await Promise.all([
           fetchAll('custom_payment_sources', 'tenant_id', tenantId),
           fetchAll('invoice_templates', 'tenant_id', tenantId),
@@ -263,12 +284,11 @@ Deno.serve(async (req) => {
           fetchAll('user_branch_access', 'tenant_id', tenantId),
           fetchAll('user_roles', 'tenant_id', tenantId),
           fetchAll('security_passwords', 'tenant_id', tenantId),
-          fetchAll('payment_config', 'tenant_id', tenantId),
         ])
         return ok({
           custom_payment_sources, invoice_templates, voucher_templates,
           einvoice_configs, notification_automations, custom_domains,
-          user_branch_access, user_roles_backup: user_roles, security_passwords, payment_config,
+          user_branch_access, user_roles_backup: user_roles, security_passwords,
         })
       }
 
@@ -294,20 +314,24 @@ Deno.serve(async (req) => {
       }
 
       case 'shop_ctv': {
-        const [shop_collaborators, shop_ctv_orders, shop_ctv_settings, shop_ctv_withdrawals, ctv_product_commissions] = await Promise.all([
+        const [shop_collaborators, shop_ctv_orders, shop_ctv_settings, shop_ctv_withdrawals] = await Promise.all([
           fetchAll('shop_collaborators', 'tenant_id', tenantId),
           fetchAll('shop_ctv_orders', 'tenant_id', tenantId),
           fetchAll('shop_ctv_settings', 'tenant_id', tenantId),
           fetchAll('shop_ctv_withdrawals', 'tenant_id', tenantId),
-          fetchAll('ctv_product_commissions', 'tenant_id', tenantId),
         ])
-        return ok({ shop_collaborators, shop_ctv_orders, shop_ctv_settings, shop_ctv_withdrawals, ctv_product_commissions })
+        return ok({ shop_collaborators, shop_ctv_orders, shop_ctv_settings, shop_ctv_withdrawals })
       }
 
       case 'email_zalo': {
-        const [email_automations, email_automation_blocks, zalo_message_logs, zalo_oa_followers] = await Promise.all([
-          fetchAll('email_automations', 'tenant_id', tenantId),
-          fetchAll('email_automation_blocks', 'tenant_id', tenantId),
+        const email_automations = await fetchAll('email_automations', 'tenant_id', tenantId)
+        // email_automation_blocks don't have tenant_id, fetch by automation IDs
+        const autoIds = email_automations.map((a: any) => a.id)
+        let email_automation_blocks: any[] = []
+        if (autoIds.length > 0) {
+          email_automation_blocks = await fetchByIds('email_automation_blocks', 'automation_id', autoIds)
+        }
+        const [zalo_message_logs, zalo_oa_followers] = await Promise.all([
           fetchAll('zalo_message_logs', 'tenant_id', tenantId),
           fetchAll('zalo_oa_followers', 'tenant_id', tenantId),
         ])
@@ -315,11 +339,16 @@ Deno.serve(async (req) => {
       }
 
       case 'einvoices': {
-        const [einvoices, einvoice_items, einvoice_logs] = await Promise.all([
+        const [einvoices, einvoice_logs] = await Promise.all([
           fetchAll('einvoices', 'tenant_id', tenantId),
-          fetchAll('einvoice_items', 'tenant_id', tenantId),
           fetchAll('einvoice_logs', 'tenant_id', tenantId),
         ])
+        // einvoice_items don't have tenant_id
+        const eIds = einvoices.map((e: any) => e.id)
+        let einvoice_items: any[] = []
+        if (eIds.length > 0) {
+          einvoice_items = await fetchByIds('einvoice_items', 'einvoice_id', eIds)
+        }
         return ok({ einvoices, einvoice_items, einvoice_logs })
       }
 
