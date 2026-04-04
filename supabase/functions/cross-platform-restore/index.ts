@@ -668,7 +668,7 @@ Deno.serve(async (req) => {
       if (hasSection('products') && Array.isArray(importData.products) && importData.products.length > 0) {
         stats.products.total = importData.products.length
 
-        await processInBatches<any>(importData.products as any[], 15, async (p, index) => {
+        await processInBatches<any>(importData.products as any[], 8, async (p, index) => {
           const extId = typeof p.external_id === 'string' && p.external_id ? p.external_id : `prod_${index + 1}`
           const name = typeof p.name === 'string' ? p.name.trim() : ''
           const sku = typeof p.sku === 'string' && p.sku.trim() ? p.sku.trim() : `AUTO-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
