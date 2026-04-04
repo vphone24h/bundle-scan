@@ -349,9 +349,13 @@ export default function ExportHistoryPage() {
   // No totalCount — use hasMore for next/prev navigation
 
   // Handle view detail
+  const prefetchExport = usePrefetchExportReceipt();
   const handleViewDetail = (receipt: ExportReceipt) => {
     setSelectedReceipt(receipt);
     setShowDetailDialog(true);
+  };
+  const handlePrefetchExport = (receiptId: string) => {
+    prefetchExport(receiptId);
   };
 
   // Handle print
