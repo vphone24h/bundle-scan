@@ -146,8 +146,10 @@ export default function ImportHistoryPage() {
   // Search & filter states (moved up for use in receipts query)
   const [searchTerm, setSearchTerm] = useState('');
   const todayStr = format(new Date(), 'yyyy-MM-dd');
-  const [dateFrom, setDateFrom] = useState(todayStr);
-  const [dateTo, setDateTo] = useState(todayStr);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const statsDateFrom = dateFrom || todayStr;
+  const statsDateTo = dateTo || todayStr;
   const [categoryFilter, setCategoryFilter] = useState('_all_');
   const [supplierFilter, setSupplierFilter] = useState('_all_');
   const [statusFilter, setStatusFilter] = useState('_all_');
