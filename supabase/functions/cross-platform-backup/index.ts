@@ -339,11 +339,16 @@ Deno.serve(async (req) => {
       }
 
       case 'einvoices': {
-        const [einvoices, einvoice_items, einvoice_logs] = await Promise.all([
+        const [einvoices, einvoice_logs] = await Promise.all([
           fetchAll('einvoices', 'tenant_id', tenantId),
-          fetchAll('einvoice_items', 'tenant_id', tenantId),
           fetchAll('einvoice_logs', 'tenant_id', tenantId),
         ])
+        // einvoice_items don't have tenant_id
+        const eIds = einvoices.map((e: any) => e.id)
+        let einvoice_items: any[] = []
+        if (eIds.length > 0) {
+          einvoice_items = await fetchByIds('einvoice_items', 'einvoice_id', eIds)
+        }
         return ok({ einvoices, einvoice_items, einvoice_logs })
       }
 
