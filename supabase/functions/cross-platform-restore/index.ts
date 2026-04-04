@@ -803,7 +803,7 @@ Deno.serve(async (req) => {
       if (hasSection('export_receipts') && Array.isArray(importData.export_receipts) && importData.export_receipts.length > 0) {
         stats.export_receipts.total = importData.export_receipts.length
 
-        await processInBatches<any>(importData.export_receipts as any[], 20, async (r, index) => {
+        await processInBatches<any>(importData.export_receipts as any[], 4, async (r, index) => {
           const extId = typeof r.external_id === 'string' && r.external_id ? r.external_id : `exp_${index + 1}`
           const code = typeof r.code === 'string' ? r.code.trim() : ''
 
