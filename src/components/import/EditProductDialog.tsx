@@ -563,10 +563,26 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
             variant_3_values: activeLevels[2]?.values || [],
           };
 
+          let groupId: string | null = null;
           if (existingGroup?.[0]) {
-            await supabase.from('product_groups').update(groupPayload as any).eq('id', (existingGroup[0] as any).id);
+            groupId = (existingGroup[0] as any).id;
+            await supabase.from('product_groups').update(groupPayload as any).eq('id', groupId!);
           } else {
-            await supabase.from('product_groups').insert([{ ...groupPayload, tenant_id: tenantId } as any]);
+            const { data: newGroup } = await supabase.from('product_groups').insert([{ ...groupPayload, tenant_id: tenantId } as any]).select('id').single();
+            groupId = newGroup?.id || null;
+          }
+
+          // Update group_id on all related products (current + new templates)
+          if (groupId) {
+            // Update current product
+            await supabase.from('products').update({ group_id: groupId } as any).eq('id', product.id);
+            // Update newly created templates
+            if (newTemplates.length > 0) {
+              const allVariantNames = combinations.map(combo => `${baseName} ${combo.join(' ')}`.trim());
+              await supabase.from('products').update({ group_id: groupId } as any)
+                .in('name', allVariantNames)
+                .is('group_id', null);
+            }
           }
 
           const createdCount = newTemplates.length;
