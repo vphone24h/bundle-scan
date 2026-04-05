@@ -285,16 +285,21 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
           if (!matchedCombo) matchedCombo = combinations[0];
 
           const variantName = `${baseName} ${matchedCombo.join(' ')}`.trim();
+          const matchedKey = matchedCombo.join('|');
+          const matchedVariantImei = variantImeis[matchedKey]?.trim();
+          const matchedPrice = variantPrices[matchedKey];
+
           updates.name = variantName;
           updates.variant_1 = matchedCombo[0] || null;
           updates.variant_2 = matchedCombo[1] || null;
           updates.variant_3 = matchedCombo[2] || null;
-          updates.imei = variantImeis[matchedCombo.join('|')]?.trim() || null;
-          // Cập nhật giá nhập từ variant nếu có
-          const matchedPrice = variantPrices[matchedCombo.join('|')];
-          if (matchedPrice) {
+          updates.imei = matchedVariantImei || (product.imei || formData.imei.trim() || null);
+          if (matchedPrice && !Number.isNaN(Number(matchedPrice))) {
             updates.import_price = Math.round(Number(matchedPrice));
             updates.total_import_cost = Math.round(Number(matchedPrice));
+          } else if (product.import_price != null) {
+            updates.import_price = Math.round(Number(product.import_price));
+            updates.total_import_cost = Math.round(Number(product.import_price));
           }
 
           const skuSuffix = matchedCombo.map(v => v.replace(/\s+/g, '')).join('-');
