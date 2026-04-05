@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { PriceInput } from '@/components/ui/price-input';
+import { normalizeLooseSearchValue, normalizeProductSearchQuery } from '@/lib/normalizeSearch';
 import {
   Select,
   SelectContent,
@@ -83,6 +84,31 @@ function useImportNewTourSteps(): TourStep[] {
       position: 'center' as const,
     },
   ];
+}
+
+type ProductSuggestion = {
+  name: string;
+  sku: string;
+  category_id: string | null;
+  import_price: number | null;
+  sale_price: number | null;
+  totalQty: number;
+};
+
+function extractBaseNameFromVariantName(name: string, variants: Array<string | null | undefined>) {
+  const normalizedName = normalizeProductSearchQuery(name);
+  const variantSuffix = normalizeProductSearchQuery(variants.filter(Boolean).join(' '));
+
+  if (!variantSuffix) return normalizedName;
+
+  const normalizedNameKey = normalizeLooseSearchValue(normalizedName);
+  const normalizedSuffixKey = normalizeLooseSearchValue(variantSuffix);
+
+  if (normalizedNameKey.endsWith(` ${normalizedSuffixKey}`)) {
+    return normalizedName.slice(0, normalizedName.length - variantSuffix.length).trim();
+  }
+
+  return normalizedName;
 }
 
 export default function ImportNewPage() {
@@ -167,9 +193,8 @@ export default function ImportNewPage() {
   // Field-level validation errors
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-
 
   // Auto-save cart to localStorage for draft persistence
   useEffect(() => {
@@ -191,6 +216,28 @@ export default function ImportNewPage() {
     [cart]
   );
 
+  const normalizeSuggestionName = useCallback((name: string) => normalizeProductSearchQuery(name), []);
+
+  const variantProductInfo = useMemo(() => {
+    const lookup = new Map<string, { baseName: string; isVariantLike: boolean }>();
+    const variantBaseNames = new Set<string>();
+
+    ((products || []) as any[]).forEach((product) => {
+      const normalizedFullName = normalizeLooseSearchValue(normalizeProductSearchQuery(product.name || ''));
+      const isVariantLike = !!(product.group_id || product.variant_1 || product.variant_2 || product.variant_3);
+      const baseName = isVariantLike
+        ? extractBaseNameFromVariantName(product.name || '', [product.variant_1, product.variant_2, product.variant_3])
+        : normalizeProductSearchQuery(product.name || '');
+
+      lookup.set(normalizedFullName, { baseName, isVariantLike });
+      if (isVariantLike) {
+        variantBaseNames.add(normalizeLooseSearchValue(baseName));
+      }
+    });
+
+    return { lookup, variantBaseNames };
+  }, [products]);
+
   // Debounced server-side product search for suggestions
   const searchProductsFromDB = useCallback(async (searchValue: string) => {
     if (searchValue.length < 2) {
@@ -206,21 +253,50 @@ export default function ImportNewPage() {
       });
 
       if (error) throw error;
-      setSuggestions(((data as any[]) || []).map((r: any) => ({
-        name: r.product_name,
-        sku: r.product_sku,
-        category_id: r.category_id,
-        import_price: r.latest_import_price,
-        sale_price: r.latest_sale_price,
-        totalQty: r.in_stock_qty,
-      })));
+
+      const grouped = new Map<string, ProductSuggestion>();
+
+      (((data as any[]) || [])).forEach((r: any) => {
+        const normalizedName = normalizeSuggestionName(r.product_name || '');
+        const normalizedNameKey = normalizeLooseSearchValue(normalizedName);
+        const matchedInfo = variantProductInfo.lookup.get(normalizedNameKey);
+        const collapsedName = matchedInfo?.baseName || normalizedName;
+        const collapsedKey = normalizeLooseSearchValue(collapsedName);
+        const isVariantLike = matchedInfo?.isVariantLike || variantProductInfo.variantBaseNames.has(collapsedKey);
+
+        const nextRow: ProductSuggestion = {
+          name: collapsedName,
+          sku: isVariantLike ? '' : (r.product_sku || ''),
+          category_id: r.category_id,
+          import_price: isVariantLike ? null : (r.latest_import_price ?? null),
+          sale_price: isVariantLike ? null : (r.latest_sale_price ?? null),
+          totalQty: Number(r.in_stock_qty || 0),
+        };
+
+        const existing = grouped.get(collapsedKey);
+        if (!existing) {
+          grouped.set(collapsedKey, nextRow);
+          return;
+        }
+
+        grouped.set(collapsedKey, {
+          ...existing,
+          sku: existing.sku || nextRow.sku,
+          category_id: existing.category_id || nextRow.category_id,
+          import_price: existing.import_price ?? nextRow.import_price,
+          sale_price: existing.sale_price ?? nextRow.sale_price,
+          totalQty: existing.totalQty + nextRow.totalQty,
+        });
+      });
+
+      setSuggestions(Array.from(grouped.values()));
     } catch (err) {
       console.error('Product search error:', err);
       setSuggestions([]);
     } finally {
       setIsSearching(false);
     }
-  }, []);
+  }, [normalizeSuggestionName, variantProductInfo]);
 
   // Auto-fill from template product navigation
   useEffect(() => {
@@ -1216,14 +1292,11 @@ export default function ImportNewPage() {
                         {suggestions.map((s, idx) => (
                           <button
                             key={`${s.name}-${s.sku}-${idx}`}
-                            onClick={() => {
-                              setForm({ ...form, productName: s.name, sku: s.sku });
-                              setSuggestions([]);
-                            }}
+                            onClick={() => handleSelectSuggestion(s)}
                             className="w-full px-4 py-2 text-left hover:bg-muted text-sm"
                           >
                             <span className="font-medium">{s.name}</span>
-                            <span className="text-muted-foreground ml-2">({s.sku})</span>
+                            {s.sku ? <span className="text-muted-foreground ml-2">({s.sku})</span> : null}
                           </button>
                         ))}
                       </div>
