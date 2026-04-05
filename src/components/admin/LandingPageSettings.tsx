@@ -85,7 +85,7 @@ function AppPasswordHelpDialog({ open, onOpenChange }: { open: boolean; onOpenCh
   );
 }
 
-function OrderEmailConfigSection({ formData, handleChange, tenantId, onSave }: { formData: any; handleChange: (field: string, value: any) => void; tenantId: string | null; onSave?: () => void }) {
+function OrderEmailConfigSection({ formData, handleChange, tenantId, onSave, onDeleteEmail }: { formData: any; handleChange: (field: string, value: any) => void; tenantId: string | null; onSave?: () => void; onDeleteEmail?: () => void }) {
   const [showHelp, setShowHelp] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
