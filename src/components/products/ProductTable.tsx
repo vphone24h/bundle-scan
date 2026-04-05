@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Product } from '@/types/warehouse';
 import { formatCurrency, formatDate } from '@/lib/mockData';
 import { formatCurrencyWithSpaces } from '@/lib/formatNumber';
@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Barcode, Trash2, Package, Settings2, Printer, Copy, Layers, ArrowDownToLine } from 'lucide-react';
+import { MoreHorizontal, Pencil, Barcode, Trash2, Package, Settings2, Printer, Copy, Layers, ArrowDownToLine, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -22,6 +22,7 @@ import { DeleteProductDialog } from './DeleteProductDialog';
 interface ExtendedProduct extends Product {
   isPrinted?: boolean;
   isTemplateGroup?: boolean;
+  isVariantGroup?: boolean;
   variantCount?: number;
   childProducts?: ExtendedProduct[];
   variant1?: string;
@@ -72,6 +73,17 @@ export function ProductTable({
     sku: string;
     imei: string;
   }>({ open: false, productId: '', productName: '', sku: '', imei: '' });
+
+  // Expand/collapse state for variant groups
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const toggleGroup = (id: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const toggleAll = () => {
     if (allSelected) {
@@ -151,142 +163,204 @@ export function ProductTable({
               Không có sản phẩm nào
             </div>
           ) : (
-            products.map((product) => (
-              <div
-                key={product.id}
-                className={cn(
-                  'bg-card border rounded-lg p-3 space-y-2',
-                  selectedProducts.includes(product.id) && 'ring-2 ring-primary/50'
-                )}
-              >
-                <div className="flex items-start gap-3">
-                  <Checkbox
-                    checked={selectedProducts.includes(product.id)}
-                    onCheckedChange={() => toggleOne(product.id)}
-                    className="mt-1"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <p className="font-medium text-sm truncate">{product.name}</p>
-                          {product.isTemplateGroup && (
-                            <Badge variant="secondary" className="text-[10px] gap-0.5 shrink-0">
-                              <Layers className="h-2.5 w-2.5" />
-                              {product.variantCount} biến thể
+            products.map((product) => {
+              const isGroup = !!(product.isVariantGroup || product.isTemplateGroup) && (product.variantCount || 0) > 1;
+              const isExpanded = expandedGroups.has(product.id);
+              
+              return (
+                <div key={product.id}>
+                  <div
+                    className={cn(
+                      'bg-card border rounded-lg p-3 space-y-2',
+                      selectedProducts.includes(product.id) && 'ring-2 ring-primary/50'
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        checked={selectedProducts.includes(product.id)}
+                        onCheckedChange={() => toggleOne(product.id)}
+                        className="mt-1"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              {isGroup && (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleGroup(product.id)}
+                                  className="shrink-0 p-0.5 rounded hover:bg-muted"
+                                >
+                                  {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                                </button>
+                              )}
+                              <p
+                                className={cn("font-medium text-sm truncate", isGroup && "cursor-pointer")}
+                                onClick={isGroup ? () => toggleGroup(product.id) : undefined}
+                              >
+                                {product.name}
+                              </p>
+                              {isGroup && (
+                                <Badge variant="secondary" className="text-[10px] gap-0.5 shrink-0">
+                                  <Layers className="h-2.5 w-2.5" />
+                                  {product.variantCount} biến thể
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground font-mono">{product.sku}</p>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" data-tour="product-action-menu">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-popover">
+                              <DropdownMenuItem onClick={() => onEdit(product)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Chỉnh sửa
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => onPrintBarcode([product])}>
+                                <Barcode className="mr-2 h-4 w-4" />
+                                In mã vạch
+                              </DropdownMenuItem>
+                              {product.status === 'template' && onDuplicate && (
+                                <DropdownMenuItem onClick={() => onDuplicate(product)}>
+                                  <Copy className="mr-2 h-4 w-4" />
+                                  Sao chép sản phẩm mẫu
+                                </DropdownMenuItem>
+                              )}
+                              {onImportFromTemplate && (
+                                <DropdownMenuItem onClick={() => onImportFromTemplate(product)}>
+                                  <ArrowDownToLine className="mr-2 h-4 w-4" />
+                                  Nhập hàng từ SP
+                                </DropdownMenuItem>
+                              )}
+                              {product.status === 'template' && onDeleteTemplate && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => onDeleteTemplate(product)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Xóa sản phẩm mẫu
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                              
+                              {permissions?.canAdjustProductQuantity && !isIMEIProduct(product) && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => handleAdjustQuantity(product)}>
+                                    <Settings2 className="mr-2 h-4 w-4" />
+                                    Điều chỉnh số lượng
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                              
+                              {permissions?.canDeleteIMEIProducts && isIMEIProduct(product) && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDeleteProduct(product)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Xóa sản phẩm
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pl-7">
+                      {product.imei && (
+                        <span className="font-mono">IMEI: {product.imei}</span>
+                      )}
+                      <span>{product.categoryName || 'Chưa phân loại'}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between pl-7">
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-3">
+                          {permissions?.canViewImportPrice && (
+                            <span className="font-semibold text-sm">{formatCurrency(product.importPrice)}</span>
+                          )}
+                          {product.salePrice && product.salePrice > 0 && (
+                            permissions?.canViewSalePrice !== false ? (
+                              <span className={cn("text-xs text-success", !permissions?.canViewImportPrice && "font-semibold text-sm text-foreground")}>
+                                {permissions?.canViewImportPrice ? 'Giá bán: ' : ''}{formatCurrencyWithSpaces(product.salePrice)}đ
+                              </span>
+                            ) : (
+                              <span className={cn("text-xs text-muted-foreground", !permissions?.canViewImportPrice && "font-semibold text-sm")}>
+                                {permissions?.canViewImportPrice ? 'Giá bán: ' : ''}***
+                              </span>
+                            )
+                          )}
+                          {getStatusBadge(product.status, product)}
+                          {(product as any).isPrinted && (
+                            <Badge variant="outline" className="text-[10px] gap-0.5 h-5 border-primary/30 text-primary">
+                              <Printer className="h-2.5 w-2.5" />
+                              Đã in
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground font-mono">{product.sku}</p>
                       </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" data-tour="product-action-menu">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-popover">
-                          <DropdownMenuItem onClick={() => onEdit(product)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Chỉnh sửa
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onPrintBarcode([product])}>
-                            <Barcode className="mr-2 h-4 w-4" />
-                            In mã vạch
-                          </DropdownMenuItem>
-                          {product.status === 'template' && onDuplicate && (
-                            <DropdownMenuItem onClick={() => onDuplicate(product)}>
-                              <Copy className="mr-2 h-4 w-4" />
-                              Sao chép sản phẩm mẫu
-                            </DropdownMenuItem>
-                          )}
-                          {onImportFromTemplate && (
-                            <DropdownMenuItem onClick={() => onImportFromTemplate(product)}>
-                              <ArrowDownToLine className="mr-2 h-4 w-4" />
-                              Nhập hàng từ SP
-                            </DropdownMenuItem>
-                          )}
-                          {product.status === 'template' && onDeleteTemplate && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => onDeleteTemplate(product)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Xóa sản phẩm mẫu
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          
-                          {/* Super Admin only actions */}
-                          {permissions?.canAdjustProductQuantity && !isIMEIProduct(product) && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleAdjustQuantity(product)}>
-                                <Settings2 className="mr-2 h-4 w-4" />
-                                Điều chỉnh số lượng
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          
-                          {permissions?.canDeleteIMEIProducts && isIMEIProduct(product) && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteProduct(product)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Xóa sản phẩm
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(product.importDate)}
+                      </span>
                     </div>
                   </div>
-                </div>
-                
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground pl-7">
-                  {product.imei && (
-                    <span className="font-mono">IMEI: {product.imei}</span>
+
+                  {/* Expanded variant children */}
+                  {isGroup && isExpanded && product.childProducts && (
+                    <div className="ml-4 mt-1 space-y-1 border-l-2 border-primary/20 pl-3">
+                      {product.childProducts.map((child) => {
+                        const variantLabel = [child.variant1, child.variant2, child.variant3].filter(Boolean).join(' · ');
+                        return (
+                          <div
+                            key={child.id}
+                            className="bg-muted/30 border rounded-md p-2.5 flex items-center justify-between gap-2"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium truncate">{variantLabel || child.name}</p>
+                              <p className="text-[10px] text-muted-foreground font-mono">{child.sku}</p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {permissions?.canViewImportPrice && (
+                                <span className="text-xs font-medium">{formatCurrency(child.importPrice)}</span>
+                              )}
+                              {getStatusBadge(child.status, child)}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                                    <MoreHorizontal className="h-3.5 w-3.5" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="bg-popover">
+                                  <DropdownMenuItem onClick={() => onEdit(child)}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Chỉnh sửa
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => onPrintBarcode([child])}>
+                                    <Barcode className="mr-2 h-4 w-4" />
+                                    In mã vạch
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
-                  <span>{product.categoryName || 'Chưa phân loại'}</span>
                 </div>
-                
-                <div className="flex items-center justify-between pl-7">
-                  <div className="flex flex-col gap-0.5">
-                    <div className="flex items-center gap-3">
-                      {permissions?.canViewImportPrice && (
-                        <span className="font-semibold text-sm">{formatCurrency(product.importPrice)}</span>
-                      )}
-                      {product.salePrice && product.salePrice > 0 && (
-                        permissions?.canViewSalePrice !== false ? (
-                          <span className={cn("text-xs text-success", !permissions?.canViewImportPrice && "font-semibold text-sm text-foreground")}>
-                            {permissions?.canViewImportPrice ? 'Giá bán: ' : ''}{formatCurrencyWithSpaces(product.salePrice)}đ
-                          </span>
-                        ) : (
-                          <span className={cn("text-xs text-muted-foreground", !permissions?.canViewImportPrice && "font-semibold text-sm")}>
-                            {permissions?.canViewImportPrice ? 'Giá bán: ' : ''}***
-                          </span>
-                        )
-                      )}
-                      {getStatusBadge(product.status, product)}
-                      {(product as any).isPrinted && (
-                        <Badge variant="outline" className="text-[10px] gap-0.5 h-5 border-primary/30 text-primary">
-                          <Printer className="h-2.5 w-2.5" />
-                          Đã in
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDate(product.importDate)}
-                  </span>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -340,115 +414,171 @@ export function ProductTable({
             </tr>
           </thead>
           <tbody>
-            {products.map((product) => (
-              <tr key={product.id}>
-                <td>
-                  <Checkbox
-                    checked={selectedProducts.includes(product.id)}
-                    onCheckedChange={() => toggleOne(product.id)}
-                    aria-label={`Chọn ${product.name}`}
-                  />
-                </td>
-                <td className="font-medium max-w-[200px]">
-                  <div className="flex items-center gap-1.5">
-                    <span className="truncate">{product.name}</span>
-                    {product.isTemplateGroup && (
-                      <Badge variant="secondary" className="text-[10px] gap-0.5 shrink-0">
-                        <Layers className="h-2.5 w-2.5" />
-                        {product.variantCount} biến thể
-                      </Badge>
+            {products.map((product) => {
+              const isGroup = !!(product.isVariantGroup || product.isTemplateGroup) && (product.variantCount || 0) > 1;
+              const isExpanded = expandedGroups.has(product.id);
+              const colCount = 6 + (permissions?.canViewImportPrice ? 1 : 0) + (permissions?.canViewSalePrice !== false ? 1 : 0);
+              
+              return (
+                <React.Fragment key={product.id}>
+                  <tr className={cn(isGroup && 'cursor-pointer')} onClick={isGroup ? () => toggleGroup(product.id) : undefined}>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedProducts.includes(product.id)}
+                        onCheckedChange={() => toggleOne(product.id)}
+                        aria-label={`Chọn ${product.name}`}
+                      />
+                    </td>
+                    <td className="font-medium max-w-[200px]">
+                      <div className="flex items-center gap-1.5">
+                        {isGroup && (
+                          isExpanded ? <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        )}
+                        <span className="truncate">{product.name}</span>
+                        {isGroup && (
+                          <Badge variant="secondary" className="text-[10px] gap-0.5 shrink-0">
+                            <Layers className="h-2.5 w-2.5" />
+                            {product.variantCount} biến thể
+                          </Badge>
+                        )}
+                      </div>
+                    </td>
+                    <td className="text-muted-foreground text-xs sm:text-sm">{product.sku}</td>
+                    <td className="font-mono text-xs sm:text-sm hidden lg:table-cell">{product.imei || '-'}</td>
+                    <td className="hidden sm:table-cell">{product.categoryName}</td>
+                    {permissions?.canViewImportPrice && <td className="text-right font-medium text-sm">{formatCurrency(product.importPrice)}</td>}
+                    {permissions?.canViewSalePrice !== false && (
+                      <td className="text-right font-medium text-sm hidden sm:table-cell">
+                        {product.salePrice ? formatCurrencyWithSpaces(product.salePrice) + 'đ' : '-'}
+                      </td>
                     )}
-                  </div>
-                </td>
-                <td className="text-muted-foreground text-xs sm:text-sm">{product.sku}</td>
-                <td className="font-mono text-xs sm:text-sm hidden lg:table-cell">{product.imei || '-'}</td>
-                <td className="hidden sm:table-cell">{product.categoryName}</td>
-                {permissions?.canViewImportPrice && <td className="text-right font-medium text-sm">{formatCurrency(product.importPrice)}</td>}
-                {permissions?.canViewSalePrice !== false && (
-                  <td className="text-right font-medium text-sm hidden sm:table-cell">
-                    {product.salePrice ? formatCurrencyWithSpaces(product.salePrice) + 'đ' : '-'}
-                  </td>
-                )}
-                <td className="hidden md:table-cell">{formatDate(product.importDate)}</td>
-                <td className="hidden lg:table-cell">{product.supplierName}</td>
-                <td>
-                  {getStatusBadge(product.status, product)}
-                  {(product as any).isPrinted && (
-                    <Badge variant="outline" className="ml-1 text-[10px] gap-0.5 h-5 border-primary/30 text-primary">
-                      <Printer className="h-2.5 w-2.5" />
-                      Đã in
-                    </Badge>
-                  )}
-                </td>
-                <td>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-popover">
-                      <DropdownMenuItem onClick={() => onEdit(product)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Chỉnh sửa
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onPrintBarcode([product])}>
-                        <Barcode className="mr-2 h-4 w-4" />
-                        In mã vạch
-                      </DropdownMenuItem>
-                      {product.status === 'template' && onDuplicate && (
-                        <DropdownMenuItem onClick={() => onDuplicate(product)}>
-                          <Copy className="mr-2 h-4 w-4" />
-                          Sao chép sản phẩm mẫu
-                        </DropdownMenuItem>
+                    <td className="hidden md:table-cell">{formatDate(product.importDate)}</td>
+                    <td className="hidden lg:table-cell">{product.supplierName}</td>
+                    <td>
+                      {getStatusBadge(product.status, product)}
+                      {(product as any).isPrinted && (
+                        <Badge variant="outline" className="ml-1 text-[10px] gap-0.5 h-5 border-primary/30 text-primary">
+                          <Printer className="h-2.5 w-2.5" />
+                          Đã in
+                        </Badge>
                       )}
-                      {onImportFromTemplate && (
-                        <DropdownMenuItem onClick={() => onImportFromTemplate(product)}>
-                          <ArrowDownToLine className="mr-2 h-4 w-4" />
-                          Nhập hàng từ SP
-                        </DropdownMenuItem>
-                      )}
-                      {product.status === 'template' && onDeleteTemplate && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => onDeleteTemplate(product)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Xóa sản phẩm mẫu
+                    </td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-popover">
+                          <DropdownMenuItem onClick={() => onEdit(product)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Chỉnh sửa
                           </DropdownMenuItem>
-                        </>
-                      )}
-                      
-                      {/* Super Admin only actions */}
-                      {permissions?.canAdjustProductQuantity && !isIMEIProduct(product) && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleAdjustQuantity(product)}>
-                            <Settings2 className="mr-2 h-4 w-4" />
-                            Điều chỉnh số lượng
+                          <DropdownMenuItem onClick={() => onPrintBarcode([product])}>
+                            <Barcode className="mr-2 h-4 w-4" />
+                            In mã vạch
                           </DropdownMenuItem>
-                        </>
-                      )}
-                      
-                      {permissions?.canDeleteIMEIProducts && isIMEIProduct(product) && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => handleDeleteProduct(product)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Xóa sản phẩm
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </td>
-              </tr>
-            ))}
+                          {product.status === 'template' && onDuplicate && (
+                            <DropdownMenuItem onClick={() => onDuplicate(product)}>
+                              <Copy className="mr-2 h-4 w-4" />
+                              Sao chép sản phẩm mẫu
+                            </DropdownMenuItem>
+                          )}
+                          {onImportFromTemplate && (
+                            <DropdownMenuItem onClick={() => onImportFromTemplate(product)}>
+                              <ArrowDownToLine className="mr-2 h-4 w-4" />
+                              Nhập hàng từ SP
+                            </DropdownMenuItem>
+                          )}
+                          {product.status === 'template' && onDeleteTemplate && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => onDeleteTemplate(product)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Xóa sản phẩm mẫu
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          {permissions?.canAdjustProductQuantity && !isIMEIProduct(product) && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleAdjustQuantity(product)}>
+                                <Settings2 className="mr-2 h-4 w-4" />
+                                Điều chỉnh số lượng
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          {permissions?.canDeleteIMEIProducts && isIMEIProduct(product) && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteProduct(product)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Xóa sản phẩm
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                  {/* Expanded variant rows */}
+                  {isGroup && isExpanded && product.childProducts?.map((child) => {
+                    const variantLabel = [child.variant1, child.variant2, child.variant3].filter(Boolean).join(' · ');
+                    return (
+                      <tr key={child.id} className="bg-muted/20">
+                        <td>
+                          <Checkbox
+                            checked={selectedProducts.includes(child.id)}
+                            onCheckedChange={() => toggleOne(child.id)}
+                          />
+                        </td>
+                        <td className="font-medium max-w-[200px] pl-8">
+                          <span className="truncate text-sm">{variantLabel || child.name}</span>
+                        </td>
+                        <td className="text-muted-foreground text-xs sm:text-sm">{child.sku}</td>
+                        <td className="font-mono text-xs sm:text-sm hidden lg:table-cell">{child.imei || '-'}</td>
+                        <td className="hidden sm:table-cell">{child.categoryName}</td>
+                        {permissions?.canViewImportPrice && <td className="text-right font-medium text-sm">{formatCurrency(child.importPrice)}</td>}
+                        {permissions?.canViewSalePrice !== false && (
+                          <td className="text-right font-medium text-sm hidden sm:table-cell">
+                            {child.salePrice ? formatCurrencyWithSpaces(child.salePrice) + 'đ' : '-'}
+                          </td>
+                        )}
+                        <td className="hidden md:table-cell">{formatDate(child.importDate)}</td>
+                        <td className="hidden lg:table-cell">{child.supplierName}</td>
+                        <td>{getStatusBadge(child.status, child)}</td>
+                        <td>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-popover">
+                              <DropdownMenuItem onClick={() => onEdit(child)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Chỉnh sửa
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => onPrintBarcode([child])}>
+                                <Barcode className="mr-2 h-4 w-4" />
+                                In mã vạch
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </React.Fragment>
+              );
+            })}
           </tbody>
         </table>
         {products.length === 0 && (
