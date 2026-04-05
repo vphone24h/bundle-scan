@@ -17,6 +17,13 @@ export interface PermissionCategory {
 
 export const PERMISSION_CATEGORIES: PermissionCategory[] = [
   {
+    key: 'overview',
+    label: 'Tổng quan',
+    children: [
+      { key: 'view_overview', label: 'Xem tổng quan' },
+    ],
+  },
+  {
     key: 'products',
     label: 'Sản phẩm',
     children: [
