@@ -107,6 +107,7 @@ type RestoreJob = {
 };
 
 const RESTORE_JOB_HANDLED_KEY = 'vkho_restore_job_handled';
+const ACTIVE_RESTORE_JOB_KEY = 'vkho_active_restore_job_id';
 
 export function CrossPlatformBackupSection() {
   const { data: tenant } = useCurrentTenant();
@@ -174,15 +175,20 @@ export function CrossPlatformBackupSection() {
     setImportStatus(restoreJob?.current_step || 'Đang xử lý...');
   }, [isRestoreRunning, restoreJob?.progress, restoreJob?.current_step]);
 
-  // Handle job completion
+  // Handle job completion only for imports started in this session
   useEffect(() => {
-    if (!restoreJob?.id || !restoreJob?.status) return;
+    if (!restoreJob?.id || !restoreJob?.status || typeof window === 'undefined') return;
     if (restoreJob.status !== 'completed' && restoreJob.status !== 'failed') return;
 
+    const activeRestoreJobId = window.sessionStorage.getItem(ACTIVE_RESTORE_JOB_KEY);
+    if (activeRestoreJobId !== restoreJob.id) return;
+
     const handledKey = `${restoreJob.id}:${restoreJob.status}`;
-    const lastHandled = sessionStorage.getItem(RESTORE_JOB_HANDLED_KEY);
+    const lastHandled = window.sessionStorage.getItem(RESTORE_JOB_HANDLED_KEY);
     if (lastHandled === handledKey) return;
-    sessionStorage.setItem(RESTORE_JOB_HANDLED_KEY, handledKey);
+
+    window.sessionStorage.setItem(RESTORE_JOB_HANDLED_KEY, handledKey);
+    window.sessionStorage.removeItem(ACTIVE_RESTORE_JOB_KEY);
 
     setIsImporting(false);
 
@@ -198,7 +204,6 @@ export function CrossPlatformBackupSection() {
       return;
     }
 
-    // completed
     const result = restoreJob.result_summary || {};
     clearRestoredDataCache();
     setImportResult(result);
@@ -479,6 +484,11 @@ export function CrossPlatformBackupSection() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
+      if (data?.jobId && typeof window !== 'undefined') {
+        window.sessionStorage.removeItem(RESTORE_JOB_HANDLED_KEY);
+        window.sessionStorage.setItem(ACTIVE_RESTORE_JOB_KEY, data.jobId);
+      }
+
       if (data?.alreadyRunning) {
         toast.info('Hệ thống đang chạy tác vụ khôi phục trước đó. Vui lòng chờ hoàn tất.');
         return;
@@ -487,9 +497,6 @@ export function CrossPlatformBackupSection() {
       if (data?.jobId) {
         toast.success('Đã bắt đầu khôi phục nền! Tiến độ sẽ cập nhật tự động.');
         setImportStatus('Đã đưa vào hàng chờ...');
-        // Clear handled key so completion will trigger
-        sessionStorage.removeItem(RESTORE_JOB_HANDLED_KEY);
-        // Refetch to start polling
         setTimeout(() => refetchRestoreJob(), 1000);
       }
     } catch (error) {

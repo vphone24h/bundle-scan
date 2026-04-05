@@ -45,6 +45,7 @@ type DataManagementJob = {
 };
 
 const JOB_HANDLED_STORAGE_KEY = 'vkho_data_management_job_handled';
+const ACTIVE_DELETE_JOB_KEY = 'vkho_active_delete_job_id';
 
 function getJobStatusLabel(status?: DataManagementJob['status']) {
   switch (status) {
@@ -105,8 +106,9 @@ export function DataManagementSection() {
 
       const { data, error } = await supabase
         .from('data_management_jobs' as any)
-        .select('id, status, progress, current_step, error_message, delete_mode, notify_email, created_at, completed_at')
+        .select('id, status, progress, current_step, error_message, delete_mode, notify_email, created_at, completed_at, job_type')
         .eq('tenant_id', tenant.id)
+        .eq('job_type', 'delete_restore')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -133,11 +135,15 @@ export function DataManagementSection() {
     if (!latestDeleteJob?.id || !latestDeleteJob?.status || typeof window === 'undefined') return;
     if (latestDeleteJob.status !== 'completed' && latestDeleteJob.status !== 'failed') return;
 
+    const activeDeleteJobId = window.sessionStorage.getItem(ACTIVE_DELETE_JOB_KEY);
+    if (activeDeleteJobId !== latestDeleteJob.id) return;
+
     const handledKey = `${latestDeleteJob.id}:${latestDeleteJob.status}`;
     const lastHandledKey = window.sessionStorage.getItem(JOB_HANDLED_STORAGE_KEY);
     if (lastHandledKey === handledKey) return;
 
     window.sessionStorage.setItem(JOB_HANDLED_STORAGE_KEY, handledKey);
+    window.sessionStorage.removeItem(ACTIVE_DELETE_JOB_KEY);
 
     if (latestDeleteJob.status === 'failed') {
       toast.error(latestDeleteJob.error_message || 'Không thể xoá dữ liệu.');
@@ -276,6 +282,9 @@ export function DataManagementSection() {
 
       if (typeof window !== 'undefined') {
         window.sessionStorage.removeItem(JOB_HANDLED_STORAGE_KEY);
+        if (data?.jobId) {
+          window.sessionStorage.setItem(ACTIVE_DELETE_JOB_KEY, data.jobId);
+        }
       }
 
       await Promise.all([refetchLatestDeleteJob(), refetchTenant()]);
