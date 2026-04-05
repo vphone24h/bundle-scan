@@ -251,11 +251,68 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         }
       }
 
+      // Nếu SP mẫu (template) được thêm IMEI → tạo phiếu nhập tự động
+      const isTemplateGettingImei = product.status === 'template' && !product.imei && (updates.imei || formData.imei.trim());
+      let autoReceiptId: string | null = null;
+
+      if (isTemplateGettingImei) {
+        const tenantRes = await supabase.rpc('get_user_tenant_id_secure');
+        const tenantId = tenantRes.data;
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (tenantId && user) {
+          const now = new Date();
+          const code = `PN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+          const importPrice = product.import_price || 0;
+
+          const { data: receipt, error: receiptErr } = await supabase
+            .from('import_receipts')
+            .insert([{
+              code,
+              total_amount: importPrice,
+              paid_amount: importPrice,
+              debt_amount: 0,
+              original_debt_amount: 0,
+              supplier_id: product.supplier_id || null,
+              branch_id: product.branch_id || null,
+              created_by: user.id,
+              tenant_id: tenantId,
+              note: `Nhập từ sản phẩm mẫu: ${updates.name || formData.name}`,
+            }])
+            .select()
+            .single();
+
+          if (!receiptErr && receipt) {
+            autoReceiptId = receipt.id;
+            // Cập nhật thêm trạng thái và liên kết phiếu nhập
+            updates.status = 'in_stock';
+            updates.quantity = 1;
+            updates.total_import_cost = importPrice;
+            updates.import_receipt_id = receipt.id;
+            updates.import_date = now.toISOString();
+          }
+        }
+      }
+
       await updateProduct.mutateAsync({
         productId: product.id,
         updates,
         oldData,
       });
+
+      // Tạo product_imports record nếu có phiếu nhập tự động
+      if (autoReceiptId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        await supabase.from('product_imports').insert([{
+          product_id: product.id,
+          import_receipt_id: autoReceiptId,
+          quantity: 1,
+          import_price: product.import_price || 0,
+          supplier_id: product.supplier_id || null,
+          note: `Nhập từ sản phẩm mẫu`,
+          created_by: user?.id,
+        }]);
+      }
 
       // Nếu có cấu hình biến thể, tạo thêm sản phẩm mẫu cho các biến thể còn lại
       if (hasVariants) {
