@@ -219,43 +219,33 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       }
 
       // === Logic IMEI + biến thể ===
-      // Khi bật biến thể cho SP có IMEI:
-      // - IMEI phải gắn vào biến thể phù hợp, không giữ ở tên gốc
-      if (hasVariants && productHasImei) {
+      // Khi bật biến thể: dùng variantImeis map từ UI
+      if (hasVariants) {
         const activeLevels = variantConfig.levels.filter(l => l.values.length > 0);
         const combinations = generateVariantCombinations(activeLevels);
         const baseName = formData.name.trim();
-        const currentImei = formData.imei.trim() || product.imei || '';
 
-        // Tìm biến thể phù hợp nhất với tên hiện tại
-        let matchedCombo: string[] | null = null;
-        const currentName = product.name || '';
-        for (const combo of combinations) {
-          const variantName = `${baseName} ${combo.join(' ')}`.trim();
-          // So khớp nếu tên sản phẩm hiện tại chứa các từ khóa biến thể
-          if (currentName.toLowerCase().includes(combo.join(' ').toLowerCase()) ||
-              combo.every(v => currentName.toLowerCase().includes(v.toLowerCase()))) {
-            matchedCombo = combo;
-            break;
+        if (combinations.length > 0) {
+          // Tìm biến thể mà user gán IMEI hiện tại của SP gốc (hoặc combo đầu tiên có IMEI)
+          let matchedCombo: string[] | null = null;
+          for (const combo of combinations) {
+            const key = combo.join('|');
+            const imeiVal = variantImeis[key]?.trim();
+            if (imeiVal) {
+              matchedCombo = combo;
+              break;
+            }
           }
-        }
+          // Nếu không có IMEI nào được nhập, lấy combo đầu tiên
+          if (!matchedCombo) matchedCombo = combinations[0];
 
-        // Nếu không tìm được biến thể khớp, lấy biến thể đầu tiên
-        if (!matchedCombo && combinations.length > 0) {
-          matchedCombo = combinations[0];
-        }
-
-        if (matchedCombo) {
-          // Cập nhật tên SP gốc thành tên biến thể + gắn variant fields
           const variantName = `${baseName} ${matchedCombo.join(' ')}`.trim();
           updates.name = variantName;
           updates.variant_1 = matchedCombo[0] || null;
           updates.variant_2 = matchedCombo[1] || null;
           updates.variant_3 = matchedCombo[2] || null;
-          // IMEI giữ nguyên trên SP này (đúng biến thể)
-          updates.imei = currentImei;
+          updates.imei = variantImeis[matchedCombo.join('|')]?.trim() || null;
 
-          // Cập nhật SKU theo biến thể
           const skuSuffix = matchedCombo.map(v => v.replace(/\s+/g, '')).join('-');
           updates.sku = formData.sku ? `${formData.sku}-${skuSuffix}` : skuSuffix;
         }
