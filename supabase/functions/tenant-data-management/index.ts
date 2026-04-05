@@ -774,12 +774,17 @@ async function deleteAllWarehouseData(supabaseAdmin: any, tenantId: string, repo
 
   await reportProgress?.(62, 'Đang xoá sản phẩm và sổ quỹ')
 
-  // Cleanup any remaining export_receipt_items referencing products (orphans not caught by receipt_id)
-  if (productIds.length > 0) {
-    await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'product_id', productIds, 'Xoá chi tiết PX còn sót theo product_id', true)
-    await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_payments', 'receipt_id', exportReceiptIds, 'Xoá thanh toán PX còn sót', true)
+  // Cleanup orphan chain: export_returns → export_receipt_items → products
+  // First find all export_receipt_items by product_id
+  const orphanExportItemIds = await fetchIdsByParent(supabaseAdmin, 'export_receipt_items', 'product_id', productIds)
+  if (orphanExportItemIds.length > 0) {
+    // Delete export_returns referencing these items first
+    await deleteByIdsInBatches(supabaseAdmin, 'export_returns', 'export_receipt_item_id', orphanExportItemIds, 'Xoá trả hàng còn sót theo item_id', true)
+    // Then delete the items themselves
+    await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'id', orphanExportItemIds, 'Xoá chi tiết PX còn sót', true)
   }
-  // Also cleanup any remaining references from other child tables
+  // Cleanup any remaining export_receipt_payments and receipts
+  await assertOptionalMutation('Xoá thanh toán PX còn sót', supabaseAdmin.from('export_receipt_payments').delete().eq('tenant_id', tenantId))
   await assertOptionalMutation('Xoá phiếu xuất còn sót', supabaseAdmin.from('export_receipts').delete().eq('tenant_id', tenantId))
   await assertOptionalMutation('Xoá phiếu nhập còn sót', supabaseAdmin.from('import_receipts').delete().eq('tenant_id', tenantId))
 
