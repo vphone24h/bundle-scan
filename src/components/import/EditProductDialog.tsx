@@ -365,8 +365,54 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
             .filter(Boolean);
           
           if (newTemplates.length > 0) {
-            const { error: templateError } = await supabase.from('products').insert(newTemplates as any[]);
+            const { data: insertedTemplates, error: templateError } = await supabase
+              .from('products')
+              .insert(newTemplates as any[])
+              .select('id, name, imei, import_price, supplier_id, branch_id');
             if (templateError) throw templateError;
+
+            // Tạo phiếu nhập cho các biến thể có IMEI
+            const templatesWithImei = (insertedTemplates || []).filter((t: any) => t.imei);
+            if (templatesWithImei.length > 0) {
+              const { data: { user } } = await supabase.auth.getUser();
+              for (const t of templatesWithImei) {
+                const now = new Date();
+                const rCode = `PN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}${String(Math.floor(Math.random() * 100)).padStart(2, '0')}`;
+                const { data: newReceipt } = await supabase
+                  .from('import_receipts')
+                  .insert([{
+                    code: rCode,
+                    total_amount: t.import_price || 0,
+                    paid_amount: t.import_price || 0,
+                    debt_amount: 0,
+                    original_debt_amount: 0,
+                    supplier_id: t.supplier_id || null,
+                    branch_id: t.branch_id || null,
+                    created_by: user?.id,
+                    tenant_id: tenantId,
+                    note: `Nhập từ sản phẩm mẫu: ${t.name}`,
+                  }])
+                  .select()
+                  .single();
+
+                if (newReceipt) {
+                  await supabase.from('products').update({
+                    import_receipt_id: newReceipt.id,
+                    import_date: new Date().toISOString(),
+                  }).eq('id', t.id);
+
+                  await supabase.from('product_imports').insert([{
+                    product_id: t.id,
+                    import_receipt_id: newReceipt.id,
+                    quantity: 1,
+                    import_price: t.import_price || 0,
+                    supplier_id: t.supplier_id || null,
+                    note: 'Nhập từ sản phẩm mẫu',
+                    created_by: user?.id,
+                  }]);
+                }
+              }
+            }
           }
 
           // Save/update product_group
