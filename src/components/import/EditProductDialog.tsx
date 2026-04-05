@@ -298,6 +298,13 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                 />
               </div>
 
+              {/* Variant config - cho phép thêm biến thể */}
+              <VariantConfigPanel
+                config={variantConfig}
+                onChange={setVariantConfig}
+                baseProductName={formData.name}
+              />
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="sku">SKU <span className="text-destructive">*</span></Label>
