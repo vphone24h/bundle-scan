@@ -196,8 +196,49 @@ export default function ImportNewPage() {
   const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  // Auto-save cart to localStorage for draft persistence
+  useEffect(() => {
+    draft.saveDraft(cart, { supplierId: selectedSupplierId, branchId: selectedBranchId });
+  }, [cart, selectedSupplierId, selectedBranchId]);
+
+  // Handle resume draft
+  const handleResumeDraft = useCallback(() => {
+    if (draft.pendingDraft) {
+      setCart(draft.pendingDraft.items);
+      if (draft.pendingDraft.supplierId) setSelectedSupplierId(draft.pendingDraft.supplierId);
+      if (draft.pendingDraft.branchId) setSelectedBranchId(draft.pendingDraft.branchId);
+    }
+    draft.acceptDraft();
+  }, [draft.pendingDraft]);
+
+  const totalAmount = useMemo(
+    () => cart.reduce((sum, item) => sum + item.importPrice * item.quantity, 0),
+    [cart]
+  );
+
   const normalizeSuggestionName = useCallback((name: string) => normalizeProductSearchQuery(name), []);
 
+  const variantProductInfo = useMemo(() => {
+    const lookup = new Map<string, { baseName: string; isVariantLike: boolean }>();
+    const variantBaseNames = new Set<string>();
+
+    ((products || []) as any[]).forEach((product) => {
+      const normalizedFullName = normalizeLooseSearchValue(normalizeProductSearchQuery(product.name || ''));
+      const isVariantLike = !!(product.group_id || product.variant_1 || product.variant_2 || product.variant_3);
+      const baseName = isVariantLike
+        ? extractBaseNameFromVariantName(product.name || '', [product.variant_1, product.variant_2, product.variant_3])
+        : normalizeProductSearchQuery(product.name || '');
+
+      lookup.set(normalizedFullName, { baseName, isVariantLike });
+      if (isVariantLike) {
+        variantBaseNames.add(normalizeLooseSearchValue(baseName));
+      }
+    });
+
+    return { lookup, variantBaseNames };
+  }, [products]);
+
+  // Debounced server-side product search for suggestions
   const searchProductsFromDB = useCallback(async (searchValue: string) => {
     if (searchValue.length < 2) {
       setSuggestions([]);
@@ -213,32 +254,38 @@ export default function ImportNewPage() {
 
       if (error) throw error;
 
-      const rows = ((data as any[]) || []).map((r: any) => ({
-        name: normalizeSuggestionName(r.product_name || ''),
-        sku: r.product_sku || '',
-        category_id: r.category_id,
-        import_price: r.latest_import_price,
-        sale_price: r.latest_sale_price,
-        totalQty: Number(r.in_stock_qty || 0),
-      }));
-
       const grouped = new Map<string, ProductSuggestion>();
 
-      rows.forEach((row) => {
-        const key = normalizeLooseSearchValue(row.name);
-        const existing = grouped.get(key);
+      (((data as any[]) || [])).forEach((r: any) => {
+        const normalizedName = normalizeSuggestionName(r.product_name || '');
+        const normalizedNameKey = normalizeLooseSearchValue(normalizedName);
+        const matchedInfo = variantProductInfo.lookup.get(normalizedNameKey);
+        const collapsedName = matchedInfo?.baseName || normalizedName;
+        const collapsedKey = normalizeLooseSearchValue(collapsedName);
+        const isVariantLike = matchedInfo?.isVariantLike || variantProductInfo.variantBaseNames.has(collapsedKey);
+
+        const nextRow: ProductSuggestion = {
+          name: collapsedName,
+          sku: isVariantLike ? '' : (r.product_sku || ''),
+          category_id: r.category_id,
+          import_price: isVariantLike ? null : (r.latest_import_price ?? null),
+          sale_price: isVariantLike ? null : (r.latest_sale_price ?? null),
+          totalQty: Number(r.in_stock_qty || 0),
+        };
+
+        const existing = grouped.get(collapsedKey);
         if (!existing) {
-          grouped.set(key, row);
+          grouped.set(collapsedKey, nextRow);
           return;
         }
 
-        grouped.set(key, {
+        grouped.set(collapsedKey, {
           ...existing,
-          sku: existing.sku || row.sku,
-          category_id: existing.category_id || row.category_id,
-          import_price: existing.import_price ?? row.import_price,
-          sale_price: existing.sale_price ?? row.sale_price,
-          totalQty: Math.max(existing.totalQty, row.totalQty),
+          sku: existing.sku || nextRow.sku,
+          category_id: existing.category_id || nextRow.category_id,
+          import_price: existing.import_price ?? nextRow.import_price,
+          sale_price: existing.sale_price ?? nextRow.sale_price,
+          totalQty: existing.totalQty + nextRow.totalQty,
         });
       });
 
@@ -249,7 +296,7 @@ export default function ImportNewPage() {
     } finally {
       setIsSearching(false);
     }
-  }, [normalizeSuggestionName]);
+  }, [normalizeSuggestionName, variantProductInfo]);
 
   // Auto-fill from template product navigation
   useEffect(() => {
