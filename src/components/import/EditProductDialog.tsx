@@ -586,3 +586,16 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     </>
   );
 }
+
+function generateVariantCombinations(levels: VariantLevel[]): string[][] {
+  if (levels.length === 0) return [[]];
+  const [first, ...rest] = levels;
+  const restCombinations = generateVariantCombinations(rest);
+  const result: string[][] = [];
+  for (const value of first.values) {
+    for (const combo of restCombinations) {
+      result.push([value, ...combo]);
+    }
+  }
+  return result;
+}
