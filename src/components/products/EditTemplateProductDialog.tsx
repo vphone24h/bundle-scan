@@ -48,6 +48,7 @@ export function EditTemplateProductDialog({ product, open, onOpenChange }: EditT
   const [note, setNote] = useState('');
   const [variants, setVariants] = useState<VariantRow[]>([]);
   const [isLoadingVariants, setIsLoadingVariants] = useState(false);
+  const [originalBaseName, setOriginalBaseName] = useState('');
   
   // New variant form
   const [newVariantName, setNewVariantName] = useState('');
