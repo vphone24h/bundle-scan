@@ -8185,6 +8185,45 @@ export type Database = {
           unit: string
         }[]
       }
+      search_products_paginated: {
+        Args: {
+          p_branch_id?: string
+          p_category_id?: string
+          p_date_from?: string
+          p_date_to?: string
+          p_filter_by_branch?: boolean
+          p_page?: number
+          p_page_size?: number
+          p_printed?: string
+          p_search?: string
+          p_status?: string
+          p_supplier_id?: string
+          p_user_branch_id?: string
+        }
+        Returns: {
+          branch_id: string
+          category_id: string
+          group_id: string
+          id: string
+          imei: string
+          import_date: string
+          import_price: number
+          import_receipt_id: string
+          is_printed: boolean
+          name: string
+          note: string
+          quantity: number
+          sale_price: number
+          sku: string
+          status: Database["public"]["Enums"]["product_status"]
+          supplier_id: string
+          total_rows: number
+          unit: string
+          variant_1: string
+          variant_2: string
+          variant_3: string
+        }[]
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       submit_staff_review: {
