@@ -121,6 +121,38 @@ async function fetchIdsByTenant(supabaseAdmin: any, table: string, tenantId: str
   return ids
 }
 
+// Fetch IDs from a child table by parent column (for tables without tenant_id)
+async function fetchIdsByParent(supabaseAdmin: any, table: string, parentColumn: string, parentIds: string[]) {
+  if (parentIds.length === 0) return []
+  const ids: string[] = []
+
+  for (let i = 0; i < parentIds.length; i += FETCH_PAGE_SIZE) {
+    const parentBatch = parentIds.slice(i, i + FETCH_PAGE_SIZE)
+    for (let from = 0; ; from += FETCH_PAGE_SIZE) {
+      const to = from + FETCH_PAGE_SIZE - 1
+      const { data, error } = await supabaseAdmin
+        .from(table)
+        .select('id')
+        .in(parentColumn, parentBatch)
+        .order('id')
+        .range(from, to)
+
+      if (error) {
+        if (isMissingTableError(error)) return ids
+        console.error(`[tenant-data-management] fetch ${table} by ${parentColumn} failed:`, error)
+        throw new Error(`Không thể tải danh sách ${table}: ${error.message}`)
+      }
+
+      const batch = (data || []).map((row: any) => row.id)
+      ids.push(...batch)
+
+      if (batch.length < FETCH_PAGE_SIZE) break
+    }
+  }
+
+  return ids
+}
+
 async function deleteByIdsInBatches(
   supabaseAdmin: any,
   table: string,
@@ -742,12 +774,17 @@ async function deleteAllWarehouseData(supabaseAdmin: any, tenantId: string, repo
 
   await reportProgress?.(62, 'Đang xoá sản phẩm và sổ quỹ')
 
-  // Cleanup any remaining export_receipt_items referencing products (orphans not caught by receipt_id)
-  if (productIds.length > 0) {
-    await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'product_id', productIds, 'Xoá chi tiết PX còn sót theo product_id', true)
-    await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_payments', 'receipt_id', exportReceiptIds, 'Xoá thanh toán PX còn sót', true)
+  // Cleanup orphan chain: export_returns → export_receipt_items → products
+  // First find all export_receipt_items by product_id
+  const orphanExportItemIds = await fetchIdsByParent(supabaseAdmin, 'export_receipt_items', 'product_id', productIds)
+  if (orphanExportItemIds.length > 0) {
+    // Delete export_returns referencing these items first
+    await deleteByIdsInBatches(supabaseAdmin, 'export_returns', 'export_receipt_item_id', orphanExportItemIds, 'Xoá trả hàng còn sót theo item_id', true)
+    // Then delete the items themselves
+    await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'id', orphanExportItemIds, 'Xoá chi tiết PX còn sót', true)
   }
-  // Also cleanup any remaining references from other child tables
+  // Cleanup any remaining export_receipt_payments and receipts
+  await assertOptionalMutation('Xoá thanh toán PX còn sót', supabaseAdmin.from('export_receipt_payments').delete().eq('tenant_id', tenantId))
   await assertOptionalMutation('Xoá phiếu xuất còn sót', supabaseAdmin.from('export_receipts').delete().eq('tenant_id', tenantId))
   await assertOptionalMutation('Xoá phiếu nhập còn sót', supabaseAdmin.from('import_receipts').delete().eq('tenant_id', tenantId))
 
@@ -830,10 +867,14 @@ async function deleteKeepTemplates(supabaseAdmin: any, tenantId: string, reportP
 
   await reportProgress?.(64, 'Đang reset sản phẩm mẫu')
 
-  // Cleanup any remaining export_receipt_items referencing products (orphans)
+  // Cleanup orphan chain: export_returns → export_receipt_items → products
   const allProductIds = await fetchIdsByTenant(supabaseAdmin, 'products', tenantId)
   if (allProductIds.length > 0) {
-    await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'product_id', allProductIds, 'Xoá chi tiết PX còn sót theo product_id', true)
+    const orphanItemIds = await fetchIdsByParent(supabaseAdmin, 'export_receipt_items', 'product_id', allProductIds)
+    if (orphanItemIds.length > 0) {
+      await deleteByIdsInBatches(supabaseAdmin, 'export_returns', 'export_receipt_item_id', orphanItemIds, 'Xoá trả hàng còn sót', true)
+      await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'id', orphanItemIds, 'Xoá chi tiết PX còn sót', true)
+    }
   }
 
   await assertMutation(
