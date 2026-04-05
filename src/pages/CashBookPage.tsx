@@ -1926,6 +1926,15 @@ export default function CashBookPage() {
           </DialogHeader>
 
           <div className="space-y-4">
+            {/* Ngày giờ */}
+            <div>
+              <Label>Ngày giờ giao dịch</Label>
+              <Input
+                type="datetime-local"
+                value={formData.transaction_date}
+                onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
+              />
+            </div>
             <div>
               <div className="flex items-center justify-between">
                 <Label>Danh mục *</Label>
