@@ -87,6 +87,38 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     }
   }, [product]);
 
+  useEffect(() => {
+    if (!variantConfig.enabled) return;
+
+    const activeLevels = variantConfig.levels.filter(level => level.values.length > 0);
+    const combos = generateVariantCombinations(activeLevels);
+    if (combos.length === 0 || (combos.length === 1 && combos[0].length === 0)) return;
+
+    const existingImei = (formData.imei || product?.imei || '').trim();
+    const existingPrice = String(product?.import_price || 0);
+    const validKeys = new Set(combos.map(combo => combo.join('|')));
+
+    setVariantImeis(prev => {
+      const next = Object.fromEntries(Object.entries(prev).filter(([key]) => validKeys.has(key)));
+      const hasAnyImei = Object.values(next).some(value => (value || '').trim());
+      if (!hasAnyImei && existingImei) {
+        next[combos[0].join('|')] = existingImei;
+      }
+      return next;
+    });
+
+    setVariantPrices(prev => {
+      const next = Object.fromEntries(Object.entries(prev).filter(([key]) => validKeys.has(key)));
+      combos.forEach(combo => {
+        const key = combo.join('|');
+        if (!next[key]) {
+          next[key] = existingPrice;
+        }
+      });
+      return next;
+    });
+  }, [variantConfig, formData.imei, product?.imei, product?.import_price]);
+
   const handleImportDateChange = (newDate: string) => {
     if (newDate !== originalImportDate && hasSecurityPassword && !securityUnlocked) {
       setPendingDateChange(newDate);
@@ -253,16 +285,21 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
           if (!matchedCombo) matchedCombo = combinations[0];
 
           const variantName = `${baseName} ${matchedCombo.join(' ')}`.trim();
+          const matchedKey = matchedCombo.join('|');
+          const matchedVariantImei = variantImeis[matchedKey]?.trim();
+          const matchedPrice = variantPrices[matchedKey];
+
           updates.name = variantName;
           updates.variant_1 = matchedCombo[0] || null;
           updates.variant_2 = matchedCombo[1] || null;
           updates.variant_3 = matchedCombo[2] || null;
-          updates.imei = variantImeis[matchedCombo.join('|')]?.trim() || null;
-          // Cập nhật giá nhập từ variant nếu có
-          const matchedPrice = variantPrices[matchedCombo.join('|')];
-          if (matchedPrice) {
+          updates.imei = matchedVariantImei || (product.imei || formData.imei.trim() || null);
+          if (matchedPrice && !Number.isNaN(Number(matchedPrice))) {
             updates.import_price = Math.round(Number(matchedPrice));
             updates.total_import_cost = Math.round(Number(matchedPrice));
+          } else if (product.import_price != null) {
+            updates.import_price = Math.round(Number(product.import_price));
+            updates.total_import_cost = Math.round(Number(product.import_price));
           }
 
           const skuSuffix = matchedCombo.map(v => v.replace(/\s+/g, '')).join('-');
