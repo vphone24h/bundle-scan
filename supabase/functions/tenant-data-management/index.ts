@@ -127,8 +127,8 @@ async function fetchIdsByParent(supabaseAdmin: any, table: string, parentColumn:
   if (parentIds.length === 0) return []
   const ids: string[] = []
 
-  for (let i = 0; i < parentIds.length; i += FETCH_PAGE_SIZE) {
-    const parentBatch = parentIds.slice(i, i + FETCH_PAGE_SIZE)
+  for (let i = 0; i < parentIds.length; i += IN_CLAUSE_BATCH_SIZE) {
+    const parentBatch = parentIds.slice(i, i + IN_CLAUSE_BATCH_SIZE)
     for (let from = 0; ; from += FETCH_PAGE_SIZE) {
       const to = from + FETCH_PAGE_SIZE - 1
       const { data, error } = await supabaseAdmin
