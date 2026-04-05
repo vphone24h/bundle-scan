@@ -73,6 +73,7 @@ import {
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useCashBook, useCashBookCategories, useCashBookBalances, useCreateCashBookEntry, useUpdateCashBookEntry, useDeleteCashBookEntry, useCreateCashBookCategory, type CashBookEntry } from '@/hooks/useCashBook';
+import { CategoryManageDialog } from '@/components/cashbook/CategoryManageDialog';
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCashBookGuideUrl } from '@/hooks/useAppConfig';
@@ -304,9 +305,9 @@ export default function CashBookPage() {
   const [summaryCustomFrom, setSummaryCustomFrom] = useState('');
   const [summaryCustomTo, setSummaryCustomTo] = useState('');
   
-  // Add category dialog
-  const [showAddCategoryDialog, setShowAddCategoryDialog] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
+  // Category management dialog
+  const [showCategoryManage, setShowCategoryManage] = useState(false);
+  const [categoryManageType, setCategoryManageType] = useState<'expense' | 'income'>('expense');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -571,39 +572,10 @@ export default function CashBookPage() {
     setTimePreset(preset);
   };
   
-  // Handle add category
-  const handleAddCategory = async () => {
-    if (!newCategoryName.trim()) {
-      toast({
-        title: 'Thiếu thông tin',
-        description: 'Vui lòng nhập tên danh mục',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    try {
-      await createCategory.mutateAsync({
-        name: newCategoryName.trim(),
-        type: formData.type,
-      });
-      
-      // Auto-select the new category
-      setFormData({ ...formData, category: newCategoryName.trim() });
-      setNewCategoryName('');
-      setShowAddCategoryDialog(false);
-      
-      toast({
-        title: 'Đã thêm danh mục',
-        description: `Danh mục "${newCategoryName.trim()}" đã được thêm`,
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Lỗi',
-        description: error.message || 'Không thể thêm danh mục',
-        variant: 'destructive',
-      });
-    }
+  // Handle open category management
+  const handleOpenCategoryManage = (type: 'expense' | 'income') => {
+    setCategoryManageType(type);
+    setShowCategoryManage(true);
   };
 
   const handleOpenAdd = (type: 'expense' | 'income') => {
