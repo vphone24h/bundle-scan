@@ -87,6 +87,38 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     }
   }, [product]);
 
+  useEffect(() => {
+    if (!variantConfig.enabled) return;
+
+    const activeLevels = variantConfig.levels.filter(level => level.values.length > 0);
+    const combos = generateVariantCombinations(activeLevels);
+    if (combos.length === 0 || (combos.length === 1 && combos[0].length === 0)) return;
+
+    const existingImei = (formData.imei || product?.imei || '').trim();
+    const existingPrice = String(product?.import_price || 0);
+    const validKeys = new Set(combos.map(combo => combo.join('|')));
+
+    setVariantImeis(prev => {
+      const next = Object.fromEntries(Object.entries(prev).filter(([key]) => validKeys.has(key)));
+      const hasAnyImei = Object.values(next).some(value => (value || '').trim());
+      if (!hasAnyImei && existingImei) {
+        next[combos[0].join('|')] = existingImei;
+      }
+      return next;
+    });
+
+    setVariantPrices(prev => {
+      const next = Object.fromEntries(Object.entries(prev).filter(([key]) => validKeys.has(key)));
+      combos.forEach(combo => {
+        const key = combo.join('|');
+        if (!next[key]) {
+          next[key] = existingPrice;
+        }
+      });
+      return next;
+    });
+  }, [variantConfig, formData.imei, product?.imei, product?.import_price]);
+
   const handleImportDateChange = (newDate: string) => {
     if (newDate !== originalImportDate && hasSecurityPassword && !securityUnlocked) {
       setPendingDateChange(newDate);
