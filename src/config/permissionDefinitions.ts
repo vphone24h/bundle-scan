@@ -17,6 +17,13 @@ export interface PermissionCategory {
 
 export const PERMISSION_CATEGORIES: PermissionCategory[] = [
   {
+    key: 'overview',
+    label: 'Tổng quan',
+    children: [
+      { key: 'view_overview', label: 'Xem tổng quan' },
+    ],
+  },
+  {
     key: 'products',
     label: 'Sản phẩm',
     children: [
@@ -170,6 +177,7 @@ export function getDefaultPermissionsForRole(role: string): PermissionMap {
 
     case 'branch_admin':
       return {
+        view_overview: true,
         view_products: true,
         view_import_price: true,
         view_sale_price: true,
@@ -203,6 +211,7 @@ export function getDefaultPermissionsForRole(role: string): PermissionMap {
 
     case 'cashier':
       return {
+        view_overview: true,
         view_products: true,
         view_import_price: true,
         view_sale_price: true,
@@ -237,6 +246,7 @@ export function getDefaultPermissionsForRole(role: string): PermissionMap {
     case 'staff':
     default:
       return {
+        view_overview: false,
         view_products: true,
         view_import_price: false,
         view_sale_price: true,
