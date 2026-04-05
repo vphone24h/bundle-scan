@@ -336,7 +336,7 @@ export default function CashBookPage() {
   const createEntry = useCreateCashBookEntry();
   const updateEntry = useUpdateCashBookEntry();
   const deleteEntry = useDeleteCashBookEntry();
-  const createCategory = useCreateCashBookCategory();
+  
   const { data: serverBalances } = useCashBookBalances(
     viewMode === 'branch' && selectedBranchId ? selectedBranchId : undefined
   );
