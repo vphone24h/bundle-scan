@@ -209,7 +209,8 @@ export function CreateProductTemplateDialog({ open, onOpenChange, initialData }:
         toast({ title: 'Tạo sản phẩm mẫu thành công' });
       }
 
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ['product-groups'], refetchType: 'all' });
       resetForm();
       onOpenChange(false);
     } catch (err: any) {
