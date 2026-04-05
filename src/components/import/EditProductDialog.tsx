@@ -258,6 +258,12 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
           updates.variant_2 = matchedCombo[1] || null;
           updates.variant_3 = matchedCombo[2] || null;
           updates.imei = variantImeis[matchedCombo.join('|')]?.trim() || null;
+          // Cập nhật giá nhập từ variant nếu có
+          const matchedPrice = variantPrices[matchedCombo.join('|')];
+          if (matchedPrice) {
+            updates.import_price = Math.round(Number(matchedPrice));
+            updates.total_import_cost = Math.round(Number(matchedPrice));
+          }
 
           const skuSuffix = matchedCombo.map(v => v.replace(/\s+/g, '')).join('-');
           updates.sku = formData.sku ? `${formData.sku}-${skuSuffix}` : skuSuffix;
