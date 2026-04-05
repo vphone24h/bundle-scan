@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { PriceInput } from '@/components/ui/price-input';
+import { normalizeLooseSearchValue, normalizeProductSearchQuery } from '@/lib/normalizeSearch';
 import {
   Select,
   SelectContent,
@@ -83,6 +84,31 @@ function useImportNewTourSteps(): TourStep[] {
       position: 'center' as const,
     },
   ];
+}
+
+type ProductSuggestion = {
+  name: string;
+  sku: string;
+  category_id: string | null;
+  import_price: number | null;
+  sale_price: number | null;
+  totalQty: number;
+};
+
+function extractBaseNameFromVariantName(name: string, variants: Array<string | null | undefined>) {
+  const normalizedName = normalizeProductSearchQuery(name);
+  const variantSuffix = normalizeProductSearchQuery(variants.filter(Boolean).join(' '));
+
+  if (!variantSuffix) return normalizedName;
+
+  const normalizedNameKey = normalizeLooseSearchValue(normalizedName);
+  const normalizedSuffixKey = normalizeLooseSearchValue(variantSuffix);
+
+  if (normalizedNameKey.endsWith(` ${normalizedSuffixKey}`)) {
+    return normalizedName.slice(0, normalizedName.length - variantSuffix.length).trim();
+  }
+
+  return normalizedName;
 }
 
 export default function ImportNewPage() {
