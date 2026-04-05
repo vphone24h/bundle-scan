@@ -121,6 +121,38 @@ async function fetchIdsByTenant(supabaseAdmin: any, table: string, tenantId: str
   return ids
 }
 
+// Fetch IDs from a child table by parent column (for tables without tenant_id)
+async function fetchIdsByParent(supabaseAdmin: any, table: string, parentColumn: string, parentIds: string[]) {
+  if (parentIds.length === 0) return []
+  const ids: string[] = []
+
+  for (let i = 0; i < parentIds.length; i += FETCH_PAGE_SIZE) {
+    const parentBatch = parentIds.slice(i, i + FETCH_PAGE_SIZE)
+    for (let from = 0; ; from += FETCH_PAGE_SIZE) {
+      const to = from + FETCH_PAGE_SIZE - 1
+      const { data, error } = await supabaseAdmin
+        .from(table)
+        .select('id')
+        .in(parentColumn, parentBatch)
+        .order('id')
+        .range(from, to)
+
+      if (error) {
+        if (isMissingTableError(error)) return ids
+        console.error(`[tenant-data-management] fetch ${table} by ${parentColumn} failed:`, error)
+        throw new Error(`Không thể tải danh sách ${table}: ${error.message}`)
+      }
+
+      const batch = (data || []).map((row: any) => row.id)
+      ids.push(...batch)
+
+      if (batch.length < FETCH_PAGE_SIZE) break
+    }
+  }
+
+  return ids
+}
+
 async function deleteByIdsInBatches(
   supabaseAdmin: any,
   table: string,
