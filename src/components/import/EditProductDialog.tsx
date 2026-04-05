@@ -188,6 +188,9 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         import_date: product.import_date,
       };
 
+      const hasVariants = variantConfig.enabled && variantConfig.levels.some(l => l.values.length > 0);
+      const productHasImei = !!(product.imei || formData.imei.trim());
+
       const updates: Record<string, any> = {
         name: formData.name.trim(),
         sku: formData.sku.trim(),
@@ -213,14 +216,57 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         updates.import_date_modified = true;
       }
 
+      // === Logic IMEI + biến thể ===
+      // Khi bật biến thể cho SP có IMEI:
+      // - IMEI phải gắn vào biến thể phù hợp, không giữ ở tên gốc
+      if (hasVariants && productHasImei) {
+        const activeLevels = variantConfig.levels.filter(l => l.values.length > 0);
+        const combinations = generateVariantCombinations(activeLevels);
+        const baseName = formData.name.trim();
+        const currentImei = formData.imei.trim() || product.imei || '';
+
+        // Tìm biến thể phù hợp nhất với tên hiện tại
+        let matchedCombo: string[] | null = null;
+        const currentName = product.name || '';
+        for (const combo of combinations) {
+          const variantName = `${baseName} ${combo.join(' ')}`.trim();
+          // So khớp nếu tên sản phẩm hiện tại chứa các từ khóa biến thể
+          if (currentName.toLowerCase().includes(combo.join(' ').toLowerCase()) ||
+              combo.every(v => currentName.toLowerCase().includes(v.toLowerCase()))) {
+            matchedCombo = combo;
+            break;
+          }
+        }
+
+        // Nếu không tìm được biến thể khớp, lấy biến thể đầu tiên
+        if (!matchedCombo && combinations.length > 0) {
+          matchedCombo = combinations[0];
+        }
+
+        if (matchedCombo) {
+          // Cập nhật tên SP gốc thành tên biến thể + gắn variant fields
+          const variantName = `${baseName} ${matchedCombo.join(' ')}`.trim();
+          updates.name = variantName;
+          updates.variant_1 = matchedCombo[0] || null;
+          updates.variant_2 = matchedCombo[1] || null;
+          updates.variant_3 = matchedCombo[2] || null;
+          // IMEI giữ nguyên trên SP này (đúng biến thể)
+          updates.imei = currentImei;
+
+          // Cập nhật SKU theo biến thể
+          const skuSuffix = matchedCombo.map(v => v.replace(/\s+/g, '')).join('-');
+          updates.sku = formData.sku ? `${formData.sku}-${skuSuffix}` : skuSuffix;
+        }
+      }
+
       await updateProduct.mutateAsync({
         productId: product.id,
         updates,
         oldData,
       });
 
-      // Nếu có cấu hình biến thể, tạo thêm sản phẩm mẫu
-      if (variantConfig.enabled && variantConfig.levels.some(l => l.values.length > 0)) {
+      // Nếu có cấu hình biến thể, tạo thêm sản phẩm mẫu cho các biến thể còn lại
+      if (hasVariants) {
         const activeLevels = variantConfig.levels.filter(l => l.values.length > 0);
         const combinations = generateVariantCombinations(activeLevels);
         const tenantRes = await supabase.rpc('get_user_tenant_id_secure');
@@ -231,14 +277,16 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
           const baseImportPrice = product.import_price || 0;
           const baseSalePrice = product.sale_price || null;
           
-          // Check existing templates to avoid duplicates
-          const { data: existingTemplates } = await supabase
+          // Lấy tất cả sản phẩm cùng tên gốc (kể cả SP vừa update) để tránh trùng
+          const { data: existingProducts } = await supabase
             .from('products')
             .select('name')
-            .eq('status', 'template')
+            .or(`status.eq.template,status.eq.in_stock,status.eq.sold`)
             .ilike('name', `${baseName}%`);
           
-          const existingNames = new Set((existingTemplates || []).map(t => t.name));
+          const existingNames = new Set((existingProducts || []).map(t => t.name));
+          // Thêm tên SP vừa update vào set
+          existingNames.add(updates.name);
           
           const newTemplates = combinations
             .map(combo => {
@@ -294,9 +342,12 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
             await supabase.from('product_groups').insert([{ ...groupPayload, tenant_id: tenantId } as any]);
           }
 
+          const createdCount = newTemplates.length;
           toast({
             title: 'Cập nhật thành công',
-            description: `Đã cập nhật sản phẩm và tạo ${newTemplates.length} biến thể mẫu`,
+            description: productHasImei 
+              ? `IMEI đã gắn vào biến thể "${updates.name}"${createdCount > 0 ? ` • Tạo ${createdCount} biến thể mẫu` : ''}`
+              : `Đã cập nhật sản phẩm${createdCount > 0 ? ` và tạo ${createdCount} biến thể mẫu` : ''}`,
           });
           queryClient.invalidateQueries({ queryKey: ['product-groups'] });
         }
@@ -309,6 +360,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
 
       onOpenChange(false);
     } catch (error: any) {
+      console.error('Edit product error:', error);
       toast({
         title: 'Lỗi',
         description: error.message || 'Không thể cập nhật sản phẩm',
