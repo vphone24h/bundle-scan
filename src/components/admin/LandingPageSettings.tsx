@@ -104,10 +104,7 @@ function OrderEmailConfigSection({ formData, handleChange, tenantId, onSave, onD
     handleChange('order_email_sender', '');
     handleChange('order_email_app_password', '');
     setEditing(false);
-    // Use setTimeout to ensure state updates are applied before saving
-    setTimeout(() => {
-      if (onSave) onSave();
-    }, 0);
+    if (onDeleteEmail) onDeleteEmail();
     toast({ title: '🗑️ Đã xóa thông tin email' });
   };
 
