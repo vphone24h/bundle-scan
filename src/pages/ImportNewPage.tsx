@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { PriceInput } from '@/components/ui/price-input';
-import { normalizeLooseSearchValue, normalizeProductSearchQuery } from '@/lib/normalizeSearch';
+import { normalizeProductSearchQuery } from '@/lib/normalizeSearch';
 import {
   Select,
   SelectContent,
@@ -39,7 +39,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, BookOpen, PlayCircle, Search, Package, ArrowLeft, QrCode, X } from 'lucide-react';
+import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, BookOpen, PlayCircle, Search, Package, ArrowLeft, QrCode, X, Layers } from 'lucide-react';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { ImportQRScanner, parseVKHOQR, type VKHOQRData } from '@/components/import/ImportQRScanner';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -1184,10 +1184,14 @@ export default function ImportNewPage() {
                                   <div className="min-w-0 flex-1">
                                     <p className="font-medium text-sm truncate">{s.name}</p>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                      {s.sku ? `SKU: ${s.sku} | ` : ''}{t('tours.importNew.stockQty')}<span className="font-medium text-foreground">{s.totalQty}</span>
+                                      {s.group_id ? 'Có biến thể | ' : (s.sku ? `SKU: ${s.sku} | ` : '')}{t('tours.importNew.stockQty')}<span className="font-medium text-foreground">{s.totalQty}</span>
                                     </p>
                                   </div>
-                                  <Package className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
+                                  {s.group_id ? (
+                                    <Layers className="h-4 w-4 text-primary shrink-0 ml-2" />
+                                  ) : (
+                                    <Package className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
+                                  )}
                                 </div>
                               </button>
                             ))}
