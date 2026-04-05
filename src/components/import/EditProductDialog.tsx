@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Save, CalendarIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { VariantConfigPanel, VariantConfig, VariantLevel } from '@/components/import/VariantConfig';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCategories } from '@/hooks/useCategories';
