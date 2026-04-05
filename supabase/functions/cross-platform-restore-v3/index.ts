@@ -243,14 +243,473 @@ function cloneRow<T>(value: T): T {
   return JSON.parse(JSON.stringify(value))
 }
 
-function prepareRows(rows: any[], tenantId: string) {
-  return rows.map((row) => {
-    const next = cloneRow(row)
-    if (next && typeof next === 'object' && !Array.isArray(next) && 'tenant_id' in next) {
-      next.tenant_id = tenantId
+type RestoreContext = {
+  adminClient: any
+  targetTenantId: string
+  sourceTenantId: string | null
+  crossTenantClone: boolean
+  restoreMode: RestoreMode
+  sourceIndexes: Record<string, Map<string, any>>
+  resolvedIdCache: Map<string, string | null>
+}
+
+function detectSourceTenantId(importData: any): string | null {
+  const directCandidates = [importData?.tenant?.id, importData?.tenant_id]
+  for (const candidate of directCandidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim()
     }
+  }
+
+  for (const value of Object.values(importData || {})) {
+    if (Array.isArray(value)) {
+      const row = value.find((item) => item && typeof item === 'object' && typeof item.tenant_id === 'string')
+      if (row?.tenant_id) {
+        return row.tenant_id
+      }
+    } else if (value && typeof value === 'object' && typeof (value as any).tenant_id === 'string') {
+      return (value as any).tenant_id
+    }
+  }
+
+  return null
+}
+
+function buildSourceIndexes(importData: any) {
+  const indexes: Record<string, Map<string, any>> = {}
+
+  for (const [key, value] of Object.entries(importData || {})) {
+    if (!Array.isArray(value)) continue
+    const map = new Map<string, any>()
+
+    for (const row of value) {
+      if (row && typeof row === 'object' && typeof row.id === 'string') {
+        map.set(row.id, row)
+      }
+    }
+
+    if (map.size > 0) {
+      indexes[key] = map
+    }
+  }
+
+  return indexes
+}
+
+function cyrb128(value: string) {
+  let h1 = 1779033703
+  let h2 = 3144134277
+  let h3 = 1013904242
+  let h4 = 2773480762
+
+  for (let index = 0; index < value.length; index++) {
+    const code = value.charCodeAt(index)
+    h1 = h2 ^ Math.imul(h1 ^ code, 597399067)
+    h2 = h3 ^ Math.imul(h2 ^ code, 2869860233)
+    h3 = h4 ^ Math.imul(h3 ^ code, 951274213)
+    h4 = h1 ^ Math.imul(h4 ^ code, 2716044179)
+  }
+
+  h1 = Math.imul(h3 ^ (h1 >>> 18), 597399067)
+  h2 = Math.imul(h4 ^ (h2 >>> 22), 2869860233)
+  h3 = Math.imul(h1 ^ (h3 >>> 17), 951274213)
+  h4 = Math.imul(h2 ^ (h4 >>> 19), 2716044179)
+
+  return [(h1 ^ h2 ^ h3 ^ h4) >>> 0, (h2 ^ h1) >>> 0, (h3 ^ h1) >>> 0, (h4 ^ h1) >>> 0]
+}
+
+function deterministicCloneId(targetTenantId: string, tableName: string, sourceId: string) {
+  const input = `${targetTenantId}:${tableName}:${sourceId}`
+  const hex = cyrb128(input)
+    .map((part) => part.toString(16).padStart(8, '0'))
+    .join('')
+    .slice(0, 32)
+    .split('')
+
+  hex[12] = '5'
+  hex[16] = ((parseInt(hex[16], 16) & 0x3) | 0x8).toString(16)
+
+  return `${hex.slice(0, 8).join('')}-${hex.slice(8, 12).join('')}-${hex.slice(12, 16).join('')}-${hex.slice(16, 20).join('')}-${hex.slice(20, 32).join('')}`
+}
+
+function createRestoreContext(adminClient: any, importData: any, targetTenantId: string, restoreMode: RestoreMode): RestoreContext {
+  const sourceTenantId = detectSourceTenantId(importData)
+
+  return {
+    adminClient,
+    targetTenantId,
+    sourceTenantId,
+    crossTenantClone: !sourceTenantId || sourceTenantId !== targetTenantId,
+    restoreMode,
+    sourceIndexes: buildSourceIndexes(importData),
+    resolvedIdCache: new Map<string, string | null>(),
+  }
+}
+
+async function queryExistingId(builder: any): Promise<string | null> {
+  const { data, error } = await builder.limit(1)
+  if (error) throw error
+  return Array.isArray(data) && data.length > 0 ? data[0].id : null
+}
+
+async function findExistingTargetId(tableName: string, sourceRow: any, context: RestoreContext): Promise<string | null> {
+  if (!sourceRow || context.restoreMode !== 'merge') return null
+
+  switch (tableName) {
+    case 'branches':
+    case 'suppliers':
+    case 'customer_tags':
+    case 'customer_sources':
+    case 'debt_tags':
+    case 'care_schedule_types':
+    case 'voucher_templates':
+    case 'invoice_templates':
+    case 'landing_product_categories':
+    case 'landing_article_categories': {
+      if (!sourceRow.name) return null
+      return await queryExistingId(
+        context.adminClient.from(tableName).select('id').eq('tenant_id', context.targetTenantId).eq('name', sourceRow.name)
+      )
+    }
+
+    case 'customers': {
+      if (sourceRow.phone) {
+        const matchByPhone = await queryExistingId(
+          context.adminClient.from('customers').select('id').eq('tenant_id', context.targetTenantId).eq('phone', sourceRow.phone)
+        )
+        if (matchByPhone) return matchByPhone
+      }
+      if (sourceRow.entity_code) {
+        const matchByCode = await queryExistingId(
+          context.adminClient.from('customers').select('id').eq('tenant_id', context.targetTenantId).eq('entity_code', sourceRow.entity_code)
+        )
+        if (matchByCode) return matchByCode
+      }
+      if (sourceRow.email) {
+        const matchByEmail = await queryExistingId(
+          context.adminClient.from('customers').select('id').eq('tenant_id', context.targetTenantId).eq('email', sourceRow.email)
+        )
+        if (matchByEmail) return matchByEmail
+      }
+      if (!sourceRow.name) return null
+      return await queryExistingId(
+        context.adminClient.from('customers').select('id').eq('tenant_id', context.targetTenantId).eq('name', sourceRow.name)
+      )
+    }
+
+    case 'categories': {
+      if (!sourceRow.name) return null
+      const resolvedParentId = sourceRow.parent_id
+        ? await resolveSourceId('categories', sourceRow.parent_id, context)
+        : null
+      let query = context.adminClient
+        .from('categories')
+        .select('id')
+        .eq('tenant_id', context.targetTenantId)
+        .eq('name', sourceRow.name)
+      query = resolvedParentId ? query.eq('parent_id', resolvedParentId) : query.is('parent_id', null)
+      return await queryExistingId(query)
+    }
+
+    case 'product_groups': {
+      if (!sourceRow.name) return null
+      let query = context.adminClient
+        .from('product_groups')
+        .select('id')
+        .eq('tenant_id', context.targetTenantId)
+        .eq('name', sourceRow.name)
+      if (sourceRow.category_id) {
+        const categoryId = await resolveSourceId('categories', sourceRow.category_id, context)
+        if (categoryId) {
+          query = query.eq('category_id', categoryId)
+        }
+      }
+      return await queryExistingId(query)
+    }
+
+    case 'products': {
+      for (const field of ['sku', 'imei', 'barcode']) {
+        if (!sourceRow[field]) continue
+        const match = await queryExistingId(
+          context.adminClient.from('products').select('id').eq('tenant_id', context.targetTenantId).eq(field, sourceRow[field])
+        )
+        if (match) return match
+      }
+      return null
+    }
+
+    case 'import_receipts':
+    case 'export_receipts':
+    case 'export_returns':
+    case 'import_returns':
+    case 'stock_counts':
+    case 'stock_transfer_requests': {
+      if (!sourceRow.code) return null
+      return await queryExistingId(
+        context.adminClient.from(tableName).select('id').eq('tenant_id', context.targetTenantId).eq('code', sourceRow.code)
+      )
+    }
+
+    case 'debt_settings':
+    case 'point_settings':
+    case 'shop_ctv_settings':
+    case 'security_passwords': {
+      return await queryExistingId(
+        context.adminClient.from(tableName).select('id').eq('tenant_id', context.targetTenantId)
+      )
+    }
+
+    case 'custom_payment_sources': {
+      if (sourceRow.source_key) {
+        const matchByKey = await queryExistingId(
+          context.adminClient.from('custom_payment_sources').select('id').eq('tenant_id', context.targetTenantId).eq('source_key', sourceRow.source_key)
+        )
+        if (matchByKey) return matchByKey
+      }
+      if (!sourceRow.name) return null
+      return await queryExistingId(
+        context.adminClient.from('custom_payment_sources').select('id').eq('tenant_id', context.targetTenantId).eq('name', sourceRow.name)
+      )
+    }
+
+    case 'email_automations': {
+      if (!sourceRow.name) return null
+      return await queryExistingId(
+        context.adminClient.from('email_automations').select('id').eq('tenant_id', context.targetTenantId).eq('name', sourceRow.name)
+      )
+    }
+
+    case 'einvoice_configs': {
+      if (sourceRow.provider_name && sourceRow.tax_code) {
+        const match = await queryExistingId(
+          context.adminClient.from('einvoice_configs').select('id').eq('tenant_id', context.targetTenantId).eq('provider_name', sourceRow.provider_name).eq('tax_code', sourceRow.tax_code)
+        )
+        if (match) return match
+      }
+      return null
+    }
+
+    case 'custom_domains': {
+      if (!sourceRow.domain) return null
+      return await queryExistingId(
+        context.adminClient.from('custom_domains').select('id').eq('tenant_id', context.targetTenantId).eq('domain', sourceRow.domain)
+      )
+    }
+
+    default:
+      return null
+  }
+}
+
+async function resolveSourceId(tableName: string, sourceId: string | null | undefined, context: RestoreContext): Promise<string | null> {
+  if (!sourceId) return null
+
+  const cacheKey = `${tableName}:${sourceId}`
+  if (context.resolvedIdCache.has(cacheKey)) {
+    return context.resolvedIdCache.get(cacheKey) ?? null
+  }
+
+  if (!context.crossTenantClone) {
+    context.resolvedIdCache.set(cacheKey, sourceId)
+    return sourceId
+  }
+
+  const sourceRow = context.sourceIndexes[tableName]?.get(sourceId) ?? null
+  const existingId = await findExistingTargetId(tableName, sourceRow, context)
+  const resolvedId = existingId || deterministicCloneId(context.targetTenantId, tableName, sourceId)
+  context.resolvedIdCache.set(cacheKey, resolvedId)
+  return resolvedId
+}
+
+async function remapIdField(
+  row: Record<string, any>,
+  field: string,
+  refTable: string,
+  context: RestoreContext,
+  options?: { asText?: boolean },
+) {
+  const sourceValue = row[field]
+  if (!sourceValue) return
+  const resolved = await resolveSourceId(refTable, String(sourceValue), context)
+  row[field] = options?.asText && resolved ? String(resolved) : resolved
+}
+
+async function prepareRows(tableName: string, rows: any[], context: RestoreContext) {
+  return await Promise.all(rows.map(async (row) => {
+    const next = cloneRow(row)
+
+    if (!next || typeof next !== 'object' || Array.isArray(next)) {
+      return next
+    }
+
+    if ('tenant_id' in next) {
+      next.tenant_id = context.targetTenantId
+    }
+
+    if (typeof next.id === 'string') {
+      next.id = await resolveSourceId(tableName, next.id, context)
+    }
+
+    switch (tableName) {
+      case 'categories':
+        await remapIdField(next, 'parent_id', 'categories', context)
+        break
+      case 'customers':
+        await remapIdField(next, 'preferred_branch_id', 'branches', context)
+        break
+      case 'product_groups':
+        await remapIdField(next, 'category_id', 'categories', context)
+        break
+      case 'products':
+        await remapIdField(next, 'supplier_id', 'suppliers', context)
+        await remapIdField(next, 'category_id', 'categories', context)
+        await remapIdField(next, 'branch_id', 'branches', context)
+        await remapIdField(next, 'group_id', 'product_groups', context)
+        break
+      case 'import_receipts':
+        await remapIdField(next, 'supplier_id', 'suppliers', context)
+        await remapIdField(next, 'branch_id', 'branches', context)
+        break
+      case 'receipt_payments':
+        await remapIdField(next, 'receipt_id', 'import_receipts', context)
+        break
+      case 'product_imports':
+        await remapIdField(next, 'import_receipt_id', 'import_receipts', context)
+        await remapIdField(next, 'product_id', 'products', context)
+        await remapIdField(next, 'branch_id', 'branches', context)
+        await remapIdField(next, 'supplier_id', 'suppliers', context)
+        break
+      case 'export_receipts':
+        await remapIdField(next, 'customer_id', 'customers', context)
+        await remapIdField(next, 'branch_id', 'branches', context)
+        break
+      case 'export_receipt_items':
+        await remapIdField(next, 'receipt_id', 'export_receipts', context)
+        await remapIdField(next, 'product_id', 'products', context)
+        break
+      case 'export_receipt_payments':
+        await remapIdField(next, 'receipt_id', 'export_receipts', context)
+        break
+      case 'export_returns':
+        await remapIdField(next, 'receipt_id', 'export_receipts', context)
+        await remapIdField(next, 'customer_id', 'customers', context)
+        await remapIdField(next, 'branch_id', 'branches', context)
+        break
+      case 'import_returns':
+        await remapIdField(next, 'receipt_id', 'import_receipts', context)
+        await remapIdField(next, 'supplier_id', 'suppliers', context)
+        await remapIdField(next, 'branch_id', 'branches', context)
+        break
+      case 'return_payments':
+        await remapIdField(next, 'return_id', 'export_returns', context)
+        await remapIdField(next, 'export_return_id', 'export_returns', context)
+        await remapIdField(next, 'import_return_id', 'import_returns', context)
+        break
+      case 'stock_counts':
+        await remapIdField(next, 'branch_id', 'branches', context)
+        break
+      case 'stock_count_items':
+        await remapIdField(next, 'stock_count_id', 'stock_counts', context)
+        await remapIdField(next, 'product_id', 'products', context)
+        break
+      case 'stock_transfer_requests':
+        await remapIdField(next, 'branch_id', 'branches', context)
+        await remapIdField(next, 'from_branch_id', 'branches', context)
+        await remapIdField(next, 'to_branch_id', 'branches', context)
+        break
+      case 'stock_transfer_items':
+        await remapIdField(next, 'transfer_request_id', 'stock_transfer_requests', context)
+        await remapIdField(next, 'product_id', 'products', context)
+        await remapIdField(next, 'supplier_id', 'suppliers', context)
+        break
+      case 'imei_histories':
+        await remapIdField(next, 'product_id', 'products', context)
+        await remapIdField(next, 'import_receipt_id', 'import_receipts', context)
+        await remapIdField(next, 'export_receipt_id', 'export_receipts', context)
+        await remapIdField(next, 'branch_id', 'branches', context)
+        break
+      case 'cash_book':
+        await remapIdField(next, 'branch_id', 'branches', context)
+        break
+      case 'debt_payments':
+        if (next.entity_type === 'customer') {
+          await remapIdField(next, 'entity_id', 'customers', context)
+        } else if (next.entity_type === 'supplier') {
+          await remapIdField(next, 'entity_id', 'suppliers', context)
+        }
+        await remapIdField(next, 'branch_id', 'branches', context)
+        break
+      case 'debt_offsets':
+        await remapIdField(next, 'customer_entity_id', 'customers', context)
+        await remapIdField(next, 'supplier_entity_id', 'suppliers', context)
+        break
+      case 'debt_tag_assignments':
+        await remapIdField(next, 'tag_id', 'debt_tags', context)
+        if (next.entity_type === 'customer') {
+          await remapIdField(next, 'entity_id', 'customers', context, { asText: true })
+        } else if (next.entity_type === 'supplier') {
+          await remapIdField(next, 'entity_id', 'suppliers', context, { asText: true })
+        }
+        break
+      case 'customer_care_schedules':
+        await remapIdField(next, 'customer_id', 'customers', context)
+        await remapIdField(next, 'care_type_id', 'care_schedule_types', context)
+        break
+      case 'customer_care_logs':
+        await remapIdField(next, 'customer_id', 'customers', context)
+        await remapIdField(next, 'schedule_id', 'customer_care_schedules', context)
+        break
+      case 'care_reminders':
+        await remapIdField(next, 'schedule_id', 'customer_care_schedules', context)
+        break
+      case 'customer_tag_assignments':
+        await remapIdField(next, 'customer_id', 'customers', context)
+        await remapIdField(next, 'tag_id', 'customer_tags', context)
+        break
+      case 'customer_contact_channels':
+        await remapIdField(next, 'customer_id', 'customers', context)
+        break
+      case 'customer_vouchers':
+        await remapIdField(next, 'customer_id', 'customers', context)
+        await remapIdField(next, 'branch_id', 'branches', context)
+        await remapIdField(next, 'voucher_template_id', 'voucher_templates', context)
+        break
+      case 'point_transactions':
+        await remapIdField(next, 'customer_id', 'customers', context)
+        break
+      case 'landing_products':
+        await remapIdField(next, 'category_id', 'landing_product_categories', context)
+        break
+      case 'landing_articles':
+        await remapIdField(next, 'category_id', 'landing_article_categories', context)
+        break
+      case 'shop_ctv_orders':
+        await remapIdField(next, 'collaborator_id', 'shop_collaborators', context)
+        break
+      case 'shop_ctv_withdrawals':
+        await remapIdField(next, 'collaborator_id', 'shop_collaborators', context)
+        break
+      case 'email_automation_blocks':
+        await remapIdField(next, 'automation_id', 'email_automations', context)
+        break
+      case 'einvoices':
+        await remapIdField(next, 'config_id', 'einvoice_configs', context)
+        await remapIdField(next, 'branch_id', 'branches', context)
+        await remapIdField(next, 'export_receipt_id', 'export_receipts', context)
+        await remapIdField(next, 'original_invoice_id', 'einvoices', context)
+        break
+      case 'einvoice_items':
+        await remapIdField(next, 'einvoice_id', 'einvoices', context)
+        break
+      case 'einvoice_logs':
+        await remapIdField(next, 'einvoice_id', 'einvoices', context)
+        break
+      default:
+        break
+    }
+
     return next
-  })
+  }))
 }
 
 async function updateJob(adminClient: any, jobId: string, payload: Record<string, unknown>) {
@@ -327,6 +786,12 @@ async function processJob(jobId: string) {
 
   const operations = buildOperations(importData)
   const nextOpIndex = Number(job.metadata?.next_op_index || 0)
+  const restoreContext = createRestoreContext(
+    adminClient,
+    importData,
+    job.tenant_id,
+    normalizeMode(job.metadata?.restore_mode),
+  )
   let result = normalizeResult(importData, job.result_summary)
 
   if (!operations.length) {
@@ -393,10 +858,10 @@ async function processJob(jobId: string) {
   } else {
     const sourceRows = Array.isArray(importData?.[operation.key]) ? importData[operation.key] : []
     const chunkRows = sourceRows.slice(operation.from, operation.to)
-    const payload = prepareRows(chunkRows, job.tenant_id)
+    const tableName = operation.table!
+    const payload = await prepareRows(tableName, chunkRows, restoreContext)
 
     if (payload.length > 0) {
-      const tableName = operation.table!
       let chunkSuccess = 0
       let chunkSkipped = 0
       let chunkError = 0
