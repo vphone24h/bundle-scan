@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { PriceInput } from '@/components/ui/price-input';
-import { normalizeLooseSearchValue, normalizeProductSearchQuery } from '@/lib/normalizeSearch';
+import { normalizeProductSearchQuery } from '@/lib/normalizeSearch';
 import {
   Select,
   SelectContent,
@@ -39,7 +39,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, BookOpen, PlayCircle, Search, Package, ArrowLeft, QrCode, X } from 'lucide-react';
+import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, BookOpen, PlayCircle, Search, Package, ArrowLeft, QrCode, X, Layers } from 'lucide-react';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { ImportQRScanner, parseVKHOQR, type VKHOQRData } from '@/components/import/ImportQRScanner';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -93,23 +93,8 @@ type ProductSuggestion = {
   import_price: number | null;
   sale_price: number | null;
   totalQty: number;
+  group_id: string | null;
 };
-
-function extractBaseNameFromVariantName(name: string, variants: Array<string | null | undefined>) {
-  const normalizedName = normalizeProductSearchQuery(name);
-  const variantSuffix = normalizeProductSearchQuery(variants.filter(Boolean).join(' '));
-
-  if (!variantSuffix) return normalizedName;
-
-  const normalizedNameKey = normalizeLooseSearchValue(normalizedName);
-  const normalizedSuffixKey = normalizeLooseSearchValue(variantSuffix);
-
-  if (normalizedNameKey.endsWith(` ${normalizedSuffixKey}`)) {
-    return normalizedName.slice(0, normalizedName.length - variantSuffix.length).trim();
-  }
-
-  return normalizedName;
-}
 
 export default function ImportNewPage() {
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('import_new');
@@ -216,28 +201,6 @@ export default function ImportNewPage() {
     [cart]
   );
 
-  const normalizeSuggestionName = useCallback((name: string) => normalizeProductSearchQuery(name), []);
-
-  const variantProductInfo = useMemo(() => {
-    const lookup = new Map<string, { baseName: string; isVariantLike: boolean }>();
-    const variantBaseNames = new Set<string>();
-
-    ((products || []) as any[]).forEach((product) => {
-      const normalizedFullName = normalizeLooseSearchValue(normalizeProductSearchQuery(product.name || ''));
-      const isVariantLike = !!(product.group_id || product.variant_1 || product.variant_2 || product.variant_3);
-      const baseName = isVariantLike
-        ? extractBaseNameFromVariantName(product.name || '', [product.variant_1, product.variant_2, product.variant_3])
-        : normalizeProductSearchQuery(product.name || '');
-
-      lookup.set(normalizedFullName, { baseName, isVariantLike });
-      if (isVariantLike) {
-        variantBaseNames.add(normalizeLooseSearchValue(baseName));
-      }
-    });
-
-    return { lookup, variantBaseNames };
-  }, [products]);
-
   // Debounced server-side product search for suggestions
   const searchProductsFromDB = useCallback(async (searchValue: string) => {
     if (searchValue.length < 2) {
@@ -254,49 +217,25 @@ export default function ImportNewPage() {
 
       if (error) throw error;
 
-      const grouped = new Map<string, ProductSuggestion>();
+      // RPC already groups variants by group_id - just map directly
+      const results: ProductSuggestion[] = ((data as any[]) || []).map((r: any) => ({
+        name: r.product_name || '',
+        sku: r.product_sku || '',
+        category_id: r.category_id,
+        import_price: r.group_id ? null : (r.latest_import_price ?? null),
+        sale_price: r.group_id ? null : (r.latest_sale_price ?? null),
+        totalQty: Number(r.in_stock_qty || 0),
+        group_id: r.group_id || null,
+      }));
 
-      (((data as any[]) || [])).forEach((r: any) => {
-        const normalizedName = normalizeSuggestionName(r.product_name || '');
-        const normalizedNameKey = normalizeLooseSearchValue(normalizedName);
-        const matchedInfo = variantProductInfo.lookup.get(normalizedNameKey);
-        const collapsedName = matchedInfo?.baseName || normalizedName;
-        const collapsedKey = normalizeLooseSearchValue(collapsedName);
-        const isVariantLike = matchedInfo?.isVariantLike || variantProductInfo.variantBaseNames.has(collapsedKey);
-
-        const nextRow: ProductSuggestion = {
-          name: collapsedName,
-          sku: isVariantLike ? '' : (r.product_sku || ''),
-          category_id: r.category_id,
-          import_price: isVariantLike ? null : (r.latest_import_price ?? null),
-          sale_price: isVariantLike ? null : (r.latest_sale_price ?? null),
-          totalQty: Number(r.in_stock_qty || 0),
-        };
-
-        const existing = grouped.get(collapsedKey);
-        if (!existing) {
-          grouped.set(collapsedKey, nextRow);
-          return;
-        }
-
-        grouped.set(collapsedKey, {
-          ...existing,
-          sku: existing.sku || nextRow.sku,
-          category_id: existing.category_id || nextRow.category_id,
-          import_price: existing.import_price ?? nextRow.import_price,
-          sale_price: existing.sale_price ?? nextRow.sale_price,
-          totalQty: existing.totalQty + nextRow.totalQty,
-        });
-      });
-
-      setSuggestions(Array.from(grouped.values()));
+      setSuggestions(results);
     } catch (err) {
       console.error('Product search error:', err);
       setSuggestions([]);
     } finally {
       setIsSearching(false);
     }
-  }, [normalizeSuggestionName, variantProductInfo]);
+  }, []);
 
   // Auto-fill from template product navigation
   useEffect(() => {
@@ -388,69 +327,77 @@ export default function ImportNewPage() {
   };
 
   const handleSelectSuggestion = async (product: any) => {
-    // Only fill base product name - don't pre-fill price/sku for variant products
-    // so users can configure variants and per-variant pricing
-    const hasVariantData = !product.import_price && !product.sale_price;
-
-    // Fetch unit from existing product
-    let productUnit = 'cái';
-    try {
-      const { data: existingProduct } = await supabase
-        .from('products')
-        .select('unit')
-        .ilike('name', product.name)
-        .not('unit', 'is', null)
-        .limit(1);
-      if (existingProduct?.[0]?.unit) {
-        productUnit = existingProduct[0].unit;
-      }
-    } catch {}
-
+    const isVariant = !!product.group_id;
+    
+    // Update form INSTANTLY - no DB wait
     setForm({
       ...form,
       productName: product.name,
-      sku: hasVariantData ? '' : (product.sku || ''),
-      categoryId: '', // Always require re-selecting category
+      sku: isVariant ? '' : (product.sku || ''),
+      categoryId: '',
       importPrice: product.import_price ? String(product.import_price) : '',
       salePrice: product.sale_price ? String(product.sale_price) : '',
-      unit: productUnit,
+      unit: 'cái',
     });
     setSuggestions([]);
     setProductFormMode('form');
 
-    // Auto-load variant config from product_groups if exists
-    try {
-      const { data: groups } = await supabase
-        .from('product_groups')
-        .select('*')
-        .ilike('name', product.name)
-        .limit(1);
+    // Load unit + variant config in background (non-blocking)
+    const groupId = product.group_id;
+    (async () => {
+      try {
+        // Fetch unit
+        const { data: existingProduct } = await supabase
+          .from('products')
+          .select('unit')
+          .ilike('name', `${product.name}%`)
+          .not('unit', 'is', null)
+          .limit(1);
+        if (existingProduct?.[0]?.unit) {
+          setForm(prev => ({ ...prev, unit: existingProduct[0].unit }));
+        }
+      } catch {}
 
-      if (groups && groups.length > 0) {
-        const group = groups[0] as any;
-        const levels: VariantLevel[] = [];
-        if (group.variant_1_label && group.variant_1_values?.length > 0) {
-          levels.push({ label: group.variant_1_label, values: group.variant_1_values });
-        }
-        if (group.variant_2_label && group.variant_2_values?.length > 0) {
-          levels.push({ label: group.variant_2_label, values: group.variant_2_values });
-        }
-        if (group.variant_3_label && group.variant_3_values?.length > 0) {
-          levels.push({ label: group.variant_3_label, values: group.variant_3_values });
-        }
+      // Load variant config if this is a grouped product
+      if (groupId) {
+        try {
+          const { data: groups } = await supabase
+            .from('product_groups')
+            .select('*')
+            .eq('id', groupId)
+            .limit(1);
 
-        if (levels.length > 0) {
-          setVariantConfig({ enabled: true, levels });
-          setSelectedVariants({});
-          toast({
-            title: 'Đã tải biến thể',
-            description: `${levels.length} cấp biến thể được tải từ nhóm "${group.name}"`,
-          });
+          if (groups && groups.length > 0) {
+            const group = groups[0] as any;
+            const levels: VariantLevel[] = [];
+            if (group.variant_1_label && group.variant_1_values?.length > 0) {
+              levels.push({ label: group.variant_1_label, values: group.variant_1_values });
+            }
+            if (group.variant_2_label && group.variant_2_values?.length > 0) {
+              levels.push({ label: group.variant_2_label, values: group.variant_2_values });
+            }
+            if (group.variant_3_label && group.variant_3_values?.length > 0) {
+              levels.push({ label: group.variant_3_label, values: group.variant_3_values });
+            }
+
+            if (levels.length > 0) {
+              setVariantConfig({ enabled: true, levels });
+              setSelectedVariants({});
+              toast({
+                title: 'Đã tải biến thể',
+                description: `${levels.length} cấp biến thể được tải từ nhóm "${group.name}"`,
+              });
+            }
+          }
+        } catch (err) {
+          console.error('Error loading product group variants:', err);
         }
+      } else {
+        // Not a variant product - reset variant config
+        setVariantConfig({ enabled: false, levels: [] });
+        setSelectedVariants({});
       }
-    } catch (err) {
-      console.error('Error loading product group variants:', err);
-    }
+    })();
   };
 
   const handleAddNewProduct = () => {
@@ -1237,10 +1184,14 @@ export default function ImportNewPage() {
                                   <div className="min-w-0 flex-1">
                                     <p className="font-medium text-sm truncate">{s.name}</p>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                      {s.sku ? `SKU: ${s.sku} | ` : ''}{t('tours.importNew.stockQty')}<span className="font-medium text-foreground">{s.totalQty}</span>
+                                      {s.group_id ? 'Có biến thể | ' : (s.sku ? `SKU: ${s.sku} | ` : '')}{t('tours.importNew.stockQty')}<span className="font-medium text-foreground">{s.totalQty}</span>
                                     </p>
                                   </div>
-                                  <Package className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
+                                  {s.group_id ? (
+                                    <Layers className="h-4 w-4 text-primary shrink-0 ml-2" />
+                                  ) : (
+                                    <Package className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
+                                  )}
                                 </div>
                               </button>
                             ))}

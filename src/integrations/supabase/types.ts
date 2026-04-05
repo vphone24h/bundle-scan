@@ -8159,6 +8159,7 @@ export type Database = {
         Args: { p_limit?: number; p_search: string }
         Returns: {
           category_id: string
+          group_id: string
           in_stock_qty: number
           latest_import_price: number
           latest_sale_price: number
