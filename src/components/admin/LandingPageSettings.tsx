@@ -1257,41 +1257,48 @@ export function LandingPageSettings() {
 
           <Separator className="my-3" />
 
-          {/* B2: Chọn mẫu website */}
-          <div>
-            <Label className="flex items-center gap-2 text-sm font-medium mb-2">
-              <Layout className="h-4 w-4" />
-              Chọn mẫu Website
-            </Label>
-            <p className="text-xs text-muted-foreground mb-3">
-              Chọn giao diện phù hợp với ngành nghề kinh doanh của bạn
-            </p>
-            <TemplateSelector
-              selectedTemplate={(formData as any).website_template || 'phone_store'}
-              onSelect={(id) => {
-                const fullNav = getFullNavItems(id);
-                const updatedData = { ...formData, website_template: id, custom_nav_items: fullNav };
-                setFormData(updatedData as any);
-                setHasChanges(true);
-                if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-                updateSettings.mutateAsync(updatedData).then(() => {
-                  setHasChanges(false);
-                  toast({ title: '✓ Đã lưu mẫu website' });
-                }).catch(() => {
-                  toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
-                });
-              }}
-              editableSettings={{
-                custom_trust_badges: (formData as any).custom_trust_badges || null,
-              }}
-              onSettingsChange={(editSettings) => {
-                if (editSettings.custom_trust_badges !== undefined) {
-                  setFormData(prev => ({ ...prev, custom_trust_badges: editSettings.custom_trust_badges as any }));
+          {/* B2: Chọn mẫu website - Collapsible */}
+          <Collapsible>
+            <CollapsibleTrigger asChild>
+              <button type="button" className="w-full flex items-center justify-between rounded-lg border border-border bg-card p-3 hover:bg-accent/50 transition-colors">
+                <div className="flex items-center gap-2">
+                  <Layout className="h-4 w-4 text-primary" />
+                  <div className="text-left">
+                    <span className="text-sm font-medium">Chọn mẫu Website</span>
+                    <p className="text-xs text-muted-foreground">Chọn giao diện phù hợp với ngành nghề kinh doanh của bạn</p>
+                  </div>
+                </div>
+                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3">
+              <TemplateSelector
+                selectedTemplate={(formData as any).website_template || 'phone_store'}
+                onSelect={(id) => {
+                  const fullNav = getFullNavItems(id);
+                  const updatedData = { ...formData, website_template: id, custom_nav_items: fullNav };
+                  setFormData(updatedData as any);
                   setHasChanges(true);
-                }
-              }}
-            />
-          </div>
+                  if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+                  updateSettings.mutateAsync(updatedData).then(() => {
+                    setHasChanges(false);
+                    toast({ title: '✓ Đã lưu mẫu website' });
+                  }).catch(() => {
+                    toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
+                  });
+                }}
+                editableSettings={{
+                  custom_trust_badges: (formData as any).custom_trust_badges || null,
+                }}
+                onSettingsChange={(editSettings) => {
+                  if (editSettings.custom_trust_badges !== undefined) {
+                    setFormData(prev => ({ ...prev, custom_trust_badges: editSettings.custom_trust_badges as any }));
+                    setHasChanges(true);
+                  }
+                }}
+              />
+            </CollapsibleContent>
+          </Collapsible>
 
           {/* Email tự động đơn hàng */}
           <OrderEmailConfigSection formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} onSave={() => {
