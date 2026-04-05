@@ -286,17 +286,20 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               const fullName = `${baseName} ${variantParts}`;
               if (existingNames.has(fullName)) return null;
               const skuSuffix = combo.map(v => v.replace(/\s+/g, '')).join('-');
+              const comboKey = combo.join('|');
+              const comboImei = variantImeis[comboKey]?.trim() || null;
               return {
                 name: fullName,
                 sku: formData.sku ? `${formData.sku}-${skuSuffix}` : skuSuffix,
                 category_id: formData.category_id === '_none_' ? null : formData.category_id,
                 import_price: Math.round(Number(baseImportPrice)),
                 sale_price: baseSalePrice ? Math.round(Number(baseSalePrice)) : null,
+                imei: comboImei,
                 note: formData.note || null,
                 tenant_id: tenantId,
-                status: 'template' as const,
-                quantity: 0,
-                total_import_cost: 0,
+                status: comboImei ? 'in_stock' as const : 'template' as const,
+                quantity: comboImei ? 1 : 0,
+                total_import_cost: comboImei ? Math.round(Number(baseImportPrice)) : 0,
                 variant_1: combo[0] || null,
                 variant_2: combo[1] || null,
                 variant_3: combo[2] || null,
