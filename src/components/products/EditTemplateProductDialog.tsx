@@ -68,20 +68,23 @@ export function EditTemplateProductDialog({ product, open, onOpenChange }: EditT
       setSalePrice(product.sale_price != null ? String(product.sale_price) : '');
       setNote(product.note || '');
 
-      // Try to load product_group config
-      const { data: groupData } = await supabase
-        .from('product_groups')
-        .select('*')
-        .ilike('name', name)
-        .limit(1);
+      // Run both queries in parallel for speed
+      const [groupResult, variantResult] = await Promise.all([
+        supabase
+          .from('product_groups')
+          .select('*')
+          .ilike('name', name)
+          .limit(1),
+        supabase
+          .from('products')
+          .select('id, name, variant_1, variant_2, variant_3')
+          .eq('status', 'template')
+          .ilike('name', `${name}%`)
+          .order('name'),
+      ]);
 
-      // Load existing variant products
-      const { data: variantProducts } = await supabase
-        .from('products')
-        .select('id, name, variant_1, variant_2, variant_3, status')
-        .eq('status', 'template')
-        .ilike('name', `${name}%`)
-        .order('name');
+      const groupData = groupResult.data;
+      const variantProducts = variantResult.data;
 
       const variants = (variantProducts || []).filter(p => p.variant_1);
       const nameMap = new Map<string, string>();
