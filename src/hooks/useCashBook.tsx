@@ -68,6 +68,7 @@ export interface CashBookCategory {
   name: string;
   type: CashBookType;
   is_default: boolean;
+  tenant_id: string | null;
   created_at: string;
 }
 
