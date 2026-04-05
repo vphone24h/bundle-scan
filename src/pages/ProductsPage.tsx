@@ -179,6 +179,17 @@ function groupTemplateProducts(products: ReturnType<typeof mapProductForTable>[]
   return result;
 }
 
+function extractBaseName(name: string, v1?: string, v2?: string, v3?: string): string {
+  let base = name;
+  const parts = [v3, v2, v1].filter(Boolean);
+  for (const part of parts) {
+    if (part && base.endsWith(part)) {
+      base = base.slice(0, -part.length).trimEnd();
+    }
+  }
+  return base || name;
+}
+
 // Debounce hook for search
 function useDebouncedValue(value: string, delay = 400) {
   const [debounced, setDebounced] = useState(value);
