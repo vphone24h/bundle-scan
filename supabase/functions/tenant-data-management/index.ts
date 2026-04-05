@@ -741,6 +741,16 @@ async function deleteAllWarehouseData(supabaseAdmin: any, tenantId: string, repo
   await assertOptionalMutation('Xoá phiếu chuyển kho', supabaseAdmin.from('stock_transfer_requests').delete().eq('tenant_id', tenantId))
 
   await reportProgress?.(62, 'Đang xoá sản phẩm và sổ quỹ')
+
+  // Cleanup any remaining export_receipt_items referencing products (orphans not caught by receipt_id)
+  if (productIds.length > 0) {
+    await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'product_id', productIds, 'Xoá chi tiết PX còn sót theo product_id', true)
+    await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_payments', 'receipt_id', exportReceiptIds, 'Xoá thanh toán PX còn sót', true)
+  }
+  // Also cleanup any remaining references from other child tables
+  await assertOptionalMutation('Xoá phiếu xuất còn sót', supabaseAdmin.from('export_receipts').delete().eq('tenant_id', tenantId))
+  await assertOptionalMutation('Xoá phiếu nhập còn sót', supabaseAdmin.from('import_receipts').delete().eq('tenant_id', tenantId))
+
   await assertMutation('Xoá sản phẩm', supabaseAdmin.from('products').delete().eq('tenant_id', tenantId))
   await assertOptionalMutation('Xoá nhóm sản phẩm', supabaseAdmin.from('product_groups').delete().eq('tenant_id', tenantId))
   await assertMutation('Xoá sổ quỹ', supabaseAdmin.from('cash_book').delete().eq('tenant_id', tenantId))
@@ -819,6 +829,13 @@ async function deleteKeepTemplates(supabaseAdmin: any, tenantId: string, reportP
   await assertMutation('Xoá phiếu nhập', supabaseAdmin.from('import_receipts').delete().eq('tenant_id', tenantId))
 
   await reportProgress?.(64, 'Đang reset sản phẩm mẫu')
+
+  // Cleanup any remaining export_receipt_items referencing products (orphans)
+  const allProductIds = await fetchIdsByTenant(supabaseAdmin, 'products', tenantId)
+  if (allProductIds.length > 0) {
+    await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'product_id', allProductIds, 'Xoá chi tiết PX còn sót theo product_id', true)
+  }
+
   await assertMutation(
     'Xoá sản phẩm IMEI',
     supabaseAdmin.from('products').delete().eq('tenant_id', tenantId).not('imei', 'is', null),
