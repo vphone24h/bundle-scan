@@ -61,6 +61,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
   });
 
   const [variantConfig, setVariantConfig] = useState<VariantConfig>({ enabled: false, levels: [] });
+  const [variantImeis, setVariantImeis] = useState<Record<string, string>>({});
   const [originalImportDate, setOriginalImportDate] = useState('');
 
   useEffect(() => {
@@ -80,6 +81,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       });
       setOriginalImportDate(importDateStr);
       setVariantConfig({ enabled: false, levels: [] });
+      setVariantImeis({});
     }
   }, [product]);
 
@@ -217,43 +219,33 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       }
 
       // === Logic IMEI + biến thể ===
-      // Khi bật biến thể cho SP có IMEI:
-      // - IMEI phải gắn vào biến thể phù hợp, không giữ ở tên gốc
-      if (hasVariants && productHasImei) {
+      // Khi bật biến thể: dùng variantImeis map từ UI
+      if (hasVariants) {
         const activeLevels = variantConfig.levels.filter(l => l.values.length > 0);
         const combinations = generateVariantCombinations(activeLevels);
         const baseName = formData.name.trim();
-        const currentImei = formData.imei.trim() || product.imei || '';
 
-        // Tìm biến thể phù hợp nhất với tên hiện tại
-        let matchedCombo: string[] | null = null;
-        const currentName = product.name || '';
-        for (const combo of combinations) {
-          const variantName = `${baseName} ${combo.join(' ')}`.trim();
-          // So khớp nếu tên sản phẩm hiện tại chứa các từ khóa biến thể
-          if (currentName.toLowerCase().includes(combo.join(' ').toLowerCase()) ||
-              combo.every(v => currentName.toLowerCase().includes(v.toLowerCase()))) {
-            matchedCombo = combo;
-            break;
+        if (combinations.length > 0) {
+          // Tìm biến thể mà user gán IMEI hiện tại của SP gốc (hoặc combo đầu tiên có IMEI)
+          let matchedCombo: string[] | null = null;
+          for (const combo of combinations) {
+            const key = combo.join('|');
+            const imeiVal = variantImeis[key]?.trim();
+            if (imeiVal) {
+              matchedCombo = combo;
+              break;
+            }
           }
-        }
+          // Nếu không có IMEI nào được nhập, lấy combo đầu tiên
+          if (!matchedCombo) matchedCombo = combinations[0];
 
-        // Nếu không tìm được biến thể khớp, lấy biến thể đầu tiên
-        if (!matchedCombo && combinations.length > 0) {
-          matchedCombo = combinations[0];
-        }
-
-        if (matchedCombo) {
-          // Cập nhật tên SP gốc thành tên biến thể + gắn variant fields
           const variantName = `${baseName} ${matchedCombo.join(' ')}`.trim();
           updates.name = variantName;
           updates.variant_1 = matchedCombo[0] || null;
           updates.variant_2 = matchedCombo[1] || null;
           updates.variant_3 = matchedCombo[2] || null;
-          // IMEI giữ nguyên trên SP này (đúng biến thể)
-          updates.imei = currentImei;
+          updates.imei = variantImeis[matchedCombo.join('|')]?.trim() || null;
 
-          // Cập nhật SKU theo biến thể
           const skuSuffix = matchedCombo.map(v => v.replace(/\s+/g, '')).join('-');
           updates.sku = formData.sku ? `${formData.sku}-${skuSuffix}` : skuSuffix;
         }
@@ -294,17 +286,20 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               const fullName = `${baseName} ${variantParts}`;
               if (existingNames.has(fullName)) return null;
               const skuSuffix = combo.map(v => v.replace(/\s+/g, '')).join('-');
+              const comboKey = combo.join('|');
+              const comboImei = variantImeis[comboKey]?.trim() || null;
               return {
                 name: fullName,
                 sku: formData.sku ? `${formData.sku}-${skuSuffix}` : skuSuffix,
                 category_id: formData.category_id === '_none_' ? null : formData.category_id,
                 import_price: Math.round(Number(baseImportPrice)),
                 sale_price: baseSalePrice ? Math.round(Number(baseSalePrice)) : null,
+                imei: comboImei,
                 note: formData.note || null,
                 tenant_id: tenantId,
-                status: 'template' as const,
-                quantity: 0,
-                total_import_cost: 0,
+                status: comboImei ? 'in_stock' as const : 'template' as const,
+                quantity: comboImei ? 1 : 0,
+                total_import_cost: comboImei ? Math.round(Number(baseImportPrice)) : 0,
                 variant_1: combo[0] || null,
                 variant_2: combo[1] || null,
                 variant_3: combo[2] || null,
@@ -436,9 +431,48 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               {/* Variant config - cho phép thêm biến thể */}
               <VariantConfigPanel
                 config={variantConfig}
-                onChange={setVariantConfig}
+                onChange={(newConfig) => {
+                  setVariantConfig(newConfig);
+                  // Auto-populate current IMEI to first variant when enabling
+                  if (newConfig.enabled && !variantConfig.enabled && formData.imei.trim()) {
+                    const activeLevels = newConfig.levels.filter(l => l.values.length > 0);
+                    const combos = generateVariantCombinations(activeLevels);
+                    if (combos.length > 0 && combos[0].length > 0) {
+                      setVariantImeis({ [combos[0].join('|')]: formData.imei.trim() });
+                    }
+                  }
+                }}
                 baseProductName={formData.name}
               />
+
+              {/* IMEI per variant */}
+              {variantConfig.enabled && (() => {
+                const activeLevels = variantConfig.levels.filter(l => l.values.length > 0);
+                const combos = generateVariantCombinations(activeLevels);
+                if (combos.length === 0 || (combos.length === 1 && combos[0].length === 0)) return null;
+                return (
+                  <div className="rounded-lg border p-3 space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">Gắn IMEI cho từng biến thể:</p>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {combos.map((combo, idx) => {
+                        const key = combo.join('|');
+                        const variantLabel = `${formData.name.trim()} ${combo.join(' ')}`;
+                        return (
+                          <div key={idx} className="flex items-center gap-2">
+                            <span className="text-xs min-w-0 flex-1 truncate" title={variantLabel}>{variantLabel}</span>
+                            <Input
+                              value={variantImeis[key] || ''}
+                              onChange={(e) => setVariantImeis(prev => ({ ...prev, [key]: e.target.value }))}
+                              placeholder="IMEI"
+                              className="font-mono text-xs w-40 h-7"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -469,6 +503,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                   </div>
                   <p className="text-xs text-muted-foreground">Mã viết tắt tên SP, dễ nhớ</p>
                 </div>
+                {!variantConfig.enabled && (
                 <div className="space-y-2">
                   <Label htmlFor="imei">IMEI</Label>
                   <Input
@@ -479,6 +514,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                     className="font-mono"
                   />
                 </div>
+                )}
               </div>
 
               <div className="space-y-2">
