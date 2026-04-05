@@ -292,93 +292,115 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       return;
     }
 
+    // Capture all values needed for background processing
+    const capturedProduct = { ...product };
+    const capturedFormData = { ...formData };
+    const capturedVariantConfig = { ...variantConfig, levels: variantConfig.levels.map(l => ({ ...l, values: [...l.values] })) };
+    const capturedVariantImeis = { ...variantImeis };
+    const capturedVariantPrices = { ...variantPrices };
+    const capturedOriginalImportDate = originalImportDate;
+
+    // Close dialog immediately
+    onOpenChange(false);
+    toast({ title: 'Đang xử lý...', description: 'Đang cập nhật sản phẩm trong nền' });
+
+    // Run processing in background
+    processUpdateInBackground(
+      capturedProduct, capturedFormData, capturedVariantConfig, 
+      capturedVariantImeis, capturedVariantPrices, capturedOriginalImportDate
+    );
+  };
+
+  const processUpdateInBackground = async (
+    prod: Product,
+    fData: typeof formData,
+    vConfig: VariantConfig,
+    vImeis: Record<string, string>,
+    vPrices: Record<string, string>,
+    origImportDate: string,
+  ) => {
     try {
       const oldData: Record<string, any> = {
-        name: product.name,
-        sku: product.sku,
-        imei: product.imei,
-        note: product.note,
-        sale_price: product.sale_price ?? null,
-        category_id: product.category_id,
-        supplier_id: product.supplier_id,
-        branch_id: product.branch_id,
-        import_date: product.import_date,
+        name: prod.name,
+        sku: prod.sku,
+        imei: prod.imei,
+        note: prod.note,
+        sale_price: prod.sale_price ?? null,
+        category_id: prod.category_id,
+        supplier_id: prod.supplier_id,
+        branch_id: prod.branch_id,
+        import_date: prod.import_date,
       };
 
-      const hasVariants = variantConfig.enabled && variantConfig.levels.some(l => l.values.length > 0);
-      const productHasImei = !!(product.imei || formData.imei.trim());
+      const hasVariants = vConfig.enabled && vConfig.levels.some(l => l.values.length > 0);
+      const productHasImei = !!(prod.imei || fData.imei.trim());
 
       const updates: Record<string, any> = {
-        name: formData.name.trim(),
-        sku: formData.sku.trim(),
-        imei: formData.imei.trim() || null,
-        note: formData.note.trim() || null,
-        category_id: formData.category_id === '_none_' ? null : formData.category_id,
-        supplier_id: formData.supplier_id === '_none_' ? null : formData.supplier_id,
-        unit: product.imei ? 'cái' : formData.unit,
+        name: fData.name.trim(),
+        sku: fData.sku.trim(),
+        imei: fData.imei.trim() || null,
+        note: fData.note.trim() || null,
+        category_id: fData.category_id === '_none_' ? null : fData.category_id,
+        supplier_id: fData.supplier_id === '_none_' ? null : fData.supplier_id,
+        unit: prod.imei ? 'cái' : fData.unit,
       };
 
-      // Chỉ Super Admin / Branch Admin mới được sửa giá bán
       if (canEditSalePrice) {
-        updates.sale_price = formData.sale_price ? Number(formData.sale_price) : null;
+        updates.sale_price = fData.sale_price ? Number(fData.sale_price) : null;
       }
       if (isSuperAdmin) {
-        updates.branch_id = formData.branch_id === '_none_' ? null : formData.branch_id;
+        updates.branch_id = fData.branch_id === '_none_' ? null : fData.branch_id;
       }
 
-      // Chỉnh sửa ngày nhập
-      const dateChanged = formData.import_date && formData.import_date !== originalImportDate;
+      const dateChanged = fData.import_date && fData.import_date !== origImportDate;
       if (dateChanged) {
-        updates.import_date = new Date(formData.import_date).toISOString();
+        updates.import_date = new Date(fData.import_date).toISOString();
         updates.import_date_modified = true;
       }
 
       // === Logic IMEI + biến thể ===
-      // Khi bật biến thể: dùng variantImeis map từ UI
       if (hasVariants) {
-        const activeLevels = variantConfig.levels.filter(l => l.values.length > 0);
+        const activeLevels = vConfig.levels.filter(l => l.values.length > 0);
         const combinations = generateVariantCombinations(activeLevels);
-        const baseName = formData.name.trim();
+        const baseName = fData.name.trim();
 
         if (combinations.length > 0) {
-          // Tìm biến thể mà user gán IMEI hiện tại của SP gốc (hoặc combo đầu tiên có IMEI)
           let matchedCombo: string[] | null = null;
           for (const combo of combinations) {
             const key = combo.join('|');
-            const imeiVal = variantImeis[key]?.trim();
+            const imeiVal = vImeis[key]?.trim();
             if (imeiVal) {
               matchedCombo = combo;
               break;
             }
           }
-          // Nếu không có IMEI nào được nhập, lấy combo đầu tiên
           if (!matchedCombo) matchedCombo = combinations[0];
 
           const variantName = `${baseName} ${matchedCombo.join(' ')}`.trim();
           const matchedKey = matchedCombo.join('|');
-          const matchedVariantImei = variantImeis[matchedKey]?.trim();
-          const matchedPrice = variantPrices[matchedKey];
+          const matchedVariantImei = vImeis[matchedKey]?.trim();
+          const matchedPrice = vPrices[matchedKey];
 
           updates.name = variantName;
           updates.variant_1 = matchedCombo[0] || null;
           updates.variant_2 = matchedCombo[1] || null;
           updates.variant_3 = matchedCombo[2] || null;
-          updates.imei = matchedVariantImei || (product.imei || formData.imei.trim() || null);
+          updates.imei = matchedVariantImei || (prod.imei || fData.imei.trim() || null);
           if (matchedPrice && !Number.isNaN(Number(matchedPrice))) {
             updates.import_price = Math.round(Number(matchedPrice));
             updates.total_import_cost = Math.round(Number(matchedPrice));
-          } else if (product.import_price != null) {
-            updates.import_price = Math.round(Number(product.import_price));
-            updates.total_import_cost = Math.round(Number(product.import_price));
+          } else if (prod.import_price != null) {
+            updates.import_price = Math.round(Number(prod.import_price));
+            updates.total_import_cost = Math.round(Number(prod.import_price));
           }
 
           const skuSuffix = matchedCombo.map(v => v.replace(/\s+/g, '')).join('-');
-          updates.sku = formData.sku ? `${formData.sku}-${skuSuffix}` : skuSuffix;
+          updates.sku = fData.sku ? `${fData.sku}-${skuSuffix}` : skuSuffix;
         }
       }
 
       // Nếu SP mẫu (template) được thêm IMEI → tạo phiếu nhập tự động
-      const isTemplateGettingImei = product.status === 'template' && !product.imei && (updates.imei || formData.imei.trim());
+      const isTemplateGettingImei = prod.status === 'template' && !prod.imei && (updates.imei || fData.imei.trim());
       let autoReceiptId: string | null = null;
 
       if (isTemplateGettingImei) {
@@ -389,7 +411,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         if (tenantId && user) {
           const now = new Date();
           const code = `PN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
-          const importPrice = updates.import_price || product.import_price || 0;
+          const importPrice = updates.import_price || prod.import_price || 0;
 
           const { data: receipt, error: receiptErr } = await supabase
             .from('import_receipts')
@@ -399,18 +421,17 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               paid_amount: importPrice,
               debt_amount: 0,
               original_debt_amount: 0,
-              supplier_id: updates.supplier_id || product.supplier_id || null,
-              branch_id: (isSuperAdmin ? (formData.branch_id === '_none_' ? null : formData.branch_id) : product.branch_id) || null,
+              supplier_id: updates.supplier_id || prod.supplier_id || null,
+              branch_id: (isSuperAdmin ? (fData.branch_id === '_none_' ? null : fData.branch_id) : prod.branch_id) || null,
               created_by: user.id,
               tenant_id: tenantId,
-              note: `Nhập từ SP mẫu: ${updates.name || formData.name}${updates.imei ? ` | IMEI: ${updates.imei}` : ''} | Giá nhập: ${importPrice.toLocaleString('vi-VN')}đ`,
+              note: `Nhập từ SP mẫu: ${updates.name || fData.name}${updates.imei ? ` | IMEI: ${updates.imei}` : ''} | Giá nhập: ${importPrice.toLocaleString('vi-VN')}đ`,
             }])
             .select()
             .single();
 
           if (!receiptErr && receipt) {
             autoReceiptId = receipt.id;
-            // Cập nhật thêm trạng thái và liên kết phiếu nhập
             updates.status = 'in_stock';
             updates.quantity = 1;
             updates.total_import_cost = importPrice;
@@ -421,7 +442,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       }
 
       await updateProduct.mutateAsync({
-        productId: product.id,
+        productId: prod.id,
         updates,
         oldData,
       });
@@ -430,11 +451,11 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       if (autoReceiptId) {
         const { data: { user } } = await supabase.auth.getUser();
         await supabase.from('product_imports').insert([{
-          product_id: product.id,
+          product_id: prod.id,
           import_receipt_id: autoReceiptId,
           quantity: 1,
-          import_price: product.import_price || 0,
-          supplier_id: product.supplier_id || null,
+          import_price: prod.import_price || 0,
+          supplier_id: prod.supplier_id || null,
           note: `Nhập từ sản phẩm mẫu`,
           created_by: user?.id,
         }]);
@@ -442,17 +463,16 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
 
       // Nếu có cấu hình biến thể, tạo thêm sản phẩm mẫu cho các biến thể còn lại
       if (hasVariants) {
-        const activeLevels = variantConfig.levels.filter(l => l.values.length > 0);
+        const activeLevels = vConfig.levels.filter(l => l.values.length > 0);
         const combinations = generateVariantCombinations(activeLevels);
         const tenantRes = await supabase.rpc('get_user_tenant_id_secure');
         const tenantId = tenantRes.data;
         
         if (tenantId && combinations.length > 0) {
-          const baseName = formData.name.trim();
-          const baseImportPrice = product.import_price || 0;
-          const baseSalePrice = product.sale_price || null;
+          const baseName = fData.name.trim();
+          const baseImportPrice = prod.import_price || 0;
+          const baseSalePrice = prod.sale_price || null;
           
-          // Lấy tất cả sản phẩm cùng tên gốc (kể cả SP vừa update) để tránh trùng
           const { data: existingProducts } = await supabase
             .from('products')
             .select('name')
@@ -460,12 +480,9 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
             .ilike('name', `${baseName}%`);
           
           const existingNames = new Set((existingProducts || []).map(t => t.name));
-          // Thêm tên SP vừa update vào set
           existingNames.add(updates.name);
           
-          // Sản phẩm cũ (in_stock/sold) → biến thể mới luôn là template, KHÔNG tạo phiếu nhập
-          // Chỉ sản phẩm mẫu (template) mới cho phép gán IMEI + tạo phiếu nhập cho biến thể
-          const isOriginalTemplate = product.status === 'template';
+          const isOriginalTemplate = prod.status === 'template';
 
           const newTemplates = combinations
             .map(combo => {
@@ -474,21 +491,19 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               if (existingNames.has(fullName)) return null;
               const skuSuffix = combo.map(v => v.replace(/\s+/g, '')).join('-');
               const comboKey = combo.join('|');
-              // Chỉ gán IMEI cho biến thể nếu SP gốc là template
-              const comboImei = isOriginalTemplate ? (variantImeis[comboKey]?.trim() || null) : null;
-              const comboPrice = variantPrices[comboKey] ? Math.round(Number(variantPrices[comboKey])) : Math.round(Number(baseImportPrice));
+              const comboImei = isOriginalTemplate ? (vImeis[comboKey]?.trim() || null) : null;
+              const comboPrice = vPrices[comboKey] ? Math.round(Number(vPrices[comboKey])) : Math.round(Number(baseImportPrice));
               return {
                 name: fullName,
-                sku: formData.sku ? `${formData.sku}-${skuSuffix}` : skuSuffix,
-                category_id: formData.category_id === '_none_' ? null : formData.category_id,
-                supplier_id: formData.supplier_id === '_none_' ? null : formData.supplier_id,
-                branch_id: isSuperAdmin ? (formData.branch_id === '_none_' ? null : formData.branch_id) : (product?.branch_id || null),
+                sku: fData.sku ? `${fData.sku}-${skuSuffix}` : skuSuffix,
+                category_id: fData.category_id === '_none_' ? null : fData.category_id,
+                supplier_id: fData.supplier_id === '_none_' ? null : fData.supplier_id,
+                branch_id: isSuperAdmin ? (fData.branch_id === '_none_' ? null : fData.branch_id) : (prod?.branch_id || null),
                 import_price: comboPrice,
                 sale_price: baseSalePrice ? Math.round(Number(baseSalePrice)) : null,
                 imei: comboImei,
-                note: formData.note || null,
+                note: fData.note || null,
                 tenant_id: tenantId,
-                // SP cũ → biến thể mới luôn là template; SP mẫu → có IMEI thì in_stock
                 status: (isOriginalTemplate && comboImei) ? 'in_stock' as const : 'template' as const,
                 quantity: (isOriginalTemplate && comboImei) ? 1 : 0,
                 total_import_cost: (isOriginalTemplate && comboImei) ? comboPrice : 0,
@@ -506,7 +521,6 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               .select('id, name, imei, import_price, supplier_id, branch_id');
             if (templateError) throw templateError;
 
-            // Chỉ tạo phiếu nhập cho biến thể có IMEI khi SP GỐC là template
             if (isOriginalTemplate) {
               const templatesWithImei = (insertedTemplates || []).filter((t: any) => t.imei);
               if (templatesWithImei.length > 0) {
@@ -561,8 +575,8 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
           
           const groupPayload = {
             name: baseName,
-            sku_prefix: formData.sku || null,
-            category_id: formData.category_id === '_none_' ? null : formData.category_id,
+            sku_prefix: fData.sku || null,
+            category_id: fData.category_id === '_none_' ? null : fData.category_id,
             variant_1_label: activeLevels[0]?.label || null,
             variant_2_label: activeLevels[1]?.label || null,
             variant_3_label: activeLevels[2]?.label || null,
@@ -580,11 +594,9 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
             groupId = newGroup?.id || null;
           }
 
-          // Update group_id on all related products (current + new templates)
+          // Update group_id on all related products
           if (groupId) {
-            // Update current product
-            await supabase.from('products').update({ group_id: groupId } as any).eq('id', product.id);
-            // Update newly created templates
+            await supabase.from('products').update({ group_id: groupId } as any).eq('id', prod.id);
             if (newTemplates.length > 0) {
               const allVariantNames = combinations.map(combo => `${baseName} ${combo.join(' ')}`.trim());
               await supabase.from('products').update({ group_id: groupId } as any)
@@ -593,23 +605,32 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
             }
           }
 
-          const createdCount = newTemplates.length;
-          toast({
-            title: 'Cập nhật thành công',
-            description: productHasImei 
-              ? `IMEI đã gắn vào biến thể "${updates.name}"${createdCount > 0 ? ` • Tạo ${createdCount} biến thể mẫu` : ''}`
-              : `Đã cập nhật sản phẩm${createdCount > 0 ? ` và tạo ${createdCount} biến thể mẫu` : ''}`,
-          });
+          // Invalidate queries after background work
+          queryClient.invalidateQueries({ queryKey: ['products'] });
+          queryClient.invalidateQueries({ queryKey: ['inventory'] });
+          queryClient.invalidateQueries({ queryKey: ['all-products'] });
+          queryClient.invalidateQueries({ queryKey: ['import-receipts'] });
           queryClient.invalidateQueries({ queryKey: ['product-groups'] });
+
+          toast({
+            title: '✅ Hoàn tất',
+            description: productHasImei 
+              ? `IMEI đã gắn vào biến thể "${updates.name}"${newTemplates.length > 0 ? ` • Tạo ${newTemplates.length} biến thể mẫu` : ''}`
+              : `Đã cập nhật sản phẩm${newTemplates.length > 0 ? ` và tạo ${newTemplates.length} biến thể mẫu` : ''}`,
+          });
         }
       } else {
+        // Invalidate queries after background work
+        queryClient.invalidateQueries({ queryKey: ['products'] });
+        queryClient.invalidateQueries({ queryKey: ['inventory'] });
+        queryClient.invalidateQueries({ queryKey: ['all-products'] });
+        queryClient.invalidateQueries({ queryKey: ['import-receipts'] });
+
         toast({
-          title: 'Cập nhật thành công',
+          title: '✅ Hoàn tất',
           description: 'Thông tin sản phẩm đã được cập nhật',
         });
       }
-
-      onOpenChange(false);
     } catch (error: any) {
       console.error('Edit product error:', error);
       toast({
