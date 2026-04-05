@@ -431,7 +431,17 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               {/* Variant config - cho phép thêm biến thể */}
               <VariantConfigPanel
                 config={variantConfig}
-                onChange={setVariantConfig}
+                onChange={(newConfig) => {
+                  setVariantConfig(newConfig);
+                  // Auto-populate current IMEI to first variant when enabling
+                  if (newConfig.enabled && !variantConfig.enabled && formData.imei.trim()) {
+                    const activeLevels = newConfig.levels.filter(l => l.values.length > 0);
+                    const combos = generateVariantCombinations(activeLevels);
+                    if (combos.length > 0 && combos[0].length > 0) {
+                      setVariantImeis({ [combos[0].join('|')]: formData.imei.trim() });
+                    }
+                  }
+                }}
                 baseProductName={formData.name}
               />
 
