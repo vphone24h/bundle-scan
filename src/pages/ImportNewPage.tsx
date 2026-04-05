@@ -193,31 +193,11 @@ export default function ImportNewPage() {
   // Field-level validation errors
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  const normalizeSuggestionName = useCallback((name: string) => normalizeProductSearchQuery(name), []);
 
-  // Auto-save cart to localStorage for draft persistence
-  useEffect(() => {
-    draft.saveDraft(cart, { supplierId: selectedSupplierId, branchId: selectedBranchId });
-  }, [cart, selectedSupplierId, selectedBranchId]);
-
-  // Handle resume draft
-  const handleResumeDraft = useCallback(() => {
-    if (draft.pendingDraft) {
-      setCart(draft.pendingDraft.items);
-      if (draft.pendingDraft.supplierId) setSelectedSupplierId(draft.pendingDraft.supplierId);
-      if (draft.pendingDraft.branchId) setSelectedBranchId(draft.pendingDraft.branchId);
-    }
-    draft.acceptDraft();
-  }, [draft.pendingDraft]);
-
-  const totalAmount = useMemo(
-    () => cart.reduce((sum, item) => sum + item.importPrice * item.quantity, 0),
-    [cart]
-  );
-
-  // Debounced server-side product search for suggestions
   const searchProductsFromDB = useCallback(async (searchValue: string) => {
     if (searchValue.length < 2) {
       setSuggestions([]);
@@ -232,21 +212,44 @@ export default function ImportNewPage() {
       });
 
       if (error) throw error;
-      setSuggestions(((data as any[]) || []).map((r: any) => ({
-        name: r.product_name,
-        sku: r.product_sku,
+
+      const rows = ((data as any[]) || []).map((r: any) => ({
+        name: normalizeSuggestionName(r.product_name || ''),
+        sku: r.product_sku || '',
         category_id: r.category_id,
         import_price: r.latest_import_price,
         sale_price: r.latest_sale_price,
-        totalQty: r.in_stock_qty,
-      })));
+        totalQty: Number(r.in_stock_qty || 0),
+      }));
+
+      const grouped = new Map<string, ProductSuggestion>();
+
+      rows.forEach((row) => {
+        const key = normalizeLooseSearchValue(row.name);
+        const existing = grouped.get(key);
+        if (!existing) {
+          grouped.set(key, row);
+          return;
+        }
+
+        grouped.set(key, {
+          ...existing,
+          sku: existing.sku || row.sku,
+          category_id: existing.category_id || row.category_id,
+          import_price: existing.import_price ?? row.import_price,
+          sale_price: existing.sale_price ?? row.sale_price,
+          totalQty: Math.max(existing.totalQty, row.totalQty),
+        });
+      });
+
+      setSuggestions(Array.from(grouped.values()));
     } catch (err) {
       console.error('Product search error:', err);
       setSuggestions([]);
     } finally {
       setIsSearching(false);
     }
-  }, []);
+  }, [normalizeSuggestionName]);
 
   // Auto-fill from template product navigation
   useEffect(() => {
