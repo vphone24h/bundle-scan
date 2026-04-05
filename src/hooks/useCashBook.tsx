@@ -571,6 +571,7 @@ export function useUpdateCashBookEntry() {
             payment_source: oldData.payment_source,
             is_business_accounting: oldData.is_business_accounting,
             note: oldData.note,
+            transaction_date: oldData.transaction_date,
           },
           new_data: {
             type: data.type,
@@ -580,6 +581,7 @@ export function useUpdateCashBookEntry() {
             payment_source: data.payment_source,
             is_business_accounting: data.is_business_accounting,
             note: data.note,
+            transaction_date: data.transaction_date,
           },
           description: `Sửa sổ quỹ: ${oldData.description} → ${data.description}`,
         }]);

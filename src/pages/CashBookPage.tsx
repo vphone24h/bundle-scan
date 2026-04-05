@@ -815,6 +815,11 @@ export default function CashBookPage() {
     try {
       const mainPayment = formData.payments[0];
       
+      // Convert datetime-local to ISO for DB
+      const newTransactionDate = formData.transaction_date 
+        ? new Date(formData.transaction_date).toISOString() 
+        : undefined;
+      
       await updateEntry.mutateAsync({
         id: editingEntry.id,
         oldData: editingEntry, // Truyền dữ liệu cũ để ghi audit log
@@ -827,6 +832,7 @@ export default function CashBookPage() {
         note: formData.note || undefined,
         recipient_name: formData.recipient_name || null,
         recipient_phone: formData.recipient_phone || null,
+        transaction_date: newTransactionDate,
       });
 
       setShowEditDialog(false);
@@ -1926,6 +1932,15 @@ export default function CashBookPage() {
           </DialogHeader>
 
           <div className="space-y-4">
+            {/* Ngày giờ */}
+            <div>
+              <Label>Ngày giờ giao dịch</Label>
+              <Input
+                type="datetime-local"
+                value={formData.transaction_date}
+                onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
+              />
+            </div>
             <div>
               <div className="flex items-center justify-between">
                 <Label>Danh mục *</Label>
