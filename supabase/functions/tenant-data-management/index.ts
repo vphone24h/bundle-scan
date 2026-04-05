@@ -15,6 +15,7 @@ const MAX_REQUESTS_PER_HOUR = 30
 const RATE_LIMIT_WINDOW_MINUTES = 60
 const DELETE_BATCH_SIZE = 100
 const FETCH_PAGE_SIZE = 1000
+const IN_CLAUSE_BATCH_SIZE = 200
 
 type DeleteMode = 'full' | 'keep_templates'
 type RestoreOption = 'delete' | 'restore'
@@ -126,8 +127,8 @@ async function fetchIdsByParent(supabaseAdmin: any, table: string, parentColumn:
   if (parentIds.length === 0) return []
   const ids: string[] = []
 
-  for (let i = 0; i < parentIds.length; i += FETCH_PAGE_SIZE) {
-    const parentBatch = parentIds.slice(i, i + FETCH_PAGE_SIZE)
+  for (let i = 0; i < parentIds.length; i += IN_CLAUSE_BATCH_SIZE) {
+    const parentBatch = parentIds.slice(i, i + IN_CLAUSE_BATCH_SIZE)
     for (let from = 0; ; from += FETCH_PAGE_SIZE) {
       const to = from + FETCH_PAGE_SIZE - 1
       const { data, error } = await supabaseAdmin
@@ -162,8 +163,9 @@ async function deleteByIdsInBatches(
   optional = false,
   batchSize = DELETE_BATCH_SIZE,
 ) {
-  for (let index = 0; index < ids.length; index += batchSize) {
-    const batch = ids.slice(index, index + batchSize)
+  const effectiveBatch = Math.min(batchSize, IN_CLAUSE_BATCH_SIZE)
+  for (let index = 0; index < ids.length; index += effectiveBatch) {
+    const batch = ids.slice(index, index + effectiveBatch)
     const operation = supabaseAdmin.from(table).delete().in(column, batch)
 
     if (optional) {
