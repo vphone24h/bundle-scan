@@ -22,6 +22,7 @@ import { DeleteProductDialog } from './DeleteProductDialog';
 interface ExtendedProduct extends Product {
   isPrinted?: boolean;
   isTemplateGroup?: boolean;
+  isVariantGroup?: boolean;
   variantCount?: number;
   childProducts?: ExtendedProduct[];
   variant1?: string;
