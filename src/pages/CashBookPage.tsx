@@ -1753,13 +1753,10 @@ export default function CashBookPage() {
                   variant="ghost" 
                   size="sm" 
                   className="h-6 px-2 text-xs"
-                  onClick={() => {
-                    setNewCategoryName('');
-                    setShowAddCategoryDialog(true);
-                  }}
+                  onClick={() => handleOpenCategoryManage(formData.type)}
                 >
                   <Plus className="h-3 w-3 mr-1" />
-                  Thêm
+                  Quản lý
                 </Button>
               </div>
               <Select
