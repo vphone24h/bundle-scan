@@ -72,7 +72,8 @@ import {
 } from 'lucide-react';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useCashBook, useCashBookCategories, useCashBookBalances, useCreateCashBookEntry, useUpdateCashBookEntry, useDeleteCashBookEntry, useCreateCashBookCategory, type CashBookEntry } from '@/hooks/useCashBook';
+import { useCashBook, useCashBookCategories, useCashBookBalances, useCreateCashBookEntry, useUpdateCashBookEntry, useDeleteCashBookEntry, type CashBookEntry } from '@/hooks/useCashBook';
+import { CategoryManageDialog } from '@/components/cashbook/CategoryManageDialog';
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCashBookGuideUrl } from '@/hooks/useAppConfig';
@@ -304,9 +305,9 @@ export default function CashBookPage() {
   const [summaryCustomFrom, setSummaryCustomFrom] = useState('');
   const [summaryCustomTo, setSummaryCustomTo] = useState('');
   
-  // Add category dialog
-  const [showAddCategoryDialog, setShowAddCategoryDialog] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
+  // Category management dialog
+  const [showCategoryManage, setShowCategoryManage] = useState(false);
+  const [categoryManageType, setCategoryManageType] = useState<'expense' | 'income'>('expense');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -335,7 +336,7 @@ export default function CashBookPage() {
   const createEntry = useCreateCashBookEntry();
   const updateEntry = useUpdateCashBookEntry();
   const deleteEntry = useDeleteCashBookEntry();
-  const createCategory = useCreateCashBookCategory();
+  
   const { data: serverBalances } = useCashBookBalances(
     viewMode === 'branch' && selectedBranchId ? selectedBranchId : undefined
   );
@@ -571,39 +572,10 @@ export default function CashBookPage() {
     setTimePreset(preset);
   };
   
-  // Handle add category
-  const handleAddCategory = async () => {
-    if (!newCategoryName.trim()) {
-      toast({
-        title: 'Thiếu thông tin',
-        description: 'Vui lòng nhập tên danh mục',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    try {
-      await createCategory.mutateAsync({
-        name: newCategoryName.trim(),
-        type: formData.type,
-      });
-      
-      // Auto-select the new category
-      setFormData({ ...formData, category: newCategoryName.trim() });
-      setNewCategoryName('');
-      setShowAddCategoryDialog(false);
-      
-      toast({
-        title: 'Đã thêm danh mục',
-        description: `Danh mục "${newCategoryName.trim()}" đã được thêm`,
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Lỗi',
-        description: error.message || 'Không thể thêm danh mục',
-        variant: 'destructive',
-      });
-    }
+  // Handle open category management
+  const handleOpenCategoryManage = (type: 'expense' | 'income') => {
+    setCategoryManageType(type);
+    setShowCategoryManage(true);
   };
 
   const handleOpenAdd = (type: 'expense' | 'income') => {
@@ -1781,13 +1753,10 @@ export default function CashBookPage() {
                   variant="ghost" 
                   size="sm" 
                   className="h-6 px-2 text-xs"
-                  onClick={() => {
-                    setNewCategoryName('');
-                    setShowAddCategoryDialog(true);
-                  }}
+                  onClick={() => handleOpenCategoryManage(formData.type)}
                 >
                   <Plus className="h-3 w-3 mr-1" />
-                  Thêm
+                  Quản lý
                 </Button>
               </div>
               <Select
@@ -1965,13 +1934,10 @@ export default function CashBookPage() {
                   variant="ghost" 
                   size="sm" 
                   className="h-6 px-2 text-xs"
-                  onClick={() => {
-                    setNewCategoryName('');
-                    setShowAddCategoryDialog(true);
-                  }}
+                  onClick={() => handleOpenCategoryManage(formData.type)}
                 >
                   <Plus className="h-3 w-3 mr-1" />
-                  Thêm
+                  Quản lý
                 </Button>
               </div>
               <Select
@@ -2408,43 +2374,13 @@ export default function CashBookPage() {
         hasTransactions={(source) => allEntries?.some(e => e.payment_source === source) || false}
       />
 
-      {/* Add Category Dialog */}
-      <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>
-              Thêm danh mục {formData.type === 'expense' ? 'chi' : 'thu'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Tên danh mục *</Label>
-              <Input
-                placeholder="Nhập tên danh mục mới"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddCategory();
-                  }
-                }}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddCategoryDialog(false)}>
-              Hủy
-            </Button>
-            <Button 
-              onClick={handleAddCategory} 
-              disabled={createCategory.isPending || !newCategoryName.trim()}
-            >
-              {createCategory.isPending ? 'Đang thêm...' : 'Thêm'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Category Management Dialog */}
+      <CategoryManageDialog
+        open={showCategoryManage}
+        onOpenChange={setShowCategoryManage}
+        type={categoryManageType}
+        onCategorySelect={(name) => setFormData({ ...formData, category: name })}
+      />
       <OnboardingTourOverlay
         steps={cashBookTourSteps}
         isActive={showCashTour}

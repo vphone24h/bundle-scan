@@ -68,6 +68,7 @@ export interface CashBookCategory {
   name: string;
   type: CashBookType;
   is_default: boolean;
+  tenant_id: string | null;
   created_at: string;
 }
 
@@ -163,7 +164,6 @@ export function useCashBook(filters?: {
 export function useCashBookCategories(type?: CashBookType) {
   const { data: tenant } = useCurrentTenant();
   return useQuery({
-    // Keyed by tenant to prevent cross-tenant cache leakage
     queryKey: ['cash-book-categories', tenant?.id, type],
     queryFn: async () => {
       let query = supabase
@@ -175,6 +175,7 @@ export function useCashBookCategories(type?: CashBookType) {
         query = query.eq('type', type);
       }
 
+      // RLS handles tenant filtering (own + default categories)
       const { data, error } = await query;
       if (error) throw error;
       return data as CashBookCategory[];
@@ -185,21 +186,63 @@ export function useCashBookCategories(type?: CashBookType) {
 
 export function useCreateCashBookCategory() {
   const queryClient = useQueryClient();
+  const { data: tenant } = useCurrentTenant();
 
   return useMutation({
     mutationFn: async (category: { name: string; type: CashBookType }) => {
+      if (!tenant?.id) throw new Error('Không tìm thấy cửa hàng');
       const { data, error } = await supabase
         .from('cash_book_categories')
         .insert([{
           name: category.name,
           type: category.type,
           is_default: false,
+          tenant_id: tenant.id,
         }])
         .select()
         .single();
 
       if (error) throw error;
       return data as CashBookCategory;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cash-book-categories'] });
+    },
+  });
+}
+
+export function useUpdateCashBookCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const { data, error } = await supabase
+        .from('cash_book_categories')
+        .update({ name })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as CashBookCategory;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cash-book-categories'] });
+    },
+  });
+}
+
+export function useDeleteCashBookCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('cash_book_categories')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cash-book-categories'] });
