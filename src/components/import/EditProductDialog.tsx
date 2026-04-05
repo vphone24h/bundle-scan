@@ -412,7 +412,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                     branch_id: t.branch_id || null,
                     created_by: user?.id,
                     tenant_id: tenantId,
-                    note: `Nhập từ sản phẩm mẫu: ${t.name}`,
+                    note: `Nhập từ SP mẫu: ${t.name}${t.imei ? ` | IMEI: ${t.imei}` : ''} | Giá nhập: ${(t.import_price || 0).toLocaleString('vi-VN')}đ`,
                   }])
                   .select()
                   .single();
