@@ -292,11 +292,11 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               paid_amount: importPrice,
               debt_amount: 0,
               original_debt_amount: 0,
-              supplier_id: product.supplier_id || null,
-              branch_id: product.branch_id || null,
+              supplier_id: updates.supplier_id || product.supplier_id || null,
+              branch_id: (isSuperAdmin ? (formData.branch_id === '_none_' ? null : formData.branch_id) : product.branch_id) || null,
               created_by: user.id,
               tenant_id: tenantId,
-              note: `Nhập từ sản phẩm mẫu: ${updates.name || formData.name}`,
+              note: `Nhập từ SP mẫu: ${updates.name || formData.name}${updates.imei ? ` | IMEI: ${updates.imei}` : ''} | Giá nhập: ${importPrice.toLocaleString('vi-VN')}đ`,
             }])
             .select()
             .single();
