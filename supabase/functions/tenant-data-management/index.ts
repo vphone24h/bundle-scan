@@ -867,10 +867,14 @@ async function deleteKeepTemplates(supabaseAdmin: any, tenantId: string, reportP
 
   await reportProgress?.(64, 'Đang reset sản phẩm mẫu')
 
-  // Cleanup any remaining export_receipt_items referencing products (orphans)
+  // Cleanup orphan chain: export_returns → export_receipt_items → products
   const allProductIds = await fetchIdsByTenant(supabaseAdmin, 'products', tenantId)
   if (allProductIds.length > 0) {
-    await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'product_id', allProductIds, 'Xoá chi tiết PX còn sót theo product_id', true)
+    const orphanItemIds = await fetchIdsByParent(supabaseAdmin, 'export_receipt_items', 'product_id', allProductIds)
+    if (orphanItemIds.length > 0) {
+      await deleteByIdsInBatches(supabaseAdmin, 'export_returns', 'export_receipt_item_id', orphanItemIds, 'Xoá trả hàng còn sót', true)
+      await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'id', orphanItemIds, 'Xoá chi tiết PX còn sót', true)
+    }
   }
 
   await assertMutation(
