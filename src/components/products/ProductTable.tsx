@@ -74,6 +74,17 @@ export function ProductTable({
     imei: string;
   }>({ open: false, productId: '', productName: '', sku: '', imei: '' });
 
+  // Expand/collapse state for variant groups
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const toggleGroup = (id: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const toggleAll = () => {
     if (allSelected) {
       onSelectionChange([]);
