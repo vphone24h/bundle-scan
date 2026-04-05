@@ -663,16 +663,16 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               </div>
 
               <div className="space-y-2">
-                <Label>Thư mục</Label>
+                <Label>Danh mục <span className="text-destructive">*</span></Label>
                 <Select 
                   value={formData.category_id} 
                   onValueChange={(v) => setFormData(prev => ({ ...prev, category_id: v }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Chọn thư mục" />
+                    <SelectValue placeholder="Chọn danh mục" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
-                    <SelectItem value="_none_">Không có</SelectItem>
+                    <SelectItem value="_none_">-- Chọn danh mục --</SelectItem>
                     {categories?.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
@@ -683,7 +683,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               </div>
 
               <div className="space-y-2">
-                <Label>Nhà cung cấp</Label>
+                <Label>Nhà cung cấp <span className="text-destructive">*</span></Label>
                 <Select 
                   value={formData.supplier_id} 
                   onValueChange={(v) => setFormData(prev => ({ ...prev, supplier_id: v }))}
