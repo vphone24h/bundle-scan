@@ -922,6 +922,7 @@ export type Database = {
           id: string
           is_default: boolean | null
           name: string
+          tenant_id: string | null
           type: Database["public"]["Enums"]["cash_book_type"]
         }
         Insert: {
@@ -929,6 +930,7 @@ export type Database = {
           id?: string
           is_default?: boolean | null
           name: string
+          tenant_id?: string | null
           type: Database["public"]["Enums"]["cash_book_type"]
         }
         Update: {
@@ -936,9 +938,18 @@ export type Database = {
           id?: string
           is_default?: boolean | null
           name?: string
+          tenant_id?: string | null
           type?: Database["public"]["Enums"]["cash_book_type"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cash_book_categories_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cash_book_opening_balances: {
         Row: {
