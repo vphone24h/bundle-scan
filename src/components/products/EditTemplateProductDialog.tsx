@@ -57,8 +57,10 @@ export function EditTemplateProductDialog({ product, open, onOpenChange }: EditT
   useEffect(() => {
     if (!product || !open) return;
     
-    // Extract base name
-    const name = product.name;
+    // If it's a template group, the name was already extracted to baseName by groupTemplateProducts
+    const name = product.isTemplateGroup
+      ? extractBaseName(product.name, product.variant_1, product.variant_2, product.variant_3)
+      : product.name;
     setBaseName(name);
     setSkuPrefix(product.sku || '');
     setCategoryId(product.category_id || '_none_');
