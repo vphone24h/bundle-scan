@@ -561,27 +561,36 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                 baseProductName={formData.name}
               />
 
-              {/* IMEI per variant */}
+              {/* IMEI + Giá nhập per variant */}
               {variantConfig.enabled && (() => {
                 const activeLevels = variantConfig.levels.filter(l => l.values.length > 0);
                 const combos = generateVariantCombinations(activeLevels);
                 if (combos.length === 0 || (combos.length === 1 && combos[0].length === 0)) return null;
+                const defaultPrice = String(product?.import_price || 0);
                 return (
                   <div className="rounded-lg border p-3 space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Gắn IMEI cho từng biến thể:</p>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                    <p className="text-xs font-medium text-muted-foreground">IMEI & Giá nhập từng biến thể:</p>
+                    <div className="space-y-3 max-h-60 overflow-y-auto">
                       {combos.map((combo, idx) => {
                         const key = combo.join('|');
                         const variantLabel = `${formData.name.trim()} ${combo.join(' ')}`;
                         return (
-                          <div key={idx} className="flex items-center gap-2">
-                            <span className="text-xs min-w-0 flex-1 truncate" title={variantLabel}>{variantLabel}</span>
-                            <Input
-                              value={variantImeis[key] || ''}
-                              onChange={(e) => setVariantImeis(prev => ({ ...prev, [key]: e.target.value }))}
-                              placeholder="IMEI"
-                              className="font-mono text-xs w-40 h-7"
-                            />
+                          <div key={idx} className="space-y-1 border-b border-border/50 pb-2 last:border-0 last:pb-0">
+                            <span className="text-xs font-medium truncate block" title={variantLabel}>{variantLabel}</span>
+                            <div className="flex gap-2">
+                              <Input
+                                value={variantImeis[key] || ''}
+                                onChange={(e) => setVariantImeis(prev => ({ ...prev, [key]: e.target.value }))}
+                                placeholder="IMEI"
+                                className="font-mono text-xs h-8 flex-1"
+                              />
+                              <PriceInput
+                                value={variantPrices[key] || defaultPrice}
+                                onChange={(value) => setVariantPrices(prev => ({ ...prev, [key]: String(value) }))}
+                                placeholder="Giá nhập"
+                                className="text-xs h-8 w-28"
+                              />
+                            </div>
                           </div>
                         );
                       })}
