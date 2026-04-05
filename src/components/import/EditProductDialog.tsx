@@ -60,6 +60,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     import_date: '',
   });
 
+  const [variantConfig, setVariantConfig] = useState<VariantConfig>({ enabled: false, levels: [] });
   const [originalImportDate, setOriginalImportDate] = useState('');
 
   useEffect(() => {
