@@ -1300,6 +1300,14 @@ export function LandingPageSettings() {
             }).catch(() => {
               toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
             });
+          }} onDeleteEmail={() => {
+            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+            const clearedData = { ...formData, order_email_sender: '', order_email_app_password: '' };
+            updateSettings.mutateAsync(clearedData).then(() => {
+              setHasChanges(false);
+            }).catch(() => {
+              toast({ title: 'Lỗi', description: 'Không thể xóa email. Vui lòng thử lại.', variant: 'destructive' });
+            });
           }} />
           </>)}
         </CardContent>
