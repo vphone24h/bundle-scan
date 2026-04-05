@@ -97,6 +97,34 @@ export function useProducts(filters?: ProductFilters) {
     queryFn: async () => {
       if (isDataHidden) return { items: [] as Product[], totalCount: 0 };
 
+      // Use optimized RPC when server-side filters are active (Products tab)
+      if (hasServerFilters) {
+        const searchTerm = filters?.search?.trim() || null;
+        const { data, error } = await supabase.rpc('search_products_paginated', {
+          p_search: searchTerm,
+          p_category_id: (filters?.categoryId && filters.categoryId !== '_all_') ? filters.categoryId : null,
+          p_supplier_id: (filters?.supplierId && filters.supplierId !== '_all_') ? filters.supplierId : null,
+          p_status: (filters?.status && filters.status !== '_all_') ? filters.status : null,
+          p_branch_id: (filters?.branchId && filters.branchId !== '_all_') ? filters.branchId : null,
+          p_date_from: filters?.dateFrom || null,
+          p_date_to: filters?.dateTo || null,
+          p_printed: (filters?.printedFilter && filters.printedFilter !== '_all_') ? filters.printedFilter : null,
+          p_page: page,
+          p_page_size: pageSize,
+          p_user_branch_id: (shouldFilter && branchId) ? branchId : null,
+          p_filter_by_branch: shouldFilter,
+        });
+
+        if (error) throw error;
+
+        const rows = (data || []) as (Product & { total_rows: number })[];
+        const totalCount = rows.length > 0 ? Number(rows[0].total_rows) : 0;
+        const items = rows.map(({ total_rows, ...rest }) => rest as Product);
+
+        return { items, totalCount };
+      }
+
+      // Fallback: non-paginated consumers (ImportNewPage, ReturnsPage, etc.)
       let query = supabase
         .from('products')
         .select(`
@@ -108,66 +136,16 @@ export function useProducts(filters?: ProductFilters) {
         .in('status', ['in_stock', 'sold', 'returned', 'template'])
         .order('import_date', { ascending: false });
 
-      // Branch filter: include template products (no branch) alongside branch-specific products
       if (shouldFilter && branchId) {
         query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
       }
 
-      if (filters?.search) {
-        const s = filters.search.trim();
-        if (s) {
-          query = query.or(`name.ilike.%${s}%,sku.ilike.%${s}%,imei.ilike.%${s}%`);
-        }
-      }
-      if (filters?.categoryId && filters.categoryId !== '_all_') {
-        query = query.eq('category_id', filters.categoryId);
-      }
-      if (filters?.supplierId && filters.supplierId !== '_all_') {
-        query = query.eq('supplier_id', filters.supplierId);
-      }
-      if (filters?.status && filters.status !== '_all_') {
-        query = query.eq('status', filters.status as ProductStatus);
-      }
-      if (filters?.branchId && filters.branchId !== '_all_') {
-        query = query.eq('branch_id', filters.branchId);
-      }
-      if (filters?.dateFrom) {
-        query = query.gte('import_date', filters.dateFrom);
-      }
-      if (filters?.dateTo) {
-        query = query.lte('import_date', filters.dateTo + 'T23:59:59');
-      }
-      if (filters?.printedFilter === 'printed') {
-        query = query.eq('is_printed', true);
-      } else if (filters?.printedFilter === 'not_printed') {
-        query = query.eq('is_printed', false);
-      }
-
-      // Server-side pagination (N+1 để tránh count exact chậm)
-      if (hasServerFilters) {
-        const from = (page - 1) * pageSize;
-        const to = from + pageSize; // fetch pageSize + 1
-        query = query.range(from, to);
-      } else {
-        // Default: limit to 500 for backward compat (non-paginated consumers)
-        query = query.limit(500);
-      }
+      query = query.limit(500);
 
       const { data, error } = await query;
       if (error) throw error;
 
       const rows = (data || []) as Product[];
-
-      if (hasServerFilters) {
-        const hasMore = rows.length > pageSize;
-        const items = hasMore ? rows.slice(0, pageSize) : rows;
-        const totalCount = hasMore
-          ? (page * pageSize) + 1
-          : ((page - 1) * pageSize) + items.length;
-
-        return { items, totalCount };
-      }
-
       return { items: rows, totalCount: rows.length };
     },
     enabled: !!user?.id && !permissionsLoading,
