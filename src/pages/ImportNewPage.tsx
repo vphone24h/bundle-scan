@@ -99,6 +99,7 @@ type ProductSuggestion = {
 };
 
 const DEFAULT_VARIANT_LABELS = ['Biến thể 1', 'Biến thể 2', 'Biến thể 3'] as const;
+const IMPORTABLE_PRODUCT_STATUSES = new Set<Product['status']>(['in_stock', 'template']);
 
 function normalizeSuggestionText(value: string) {
   return normalizeProductSearchQuery(String(value || ''))
@@ -253,6 +254,11 @@ export default function ImportNewPage() {
     [cart]
   );
 
+  const importableProducts = useMemo(
+    () => (products || []).filter((product) => IMPORTABLE_PRODUCT_STATUSES.has(product.status)),
+    [products]
+  );
+
   const productGroupById = useMemo(() => {
     return new Map((productGroups || []).map((group) => [group.id, group]));
   }, [productGroups]);
@@ -261,13 +267,34 @@ export default function ImportNewPage() {
     return new Map((productGroups || []).map((group) => [normalizeSuggestionText(group.name), group]));
   }, [productGroups]);
 
+  const importableGroupIds = useMemo(() => {
+    return new Set(
+      importableProducts
+        .map((product) => product.group_id)
+        .filter((groupId): groupId is string => !!groupId)
+    );
+  }, [importableProducts]);
+
+  const importableSuggestionKeys = useMemo(() => {
+    const keys = new Set<string>();
+
+    for (const product of importableProducts) {
+      keys.add(normalizeSuggestionText(product.name));
+      keys.add(normalizeSuggestionText(inferBaseProductName(product)));
+
+      if (product.sku) {
+        keys.add(`${normalizeSuggestionText(product.name)}::${normalizeSuggestionText(product.sku)}`);
+      }
+    }
+
+    return keys;
+  }, [importableProducts]);
+
   const localProductSuggestions = useMemo(() => {
     const variantEntries = new Map<string, { suggestion: ProductSuggestion; members: Product[]; group: ProductGroup | null }>();
     const standaloneEntries = new Map<string, ProductSuggestion>();
 
-    for (const product of products || []) {
-      if (!['in_stock', 'sold', 'returned', 'template'].includes(product.status)) continue;
-
+    for (const product of importableProducts) {
       const hasVariantInfo = !!(product.group_id || product.variant_1 || product.variant_2 || product.variant_3);
       const totalQty = product.status === 'in_stock' ? Number(product.quantity || 0) : 0;
 
@@ -329,10 +356,7 @@ export default function ImportNewPage() {
       const key = group.id;
       if (variantEntries.has(key)) continue;
 
-      // Only include groups that have at least one active product
-      const hasActiveProducts = (products || []).some(
-        (p) => p.group_id === group.id && ['in_stock', 'sold', 'returned', 'template'].includes(p.status)
-      );
+      const hasActiveProducts = importableProducts.some((p) => p.group_id === group.id);
       if (!hasActiveProducts) continue;
 
       variantEntries.set(key, {
@@ -360,7 +384,7 @@ export default function ImportNewPage() {
     }));
 
     return [...variantSuggestions, ...Array.from(standaloneEntries.values())].sort((a, b) => a.name.localeCompare(b.name, 'vi'));
-  }, [productGroupById, productGroupByName, productGroups, products]);
+  }, [importableProducts, productGroupById, productGroupByName, productGroups]);
 
   // Debounced server-side product search for suggestions
   const searchProductsFromDB = useCallback(async (searchValue: string) => {
@@ -395,17 +419,31 @@ export default function ImportNewPage() {
       if (error) throw error;
 
       // RPC already groups variants by group_id - just map directly
-      const results: ProductSuggestion[] = ((data as any[]) || []).map((r: any) => ({
-        name: r.product_name || '',
-        sku: r.product_sku || '',
-        category_id: r.category_id,
-        import_price: r.group_id ? null : (r.latest_import_price ?? null),
-        sale_price: r.group_id ? null : (r.latest_sale_price ?? null),
-        totalQty: Number(r.in_stock_qty || 0),
-        group_id: r.group_id || null,
-        unit: 'cái',
-        variantLevels: r.group_id ? buildVariantLevelsFromProducts([], productGroupById.get(r.group_id) || null) : [],
-      }));
+      const results: ProductSuggestion[] = ((data as any[]) || [])
+        .map((r: any) => ({
+          name: r.product_name || '',
+          sku: r.product_sku || '',
+          category_id: r.category_id,
+          import_price: r.group_id ? null : (r.latest_import_price ?? null),
+          sale_price: r.group_id ? null : (r.latest_sale_price ?? null),
+          totalQty: Number(r.in_stock_qty || 0),
+          group_id: r.group_id || null,
+          unit: 'cái',
+          variantLevels: r.group_id ? buildVariantLevelsFromProducts([], productGroupById.get(r.group_id) || null) : [],
+        }))
+        .filter((item) => {
+          const normalizedName = normalizeSuggestionText(item.name);
+          const normalizedSku = normalizeSuggestionText(item.sku || '');
+
+          if (item.group_id) {
+            return importableGroupIds.has(item.group_id) || importableSuggestionKeys.has(normalizedName);
+          }
+
+          return (
+            importableSuggestionKeys.has(normalizedName)
+            || (!!normalizedSku && importableSuggestionKeys.has(`${normalizedName}::${normalizedSku}`))
+          );
+        });
 
       setSuggestions(results);
     } catch (err) {
@@ -414,7 +452,7 @@ export default function ImportNewPage() {
     } finally {
       setIsSearching(false);
     }
-  }, [localProductSuggestions, productGroupById]);
+  }, [importableGroupIds, importableSuggestionKeys, localProductSuggestions, productGroupById]);
 
   // Auto-fill from template product navigation
   useEffect(() => {
