@@ -325,9 +325,32 @@ export default function ImportNewPage() {
       }
     }
 
+    for (const group of productGroups || []) {
+      const key = group.id;
+      if (variantEntries.has(key)) continue;
+
+      variantEntries.set(key, {
+        group,
+        members: [],
+        suggestion: {
+          name: group.name,
+          sku: group.sku_prefix || '',
+          category_id: group.category_id,
+          import_price: null,
+          sale_price: null,
+          totalQty: 0,
+          group_id: group.id,
+          unit: 'cái',
+          variantLevels: buildVariantLevelsFromProducts([], group),
+        },
+      });
+    }
+
     const variantSuggestions = Array.from(variantEntries.values()).map((entry) => ({
       ...entry.suggestion,
-      variantLevels: buildVariantLevelsFromProducts(entry.members, entry.group),
+      variantLevels: entry.suggestion.variantLevels?.length
+        ? entry.suggestion.variantLevels
+        : buildVariantLevelsFromProducts(entry.members, entry.group),
     }));
 
     return [...variantSuggestions, ...Array.from(standaloneEntries.values())].sort((a, b) => a.name.localeCompare(b.name, 'vi'));
@@ -1134,7 +1157,22 @@ export default function ImportNewPage() {
           p => p.name.toLowerCase() === data.productName!.toLowerCase()
         );
         if (match) {
-          handleSelectSuggestion(match);
+          handleSelectSuggestion({
+            name: inferBaseProductName(match),
+            sku: match.sku || '',
+            category_id: match.category_id,
+            import_price: match.import_price ?? null,
+            sale_price: match.sale_price ?? null,
+            totalQty: Number(match.quantity || 0),
+            group_id: match.group_id,
+            unit: match.unit || 'cái',
+            variantLevels: buildVariantLevelsFromProducts(
+              [match],
+              (match.group_id ? productGroupById.get(match.group_id) : null)
+                || productGroupByName.get(normalizeSuggestionText(inferBaseProductName(match)))
+                || null,
+            ),
+          });
         } else {
           setForm(prev => ({ ...prev, productName: data.productName || prev.productName }));
           setProductFormMode('form');
