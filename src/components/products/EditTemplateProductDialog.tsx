@@ -48,6 +48,7 @@ export function EditTemplateProductDialog({ product, open, onOpenChange }: EditT
   const [note, setNote] = useState('');
   const [variants, setVariants] = useState<VariantRow[]>([]);
   const [isLoadingVariants, setIsLoadingVariants] = useState(false);
+  const [originalBaseName, setOriginalBaseName] = useState('');
   
   // New variant form
   const [newVariantName, setNewVariantName] = useState('');
@@ -57,8 +58,10 @@ export function EditTemplateProductDialog({ product, open, onOpenChange }: EditT
   useEffect(() => {
     if (!product || !open) return;
     
-    // Extract base name
-    const name = product.name;
+    // If it's a template group, the name was already extracted to baseName by groupTemplateProducts
+    const name = product.isTemplateGroup
+      ? extractBaseName(product.name, product.variant_1, product.variant_2, product.variant_3)
+      : product.name;
     setBaseName(name);
     setSkuPrefix(product.sku || '');
     setCategoryId(product.category_id || '_none_');
@@ -77,13 +80,13 @@ export function EditTemplateProductDialog({ product, open, onOpenChange }: EditT
     try {
       // If it's a grouped template, load child products from DB
       // Find all template products that share the same base name
-      const baseName = extractBaseName(name, prod.variant_1, prod.variant_2, prod.variant_3);
+      const baseNameExtracted = extractBaseName(name, prod.variant_1, prod.variant_2, prod.variant_3);
       
       const { data, error } = await supabase
         .from('products')
         .select('id, name, sku, variant_1, variant_2, variant_3, import_price, sale_price, status')
         .eq('status', 'template')
-        .ilike('name', `${baseName}%`)
+        .ilike('name', `${baseNameExtracted}%`)
         .order('name');
       
       if (error) throw error;
@@ -92,7 +95,8 @@ export function EditTemplateProductDialog({ product, open, onOpenChange }: EditT
       const variantProducts = (data || []).filter(p => p.variant_1);
       
       if (variantProducts.length > 0) {
-        setBaseName(baseName);
+        setBaseName(baseNameExtracted);
+        setOriginalBaseName(baseNameExtracted);
         setVariants(variantProducts.map(p => ({
           id: p.id,
           name: p.name,
@@ -226,11 +230,18 @@ export function EditTemplateProductDialog({ product, open, onOpenChange }: EditT
         }
 
         // Update existing variants
+        const baseNameChanged = baseName.trim() !== originalBaseName;
         for (const v of toUpdate) {
+          // If baseName changed, reconstruct variant name
+          let updatedName = v.name;
+          if (baseNameChanged) {
+            const variantSuffix = [v.variant_1, v.variant_2, v.variant_3].filter(Boolean).join(' ');
+            updatedName = variantSuffix ? `${baseName.trim()} ${variantSuffix}` : baseName.trim();
+          }
           const { error } = await supabase
             .from('products')
             .update({
-              name: v.name,
+              name: updatedName,
               sku: v.sku,
               import_price: Math.round(v.import_price),
               sale_price: v.sale_price != null ? Math.round(v.sale_price) : null,
