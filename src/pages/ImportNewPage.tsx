@@ -9,10 +9,10 @@ import { KiotVietImportDialog } from '@/components/import/KiotVietImportDialog';
 import { ProductNamingTip } from '@/components/import/ProductNamingTip';
 import { VariantConfigPanel, VariantConfig, VariantLevel } from '@/components/import/VariantConfig';
 import { VariantSelector, SelectedVariants, buildVariantProductName } from '@/components/import/VariantSelector';
-import { useCreateProductGroup } from '@/hooks/useProductGroups';
+import { useCreateProductGroup, useProductGroups, ProductGroup } from '@/hooks/useProductGroups';
 import { useCategories, useCreateCategory } from '@/hooks/useCategories';
 import { useSuppliersByBranch, useCreateSupplier } from '@/hooks/useSuppliers';
-import { useProducts, useCheckIMEI, useBatchCheckIMEI } from '@/hooks/useProducts';
+import { useProducts, useCheckIMEI, useBatchCheckIMEI, Product } from '@/hooks/useProducts';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCreateImportReceipt } from '@/hooks/useImportReceipts';
 import { useBranches } from '@/hooks/useBranches';
@@ -94,7 +94,58 @@ type ProductSuggestion = {
   sale_price: number | null;
   totalQty: number;
   group_id: string | null;
+  unit?: string;
+  variantLevels?: VariantLevel[];
 };
+
+const DEFAULT_VARIANT_LABELS = ['Biến thể 1', 'Biến thể 2', 'Biến thể 3'] as const;
+
+function normalizeSuggestionText(value: string) {
+  return normalizeProductSearchQuery(String(value || ''))
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function inferBaseProductName(product: Pick<Product, 'name' | 'variant_1' | 'variant_2' | 'variant_3'>) {
+  let baseName = product.name;
+
+  [product.variant_1, product.variant_2, product.variant_3]
+    .filter(Boolean)
+    .forEach((variantValue) => {
+      const normalizedVariant = String(variantValue).trim();
+      if (!normalizedVariant) return;
+
+      const pattern = new RegExp(`(^|\\s)${escapeRegExp(normalizedVariant)}(?=\\s|$)`, 'gi');
+      baseName = baseName.replace(pattern, ' ');
+    });
+
+  return baseName.replace(/\s+/g, ' ').trim() || product.name;
+}
+
+function buildVariantLevelsFromProducts(products: Product[], group?: ProductGroup | null): VariantLevel[] {
+  const variantSets = [new Set<string>(), new Set<string>(), new Set<string>()];
+
+  for (const product of products) {
+    if (product.variant_1) variantSets[0].add(product.variant_1);
+    if (product.variant_2) variantSets[1].add(product.variant_2);
+    if (product.variant_3) variantSets[2].add(product.variant_3);
+  }
+
+  return [0, 1, 2]
+    .map((index) => {
+      const groupValues = [group?.variant_1_values, group?.variant_2_values, group?.variant_3_values][index] || [];
+      const values = Array.from(new Set([...groupValues, ...Array.from(variantSets[index])])).filter(Boolean);
+      const label = [group?.variant_1_label, group?.variant_2_label, group?.variant_3_label][index] || DEFAULT_VARIANT_LABELS[index];
+
+      return values.length > 0 ? { label, values } : null;
+    })
+    .filter((level): level is VariantLevel => !!level);
+}
 
 export default function ImportNewPage() {
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('import_new');
@@ -106,6 +157,7 @@ export default function ImportNewPage() {
   const location = useLocation();
   const { data: categories } = useCategories();
   const { data: products } = useProducts();
+  const { data: productGroups } = useProductGroups();
   const { data: branches } = useBranches();
   const importGuideUrl = useImportGuideUrl();
   const { data: permissions } = usePermissions();
@@ -201,12 +253,131 @@ export default function ImportNewPage() {
     [cart]
   );
 
+  const productGroupById = useMemo(() => {
+    return new Map((productGroups || []).map((group) => [group.id, group]));
+  }, [productGroups]);
+
+  const productGroupByName = useMemo(() => {
+    return new Map((productGroups || []).map((group) => [normalizeSuggestionText(group.name), group]));
+  }, [productGroups]);
+
+  const localProductSuggestions = useMemo(() => {
+    const variantEntries = new Map<string, { suggestion: ProductSuggestion; members: Product[]; group: ProductGroup | null }>();
+    const standaloneEntries = new Map<string, ProductSuggestion>();
+
+    for (const product of products || []) {
+      if (!['in_stock', 'sold', 'returned', 'template'].includes(product.status)) continue;
+
+      const hasVariantInfo = !!(product.group_id || product.variant_1 || product.variant_2 || product.variant_3);
+      const totalQty = product.status === 'in_stock' ? Number(product.quantity || 0) : 0;
+
+      if (hasVariantInfo) {
+        const inferredBaseName = inferBaseProductName(product);
+        const matchedGroup = (product.group_id ? productGroupById.get(product.group_id) : null)
+          || productGroupByName.get(normalizeSuggestionText(inferredBaseName))
+          || null;
+        const baseName = matchedGroup?.name || inferredBaseName;
+        const key = matchedGroup?.id || `variant:${normalizeSuggestionText(baseName)}`;
+        const existing = variantEntries.get(key);
+
+        if (existing) {
+          existing.members.push(product);
+          existing.suggestion.totalQty += totalQty;
+          if (!existing.suggestion.category_id) existing.suggestion.category_id = matchedGroup?.category_id || product.category_id;
+          if (!existing.suggestion.unit && product.unit) existing.suggestion.unit = product.unit;
+        } else {
+          variantEntries.set(key, {
+            group: matchedGroup,
+            members: [product],
+            suggestion: {
+              name: baseName,
+              sku: matchedGroup?.sku_prefix || '',
+              category_id: matchedGroup?.category_id || product.category_id,
+              import_price: null,
+              sale_price: null,
+              totalQty,
+              group_id: matchedGroup?.id || null,
+              unit: product.unit || 'cái',
+              variantLevels: [],
+            },
+          });
+        }
+
+        continue;
+      }
+
+      const key = `${normalizeSuggestionText(product.name)}::${product.sku || ''}`;
+      const existing = standaloneEntries.get(key);
+
+      if (existing) {
+        existing.totalQty += totalQty;
+      } else {
+        standaloneEntries.set(key, {
+          name: product.name,
+          sku: product.sku || '',
+          category_id: product.category_id,
+          import_price: product.import_price ?? null,
+          sale_price: product.sale_price ?? null,
+          totalQty,
+          group_id: null,
+          unit: product.unit || 'cái',
+        });
+      }
+    }
+
+    for (const group of productGroups || []) {
+      const key = group.id;
+      if (variantEntries.has(key)) continue;
+
+      variantEntries.set(key, {
+        group,
+        members: [],
+        suggestion: {
+          name: group.name,
+          sku: group.sku_prefix || '',
+          category_id: group.category_id,
+          import_price: null,
+          sale_price: null,
+          totalQty: 0,
+          group_id: group.id,
+          unit: 'cái',
+          variantLevels: buildVariantLevelsFromProducts([], group),
+        },
+      });
+    }
+
+    const variantSuggestions = Array.from(variantEntries.values()).map((entry) => ({
+      ...entry.suggestion,
+      variantLevels: entry.suggestion.variantLevels?.length
+        ? entry.suggestion.variantLevels
+        : buildVariantLevelsFromProducts(entry.members, entry.group),
+    }));
+
+    return [...variantSuggestions, ...Array.from(standaloneEntries.values())].sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+  }, [productGroupById, productGroupByName, productGroups, products]);
+
   // Debounced server-side product search for suggestions
   const searchProductsFromDB = useCallback(async (searchValue: string) => {
     if (searchValue.length < 2) {
       setSuggestions([]);
       return;
     }
+
+    const normalizedSearch = normalizeSuggestionText(searchValue);
+    const localMatches = localProductSuggestions
+      .filter((item) => {
+        const normalizedName = normalizeSuggestionText(item.name);
+        const normalizedSku = normalizeSuggestionText(item.sku || '');
+        return normalizedName.includes(normalizedSearch) || (!!normalizedSku && normalizedSku.includes(normalizedSearch));
+      })
+      .slice(0, 20);
+
+    if (localMatches.length > 0) {
+      setSuggestions(localMatches);
+      setIsSearching(false);
+      return;
+    }
+
     setIsSearching(true);
     try {
       const s = searchValue.trim();
@@ -226,6 +397,8 @@ export default function ImportNewPage() {
         sale_price: r.group_id ? null : (r.latest_sale_price ?? null),
         totalQty: Number(r.in_stock_qty || 0),
         group_id: r.group_id || null,
+        unit: 'cái',
+        variantLevels: r.group_id ? buildVariantLevelsFromProducts([], productGroupById.get(r.group_id) || null) : [],
       }));
 
       setSuggestions(results);
@@ -235,7 +408,7 @@ export default function ImportNewPage() {
     } finally {
       setIsSearching(false);
     }
-  }, []);
+  }, [localProductSuggestions, productGroupById]);
 
   // Auto-fill from template product navigation
   useEffect(() => {
@@ -326,26 +499,35 @@ export default function ImportNewPage() {
     }, 300);
   };
 
-  const handleSelectSuggestion = async (product: any) => {
-    const isVariant = !!product.group_id;
-    
-    // Update form INSTANTLY - no DB wait
-    setForm({
-      ...form,
+  const handleSelectSuggestion = async (product: ProductSuggestion) => {
+    const hasVariants = !!product.group_id || !!product.variantLevels?.length;
+
+    setForm((prev) => ({
+      ...prev,
       productName: product.name,
-      sku: isVariant ? '' : (product.sku || ''),
-      categoryId: '',
-      importPrice: product.import_price ? String(product.import_price) : '',
-      salePrice: product.sale_price ? String(product.sale_price) : '',
-      unit: 'cái',
-    });
+      sku: hasVariants ? '' : (product.sku || ''),
+      categoryId: product.category_id || '',
+      importPrice: !hasVariants && product.import_price ? String(product.import_price) : '',
+      salePrice: !hasVariants && product.sale_price ? String(product.sale_price) : '',
+      unit: product.unit || 'cái',
+    }));
     setSuggestions([]);
     setProductFormMode('form');
+
+    if (product.variantLevels && product.variantLevels.length > 0) {
+      setVariantConfig({ enabled: true, levels: product.variantLevels });
+      setSelectedVariants({});
+    } else {
+      setVariantConfig({ enabled: false, levels: [] });
+      setSelectedVariants({});
+    }
 
     // Load unit + variant config in background (non-blocking)
     const groupId = product.group_id;
     (async () => {
       try {
+        if (product.unit) return;
+
         // Fetch unit
         const { data: existingProduct } = await supabase
           .from('products')
@@ -359,7 +541,7 @@ export default function ImportNewPage() {
       } catch {}
 
       // Load variant config if this is a grouped product
-      if (groupId) {
+      if (groupId && (!product.variantLevels || product.variantLevels.length === 0)) {
         try {
           const { data: groups } = await supabase
             .from('product_groups')
@@ -392,10 +574,6 @@ export default function ImportNewPage() {
         } catch (err) {
           console.error('Error loading product group variants:', err);
         }
-      } else {
-        // Not a variant product - reset variant config
-        setVariantConfig({ enabled: false, levels: [] });
-        setSelectedVariants({});
       }
     })();
   };
@@ -979,7 +1157,22 @@ export default function ImportNewPage() {
           p => p.name.toLowerCase() === data.productName!.toLowerCase()
         );
         if (match) {
-          handleSelectSuggestion(match);
+          handleSelectSuggestion({
+            name: inferBaseProductName(match),
+            sku: match.sku || '',
+            category_id: match.category_id,
+            import_price: match.import_price ?? null,
+            sale_price: match.sale_price ?? null,
+            totalQty: Number(match.quantity || 0),
+            group_id: match.group_id,
+            unit: match.unit || 'cái',
+            variantLevels: buildVariantLevelsFromProducts(
+              [match],
+              (match.group_id ? productGroupById.get(match.group_id) : null)
+                || productGroupByName.get(normalizeSuggestionText(inferBaseProductName(match)))
+                || null,
+            ),
+          });
         } else {
           setForm(prev => ({ ...prev, productName: data.productName || prev.productName }));
           setProductFormMode('form');
