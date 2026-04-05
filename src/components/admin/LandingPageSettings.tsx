@@ -85,7 +85,7 @@ function AppPasswordHelpDialog({ open, onOpenChange }: { open: boolean; onOpenCh
   );
 }
 
-function OrderEmailConfigSection({ formData, handleChange, tenantId, onSave }: { formData: any; handleChange: (field: string, value: any) => void; tenantId: string | null; onSave?: () => void }) {
+function OrderEmailConfigSection({ formData, handleChange, tenantId, onSave, onDeleteEmail }: { formData: any; handleChange: (field: string, value: any) => void; tenantId: string | null; onSave?: () => void; onDeleteEmail?: () => void }) {
   const [showHelp, setShowHelp] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -104,7 +104,7 @@ function OrderEmailConfigSection({ formData, handleChange, tenantId, onSave }: {
     handleChange('order_email_sender', '');
     handleChange('order_email_app_password', '');
     setEditing(false);
-    if (onSave) onSave();
+    if (onDeleteEmail) onDeleteEmail();
     toast({ title: '🗑️ Đã xóa thông tin email' });
   };
 
@@ -1299,6 +1299,14 @@ export function LandingPageSettings() {
               setHasChanges(false);
             }).catch(() => {
               toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
+            });
+          }} onDeleteEmail={() => {
+            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+            const clearedData = { ...formData, order_email_sender: '', order_email_app_password: '' };
+            updateSettings.mutateAsync(clearedData).then(() => {
+              setHasChanges(false);
+            }).catch(() => {
+              toast({ title: 'Lỗi', description: 'Không thể xóa email. Vui lòng thử lại.', variant: 'destructive' });
             });
           }} />
           </>)}
