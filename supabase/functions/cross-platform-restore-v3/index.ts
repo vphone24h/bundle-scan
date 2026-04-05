@@ -786,6 +786,12 @@ async function processJob(jobId: string) {
 
   const operations = buildOperations(importData)
   const nextOpIndex = Number(job.metadata?.next_op_index || 0)
+  const restoreContext = createRestoreContext(
+    adminClient,
+    importData,
+    job.tenant_id,
+    normalizeMode(job.metadata?.restore_mode),
+  )
   let result = normalizeResult(importData, job.result_summary)
 
   if (!operations.length) {
@@ -853,12 +859,6 @@ async function processJob(jobId: string) {
     const sourceRows = Array.isArray(importData?.[operation.key]) ? importData[operation.key] : []
     const chunkRows = sourceRows.slice(operation.from, operation.to)
     const tableName = operation.table!
-    const restoreContext = createRestoreContext(
-      adminClient,
-      importData,
-      job.tenant_id,
-      normalizeMode(job.metadata?.restore_mode),
-    )
     const payload = await prepareRows(tableName, chunkRows, restoreContext)
 
     if (payload.length > 0) {
