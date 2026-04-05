@@ -288,18 +288,18 @@ export default function ProductsPage() {
       const originalProduct = products?.find(p => p.id === product.id);
       setEditTemplateProduct(originalProduct ? { ...originalProduct, isTemplateGroup: product.isTemplateGroup, isVariantGroup: product.isVariantGroup, childProducts: product.childProducts } : product);
     } else if (product.groupId) {
-      // Child variant with group_id → find the parent group and open template editor
-      const groupSiblings = mappedProducts.filter(p => p.groupId === product.groupId);
-      const first = groupSiblings[0];
-      if (first && groupSiblings.length > 1) {
-        const baseName = extractBaseName(first.name, first.variant1, first.variant2, first.variant3);
-        const originalFirst = products?.find(p => p.id === first.id);
+      // Child variant with group_id → find all siblings and open template editor
+      const groupSiblings = products?.filter(p => p.group_id === product.groupId) || [];
+      if (groupSiblings.length > 1) {
+        const first = groupSiblings[0];
+        const mappedSiblings = groupSiblings.map(p => mapProductForTable(p, categoryMap, supplierMap, branchMap));
+        const baseName = extractBaseName(first.name, first.variant_1 || '', first.variant_2 || '', first.variant_3 || '');
         setEditTemplateProduct({
-          ...(originalFirst || first),
+          ...first,
           name: baseName,
           isVariantGroup: true,
           isTemplateGroup: groupSiblings.some(p => p.status === 'template'),
-          childProducts: groupSiblings,
+          childProducts: mappedSiblings,
         });
       } else {
         // Single product in group → open regular editor
