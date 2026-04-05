@@ -463,6 +463,10 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
           // Thêm tên SP vừa update vào set
           existingNames.add(updates.name);
           
+          // Sản phẩm cũ (in_stock/sold) → biến thể mới luôn là template, KHÔNG tạo phiếu nhập
+          // Chỉ sản phẩm mẫu (template) mới cho phép gán IMEI + tạo phiếu nhập cho biến thể
+          const isOriginalTemplate = product.status === 'template';
+
           const newTemplates = combinations
             .map(combo => {
               const variantParts = combo.join(' ');
@@ -470,7 +474,8 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               if (existingNames.has(fullName)) return null;
               const skuSuffix = combo.map(v => v.replace(/\s+/g, '')).join('-');
               const comboKey = combo.join('|');
-              const comboImei = variantImeis[comboKey]?.trim() || null;
+              // Chỉ gán IMEI cho biến thể nếu SP gốc là template
+              const comboImei = isOriginalTemplate ? (variantImeis[comboKey]?.trim() || null) : null;
               const comboPrice = variantPrices[comboKey] ? Math.round(Number(variantPrices[comboKey])) : Math.round(Number(baseImportPrice));
               return {
                 name: fullName,
@@ -483,9 +488,10 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                 imei: comboImei,
                 note: formData.note || null,
                 tenant_id: tenantId,
-                status: comboImei ? 'in_stock' as const : 'template' as const,
-                quantity: comboImei ? 1 : 0,
-                total_import_cost: comboImei ? comboPrice : 0,
+                // SP cũ → biến thể mới luôn là template; SP mẫu → có IMEI thì in_stock
+                status: (isOriginalTemplate && comboImei) ? 'in_stock' as const : 'template' as const,
+                quantity: (isOriginalTemplate && comboImei) ? 1 : 0,
+                total_import_cost: (isOriginalTemplate && comboImei) ? comboPrice : 0,
                 variant_1: combo[0] || null,
                 variant_2: combo[1] || null,
                 variant_3: combo[2] || null,
@@ -500,45 +506,47 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               .select('id, name, imei, import_price, supplier_id, branch_id');
             if (templateError) throw templateError;
 
-            // Tạo phiếu nhập cho các biến thể có IMEI
-            const templatesWithImei = (insertedTemplates || []).filter((t: any) => t.imei);
-            if (templatesWithImei.length > 0) {
-              const { data: { user } } = await supabase.auth.getUser();
-              for (const t of templatesWithImei) {
-                const now = new Date();
-                const rCode = `PN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}${String(Math.floor(Math.random() * 100)).padStart(2, '0')}`;
-                const { data: newReceipt } = await supabase
-                  .from('import_receipts')
-                  .insert([{
-                    code: rCode,
-                    total_amount: t.import_price || 0,
-                    paid_amount: t.import_price || 0,
-                    debt_amount: 0,
-                    original_debt_amount: 0,
-                    supplier_id: t.supplier_id || null,
-                    branch_id: t.branch_id || null,
-                    created_by: user?.id,
-                    tenant_id: tenantId,
-                    note: `Nhập từ SP mẫu: ${t.name}${t.imei ? ` | IMEI: ${t.imei}` : ''} | Giá nhập: ${(t.import_price || 0).toLocaleString('vi-VN')}đ`,
-                  }])
-                  .select()
-                  .single();
+            // Chỉ tạo phiếu nhập cho biến thể có IMEI khi SP GỐC là template
+            if (isOriginalTemplate) {
+              const templatesWithImei = (insertedTemplates || []).filter((t: any) => t.imei);
+              if (templatesWithImei.length > 0) {
+                const { data: { user } } = await supabase.auth.getUser();
+                for (const t of templatesWithImei) {
+                  const now = new Date();
+                  const rCode = `PN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}${String(Math.floor(Math.random() * 100)).padStart(2, '0')}`;
+                  const { data: newReceipt } = await supabase
+                    .from('import_receipts')
+                    .insert([{
+                      code: rCode,
+                      total_amount: t.import_price || 0,
+                      paid_amount: t.import_price || 0,
+                      debt_amount: 0,
+                      original_debt_amount: 0,
+                      supplier_id: t.supplier_id || null,
+                      branch_id: t.branch_id || null,
+                      created_by: user?.id,
+                      tenant_id: tenantId,
+                      note: `Nhập từ SP mẫu: ${t.name}${t.imei ? ` | IMEI: ${t.imei}` : ''} | Giá nhập: ${(t.import_price || 0).toLocaleString('vi-VN')}đ`,
+                    }])
+                    .select()
+                    .single();
 
-                if (newReceipt) {
-                  await supabase.from('products').update({
-                    import_receipt_id: newReceipt.id,
-                    import_date: new Date().toISOString(),
-                  }).eq('id', t.id);
+                  if (newReceipt) {
+                    await supabase.from('products').update({
+                      import_receipt_id: newReceipt.id,
+                      import_date: new Date().toISOString(),
+                    }).eq('id', t.id);
 
-                  await supabase.from('product_imports').insert([{
-                    product_id: t.id,
-                    import_receipt_id: newReceipt.id,
-                    quantity: 1,
-                    import_price: t.import_price || 0,
-                    supplier_id: t.supplier_id || null,
-                    note: 'Nhập từ sản phẩm mẫu',
-                    created_by: user?.id,
-                  }]);
+                    await supabase.from('product_imports').insert([{
+                      product_id: t.id,
+                      import_receipt_id: newReceipt.id,
+                      quantity: 1,
+                      import_price: t.import_price || 0,
+                      supplier_id: t.supplier_id || null,
+                      note: 'Nhập từ sản phẩm mẫu',
+                      created_by: user?.id,
+                    }]);
+                  }
                 }
               }
             }
