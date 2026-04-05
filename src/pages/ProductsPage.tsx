@@ -98,26 +98,36 @@ function mapProductForTable(product: Product, categoryMap: Map<string, string>, 
 }
 
 /**
- * Group template products by base name.
- * Templates with variants (variant_1 set) are grouped into a single row
- * showing the base name + variant count badge.
- * Non-variant templates and non-template products remain as individual rows.
+ * Group products by group_id (variant groups).
+ * Products with the same group_id are collapsed into a single summary row.
+ * Products without group_id remain as individual rows.
+ * Template-only variants (no group_id but with variant_1) are also grouped by base name.
  */
 function groupTemplateProducts(products: ReturnType<typeof mapProductForTable>[]) {
-  const result: Array<ReturnType<typeof mapProductForTable> & {
+  type MappedProduct = ReturnType<typeof mapProductForTable>;
+  type GroupedProduct = MappedProduct & {
     isTemplateGroup?: boolean;
+    isVariantGroup?: boolean;
     variantCount?: number;
-    childProducts?: ReturnType<typeof mapProductForTable>[];
-  }> = [];
+    childProducts?: MappedProduct[];
+  };
+
+  const result: GroupedProduct[] = [];
   
-  const templateGroups = new Map<string, ReturnType<typeof mapProductForTable>[]>();
+  // Group by group_id first
+  const groupIdMap = new Map<string, MappedProduct[]>();
+  // Template products without group_id but with variants → group by base name
+  const templateGroups = new Map<string, MappedProduct[]>();
   
   for (const p of products) {
-    // Only group template products that have variants
-    if (p.status === 'template' && p.variant1) {
-      // Extract base name by removing variant suffixes
+    if (p.groupId) {
+      if (!groupIdMap.has(p.groupId)) {
+        groupIdMap.set(p.groupId, []);
+      }
+      groupIdMap.get(p.groupId)!.push(p);
+    } else if (p.status === 'template' && p.variant1) {
       const baseName = extractBaseName(p.name, p.variant1, p.variant2, p.variant3);
-      const key = `${baseName}__${p.categoryId || ''}`;
+      const key = `tpl__${baseName}__${p.categoryId || ''}`;
       if (!templateGroups.has(key)) {
         templateGroups.set(key, []);
       }
@@ -127,19 +137,38 @@ function groupTemplateProducts(products: ReturnType<typeof mapProductForTable>[]
     }
   }
   
-  // Add grouped templates
-  for (const [, group] of templateGroups) {
+  // Add group_id groups
+  for (const [, group] of groupIdMap) {
     if (group.length === 1) {
-      // Single variant, show as-is
       result.push(group[0]);
     } else {
-      // Create a summary row from the first product
+      const first = group[0];
+      const baseName = extractBaseName(first.name, first.variant1, first.variant2, first.variant3);
+      const skuBase = first.sku.split('-').slice(0, -1).join('-') || first.sku;
+      const hasTemplate = group.some(p => p.status === 'template');
+      result.push({
+        ...first,
+        name: baseName,
+        sku: skuBase,
+        isVariantGroup: true,
+        isTemplateGroup: hasTemplate,
+        variantCount: group.length,
+        childProducts: group,
+      });
+    }
+  }
+  
+  // Add template-only groups (no group_id)
+  for (const [, group] of templateGroups) {
+    if (group.length === 1) {
+      result.push(group[0]);
+    } else {
       const first = group[0];
       const baseName = extractBaseName(first.name, first.variant1, first.variant2, first.variant3);
       result.push({
         ...first,
         name: baseName,
-        sku: first.sku.split('-').slice(0, -1).join('-') || first.sku, // Remove variant suffix from SKU
+        sku: first.sku.split('-').slice(0, -1).join('-') || first.sku,
         isTemplateGroup: true,
         variantCount: group.length,
         childProducts: group,
@@ -148,18 +177,6 @@ function groupTemplateProducts(products: ReturnType<typeof mapProductForTable>[]
   }
   
   return result;
-}
-
-function extractBaseName(name: string, v1?: string, v2?: string, v3?: string): string {
-  let base = name;
-  // Remove variant values from end of name
-  const parts = [v3, v2, v1].filter(Boolean);
-  for (const part of parts) {
-    if (part && base.endsWith(part)) {
-      base = base.slice(0, -part.length).trimEnd();
-    }
-  }
-  return base || name;
 }
 
 // Debounce hook for search
