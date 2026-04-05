@@ -287,6 +287,25 @@ export default function ProductsPage() {
     if (product.status === 'template' || product.isTemplateGroup || product.isVariantGroup) {
       const originalProduct = products?.find(p => p.id === product.id);
       setEditTemplateProduct(originalProduct ? { ...originalProduct, isTemplateGroup: product.isTemplateGroup, isVariantGroup: product.isVariantGroup, childProducts: product.childProducts } : product);
+    } else if (product.groupId) {
+      // Child variant with group_id → find all siblings and open template editor
+      const groupSiblings = products?.filter(p => p.group_id === product.groupId) || [];
+      if (groupSiblings.length > 1) {
+        const first = groupSiblings[0];
+        const mappedSiblings = groupSiblings.map(p => mapProductForTable(p, categoryMap, supplierMap, branchMap));
+        const baseName = extractBaseName(first.name, first.variant_1 || '', first.variant_2 || '', first.variant_3 || '');
+        setEditTemplateProduct({
+          ...first,
+          name: baseName,
+          isVariantGroup: true,
+          isTemplateGroup: groupSiblings.some(p => p.status === 'template'),
+          childProducts: mappedSiblings,
+        });
+      } else {
+        // Single product in group → open regular editor
+        const originalProduct = products?.find(p => p.id === product.id);
+        if (originalProduct) setEditProduct(originalProduct);
+      }
     } else {
       // Regular products → existing edit dialog
       const originalProduct = products?.find(p => p.id === product.id);
