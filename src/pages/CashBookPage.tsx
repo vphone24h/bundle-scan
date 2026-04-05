@@ -2374,43 +2374,13 @@ export default function CashBookPage() {
         hasTransactions={(source) => allEntries?.some(e => e.payment_source === source) || false}
       />
 
-      {/* Add Category Dialog */}
-      <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>
-              Thêm danh mục {formData.type === 'expense' ? 'chi' : 'thu'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Tên danh mục *</Label>
-              <Input
-                placeholder="Nhập tên danh mục mới"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddCategory();
-                  }
-                }}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddCategoryDialog(false)}>
-              Hủy
-            </Button>
-            <Button 
-              onClick={handleAddCategory} 
-              disabled={createCategory.isPending || !newCategoryName.trim()}
-            >
-              {createCategory.isPending ? 'Đang thêm...' : 'Thêm'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Category Management Dialog */}
+      <CategoryManageDialog
+        open={showCategoryManage}
+        onOpenChange={setShowCategoryManage}
+        type={categoryManageType}
+        onCategorySelect={(name) => setFormData({ ...formData, category: name })}
+      />
       <OnboardingTourOverlay
         steps={cashBookTourSteps}
         isActive={showCashTour}
