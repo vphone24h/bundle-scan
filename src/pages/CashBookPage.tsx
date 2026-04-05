@@ -815,6 +815,11 @@ export default function CashBookPage() {
     try {
       const mainPayment = formData.payments[0];
       
+      // Convert datetime-local to ISO for DB
+      const newTransactionDate = formData.transaction_date 
+        ? new Date(formData.transaction_date).toISOString() 
+        : undefined;
+      
       await updateEntry.mutateAsync({
         id: editingEntry.id,
         oldData: editingEntry, // Truyền dữ liệu cũ để ghi audit log
@@ -827,6 +832,7 @@ export default function CashBookPage() {
         note: formData.note || undefined,
         recipient_name: formData.recipient_name || null,
         recipient_phone: formData.recipient_phone || null,
+        transaction_date: newTransactionDate,
       });
 
       setShowEditDialog(false);
