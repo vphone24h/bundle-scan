@@ -61,6 +61,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
   });
 
   const [variantConfig, setVariantConfig] = useState<VariantConfig>({ enabled: false, levels: [] });
+  const [variantImeis, setVariantImeis] = useState<Record<string, string>>({});
   const [originalImportDate, setOriginalImportDate] = useState('');
 
   useEffect(() => {
