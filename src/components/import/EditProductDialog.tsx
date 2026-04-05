@@ -503,6 +503,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                   </div>
                   <p className="text-xs text-muted-foreground">Mã viết tắt tên SP, dễ nhớ</p>
                 </div>
+                {!variantConfig.enabled && (
                 <div className="space-y-2">
                   <Label htmlFor="imei">IMEI</Label>
                   <Input
@@ -513,6 +514,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                     className="font-mono"
                   />
                 </div>
+                )}
               </div>
 
               <div className="space-y-2">
