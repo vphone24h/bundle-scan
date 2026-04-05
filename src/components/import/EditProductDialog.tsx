@@ -67,11 +67,33 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
 
   useEffect(() => {
     if (product) {
+      // Detect base name: strip variant parts from name
+      let baseName = product.name || '';
+      if (product.variant_1) {
+        // Remove variant suffixes from name to get base name
+        const variantSuffix = [product.variant_1, product.variant_2, product.variant_3].filter(Boolean).join(' ');
+        if (baseName.endsWith(variantSuffix)) {
+          baseName = baseName.slice(0, -variantSuffix.length).trim();
+        }
+      }
+
+      // Detect base SKU: strip variant suffixes
+      let baseSku = product.sku || '';
+      if (product.variant_1) {
+        const skuSuffix = [product.variant_1, product.variant_2, product.variant_3]
+          .filter(Boolean)
+          .map(v => v!.replace(/\s+/g, ''))
+          .join('-');
+        if (baseSku.endsWith(`-${skuSuffix}`)) {
+          baseSku = baseSku.slice(0, -(skuSuffix.length + 1));
+        }
+      }
+
       const importDateStr = product.import_date ? format(parseISO(product.import_date), 'yyyy-MM-dd\'T\'HH:mm') : '';
       setFormData({
-        name: product.name || '',
-        sku: product.sku || '',
-        imei: product.imei || '',
+        name: product.variant_1 ? baseName : (product.name || ''),
+        sku: product.variant_1 ? baseSku : (product.sku || ''),
+        imei: product.variant_1 ? '' : (product.imei || ''),
         note: product.note || '',
         sale_price: product.sale_price != null ? String(product.sale_price) : '',
         category_id: product.category_id || '_none_',
@@ -81,9 +103,57 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         import_date: importDateStr,
       });
       setOriginalImportDate(importDateStr);
-      setVariantConfig({ enabled: false, levels: [] });
       setVariantImeis({});
       setVariantPrices({});
+
+      // If product already has variants, load variant config from product_groups
+      if (product.variant_1 || product.group_id) {
+        // Load variant group config
+        const loadGroupConfig = async () => {
+          const groupName = product.variant_1 ? baseName : product.name;
+          const { data: groups } = await supabase
+            .from('product_groups')
+            .select('*')
+            .ilike('name', groupName || '')
+            .limit(1);
+
+          if (groups && groups.length > 0) {
+            const g = groups[0] as any;
+            const levels: VariantLevel[] = [];
+            if (g.variant_1_label) {
+              levels.push({ label: g.variant_1_label, values: g.variant_1_values || [] });
+            }
+            if (g.variant_2_label) {
+              levels.push({ label: g.variant_2_label, values: g.variant_2_values || [] });
+            }
+            if (g.variant_3_label) {
+              levels.push({ label: g.variant_3_label, values: g.variant_3_values || [] });
+            }
+            setVariantConfig({ enabled: true, levels });
+
+            // Pre-fill current product's IMEI and price into the correct combo
+            if (product.variant_1) {
+              const comboKey = [product.variant_1, product.variant_2, product.variant_3]
+                .filter(Boolean)
+                .join('|');
+              if (product.imei) {
+                setVariantImeis(prev => ({ ...prev, [comboKey]: product.imei! }));
+              }
+              setVariantPrices(prev => ({ ...prev, [comboKey]: String(product.import_price || 0) }));
+            }
+          } else {
+            // No group found but has variant_1 — reconstruct minimal config
+            const levels: VariantLevel[] = [];
+            if (product.variant_1) levels.push({ label: 'Biến thể 1', values: [product.variant_1] });
+            if (product.variant_2) levels.push({ label: 'Biến thể 2', values: [product.variant_2] });
+            if (product.variant_3) levels.push({ label: 'Biến thể 3', values: [product.variant_3] });
+            setVariantConfig({ enabled: true, levels });
+          }
+        };
+        loadGroupConfig();
+      } else {
+        setVariantConfig({ enabled: false, levels: [] });
+      }
     }
   }, [product]);
 
