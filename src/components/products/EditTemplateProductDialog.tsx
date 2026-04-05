@@ -230,11 +230,18 @@ export function EditTemplateProductDialog({ product, open, onOpenChange }: EditT
         }
 
         // Update existing variants
+        const baseNameChanged = baseName.trim() !== originalBaseName;
         for (const v of toUpdate) {
+          // If baseName changed, reconstruct variant name
+          let updatedName = v.name;
+          if (baseNameChanged) {
+            const variantSuffix = [v.variant_1, v.variant_2, v.variant_3].filter(Boolean).join(' ');
+            updatedName = variantSuffix ? `${baseName.trim()} ${variantSuffix}` : baseName.trim();
+          }
           const { error } = await supabase
             .from('products')
             .update({
-              name: v.name,
+              name: updatedName,
               sku: v.sku,
               import_price: Math.round(v.import_price),
               sale_price: v.sale_price != null ? Math.round(v.sale_price) : null,
