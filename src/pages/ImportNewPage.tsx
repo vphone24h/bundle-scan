@@ -1292,14 +1292,11 @@ export default function ImportNewPage() {
                         {suggestions.map((s, idx) => (
                           <button
                             key={`${s.name}-${s.sku}-${idx}`}
-                            onClick={() => {
-                              setForm({ ...form, productName: s.name, sku: s.sku });
-                              setSuggestions([]);
-                            }}
+                            onClick={() => handleSelectSuggestion(s)}
                             className="w-full px-4 py-2 text-left hover:bg-muted text-sm"
                           >
                             <span className="font-medium">{s.name}</span>
-                            <span className="text-muted-foreground ml-2">({s.sku})</span>
+                            {s.sku ? <span className="text-muted-foreground ml-2">({s.sku})</span> : null}
                           </button>
                         ))}
                       </div>
