@@ -509,7 +509,6 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                 </div>
               </div>
             )}
-            )}
 
             {/* Giá bán - editable cho Admin, read-only cho Kế toán/Nhân viên */}
             {canEditSalePrice ? (
