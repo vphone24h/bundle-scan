@@ -282,6 +282,9 @@ export function DataManagementSection() {
 
       if (typeof window !== 'undefined') {
         window.sessionStorage.removeItem(JOB_HANDLED_STORAGE_KEY);
+        if (data?.jobId) {
+          window.sessionStorage.setItem(ACTIVE_DELETE_JOB_KEY, data.jobId);
+        }
       }
 
       await Promise.all([refetchLatestDeleteJob(), refetchTenant()]);
