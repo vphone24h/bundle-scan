@@ -163,8 +163,9 @@ async function deleteByIdsInBatches(
   optional = false,
   batchSize = DELETE_BATCH_SIZE,
 ) {
-  for (let index = 0; index < ids.length; index += batchSize) {
-    const batch = ids.slice(index, index + batchSize)
+  const effectiveBatch = Math.min(batchSize, IN_CLAUSE_BATCH_SIZE)
+  for (let index = 0; index < ids.length; index += effectiveBatch) {
+    const batch = ids.slice(index, index + effectiveBatch)
     const operation = supabaseAdmin.from(table).delete().in(column, batch)
 
     if (optional) {
