@@ -15,6 +15,7 @@ const MAX_REQUESTS_PER_HOUR = 30
 const RATE_LIMIT_WINDOW_MINUTES = 60
 const DELETE_BATCH_SIZE = 100
 const FETCH_PAGE_SIZE = 1000
+const IN_CLAUSE_BATCH_SIZE = 200
 
 type DeleteMode = 'full' | 'keep_templates'
 type RestoreOption = 'delete' | 'restore'
