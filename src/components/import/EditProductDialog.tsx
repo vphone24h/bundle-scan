@@ -728,7 +728,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               )}
 
               <div className="space-y-2">
-                <Label>Chi nhánh</Label>
+                <Label>Chi nhánh {isSuperAdmin && <span className="text-destructive">*</span>}</Label>
                 {isSuperAdmin ? (
                   <Select 
                     value={formData.branch_id} 
@@ -738,7 +738,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                       <SelectValue placeholder="Chọn chi nhánh" />
                     </SelectTrigger>
                     <SelectContent className="bg-popover">
-                      <SelectItem value="_none_">Không có</SelectItem>
+                      <SelectItem value="_none_">-- Chọn chi nhánh --</SelectItem>
                       {branches?.map((branch) => (
                         <SelectItem key={branch.id} value={branch.id}>
                           {branch.name}
