@@ -364,18 +364,21 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               const skuSuffix = combo.map(v => v.replace(/\s+/g, '')).join('-');
               const comboKey = combo.join('|');
               const comboImei = variantImeis[comboKey]?.trim() || null;
+              const comboPrice = variantPrices[comboKey] ? Math.round(Number(variantPrices[comboKey])) : Math.round(Number(baseImportPrice));
               return {
                 name: fullName,
                 sku: formData.sku ? `${formData.sku}-${skuSuffix}` : skuSuffix,
                 category_id: formData.category_id === '_none_' ? null : formData.category_id,
-                import_price: Math.round(Number(baseImportPrice)),
+                supplier_id: formData.supplier_id === '_none_' ? null : formData.supplier_id,
+                branch_id: isSuperAdmin ? (formData.branch_id === '_none_' ? null : formData.branch_id) : (product?.branch_id || null),
+                import_price: comboPrice,
                 sale_price: baseSalePrice ? Math.round(Number(baseSalePrice)) : null,
                 imei: comboImei,
                 note: formData.note || null,
                 tenant_id: tenantId,
                 status: comboImei ? 'in_stock' as const : 'template' as const,
                 quantity: comboImei ? 1 : 0,
-                total_import_cost: comboImei ? Math.round(Number(baseImportPrice)) : 0,
+                total_import_cost: comboImei ? comboPrice : 0,
                 variant_1: combo[0] || null,
                 variant_2: combo[1] || null,
                 variant_3: combo[2] || null,
