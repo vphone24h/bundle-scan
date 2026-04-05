@@ -329,6 +329,12 @@ export default function ImportNewPage() {
       const key = group.id;
       if (variantEntries.has(key)) continue;
 
+      // Only include groups that have at least one active product
+      const hasActiveProducts = (products || []).some(
+        (p) => p.group_id === group.id && ['in_stock', 'sold', 'returned', 'template'].includes(p.status)
+      );
+      if (!hasActiveProducts) continue;
+
       variantEntries.set(key, {
         group,
         members: [],
