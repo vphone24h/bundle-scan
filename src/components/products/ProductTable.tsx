@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Product } from '@/types/warehouse';
 import { formatCurrency, formatDate } from '@/lib/mockData';
 import { formatCurrencyWithSpaces } from '@/lib/formatNumber';
