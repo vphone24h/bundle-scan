@@ -62,6 +62,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
 
   const [variantConfig, setVariantConfig] = useState<VariantConfig>({ enabled: false, levels: [] });
   const [variantImeis, setVariantImeis] = useState<Record<string, string>>({});
+  const [variantPrices, setVariantPrices] = useState<Record<string, string>>({});
   const [originalImportDate, setOriginalImportDate] = useState('');
 
   useEffect(() => {
@@ -82,6 +83,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       setOriginalImportDate(importDateStr);
       setVariantConfig({ enabled: false, levels: [] });
       setVariantImeis({});
+      setVariantPrices({});
     }
   }, [product]);
 
@@ -171,9 +173,20 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       toast({ title: 'Lỗi', description: 'Tên sản phẩm không được để trống', variant: 'destructive' });
       return;
     }
-
     if (!formData.sku.trim()) {
       toast({ title: 'Lỗi', description: 'SKU không được để trống', variant: 'destructive' });
+      return;
+    }
+    if (!formData.category_id || formData.category_id === '_none_') {
+      toast({ title: 'Lỗi', description: 'Vui lòng chọn danh mục', variant: 'destructive' });
+      return;
+    }
+    if (!formData.supplier_id || formData.supplier_id === '_none_') {
+      toast({ title: 'Lỗi', description: 'Vui lòng chọn nhà cung cấp', variant: 'destructive' });
+      return;
+    }
+    if (isSuperAdmin && (!formData.branch_id || formData.branch_id === '_none_')) {
+      toast({ title: 'Lỗi', description: 'Vui lòng chọn chi nhánh', variant: 'destructive' });
       return;
     }
 
@@ -245,6 +258,12 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
           updates.variant_2 = matchedCombo[1] || null;
           updates.variant_3 = matchedCombo[2] || null;
           updates.imei = variantImeis[matchedCombo.join('|')]?.trim() || null;
+          // Cập nhật giá nhập từ variant nếu có
+          const matchedPrice = variantPrices[matchedCombo.join('|')];
+          if (matchedPrice) {
+            updates.import_price = Math.round(Number(matchedPrice));
+            updates.total_import_cost = Math.round(Number(matchedPrice));
+          }
 
           const skuSuffix = matchedCombo.map(v => v.replace(/\s+/g, '')).join('-');
           updates.sku = formData.sku ? `${formData.sku}-${skuSuffix}` : skuSuffix;
@@ -263,7 +282,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         if (tenantId && user) {
           const now = new Date();
           const code = `PN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
-          const importPrice = product.import_price || 0;
+          const importPrice = updates.import_price || product.import_price || 0;
 
           const { data: receipt, error: receiptErr } = await supabase
             .from('import_receipts')
@@ -273,11 +292,11 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               paid_amount: importPrice,
               debt_amount: 0,
               original_debt_amount: 0,
-              supplier_id: product.supplier_id || null,
-              branch_id: product.branch_id || null,
+              supplier_id: updates.supplier_id || product.supplier_id || null,
+              branch_id: (isSuperAdmin ? (formData.branch_id === '_none_' ? null : formData.branch_id) : product.branch_id) || null,
               created_by: user.id,
               tenant_id: tenantId,
-              note: `Nhập từ sản phẩm mẫu: ${updates.name || formData.name}`,
+              note: `Nhập từ SP mẫu: ${updates.name || formData.name}${updates.imei ? ` | IMEI: ${updates.imei}` : ''} | Giá nhập: ${importPrice.toLocaleString('vi-VN')}đ`,
             }])
             .select()
             .single();
@@ -345,18 +364,21 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               const skuSuffix = combo.map(v => v.replace(/\s+/g, '')).join('-');
               const comboKey = combo.join('|');
               const comboImei = variantImeis[comboKey]?.trim() || null;
+              const comboPrice = variantPrices[comboKey] ? Math.round(Number(variantPrices[comboKey])) : Math.round(Number(baseImportPrice));
               return {
                 name: fullName,
                 sku: formData.sku ? `${formData.sku}-${skuSuffix}` : skuSuffix,
                 category_id: formData.category_id === '_none_' ? null : formData.category_id,
-                import_price: Math.round(Number(baseImportPrice)),
+                supplier_id: formData.supplier_id === '_none_' ? null : formData.supplier_id,
+                branch_id: isSuperAdmin ? (formData.branch_id === '_none_' ? null : formData.branch_id) : (product?.branch_id || null),
+                import_price: comboPrice,
                 sale_price: baseSalePrice ? Math.round(Number(baseSalePrice)) : null,
                 imei: comboImei,
                 note: formData.note || null,
                 tenant_id: tenantId,
                 status: comboImei ? 'in_stock' as const : 'template' as const,
                 quantity: comboImei ? 1 : 0,
-                total_import_cost: comboImei ? Math.round(Number(baseImportPrice)) : 0,
+                total_import_cost: comboImei ? comboPrice : 0,
                 variant_1: combo[0] || null,
                 variant_2: combo[1] || null,
                 variant_3: combo[2] || null,
@@ -390,7 +412,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                     branch_id: t.branch_id || null,
                     created_by: user?.id,
                     tenant_id: tenantId,
-                    note: `Nhập từ sản phẩm mẫu: ${t.name}`,
+                    note: `Nhập từ SP mẫu: ${t.name}${t.imei ? ` | IMEI: ${t.imei}` : ''} | Giá nhập: ${(t.import_price || 0).toLocaleString('vi-VN')}đ`,
                   }])
                   .select()
                   .single();
@@ -484,9 +506,9 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         )}
 
         {product && (isOwnBranch || !isBranchAdmin) && (
-          <div className="space-y-4">
-            {/* Giá nhập - chỉ hiển thị cho ai có quyền xem giá nhập (Admin, Kế toán) */}
-            {permissions?.canViewImportPrice && (
+          <div className="space-y-3">
+            {/* Giá nhập - ẩn khi bật biến thể (giá nhập sẽ nằm trong từng biến thể) */}
+            {!variantConfig.enabled && permissions?.canViewImportPrice && (
               <div className="rounded-lg bg-muted/50 p-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Giá nhập:</span>
@@ -548,27 +570,36 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                 baseProductName={formData.name}
               />
 
-              {/* IMEI per variant */}
+              {/* IMEI + Giá nhập per variant */}
               {variantConfig.enabled && (() => {
                 const activeLevels = variantConfig.levels.filter(l => l.values.length > 0);
                 const combos = generateVariantCombinations(activeLevels);
                 if (combos.length === 0 || (combos.length === 1 && combos[0].length === 0)) return null;
+                const defaultPrice = String(product?.import_price || 0);
                 return (
                   <div className="rounded-lg border p-3 space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Gắn IMEI cho từng biến thể:</p>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                    <p className="text-xs font-medium text-muted-foreground">IMEI & Giá nhập từng biến thể:</p>
+                    <div className="space-y-3 max-h-60 overflow-y-auto">
                       {combos.map((combo, idx) => {
                         const key = combo.join('|');
                         const variantLabel = `${formData.name.trim()} ${combo.join(' ')}`;
                         return (
-                          <div key={idx} className="flex items-center gap-2">
-                            <span className="text-xs min-w-0 flex-1 truncate" title={variantLabel}>{variantLabel}</span>
-                            <Input
-                              value={variantImeis[key] || ''}
-                              onChange={(e) => setVariantImeis(prev => ({ ...prev, [key]: e.target.value }))}
-                              placeholder="IMEI"
-                              className="font-mono text-xs w-40 h-7"
-                            />
+                          <div key={idx} className="space-y-1 border-b border-border/50 pb-2 last:border-0 last:pb-0">
+                            <span className="text-xs font-medium truncate block" title={variantLabel}>{variantLabel}</span>
+                            <div className="flex gap-2">
+                              <Input
+                                value={variantImeis[key] || ''}
+                                onChange={(e) => setVariantImeis(prev => ({ ...prev, [key]: e.target.value }))}
+                                placeholder="IMEI"
+                                className="font-mono text-xs h-8 flex-1"
+                              />
+                              <PriceInput
+                                value={variantPrices[key] || defaultPrice}
+                                onChange={(value) => setVariantPrices(prev => ({ ...prev, [key]: String(value) }))}
+                                placeholder="Giá nhập"
+                                className="text-xs h-8 w-28"
+                              />
+                            </div>
                           </div>
                         );
                       })}
@@ -632,16 +663,16 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               </div>
 
               <div className="space-y-2">
-                <Label>Thư mục</Label>
+                <Label>Danh mục <span className="text-destructive">*</span></Label>
                 <Select 
                   value={formData.category_id} 
                   onValueChange={(v) => setFormData(prev => ({ ...prev, category_id: v }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Chọn thư mục" />
+                    <SelectValue placeholder="Chọn danh mục" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
-                    <SelectItem value="_none_">Không có</SelectItem>
+                    <SelectItem value="_none_">-- Chọn danh mục --</SelectItem>
                     {categories?.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
@@ -652,7 +683,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               </div>
 
               <div className="space-y-2">
-                <Label>Nhà cung cấp</Label>
+                <Label>Nhà cung cấp <span className="text-destructive">*</span></Label>
                 <Select 
                   value={formData.supplier_id} 
                   onValueChange={(v) => setFormData(prev => ({ ...prev, supplier_id: v }))}
@@ -661,7 +692,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                     <SelectValue placeholder="Chọn nhà cung cấp" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
-                    <SelectItem value="_none_">Không có</SelectItem>
+                    <SelectItem value="_none_">-- Chọn NCC --</SelectItem>
                     {suppliers?.map((sup) => (
                       <SelectItem key={sup.id} value={sup.id}>
                         {sup.name}
@@ -697,7 +728,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               )}
 
               <div className="space-y-2">
-                <Label>Chi nhánh</Label>
+                <Label>Chi nhánh {isSuperAdmin && <span className="text-destructive">*</span>}</Label>
                 {isSuperAdmin ? (
                   <Select 
                     value={formData.branch_id} 
@@ -707,7 +738,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                       <SelectValue placeholder="Chọn chi nhánh" />
                     </SelectTrigger>
                     <SelectContent className="bg-popover">
-                      <SelectItem value="_none_">Không có</SelectItem>
+                      <SelectItem value="_none_">-- Chọn chi nhánh --</SelectItem>
                       {branches?.map((branch) => (
                         <SelectItem key={branch.id} value={branch.id}>
                           {branch.name}
