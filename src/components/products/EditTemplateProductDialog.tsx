@@ -86,7 +86,7 @@ export function EditTemplateProductDialog({ product, open, onOpenChange }: EditT
         .from('products')
         .select('id, name, sku, variant_1, variant_2, variant_3, import_price, sale_price, status')
         .eq('status', 'template')
-        .ilike('name', `${baseName}%`)
+        .ilike('name', `${baseNameExtracted}%`)
         .order('name');
       
       if (error) throw error;
