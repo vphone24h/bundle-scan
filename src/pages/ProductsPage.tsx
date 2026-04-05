@@ -137,23 +137,32 @@ function groupTemplateProducts(products: ReturnType<typeof mapProductForTable>[]
     }
   }
   
-  // Add group_id groups
+  // Add group_id groups — only group if ALL members are templates
+  // Real products (in_stock, sold, etc.) show as individual rows
   for (const [, group] of groupIdMap) {
-    if (group.length === 1) {
-      result.push(group[0]);
-    } else {
-      const first = group[0];
+    const templates = group.filter(p => p.status === 'template');
+    const realProducts = group.filter(p => p.status !== 'template');
+    
+    // Real products always show individually
+    for (const p of realProducts) {
+      result.push(p);
+    }
+    
+    // Templates in this group → group them together
+    if (templates.length === 1) {
+      result.push(templates[0]);
+    } else if (templates.length > 1) {
+      const first = templates[0];
       const baseName = extractBaseName(first.name, first.variant1, first.variant2, first.variant3);
       const skuBase = first.sku.split('-').slice(0, -1).join('-') || first.sku;
-      const hasTemplate = group.some(p => p.status === 'template');
       result.push({
         ...first,
         name: baseName,
         sku: skuBase,
         isVariantGroup: true,
-        isTemplateGroup: hasTemplate,
-        variantCount: group.length,
-        childProducts: group,
+        isTemplateGroup: true,
+        variantCount: templates.length,
+        childProducts: templates,
       });
     }
   }
