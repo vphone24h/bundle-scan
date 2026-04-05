@@ -829,6 +829,13 @@ async function deleteKeepTemplates(supabaseAdmin: any, tenantId: string, reportP
   await assertMutation('Xoá phiếu nhập', supabaseAdmin.from('import_receipts').delete().eq('tenant_id', tenantId))
 
   await reportProgress?.(64, 'Đang reset sản phẩm mẫu')
+
+  // Cleanup any remaining export_receipt_items referencing products (orphans)
+  const allProductIds = await fetchIdsByTenant(supabaseAdmin, 'products', tenantId)
+  if (allProductIds.length > 0) {
+    await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'product_id', allProductIds, 'Xoá chi tiết PX còn sót theo product_id', true)
+  }
+
   await assertMutation(
     'Xoá sản phẩm IMEI',
     supabaseAdmin.from('products').delete().eq('tenant_id', tenantId).not('imei', 'is', null),
