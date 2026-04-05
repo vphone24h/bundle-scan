@@ -80,7 +80,7 @@ export function EditTemplateProductDialog({ product, open, onOpenChange }: EditT
     try {
       // If it's a grouped template, load child products from DB
       // Find all template products that share the same base name
-      const baseName = extractBaseName(name, prod.variant_1, prod.variant_2, prod.variant_3);
+      const baseNameExtracted = extractBaseName(name, prod.variant_1, prod.variant_2, prod.variant_3);
       
       const { data, error } = await supabase
         .from('products')
