@@ -173,9 +173,20 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       toast({ title: 'Lỗi', description: 'Tên sản phẩm không được để trống', variant: 'destructive' });
       return;
     }
-
     if (!formData.sku.trim()) {
       toast({ title: 'Lỗi', description: 'SKU không được để trống', variant: 'destructive' });
+      return;
+    }
+    if (!formData.category_id || formData.category_id === '_none_') {
+      toast({ title: 'Lỗi', description: 'Vui lòng chọn danh mục', variant: 'destructive' });
+      return;
+    }
+    if (!formData.supplier_id || formData.supplier_id === '_none_') {
+      toast({ title: 'Lỗi', description: 'Vui lòng chọn nhà cung cấp', variant: 'destructive' });
+      return;
+    }
+    if (isSuperAdmin && (!formData.branch_id || formData.branch_id === '_none_')) {
+      toast({ title: 'Lỗi', description: 'Vui lòng chọn chi nhánh', variant: 'destructive' });
       return;
     }
 
