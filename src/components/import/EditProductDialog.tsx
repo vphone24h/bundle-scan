@@ -282,7 +282,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         if (tenantId && user) {
           const now = new Date();
           const code = `PN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
-          const importPrice = product.import_price || 0;
+          const importPrice = updates.import_price || product.import_price || 0;
 
           const { data: receipt, error: receiptErr } = await supabase
             .from('import_receipts')
