@@ -497,9 +497,9 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         )}
 
         {product && (isOwnBranch || !isBranchAdmin) && (
-          <div className="space-y-4">
-            {/* Giá nhập - chỉ hiển thị cho ai có quyền xem giá nhập (Admin, Kế toán) */}
-            {permissions?.canViewImportPrice && (
+          <div className="space-y-3">
+            {/* Giá nhập - ẩn khi bật biến thể (giá nhập sẽ nằm trong từng biến thể) */}
+            {!variantConfig.enabled && permissions?.canViewImportPrice && (
               <div className="rounded-lg bg-muted/50 p-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Giá nhập:</span>
@@ -508,6 +508,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                   </span>
                 </div>
               </div>
+            )}
             )}
 
             {/* Giá bán - editable cho Admin, read-only cho Kế toán/Nhân viên */}
