@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Save, CalendarIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { VariantConfigPanel, VariantConfig, VariantLevel } from '@/components/import/VariantConfig';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCategories } from '@/hooks/useCategories';
@@ -59,6 +60,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     import_date: '',
   });
 
+  const [variantConfig, setVariantConfig] = useState<VariantConfig>({ enabled: false, levels: [] });
   const [originalImportDate, setOriginalImportDate] = useState('');
 
   useEffect(() => {
@@ -77,6 +79,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         import_date: importDateStr,
       });
       setOriginalImportDate(importDateStr);
+      setVariantConfig({ enabled: false, levels: [] });
     }
   }, [product]);
 
@@ -216,10 +219,93 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         oldData,
       });
 
-      toast({
-        title: 'Cập nhật thành công',
-        description: 'Thông tin sản phẩm đã được cập nhật',
-      });
+      // Nếu có cấu hình biến thể, tạo thêm sản phẩm mẫu
+      if (variantConfig.enabled && variantConfig.levels.some(l => l.values.length > 0)) {
+        const activeLevels = variantConfig.levels.filter(l => l.values.length > 0);
+        const combinations = generateVariantCombinations(activeLevels);
+        const tenantRes = await supabase.rpc('get_user_tenant_id_secure');
+        const tenantId = tenantRes.data;
+        
+        if (tenantId && combinations.length > 0) {
+          const baseName = formData.name.trim();
+          const baseImportPrice = product.import_price || 0;
+          const baseSalePrice = product.sale_price || null;
+          
+          // Check existing templates to avoid duplicates
+          const { data: existingTemplates } = await supabase
+            .from('products')
+            .select('name')
+            .eq('status', 'template')
+            .ilike('name', `${baseName}%`);
+          
+          const existingNames = new Set((existingTemplates || []).map(t => t.name));
+          
+          const newTemplates = combinations
+            .map(combo => {
+              const variantParts = combo.join(' ');
+              const fullName = `${baseName} ${variantParts}`;
+              if (existingNames.has(fullName)) return null;
+              const skuSuffix = combo.map(v => v.replace(/\s+/g, '')).join('-');
+              return {
+                name: fullName,
+                sku: formData.sku ? `${formData.sku}-${skuSuffix}` : skuSuffix,
+                category_id: formData.category_id === '_none_' ? null : formData.category_id,
+                import_price: Math.round(Number(baseImportPrice)),
+                sale_price: baseSalePrice ? Math.round(Number(baseSalePrice)) : null,
+                note: formData.note || null,
+                tenant_id: tenantId,
+                status: 'template' as const,
+                quantity: 0,
+                total_import_cost: 0,
+                variant_1: combo[0] || null,
+                variant_2: combo[1] || null,
+                variant_3: combo[2] || null,
+              };
+            })
+            .filter(Boolean);
+          
+          if (newTemplates.length > 0) {
+            const { error: templateError } = await supabase.from('products').insert(newTemplates as any[]);
+            if (templateError) throw templateError;
+          }
+
+          // Save/update product_group
+          const { data: existingGroup } = await supabase
+            .from('product_groups')
+            .select('id')
+            .ilike('name', baseName)
+            .limit(1);
+          
+          const groupPayload = {
+            name: baseName,
+            sku_prefix: formData.sku || null,
+            category_id: formData.category_id === '_none_' ? null : formData.category_id,
+            variant_1_label: activeLevels[0]?.label || null,
+            variant_2_label: activeLevels[1]?.label || null,
+            variant_3_label: activeLevels[2]?.label || null,
+            variant_1_values: activeLevels[0]?.values || [],
+            variant_2_values: activeLevels[1]?.values || [],
+            variant_3_values: activeLevels[2]?.values || [],
+          };
+
+          if (existingGroup?.[0]) {
+            await supabase.from('product_groups').update(groupPayload as any).eq('id', (existingGroup[0] as any).id);
+          } else {
+            await supabase.from('product_groups').insert([{ ...groupPayload, tenant_id: tenantId } as any]);
+          }
+
+          toast({
+            title: 'Cập nhật thành công',
+            description: `Đã cập nhật sản phẩm và tạo ${newTemplates.length} biến thể mẫu`,
+          });
+          queryClient.invalidateQueries({ queryKey: ['product-groups'] });
+        }
+      } else {
+        toast({
+          title: 'Cập nhật thành công',
+          description: 'Thông tin sản phẩm đã được cập nhật',
+        });
+      }
 
       onOpenChange(false);
     } catch (error: any) {
@@ -294,6 +380,13 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                   placeholder="Nhập tên sản phẩm"
                 />
               </div>
+
+              {/* Variant config - cho phép thêm biến thể */}
+              <VariantConfigPanel
+                config={variantConfig}
+                onChange={setVariantConfig}
+                baseProductName={formData.name}
+              />
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -492,4 +585,17 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     />
     </>
   );
+}
+
+function generateVariantCombinations(levels: VariantLevel[]): string[][] {
+  if (levels.length === 0) return [[]];
+  const [first, ...rest] = levels;
+  const restCombinations = generateVariantCombinations(rest);
+  const result: string[][] = [];
+  for (const value of first.values) {
+    for (const combo of restCombinations) {
+      result.push([value, ...combo]);
+    }
+  }
+  return result;
 }
