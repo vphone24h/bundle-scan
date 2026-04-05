@@ -442,6 +442,35 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                 baseProductName={formData.name}
               />
 
+              {/* IMEI per variant */}
+              {variantConfig.enabled && (() => {
+                const activeLevels = variantConfig.levels.filter(l => l.values.length > 0);
+                const combos = generateVariantCombinations(activeLevels);
+                if (combos.length === 0 || (combos.length === 1 && combos[0].length === 0)) return null;
+                return (
+                  <div className="rounded-lg border p-3 space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">Gắn IMEI cho từng biến thể:</p>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {combos.map((combo, idx) => {
+                        const key = combo.join('|');
+                        const variantLabel = `${formData.name.trim()} ${combo.join(' ')}`;
+                        return (
+                          <div key={idx} className="flex items-center gap-2">
+                            <span className="text-xs min-w-0 flex-1 truncate" title={variantLabel}>{variantLabel}</span>
+                            <Input
+                              value={variantImeis[key] || ''}
+                              onChange={(e) => setVariantImeis(prev => ({ ...prev, [key]: e.target.value }))}
+                              placeholder="IMEI"
+                              className="font-mono text-xs w-40 h-7"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="sku">SKU <span className="text-destructive">*</span></Label>
