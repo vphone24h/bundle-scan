@@ -79,6 +79,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         import_date: importDateStr,
       });
       setOriginalImportDate(importDateStr);
+      setVariantConfig({ enabled: false, levels: [] });
     }
   }, [product]);
 
