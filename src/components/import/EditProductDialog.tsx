@@ -692,7 +692,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                     <SelectValue placeholder="Chọn nhà cung cấp" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
-                    <SelectItem value="_none_">Không có</SelectItem>
+                    <SelectItem value="_none_">-- Chọn NCC --</SelectItem>
                     {suppliers?.map((sup) => (
                       <SelectItem key={sup.id} value={sup.id}>
                         {sup.name}
