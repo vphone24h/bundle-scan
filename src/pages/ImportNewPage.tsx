@@ -1161,7 +1161,7 @@ export default function ImportNewPage() {
                                   <div className="min-w-0 flex-1">
                                     <p className="font-medium text-sm truncate">{s.name}</p>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                      SKU: {s.sku} | {t('tours.importNew.stockQty')}<span className="font-medium text-foreground">{s.totalQty}</span>
+                                      {s.sku ? `SKU: ${s.sku} | ` : ''}{t('tours.importNew.stockQty')}<span className="font-medium text-foreground">{s.totalQty}</span>
                                     </p>
                                   </div>
                                   <Package className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
