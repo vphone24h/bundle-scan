@@ -95,7 +95,8 @@ export function EditTemplateProductDialog({ product, open, onOpenChange }: EditT
       const variantProducts = (data || []).filter(p => p.variant_1);
       
       if (variantProducts.length > 0) {
-        setBaseName(baseName);
+        setBaseName(baseNameExtracted);
+        setOriginalBaseName(baseNameExtracted);
         setVariants(variantProducts.map(p => ({
           id: p.id,
           name: p.name,
