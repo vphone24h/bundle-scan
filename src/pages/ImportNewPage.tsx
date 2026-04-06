@@ -543,17 +543,17 @@ export default function ImportNewPage() {
     const groupId = product.group_id;
     (async () => {
       try {
-        if (product.unit) return;
-
-        // Fetch unit
-        const { data: existingProduct } = await supabase
-          .from('products')
-          .select('unit')
-          .ilike('name', `${product.name}%`)
-          .not('unit', 'is', null)
-          .limit(1);
-        if (existingProduct?.[0]?.unit) {
-          setForm(prev => ({ ...prev, unit: existingProduct[0].unit }));
+        if (!product.unit) {
+          // Fetch unit
+          const { data: existingProduct } = await supabase
+            .from('products')
+            .select('unit')
+            .ilike('name', `${product.name}%`)
+            .not('unit', 'is', null)
+            .limit(1);
+          if (existingProduct?.[0]?.unit) {
+            setForm(prev => ({ ...prev, unit: existingProduct[0].unit }));
+          }
         }
       } catch {}
 
@@ -590,6 +590,45 @@ export default function ImportNewPage() {
           }
         } catch (err) {
           console.error('Error loading product group variants:', err);
+        }
+      }
+
+      // Load variant info from existing products if no group_id but might have variants
+      if (!groupId && (!product.variantLevels || product.variantLevels.length === 0)) {
+        try {
+          const { data: variantProducts } = await supabase
+            .from('products')
+            .select('variant_1, variant_2, variant_3')
+            .ilike('name', `${product.name}%`)
+            .not('variant_1', 'is', null)
+            .limit(50);
+
+          if (variantProducts && variantProducts.length > 0) {
+            const v1Set = new Set<string>();
+            const v2Set = new Set<string>();
+            const v3Set = new Set<string>();
+            variantProducts.forEach((vp: any) => {
+              if (vp.variant_1) v1Set.add(vp.variant_1);
+              if (vp.variant_2) v2Set.add(vp.variant_2);
+              if (vp.variant_3) v3Set.add(vp.variant_3);
+            });
+
+            const levels: VariantLevel[] = [];
+            if (v1Set.size > 0) levels.push({ label: 'Biến thể 1', values: Array.from(v1Set) });
+            if (v2Set.size > 0) levels.push({ label: 'Biến thể 2', values: Array.from(v2Set) });
+            if (v3Set.size > 0) levels.push({ label: 'Biến thể 3', values: Array.from(v3Set) });
+
+            if (levels.length > 0) {
+              setVariantConfig({ enabled: true, levels });
+              setSelectedVariants({});
+              toast({
+                title: 'Đã tải biến thể',
+                description: `${levels.length} cấp biến thể được phát hiện`,
+              });
+            }
+          }
+        } catch (err) {
+          console.error('Error loading variant info from products:', err);
         }
       }
     })();
