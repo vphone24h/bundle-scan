@@ -170,9 +170,10 @@ export function useProducts(filters?: ProductFilters) {
       return { items: rows, totalCount: rows.length };
     },
     enabled: !!user?.id && !permissionsLoading,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
     placeholderData: (previous) => previous,
   });
 
@@ -286,8 +287,9 @@ export function useAllProducts(filters?: {
       return { items, totalCount: count || 0 };
     },
     enabled: !!user?.id && !branchLoading,
-    staleTime: 2 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
     placeholderData: (previous) => previous,
   });
 
