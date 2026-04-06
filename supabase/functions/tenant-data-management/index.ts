@@ -13,7 +13,7 @@ const jsonHeaders = {
 
 const MAX_REQUESTS_PER_HOUR = 30
 const RATE_LIMIT_WINDOW_MINUTES = 60
-const DELETE_BATCH_SIZE = 100
+const DELETE_BATCH_SIZE = 50
 const FETCH_PAGE_SIZE = 1000
 const IN_CLAUSE_BATCH_SIZE = 200
 
@@ -122,10 +122,15 @@ async function fetchIdsByTenant(supabaseAdmin: any, table: string, tenantId: str
   return ids
 }
 
-// Fetch IDs from a child table by parent column (for tables without tenant_id)
-async function fetchIdsByParent(supabaseAdmin: any, table: string, parentColumn: string, parentIds: string[]) {
+async function fetchRowsByParent(
+  supabaseAdmin: any,
+  table: string,
+  selectClause: string,
+  parentColumn: string,
+  parentIds: string[],
+) {
   if (parentIds.length === 0) return []
-  const ids: string[] = []
+  const rows: any[] = []
 
   for (let i = 0; i < parentIds.length; i += IN_CLAUSE_BATCH_SIZE) {
     const parentBatch = parentIds.slice(i, i + IN_CLAUSE_BATCH_SIZE)
@@ -133,25 +138,60 @@ async function fetchIdsByParent(supabaseAdmin: any, table: string, parentColumn:
       const to = from + FETCH_PAGE_SIZE - 1
       const { data, error } = await supabaseAdmin
         .from(table)
-        .select('id')
+        .select(selectClause)
         .in(parentColumn, parentBatch)
         .order('id')
         .range(from, to)
 
       if (error) {
-        if (isMissingTableError(error)) return ids
+        if (isMissingTableError(error)) return rows
         console.error(`[tenant-data-management] fetch ${table} by ${parentColumn} failed:`, error)
         throw new Error(`Không thể tải danh sách ${table}: ${error.message}`)
       }
 
-      const batch = (data || []).map((row: any) => row.id)
-      ids.push(...batch)
+      const batch = data || []
+      rows.push(...batch)
 
       if (batch.length < FETCH_PAGE_SIZE) break
     }
   }
 
-  return ids
+  return rows
+}
+
+// Fetch IDs from a child table by parent column (for tables without tenant_id)
+async function fetchIdsByParent(supabaseAdmin: any, table: string, parentColumn: string, parentIds: string[]) {
+  const rows = await fetchRowsByParent(supabaseAdmin, table, 'id', parentColumn, parentIds)
+  return rows.map((row: any) => row.id)
+}
+
+function uniqueIds(values: Array<string | null | undefined>) {
+  return [...new Set(values.filter((value): value is string => Boolean(value)))]
+}
+
+async function cleanupOrphanExportDataByProducts(supabaseAdmin: any, productIds: string[]) {
+  if (productIds.length === 0) return
+
+  const orphanExportItems = await fetchRowsByParent(
+    supabaseAdmin,
+    'export_receipt_items',
+    'id, receipt_id',
+    'product_id',
+    productIds,
+  )
+
+  const orphanExportItemIds = orphanExportItems.map((item: any) => item.id)
+  const orphanExportReceiptIds = uniqueIds(orphanExportItems.map((item: any) => item.receipt_id))
+
+  if (orphanExportItemIds.length > 0) {
+    await deleteByIdsInBatches(supabaseAdmin, 'export_returns', 'export_receipt_item_id', orphanExportItemIds, 'Xoá trả hàng còn sót theo item_id', true)
+    await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'id', orphanExportItemIds, 'Xoá chi tiết PX còn sót', true)
+  }
+
+  if (orphanExportReceiptIds.length > 0) {
+    await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_payments', 'receipt_id', orphanExportReceiptIds, 'Xoá thanh toán PX còn sót theo receipt_id', true)
+    await deleteByIdsInBatches(supabaseAdmin, 'export_receipts', 'id', orphanExportReceiptIds, 'Xoá phiếu xuất còn sót theo receipt_id', true)
+  }
 }
 
 async function deleteByIdsInBatches(
@@ -776,17 +816,8 @@ async function deleteAllWarehouseData(supabaseAdmin: any, tenantId: string, repo
 
   await reportProgress?.(62, 'Đang xoá sản phẩm và sổ quỹ')
 
-  // Cleanup orphan chain: export_returns → export_receipt_items → products
-  // First find all export_receipt_items by product_id
-  const orphanExportItemIds = await fetchIdsByParent(supabaseAdmin, 'export_receipt_items', 'product_id', productIds)
-  if (orphanExportItemIds.length > 0) {
-    // Delete export_returns referencing these items first
-    await deleteByIdsInBatches(supabaseAdmin, 'export_returns', 'export_receipt_item_id', orphanExportItemIds, 'Xoá trả hàng còn sót theo item_id', true)
-    // Then delete the items themselves
-    await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'id', orphanExportItemIds, 'Xoá chi tiết PX còn sót', true)
-  }
-  // Cleanup any remaining export_receipt_payments and receipts
-  await assertOptionalMutation('Xoá thanh toán PX còn sót', supabaseAdmin.from('export_receipt_payments').delete().eq('tenant_id', tenantId))
+  // Cleanup orphan chain: export_returns → export_receipt_items → export_receipt_payments → products
+  await cleanupOrphanExportDataByProducts(supabaseAdmin, productIds)
   await assertOptionalMutation('Xoá phiếu xuất còn sót', supabaseAdmin.from('export_receipts').delete().eq('tenant_id', tenantId))
   await assertOptionalMutation('Xoá phiếu nhập còn sót', supabaseAdmin.from('import_receipts').delete().eq('tenant_id', tenantId))
 
@@ -869,15 +900,9 @@ async function deleteKeepTemplates(supabaseAdmin: any, tenantId: string, reportP
 
   await reportProgress?.(64, 'Đang reset sản phẩm mẫu')
 
-  // Cleanup orphan chain: export_returns → export_receipt_items → products
+  // Cleanup orphan chain: export_returns → export_receipt_items → export_receipt_payments → products
   const allProductIds = await fetchIdsByTenant(supabaseAdmin, 'products', tenantId)
-  if (allProductIds.length > 0) {
-    const orphanItemIds = await fetchIdsByParent(supabaseAdmin, 'export_receipt_items', 'product_id', allProductIds)
-    if (orphanItemIds.length > 0) {
-      await deleteByIdsInBatches(supabaseAdmin, 'export_returns', 'export_receipt_item_id', orphanItemIds, 'Xoá trả hàng còn sót', true)
-      await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'id', orphanItemIds, 'Xoá chi tiết PX còn sót', true)
-    }
-  }
+  await cleanupOrphanExportDataByProducts(supabaseAdmin, allProductIds)
 
   await assertMutation(
     'Xoá sản phẩm IMEI',
