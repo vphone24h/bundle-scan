@@ -439,7 +439,7 @@ export default function ImportNewPage() {
     } finally {
       setIsSearching(false);
     }
-  }, [importableGroupIds, importableSuggestionKeys, localProductSuggestions, productGroupById]);
+  }, [localProductSuggestions, productGroupById]);
 
   // Auto-fill from template product navigation
   useEffect(() => {
