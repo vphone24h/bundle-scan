@@ -114,6 +114,49 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Check member limit for tenant
+    const { data: tenantData, error: tenantError } = await supabaseAdmin
+      .from('tenants')
+      .select('max_users')
+      .eq('id', callerTenantId)
+      .single()
+
+    if (tenantError) {
+      console.error('Tenant fetch error:', tenantError)
+      return new Response(
+        JSON.stringify({ error: 'Không thể kiểm tra thông tin cửa hàng' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const maxUsers = tenantData?.max_users || 5
+
+    // Count existing users in this tenant (excluding super_admin)
+    const { count: currentUserCount, error: countError } = await supabaseAdmin
+      .from('user_roles')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', callerTenantId)
+
+    if (countError) {
+      console.error('User count error:', countError)
+      return new Response(
+        JSON.stringify({ error: 'Không thể kiểm tra số lượng thành viên' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if ((currentUserCount || 0) >= maxUsers) {
+      return new Response(
+        JSON.stringify({ 
+          error: `Cửa hàng đã đạt giới hạn ${maxUsers} thành viên. Vui lòng nâng cấp lên gói cao hơn để thêm thành viên.`,
+          errorCode: 'MEMBER_LIMIT_REACHED',
+          currentCount: currentUserCount,
+          maxUsers: maxUsers,
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Không cho phép tạo super_admin
     if (role === 'super_admin') {
       return new Response(

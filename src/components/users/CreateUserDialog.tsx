@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -20,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowRight, ArrowLeft, Crown } from 'lucide-react';
 import { UserRole } from '@/hooks/usePermissions';
 import { PermissionEditor } from './PermissionEditor';
 import { PermissionMap, getDefaultPermissionsForRole } from '@/config/permissionDefinitions';
@@ -50,6 +51,7 @@ export function CreateUserDialog({
   onOpenChange,
   branches,
 }: CreateUserDialogProps) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: currentTenant } = useCurrentTenant();
   const savePermissions = useSaveCustomPermissions();
@@ -67,6 +69,11 @@ export function CreateUserDialog({
   const [permissions, setPermissions] = useState<PermissionMap>(() =>
     getDefaultPermissionsForRole('super_admin')
   );
+  const [memberLimitError, setMemberLimitError] = useState<{
+    currentCount: number;
+    maxUsers: number;
+    message: string;
+  } | null>(null);
 
   const resetForm = () => {
     setStep(1);
@@ -79,6 +86,7 @@ export function CreateUserDialog({
     setUseCustomRole(false);
     setNewBranchId('');
     setPermissions(getDefaultPermissionsForRole('super_admin'));
+    setMemberLimitError(null);
   };
 
   const handleRoleChange = (value: string) => {
@@ -106,7 +114,13 @@ export function CreateUserDialog({
       });
 
       if (response.error) throw new Error(response.error.message);
-      if (response.data?.error) throw new Error(response.data.error);
+      if (response.data?.error) {
+        const err = new Error(response.data.error) as any;
+        err.errorCode = response.data.errorCode;
+        err.maxUsers = response.data.maxUsers;
+        err.currentCount = response.data.currentCount;
+        throw err;
+      }
 
       // Save custom permissions
       const userId = response.data?.userId;
@@ -135,8 +149,16 @@ export function CreateUserDialog({
       onOpenChange(false);
       resetForm();
     },
-    onError: (error) => {
-      toast.error('Lỗi: ' + (error as Error).message);
+    onError: (error: any) => {
+      if (error.errorCode === 'MEMBER_LIMIT_REACHED') {
+        setMemberLimitError({
+          currentCount: error.currentCount || 0,
+          maxUsers: error.maxUsers || 0,
+          message: error.message,
+        });
+      } else {
+        toast.error('Lỗi: ' + error.message);
+      }
     },
   });
 
@@ -179,7 +201,37 @@ export function CreateUserDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {step === 1 ? (
+        {memberLimitError ? (
+          <div className="space-y-4 py-4">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <div className="rounded-full bg-amber-100 p-3">
+                <Crown className="h-8 w-8 text-amber-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-amber-600">Đã đạt giới hạn thành viên</h3>
+              <p className="text-sm text-muted-foreground">
+                Cửa hàng của bạn đã có <strong className="text-foreground">{memberLimitError.currentCount}</strong> / <strong className="text-foreground">{memberLimitError.maxUsers}</strong> thành viên.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Vui lòng nâng cấp lên gói cao hơn để thêm thành viên.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+                onClick={() => {
+                  handleOpenChange(false);
+                  navigate('/subscription');
+                }}
+              >
+                <Crown className="h-4 w-4 mr-2" />
+                Nâng cấp ngay
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => setMemberLimitError(null)}>
+                Quay lại
+              </Button>
+            </div>
+          </div>
+        ) : step === 1 ? (
           <div className="space-y-4 overflow-y-auto">
             <div className="space-y-2">
               <Label>Email <span className="text-destructive">*</span></Label>
