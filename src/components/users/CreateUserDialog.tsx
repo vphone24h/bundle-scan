@@ -201,7 +201,37 @@ export function CreateUserDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {step === 1 ? (
+        {memberLimitError ? (
+          <div className="space-y-4 py-4">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <div className="rounded-full bg-amber-100 p-3">
+                <Crown className="h-8 w-8 text-amber-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-amber-600">Đã đạt giới hạn thành viên</h3>
+              <p className="text-sm text-muted-foreground">
+                Cửa hàng của bạn đã có <strong className="text-foreground">{memberLimitError.currentCount}</strong> / <strong className="text-foreground">{memberLimitError.maxUsers}</strong> thành viên.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Vui lòng nâng cấp lên gói cao hơn để thêm thành viên.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
+                onClick={() => {
+                  handleOpenChange(false);
+                  navigate('/subscription');
+                }}
+              >
+                <Crown className="h-4 w-4 mr-2" />
+                Nâng cấp ngay
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => setMemberLimitError(null)}>
+                Quay lại
+              </Button>
+            </div>
+          </div>
+        ) : step === 1 ? (
           <div className="space-y-4 overflow-y-auto">
             <div className="space-y-2">
               <Label>Email <span className="text-destructive">*</span></Label>
