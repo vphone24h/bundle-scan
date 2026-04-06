@@ -19,14 +19,26 @@ export function useCashBookBalances(branchId?: string, options?: { assignedBranc
   const assignedBranchesOnly = options?.assignedBranchesOnly === true && !effectiveBranchId;
 
   return useQuery({
-    queryKey: ['cash-book-balances', tenant?.id, effectiveBranchId, assignedBranchesOnly],
+    queryKey: ['cash-book-balances', 'branch-summed', tenant?.id, effectiveBranchId, assignedBranchesOnly],
     queryFn: async () => {
       if (assignedBranchesOnly) {
+        const { data: branchRows, error: branchesError } = await supabase
+          .from('branches')
+          .select('id')
+          .eq('tenant_id', tenant!.id);
+
+        if (branchesError) throw branchesError;
+
+        const validBranchIds = (branchRows || []).map((branch) => branch.id);
+        if (validBranchIds.length === 0) {
+          return {} as Record<string, { income: number; expense: number }>;
+        }
+
         const { data, error } = await supabase
           .from('cash_book')
           .select('payment_source, type, amount, branch_id')
           .eq('tenant_id', tenant!.id)
-          .not('branch_id', 'is', null);
+          .in('branch_id', validBranchIds);
 
         if (error) throw error;
 
