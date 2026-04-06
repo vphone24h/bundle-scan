@@ -472,24 +472,39 @@ export default function CashBookPage() {
     return Object.values(balanceBySource).reduce((sum, v) => sum + v, 0);
   }, [balanceBySource]);
 
-  // Running balance per entry - use serverBalances (total from ALL transactions)
-  // then work backwards so the newest entry shows the current real balance
+  // Running balance per entry
+  // Calculate "balance before filtered period" per source = total balance - sum of filtered entries
+  // Then walk chronologically adding each entry to get accurate running balance
   const runningBalanceMap = useMemo(() => {
     if (!allEntries?.length) return new Map<string, number>();
-    // allEntries is sorted newest-first; iterate newest→oldest
-    const map = new Map<string, number>();
-    // Clone balanceBySource as the "after last entry" state
-    const sourceBalances: Record<string, number> = { ...balanceBySource };
-    // Walk newest to oldest: current entry's balance = sourceBalances[source]
-    // then subtract its effect to get the state before it
+
+    // Sum of filtered entries per source
+    const filteredSum: Record<string, number> = {};
     allEntries.forEach(entry => {
+      const source = normalizePaymentSource(entry.payment_source);
+      if (!filteredSum[source]) filteredSum[source] = 0;
+      filteredSum[source] += entry.type === 'income' ? Number(entry.amount) : -Number(entry.amount);
+    });
+
+    // Pre-period balance = total balance - sum of entries in current view
+    const prePeriodBalance: Record<string, number> = {};
+    Object.keys(balanceBySource).forEach(source => {
+      prePeriodBalance[source] = (balanceBySource[source] || 0) - (filteredSum[source] || 0);
+    });
+
+    // Walk chronologically (oldest first) to build running balance
+    const chronological = [...allEntries].reverse();
+    const map = new Map<string, number>();
+    const sourceBalances: Record<string, number> = { ...prePeriodBalance };
+
+    chronological.forEach(entry => {
       const source = normalizePaymentSource(entry.payment_source);
       if (sourceBalances[source] === undefined) {
         sourceBalances[source] = 0;
       }
-      map.set(entry.id, sourceBalances[source]);
       const amount = Number(entry.amount);
-      sourceBalances[source] -= entry.type === 'income' ? amount : -amount;
+      sourceBalances[source] += entry.type === 'income' ? amount : -amount;
+      map.set(entry.id, sourceBalances[source]);
     });
     return map;
   }, [allEntries, balanceBySource]);

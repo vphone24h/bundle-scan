@@ -33,7 +33,7 @@ export function PaymentSourceHistoryDialog({
     .filter((e) => normalizePaymentSource(e.payment_source) === sourceId)
     .sort((a, b) => new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime());
 
-  // Calculate running balance
+  // Calculate running balance starting from opening balance
   let runningBalance = openingBalance;
   const entriesWithBalance = filtered.map((entry) => {
     const delta = entry.type === 'income' ? Number(entry.amount) : -Number(entry.amount);
