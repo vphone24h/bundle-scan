@@ -89,8 +89,7 @@ export function useDashboardStats() {
     gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: true,
     refetchOnReconnect: false,
-    refetchOnMount: true,
-    placeholderData: (previous) => previous,
+    refetchOnMount: 'always',
   });
 }
 
