@@ -41,11 +41,25 @@ type DataManagementJob = {
   delete_mode: 'full' | 'keep_templates';
   notify_email: string | null;
   created_at: string;
+  updated_at?: string | null;
   completed_at: string | null;
 };
 
 const JOB_HANDLED_STORAGE_KEY = 'vkho_data_management_job_handled';
 const ACTIVE_DELETE_JOB_KEY = 'vkho_active_delete_job_id';
+const STALE_JOB_MINUTES = 10;
+
+function isStaleDeleteJob(job?: DataManagementJob | null) {
+  if (!job || (job.status !== 'queued' && job.status !== 'processing')) return false;
+
+  const referenceTime = job.updated_at || job.created_at;
+  if (!referenceTime) return false;
+
+  const timestamp = new Date(referenceTime).getTime();
+  if (Number.isNaN(timestamp)) return false;
+
+  return Date.now() - timestamp > STALE_JOB_MINUTES * 60 * 1000;
+}
 
 function getJobStatusLabel(status?: DataManagementJob['status']) {
   switch (status) {
@@ -104,9 +118,9 @@ export function DataManagementSection() {
     queryFn: async () => {
       if (!tenant?.id) return null;
 
-      const { data, error } = await supabase
+        const { data, error } = await supabase
         .from('data_management_jobs' as any)
-        .select('id, status, progress, current_step, error_message, delete_mode, notify_email, created_at, completed_at, job_type')
+          .select('id, status, progress, current_step, error_message, delete_mode, notify_email, created_at, updated_at, completed_at, job_type')
         .eq('tenant_id', tenant.id)
         .eq('job_type', 'delete_restore')
         .order('created_at', { ascending: false })
@@ -122,7 +136,11 @@ export function DataManagementSection() {
     },
   });
 
-  const hasActiveDeleteJob = latestDeleteJob?.status === 'queued' || latestDeleteJob?.status === 'processing';
+  const hasActiveDeleteJob =
+    (latestDeleteJob?.status === 'queued' || latestDeleteJob?.status === 'processing') &&
+    !isStaleDeleteJob(latestDeleteJob);
+
+  const isDeleteJobStale = isStaleDeleteJob(latestDeleteJob);
 
   useEffect(() => {
     if (tenant) {
@@ -401,7 +419,9 @@ export function DataManagementSection() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-foreground">Tiến trình xoá dữ liệu</p>
-                    <p className="text-sm text-muted-foreground">{getJobStatusLabel(latestDeleteJob.status)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {isDeleteJobStale ? 'Tác vụ cũ đã bị treo, có thể bấm xoá lại' : getJobStatusLabel(latestDeleteJob.status)}
+                    </p>
                   </div>
                   <p className="text-sm font-medium text-foreground">{latestDeleteJob.progress ?? 0}%</p>
                 </div>
@@ -410,6 +430,9 @@ export function DataManagementSection() {
 
                 <div className="space-y-1 text-sm text-muted-foreground">
                   <p>{latestDeleteJob.current_step || 'Đang chuẩn bị xử lý dữ liệu...'}</p>
+                  {isDeleteJobStale && (
+                    <p className="text-destructive">Tác vụ này đã đứng quá lâu, hệ thống sẽ cho chạy lại khi bạn bấm xoá lần nữa.</p>
+                  )}
                   {latestDeleteJob.notify_email && (
                     <p>Sẽ báo hoàn tất qua email: {latestDeleteJob.notify_email}</p>
                   )}
