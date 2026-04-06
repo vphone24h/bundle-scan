@@ -194,6 +194,39 @@ async function cleanupOrphanExportDataByProducts(supabaseAdmin: any, productIds:
   }
 }
 
+async function cleanupStockCountData(
+  supabaseAdmin: any,
+  tenantId: string,
+  productIds: string[],
+  stockCountIds: string[],
+) {
+  if (stockCountIds.length > 0) {
+    await deleteByIdsInBatches(supabaseAdmin, 'stock_count_items', 'stock_count_id', stockCountIds, 'Xoá chi tiết kiểm kho theo phiếu', true)
+  }
+
+  if (productIds.length > 0) {
+    await deleteByIdsInBatches(supabaseAdmin, 'stock_count_items', 'product_id', productIds, 'Xoá chi tiết kiểm kho theo sản phẩm', true)
+
+    const residualStockCountItemIds = await fetchIdsByParent(supabaseAdmin, 'stock_count_items', 'product_id', productIds)
+    if (residualStockCountItemIds.length > 0) {
+      await deleteByIdsInBatches(supabaseAdmin, 'stock_count_items', 'id', residualStockCountItemIds, 'Xoá chi tiết kiểm kho còn sót', true)
+    }
+  }
+
+  await assertOptionalMutation('Xoá phiếu kiểm kho', supabaseAdmin.from('stock_counts').delete().eq('tenant_id', tenantId))
+}
+
+async function cleanupDirectProductReferences(supabaseAdmin: any, productIds: string[]) {
+  if (productIds.length === 0) return
+
+  await cleanupOrphanExportDataByProducts(supabaseAdmin, productIds)
+  await deleteByIdsInBatches(supabaseAdmin, 'export_returns', 'product_id', productIds, 'Xoá trả hàng bán theo sản phẩm', true)
+  await deleteByIdsInBatches(supabaseAdmin, 'import_returns', 'product_id', productIds, 'Xoá trả hàng nhập theo sản phẩm', true)
+  await deleteByIdsInBatches(supabaseAdmin, 'stock_transfer_items', 'product_id', productIds, 'Xoá liên kết chuyển kho theo sản phẩm', true)
+  await deleteByIdsInBatches(supabaseAdmin, 'imei_histories', 'product_id', productIds, 'Xoá lịch sử IMEI còn sót', true)
+  await deleteByIdsInBatches(supabaseAdmin, 'product_imports', 'product_id', productIds, 'Xoá lịch sử nhập sản phẩm còn sót', true)
+}
+
 async function deleteByIdsInBatches(
   supabaseAdmin: any,
   table: string,
@@ -774,10 +807,7 @@ async function deleteAllWarehouseData(supabaseAdmin: any, tenantId: string, repo
   }
 
   await reportProgress?.(28, 'Đang xoá kiểm kho và hoá đơn điện tử')
-  if (stockCountIds.length > 0) {
-    await deleteByIdsInBatches(supabaseAdmin, 'stock_count_items', 'stock_count_id', stockCountIds, 'Xoá chi tiết kiểm kho', true)
-  }
-  await assertOptionalMutation('Xoá phiếu kiểm kho', supabaseAdmin.from('stock_counts').delete().eq('tenant_id', tenantId))
+  await cleanupStockCountData(supabaseAdmin, tenantId, productIds, stockCountIds)
 
   if (einvoiceIds.length > 0) {
     await deleteByIdsInBatches(supabaseAdmin, 'einvoice_items', 'einvoice_id', einvoiceIds, 'Xoá chi tiết hoá đơn điện tử', true)
@@ -816,8 +846,8 @@ async function deleteAllWarehouseData(supabaseAdmin: any, tenantId: string, repo
 
   await reportProgress?.(62, 'Đang xoá sản phẩm và sổ quỹ')
 
-  // Cleanup orphan chain: export_returns → export_receipt_items → export_receipt_payments → products
-  await cleanupOrphanExportDataByProducts(supabaseAdmin, productIds)
+  await cleanupDirectProductReferences(supabaseAdmin, productIds)
+  await cleanupStockCountData(supabaseAdmin, tenantId, productIds, [])
   await assertOptionalMutation('Xoá phiếu xuất còn sót', supabaseAdmin.from('export_receipts').delete().eq('tenant_id', tenantId))
   await assertOptionalMutation('Xoá phiếu nhập còn sót', supabaseAdmin.from('import_receipts').delete().eq('tenant_id', tenantId))
 
@@ -898,11 +928,11 @@ async function deleteKeepTemplates(supabaseAdmin: any, tenantId: string, reportP
   }
   await assertMutation('Xoá phiếu nhập', supabaseAdmin.from('import_receipts').delete().eq('tenant_id', tenantId))
 
-  await reportProgress?.(64, 'Đang reset sản phẩm mẫu')
+  await reportProgress?.(64, 'Đang dọn kiểm kho và reset sản phẩm mẫu')
 
-  // Cleanup orphan chain: export_returns → export_receipt_items → export_receipt_payments → products
   const allProductIds = await fetchIdsByTenant(supabaseAdmin, 'products', tenantId)
-  await cleanupOrphanExportDataByProducts(supabaseAdmin, allProductIds)
+  await cleanupStockCountData(supabaseAdmin, tenantId, allProductIds, stockCountIds)
+  await cleanupDirectProductReferences(supabaseAdmin, allProductIds)
 
   await assertMutation(
     'Xoá sản phẩm IMEI',
@@ -916,14 +946,9 @@ async function deleteKeepTemplates(supabaseAdmin: any, tenantId: string, reportP
       .eq('tenant_id', tenantId),
   )
 
-  await reportProgress?.(76, 'Đang xoá sổ quỹ, công nợ và kiểm kho')
+  await reportProgress?.(76, 'Đang xoá sổ quỹ, công nợ và dữ liệu còn lại')
   await assertMutation('Xoá sổ quỹ', supabaseAdmin.from('cash_book').delete().eq('tenant_id', tenantId))
   await assertMutation('Xoá thanh toán công nợ', supabaseAdmin.from('debt_payments').delete().eq('tenant_id', tenantId))
-
-  if (stockCountIds.length > 0) {
-    await deleteByIdsInBatches(supabaseAdmin, 'stock_count_items', 'stock_count_id', stockCountIds, 'Xoá chi tiết kiểm kho', true)
-  }
-  await assertOptionalMutation('Xoá phiếu kiểm kho', supabaseAdmin.from('stock_counts').delete().eq('tenant_id', tenantId))
 
   await reportProgress?.(86, 'Đang reset dữ liệu khách hàng và nhật ký')
   await assertMutation('Xoá nhật ký hệ thống', supabaseAdmin.from('audit_logs').delete().eq('tenant_id', tenantId))
