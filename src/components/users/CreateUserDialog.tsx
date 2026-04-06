@@ -86,6 +86,7 @@ export function CreateUserDialog({
     setUseCustomRole(false);
     setNewBranchId('');
     setPermissions(getDefaultPermissionsForRole('super_admin'));
+    setMemberLimitError(null);
   };
 
   const handleRoleChange = (value: string) => {
