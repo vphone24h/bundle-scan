@@ -2423,7 +2423,15 @@ export default function CashBookPage() {
         sourceId={historySource?.id || ''}
         allEntries={allEntries || []}
         branches={(branches || []).map(b => ({ id: b.id, name: b.name }))}
-        openingBalance={historySource ? (latestOpeningBalances?.[historySource.id]?.amount || 0) : 0}
+        openingBalance={historySource ? (() => {
+          const sourceId = historySource.id;
+          const totalBalance = balanceBySource[sourceId] || 0;
+          // Subtract entries in current view to get pre-period balance
+          const entriesSum = (allEntries || [])
+            .filter(e => normalizePaymentSource(e.payment_source) === sourceId)
+            .reduce((sum, e) => sum + (e.type === 'income' ? Number(e.amount) : -Number(e.amount)), 0);
+          return totalBalance - entriesSum;
+        })() : 0}
       />
 
       <SecurityPasswordDialog
