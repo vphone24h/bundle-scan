@@ -1556,7 +1556,10 @@ export default function ImportNewPage() {
                           title={t('pages.importNew.copySku')}
                           onClick={() => {
                             if (form.productName.trim()) {
-                              setForm({ ...form, sku: form.productName.trim() });
+                              const skuValue = variantConfig.enabled
+                                ? buildVariantProductName(form.productName.trim(), selectedVariants)
+                                : form.productName.trim();
+                              setForm({ ...form, sku: skuValue });
                               if (fieldErrors.sku) setFieldErrors(prev => { const { sku, ...rest } = prev; return rest; });
                             }
                           }}
