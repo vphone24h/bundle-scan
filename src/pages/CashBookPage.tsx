@@ -338,7 +338,8 @@ export default function CashBookPage() {
   const deleteEntry = useDeleteCashBookEntry();
   
   const { data: serverBalances } = useCashBookBalances(
-    viewMode === 'branch' && selectedBranchId ? selectedBranchId : undefined
+    viewMode === 'branch' && selectedBranchId ? selectedBranchId : undefined,
+    { assignedBranchesOnly: viewMode === 'total' }
   );
   const isMobile = useIsMobile();
   const { data: latestOpeningBalances } = useLatestOpeningBalances();

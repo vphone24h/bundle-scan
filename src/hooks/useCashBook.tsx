@@ -11,15 +11,36 @@ type CashBookType = Database['public']['Enums']['cash_book_type'];
 /**
  * Server-side balance calculation via RPC - fast aggregation without loading all rows
  */
-export function useCashBookBalances(branchId?: string) {
+export function useCashBookBalances(branchId?: string, options?: { assignedBranchesOnly?: boolean }) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const { branchId: userBranchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
   
   const effectiveBranchId = branchId || (shouldFilter ? userBranchId : undefined);
+  const assignedBranchesOnly = options?.assignedBranchesOnly === true && !effectiveBranchId;
 
   return useQuery({
-    queryKey: ['cash-book-balances', tenant?.id, effectiveBranchId],
+    queryKey: ['cash-book-balances', tenant?.id, effectiveBranchId, assignedBranchesOnly],
     queryFn: async () => {
+      if (assignedBranchesOnly) {
+        const { data, error } = await supabase
+          .from('cash_book')
+          .select('payment_source, type, amount, branch_id')
+          .eq('tenant_id', tenant!.id)
+          .not('branch_id', 'is', null);
+
+        if (error) throw error;
+
+        const grouped: Record<string, { income: number; expense: number }> = {};
+        (data || []).forEach((row) => {
+          const source = row.payment_source;
+          if (!grouped[source]) grouped[source] = { income: 0, expense: 0 };
+          if (row.type === 'income') grouped[source].income += Number(row.amount);
+          else grouped[source].expense += Number(row.amount);
+        });
+
+        return grouped;
+      }
+
       const { data, error } = await supabase.rpc('get_cash_book_balances' as any, {
         p_tenant_id: tenant!.id,
         p_branch_id: effectiveBranchId || null,
@@ -28,7 +49,7 @@ export function useCashBookBalances(branchId?: string) {
       return (data || {}) as Record<string, { income: number; expense: number }>;
     },
     enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
-    staleTime: 30 * 1000, // 30s cache
+    staleTime: 30 * 1000,
     refetchOnWindowFocus: false,
   });
 }
