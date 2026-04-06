@@ -51,6 +51,7 @@ export function CreateUserDialog({
   onOpenChange,
   branches,
 }: CreateUserDialogProps) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: currentTenant } = useCurrentTenant();
   const savePermissions = useSaveCustomPermissions();
@@ -68,6 +69,11 @@ export function CreateUserDialog({
   const [permissions, setPermissions] = useState<PermissionMap>(() =>
     getDefaultPermissionsForRole('super_admin')
   );
+  const [memberLimitError, setMemberLimitError] = useState<{
+    currentCount: number;
+    maxUsers: number;
+    message: string;
+  } | null>(null);
 
   const resetForm = () => {
     setStep(1);
