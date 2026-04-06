@@ -336,10 +336,11 @@ export default function CashBookPage() {
   const createEntry = useCreateCashBookEntry();
   const updateEntry = useUpdateCashBookEntry();
   const deleteEntry = useDeleteCashBookEntry();
+  const isTotalFromBranches = viewMode === 'total';
   
   const { data: serverBalances } = useCashBookBalances(
     viewMode === 'branch' && selectedBranchId ? selectedBranchId : undefined,
-    { assignedBranchesOnly: viewMode === 'total' }
+    { assignedBranchesOnly: isTotalFromBranches }
   );
   const isMobile = useIsMobile();
   const { data: latestOpeningBalances } = useLatestOpeningBalances();
@@ -362,10 +363,16 @@ export default function CashBookPage() {
   const currentCategories = formData.type === 'expense' ? expenseCategories : incomeCategories;
 
   // Filter entries
-  const filteredEntries = useMemo(() => {
+  const scopedEntries = useMemo(() => {
     if (!allEntries) return [];
+    if (!isTotalFromBranches) return allEntries;
+    return allEntries.filter((entry) => entry.branch_id !== null);
+  }, [allEntries, isTotalFromBranches]);
+
+  const filteredEntries = useMemo(() => {
+    if (!scopedEntries.length) return [];
     
-    return allEntries.filter((entry) => {
+    return scopedEntries.filter((entry) => {
       // Check if entry is a transfer (category is "Chuyển tiền nội bộ")
       const isTransfer = entry.category === 'Chuyển tiền nội bộ';
       
@@ -417,7 +424,7 @@ export default function CashBookPage() {
 
       return matchesType && matchesSearch && matchesDate && matchesPaymentSource && matchesAccounting && matchesCategory && matchesStaff;
     });
-  }, [allEntries, typeFilter, searchTerm, dateFrom, dateTo, paymentSourceFilter, accountingFilter, categoryFilter, staffFilter]);
+  }, [scopedEntries, typeFilter, searchTerm, dateFrom, dateTo, paymentSourceFilter, accountingFilter, categoryFilter, staffFilter]);
 
   // Filtered totals (react to all filters)
   const filteredTotals = useMemo(() => {
@@ -428,11 +435,11 @@ export default function CashBookPage() {
 
   // Unique staff names for filter
   const uniqueStaffNames = useMemo(() => {
-    if (!allEntries) return [];
+    if (!scopedEntries.length) return [];
     const names = new Set<string>();
-    allEntries.forEach(e => { if (e.created_by_name) names.add(e.created_by_name); });
+    scopedEntries.forEach(e => { if (e.created_by_name) names.add(e.created_by_name); });
     return Array.from(names).sort();
-  }, [allEntries]);
+  }, [scopedEntries]);
 
   // Pagination for transactions
   const pagination = usePagination(filteredEntries, { 
@@ -450,7 +457,7 @@ export default function CashBookPage() {
   const balanceBySource = useMemo(() => {
     const result: Record<string, number> = {};
     allPaymentSources.forEach(src => {
-      const openingBalance = latestOpeningBalances?.[src.id];
+      const openingBalance = isTotalFromBranches ? undefined : latestOpeningBalances?.[src.id];
       result[src.id] = openingBalance ? Number(openingBalance.amount) : 0;
     });
     
@@ -458,7 +465,7 @@ export default function CashBookPage() {
       Object.entries(serverBalances).forEach(([source, data]) => {
         const normalizedSource = normalizePaymentSource(source);
         if (result[normalizedSource] === undefined) {
-          const openingBalance = latestOpeningBalances?.[normalizedSource];
+          const openingBalance = isTotalFromBranches ? undefined : latestOpeningBalances?.[normalizedSource];
           result[normalizedSource] = openingBalance ? Number(openingBalance.amount) : 0;
         }
         const d = data as { income: number; expense: number };
@@ -467,7 +474,7 @@ export default function CashBookPage() {
     }
     
     return result;
-  }, [serverBalances, allPaymentSources, latestOpeningBalances]);
+  }, [serverBalances, allPaymentSources, latestOpeningBalances, isTotalFromBranches]);
 
   const totalBalance = useMemo(() => {
     return Object.values(balanceBySource).reduce((sum, v) => sum + v, 0);
@@ -477,11 +484,11 @@ export default function CashBookPage() {
   // Calculate "balance before filtered period" per source = total balance - sum of filtered entries
   // Then walk chronologically adding each entry to get accurate running balance
   const runningBalanceMap = useMemo(() => {
-    if (!allEntries?.length) return new Map<string, number>();
+    if (!scopedEntries.length) return new Map<string, number>();
 
     // Sum of filtered entries per source
     const filteredSum: Record<string, number> = {};
-    allEntries.forEach(entry => {
+    scopedEntries.forEach(entry => {
       const source = normalizePaymentSource(entry.payment_source);
       if (!filteredSum[source]) filteredSum[source] = 0;
       filteredSum[source] += entry.type === 'income' ? Number(entry.amount) : -Number(entry.amount);
@@ -494,7 +501,7 @@ export default function CashBookPage() {
     });
 
     // Walk chronologically (oldest first) to build running balance
-    const chronological = [...allEntries].reverse();
+    const chronological = [...scopedEntries].reverse();
     const map = new Map<string, number>();
     const sourceBalances: Record<string, number> = { ...prePeriodBalance };
 
@@ -508,7 +515,7 @@ export default function CashBookPage() {
       map.set(entry.id, sourceBalances[source]);
     });
     return map;
-  }, [allEntries, balanceBySource]);
+  }, [scopedEntries, balanceBySource]);
 
   // Shared date range for summary + balance history
   const summaryDateRange = useMemo(() => {
@@ -528,10 +535,10 @@ export default function CashBookPage() {
 
   // Summary totals based on shared time preset
   const summaryTotals = useMemo(() => {
-    if (!allEntries) return { income: 0, expense: 0 };
+    if (!scopedEntries.length) return { income: 0, expense: 0 };
     const rangeStart = startOfDay(summaryDateRange.from);
     const rangeEnd = endOfDay(summaryDateRange.to);
-    const filtered = allEntries.filter(e => {
+    const filtered = scopedEntries.filter(e => {
       const d = new Date(e.transaction_date);
       return d >= rangeStart && d <= rangeEnd;
     });
@@ -539,7 +546,7 @@ export default function CashBookPage() {
       income: filtered.filter(e => e.type === 'income').reduce((sum, e) => sum + Number(e.amount), 0),
       expense: filtered.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.amount), 0),
     };
-  }, [allEntries, summaryDateRange]);
+  }, [scopedEntries, summaryDateRange]);
 
   const hasActiveFilters = dateFrom || dateTo || paymentSourceFilter !== '_all_' || accountingFilter !== '_all_' || categoryFilter !== '_all_' || searchTerm || staffFilter !== '_all_';
 
@@ -637,11 +644,10 @@ export default function CashBookPage() {
 
   // Tính số dư theo nguồn tiền CHO MỘT chi nhánh cụ thể
   const getBalanceBySourceForBranch = (source: string, branchId: string) => {
-    if (!allEntries) return 0;
-    const openingBalance = latestOpeningBalances?.[source];
+    if (!scopedEntries.length) return 0;
     // Khi xem theo chi nhánh, opening balance không chia theo branch nên chỉ tính giao dịch
     let balance = 0;
-    allEntries.forEach(entry => {
+    scopedEntries.forEach(entry => {
       if (normalizePaymentSource(entry.payment_source) === source && entry.branch_id === branchId) {
         balance += entry.type === 'income' ? Number(entry.amount) : -Number(entry.amount);
       }
@@ -1086,7 +1092,7 @@ export default function CashBookPage() {
               {allPaymentSources.map((source) => {
                 const balance = balanceBySource[source.id] || 0;
                 const isBuiltIn = builtInPaymentSources.some(s => s.id === source.id);
-                const openingBal = latestOpeningBalances?.[source.id];
+                const openingBal = isTotalFromBranches ? null : latestOpeningBalances?.[source.id];
                 const colorClass = source.color === 'green' ? 'bg-green-100' : 
                                    source.color === 'blue' ? 'bg-blue-100' : 
                                    source.color === 'purple' ? 'bg-purple-100' : 'bg-muted';
@@ -1266,7 +1272,7 @@ export default function CashBookPage() {
 
         {/* Balance History - uses same time filter */}
         <BalanceHistorySection
-          allEntries={allEntries}
+          allEntries={scopedEntries}
           latestOpeningBalances={latestOpeningBalances}
           dateRange={summaryDateRange}
         />
@@ -2422,13 +2428,13 @@ export default function CashBookPage() {
         onOpenChange={(open) => { if (!open) setHistorySource(null); }}
         sourceName={historySource?.name || ''}
         sourceId={historySource?.id || ''}
-        allEntries={allEntries || []}
+        allEntries={scopedEntries}
         branches={(branches || []).map(b => ({ id: b.id, name: b.name }))}
         openingBalance={historySource ? (() => {
           const sourceId = historySource.id;
           const totalBalance = balanceBySource[sourceId] || 0;
           // Subtract entries in current view to get pre-period balance
-          const entriesSum = (allEntries || [])
+          const entriesSum = scopedEntries
             .filter(e => normalizePaymentSource(e.payment_source) === sourceId)
             .reduce((sum, e) => sum + (e.type === 'income' ? Number(e.amount) : -Number(e.amount)), 0);
           return totalBalance - entriesSum;
