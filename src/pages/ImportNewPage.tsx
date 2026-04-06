@@ -393,27 +393,13 @@ export default function ImportNewPage() {
       return;
     }
 
-    const normalizedSearch = normalizeSuggestionText(searchValue);
-    const localMatches = localProductSuggestions
-      .filter((item) => {
-        const normalizedName = normalizeSuggestionText(item.name);
-        const normalizedSku = normalizeSuggestionText(item.sku || '');
-        return normalizedName.includes(normalizedSearch) || (!!normalizedSku && normalizedSku.includes(normalizedSearch));
-      })
-      .slice(0, 20);
-
-    if (localMatches.length > 0) {
-      setSuggestions(localMatches);
-      setIsSearching(false);
-      return;
-    }
-
+    // Always search server-side to get complete results
     setIsSearching(true);
     try {
       const s = searchValue.trim();
       const { data, error } = await supabase.rpc('search_product_suggestions' as any, {
         p_search: s,
-        p_limit: 20,
+        p_limit: 50,
       });
 
       if (error) throw error;
