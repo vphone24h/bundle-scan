@@ -472,30 +472,27 @@ export default function CashBookPage() {
     return Object.values(balanceBySource).reduce((sum, v) => sum + v, 0);
   }, [balanceBySource]);
 
-  // Running balance per entry (for display only, computed from filtered entries)
+  // Running balance per entry - use serverBalances (total from ALL transactions)
+  // then work backwards so the newest entry shows the current real balance
   const runningBalanceMap = useMemo(() => {
     if (!allEntries?.length) return new Map<string, number>();
-    const chronological = [...allEntries].reverse();
+    // allEntries is sorted newest-first; iterate newest→oldest
     const map = new Map<string, number>();
-    const sourceBalances: Record<string, number> = {};
-    // Start from server-side balances minus the entries in current view
-    // to show accurate running balance within the filtered period
-    allPaymentSources.forEach(src => {
-      const openingBalance = latestOpeningBalances?.[src.id];
-      sourceBalances[src.id] = openingBalance ? Number(openingBalance.amount) : 0;
-    });
-    chronological.forEach(entry => {
+    // Clone balanceBySource as the "after last entry" state
+    const sourceBalances: Record<string, number> = { ...balanceBySource };
+    // Walk newest to oldest: current entry's balance = sourceBalances[source]
+    // then subtract its effect to get the state before it
+    allEntries.forEach(entry => {
       const source = normalizePaymentSource(entry.payment_source);
       if (sourceBalances[source] === undefined) {
-        const openingBalance = latestOpeningBalances?.[source];
-        sourceBalances[source] = openingBalance ? Number(openingBalance.amount) : 0;
+        sourceBalances[source] = 0;
       }
-      const amount = Number(entry.amount);
-      sourceBalances[source] += entry.type === 'income' ? amount : -amount;
       map.set(entry.id, sourceBalances[source]);
+      const amount = Number(entry.amount);
+      sourceBalances[source] -= entry.type === 'income' ? amount : -amount;
     });
     return map;
-  }, [allEntries, allPaymentSources, latestOpeningBalances]);
+  }, [allEntries, balanceBySource]);
 
   // Shared date range for summary + balance history
   const summaryDateRange = useMemo(() => {
