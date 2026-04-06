@@ -18,10 +18,42 @@ const LARGE_DELETE_BATCH_SIZE = 200
 const FETCH_PAGE_SIZE = 1000
 const IN_CLAUSE_BATCH_SIZE = 200
 const ACTIVE_JOB_STALE_MINUTES = 10
+const INTERNAL_CONTINUATION_RETRIES = 3
+const INTERNAL_CONTINUATION_RETRY_DELAY_MS = 1500
+
+const FULL_DELETE_PHASES = [
+  'product_history',
+  'stock_and_einvoice',
+  'returns_and_exports',
+  'imports_and_transfers',
+  'products_and_cash_book',
+  'debts_and_customers',
+  'final_reports',
+] as const
+
+const KEEP_TEMPLATES_PHASES = [
+  'history_and_returns',
+  'exports',
+  'imports',
+  'products_reset',
+  'remaining_cleanup',
+] as const
 
 type DeleteMode = 'full' | 'keep_templates'
 type RestoreOption = 'delete' | 'restore'
 type ProgressReporter = (progress: number, step: string) => Promise<void>
+type DeletePhase =
+  | (typeof FULL_DELETE_PHASES)[number]
+  | (typeof KEEP_TEMPLATES_PHASES)[number]
+  | 'restore'
+  | 'finalize'
+  | 'done'
+
+type DeleteJobMetadata = {
+  restore_option?: RestoreOption
+  requested_action?: string
+  delete_phase?: DeletePhase
+}
 
 type BackgroundJobParams = {
   jobId: string
@@ -61,6 +93,90 @@ function normalizeDeleteMode(value: unknown): DeleteMode {
 
 function normalizeRestoreOption(value: unknown): RestoreOption {
   return value === 'restore' ? 'restore' : 'delete'
+}
+
+function normalizeJobMetadata(value: unknown): DeleteJobMetadata {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {}
+  }
+
+  const metadata = value as Record<string, unknown>
+
+  return {
+    restore_option: normalizeRestoreOption(metadata.restore_option),
+    requested_action: typeof metadata.requested_action === 'string' ? metadata.requested_action : undefined,
+    delete_phase: typeof metadata.delete_phase === 'string' ? (metadata.delete_phase as DeletePhase) : undefined,
+  }
+}
+
+function getPhaseSequence(deleteMode: DeleteMode) {
+  return deleteMode === 'keep_templates' ? KEEP_TEMPLATES_PHASES : FULL_DELETE_PHASES
+}
+
+function getInitialDeletePhase(deleteMode: DeleteMode): DeletePhase {
+  return getPhaseSequence(deleteMode)[0]
+}
+
+function getNextDeletePhase(deleteMode: DeleteMode, currentPhase: DeletePhase): DeletePhase | null {
+  const phases = getPhaseSequence(deleteMode)
+  const currentIndex = phases.indexOf(currentPhase as any)
+
+  if (currentIndex === -1) return null
+  return phases[currentIndex + 1] ?? null
+}
+
+async function delay(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function triggerJobContinuation(supabaseUrl: string, serviceKey: string, jobId: string) {
+  let lastError: string | null = null
+
+  for (let attempt = 1; attempt <= INTERNAL_CONTINUATION_RETRIES; attempt += 1) {
+    try {
+      const response = await fetch(`${supabaseUrl}/functions/v1/tenant-data-management`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${serviceKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'continue_job',
+          jobId,
+        }),
+      })
+
+      const payload = await response.json().catch(() => null)
+
+      if (response.ok && !payload?.error) {
+        return
+      }
+
+      lastError = payload?.error || `HTTP ${response.status}`
+    } catch (error) {
+      lastError = toErrorMessage(error)
+    }
+
+    if (attempt < INTERNAL_CONTINUATION_RETRIES) {
+      await delay(INTERNAL_CONTINUATION_RETRY_DELAY_MS * attempt)
+    }
+  }
+
+  throw new Error(lastError || 'Không thể tiếp tục tác vụ xoá dữ liệu')
+}
+
+function scheduleJobContinuation(supabaseUrl: string, serviceKey: string, jobId: string) {
+  const continuationTask = triggerJobContinuation(supabaseUrl, serviceKey, jobId)
+  const edgeRuntime = (globalThis as any).EdgeRuntime
+
+  if (edgeRuntime?.waitUntil) {
+    edgeRuntime.waitUntil(continuationTask)
+    return
+  }
+
+  continuationTask.catch((error: unknown) => {
+    console.error('[tenant-data-management] scheduleJobContinuation failed:', error)
+  })
 }
 
 function isMissingTableError(error: any) {
@@ -477,18 +593,366 @@ async function restoreDataFromBackup(supabaseAdmin: any, tenantId: string, repor
   }
 }
 
+async function finalizeDataManagementJob(
+  supabaseAdmin: any,
+  params: BackgroundJobParams,
+  reportProgress?: ProgressReporter,
+) {
+  await reportProgress?.(94, 'Đang dọn dẹp dữ liệu backup')
+  await clearBackupTables(supabaseAdmin, params.tenantId)
+
+  await reportProgress?.(97, 'Đang cập nhật trạng thái cửa hàng')
+  await assertMutation(
+    'Cập nhật trạng thái cửa hàng',
+    supabaseAdmin
+      .from('tenants')
+      .update({ is_data_hidden: false, has_data_backup: false })
+      .eq('id', params.tenantId),
+  )
+
+  await reportProgress?.(99, 'Đang ghi nhật ký thao tác')
+  await assertOptionalMutation(
+    'Ghi nhật ký thao tác',
+    supabaseAdmin.from('audit_logs').insert({
+      tenant_id: params.tenantId,
+      user_id: params.requestedBy,
+      action_type: params.deleteMode === 'keep_templates' ? 'DELETE_KEEP_TEMPLATES_JOB_COMPLETED' : 'DELETE_ALL_DATA_JOB_COMPLETED',
+      table_name: 'data_management_jobs',
+      description:
+        params.deleteMode === 'keep_templates'
+          ? `Job ${params.jobId} đã hoàn tất: xoá lịch sử, giữ sản phẩm mẫu`
+          : `Job ${params.jobId} đã hoàn tất: xoá toàn bộ dữ liệu`,
+    }),
+  )
+}
+
+async function runFullDeletePhase(
+  supabaseAdmin: any,
+  tenantId: string,
+  phase: DeletePhase,
+  reportProgress?: ProgressReporter,
+) {
+  switch (phase) {
+    case 'product_history': {
+      await reportProgress?.(8, 'Đang tải danh sách dữ liệu cần xoá')
+      const productIds = await fetchIdsByTenant(supabaseAdmin, 'products', tenantId)
+
+      await reportProgress?.(18, 'Đang xoá IMEI và lịch sử nhập sản phẩm')
+      if (productIds.length > 0) {
+        await deleteByIdsInBatches(supabaseAdmin, 'imei_histories', 'product_id', productIds, 'Xoá lịch sử IMEI')
+        await deleteByIdsInBatches(supabaseAdmin, 'product_imports', 'product_id', productIds, 'Xoá lịch sử nhập sản phẩm')
+      }
+      return
+    }
+
+    case 'stock_and_einvoice': {
+      const [productIds, stockCountIds, einvoiceIds] = await Promise.all([
+        fetchIdsByTenant(supabaseAdmin, 'products', tenantId),
+        fetchIdsByTenant(supabaseAdmin, 'stock_counts', tenantId),
+        fetchIdsByTenant(supabaseAdmin, 'einvoices', tenantId),
+      ])
+
+      await reportProgress?.(28, 'Đang xoá kiểm kho và hoá đơn điện tử')
+      await cleanupStockCountData(supabaseAdmin, tenantId, productIds, stockCountIds)
+
+      if (einvoiceIds.length > 0) {
+        await deleteByIdsInBatches(supabaseAdmin, 'einvoice_items', 'einvoice_id', einvoiceIds, 'Xoá chi tiết hoá đơn điện tử', true)
+      }
+      await assertOptionalMutation('Xoá log hoá đơn điện tử', supabaseAdmin.from('einvoice_logs').delete().eq('tenant_id', tenantId))
+      await assertOptionalMutation('Xoá hoá đơn điện tử', supabaseAdmin.from('einvoices').delete().eq('tenant_id', tenantId))
+      return
+    }
+
+    case 'returns_and_exports': {
+      const exportReceiptIds = await fetchIdsByTenant(supabaseAdmin, 'export_receipts', tenantId)
+
+      await reportProgress?.(38, 'Đang xoá trả hàng và phiếu xuất')
+      await assertMutation('Xoá phiếu trả hàng bán', supabaseAdmin.from('export_returns').delete().eq('tenant_id', tenantId))
+      await assertMutation('Xoá phiếu trả hàng nhập', supabaseAdmin.from('import_returns').delete().eq('tenant_id', tenantId))
+      await assertOptionalMutation('Xoá thanh toán trả hàng', supabaseAdmin.from('return_payments').delete().eq('tenant_id', tenantId))
+
+      if (exportReceiptIds.length > 0) {
+        await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'receipt_id', exportReceiptIds, 'Xoá chi tiết phiếu xuất')
+        await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_payments', 'receipt_id', exportReceiptIds, 'Xoá thanh toán phiếu xuất')
+      }
+      await assertMutation('Xoá phiếu xuất', supabaseAdmin.from('export_receipts').delete().eq('tenant_id', tenantId))
+      return
+    }
+
+    case 'imports_and_transfers': {
+      const [productIds, supplierIds, importReceiptIds, stockTransferIds] = await Promise.all([
+        fetchIdsByTenant(supabaseAdmin, 'products', tenantId),
+        fetchIdsByTenant(supabaseAdmin, 'suppliers', tenantId),
+        fetchIdsByTenant(supabaseAdmin, 'import_receipts', tenantId),
+        fetchIdsByTenant(supabaseAdmin, 'stock_transfer_requests', tenantId),
+      ])
+
+      await reportProgress?.(50, 'Đang xoá phiếu nhập và điều chuyển kho')
+      if (importReceiptIds.length > 0) {
+        await deleteByIdsInBatches(supabaseAdmin, 'receipt_payments', 'receipt_id', importReceiptIds, 'Xoá thanh toán phiếu nhập', true)
+        await deleteByIdsInBatches(supabaseAdmin, 'import_receipt_payments', 'receipt_id', importReceiptIds, 'Xoá thanh toán phiếu nhập cũ', true)
+      }
+      await assertMutation('Xoá phiếu nhập', supabaseAdmin.from('import_receipts').delete().eq('tenant_id', tenantId))
+
+      if (stockTransferIds.length > 0) {
+        await deleteByIdsInBatches(supabaseAdmin, 'stock_transfer_items', 'transfer_request_id', stockTransferIds, 'Xoá chi tiết chuyển kho')
+      }
+      if (productIds.length > 0) {
+        await deleteByIdsInBatches(supabaseAdmin, 'stock_transfer_items', 'product_id', productIds, 'Xoá liên kết chuyển kho theo sản phẩm', true)
+      }
+      if (supplierIds.length > 0) {
+        await deleteByIdsInBatches(supabaseAdmin, 'stock_transfer_items', 'supplier_id', supplierIds, 'Xoá liên kết chuyển kho theo nhà cung cấp', true)
+      }
+      await assertOptionalMutation('Xoá phiếu chuyển kho', supabaseAdmin.from('stock_transfer_requests').delete().eq('tenant_id', tenantId))
+      return
+    }
+
+    case 'products_and_cash_book': {
+      const productIds = await fetchIdsByTenant(supabaseAdmin, 'products', tenantId)
+
+      await reportProgress?.(62, 'Đang xoá sản phẩm và sổ quỹ')
+
+      try {
+        await cleanupDirectProductReferences(supabaseAdmin, productIds)
+      } catch (error) {
+        console.warn('[tenant-data-management] cleanupDirectProductReferences skipped:', toErrorMessage(error))
+      }
+
+      try {
+        await cleanupStockCountData(supabaseAdmin, tenantId, productIds, [])
+      } catch (error) {
+        console.warn('[tenant-data-management] cleanupStockCountData skipped:', toErrorMessage(error))
+      }
+
+      try {
+        await assertOptionalMutation('Xoá phiếu xuất còn sót', supabaseAdmin.from('export_receipts').delete().eq('tenant_id', tenantId))
+      } catch (error) {
+        console.warn('[tenant-data-management] export_receipts cleanup skipped:', toErrorMessage(error))
+      }
+
+      try {
+        await assertOptionalMutation('Xoá phiếu nhập còn sót', supabaseAdmin.from('import_receipts').delete().eq('tenant_id', tenantId))
+      } catch (error) {
+        console.warn('[tenant-data-management] import_receipts cleanup skipped:', toErrorMessage(error))
+      }
+
+      await deleteByIdsBestEffort(supabaseAdmin, 'products', 'id', productIds, 'Xoá sản phẩm', LARGE_DELETE_BATCH_SIZE)
+      await assertOptionalMutation('Xoá nhóm sản phẩm', supabaseAdmin.from('product_groups').delete().eq('tenant_id', tenantId))
+
+      const cashBookIds = await fetchIdsByTenant(supabaseAdmin, 'cash_book', tenantId)
+      await deleteByIdsBestEffort(supabaseAdmin, 'cash_book', 'id', cashBookIds, 'Xoá sổ quỹ', LARGE_DELETE_BATCH_SIZE)
+      await assertOptionalMutation('Xoá số dư đầu kỳ', supabaseAdmin.from('cash_book_opening_balances').delete().eq('tenant_id', tenantId))
+      return
+    }
+
+    case 'debts_and_customers': {
+      const customerIds = await fetchIdsByTenant(supabaseAdmin, 'customers', tenantId)
+
+      await reportProgress?.(74, 'Đang xoá công nợ và dữ liệu khách hàng')
+      const debtPaymentIds = await fetchIdsByTenant(supabaseAdmin, 'debt_payments', tenantId)
+      await deleteByIdsBestEffort(supabaseAdmin, 'debt_payments', 'id', debtPaymentIds, 'Xoá thanh toán công nợ', LARGE_DELETE_BATCH_SIZE)
+      await assertOptionalMutation('Xoá bù trừ công nợ', supabaseAdmin.from('debt_offsets').delete().eq('tenant_id', tenantId))
+      await assertOptionalMutation('Xoá gán nhãn công nợ', supabaseAdmin.from('debt_tag_assignments').delete().eq('tenant_id', tenantId))
+      await assertOptionalMutation('Xoá nhãn công nợ', supabaseAdmin.from('debt_tags').delete().eq('tenant_id', tenantId))
+
+      if (customerIds.length > 0) {
+        await deleteByIdsInBatches(supabaseAdmin, 'customer_tag_assignments', 'customer_id', customerIds, 'Xoá gán tag khách hàng', true)
+        await deleteByIdsInBatches(supabaseAdmin, 'customer_contact_channels', 'customer_id', customerIds, 'Xoá kênh liên hệ khách hàng', true)
+        await deleteByIdsInBatches(supabaseAdmin, 'point_transactions', 'customer_id', customerIds, 'Xoá lịch sử điểm', true)
+        await deleteByIdsInBatches(supabaseAdmin, 'email_automation_logs', 'customer_id', customerIds, 'Xoá log email khách hàng', true)
+
+        await assertOptionalMutation(
+          'Gỡ liên kết khách hàng chéo tenant ở phiếu xuất',
+          supabaseAdmin
+            .from('export_receipts')
+            .update({ customer_id: null })
+            .neq('tenant_id', tenantId)
+            .in('customer_id', customerIds),
+        )
+        await assertOptionalMutation(
+          'Gỡ liên kết khách hàng chéo tenant ở phiếu trả hàng',
+          supabaseAdmin
+            .from('export_returns')
+            .update({ customer_id: null })
+            .neq('tenant_id', tenantId)
+            .in('customer_id', customerIds),
+        )
+        await assertOptionalMutation(
+          'Gỡ liên kết khách hàng chéo tenant ở lịch sử IMEI',
+          supabaseAdmin
+            .from('imei_histories')
+            .update({ customer_id: null })
+            .in('customer_id', customerIds),
+        )
+        await assertOptionalMutation(
+          'Gỡ liên kết khách hàng ở log email tự động',
+          supabaseAdmin
+            .from('email_automation_logs')
+            .update({ customer_id: null })
+            .in('customer_id', customerIds),
+        )
+      }
+
+      await assertOptionalMutation('Xoá log chăm sóc khách hàng', supabaseAdmin.from('customer_care_logs').delete().eq('tenant_id', tenantId))
+      await assertOptionalMutation('Xoá nhắc lịch chăm sóc', supabaseAdmin.from('care_reminders').delete().eq('tenant_id', tenantId))
+      await assertOptionalMutation('Xoá lịch chăm sóc', supabaseAdmin.from('customer_care_schedules').delete().eq('tenant_id', tenantId))
+      await assertOptionalMutation('Xoá voucher khách hàng', supabaseAdmin.from('customer_vouchers').delete().eq('tenant_id', tenantId))
+      await assertOptionalMutation('Xoá tag khách hàng', supabaseAdmin.from('customer_tags').delete().eq('tenant_id', tenantId))
+      await assertOptionalMutation('Xoá nguồn khách hàng', supabaseAdmin.from('customer_sources').delete().eq('tenant_id', tenantId))
+      await assertOptionalMutation('Xoá thông báo CRM', supabaseAdmin.from('crm_notifications').delete().eq('tenant_id', tenantId))
+      await deleteByIdsBestEffort(supabaseAdmin, 'customers', 'id', customerIds, 'Xoá khách hàng', LARGE_DELETE_BATCH_SIZE)
+      return
+    }
+
+    case 'final_reports': {
+      const landingOrderIds = await fetchIdsByTenant(supabaseAdmin, 'landing_orders', tenantId)
+
+      await reportProgress?.(84, 'Đang xoá nhà cung cấp, danh mục và báo cáo')
+      await assertOptionalMutation('Xoá nhà cung cấp', supabaseAdmin.from('suppliers').delete().eq('tenant_id', tenantId))
+      await assertOptionalMutation('Xoá danh mục', supabaseAdmin.from('categories').delete().eq('tenant_id', tenantId))
+      await assertOptionalMutation('Xoá thống kê ngày', supabaseAdmin.from('daily_stats').delete().eq('tenant_id', tenantId))
+      await assertOptionalMutation('Xoá snapshot giá trị kho', supabaseAdmin.from('warehouse_value_snapshots').delete().eq('tenant_id', tenantId))
+      await assertOptionalMutation('Xoá snapshot hiệu suất nhân viên', supabaseAdmin.from('staff_performance_snapshots').delete().eq('tenant_id', tenantId))
+      await assertOptionalMutation('Xoá đánh giá nhân viên', supabaseAdmin.from('staff_reviews').delete().eq('tenant_id', tenantId))
+      await assertOptionalMutation('Xoá mẫu voucher', supabaseAdmin.from('voucher_templates').delete().eq('tenant_id', tenantId))
+
+      if (landingOrderIds.length > 0) {
+        await deleteByIdsInBatches(supabaseAdmin, 'shop_ctv_orders', 'landing_order_id', landingOrderIds, 'Xoá đơn cộng tác viên', true)
+      }
+      await assertOptionalMutation('Xoá log email đơn landing', supabaseAdmin.from('landing_order_email_logs').delete().eq('tenant_id', tenantId))
+      await assertOptionalMutation('Xoá đơn landing', supabaseAdmin.from('landing_orders').delete().eq('tenant_id', tenantId))
+
+      await reportProgress?.(90, 'Đang xoá nhật ký hệ thống')
+      const auditLogIds = await fetchIdsByTenant(supabaseAdmin, 'audit_logs', tenantId)
+      await deleteByIdsBestEffort(supabaseAdmin, 'audit_logs', 'id', auditLogIds, 'Xoá nhật ký hệ thống', LARGE_DELETE_BATCH_SIZE)
+      return
+    }
+  }
+}
+
+async function runKeepTemplatesPhase(
+  supabaseAdmin: any,
+  tenantId: string,
+  phase: DeletePhase,
+  reportProgress?: ProgressReporter,
+) {
+  switch (phase) {
+    case 'history_and_returns': {
+      await reportProgress?.(10, 'Đang tải danh sách dữ liệu cần làm sạch')
+      const productIds = await fetchIdsByTenant(supabaseAdmin, 'products', tenantId)
+
+      await reportProgress?.(22, 'Đang xoá lịch sử IMEI và trả hàng')
+      if (productIds.length > 0) {
+        await deleteByIdsInBatches(supabaseAdmin, 'imei_histories', 'product_id', productIds, 'Xoá lịch sử IMEI')
+        await deleteByIdsInBatches(supabaseAdmin, 'product_imports', 'product_id', productIds, 'Xoá lịch sử nhập sản phẩm', true)
+      }
+      await assertMutation('Xoá phiếu trả hàng bán', supabaseAdmin.from('export_returns').delete().eq('tenant_id', tenantId))
+      await assertMutation('Xoá phiếu trả hàng nhập', supabaseAdmin.from('import_returns').delete().eq('tenant_id', tenantId))
+      return
+    }
+
+    case 'exports': {
+      const exportReceiptIds = await fetchIdsByTenant(supabaseAdmin, 'export_receipts', tenantId)
+
+      await reportProgress?.(36, 'Đang xoá phiếu xuất và thanh toán')
+      if (exportReceiptIds.length > 0) {
+        await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'receipt_id', exportReceiptIds, 'Xoá chi tiết phiếu xuất')
+        await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_payments', 'receipt_id', exportReceiptIds, 'Xoá thanh toán phiếu xuất')
+      }
+      await assertMutation('Xoá phiếu xuất', supabaseAdmin.from('export_receipts').delete().eq('tenant_id', tenantId))
+      return
+    }
+
+    case 'imports': {
+      const importReceiptIds = await fetchIdsByTenant(supabaseAdmin, 'import_receipts', tenantId)
+
+      await reportProgress?.(50, 'Đang xoá phiếu nhập và thanh toán')
+      if (importReceiptIds.length > 0) {
+        await deleteByIdsInBatches(supabaseAdmin, 'receipt_payments', 'receipt_id', importReceiptIds, 'Xoá thanh toán phiếu nhập', true)
+        await deleteByIdsInBatches(supabaseAdmin, 'import_receipt_payments', 'receipt_id', importReceiptIds, 'Xoá thanh toán phiếu nhập cũ', true)
+      }
+      await assertMutation('Xoá phiếu nhập', supabaseAdmin.from('import_receipts').delete().eq('tenant_id', tenantId))
+      return
+    }
+
+    case 'products_reset': {
+      const [allProductIds, stockCountIds] = await Promise.all([
+        fetchIdsByTenant(supabaseAdmin, 'products', tenantId),
+        fetchIdsByTenant(supabaseAdmin, 'stock_counts', tenantId),
+      ])
+
+      await reportProgress?.(64, 'Đang dọn kiểm kho và reset sản phẩm mẫu')
+      await cleanupStockCountData(supabaseAdmin, tenantId, allProductIds, stockCountIds)
+      await cleanupDirectProductReferences(supabaseAdmin, allProductIds)
+
+      await assertMutation(
+        'Xoá sản phẩm IMEI',
+        supabaseAdmin.from('products').delete().eq('tenant_id', tenantId).not('imei', 'is', null),
+      )
+      await assertMutation(
+        'Reset số lượng sản phẩm mẫu',
+        supabaseAdmin
+          .from('products')
+          .update({ quantity: 0, status: 'in_stock' })
+          .eq('tenant_id', tenantId),
+      )
+      return
+    }
+
+    case 'remaining_cleanup': {
+      await reportProgress?.(76, 'Đang xoá sổ quỹ, công nợ và dữ liệu còn lại')
+      await assertMutation('Xoá sổ quỹ', supabaseAdmin.from('cash_book').delete().eq('tenant_id', tenantId))
+      await assertMutation('Xoá thanh toán công nợ', supabaseAdmin.from('debt_payments').delete().eq('tenant_id', tenantId))
+
+      await reportProgress?.(86, 'Đang reset dữ liệu khách hàng và nhật ký')
+      await assertMutation('Xoá nhật ký hệ thống', supabaseAdmin.from('audit_logs').delete().eq('tenant_id', tenantId))
+      await assertMutation(
+        'Reset thông tin khách hàng',
+        supabaseAdmin
+          .from('customers')
+          .update({
+            total_spent: 0,
+            current_points: 0,
+            pending_points: 0,
+            total_points_earned: 0,
+            total_points_used: 0,
+            last_purchase_date: null,
+          })
+          .eq('tenant_id', tenantId),
+      )
+      return
+    }
+  }
+}
+
 async function processDataManagementJob(params: BackgroundJobParams) {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const supabaseAdmin = createAdminClient(supabaseUrl, serviceKey)
   const startedAt = new Date().toISOString()
+  const { data: jobSnapshot, error: jobSnapshotError } = await supabaseAdmin
+    .from('data_management_jobs')
+    .select('status, metadata, started_at')
+    .eq('id', params.jobId)
+    .single()
+
+  if (jobSnapshotError) {
+    throw new Error(`Không thể tải trạng thái tác vụ xoá dữ liệu: ${jobSnapshotError.message}`)
+  }
+
+  if (!jobSnapshot || (jobSnapshot.status !== 'queued' && jobSnapshot.status !== 'processing')) {
+    return
+  }
+
+  const jobMetadata = normalizeJobMetadata(jobSnapshot.metadata)
+  const effectiveStartedAt = jobSnapshot.started_at || startedAt
 
   const reportProgress: ProgressReporter = async (progress, step) => {
     await updateJob(supabaseAdmin, params.jobId, {
       status: 'processing',
       progress,
       current_step: step,
-      started_at: startedAt,
+      started_at: effectiveStartedAt,
       error_message: null,
     })
   }
@@ -498,61 +962,68 @@ async function processDataManagementJob(params: BackgroundJobParams) {
       status: 'processing',
       progress: 3,
       current_step: 'Đang chuẩn bị xoá dữ liệu',
-      started_at: startedAt,
+      started_at: effectiveStartedAt,
       error_message: null,
     })
+
+    const currentPhase = jobMetadata.delete_phase || getInitialDeletePhase(params.deleteMode)
+
+    if (currentPhase === 'restore') {
+      if (params.restoreOption === 'restore') {
+        await restoreDataFromBackup(supabaseAdmin, params.tenantId, reportProgress)
+      }
+
+      await updateJob(supabaseAdmin, params.jobId, {
+        metadata: {
+          ...jobMetadata,
+          delete_phase: 'finalize',
+        },
+      })
+
+      scheduleJobContinuation(supabaseUrl, serviceKey, params.jobId)
+      return
+    }
+
+    if (currentPhase === 'finalize') {
+      await finalizeDataManagementJob(supabaseAdmin, params, reportProgress)
+
+      await updateJob(supabaseAdmin, params.jobId, {
+        status: 'completed',
+        progress: 100,
+        current_step: 'Hoàn tất',
+        completed_at: new Date().toISOString(),
+        error_message: null,
+        metadata: {
+          ...jobMetadata,
+          delete_phase: 'done',
+        },
+      })
+
+      await sendDataManagementEmail({
+        jobId: params.jobId,
+        toEmail: params.requestedByEmail,
+        deleteMode: params.deleteMode,
+        status: 'completed',
+      })
+      return
+    }
 
     if (params.deleteMode === 'keep_templates') {
-      await deleteKeepTemplates(supabaseAdmin, params.tenantId, reportProgress)
+      await runKeepTemplatesPhase(supabaseAdmin, params.tenantId, currentPhase, reportProgress)
     } else {
-      await deleteAllWarehouseData(supabaseAdmin, params.tenantId, reportProgress)
+      await runFullDeletePhase(supabaseAdmin, params.tenantId, currentPhase, reportProgress)
     }
 
-    if (params.restoreOption === 'restore') {
-      await restoreDataFromBackup(supabaseAdmin, params.tenantId, reportProgress)
-    }
-
-    await reportProgress(94, 'Đang dọn dẹp dữ liệu backup')
-    await clearBackupTables(supabaseAdmin, params.tenantId)
-
-    await reportProgress(97, 'Đang cập nhật trạng thái cửa hàng')
-    await assertMutation(
-      'Cập nhật trạng thái cửa hàng',
-      supabaseAdmin
-        .from('tenants')
-        .update({ is_data_hidden: false, has_data_backup: false })
-        .eq('id', params.tenantId),
-    )
-
-    await reportProgress(99, 'Đang ghi nhật ký thao tác')
-    await assertOptionalMutation(
-      'Ghi nhật ký thao tác',
-      supabaseAdmin.from('audit_logs').insert({
-        tenant_id: params.tenantId,
-        user_id: params.requestedBy,
-        action_type: params.deleteMode === 'keep_templates' ? 'DELETE_KEEP_TEMPLATES_JOB_COMPLETED' : 'DELETE_ALL_DATA_JOB_COMPLETED',
-        table_name: 'data_management_jobs',
-        description:
-          params.deleteMode === 'keep_templates'
-            ? `Job ${params.jobId} đã hoàn tất: xoá lịch sử, giữ sản phẩm mẫu`
-            : `Job ${params.jobId} đã hoàn tất: xoá toàn bộ dữ liệu`,
-      }),
-    )
+    const nextPhase = getNextDeletePhase(params.deleteMode, currentPhase)
 
     await updateJob(supabaseAdmin, params.jobId, {
-      status: 'completed',
-      progress: 100,
-      current_step: 'Hoàn tất',
-      completed_at: new Date().toISOString(),
-      error_message: null,
+      metadata: {
+        ...jobMetadata,
+        delete_phase: nextPhase ?? (params.restoreOption === 'restore' ? 'restore' : 'finalize'),
+      },
     })
 
-    await sendDataManagementEmail({
-      jobId: params.jobId,
-      toEmail: params.requestedByEmail,
-      deleteMode: params.deleteMode,
-      status: 'completed',
-    })
+    scheduleJobContinuation(supabaseUrl, serviceKey, params.jobId)
   } catch (error) {
     const errorMessage = toErrorMessage(error)
     console.error('[tenant-data-management] processDataManagementJob failed:', error)
@@ -587,12 +1058,58 @@ Deno.serve(async (req) => {
 
     const rlClient = createAdminClient(supabaseUrl, supabaseServiceKey)
 
+    const supabaseAdmin = createAdminClient(supabaseUrl, supabaseServiceKey)
+    const body = await req.json()
+    const { action, tenantId } = body
+
+    if (!action) {
+      return jsonResponse({ error: 'Thiếu action' })
+    }
+
     const authHeader = req.headers.get('Authorization')
+    const isInternalCall = authHeader === `Bearer ${supabaseServiceKey}`
+
+    if (action === 'continue_job') {
+      if (!isInternalCall) {
+        return jsonResponse({ error: 'Không có quyền truy cập' })
+      }
+
+      const jobId = String(body.jobId || '')
+      if (!jobId) {
+        return jsonResponse({ error: 'Thiếu jobId' })
+      }
+
+      const { data: internalJob, error: internalJobError } = await supabaseAdmin
+        .from('data_management_jobs')
+        .select('id, tenant_id, delete_mode, requested_by, requested_by_email, metadata, status')
+        .eq('id', jobId)
+        .single()
+
+      if (internalJobError) {
+        return jsonResponse({ error: 'Không thể tải tác vụ xoá dữ liệu: ' + internalJobError.message })
+      }
+
+      if (!internalJob || (internalJob.status !== 'queued' && internalJob.status !== 'processing')) {
+        return jsonResponse({ success: true, skipped: true })
+      }
+
+      const internalMetadata = normalizeJobMetadata(internalJob.metadata)
+      await processDataManagementJob({
+        jobId: internalJob.id,
+        tenantId: internalJob.tenant_id,
+        deleteMode: normalizeDeleteMode(internalJob.delete_mode),
+        restoreOption: normalizeRestoreOption(internalMetadata.restore_option),
+        requestedBy: internalJob.requested_by,
+        requestedByEmail: internalJob.requested_by_email,
+      })
+
+      return jsonResponse({ success: true, jobId })
+    }
+
     if (!authHeader) {
       return jsonResponse({ error: 'Không có quyền truy cập' })
     }
 
-    const supabaseAdmin = createAdminClient(supabaseUrl, supabaseServiceKey)
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     })
@@ -604,13 +1121,6 @@ Deno.serve(async (req) => {
 
     if (callerError || !caller) {
       return jsonResponse({ error: 'Không thể xác thực người dùng' })
-    }
-
-    const body = await req.json()
-    const { action, tenantId } = body
-
-    if (!action) {
-      return jsonResponse({ error: 'Thiếu action' })
     }
 
     const { data: userRole } = await supabaseAdmin
@@ -813,23 +1323,7 @@ Deno.serve(async (req) => {
           return jsonResponse({ error: 'Không thể tạo tác vụ xoá dữ liệu: ' + createJobError.message })
         }
 
-        const backgroundTask = processDataManagementJob({
-          jobId: createdJob.id,
-          tenantId: callerTenantId,
-          deleteMode,
-          restoreOption,
-          requestedBy: caller.id,
-          requestedByEmail: notifyEmail,
-        })
-
-        const edgeRuntime = (globalThis as any).EdgeRuntime
-        if (edgeRuntime?.waitUntil) {
-          edgeRuntime.waitUntil(backgroundTask)
-        } else {
-          backgroundTask.catch((error: unknown) => {
-            console.error('[tenant-data-management] background task failed:', error)
-          })
-        }
+        scheduleJobContinuation(supabaseUrl, supabaseServiceKey, createdJob.id)
 
         return jsonResponse({
           success: true,
