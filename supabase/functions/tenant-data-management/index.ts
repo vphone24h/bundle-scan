@@ -777,6 +777,7 @@ Deno.serve(async (req) => {
         const { data: createdJob, error: createJobError } = await supabaseAdmin
           .from('data_management_jobs')
           .insert({
+            job_type: 'delete_restore',
             tenant_id: callerTenantId,
             requested_by: caller.id,
             requested_by_email: notifyEmail,
