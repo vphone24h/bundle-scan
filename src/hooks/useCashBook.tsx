@@ -22,35 +22,13 @@ export function useCashBookBalances(branchId?: string, options?: { assignedBranc
     queryKey: ['cash-book-balances', 'branch-summed', tenant?.id, effectiveBranchId, assignedBranchesOnly],
     queryFn: async () => {
       if (assignedBranchesOnly) {
-        const { data: branchRows, error: branchesError } = await supabase
-          .from('branches')
-          .select('id')
-          .eq('tenant_id', tenant!.id);
-
-        if (branchesError) throw branchesError;
-
-        const validBranchIds = (branchRows || []).map((branch) => branch.id);
-        if (validBranchIds.length === 0) {
-          return {} as Record<string, { income: number; expense: number }>;
-        }
-
-        const { data, error } = await supabase
-          .from('cash_book')
-          .select('payment_source, type, amount, branch_id')
-          .eq('tenant_id', tenant!.id)
-          .in('branch_id', validBranchIds);
-
-        if (error) throw error;
-
-        const grouped: Record<string, { income: number; expense: number }> = {};
-        (data || []).forEach((row) => {
-          const source = row.payment_source;
-          if (!grouped[source]) grouped[source] = { income: 0, expense: 0 };
-          if (row.type === 'income') grouped[source].income += Number(row.amount);
-          else grouped[source].expense += Number(row.amount);
+        // Use server-side RPC to aggregate balances ONLY from valid branches
+        // This ensures Total = Sum of all branches (no orphan/null branch data)
+        const { data, error } = await supabase.rpc('get_cash_book_balances_by_branches' as any, {
+          p_tenant_id: tenant!.id,
         });
-
-        return grouped;
+        if (error) throw error;
+        return (data || {}) as Record<string, { income: number; expense: number }>;
       }
 
       const { data, error } = await supabase.rpc('get_cash_book_balances' as any, {
