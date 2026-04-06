@@ -399,7 +399,7 @@ export default function ImportNewPage() {
       const s = searchValue.trim();
       const { data, error } = await supabase.rpc('search_product_suggestions' as any, {
         p_search: s,
-        p_limit: 20,
+        p_limit: 50,
       });
 
       if (error) throw error;
