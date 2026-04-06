@@ -177,21 +177,18 @@ export function DataManagementSection() {
 
     clearPersistedQueryCache();
 
-    void Promise.all([
-      refetchTenant(),
-      queryClient.invalidateQueries({ refetchType: 'all' }),
-      queryClient.invalidateQueries({ queryKey: ['current-tenant-combined'], refetchType: 'all' }),
-    ]).finally(() => {
-      toast.success(
-        latestDeleteJob.delete_mode === 'keep_templates'
-          ? 'Đã xoá lịch sử ở nền và giữ lại sản phẩm mẫu.'
-          : 'Đã xoá toàn bộ dữ liệu ở nền thành công.',
-      );
+    // Remove all cached query data so stale products/inventory don't persist
+    queryClient.removeQueries();
 
-      setTimeout(() => {
-        window.location.reload();
-      }, 300);
-    });
+    toast.success(
+      latestDeleteJob.delete_mode === 'keep_templates'
+        ? 'Đã xoá lịch sử ở nền và giữ lại sản phẩm mẫu.'
+        : 'Đã xoá toàn bộ dữ liệu ở nền thành công.',
+    );
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
   }, [latestDeleteJob, queryClient, refetchTenant]);
 
   const clearPersistedQueryCache = () => {
