@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -20,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowRight, ArrowLeft, Crown } from 'lucide-react';
 import { UserRole } from '@/hooks/usePermissions';
 import { PermissionEditor } from './PermissionEditor';
 import { PermissionMap, getDefaultPermissionsForRole } from '@/config/permissionDefinitions';
@@ -106,7 +107,13 @@ export function CreateUserDialog({
       });
 
       if (response.error) throw new Error(response.error.message);
-      if (response.data?.error) throw new Error(response.data.error);
+      if (response.data?.error) {
+        const err = new Error(response.data.error) as any;
+        err.errorCode = response.data.errorCode;
+        err.maxUsers = response.data.maxUsers;
+        err.currentCount = response.data.currentCount;
+        throw err;
+      }
 
       // Save custom permissions
       const userId = response.data?.userId;
@@ -135,8 +142,16 @@ export function CreateUserDialog({
       onOpenChange(false);
       resetForm();
     },
-    onError: (error) => {
-      toast.error('Lỗi: ' + (error as Error).message);
+    onError: (error: any) => {
+      if (error.errorCode === 'MEMBER_LIMIT_REACHED') {
+        setMemberLimitError({
+          currentCount: error.currentCount || 0,
+          maxUsers: error.maxUsers || 0,
+          message: error.message,
+        });
+      } else {
+        toast.error('Lỗi: ' + error.message);
+      }
     },
   });
 
