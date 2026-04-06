@@ -655,26 +655,9 @@ export default function ImportNewPage() {
 
     if (!allSelected) return;
 
-    // Build the full variant product name
+    // Build the full variant product name and auto-fill SKU
     const fullName = buildVariantProductName(form.productName, newSelected);
-
-    try {
-      // Look up existing product with this exact name
-      const { data: existing } = await supabase
-        .from('products')
-        .select('sku')
-        .ilike('name', fullName)
-        .limit(1);
-
-      if (existing && existing.length > 0) {
-        const p = existing[0] as any;
-        if (p.sku) {
-          setForm(prev => ({ ...prev, sku: p.sku }));
-        }
-      }
-    } catch (err) {
-      console.error('Error auto-filling variant data:', err);
-    }
+    setForm(prev => ({ ...prev, sku: fullName }));
   }, [variantConfig, form.productName]);
 
   const [isCheckingIMEI, setIsCheckingIMEI] = useState(false);
