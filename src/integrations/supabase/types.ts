@@ -7623,6 +7623,10 @@ export type Database = {
         Args: { p_branch_id?: string; p_tenant_id: string }
         Returns: Json
       }
+      get_cash_book_balances_by_branches: {
+        Args: { p_tenant_id: string }
+        Returns: Json
+      }
       get_current_tenant: { Args: never; Returns: string }
       get_customer_debt_summary: {
         Args: { _branch_id?: string; _show_settled?: boolean }
