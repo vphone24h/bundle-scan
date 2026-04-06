@@ -418,7 +418,7 @@ export default function ImportNewPage() {
 
       if (error) throw error;
 
-      // RPC already groups variants by group_id - just map directly
+      // RPC already filters by importable statuses (in_stock, template) and tenant
       const results: ProductSuggestion[] = ((data as any[]) || [])
         .map((r: any) => ({
           name: r.product_name || '',
@@ -430,20 +430,7 @@ export default function ImportNewPage() {
           group_id: r.group_id || null,
           unit: 'cái',
           variantLevels: r.group_id ? buildVariantLevelsFromProducts([], productGroupById.get(r.group_id) || null) : [],
-        }))
-        .filter((item) => {
-          const normalizedName = normalizeSuggestionText(item.name);
-          const normalizedSku = normalizeSuggestionText(item.sku || '');
-
-          if (item.group_id) {
-            return importableGroupIds.has(item.group_id) || importableSuggestionKeys.has(normalizedName);
-          }
-
-          return (
-            importableSuggestionKeys.has(normalizedName)
-            || (!!normalizedSku && importableSuggestionKeys.has(`${normalizedName}::${normalizedSku}`))
-          );
-        });
+        }));
 
       setSuggestions(results);
     } catch (err) {
@@ -452,7 +439,7 @@ export default function ImportNewPage() {
     } finally {
       setIsSearching(false);
     }
-  }, [importableGroupIds, importableSuggestionKeys, localProductSuggestions, productGroupById]);
+  }, [localProductSuggestions, productGroupById]);
 
   // Auto-fill from template product navigation
   useEffect(() => {
