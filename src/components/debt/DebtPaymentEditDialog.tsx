@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatNumber, parseFormattedNumber, formatInputNumber } from '@/lib/formatNumber';
 import { Loader2, ShieldAlert } from 'lucide-react';
+import { format } from 'date-fns';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 import { createSafeDialogOpenChange, forceReleaseStuckInteraction, preventDialogAutoFocus } from '@/lib/dialogInteraction';
@@ -23,6 +24,7 @@ interface DebtPaymentEditDialogProps {
     payment_type: 'addition' | 'payment';
     entity_type: 'customer' | 'supplier';
     entity_id: string;
+    created_at?: string;
   } | null;
   entityName: string;
   branchId?: string | null;
@@ -42,12 +44,19 @@ export function DebtPaymentEditDialog({
   const [newAmount, setNewAmount] = useState('');
   const [reason, setReason] = useState('');
   const [saving, setSaving] = useState(false);
+  const [newDate, setNewDate] = useState('');
   const handleDialogOpenChange = createSafeDialogOpenChange(onOpenChange);
 
   useEffect(() => {
     if (open && payment) {
       setNewAmount(formatInputNumber(String(payment.amount)));
       setReason('');
+      if (payment.created_at) {
+        const d = new Date(payment.created_at);
+        setNewDate(format(d, "yyyy-MM-dd'T'HH:mm"));
+      } else {
+        setNewDate('');
+      }
     }
   }, [open, payment]);
 
@@ -74,8 +83,9 @@ export function DebtPaymentEditDialog({
       toast.error('Vui lòng nhập lý do chỉnh sửa');
       return;
     }
-    if (numAmount === payment.amount) {
-      toast.info('Số tiền không thay đổi');
+    const dateChanged = newDate && payment.created_at && format(new Date(payment.created_at), "yyyy-MM-dd'T'HH:mm") !== newDate;
+    if (numAmount === payment.amount && !dateChanged) {
+      toast.info('Không có thay đổi');
       return;
     }
 
@@ -86,10 +96,14 @@ export function DebtPaymentEditDialog({
 
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Update the payment amount
+      // Update the payment amount and date
+      const updateData: any = { amount: numAmount };
+      if (dateChanged && newDate) {
+        updateData.created_at = new Date(newDate).toISOString();
+      }
       const { error } = await supabase
         .from('debt_payments')
-        .update({ amount: numAmount })
+        .update(updateData)
         .eq('id', payment.id);
 
       if (error) throw error;
@@ -102,9 +116,10 @@ export function DebtPaymentEditDialog({
         .eq('entity_id', payment.entity_id)
         .order('created_at', { ascending: true });
 
-      if (allPayments && allPayments.length > 0) {
+      if (numAmount !== payment.amount && allPayments && allPayments.length > 0) {
         let foundEdited = false;
-        const balanceAdjustment = payment.payment_type === 'addition' ? diff : -diff;
+        const diff2 = numAmount - payment.amount;
+        const balanceAdjustment = payment.payment_type === 'addition' ? diff2 : -diff2;
 
         for (const p of allPayments) {
           if (p.id === payment.id) {
@@ -126,18 +141,28 @@ export function DebtPaymentEditDialog({
         table_name: 'debt_payments',
         record_id: payment.id,
         branch_id: branchId,
-        description: `Sửa số tiền ${payment.payment_type === 'addition' ? 'phiếu thêm nợ' : 'phiếu thu nợ'}: ${entityName} | ${formatNumber(oldAmount)}đ → ${formatNumber(numAmount)}đ | Lý do: ${reason.trim()}`,
-        old_data: { amount: oldAmount },
-        new_data: { amount: numAmount, reason: reason.trim() },
+        description: `Sửa ${payment.payment_type === 'addition' ? 'phiếu thêm nợ' : 'phiếu thu nợ'}: ${entityName} | ${formatNumber(oldAmount)}đ → ${formatNumber(numAmount)}đ${dateChanged ? ' | Đổi ngày' : ''} | Lý do: ${reason.trim()}`,
+        old_data: { amount: oldAmount, created_at: payment.created_at },
+        new_data: { amount: numAmount, reason: reason.trim(), ...(dateChanged ? { created_at: new Date(newDate).toISOString() } : {}) },
       }]);
+
+      // Also update cash_book entry if date changed and it's a payment
+      if (dateChanged && payment.payment_type === 'payment') {
+        await supabase.from('cash_book')
+          .update({ transaction_date: new Date(newDate).toISOString() })
+          .eq('reference_id', payment.id)
+          .eq('reference_type', 'debt_payment');
+      }
 
       queryClient.invalidateQueries({ queryKey: ['debt'] });
       queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
       queryClient.invalidateQueries({ queryKey: ['debt-payment-history'] });
       queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
       queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] });
 
-      toast.success(`Đã sửa: ${formatNumber(oldAmount)}đ → ${formatNumber(numAmount)}đ`);
+      toast.success(dateChanged ? 'Đã sửa phiếu' : `Đã sửa: ${formatNumber(oldAmount)}đ → ${formatNumber(numAmount)}đ`);
       onOpenChange(false);
     } catch (err) {
       console.error('Edit payment error:', err);
@@ -172,6 +197,20 @@ export function DebtPaymentEditDialog({
               <Label className="text-xs text-muted-foreground">Số tiền hiện tại</Label>
               <p className="font-semibold text-destructive">{formatNumber(payment.amount)}đ</p>
             </div>
+
+            {/* Date/time */}
+            {payment.created_at && (
+              <div>
+                <Label htmlFor="editPaymentDate">Ngày / Giờ giao dịch</Label>
+                <Input
+                  id="editPaymentDate"
+                  type="datetime-local"
+                  value={newDate}
+                  onChange={(e) => setNewDate(e.target.value)}
+                  className="block mt-1"
+                />
+              </div>
+            )}
 
             <div>
               <Label htmlFor="editPaymentAmount">Số tiền mới <span className="text-destructive">*</span></Label>
