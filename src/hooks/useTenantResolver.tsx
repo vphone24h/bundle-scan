@@ -4,11 +4,13 @@ import {
   detectTenantFromHostname, 
   getStoreIdFromSubdomain 
 } from '@/lib/tenantResolver';
+import { getCurrentCompanyId } from '@/hooks/useCompanyResolver';
 
 export interface ResolvedTenant {
   tenantId: string | null;
   subdomain: string | null;
   tenantName: string | null;
+  companyId: string | null;
   status: 'loading' | 'resolved' | 'not_found' | 'main_domain';
   isMainDomain: boolean;
 }
@@ -71,6 +73,7 @@ function readPersistedTenant(hostname: string): ResolvedTenant | null {
       tenantId: parsed.tenantId,
       subdomain: parsed.subdomain ?? null,
       tenantName: parsed.tenantName ?? null,
+      companyId: getCurrentCompanyId(),
       status: 'resolved',
       isMainDomain: false,
     };
@@ -122,6 +125,7 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
         tenantId: null,
         subdomain: hostInfo.subdomain,
         tenantName: null,
+        companyId: getCurrentCompanyId(),
         status: 'main_domain',
         isMainDomain: true,
       };
@@ -140,6 +144,7 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
           tenantId,
           subdomain: tenant?.subdomain || prefetch.storeId || null,
           tenantName: tenant?.name || null,
+          companyId: getCurrentCompanyId(),
           status: 'resolved',
           isMainDomain: false,
         };
@@ -163,6 +168,7 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
             tenantId: tenant.id,
             subdomain: tenant.subdomain,
             tenantName: tenant.name,
+            companyId: getCurrentCompanyId(),
             status: 'resolved',
             isMainDomain: false,
           };
@@ -184,6 +190,7 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
                 tenantId,
                 subdomain: hostInfo.subdomain,
                 tenantName: null,
+                companyId: getCurrentCompanyId(),
                 status: 'resolved',
                 isMainDomain: false,
               };
@@ -211,6 +218,7 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
           tenantId: null,
           subdomain: hostInfo.subdomain,
           tenantName: null,
+          companyId: getCurrentCompanyId(),
           status: 'not_found',
           isMainDomain: false,
         };
@@ -228,6 +236,7 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
           tenantId: null,
           subdomain: hostInfo.subdomain,
           tenantName: null,
+          companyId: getCurrentCompanyId(),
           status: 'not_found',
           isMainDomain: false,
         };
@@ -254,6 +263,7 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
           tenantId: null,
           subdomain: null,
           tenantName: null,
+          companyId: getCurrentCompanyId(),
           status: 'not_found',
           isMainDomain: false,
         };
@@ -265,6 +275,7 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
         tenantId,
         subdomain: null,
         tenantName: null,
+        companyId: getCurrentCompanyId(),
         status: 'resolved',
         isMainDomain: false,
       };
@@ -287,6 +298,7 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
         tenantId: null,
         subdomain: null,
         tenantName: null,
+        companyId: getCurrentCompanyId(),
         status: 'not_found',
         isMainDomain: false,
       };
@@ -323,6 +335,7 @@ export function useTenantResolver() {
         tenantId: null,
         subdomain: hostInfo.subdomain,
         tenantName: null,
+        companyId: getCurrentCompanyId(),
         status: 'main_domain',
         isMainDomain: true,
       };
@@ -339,6 +352,7 @@ export function useTenantResolver() {
         tenantId: prefetch.tenantId,
         subdomain: prefetch.tenant?.subdomain || prefetch.storeId || null,
         tenantName: prefetch.tenant?.name || null,
+        companyId: getCurrentCompanyId(),
         status: 'resolved',
         isMainDomain: false,
       };
@@ -369,6 +383,7 @@ export function useTenantResolver() {
       tenantId: null,
       subdomain: null,
       tenantName: null,
+      companyId: getCurrentCompanyId(),
       status: 'loading',
       isMainDomain: true,
     };

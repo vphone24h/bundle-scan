@@ -7,6 +7,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { CompanyProvider } from "@/hooks/useCompanyResolver";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { TenantGuard } from "@/components/tenant/TenantGuard";
 import { SubdomainRouter } from "@/components/routing/SubdomainRouter";
@@ -175,6 +176,7 @@ const SubscriptionRoute = ({ children }: { children: React.ReactNode }) => (
 
 const App = () => (
   <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24, buster: 'v2' }}>
+    <CompanyProvider>
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
@@ -242,6 +244,7 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
+    </CompanyProvider>
   </PersistQueryClientProvider>
 );
 
