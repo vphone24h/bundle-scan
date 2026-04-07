@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatNumber } from '@/lib/formatNumber';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useCurrentTenant } from '@/hooks/useTenant';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 
@@ -37,6 +38,7 @@ export function DebtDeleteDialog({
   const [paymentSource, setPaymentSource] = useState('cash');
   const [deleting, setDeleting] = useState(false);
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
+  const { data: tenant } = useCurrentTenant();
 
   const allPaymentSources = useMemo(() => {
     const defaults = [
@@ -66,12 +68,21 @@ export function DebtDeleteDialog({
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const entityLabel = entityType === 'customer' ? 'khách hàng' : 'nhà cung cấp';
+      const tenantId = tenant?.id;
+
+      // Fetch staff name for cash book
+      const { data: staffProfile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+      const staffName = staffProfile?.display_name || user?.email || null;
 
       // If sync cash book: record remaining amount as income (customer) or expense (supplier)
       if (syncCashBook && remainingAmount > 0) {
         const cashBookType = entityType === 'customer' ? 'income' as const : 'expense' as const;
         const category = entityType === 'customer' ? 'Thu nợ (xóa công nợ)' : 'Trả nợ NCC (xóa công nợ)';
-        await supabase.from('cash_book').insert([{
+        const { error: cashErr } = await supabase.from('cash_book').insert([{
           type: cashBookType,
           amount: remainingAmount,
           category,
@@ -79,8 +90,16 @@ export function DebtDeleteDialog({
           payment_source: paymentSource,
           branch_id: branchId,
           created_by: user?.id,
+          created_by_name: staffName,
+          recipient_name: entityName,
+          tenant_id: tenantId,
+          is_business_accounting: false,
           transaction_date: new Date().toISOString(),
         }]);
+        if (cashErr) {
+          console.error('Cash book insert error:', cashErr);
+          throw cashErr;
+        }
       }
 
       // Delete all debt_payments for this entity
