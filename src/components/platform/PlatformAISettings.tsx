@@ -10,6 +10,7 @@ import { Bot, Image as ImageIcon, Loader2, Search, Phone, MessageCircle, Save } 
 import { Input } from '@/components/ui/input';
 import { SearchInput } from '@/components/ui/search-input';
 import { Button } from '@/components/ui/button';
+import { useAdminCompanyId } from '@/hooks/useAdminCompanyId';
 
 interface TenantAISetting {
   tenant_id: string;
