@@ -8062,6 +8062,10 @@ export type Database = {
         Returns: boolean
       }
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_platform_or_company_admin: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       is_tenant_accessible: { Args: { _tenant_id: string }; Returns: boolean }
       is_tenant_admin: { Args: { _user_id: string }; Returns: boolean }
       lookup_company_by_domain: {
