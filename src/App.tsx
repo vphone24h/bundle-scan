@@ -1,4 +1,8 @@
 import { Suspense, lazy } from "react";
+import { startGlobalInteractionWatcher } from "@/lib/dialogInteraction";
+
+// Start global watcher to auto-recover from stuck pointer-events
+startGlobalInteractionWatcher();
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
