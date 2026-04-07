@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import nodemailer from 'npm:nodemailer@6.9.10'
+import { resolveSmtpForTenant, createSmtpTransporter } from '../_shared/smtp.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -119,16 +120,8 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const smtpUser = Deno.env.get('SMTP_USER')
-    const smtpPassword = Deno.env.get('SMTP_PASSWORD')
-
-    if (!smtpUser || !smtpPassword) {
-      console.log('SMTP not configured, skipping landing order alert')
-      return new Response(JSON.stringify({ ok: true, skipped: 'smtp_not_configured' }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
+    // Resolve SMTP based on tenant's company config
+    // (will be used after tenant_id is parsed from body)
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
@@ -227,15 +220,16 @@ Deno.serve(async (req) => {
     const actionLabel = ACTION_TYPE_LABELS[action_type] || action_type || 'Đơn hàng'
     const subject = `🔔 ${actionLabel}: ${customer_name || 'Khách hàng'} – ${product_name || 'Sản phẩm'}`
 
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: { user: smtpUser, pass: smtpPassword },
-    })
+    const smtpConfig = await resolveSmtpForTenant(supabase, tenant_id)
+    if (!smtpConfig.smtpUser || !smtpConfig.smtpPass) {
+      return new Response(JSON.stringify({ ok: true, skipped: 'smtp_not_configured' }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    const transporter = createSmtpTransporter(smtpConfig)
 
     await transporter.sendMail({
-      from: `"vKho" <${smtpUser}>`,
+      from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
       to: platformUser.email,
       subject,
       html,

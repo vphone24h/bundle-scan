@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import nodemailer from 'npm:nodemailer@6.9.10'
+import { resolveSmtpForTenant, createSmtpTransporter } from '../_shared/smtp.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -197,10 +198,10 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const smtpUser = Deno.env.get('SMTP_USER')!
-    const smtpPassword = Deno.env.get('SMTP_PASSWORD')!
+    const defaultSmtpUser = Deno.env.get('SMTP_USER')!
+    const defaultSmtpPassword = Deno.env.get('SMTP_PASSWORD')!
 
-    if (!smtpUser || !smtpPassword) {
+    if (!defaultSmtpUser || !defaultSmtpPassword) {
       return new Response(JSON.stringify({ error: 'SMTP not configured' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
@@ -208,13 +209,6 @@ Deno.serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
-    })
-
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: { user: smtpUser, pass: smtpPassword },
     })
 
     const results = { day2: 0, day5: 0, day10: 0, skipped: 0, errors: 0 }
@@ -283,9 +277,12 @@ Deno.serve(async (req) => {
         const admin = await getTenantAdmin(tenant.id)
         if (!admin) continue
 
+        const smtpConfig = await resolveSmtpForTenant(supabaseAdmin, tenant.id)
+        if (!smtpConfig.smtpUser) continue
+        const transporter = createSmtpTransporter(smtpConfig)
         const html = buildDay2Email(admin.name)
         const subject = `📦 ${admin.name || 'Anh/chị'}, đã nhập hàng vào vKho chưa?`
-        await transporter.sendMail({ from: `"vKho" <${smtpUser}>`, to: admin.email, subject, html })
+        await transporter.sendMail({ from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`, to: admin.email, subject, html })
         await logSent(tenant.id, 'day_2_import', admin.email)
         results.day2++
       } catch (err) {
@@ -303,9 +300,12 @@ Deno.serve(async (req) => {
         const admin = await getTenantAdmin(tenant.id)
         if (!admin) continue
 
+        const smtpConfig5 = await resolveSmtpForTenant(supabaseAdmin, tenant.id)
+        if (!smtpConfig5.smtpUser) continue
+        const transporter5 = createSmtpTransporter(smtpConfig5)
         const html = buildDay5Email(admin.name)
         const subject = `🎬 Video: Cách dùng vKho trong 3 phút`
-        await transporter.sendMail({ from: `"vKho" <${smtpUser}>`, to: admin.email, subject, html })
+        await transporter5.sendMail({ from: `"${smtpConfig5.fromName}" <${smtpConfig5.fromEmail}>`, to: admin.email, subject, html })
         await logSent(tenant.id, 'day_5_video', admin.email)
         results.day5++
       } catch (err) {
@@ -329,9 +329,12 @@ Deno.serve(async (req) => {
         const admin = await getTenantAdmin(tenant.id)
         if (!admin) continue
 
+        const smtpConfig10 = await resolveSmtpForTenant(supabaseAdmin, tenant.id)
+        if (!smtpConfig10.smtpUser) continue
+        const transporter10 = createSmtpTransporter(smtpConfig10)
         const html = buildDay10Email(admin.name)
         const subject = `🛒 ${admin.name || 'Anh/chị'} đã thử bán đơn đầu tiên chưa?`
-        await transporter.sendMail({ from: `"vKho" <${smtpUser}>`, to: admin.email, subject, html })
+        await transporter10.sendMail({ from: `"${smtpConfig10.fromName}" <${smtpConfig10.fromEmail}>`, to: admin.email, subject, html })
         await logSent(tenant.id, 'day_10_sell', admin.email)
         results.day10++
       } catch (err) {

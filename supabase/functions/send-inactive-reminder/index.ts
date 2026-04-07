@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import nodemailer from 'npm:nodemailer@6.9.10'
+import { resolveSmtpForTenant, createSmtpTransporter } from '../_shared/smtp.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -126,8 +127,8 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const smtpUser = Deno.env.get('SMTP_USER')!
-    const smtpPassword = Deno.env.get('SMTP_PASSWORD')!
+    const defaultSmtpUser = Deno.env.get('SMTP_USER')!
+    const defaultSmtpPassword = Deno.env.get('SMTP_PASSWORD')!
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -163,13 +164,6 @@ Deno.serve(async (req) => {
       })
     }
 
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: { user: smtpUser, pass: smtpPassword },
-    })
-
     let sent = 0
     let skipped = 0
 
@@ -183,7 +177,7 @@ Deno.serve(async (req) => {
 
         if ((productCount || 0) > 0) {
           skipped++
-          continue // Đã có sản phẩm → bỏ qua
+          continue
         }
 
         // Kiểm tra đã gửi email này chưa
@@ -195,7 +189,7 @@ Deno.serve(async (req) => {
 
         if ((emailSentCount || 0) > 0) {
           skipped++
-          continue // Đã gửi rồi → bỏ qua
+          continue
         }
 
         // Lấy thông tin admin của tenant
@@ -225,9 +219,13 @@ Deno.serve(async (req) => {
         const html = buildEmailHtml({ adminName, businessName, subdomain: tenant.subdomain, hotline, zalo })
         const subject = `👋 ${adminName}, vKho đang chờ bạn bắt đầu!`
 
-        // Gửi email
+        // Resolve SMTP per tenant (company config or platform default)
+        const smtpConfig = await resolveSmtpForTenant(supabaseAdmin, tenant.id)
+        if (!smtpConfig.smtpUser) continue
+        const transporter = createSmtpTransporter(smtpConfig)
+
         await transporter.sendMail({
-          from: `"vKho" <${smtpUser}>`,
+          from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
           to: tenantUser.email,
           subject,
           html,

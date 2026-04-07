@@ -1,15 +1,23 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import nodemailer from 'npm:nodemailer@6.9.10'
+import { resolveSmtpForTenant, createSmtpTransporter } from '../_shared/smtp.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-async function sendExtensionEmails(recipients: { email: string; name: string; newEndDate: string; daysAdded: number }[], customNote?: string) {
-  const smtpUser = Deno.env.get('SMTP_USER')
-  const smtpPassword = Deno.env.get('SMTP_PASSWORD')
+async function sendExtensionEmails(
+  recipients: { email: string; name: string; newEndDate: string; daysAdded: number }[],
+  customNote?: string,
+  smtpUserOverride?: string,
+  smtpPassOverride?: string,
+  fromNameOverride?: string,
+) {
+  const smtpUser = smtpUserOverride || Deno.env.get('SMTP_USER')
+  const smtpPassword = smtpPassOverride || Deno.env.get('SMTP_PASSWORD')
   if (!smtpUser || !smtpPassword) return
+  const senderName = fromNameOverride || 'VKHO'
 
   const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
@@ -31,23 +39,23 @@ async function sendExtensionEmails(recipients: { email: string; name: string; ne
           '</div>',
           '<div style="background:#fff;padding:24px">',
             `<p style="margin:0 0 12px;color:#374151;font-size:15px">Xin chào <strong>${r.name}</strong>,</p>`,
-            `<p style="margin:0 0 12px;color:#374151;font-size:15px">Tài khoản VKHO của bạn vừa được <strong>tặng thêm ${r.daysAdded} ngày</strong> sử dụng! 🎊</p>`,
+            `<p style="margin:0 0 12px;color:#374151;font-size:15px">Tài khoản của bạn vừa được <strong>tặng thêm ${r.daysAdded} ngày</strong> sử dụng! 🎊</p>`,
             `<div style="background:#eff6ff;border-left:4px solid #2563eb;padding:16px;border-radius:0 8px 8px 0;margin:16px 0">`,
               `<p style="margin:0;font-size:14px;color:#1e40af"><strong>Hạn sử dụng mới:</strong> ${endDateStr}</p>`,
             '</div>',
             noteHtml,
-            '<p style="margin:16px 0 0;color:#374151;font-size:14px">Cảm ơn bạn đã sử dụng VKHO! 💙</p>',
+            '<p style="margin:16px 0 0;color:#374151;font-size:14px">Cảm ơn bạn đã sử dụng! 💙</p>',
           '</div>',
           '<div style="background:#f3f4f6;padding:16px 24px;text-align:center">',
-            '<p style="margin:0;font-size:12px;color:#9ca3af">© 2025 VKHO – Hệ thống quản lý kho hàng thông minh</p>',
+            `<p style="margin:0;font-size:12px;color:#9ca3af">© 2026 ${senderName}</p>`,
           '</div>',
         '</div>',
       ].join('')
 
       return transporter.sendMail({
-        from: `"VKHO" <${smtpUser}>`,
+        from: `"${senderName}" <${smtpUser}>`,
         to: r.email,
-        subject: `🎉 Tặng thêm ${r.daysAdded} ngày sử dụng VKHO`,
+        subject: `🎉 Tặng thêm ${r.daysAdded} ngày sử dụng`,
         html,
       })
     }))
@@ -197,10 +205,11 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Send notification emails
-      if (emailsToSend.length > 0) {
+      // Send notification emails - use first tenant's SMTP for bulk
+      if (emailsToSend.length > 0 && tenantIds?.length > 0) {
         try {
-          await sendExtensionEmails(emailsToSend, note)
+          const smtpConfig = await resolveSmtpForTenant(supabaseAdmin, tenantIds[0])
+          await sendExtensionEmails(emailsToSend, note, smtpConfig.smtpUser, smtpConfig.smtpPass, smtpConfig.fromName)
         } catch (err) {
           console.error('Failed to send extension emails:', err)
         }
@@ -359,12 +368,13 @@ Deno.serve(async (req) => {
         // Send email notification for single extend too
         if (tenant.email) {
           try {
+            const smtpConfig = await resolveSmtpForTenant(supabaseAdmin, tenantId)
             await sendExtensionEmails([{
               email: tenant.email,
               name: tenant.name,
               newEndDate: newEndDate.toISOString(),
               daysAdded: days,
-            }], note)
+            }], note, smtpConfig.smtpUser, smtpConfig.smtpPass, smtpConfig.fromName)
           } catch (err) {
             console.error('Failed to send extension email:', err)
           }

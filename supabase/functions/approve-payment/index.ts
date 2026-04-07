@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import nodemailer from 'npm:nodemailer@6.9.10'
+import { resolveSmtpForTenant, createSmtpTransporter } from '../_shared/smtp.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -330,11 +331,10 @@ Deno.serve(async (req) => {
           note: `Kích hoạt gói ${plan.name}${bonusDays ? ` + ${bonusDays} ngày bonus` : ''}`,
         })
 
-      // === Gửi email xác nhận ===
-      const smtpUser = Deno.env.get('SMTP_USER')
-      const smtpPassword = Deno.env.get('SMTP_PASSWORD')
+      // === Gửi email xác nhận (resolve company SMTP) ===
+      const smtpConfig = await resolveSmtpForTenant(supabaseAdmin, tenant.id)
 
-      if (smtpUser && smtpPassword) {
+      if (smtpConfig.smtpUser && smtpConfig.smtpPass) {
         try {
           // Lấy email và tên admin của tenant
           const { data: tenantAdmin } = await supabaseAdmin
@@ -352,7 +352,6 @@ Deno.serve(async (req) => {
             const { data: { user: tenantUser } } = await supabaseAdmin.auth.admin.getUserById(tenantAdmin.user_id)
             customerEmail = tenantUser?.email || null
 
-            // Lấy tên hiển thị từ profiles
             const { data: profile } = await supabaseAdmin
               .from('profiles')
               .select('display_name')
@@ -382,13 +381,12 @@ Deno.serve(async (req) => {
               newEndDate,
               durationDays: plan.duration_days,
               hotline,
-              smtpUser,
-              smtpPassword,
+              smtpUser: smtpConfig.smtpUser,
+              smtpPassword: smtpConfig.smtpPass,
             })
             console.log('Approval email sent to:', customerEmail)
           }
         } catch (emailError) {
-          // Không fail toàn bộ request nếu gửi mail lỗi
           console.error('Failed to send approval email:', emailError)
         }
       }

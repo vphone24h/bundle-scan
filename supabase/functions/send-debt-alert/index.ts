@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import nodemailer from 'npm:nodemailer@6.9.10'
+import { resolveSmtpForTenant, createSmtpTransporter } from '../_shared/smtp.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -158,10 +159,10 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const smtpUser = Deno.env.get('SMTP_USER')
-    const smtpPassword = Deno.env.get('SMTP_PASSWORD')
+    const defaultSmtpUser = Deno.env.get('SMTP_USER')
+    const defaultSmtpPassword = Deno.env.get('SMTP_PASSWORD')
 
-    if (!smtpUser || !smtpPassword) {
+    if (!defaultSmtpUser || !defaultSmtpPassword) {
       return new Response(JSON.stringify({ error: 'SMTP not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -177,13 +178,6 @@ Deno.serve(async (req) => {
       .in('status', ['active', 'trial'])
 
     if (tenantErr) throw tenantErr
-
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: { user: smtpUser, pass: smtpPassword },
-    })
 
     let emailsSent = 0
 
@@ -344,8 +338,11 @@ Deno.serve(async (req) => {
       const subject = `⚠️ Cảnh báo công nợ: ${totalAlert} khoản cần thu – ${formatMoney(summary.overdue.total + summary.due_today.total)}`
 
       try {
+        const smtpConfig = await resolveSmtpForTenant(supabase, tenant.id)
+        if (!smtpConfig.smtpUser) continue
+        const transporter = createSmtpTransporter(smtpConfig)
         await transporter.sendMail({
-          from: `"vKho" <${smtpUser}>`,
+          from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
           to: platformUser.email,
           subject,
           html,

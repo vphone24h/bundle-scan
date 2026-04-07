@@ -1,5 +1,6 @@
 import nodemailer from 'npm:nodemailer@6.9.10'
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
+import { resolveSmtpForTenant, createSmtpTransporter } from '../_shared/smtp.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -237,8 +238,10 @@ Deno.serve(async (req) => {
   const sb = createClient(supabaseUrl, supabaseKey)
 
   try {
-    const smtpUser = Deno.env.get('SMTP_USER')
-    const smtpPassword = Deno.env.get('SMTP_PASSWORD')
+    // Resolve SMTP: check company config first, then fall back to platform
+    const smtpConfig = await resolveSmtpForTenant(sb, tenant_id)
+    const smtpUser = smtpConfig.smtpUser
+    const smtpPassword = smtpConfig.smtpPass
 
     if (!smtpUser || !smtpPassword) {
       return new Response(JSON.stringify({ ok: true, skipped: 'smtp_not_configured' }), {
@@ -348,12 +351,7 @@ Deno.serve(async (req) => {
       subject = `✅ ${actionLabel} thành công – ${product_name || 'Sản phẩm'} | ${shop_name || 'Cửa hàng'}`
     }
 
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: { user: smtpUser, pass: smtpPassword },
-    })
+    const transporter = createSmtpTransporter(smtpConfig)
 
     await transporter.sendMail({
       from: `"${shop_name || 'Cửa hàng'}" <${smtpUser}>`,
