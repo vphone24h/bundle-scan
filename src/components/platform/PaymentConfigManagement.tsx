@@ -238,7 +238,7 @@ export function PaymentConfigManagement() {
         title: 'Thành công',
         description: 'Đã lưu tài khoản ngân hàng',
       });
-      queryClient.invalidateQueries({ queryKey: ['bank-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['bank-accounts', companyId] });
       setBankDialog(false);
       setEditingBank(null);
       setBankForm({
