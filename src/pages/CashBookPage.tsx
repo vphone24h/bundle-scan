@@ -1213,12 +1213,15 @@ export default function CashBookPage() {
             ].map(p => (
               <Button
                 key={p.key}
-                variant={summaryTimePreset === p.key ? 'default' : 'outline'}
+                variant={timePreset === p.key ? 'default' : 'outline'}
                 size="sm"
                 className="text-xs h-7 px-2.5"
                 onClick={() => {
-                  setSummaryTimePreset(p.key);
-                  if (p.key !== 'custom') { setSummaryCustomFrom(''); setSummaryCustomTo(''); }
+                  if (p.key === 'custom') {
+                    setTimePreset('custom');
+                  } else {
+                    handleTimePreset(p.key);
+                  }
                 }}
               >
                 {p.label}
@@ -1226,11 +1229,11 @@ export default function CashBookPage() {
             ))}
           </div>
 
-          {summaryTimePreset === 'custom' && (
+          {timePreset === 'custom' && (
             <DateRangeApplyFilter
-              startDate={summaryCustomFrom}
-              endDate={summaryCustomTo}
-              onApply={(s, e) => { setSummaryCustomFrom(s); setSummaryCustomTo(e); }}
+              startDate={dateFrom}
+              endDate={dateTo}
+              onApply={(s, e) => { setDateFrom(s); setDateTo(e); setTimePreset('custom'); }}
               isLoading={false}
               layout="stacked"
               labelClassName="text-xs"
