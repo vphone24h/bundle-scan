@@ -55,6 +55,7 @@ export function AdvertisementFormDialog({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: platformUser } = usePlatformUser();
+  const { companyId, isPlatformAdmin: isPA } = useAdminCompanyId();
   const uploadImage = useUploadAdImage();
 
   const [title, setTitle] = useState('');
