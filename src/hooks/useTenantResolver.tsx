@@ -362,6 +362,22 @@ export function useTenantResolver() {
 
     // FAST PATH: Inline script may have already resolved the tenant
     const prefetch = (window as any).__STORE_PREFETCH__;
+    
+    // Company domain detected by inline script
+    if (prefetch?.isCompanyDomain) {
+      const result: ResolvedTenant = {
+        tenantId: null,
+        subdomain: null,
+        tenantName: null,
+        companyId: prefetch.companyId || getCurrentCompanyId(),
+        status: 'main_domain',
+        isMainDomain: true,
+      };
+      cachedResult = result;
+      cacheHostname = hostname;
+      return result;
+    }
+
     if (prefetch?.tenantId) {
       const result: ResolvedTenant = {
         tenantId: prefetch.tenantId,
