@@ -310,7 +310,9 @@ export function CompaniesManagement() {
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">Chưa có công ty nào</p>}
-        {filtered.map(c => (
+        {filtered.map(c => {
+          const admin = getAdminForCompany(c.id);
+          return (
           <Card key={c.id}>
             <CardContent className="p-4 space-y-2">
               <div className="flex items-center justify-between">
@@ -334,6 +336,16 @@ export function CompaniesManagement() {
                   <Button variant="ghost" size="sm" className="h-6 gap-1" onClick={() => setShowTenantsDialog(c)}>
                     <Store className="h-3 w-3" /> {c.tenant_count || 0}
                   </Button>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Admin:</span>
+                  {admin ? (
+                    <span className="text-xs">{admin.email}</span>
+                  ) : (
+                    <Button variant="outline" size="sm" className="h-6 text-xs gap-1" onClick={() => { setShowAdminDialog(c); setAdminEmail(''); setAdminPassword(''); setAdminDisplayName(''); }}>
+                      <UserCog className="h-3 w-3" />Tạo
+                    </Button>
+                  )}
                 </div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Trạng thái:</span>{renderStatusBadge(c.status)}</div>
               </div>
