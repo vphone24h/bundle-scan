@@ -1209,9 +1209,19 @@ export function useDeleteImportReceipt() {
       };
 
       // 3. Delete related records in correct order
-      // product_imports
       if (productIds.length > 0) {
-        await supabase.from('product_imports').delete().in('product_id', productIds);
+        // Delete all FK-dependent records first (batch 200)
+        for (let i = 0; i < productIds.length; i += 200) {
+          const chunk = productIds.slice(i, i + 200);
+          await supabase.from('export_receipt_items').delete().in('product_id', chunk);
+          await supabase.from('export_returns').delete().in('product_id', chunk);
+          await supabase.from('import_returns').delete().in('product_id', chunk);
+          await supabase.from('imei_histories').delete().in('product_id', chunk);
+          await supabase.from('stock_count_items').delete().in('product_id', chunk);
+          await supabase.from('stock_transfer_items').delete().in('product_id', chunk);
+          // product_imports has ON DELETE CASCADE, but delete explicitly to be safe
+          await supabase.from('product_imports').delete().in('product_id', chunk);
+        }
       }
 
       // cash_book entries linked to this receipt (optional)
@@ -1229,9 +1239,13 @@ export function useDeleteImportReceipt() {
           .eq('description', `Thanh toán phiếu nhập ${receipt.code}`);
       }
 
-      // products
+      // products - now safe to delete after all references removed
       if (productIds.length > 0) {
-        await supabase.from('products').delete().in('id', productIds);
+        for (let i = 0; i < productIds.length; i += 200) {
+          const chunk = productIds.slice(i, i + 200);
+          const { error: delErr } = await supabase.from('products').delete().in('id', chunk);
+          if (delErr) console.error('Error deleting products chunk:', delErr);
+        }
       }
 
       // import_receipt itself
