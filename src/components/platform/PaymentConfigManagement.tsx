@@ -55,6 +55,7 @@ interface BankAccount {
 
 export function PaymentConfigManagement() {
   const queryClient = useQueryClient();
+  const { companyId } = useAdminCompanyId();
   const [hotline, setHotline] = useState('');
   const [supportEmail, setSupportEmail] = useState('');
   const [companyName, setCompanyName] = useState('');
