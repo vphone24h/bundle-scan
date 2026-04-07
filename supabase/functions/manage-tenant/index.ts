@@ -233,6 +233,17 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Company admin can only manage tenants in their company
+    if (isCompanyAdmin) {
+      const allowed = await checkCompanyScope(tenantId)
+      if (!allowed) {
+        return new Response(
+          JSON.stringify({ error: 'Bạn không có quyền quản lý doanh nghiệp này' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
     switch (action) {
       case 'lock': {
         await supabaseAdmin
