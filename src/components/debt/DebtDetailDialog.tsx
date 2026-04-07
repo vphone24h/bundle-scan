@@ -478,24 +478,6 @@ export function DebtDetailDialog({
                                 </span>
                                 <button
                                   type="button"
-                                  onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: p.id, amount: p.amount, description: p.description, payment_type: 'payment', entity_type: entityType, entity_id: entityId }); }}
-                                 onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: p.id, amount: p.amount, description: p.description, payment_type: 'payment', entity_type: entityType, entity_id: entityId, created_at: p.date }); }}
-                                  className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                  title="Sửa số tiền"
-                                 <button
-                                   type="button"
-                                   onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: p.id, amount: p.amount, description: p.description, payment_type: 'payment', entity_type: entityType, entity_id: entityId, created_at: p.date }); }}
-                                   className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                   title="Sửa phiếu"
-                                >
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: p.id, amount: p.amount, description: p.description, payment_type: 'payment', entity_type: entityType, entity_id: entityId, created_at: p.date }); }}
-                                  className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                  title="Sửa phiếu"
-                                >
-                                <button
-                                  type="button"
                                   onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: p.id, amount: p.amount, description: p.description, payment_type: 'payment', entity_type: entityType, entity_id: entityId, created_at: p.date }); }}
                                   className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                                   title="Sửa phiếu"
@@ -552,18 +534,6 @@ export function DebtDetailDialog({
                                   +{formatNumber(a.amount)}
                                   {a.isFullyPaid && <span className="text-xs ml-1">✓</span>}
                                 </span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: a.id, amount: a.amount, description: a.description, payment_type: 'addition', entity_type: entityType, entity_id: entityId }); }}
-                                 onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: a.id, amount: a.amount, description: a.description, payment_type: 'addition', entity_type: entityType, entity_id: entityId, created_at: a.date }); }}
-                                  className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                  title="Sửa số tiền"
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: a.id, amount: a.amount, description: a.description, payment_type: 'addition', entity_type: entityType, entity_id: entityId, created_at: a.date }); }}
-                                  className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                  title="Sửa phiếu"
-                                >
                                 <button
                                   type="button"
                                   onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: a.id, amount: a.amount, description: a.description, payment_type: 'addition', entity_type: entityType, entity_id: entityId, created_at: a.date }); }}
@@ -664,18 +634,6 @@ export function DebtDetailDialog({
                               <p className={`font-semibold ${isAddition ? 'text-orange-600' : 'text-green-600'}`}>
                                 {isAddition ? '+' : '-'}{formatNumber(payment.amount)}
                               </p>
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: payment.id, amount: payment.amount, description: payment.description, payment_type: payment.payment_type, entity_type: entityType, entity_id: entityId }); }}
-                                 onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: payment.id, amount: payment.amount, description: payment.description, payment_type: payment.payment_type, entity_type: entityType, entity_id: entityId, created_at: payment.created_at }); }}
-                                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                title="Sửa số tiền"
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: payment.id, amount: payment.amount, description: payment.description, payment_type: payment.payment_type, entity_type: entityType, entity_id: entityId, created_at: payment.created_at }); }}
-                                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                title="Sửa phiếu"
-                              >
                               <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); setEditingPayment({ id: payment.id, amount: payment.amount, description: payment.description, payment_type: payment.payment_type, entity_type: entityType, entity_id: entityId, created_at: payment.created_at }); }}
