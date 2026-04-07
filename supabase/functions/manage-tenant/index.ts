@@ -213,7 +213,7 @@ Deno.serve(async (req) => {
         } catch (err) {
           console.error('Failed to send extension emails:', err)
         }
-        }
+      }
       }
 
       return new Response(
