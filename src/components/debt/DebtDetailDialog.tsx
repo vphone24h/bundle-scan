@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, History, Phone, Building2, Filter, Pencil, ChevronDown, ChevronRight, Package, Wallet, Plus, X } from 'lucide-react';
+import { FileText, History, Phone, Building2, Filter, Pencil, ChevronDown, ChevronRight, Package, Wallet, Plus, X, Trash2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { EditCustomerDebtDialog } from './EditCustomerDebtDialog';
@@ -32,6 +32,7 @@ import { EditSupplierDialog } from './EditSupplierDialog';
 import { DebtPaymentDialog } from './DebtPaymentDialog';
 import { DebtAdditionDialog } from './DebtAdditionDialog';
 import { DebtPaymentEditDialog } from './DebtPaymentEditDialog';
+import { DebtPaymentDeleteDialog } from './DebtPaymentDeleteDialog';
 import {
   Select,
   SelectContent,
@@ -77,6 +78,7 @@ export function DebtDetailDialog({
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
   const [onlyShowDebt, setOnlyShowDebt] = useState(true);
   const [editingPayment, setEditingPayment] = useState<any>(null);
+  const [deletingPayment, setDeletingPayment] = useState<any>(null);
   const { data: allReceipts, isLoading: receiptsLoading } = useDebtDetail(entityType, entityId, mergedEntityIds);
   const { data: paymentHistory, isLoading: historyLoading } = useDebtPaymentHistory(entityType, entityId, mergedEntityIds);
 
@@ -484,6 +486,14 @@ export function DebtDetailDialog({
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
                                 </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setDeletingPayment({ id: p.id, amount: p.amount, description: p.description, payment_type: 'payment', entity_type: entityType, entity_id: entityId, created_at: p.date }); }}
+                                  className="p-1 rounded hover:bg-muted text-destructive hover:text-destructive transition-colors"
+                                  title="Xóa phiếu"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
                               </div>
                             </div>
                             <div className="text-xs text-muted-foreground mt-1 pt-1 border-t border-dashed">
@@ -541,6 +551,14 @@ export function DebtDetailDialog({
                                   title="Sửa phiếu"
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setDeletingPayment({ id: a.id, amount: a.amount, description: a.description, payment_type: 'addition', entity_type: entityType, entity_id: entityId, created_at: a.date }); }}
+                                  className="p-1 rounded hover:bg-muted text-destructive hover:text-destructive transition-colors"
+                                  title="Xóa phiếu"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                               </div>
                             </div>
@@ -641,6 +659,14 @@ export function DebtDetailDialog({
                                 title="Sửa phiếu"
                               >
                                 <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setDeletingPayment({ id: payment.id, amount: payment.amount, description: payment.description, payment_type: payment.payment_type, entity_type: entityType, entity_id: entityId, created_at: payment.created_at }); }}
+                                className="p-1 rounded hover:bg-muted text-destructive hover:text-destructive transition-colors"
+                                title="Xóa phiếu"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             </div>
                             <p className="text-xs text-muted-foreground">
@@ -785,6 +811,14 @@ export function DebtDetailDialog({
         open={!!editingPayment}
         onOpenChange={(open) => !open && setEditingPayment(null)}
         payment={editingPayment}
+        entityName={entityName}
+        branchId={branchId}
+      />
+
+      <DebtPaymentDeleteDialog
+        open={!!deletingPayment}
+        onOpenChange={(open) => !open && setDeletingPayment(null)}
+        payment={deletingPayment}
         entityName={entityName}
         branchId={branchId}
       />
