@@ -329,6 +329,14 @@ Deno.serve(async (req) => {
           updateData.status = tenant.subscription_plan ? 'active' : 'trial'
         }
 
+        // Update max_branches and max_users if provided
+        if (max_branches !== undefined && max_branches !== null) {
+          updateData.max_branches = parseInt(max_branches)
+        }
+        if (max_users !== undefined && max_users !== null) {
+          updateData.max_users = parseInt(max_users)
+        }
+
         await supabaseAdmin
           .from('tenants')
           .update(updateData)
