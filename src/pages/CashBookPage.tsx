@@ -512,21 +512,14 @@ export default function CashBookPage() {
     return map;
   }, [scopedEntries, balanceBySource]);
 
-  // Shared date range for summary + balance history
+  // Shared date range for summary + balance history (uses same dateFrom/dateTo as detail filter)
   const summaryDateRange = useMemo(() => {
-    if (summaryTimePreset === 'custom' && summaryCustomFrom && summaryCustomTo) {
-      return { from: parseISO(summaryCustomFrom), to: parseISO(summaryCustomTo) };
+    if (dateFrom && dateTo) {
+      return { from: parseISO(dateFrom), to: parseISO(dateTo) };
     }
     const today = new Date();
-    switch (summaryTimePreset) {
-      case 'today': return { from: today, to: today };
-      case 'yesterday': { const y = subDays(today, 1); return { from: y, to: y }; }
-      case 'this_week': return { from: startOfWeek(today, { weekStartsOn: 1 }), to: today };
-      case 'this_month': return { from: startOfMonth(today), to: today };
-      case 'this_year': return { from: startOfYear(today), to: today };
-      default: return { from: startOfMonth(today), to: today };
-    }
-  }, [summaryTimePreset, summaryCustomFrom, summaryCustomTo]);
+    return { from: startOfWeek(today, { weekStartsOn: 1 }), to: today };
+  }, [dateFrom, dateTo]);
 
   // Summary totals based on shared time preset
   const summaryTotals = useMemo(() => {
