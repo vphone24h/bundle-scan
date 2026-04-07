@@ -60,7 +60,8 @@ export function CompaniesManagement() {
       const { data, error } = await supabase.functions.invoke('manage-company-admin', {
         body: { action: 'list' },
       });
-      if (error) throw error;
+      if (error) throw new Error(error.message || 'Không thể tải danh sách Company Admin');
+      if (data?.error) throw new Error(data.error);
       return data?.admins || [];
     },
   });
@@ -102,7 +103,10 @@ export function CompaniesManagement() {
           display_name: adminDisplayName || adminEmail.split('@')[0],
         },
       });
-      if (error) throw error;
+      if (error) {
+        console.error('manage-company-admin create error:', error);
+        throw new Error(error.message || 'Không thể gọi chức năng tạo admin');
+      }
       if (data?.error) throw new Error(data.error);
       toast({ title: data.message || 'Đã tạo Company Admin' });
       setShowAdminDialog(null);
@@ -111,7 +115,7 @@ export function CompaniesManagement() {
       setAdminDisplayName('');
       queryClient.invalidateQueries({ queryKey: ['company-admins'] });
     } catch (err: any) {
-      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+      toast({ title: 'Lỗi', description: err.message || 'Không thể tạo Company Admin', variant: 'destructive' });
     } finally {
       setAdminLoading(false);
     }
@@ -124,13 +128,16 @@ export function CompaniesManagement() {
       const { data, error } = await supabase.functions.invoke('manage-company-admin', {
         body: { action: 'delete', user_id: showDeleteAdminDialog.user_id },
       });
-      if (error) throw error;
+      if (error) {
+        console.error('manage-company-admin delete error:', error);
+        throw new Error(error.message || 'Không thể gọi chức năng xóa admin');
+      }
       if (data?.error) throw new Error(data.error);
       toast({ title: 'Đã xóa Company Admin' });
       setShowDeleteAdminDialog(null);
       queryClient.invalidateQueries({ queryKey: ['company-admins'] });
     } catch (err: any) {
-      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+      toast({ title: 'Lỗi', description: err.message || 'Không thể xóa Company Admin', variant: 'destructive' });
     } finally {
       setAdminLoading(false);
     }
@@ -143,13 +150,16 @@ export function CompaniesManagement() {
       const { data, error } = await supabase.functions.invoke('manage-company-admin', {
         body: { action: 'update_password', user_id: showChangePasswordDialog.user_id, new_password: newPassword },
       });
-      if (error) throw error;
+      if (error) {
+        console.error('manage-company-admin update_password error:', error);
+        throw new Error(error.message || 'Không thể gọi chức năng đổi mật khẩu');
+      }
       if (data?.error) throw new Error(data.error);
       toast({ title: 'Đã cập nhật mật khẩu' });
       setShowChangePasswordDialog(null);
       setNewPassword('');
     } catch (err: any) {
-      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+      toast({ title: 'Lỗi', description: err.message || 'Không thể cập nhật mật khẩu', variant: 'destructive' });
     } finally {
       setAdminLoading(false);
     }
