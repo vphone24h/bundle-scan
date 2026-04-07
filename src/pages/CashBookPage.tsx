@@ -1347,38 +1347,7 @@ export default function CashBookPage() {
 
               {showFilters && (
                 <div className="space-y-4 pt-4 border-t">
-                  {/* Time Presets */}
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { key: 'today', label: 'Hôm nay' },
-                      { key: 'yesterday', label: 'Hôm qua' },
-                      { key: 'this_week', label: 'Tuần này' },
-                      { key: 'this_month', label: 'Tháng này' },
-                      { key: 'this_year', label: 'Năm nay' },
-                    ].map((p) => (
-                      <Button
-                        key={p.key}
-                        variant={timePreset === p.key ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => handleTimePreset(p.key)}
-                        className="text-xs"
-                      >
-                        {p.label}
-                      </Button>
-                    ))}
-                  </div>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
-                    <div className="sm:col-span-2 lg:col-span-3">
-                      <DateRangeApplyFilter
-                        startDate={dateFrom}
-                        endDate={dateTo}
-                        onApply={(s, e) => { setDateFrom(s); setDateTo(e); setTimePreset(''); }}
-                        isLoading={false}
-                        layout="stacked"
-                        labelClassName="text-xs"
-                      />
-                    </div>
                     <div className="space-y-2">
                       <Label className="text-xs">Danh mục</Label>
                       <Select value={categoryFilter} onValueChange={setCategoryFilter}>
