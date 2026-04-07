@@ -8,8 +8,21 @@
  * - localhost:5173 → null (dev mode)
  */
 
+// Primary domains include all company domains registered in the system
+// These are checked statically; additional company domains are resolved at runtime
 const PRIMARY_DOMAINS = ['vkho.vn', 'nguyenkieuanh.net'];
 const PRIMARY_DOMAIN = PRIMARY_DOMAINS[0]; // default for URL building
+
+/**
+ * Dynamically add a company domain to the primary domains list
+ * Called by CompanyProvider when a new company domain is resolved
+ */
+export function registerCompanyDomain(domain: string) {
+  const normalized = domain.toLowerCase().replace(/^www\./, '');
+  if (!PRIMARY_DOMAINS.includes(normalized)) {
+    PRIMARY_DOMAINS.push(normalized);
+  }
+}
 const RESERVED_SUBDOMAINS = ['www', 'api', 'admin', 'app', 'dashboard'];
 
 export interface TenantInfo {
