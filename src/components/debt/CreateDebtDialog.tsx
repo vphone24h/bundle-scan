@@ -283,11 +283,10 @@ export function CreateDebtDialog({
     setSupplierSearchQuery('');
   };
 
+  const handleDialogOpenChange = createSafeDialogOpenChange(onOpenChange, resetForm);
+
   return (
-    <Dialog open={open} onOpenChange={(o) => {
-      if (!o) resetForm();
-      onOpenChange(o);
-    }}>
+    <Dialog modal open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
