@@ -1280,7 +1280,7 @@ export default function CashBookPage() {
         {/* Balance History - uses same time filter */}
         <BalanceHistorySection
           allEntries={scopedEntries}
-          latestOpeningBalances={latestOpeningBalances}
+          totalBalance={totalBalance}
           dateRange={summaryDateRange}
         />
 
