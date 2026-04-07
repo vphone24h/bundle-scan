@@ -12,6 +12,8 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { validateTenantCompany } from '@/lib/companyHelpers';
+import { useCompany } from '@/hooks/useCompanyResolver';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 
 const CURRENT_STORE_ID_KEY = 'current_store_id';
 
