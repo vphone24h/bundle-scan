@@ -28,6 +28,7 @@ import { FileText, History, Phone, Building2, Filter, Pencil, ChevronDown, Chevr
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { EditCustomerDebtDialog } from './EditCustomerDebtDialog';
+import { EditSupplierDialog } from './EditSupplierDialog';
 import { DebtPaymentDialog } from './DebtPaymentDialog';
 import { DebtAdditionDialog } from './DebtAdditionDialog';
 import { DebtPaymentEditDialog } from './DebtPaymentEditDialog';
