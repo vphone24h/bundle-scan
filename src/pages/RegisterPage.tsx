@@ -18,6 +18,10 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [tenantInfo, setTenantInfo] = useState<{ subdomain: string } | null>(null);
+  const company = useCompany();
+  const { data: companySettings } = useCompanySettings();
+  const companyLogo = companySettings?.logo_url;
+  const companyDomain = company.domain || 'vkho.vn';
 
   const [formData, setFormData] = useState({
     businessName: '',
