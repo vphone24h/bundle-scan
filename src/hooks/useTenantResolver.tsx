@@ -137,6 +137,21 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
     // FAST PATH: Check if inline script already resolved the tenant
     const prefetch = (window as any).__STORE_PREFETCH__;
     if (prefetch) {
+      // If inline script detected this is a company domain, treat as main domain
+      if (prefetch.isCompanyDomain) {
+        const result: ResolvedTenant = {
+          tenantId: null,
+          subdomain: null,
+          tenantName: null,
+          companyId: prefetch.companyId || getCurrentCompanyId(),
+          status: 'main_domain',
+          isMainDomain: true,
+        };
+        cachedResult = result;
+        cacheHostname = hostname;
+        return result;
+      }
+
       const tenantId = prefetch.tenantId;
       const tenant = prefetch.tenant;
       if (tenantId) {
