@@ -79,6 +79,8 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
   const [actionDialog, setActionDialog] = useState<'lock' | 'unlock' | 'extend' | 'set_days' | 'edit' | null>(null);
   const [reason, setReason] = useState('');
   const [days, setDays] = useState('30');
+  const [extendMaxBranches, setExtendMaxBranches] = useState('');
+  const [extendMaxUsers, setExtendMaxUsers] = useState('');
   const [setDaysValue, setSetDaysValue] = useState('0');
   const [settingDays, setSettingDays] = useState(false);
   const [togglingEinvoice, setTogglingEinvoice] = useState<string | null>(null);
