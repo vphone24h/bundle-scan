@@ -37,13 +37,16 @@ Deno.serve(async (req) => {
 
     const { data: platformUser } = await adminClient
       .from('platform_users')
-      .select('platform_role')
+      .select('platform_role, company_id')
       .eq('user_id', user.id)
       .eq('is_active', true)
       .single()
 
-    if (!platformUser || platformUser.platform_role !== 'platform_admin') {
-      return new Response(JSON.stringify({ error: 'Forbidden: Platform admin only' }), {
+    const isPlatformAdmin = platformUser?.platform_role === 'platform_admin'
+    const isCompanyAdmin = platformUser?.platform_role === 'company_admin'
+
+    if (!platformUser || (!isPlatformAdmin && !isCompanyAdmin)) {
+      return new Response(JSON.stringify({ error: 'Forbidden: Admin only' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -89,6 +92,15 @@ Deno.serve(async (req) => {
     if (targetTenantId) {
       const { data } = await adminClient.from('tenants').select('*').eq('id', targetTenantId).single()
       if (data) tenants = [data]
+      // Company admin scope check
+      if (isCompanyAdmin && platformUser.company_id && tenants[0]?.company_id !== platformUser.company_id) {
+        return new Response(JSON.stringify({ error: 'Không có quyền xuất dữ liệu shop này' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+    } else if (isCompanyAdmin && platformUser.company_id) {
+      const { data } = await adminClient.from('tenants').select('*').eq('company_id', platformUser.company_id)
+      if (data) tenants = data
     } else {
       const { data } = await adminClient.from('tenants').select('*')
       if (data) tenants = data

@@ -161,12 +161,10 @@ export default function PlatformAdminPage() {
                 <Bell className="h-3 w-3" />
                 <span className="hidden sm:inline">{t('pages.platformAdmin.notifications')}</span>
               </TabsTrigger>
-              {isPlatformAdmin && (
-                <TabsTrigger value="export-all" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
-                  <Database className="h-3 w-3" />
-                  <span className="hidden sm:inline">{t('pages.platformAdmin.exportDB')}</span>
-                </TabsTrigger>
-              )}
+              <TabsTrigger value="export-all" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
+                <Database className="h-3 w-3" />
+                <span className="hidden sm:inline">{t('pages.platformAdmin.exportDB')}</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 

@@ -40,16 +40,29 @@ Deno.serve(async (req) => {
 
     const { data: platformUser } = await adminClient
       .from('platform_users')
-      .select('platform_role')
+      .select('platform_role, company_id')
       .eq('user_id', user.id)
       .eq('is_active', true)
       .single()
 
-    if (!platformUser || platformUser.platform_role !== 'platform_admin') {
-      return new Response(JSON.stringify({ error: 'Forbidden: Platform admin only' }), {
+    const isPlatformAdmin = platformUser?.platform_role === 'platform_admin'
+    const isCompanyAdmin = platformUser?.platform_role === 'company_admin'
+
+    if (!platformUser || (!isPlatformAdmin && !isCompanyAdmin)) {
+      return new Response(JSON.stringify({ error: 'Forbidden: Admin only' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
+    }
+
+    // For company admin, get tenant IDs in their company
+    let companyTenantIds: string[] | null = null
+    if (isCompanyAdmin && platformUser.company_id) {
+      const { data: companyTenants } = await adminClient
+        .from('tenants')
+        .select('id')
+        .eq('company_id', platformUser.company_id)
+      companyTenantIds = (companyTenants || []).map((t: any) => t.id)
     }
 
     const exportData: Record<string, any[]> = {}
@@ -73,6 +86,14 @@ Deno.serve(async (req) => {
         allRows.push(...data)
         if (data.length < batchSize) break
         from += batchSize
+      }
+      // For company admin, filter rows by tenant_id
+      if (companyTenantIds && allRows.length > 0 && allRows[0]?.tenant_id !== undefined) {
+        return allRows.filter(r => companyTenantIds!.includes(r.tenant_id))
+      }
+      // For tenants table, filter by company_id
+      if (companyTenantIds && table === 'tenants') {
+        return allRows.filter(r => companyTenantIds!.includes(r.id))
       }
       return allRows
     }
