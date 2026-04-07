@@ -1,4 +1,4 @@
-import { ReactNode, useMemo, useEffect } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { useAuth } from '@/hooks/useAuth';
 import { useCompany } from '@/hooks/useCompanyResolver';
@@ -27,6 +27,10 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
   const company = useCompany();
   const location = useLocation();
   const hostInfo = useMemo(() => detectTenantFromHostname(), []);
+  const isAdminEntryRoute = useMemo(
+    () => location.pathname === '/admin' || location.pathname.startsWith('/platform-admin'),
+    [location.pathname]
+  );
 
   // Check if current hostname IS a company domain (not a shop subdomain of a company domain)
   const isCompanyDomain = useMemo(() => {
@@ -37,6 +41,12 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
   }, [company.status, company.domain]);
   
   const routerState = useMemo(() => {
+
+    // Company custom domains may need one async round to resolve.
+    // Never push explicit admin entry to store website during that window.
+    if (isAdminEntryRoute && company.status === 'loading' && resolvedTenant.status === 'loading') {
+      return 'app';
+    }
 
     // CRITICAL: On custom domain/subdomain, ALWAYS show store landing while loading
     // Never show admin app to store visitors during loading states
@@ -124,7 +134,7 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
     }
     
     return 'app';
-  }, [resolvedTenant, user, authLoading, location.pathname, publicLandingPage, hostInfo.isMainDomain, isCompanyDomain]);
+  }, [resolvedTenant, user, authLoading, publicLandingPage, hostInfo.isMainDomain, isCompanyDomain, isAdminEntryRoute, company.status]);
 
   // No loading spinner - app shell renders immediately
 

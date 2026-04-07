@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode, useMemo } fr
 import { supabase } from '@/integrations/supabase/client';
 import { registerCompanyDomain } from '@/lib/tenantResolver';
 
-interface CompanyInfo {
+export interface CompanyInfo {
   companyId: string | null;
   domain: string | null;
   name: string | null;
@@ -24,7 +24,7 @@ let cachedForHostname: string | null = null;
 const COMPANY_CACHE_KEY = 'company_resolver_cache_v1';
 const COMPANY_CACHE_TTL = 1000 * 60 * 60 * 24; // 24h
 
-function normalizeHostname(hostname: string): string {
+export function normalizeHostname(hostname: string): string {
   return hostname.toLowerCase().replace(/^www\./, '');
 }
 
@@ -69,7 +69,27 @@ function persistCompany(hostname: string, info: CompanyInfo) {
  * 3. Check if hostname is a subdomain of a company domain (e.g. shop.mycompany.vn)
  * 4. Fallback to default company (vkho.vn)
  */
-async function resolveCompanyFromHostname(hostname: string): Promise<CompanyInfo> {
+export function getCachedCompanyForHostname(hostname: string): CompanyInfo | null {
+  const normalizedHostname = normalizeHostname(hostname);
+
+  if (cachedCompany && cachedForHostname && normalizeHostname(cachedForHostname) === normalizedHostname) {
+    return cachedCompany;
+  }
+
+  const persisted = readPersistedCompany(normalizedHostname);
+  if (persisted) {
+    cachedCompany = persisted;
+    cachedForHostname = hostname;
+    if (persisted.domain) {
+      registerCompanyDomain(persisted.domain);
+    }
+    return persisted;
+  }
+
+  return null;
+}
+
+export async function resolveCompanyFromHostname(hostname: string): Promise<CompanyInfo> {
   const normalized = normalizeHostname(hostname);
 
   // Dev/preview mode → default company
@@ -137,15 +157,8 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
 
   const [company, setCompany] = useState<CompanyInfo>(() => {
-    // Check in-memory cache
-    if (cachedCompany && cachedForHostname === hostname) return cachedCompany;
-    // Check localStorage
-    const persisted = readPersistedCompany(normalizeHostname(hostname));
-    if (persisted) {
-      cachedCompany = persisted;
-      cachedForHostname = hostname;
-      return persisted;
-    }
+    const cached = getCachedCompanyForHostname(hostname);
+    if (cached) return cached;
     return { companyId: null, domain: null, name: null, status: 'loading' };
   });
 
