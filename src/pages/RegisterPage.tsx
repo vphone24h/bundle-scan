@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { cn } from '@/lib/utils';
+import { getCurrentCompanyDomain } from '@/hooks/useCompanyResolver';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -91,6 +92,7 @@ export default function RegisterPage() {
           businessType: formData.businessType || null,
           businessMode: formData.businessMode,
           businessNeed: formData.businessNeed,
+          companyDomain: getCurrentCompanyDomain() || 'vkho.vn',
         },
       });
 
