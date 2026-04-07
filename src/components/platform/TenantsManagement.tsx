@@ -15,6 +15,7 @@ import {
   Tenant,
   calculateRemainingDays 
 } from '@/hooks/useTenant';
+import { useCompanies } from '@/hooks/useCompanies';
 import { 
   Search, 
   Lock, 
@@ -97,7 +98,9 @@ export function TenantsManagement() {
   const [websiteFilter, setWebsiteFilter] = useState('_all_');
   const [einvoiceFilter, setEinvoiceFilter] = useState('_all_');
   const [needFilter, setNeedFilter] = useState('_all_');
-
+  const [companyFilter, setCompanyFilter] = useState('_all_');
+  
+  const { data: companies } = useCompanies();
   const filteredTenants = tenants?.filter(t => {
     // Text search
     const matchSearch = !search || 
@@ -129,7 +132,11 @@ export function TenantsManagement() {
     const matchNeed = needFilter === '_all_' ||
       (t as any).business_need === needFilter;
     
-    return matchSearch && matchStatus && matchUsage && matchWebsite && matchEinvoice && matchNeed;
+    // Company filter
+    const matchCompany = companyFilter === '_all_' ||
+      (t as any).company_id === companyFilter;
+    
+    return matchSearch && matchStatus && matchUsage && matchWebsite && matchEinvoice && matchNeed && matchCompany;
   });
 
   const handleAction = async () => {
