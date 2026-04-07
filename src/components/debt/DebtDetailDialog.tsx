@@ -815,6 +815,14 @@ export function DebtDetailDialog({
         branchId={branchId}
       />
 
+      <DebtPaymentDeleteDialog
+        open={!!deletingPayment}
+        onOpenChange={(open) => !open && setDeletingPayment(null)}
+        payment={deletingPayment}
+        entityName={entityName}
+        branchId={branchId}
+      />
+
       {/* Receipt Detail Popup */}
       {isMobile ? (
         <Drawer open={!!selectedReceipt} onOpenChange={(open) => !open && setSelectedReceipt(null)}>
