@@ -1016,7 +1016,14 @@ export default function CashBookPage() {
       <div className="p-6 space-y-6">
         {/* View Mode Tabs - Only Super Admin can switch between total/branch view */}
         {isSuperAdmin ? (
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'branch' | 'total')}>
+          <Tabs value={viewMode} onValueChange={(v) => {
+              const newMode = v as 'branch' | 'total';
+              setViewMode(newMode);
+              if (newMode === 'branch' && !selectedBranchId && branches?.length) {
+                const defaultBranch = branches.find(b => b.is_default) || branches[0];
+                setSelectedBranchId(defaultBranch.id);
+              }
+            }}>
             <div className="flex items-center justify-between">
               <TabsList data-tour="cashbook-view-tabs">
                 <TabsTrigger value="total" className="gap-2">
