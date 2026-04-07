@@ -526,6 +526,7 @@ export function TenantsManagement() {
                 <TableHead>Gói dịch vụ</TableHead>
                 <TableHead>HĐĐT</TableHead>
                 <TableHead>Còn lại</TableHead>
+                <TableHead>Công ty</TableHead>
                 <TableHead>Ngày tạo</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
