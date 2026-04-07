@@ -172,6 +172,7 @@ export function AdvertisementFormDialog({
       start_date: startDate.toISOString(),
       end_date: hasEndDate && endDate ? endDate.toISOString() : null,
       tenant_id: isPlatformAdmin ? null : platformUser?.tenant_id,
+      ...(advertisement ? {} : { company_id: isPA ? null : companyId }),
     };
 
     if (advertisement) {
