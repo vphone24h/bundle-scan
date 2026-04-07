@@ -629,6 +629,11 @@ export function TenantsManagement() {
                       </span>
                     </TableCell>
                     <TableCell>
+                      <span className="text-xs">
+                        {companies?.find(c => c.id === (tenant as any).company_id)?.name || '-'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
                       {format(new Date(tenant.created_at), 'dd/MM/yyyy', { locale: vi })}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
