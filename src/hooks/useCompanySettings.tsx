@@ -37,7 +37,12 @@ export function useCompanySettings(companyId?: string | null) {
         .eq('company_id', effectiveId)
         .maybeSingle();
       if (error) throw error;
-      return data as CompanySettings | null;
+      if (!data) return null;
+      return {
+        ...data,
+        bank_accounts: (data.bank_accounts as unknown as BankAccount[]) || [],
+        subscription_plans: (data.subscription_plans as unknown as any[]) || [],
+      } as CompanySettings;
     },
     enabled: !!effectiveId,
   });
@@ -68,10 +73,15 @@ export function useUpsertCompanySettings() {
         .eq('company_id', company_id)
         .maybeSingle();
 
+      const payload = {
+        ...rest,
+        bank_accounts: rest.bank_accounts ? JSON.parse(JSON.stringify(rest.bank_accounts)) : undefined,
+      };
+
       if (existing) {
         const { data, error } = await supabase
           .from('company_settings')
-          .update({ ...rest, updated_at: new Date().toISOString() })
+          .update({ ...payload, updated_at: new Date().toISOString() })
           .eq('company_id', company_id)
           .select()
           .single();
@@ -80,7 +90,7 @@ export function useUpsertCompanySettings() {
       } else {
         const { data, error } = await supabase
           .from('company_settings')
-          .insert({ company_id, ...rest })
+          .insert({ ...payload, company_id })
           .select()
           .single();
         if (error) throw error;
