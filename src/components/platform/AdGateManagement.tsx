@@ -38,8 +38,12 @@ export function AdGateManagement() {
   }, [settings]);
 
   const handleSave = () => {
-    if (!settings) return;
-    update.mutate({ id: settings.id, ...form } as any);
+    if (settings) {
+      update.mutate({ id: settings.id, ...form } as any);
+    } else {
+      // Create new settings for this admin scope
+      update.mutate({ ...form } as any);
+    }
   };
 
   const pinnedAd = activeAds?.find(a => a.id === form.pinned_ad_id);
