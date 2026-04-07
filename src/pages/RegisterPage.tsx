@@ -190,8 +190,8 @@ export default function RegisterPage() {
           </Button>
           <div className="flex justify-center mb-4">
             <img 
-              src={vkhoLogo} 
-              alt="VKho Logo" 
+              src={companyLogo || vkhoLogo} 
+              alt="Logo" 
               className="h-14 w-14 object-contain"
             />
           </div>
@@ -238,7 +238,7 @@ export default function RegisterPage() {
                   required
                 />
                 <span className="inline-flex items-center px-3 h-10 border border-l-0 rounded-r-md bg-muted text-muted-foreground text-sm whitespace-nowrap">
-                  .vkho.vn
+                  .{companyDomain}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
