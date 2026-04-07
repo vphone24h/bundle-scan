@@ -221,6 +221,7 @@ export default function PlatformAdminPage() {
 
           <TabsContent value="config" className="mt-6">
             <div className="space-y-6">
+              <CompanyEmailConfigForm />
               <PlatformAISettings />
               <PaymentConfigManagement />
             </div>
