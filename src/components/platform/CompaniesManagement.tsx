@@ -467,6 +467,86 @@ export function CompaniesManagement() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Create Company Admin Dialog */}
+      <Dialog open={!!showAdminDialog} onOpenChange={() => setShowAdminDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCog className="h-5 w-5 text-primary" />
+              Tạo Admin cho {showAdminDialog?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Company Admin có quyền quản lý toàn bộ shop trong domain {showAdminDialog?.domain}, nhưng không thể truy cập tab Công ty.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Email</Label>
+              <Input type="email" placeholder="admin@company.com" value={adminEmail} onChange={e => setAdminEmail(e.target.value)} />
+            </div>
+            <div>
+              <Label>Mật khẩu</Label>
+              <Input type="password" placeholder="Tối thiểu 6 ký tự" value={adminPassword} onChange={e => setAdminPassword(e.target.value)} />
+            </div>
+            <div>
+              <Label>Tên hiển thị (tùy chọn)</Label>
+              <Input placeholder="vd: Admin ABC" value={adminDisplayName} onChange={e => setAdminDisplayName(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAdminDialog(null)}>Hủy</Button>
+            <Button onClick={handleCreateAdmin} disabled={adminLoading}>
+              {adminLoading && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+              Tạo Admin
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Company Admin Dialog */}
+      <Dialog open={!!showDeleteAdminDialog} onOpenChange={() => setShowDeleteAdminDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xác nhận xóa Company Admin</DialogTitle>
+            <DialogDescription>
+              Xóa admin <strong>{showDeleteAdminDialog?.email}</strong>? Tài khoản sẽ bị xóa hoàn toàn.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteAdminDialog(null)}>Hủy</Button>
+            <Button variant="destructive" onClick={handleDeleteAdmin} disabled={adminLoading}>
+              {adminLoading && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+              Xóa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog open={!!showChangePasswordDialog} onOpenChange={() => setShowChangePasswordDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Đổi mật khẩu Company Admin</DialogTitle>
+            <DialogDescription>
+              Đổi mật khẩu cho: {showChangePasswordDialog?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Mật khẩu mới</Label>
+              <Input type="password" placeholder="Tối thiểu 6 ký tự" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowChangePasswordDialog(null)}>Hủy</Button>
+            <Button onClick={handleChangePassword} disabled={adminLoading || !newPassword}>
+              {adminLoading && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+              Cập nhật
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
