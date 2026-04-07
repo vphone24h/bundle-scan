@@ -180,7 +180,6 @@ export default function PlatformAdminPage() {
                   <span className="hidden sm:inline">{t('pages.platformAdmin.exportDB')}</span>
                 </TabsTrigger>
               )}
-              </TabsTrigger>
             </TabsList>
           </div>
 
