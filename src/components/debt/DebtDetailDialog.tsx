@@ -486,6 +486,14 @@ export function DebtDetailDialog({
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
                                 </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setDeletingPayment({ id: p.id, amount: p.amount, description: p.description, payment_type: 'payment', entity_type: entityType, entity_id: entityId, created_at: p.date }); }}
+                                  className="p-1 rounded hover:bg-muted text-destructive hover:text-destructive transition-colors"
+                                  title="Xóa phiếu"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
                               </div>
                             </div>
                             <div className="text-xs text-muted-foreground mt-1 pt-1 border-t border-dashed">
@@ -543,6 +551,14 @@ export function DebtDetailDialog({
                                   title="Sửa phiếu"
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setDeletingPayment({ id: a.id, amount: a.amount, description: a.description, payment_type: 'addition', entity_type: entityType, entity_id: entityId, created_at: a.date }); }}
+                                  className="p-1 rounded hover:bg-muted text-destructive hover:text-destructive transition-colors"
+                                  title="Xóa phiếu"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                               </div>
                             </div>
@@ -643,6 +659,14 @@ export function DebtDetailDialog({
                                 title="Sửa phiếu"
                               >
                                 <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setDeletingPayment({ id: payment.id, amount: payment.amount, description: payment.description, payment_type: payment.payment_type, entity_type: entityType, entity_id: entityId, created_at: payment.created_at }); }}
+                                className="p-1 rounded hover:bg-muted text-destructive hover:text-destructive transition-colors"
+                                title="Xóa phiếu"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             </div>
                             <p className="text-xs text-muted-foreground">
