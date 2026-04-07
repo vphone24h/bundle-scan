@@ -229,7 +229,7 @@ export function PaymentConfigManagement() {
       } else {
         const { error } = await supabase
           .from('bank_accounts')
-          .insert(data);
+          .insert({ ...data, company_id: companyId });
         if (error) throw error;
       }
     },
