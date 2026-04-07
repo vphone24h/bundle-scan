@@ -155,6 +155,8 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
         tenantId: selectedTenant.id,
         reason: reason || undefined,
         days: actionDialog === 'extend' ? parseInt(days) : undefined,
+        max_branches: actionDialog === 'extend' && extendMaxBranches ? parseInt(extendMaxBranches) : undefined,
+        max_users: actionDialog === 'extend' && extendMaxUsers ? parseInt(extendMaxUsers) : undefined,
       });
 
       toast({
