@@ -8,8 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAllCustomDomains, useUpdateDomainStatus, useDeleteCustomDomain } from '@/hooks/useCustomDomains';
-import { useAllTenants } from '@/hooks/useTenant';
+import { useAdminCustomDomains, useUpdateDomainStatus, useDeleteCustomDomain } from '@/hooks/useCustomDomains';
+import { useAllTenants, useAdminTenants } from '@/hooks/useTenant';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
@@ -24,8 +24,8 @@ const sslStatusConfig: Record<string, { label: string; variant: 'default' | 'sec
 };
 
 export function CustomDomainsManagement() {
-  const { data: domains, isLoading } = useAllCustomDomains();
-  const { data: tenants } = useAllTenants();
+  const { data: domains, isLoading } = useAdminCustomDomains();
+  const { data: tenants } = useAdminTenants();
   const updateStatus = useUpdateDomainStatus();
   const deleteDomain = useDeleteCustomDomain();
   const queryClient = useQueryClient();
@@ -72,7 +72,7 @@ export function CustomDomainsManagement() {
       }]);
       if (error) throw error;
       toast({ title: 'Đã thêm domain thành công' });
-      queryClient.invalidateQueries({ queryKey: ['all-custom-domains'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-custom-domains'] });
       setShowAddDialog(false);
       setNewDomain('');
       setSelectedTenantId('');
@@ -87,7 +87,7 @@ export function CustomDomainsManagement() {
     try {
       await deleteDomain.mutateAsync(id);
       toast({ title: 'Đã xóa domain' });
-      queryClient.invalidateQueries({ queryKey: ['all-custom-domains'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-custom-domains'] });
       setShowDeleteDialog(null);
     } catch (error: any) {
       toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });

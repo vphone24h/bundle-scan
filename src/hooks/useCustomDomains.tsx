@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminCompanyId } from './useAdminCompanyId';
 
 export interface CustomDomain {
   id: string;
@@ -120,6 +121,65 @@ export function useAllCustomDomains() {
         `)
         .order('created_at', { ascending: false });
 
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// Admin scoped: Lấy custom domains theo company_id (company_admin chỉ thấy domains của tenants thuộc công ty mình)
+export function useAdminCustomDomains() {
+  const { companyId, isPlatformAdmin, isLoading: adminLoading } = useAdminCompanyId();
+
+  return useQuery({
+    queryKey: ['admin-custom-domains', companyId],
+    enabled: !adminLoading,
+    queryFn: async () => {
+      if (isPlatformAdmin) {
+        // Platform admin sees all
+        const { data, error } = await supabase
+          .from('custom_domains')
+          .select(`
+            *,
+            tenants:tenant_id (
+              id,
+              name,
+              subdomain,
+              email,
+              company_id
+            )
+          `)
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data;
+      }
+
+      // Company admin: only domains belonging to tenants of their company
+      if (!companyId) return [];
+      
+      // First get tenant IDs for this company
+      const { data: companyTenants, error: tErr } = await supabase
+        .from('tenants')
+        .select('id')
+        .eq('company_id', companyId);
+      if (tErr) throw tErr;
+      if (!companyTenants || companyTenants.length === 0) return [];
+
+      const tenantIds = companyTenants.map(t => t.id);
+      const { data, error } = await supabase
+        .from('custom_domains')
+        .select(`
+          *,
+          tenants:tenant_id (
+            id,
+            name,
+            subdomain,
+            email,
+            company_id
+          )
+        `)
+        .in('tenant_id', tenantIds)
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     },
