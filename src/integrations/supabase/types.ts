@@ -4616,6 +4616,7 @@ export type Database = {
       }
       platform_users: {
         Row: {
+          company_id: string | null
           created_at: string
           display_name: string
           email: string | null
@@ -4628,6 +4629,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           display_name: string
           email?: string | null
@@ -4640,6 +4642,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           display_name?: string
           email?: string | null
@@ -4652,6 +4655,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "platform_users_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "platform_users_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -7636,6 +7646,7 @@ export type Database = {
       generate_domain_verification_token: { Args: never; Returns: string }
       generate_shop_ctv_code: { Args: { _tenant_id: string }; Returns: string }
       generate_voucher_code: { Args: never; Returns: string }
+      get_admin_company_id: { Args: { _user_id: string }; Returns: string }
       get_automation_eligible_tenants: {
         Args: {
           p_target_audience: string
@@ -7987,6 +7998,10 @@ export type Database = {
         Returns: boolean
       }
       is_authenticated: { Args: never; Returns: boolean }
+      is_company_admin: {
+        Args: { _company_id?: string; _user_id: string }
+        Returns: boolean
+      }
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
       is_tenant_accessible: { Args: { _tenant_id: string }; Returns: boolean }
       is_tenant_admin: { Args: { _user_id: string }; Returns: boolean }
@@ -8321,7 +8336,7 @@ export type Database = {
       membership_tier: "regular" | "silver" | "gold" | "vip"
       payment_status: "pending" | "approved" | "rejected" | "cancelled"
       payment_type: "cash" | "bank_card" | "e_wallet" | "debt"
-      platform_role: "platform_admin" | "tenant_admin"
+      platform_role: "platform_admin" | "tenant_admin" | "company_admin"
       point_status: "active" | "pending" | "expired"
       point_transaction_type: "earn" | "redeem" | "refund" | "adjust" | "expire"
       product_status:
@@ -8494,7 +8509,7 @@ export const Constants = {
       membership_tier: ["regular", "silver", "gold", "vip"],
       payment_status: ["pending", "approved", "rejected", "cancelled"],
       payment_type: ["cash", "bank_card", "e_wallet", "debt"],
-      platform_role: ["platform_admin", "tenant_admin"],
+      platform_role: ["platform_admin", "tenant_admin", "company_admin"],
       point_status: ["active", "pending", "expired"],
       point_transaction_type: ["earn", "redeem", "refund", "adjust", "expire"],
       product_status: [

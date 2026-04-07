@@ -57,7 +57,7 @@ export default function AuthPage() {
     const check = async () => {
       try {
         const { data: platformUser } = await supabase.from('platform_users').select('tenant_id, platform_role').eq('user_id', user.id).maybeSingle();
-        if (platformUser?.platform_role === 'platform_admin') return;
+        if (platformUser?.platform_role === 'platform_admin' || platformUser?.platform_role === 'company_admin') return;
         const { data: userRole } = await supabase.from('user_roles').select('tenant_id').eq('user_id', user.id).maybeSingle();
         const userTenantId = platformUser?.tenant_id || userRole?.tenant_id;
         if (!userTenantId) return;
@@ -108,7 +108,7 @@ export default function AuthPage() {
       const userRole = roleRes.data;
       const userTenantId = platformUser?.tenant_id || userRole?.tenant_id;
 
-      if (platformUser?.platform_role === 'platform_admin') {
+      if (platformUser?.platform_role === 'platform_admin' || platformUser?.platform_role === 'company_admin') {
         toast({ title: t('pages.auth.loginSuccess'), description: t('pages.auth.welcomeAdmin') });
         navigate('/platform-admin', { replace: true });
         return;

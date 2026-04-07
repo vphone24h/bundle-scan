@@ -13,7 +13,9 @@ import { useAllTenants } from '@/hooks/useTenant';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Plus, Trash2, Pencil, Globe, Loader2, Building2, Store, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Plus, Trash2, Pencil, Globe, Loader2, Building2, Store, CheckCircle, XCircle, Clock, UserCog, Key } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   active: { label: 'Hoạt động', variant: 'default' },
@@ -28,6 +30,7 @@ export function CompaniesManagement() {
   const updateCompany = useUpdateCompany();
   const deleteCompany = useDeleteCompany();
   const assignTenant = useAssignTenantToCompany();
+  const queryClient = useQueryClient();
 
   const [search, setSearch] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -39,6 +42,32 @@ export function CompaniesManagement() {
   const [formDomain, setFormDomain] = useState('');
   const [formName, setFormName] = useState('');
   const [formStatus, setFormStatus] = useState('active');
+
+  // Company Admin states
+  const [showAdminDialog, setShowAdminDialog] = useState<any>(null); // company object
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminDisplayName, setAdminDisplayName] = useState('');
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [showDeleteAdminDialog, setShowDeleteAdminDialog] = useState<any>(null);
+  const [showChangePasswordDialog, setShowChangePasswordDialog] = useState<any>(null);
+  const [newPassword, setNewPassword] = useState('');
+
+  // Fetch company admins
+  const { data: companyAdmins } = useQuery({
+    queryKey: ['company-admins'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('manage-company-admin', {
+        body: { action: 'list' },
+      });
+      if (error) throw error;
+      return data?.admins || [];
+    },
+  });
+
+  const getAdminForCompany = (companyId: string) => {
+    return companyAdmins?.find((a: any) => a.company_id === companyId);
+  };
 
   const filtered = useMemo(() => {
     if (!companies) return [];
@@ -56,6 +85,75 @@ export function CompaniesManagement() {
     if (!showTenantsDialog || !tenants) return [];
     return tenants.filter((t: any) => t.company_id !== showTenantsDialog.id);
   }, [showTenantsDialog, tenants]);
+
+  const handleCreateAdmin = async () => {
+    if (!showAdminDialog || !adminEmail || !adminPassword) {
+      toast({ title: 'Vui lòng nhập đủ email và mật khẩu', variant: 'destructive' });
+      return;
+    }
+    setAdminLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-company-admin', {
+        body: {
+          action: 'create',
+          email: adminEmail,
+          password: adminPassword,
+          company_id: showAdminDialog.id,
+          display_name: adminDisplayName || adminEmail.split('@')[0],
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: data.message || 'Đã tạo Company Admin' });
+      setShowAdminDialog(null);
+      setAdminEmail('');
+      setAdminPassword('');
+      setAdminDisplayName('');
+      queryClient.invalidateQueries({ queryKey: ['company-admins'] });
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  const handleDeleteAdmin = async () => {
+    if (!showDeleteAdminDialog) return;
+    setAdminLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-company-admin', {
+        body: { action: 'delete', user_id: showDeleteAdminDialog.user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'Đã xóa Company Admin' });
+      setShowDeleteAdminDialog(null);
+      queryClient.invalidateQueries({ queryKey: ['company-admins'] });
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!showChangePasswordDialog || !newPassword) return;
+    setAdminLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-company-admin', {
+        body: { action: 'update_password', user_id: showChangePasswordDialog.user_id, new_password: newPassword },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'Đã cập nhật mật khẩu' });
+      setShowChangePasswordDialog(null);
+      setNewPassword('');
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+    } finally {
+      setAdminLoading(false);
+    }
+  };
 
   const openAdd = () => {
     setFormDomain('');
@@ -143,16 +241,19 @@ export function CompaniesManagement() {
                 <TableHead>Domain</TableHead>
                 <TableHead>Tên công ty</TableHead>
                 <TableHead>Số shop</TableHead>
+                <TableHead>Admin</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead>Ngày tạo</TableHead>
-                <TableHead className="w-[150px]">Thao tác</TableHead>
+                <TableHead className="w-[180px]">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Chưa có công ty nào</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Chưa có công ty nào</TableCell></TableRow>
               )}
-              {filtered.map(c => (
+              {filtered.map(c => {
+                const admin = getAdminForCompany(c.id);
+                return (
                 <TableRow key={c.id}>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -167,6 +268,25 @@ export function CompaniesManagement() {
                       {c.tenant_count || 0} shop
                     </Button>
                   </TableCell>
+                  <TableCell>
+                    {admin ? (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium">{admin.email}</p>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" className="h-6 text-xs p-1" onClick={() => { setShowChangePasswordDialog(admin); setNewPassword(''); }}>
+                            <Key className="h-3 w-3 mr-0.5" />Đổi MK
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-6 text-xs p-1 text-destructive" onClick={() => setShowDeleteAdminDialog(admin)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => { setShowAdminDialog(c); setAdminEmail(''); setAdminPassword(''); setAdminDisplayName(''); }}>
+                        <UserCog className="h-3.5 w-3.5" />Tạo admin
+                      </Button>
+                    )}
+                  </TableCell>
                   <TableCell>{renderStatusBadge(c.status)}</TableCell>
                   <TableCell>{format(new Date(c.created_at), 'dd/MM/yyyy', { locale: vi })}</TableCell>
                   <TableCell>
@@ -180,7 +300,8 @@ export function CompaniesManagement() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </Card>
@@ -189,7 +310,9 @@ export function CompaniesManagement() {
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">Chưa có công ty nào</p>}
-        {filtered.map(c => (
+        {filtered.map(c => {
+          const admin = getAdminForCompany(c.id);
+          return (
           <Card key={c.id}>
             <CardContent className="p-4 space-y-2">
               <div className="flex items-center justify-between">
@@ -214,11 +337,22 @@ export function CompaniesManagement() {
                     <Store className="h-3 w-3" /> {c.tenant_count || 0}
                   </Button>
                 </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Admin:</span>
+                  {admin ? (
+                    <span className="text-xs">{admin.email}</span>
+                  ) : (
+                    <Button variant="outline" size="sm" className="h-6 text-xs gap-1" onClick={() => { setShowAdminDialog(c); setAdminEmail(''); setAdminPassword(''); setAdminDisplayName(''); }}>
+                      <UserCog className="h-3 w-3" />Tạo
+                    </Button>
+                  )}
+                </div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Trạng thái:</span>{renderStatusBadge(c.status)}</div>
               </div>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
       </div>
 
       {/* Add/Edit Dialog */}
@@ -331,6 +465,86 @@ export function CompaniesManagement() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Company Admin Dialog */}
+      <Dialog open={!!showAdminDialog} onOpenChange={() => setShowAdminDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCog className="h-5 w-5 text-primary" />
+              Tạo Admin cho {showAdminDialog?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Company Admin có quyền quản lý toàn bộ shop trong domain {showAdminDialog?.domain}, nhưng không thể truy cập tab Công ty.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Email</Label>
+              <Input type="email" placeholder="admin@company.com" value={adminEmail} onChange={e => setAdminEmail(e.target.value)} />
+            </div>
+            <div>
+              <Label>Mật khẩu</Label>
+              <Input type="password" placeholder="Tối thiểu 6 ký tự" value={adminPassword} onChange={e => setAdminPassword(e.target.value)} />
+            </div>
+            <div>
+              <Label>Tên hiển thị (tùy chọn)</Label>
+              <Input placeholder="vd: Admin ABC" value={adminDisplayName} onChange={e => setAdminDisplayName(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAdminDialog(null)}>Hủy</Button>
+            <Button onClick={handleCreateAdmin} disabled={adminLoading}>
+              {adminLoading && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+              Tạo Admin
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Company Admin Dialog */}
+      <Dialog open={!!showDeleteAdminDialog} onOpenChange={() => setShowDeleteAdminDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xác nhận xóa Company Admin</DialogTitle>
+            <DialogDescription>
+              Xóa admin <strong>{showDeleteAdminDialog?.email}</strong>? Tài khoản sẽ bị xóa hoàn toàn.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteAdminDialog(null)}>Hủy</Button>
+            <Button variant="destructive" onClick={handleDeleteAdmin} disabled={adminLoading}>
+              {adminLoading && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+              Xóa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog open={!!showChangePasswordDialog} onOpenChange={() => setShowChangePasswordDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Đổi mật khẩu Company Admin</DialogTitle>
+            <DialogDescription>
+              Đổi mật khẩu cho: {showChangePasswordDialog?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Mật khẩu mới</Label>
+              <Input type="password" placeholder="Tối thiểu 6 ký tự" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowChangePasswordDialog(null)}>Hủy</Button>
+            <Button onClick={handleChangePassword} disabled={adminLoading || !newPassword}>
+              {adminLoading && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+              Cập nhật
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
