@@ -100,18 +100,29 @@ Deno.serve(async (req) => {
 
     const { data: platformUser } = await supabaseAdmin
       .from('platform_users')
-      .select('platform_role')
+      .select('platform_role, company_id')
       .eq('user_id', caller.id)
       .single()
 
-    if (!platformUser || platformUser.platform_role !== 'platform_admin') {
+    const isPlatformAdmin = platformUser?.platform_role === 'platform_admin'
+    const isCompanyAdmin = platformUser?.platform_role === 'company_admin'
+
+    if (!platformUser || (!isPlatformAdmin && !isCompanyAdmin)) {
       return new Response(
         JSON.stringify({ error: 'Chỉ Admin nền tảng mới có quyền thực hiện' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const { action, tenantId, tenantIds, reason, days, note } = await req.json()
+    const { action, tenantId, tenantIds, reason, days, note, max_branches, max_users } = await req.json()
+
+    // Company admin scope check helper
+    const checkCompanyScope = async (tid: string) => {
+      if (isPlatformAdmin) return true
+      if (!isCompanyAdmin || !platformUser.company_id) return false
+      const { data: t } = await supabaseAdmin.from('tenants').select('company_id').eq('id', tid).single()
+      return t?.company_id === platformUser.company_id
+    }
 
     // ========== BULK EXTEND ==========
     if (action === 'bulk_extend') {
