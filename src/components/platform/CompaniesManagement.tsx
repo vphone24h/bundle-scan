@@ -30,6 +30,7 @@ export function CompaniesManagement() {
   const updateCompany = useUpdateCompany();
   const deleteCompany = useDeleteCompany();
   const assignTenant = useAssignTenantToCompany();
+  const queryClient = useQueryClient();
 
   const [search, setSearch] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -40,6 +41,33 @@ export function CompaniesManagement() {
   // Add/Edit form
   const [formDomain, setFormDomain] = useState('');
   const [formName, setFormName] = useState('');
+  const [formStatus, setFormStatus] = useState('active');
+
+  // Company Admin states
+  const [showAdminDialog, setShowAdminDialog] = useState<any>(null); // company object
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminDisplayName, setAdminDisplayName] = useState('');
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [showDeleteAdminDialog, setShowDeleteAdminDialog] = useState<any>(null);
+  const [showChangePasswordDialog, setShowChangePasswordDialog] = useState<any>(null);
+  const [newPassword, setNewPassword] = useState('');
+
+  // Fetch company admins
+  const { data: companyAdmins } = useQuery({
+    queryKey: ['company-admins'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('manage-company-admin', {
+        body: { action: 'list' },
+      });
+      if (error) throw error;
+      return data?.admins || [];
+    },
+  });
+
+  const getAdminForCompany = (companyId: string) => {
+    return companyAdmins?.find((a: any) => a.company_id === companyId);
+  };
   const [formStatus, setFormStatus] = useState('active');
 
   const filtered = useMemo(() => {
