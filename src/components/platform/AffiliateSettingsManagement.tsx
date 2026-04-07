@@ -7,10 +7,10 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Save, Settings, Shield, Clock, Wallet, FileText } from 'lucide-react';
-import { useAffiliateSettings, useUpdateAffiliateSettings } from '@/hooks/useAffiliate';
+import { useAdminAffiliateSettings, useUpdateAffiliateSettings } from '@/hooks/useAffiliate';
 
 export function AffiliateSettingsManagement() {
-  const { data: settings, isLoading } = useAffiliateSettings();
+  const { data: settings, isLoading } = useAdminAffiliateSettings();
   const updateSettings = useUpdateAffiliateSettings();
 
   const [form, setForm] = useState({
