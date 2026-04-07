@@ -78,6 +78,7 @@ export function DebtDetailDialog({
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
   const [onlyShowDebt, setOnlyShowDebt] = useState(true);
   const [editingPayment, setEditingPayment] = useState<any>(null);
+  const [deletingPayment, setDeletingPayment] = useState<any>(null);
   const { data: allReceipts, isLoading: receiptsLoading } = useDebtDetail(entityType, entityId, mergedEntityIds);
   const { data: paymentHistory, isLoading: historyLoading } = useDebtPaymentHistory(entityType, entityId, mergedEntityIds);
 
