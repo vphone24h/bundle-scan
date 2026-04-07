@@ -120,16 +120,8 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const smtpUser = Deno.env.get('SMTP_USER')
-    const smtpPassword = Deno.env.get('SMTP_PASSWORD')
-
-    if (!smtpUser || !smtpPassword) {
-      console.log('SMTP not configured, skipping landing order alert')
-      return new Response(JSON.stringify({ ok: true, skipped: 'smtp_not_configured' }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
+    // Resolve SMTP based on tenant's company config
+    // (will be used after tenant_id is parsed from body)
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
