@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { useCompanySettings, useUpsertCompanySettings, BankAccount } from '@/hooks/useCompanySettings';
 import { usePlatformUser } from '@/hooks/useTenant';
-import { Loader2, Save, Plus, Trash2, Building2, Phone, Mail, Globe, CreditCard, Image } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Loader2, Save, Plus, Trash2, Building2, Phone, Mail, Globe, CreditCard, Image, Upload } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 export function CompanySettingsForm() {
@@ -25,6 +26,8 @@ export function CompanySettingsForm() {
   const [address, setAddress] = useState('');
   const [description, setDescription] = useState('');
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (settings) {
@@ -39,6 +42,44 @@ export function CompanySettingsForm() {
       setBankAccounts(settings.bank_accounts || []);
     }
   }, [settings]);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !companyId) return;
+
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({ title: 'Lỗi', description: 'Chỉ hỗ trợ PNG, JPG, WebP, SVG', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'Lỗi', description: 'File tối đa 2MB', variant: 'destructive' });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop() || 'png';
+      const path = `logos/${companyId}/logo.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('company-assets')
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('company-assets')
+        .getPublicUrl(path);
+
+      setLogoUrl(urlData.publicUrl + '?t=' + Date.now());
+      toast({ title: 'Đã tải logo lên thành công' });
+    } catch (err: any) {
+      toast({ title: 'Lỗi tải ảnh', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const handleSave = async () => {
     if (!companyId) return;
@@ -110,15 +151,34 @@ export function CompanySettingsForm() {
           <div className="space-y-2">
             <Label className="text-sm flex items-center gap-1.5">
               <Image className="h-3.5 w-3.5" />
-              URL Logo
+              Logo công ty
             </Label>
-            <Input placeholder="https://..." value={logoUrl} onChange={e => setLogoUrl(e.target.value)} />
-            {logoUrl && (
-              <div className="flex items-center gap-3 mt-2">
-                <img src={logoUrl} alt="Logo" className="h-12 w-12 object-contain rounded-lg border" />
-                <span className="text-xs text-muted-foreground">Xem trước logo</span>
+            <div className="flex items-center gap-3">
+              {logoUrl && (
+                <img src={logoUrl} alt="Logo" className="h-14 w-14 object-contain rounded-lg border" />
+              )}
+              <div className="flex-1">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="gap-1.5"
+                >
+                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                  {uploading ? 'Đang tải...' : 'Chọn ảnh logo'}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-1">PNG, JPG, WebP, SVG • Tối đa 2MB</p>
               </div>
-            )}
+            </div>
           </div>
           <div className="space-y-2">
             <Label className="text-sm">Mô tả ngắn</Label>
