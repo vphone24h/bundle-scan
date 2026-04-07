@@ -3,15 +3,27 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import vkhoLogo from '@/assets/vkho-logo.png';
-// Only import icons actually used on initial render - others lazy loaded via tree-shaking
 import { 
   Package, BarChart3, Users, Shield, Smartphone,
   CheckCircle2, ArrowRight, Store, Receipt, TrendingUp,
   Phone, Mail, ChevronRight, Zap, Globe
 } from 'lucide-react';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
+import { useCompany } from '@/hooks/useCompanyResolver';
 
 export default function PublicLandingPage() {
   const navigate = useNavigate();
+  const company = useCompany();
+  const { data: companySettings } = useCompanySettings();
+
+  // Branding from company settings, fallback to vkho defaults
+  const brandName = companySettings?.display_name || company.domain || 'vkho.vn';
+  const brandSlogan = companySettings?.slogan || 'Quản lý thông minh';
+  const brandLogo = companySettings?.logo_url || vkhoLogo;
+  const brandPhone = companySettings?.phone || '0355.820.185';
+  const brandEmail = companySettings?.email || 'vkho.vn@gmail.com';
+  const brandWebsite = companySettings?.website || company.domain || 'vkho.vn';
+  const brandDescription = companySettings?.description || 'Nền tảng quản lý kho chuyên nghiệp dành cho cửa hàng điện thoại, điện máy tại Việt Nam.';
 
   const features = [
     {
