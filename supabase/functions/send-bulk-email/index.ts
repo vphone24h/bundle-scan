@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
           const personalizedHtml = fullHtml + trackingPixel
 
           const mailOptions = {
-            from: `"VKHO" <${currentSmtpUser}>`,
+            from: `"${fromName}" <${currentSmtpUser}>`,
             to: email,
             subject,
             html: personalizedHtml,
@@ -218,7 +218,7 @@ Deno.serve(async (req) => {
               try {
                 await currentTransporter.sendMail({
                   ...mailOptions,
-                  from: `"VKHO" <${currentSmtpUser}>`,
+                  from: `"${fromName}" <${currentSmtpUser}>`,
                 })
                 return { email, ok: true }
               } catch (retryErr: any) {
