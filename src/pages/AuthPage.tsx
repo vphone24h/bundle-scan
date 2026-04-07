@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
+import { validateTenantCompany } from '@/lib/companyHelpers';
 
 const CURRENT_STORE_ID_KEY = 'current_store_id';
 
@@ -120,7 +121,7 @@ export default function AuthPage() {
         return;
       }
 
-      const { data: tenant } = await supabase.from('tenants').select('id, subdomain, status').eq('id', userTenantId).maybeSingle();
+      const { data: tenant } = await supabase.from('tenants').select('id, subdomain, status, company_id').eq('id', userTenantId).maybeSingle();
       
       if (!tenant) {
         await supabase.auth.signOut({ scope: 'local' });
@@ -137,6 +138,15 @@ export default function AuthPage() {
       if (tenant.subdomain !== inputStoreId) {
         await supabase.auth.signOut({ scope: 'local' });
         toast({ title: t('pages.auth.loginFailed'), description: t('pages.auth.wrongCredentials'), variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
+      // Company validation: ensure tenant belongs to current company/domain
+      const isValidCompany = await validateTenantCompany(userTenantId);
+      if (!isValidCompany) {
+        await supabase.auth.signOut({ scope: 'local' });
+        toast({ title: t('pages.auth.loginFailed'), description: 'Tài khoản không thuộc hệ thống này.', variant: 'destructive' });
         setLoading(false);
         return;
       }
