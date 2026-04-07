@@ -41,13 +41,17 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
   }, [company.status, company.domain]);
   
   const routerState = useMemo(() => {
-
-    // Company custom domains may need one async round to resolve.
-    // Never push explicit admin entry to store website during that window.
+    // Unknown custom root domain must wait for company resolution.
+    // Never fallback to store/vkho branding before company lookup finishes.
     if (company.status === 'loading' && !hostInfo.isMainDomain && !hostInfo.subdomain) {
-      // Unknown domain + company not resolved yet → don't show store landing prematurely
-      // Wait for company resolution to decide if this is a company domain or store
       if (isAdminEntryRoute) return 'app';
+      if (location.pathname === '/' && publicLandingPage) return 'public_landing';
+      return 'app';
+    }
+
+    if (company.status === 'resolved' && isCompanyDomain) {
+      if (authLoading) return 'app';
+      if (user) return 'app';
       if (location.pathname === '/' && publicLandingPage) return 'public_landing';
       return 'app';
     }
@@ -63,21 +67,6 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
       }
     }
 
-    // Company domain (e.g. cty.vphone.vn) → treat like main domain
-    // Show public landing page, not store landing
-    if (isCompanyDomain) {
-      if (authLoading) {
-        return 'app';
-      }
-      if (user) {
-        return 'app';
-      }
-      if (location.pathname === '/' && publicLandingPage) {
-        return 'public_landing';
-      }
-      return 'app';
-    }
-    
     // OPTIMIZATION: For main domains, skip loading state entirely
     // as tenant resolution is synchronous
     if (resolvedTenant.isMainDomain && resolvedTenant.status !== 'loading') {
