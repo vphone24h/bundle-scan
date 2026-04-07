@@ -28,6 +28,18 @@ export function normalizeHostname(hostname: string): string {
   return hostname.toLowerCase().replace(/^www\./, '');
 }
 
+function isHostnameCompatibleWithCompany(hostname: string, companyDomain: string | null): boolean {
+  if (!companyDomain) return false;
+
+  const normalizedHostname = normalizeHostname(hostname);
+  const normalizedDomain = normalizeHostname(companyDomain);
+
+  return (
+    normalizedHostname === normalizedDomain ||
+    normalizedHostname.endsWith(`.${normalizedDomain}`)
+  );
+}
+
 function readPersistedCompany(hostname: string): CompanyInfo | null {
   try {
     const raw = localStorage.getItem(`${COMPANY_CACHE_KEY}:${hostname}`);
@@ -37,12 +49,19 @@ function readPersistedCompany(hostname: string): CompanyInfo | null {
       localStorage.removeItem(`${COMPANY_CACHE_KEY}:${hostname}`);
       return null;
     }
-    return {
+    const persistedCompany = {
       companyId: parsed.companyId,
       domain: parsed.domain,
       name: parsed.name,
       status: 'resolved',
-    };
+    } as CompanyInfo;
+
+    if (!isHostnameCompatibleWithCompany(hostname, persistedCompany.domain)) {
+      localStorage.removeItem(`${COMPANY_CACHE_KEY}:${hostname}`);
+      return null;
+    }
+
+    return persistedCompany;
   } catch {
     return null;
   }
@@ -50,6 +69,7 @@ function readPersistedCompany(hostname: string): CompanyInfo | null {
 
 function persistCompany(hostname: string, info: CompanyInfo) {
   if (info.status !== 'resolved' || !info.companyId) return;
+  if (!isHostnameCompatibleWithCompany(hostname, info.domain)) return;
   try {
     localStorage.setItem(`${COMPANY_CACHE_KEY}:${hostname}`, JSON.stringify({
       companyId: info.companyId,
@@ -72,7 +92,12 @@ function persistCompany(hostname: string, info: CompanyInfo) {
 export function getCachedCompanyForHostname(hostname: string): CompanyInfo | null {
   const normalizedHostname = normalizeHostname(hostname);
 
-  if (cachedCompany && cachedForHostname && normalizeHostname(cachedForHostname) === normalizedHostname) {
+  if (
+    cachedCompany &&
+    cachedForHostname &&
+    normalizeHostname(cachedForHostname) === normalizedHostname &&
+    isHostnameCompatibleWithCompany(hostname, cachedCompany.domain)
+  ) {
     return cachedCompany;
   }
 
@@ -141,15 +166,6 @@ export async function resolveCompanyFromHostname(hostname: string): Promise<Comp
     } catch {}
   }
 
-  // Fallback to default
-  try {
-    const { data } = await supabase.rpc('lookup_company_by_domain', { _domain: 'vkho.vn' });
-    const company = Array.isArray(data) ? data[0] : data;
-    if (company) {
-      return { companyId: company.id, domain: company.domain, name: company.name, status: 'resolved' };
-    }
-  } catch {}
-
   return { companyId: null, domain: null, name: null, status: 'not_found' };
 }
 
@@ -163,13 +179,23 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    if (company.status === 'resolved' && cachedForHostname === hostname) return;
+    if (
+      company.status === 'resolved' &&
+      cachedForHostname === hostname &&
+      isHostnameCompatibleWithCompany(hostname, company.domain)
+    ) return;
 
     let cancelled = false;
     resolveCompanyFromHostname(hostname).then(result => {
       if (cancelled) return;
       cachedCompany = result;
       cachedForHostname = hostname;
+      if (result.status === 'resolved' && !isHostnameCompatibleWithCompany(hostname, result.domain)) {
+        cachedCompany = null;
+        setCompany({ companyId: null, domain: null, name: null, status: 'not_found' });
+        return;
+      }
+
       persistCompany(normalizeHostname(hostname), result);
       // Register company domain so tenantResolver treats it as a primary domain
       if (result.domain) {
