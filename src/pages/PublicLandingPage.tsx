@@ -15,14 +15,19 @@ export default function PublicLandingPage() {
   const navigate = useNavigate();
   const company = useCompany();
   const { data: companySettings } = useCompanySettings();
+  const normalizedHostname = typeof window !== 'undefined'
+    ? window.location.hostname.toLowerCase().replace(/^www\./, '')
+    : '';
+  const isCustomCompanyDomain = !!normalizedHostname && normalizedHostname !== 'vkho.vn' && !normalizedHostname.includes('lovable');
+  const pendingBrandName = isCustomCompanyDomain ? normalizedHostname : 'vkho.vn';
 
   // Branding from company settings, fallback to vkho defaults
-  const brandName = companySettings?.display_name || company.domain || 'vkho.vn';
+  const brandName = companySettings?.display_name || company.domain || pendingBrandName;
   const brandSlogan = companySettings?.slogan || 'Quản lý thông minh';
   const brandLogo = companySettings?.logo_url || vkhoLogo;
   const brandPhone = companySettings?.phone || '0355.820.185';
   const brandEmail = companySettings?.email || 'vkho.vn@gmail.com';
-  const brandWebsite = companySettings?.website || company.domain || 'vkho.vn';
+  const brandWebsite = companySettings?.website || company.domain || pendingBrandName;
   const brandDescription = companySettings?.description || 'Nền tảng quản lý kho chuyên nghiệp dành cho cửa hàng điện thoại, điện máy tại Việt Nam.';
 
   const features = [
@@ -192,7 +197,7 @@ export default function PublicLandingPage() {
             <div>
               <Badge variant="outline" className="mb-4">Lợi ích</Badge>
               <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
-                Tại sao chọn vkho.vn?
+                Tại sao chọn {brandName}?
               </h2>
               <p className="mt-4 text-muted-foreground">
                 Được thiết kế dành riêng cho các cửa hàng điện thoại, điện máy tại Việt Nam
