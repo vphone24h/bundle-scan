@@ -10,12 +10,18 @@ import { Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { cn } from '@/lib/utils';
 import { getCurrentCompanyDomain } from '@/hooks/useCompanyResolver';
+import { useCompany } from '@/hooks/useCompanyResolver';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [tenantInfo, setTenantInfo] = useState<{ subdomain: string } | null>(null);
+  const company = useCompany();
+  const { data: companySettings } = useCompanySettings();
+  const companyLogo = companySettings?.logo_url;
+  const companyDomain = company.domain || 'vkho.vn';
 
   const [formData, setFormData] = useState({
     businessName: '',
@@ -184,8 +190,8 @@ export default function RegisterPage() {
           </Button>
           <div className="flex justify-center mb-4">
             <img 
-              src={vkhoLogo} 
-              alt="VKho Logo" 
+              src={companyLogo || vkhoLogo} 
+              alt="Logo" 
               className="h-14 w-14 object-contain"
             />
           </div>
@@ -232,7 +238,7 @@ export default function RegisterPage() {
                   required
                 />
                 <span className="inline-flex items-center px-3 h-10 border border-l-0 rounded-r-md bg-muted text-muted-foreground text-sm whitespace-nowrap">
-                  .vkho.vn
+                  .{companyDomain}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">

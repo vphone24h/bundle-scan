@@ -12,6 +12,8 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { validateTenantCompany } from '@/lib/companyHelpers';
+import { useCompany } from '@/hooks/useCompanyResolver';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 
 const CURRENT_STORE_ID_KEY = 'current_store_id';
 
@@ -23,6 +25,10 @@ export default function AuthPage() {
   
   const resolvedTenant = useTenantResolver();
   const isSubdomainMode = resolvedTenant.status === 'resolved' && resolvedTenant.subdomain;
+  const company = useCompany();
+  const { data: companySettings } = useCompanySettings();
+  const companyLogo = companySettings?.logo_url;
+  const companyDomain = company.domain || 'vkho.vn';
 
   const [storeId, setStoreId] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
@@ -169,7 +175,7 @@ export default function AuthPage() {
             </Button>
           )}
           <div className="flex justify-center mb-4 pt-6">
-            <img src={vkhoLogo} alt="VKho Logo" className="h-20 w-20 object-contain" />
+            <img src={companyLogo || vkhoLogo} alt="Logo" className="h-20 w-20 object-contain" />
           </div>
           <CardTitle className="text-2xl">
             {isSubdomainMode && resolvedTenant.tenantName ? resolvedTenant.tenantName : t('pages.auth.title')}
@@ -185,7 +191,7 @@ export default function AuthPage() {
                 <Label htmlFor="store-id">{t('pages.auth.storeId')}</Label>
                 <div className="flex items-center gap-0">
                   <Input id="store-id" type="text" placeholder={t('pages.auth.storeIdPlaceholder')} value={storeId} onChange={(e) => setStoreId(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} className="rounded-r-none border-r-0" required />
-                  <span className="inline-flex items-center px-3 h-10 border border-l-0 rounded-r-md bg-muted text-muted-foreground text-sm">.vkho.vn</span>
+                  <span className="inline-flex items-center px-3 h-10 border border-l-0 rounded-r-md bg-muted text-muted-foreground text-sm">.{companyDomain}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">{t('pages.auth.storeIdHint')}</p>
               </div>
@@ -193,7 +199,7 @@ export default function AuthPage() {
             {isSubdomainMode && (
               <div className="bg-muted p-3 rounded-lg text-center">
                 <p className="text-sm text-muted-foreground">{t('pages.auth.loggingInTo')}</p>
-                <p className="font-mono font-semibold text-primary">{resolvedTenant.subdomain}.vkho.vn</p>
+                <p className="font-mono font-semibold text-primary">{resolvedTenant.subdomain}.{companyDomain}</p>
               </div>
             )}
             <div className="space-y-2">
