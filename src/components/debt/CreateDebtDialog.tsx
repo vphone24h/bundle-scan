@@ -38,6 +38,12 @@ export function CreateDebtDialog({
   onOpenChange,
   entityType,
 }: CreateDebtDialogProps) {
+  useEffect(() => {
+    if (!open) {
+      forceReleaseStuckInteraction();
+    }
+  }, [open]);
+
   const queryClient = useQueryClient();
   const { data: permissions } = usePermissions();
   const { data: branches } = useBranches();
