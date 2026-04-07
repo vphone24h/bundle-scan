@@ -107,14 +107,15 @@ export function DebtPaymentDeleteDialog({
         new_data: null,
       }]);
 
-      // 5. Invalidate queries
+      // 5. Invalidate queries - use refetchType 'all' for cash-book so inactive queries also refetch
       queryClient.invalidateQueries({ queryKey: ['debt'] });
       queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
       queryClient.invalidateQueries({ queryKey: ['debt-payment-history'] });
       queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
       queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
-      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
-      queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] });
+      queryClient.removeQueries({ queryKey: ['cash-book'] });
+      queryClient.removeQueries({ queryKey: ['cash-book-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
 
       toast.success(`Đã xóa ${typeLabel}`);
       onOpenChange(false);
