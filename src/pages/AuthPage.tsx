@@ -199,7 +199,7 @@ export default function AuthPage() {
             {isSubdomainMode && (
               <div className="bg-muted p-3 rounded-lg text-center">
                 <p className="text-sm text-muted-foreground">{t('pages.auth.loggingInTo')}</p>
-                <p className="font-mono font-semibold text-primary">{resolvedTenant.subdomain}.vkho.vn</p>
+                <p className="font-mono font-semibold text-primary">{resolvedTenant.subdomain}.{companyDomain}</p>
               </div>
             )}
             <div className="space-y-2">
