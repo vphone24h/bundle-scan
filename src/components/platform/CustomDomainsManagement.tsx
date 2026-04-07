@@ -72,7 +72,7 @@ export function CustomDomainsManagement() {
       }]);
       if (error) throw error;
       toast({ title: 'Đã thêm domain thành công' });
-      queryClient.invalidateQueries({ queryKey: ['all-custom-domains'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-custom-domains'] });
       setShowAddDialog(false);
       setNewDomain('');
       setSelectedTenantId('');
@@ -87,7 +87,7 @@ export function CustomDomainsManagement() {
     try {
       await deleteDomain.mutateAsync(id);
       toast({ title: 'Đã xóa domain' });
-      queryClient.invalidateQueries({ queryKey: ['all-custom-domains'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-custom-domains'] });
       setShowDeleteDialog(null);
     } catch (error: any) {
       toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
