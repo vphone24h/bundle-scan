@@ -206,7 +206,7 @@ export function PaymentConfigManagement() {
         description: 'Đã lưu cấu hình thanh toán',
       });
 
-      queryClient.invalidateQueries({ queryKey: ['payment-config'] });
+      queryClient.invalidateQueries({ queryKey: ['payment-config', companyId] });
     } catch (error: any) {
       toast({
         title: 'Lỗi',
