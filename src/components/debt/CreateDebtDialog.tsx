@@ -288,7 +288,7 @@ export function CreateDebtDialog({
 
   return (
     <Dialog modal open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" onCloseAutoFocus={preventDialogAutoFocus}>
         <DialogHeader>
           <DialogTitle>
             {isCustomer ? 'Thêm công nợ khách hàng' : 'Thêm công nợ nhà cung cấp'}
