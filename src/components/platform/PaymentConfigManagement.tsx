@@ -197,7 +197,7 @@ export function PaymentConfigManagement() {
       for (const update of updates) {
         const { error } = await supabase
           .from('payment_config')
-          .upsert(update, { onConflict: 'config_key' });
+          .upsert({ ...update, company_id: companyId }, { onConflict: 'config_key' });
         if (error) throw error;
       }
 
