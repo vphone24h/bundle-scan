@@ -127,48 +127,11 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const smtpUser = Deno.env.get('SMTP_USER')!
-    const smtpPassword = Deno.env.get('SMTP_PASSWORD')!
+    const defaultSmtpUser = Deno.env.get('SMTP_USER')!
+    const defaultSmtpPassword = Deno.env.get('SMTP_PASSWORD')!
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
-    })
-
-    // Lấy cấu hình hotline & zalo
-    const { data: configs } = await supabaseAdmin
-      .from('payment_config')
-      .select('config_key, config_value')
-      .in('config_key', ['hotline', 'feedback_zalo_url', 'feedback_hotline'])
-
-    const hotline = configs?.find(c => c.config_key === 'hotline')?.config_value
-      || configs?.find(c => c.config_key === 'feedback_hotline')?.config_value
-      || '0396-793-883'
-    const zalo = configs?.find(c => c.config_key === 'feedback_zalo_url')?.config_value
-      || '0396 793 883'
-
-    // Tìm tenants đăng ký đúng 15 ngày trước, chưa có sản phẩm
-    const threeDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
-    const fourDaysAgo = new Date(Date.now() - 16 * 24 * 60 * 60 * 1000)
-
-    const { data: tenants } = await supabaseAdmin
-      .from('tenants')
-      .select('id, subdomain, business_name, created_at')
-      .in('status', ['trial', 'active'])
-      .gte('created_at', fourDaysAgo.toISOString())
-      .lte('created_at', threeDaysAgo.toISOString())
-
-    if (!tenants || tenants.length === 0) {
-      console.log('No inactive tenants found')
-      return new Response(JSON.stringify({ success: true, sent: 0 }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: { user: smtpUser, pass: smtpPassword },
     })
 
     let sent = 0
