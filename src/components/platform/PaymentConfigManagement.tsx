@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminCompanyId } from '@/hooks/useAdminCompanyId';
 import { 
   Loader2, 
   Save, 
@@ -54,6 +55,7 @@ interface BankAccount {
 
 export function PaymentConfigManagement() {
   const queryClient = useQueryClient();
+  const { companyId } = useAdminCompanyId();
   const [hotline, setHotline] = useState('');
   const [supportEmail, setSupportEmail] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -86,26 +88,33 @@ export function PaymentConfigManagement() {
     is_active: true,
   });
 
-  // Fetch payment config
+  // Fetch payment config scoped to company
   const { data: configs, isLoading: loadingConfigs } = useQuery({
-    queryKey: ['payment-config'],
+    queryKey: ['payment-config', companyId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('payment_config')
-        .select('*');
+      let query = supabase.from('payment_config').select('*');
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      } else {
+        query = query.is('company_id', null);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data as PaymentConfig[];
     },
   });
 
-  // Fetch bank accounts
+  // Fetch bank accounts scoped to company
   const { data: bankAccounts, isLoading: loadingBanks } = useQuery({
-    queryKey: ['bank-accounts'],
+    queryKey: ['bank-accounts', companyId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('bank_accounts')
-        .select('*')
-        .order('display_order');
+      let query = supabase.from('bank_accounts').select('*').order('display_order');
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      } else {
+        query = query.is('company_id', null);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data as BankAccount[];
     },
@@ -188,7 +197,7 @@ export function PaymentConfigManagement() {
       for (const update of updates) {
         const { error } = await supabase
           .from('payment_config')
-          .upsert(update, { onConflict: 'config_key' });
+          .upsert({ ...update, company_id: companyId }, { onConflict: 'config_key' });
         if (error) throw error;
       }
 
@@ -197,7 +206,7 @@ export function PaymentConfigManagement() {
         description: 'Đã lưu cấu hình thanh toán',
       });
 
-      queryClient.invalidateQueries({ queryKey: ['payment-config'] });
+      queryClient.invalidateQueries({ queryKey: ['payment-config', companyId] });
     } catch (error: any) {
       toast({
         title: 'Lỗi',
@@ -220,7 +229,7 @@ export function PaymentConfigManagement() {
       } else {
         const { error } = await supabase
           .from('bank_accounts')
-          .insert(data);
+          .insert({ ...data, company_id: companyId });
         if (error) throw error;
       }
     },
@@ -229,7 +238,7 @@ export function PaymentConfigManagement() {
         title: 'Thành công',
         description: 'Đã lưu tài khoản ngân hàng',
       });
-      queryClient.invalidateQueries({ queryKey: ['bank-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['bank-accounts', companyId] });
       setBankDialog(false);
       setEditingBank(null);
       setBankForm({
@@ -257,7 +266,7 @@ export function PaymentConfigManagement() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bank-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['bank-accounts', companyId] });
     },
   });
 
@@ -274,7 +283,7 @@ export function PaymentConfigManagement() {
         title: 'Thành công',
         description: 'Đã xóa tài khoản ngân hàng',
       });
-      queryClient.invalidateQueries({ queryKey: ['bank-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['bank-accounts', companyId] });
     },
   });
 
