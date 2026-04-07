@@ -17,6 +17,7 @@ import { PlatformEmailAutomationManagement } from '@/components/platform/Platfor
 import { AutoEmailHistoryTable } from '@/components/platform/AutoEmailHistoryTable';
 import { CustomDomainsManagement } from '@/components/platform/CustomDomainsManagement';
 import { CompaniesManagement } from '@/components/platform/CompaniesManagement';
+import { CompanySettingsForm } from '@/components/platform/CompanySettingsForm';
 import { PlatformArticlesManagement } from '@/components/platform/PlatformArticlesManagement';
 import { WelcomeEmailConfig } from '@/components/platform/WelcomeEmailConfig';
 import { PlatformAISettings } from '@/components/platform/PlatformAISettings';
@@ -185,6 +186,11 @@ export default function PlatformAdminPage() {
 
           <TabsContent value="overview" className="mt-6">
             <PlatformStats />
+            {isCompanyAdmin && (
+              <div className="mt-6">
+                <CompanySettingsForm />
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="tenants" className="mt-6">
