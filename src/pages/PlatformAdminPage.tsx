@@ -172,7 +172,7 @@ export default function PlatformAdminPage() {
           </TabsContent>
 
           <TabsContent value="tenants" className="mt-6">
-            <TenantsManagement />
+            <TenantsManagement filterByCompanyId={isCompanyAdmin ? platformUser?.company_id ?? undefined : undefined} />
           </TabsContent>
 
           <TabsContent value="payments" className="mt-6">
