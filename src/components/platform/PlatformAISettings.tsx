@@ -25,16 +25,19 @@ export function PlatformAISettings() {
   const [search, setSearch] = useState('');
   const [adminPhone, setAdminPhone] = useState('');
   const [adminZalo, setAdminZalo] = useState('');
+  const { companyId } = useAdminCompanyId();
 
-  // Fetch admin contact info
+  // Fetch admin contact info scoped to company
   const { data: platformSettings } = useQuery({
-    queryKey: ['platform-settings-contact'],
+    queryKey: ['platform-settings-contact', companyId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('platform_settings')
-        .select('id, admin_phone, admin_zalo')
-        .limit(1)
-        .single();
+      let query = supabase.from('platform_settings').select('id, admin_phone, admin_zalo');
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      } else {
+        query = query.is('company_id', null);
+      }
+      const { data } = await query.limit(1).maybeSingle();
       return data as { id: string; admin_phone: string; admin_zalo: string } | null;
     },
   });
