@@ -119,12 +119,32 @@ export interface AffiliateWithdrawal {
   affiliates?: Affiliate;
 }
 
-// Hooks
+/**
+ * For end-user contexts - returns affiliate settings visible via RLS.
+ */
 export function useAffiliateSettings() {
+  return useQuery({
+    queryKey: ['affiliate-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('affiliate_settings')
+        .select('*')
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as AffiliateSettings | null;
+    },
+  });
+}
+
+/**
+ * For admin contexts - scoped by company_id.
+ */
+export function useAdminAffiliateSettings() {
   const { companyId, isPlatformAdmin } = useAdminCompanyId();
 
   return useQuery({
-    queryKey: ['affiliate-settings', companyId],
+    queryKey: ['affiliate-settings-admin', companyId],
     queryFn: async () => {
       let query = supabase
         .from('affiliate_settings')
