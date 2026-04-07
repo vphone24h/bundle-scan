@@ -159,6 +159,27 @@ export function useAllTenants() {
   });
 }
 
+// Get tenants scoped by admin's company
+export function useAdminTenants() {
+  const { companyId, isPlatformAdmin, isLoading: adminLoading } = useAdminCompanyId();
+
+  return useQuery({
+    queryKey: ['admin-tenants', companyId],
+    enabled: !adminLoading,
+    queryFn: async () => {
+      let query = supabase.from('tenants').select('*').order('created_at', { ascending: false });
+      if (!isPlatformAdmin && companyId) {
+        query = query.eq('company_id', companyId);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as Tenant[];
+    },
+    staleTime: 0,
+    refetchOnMount: 'always',
+  });
+}
+
 // Get tenant enrichment data (landing + usage)
 export function useTenantEnrichment() {
   return useQuery({
