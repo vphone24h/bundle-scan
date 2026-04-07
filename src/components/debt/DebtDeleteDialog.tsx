@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { formatNumber } from '@/lib/formatNumber';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
-import { useCurrentTenant } from '@/hooks/useCurrentTenant';
+import { useCurrentTenant } from '@/hooks/useTenant';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 
