@@ -1111,6 +1111,65 @@ export type Database = {
         }
         Relationships: []
       }
+      company_settings: {
+        Row: {
+          address: string | null
+          bank_accounts: Json | null
+          company_id: string
+          created_at: string
+          description: string | null
+          display_name: string | null
+          email: string | null
+          id: string
+          logo_url: string | null
+          phone: string | null
+          slogan: string | null
+          subscription_plans: Json | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          bank_accounts?: Json | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          phone?: string | null
+          slogan?: string | null
+          subscription_plans?: Json | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          bank_accounts?: Json | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          phone?: string | null
+          slogan?: string | null
+          subscription_plans?: Json | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_members: {
         Row: {
           conversation_id: string

@@ -3,15 +3,27 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import vkhoLogo from '@/assets/vkho-logo.png';
-// Only import icons actually used on initial render - others lazy loaded via tree-shaking
 import { 
   Package, BarChart3, Users, Shield, Smartphone,
   CheckCircle2, ArrowRight, Store, Receipt, TrendingUp,
   Phone, Mail, ChevronRight, Zap, Globe
 } from 'lucide-react';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
+import { useCompany } from '@/hooks/useCompanyResolver';
 
 export default function PublicLandingPage() {
   const navigate = useNavigate();
+  const company = useCompany();
+  const { data: companySettings } = useCompanySettings();
+
+  // Branding from company settings, fallback to vkho defaults
+  const brandName = companySettings?.display_name || company.domain || 'vkho.vn';
+  const brandSlogan = companySettings?.slogan || 'Quản lý thông minh';
+  const brandLogo = companySettings?.logo_url || vkhoLogo;
+  const brandPhone = companySettings?.phone || '0355.820.185';
+  const brandEmail = companySettings?.email || 'vkho.vn@gmail.com';
+  const brandWebsite = companySettings?.website || company.domain || 'vkho.vn';
+  const brandDescription = companySettings?.description || 'Nền tảng quản lý kho chuyên nghiệp dành cho cửa hàng điện thoại, điện máy tại Việt Nam.';
 
   const features = [
     {
@@ -77,10 +89,10 @@ export default function PublicLandingPage() {
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pt-[env(safe-area-inset-top)]">
         <div className="container mx-auto flex h-14 sm:h-16 items-center justify-between px-3 sm:px-4">
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            <img src={vkhoLogo} alt="vkho.vn" className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg flex-shrink-0" />
+            <img src={brandLogo} alt={brandName} className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg flex-shrink-0" />
             <div className="min-w-0">
-              <span className="font-bold text-base sm:text-lg text-primary">vkho.vn</span>
-              <p className="text-[9px] sm:text-[10px] text-muted-foreground -mt-1 truncate">Quản lý thông minh</p>
+              <span className="font-bold text-base sm:text-lg text-primary">{brandName}</span>
+              <p className="text-[9px] sm:text-[10px] text-muted-foreground -mt-1 truncate">{brandSlogan}</p>
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
@@ -240,7 +252,7 @@ export default function PublicLandingPage() {
                 Sẵn sàng nâng cấp quản lý kho?
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-primary-foreground/90">
-                Tham gia cùng hàng nghìn cửa hàng đang sử dụng vkho.vn để quản lý hiệu quả hơn mỗi ngày
+                Tham gia cùng hàng nghìn cửa hàng đang sử dụng {brandName} để quản lý hiệu quả hơn mỗi ngày
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 <Button size="lg" variant="secondary" className="gap-2" onClick={() => navigate('/register')}>
@@ -259,30 +271,30 @@ export default function PublicLandingPage() {
           <div className="grid gap-8 md:grid-cols-3">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <img src={vkhoLogo} alt="vkho.vn" className="h-10 w-10 rounded-lg" />
+                <img src={brandLogo} alt={brandName} className="h-10 w-10 rounded-lg" />
                 <div>
-                  <span className="font-bold text-lg text-primary">vkho.vn</span>
-                  <p className="text-xs text-muted-foreground">Quản lý thông minh</p>
+                  <span className="font-bold text-lg text-primary">{brandName}</span>
+                  <p className="text-xs text-muted-foreground">{brandSlogan}</p>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                Nền tảng quản lý kho chuyên nghiệp dành cho cửa hàng điện thoại, điện máy tại Việt Nam.
+                {brandDescription}
               </p>
             </div>
             <div>
               <h3 className="font-semibold mb-4">Liên hệ</h3>
               <div className="space-y-3 text-sm text-muted-foreground">
-                <a href="tel:0355820185" className="flex items-center gap-2 hover:text-primary transition-colors">
+                <a href={`tel:${brandPhone.replace(/\./g, '')}`} className="flex items-center gap-2 hover:text-primary transition-colors">
                   <Phone className="h-4 w-4" />
-                  0355.820.185
+                  {brandPhone}
                 </a>
-                <a href="mailto:vkho.vn@gmail.com" className="flex items-center gap-2 hover:text-primary transition-colors">
+                <a href={`mailto:${brandEmail}`} className="flex items-center gap-2 hover:text-primary transition-colors">
                   <Mail className="h-4 w-4" />
-                  vkho.vn@gmail.com
+                  {brandEmail}
                 </a>
                 <div className="flex items-center gap-2">
                   <Globe className="h-4 w-4" />
-                  vkho.vn
+                  {brandWebsite}
                 </div>
               </div>
             </div>
@@ -298,7 +310,7 @@ export default function PublicLandingPage() {
             </div>
           </div>
           <div className="mt-8 border-t pt-8 text-center text-sm text-muted-foreground">
-            <p>© {new Date().getFullYear()} vkho.vn - Nền tảng quản lý kho thông minh. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} {brandName} - Nền tảng quản lý kho thông minh. All rights reserved.</p>
           </div>
         </div>
       </footer>
