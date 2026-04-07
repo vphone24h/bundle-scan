@@ -199,6 +199,10 @@ export default function PlatformAdminPage() {
             </div>
           </TabsContent>
 
+          <TabsContent value="companies" className="mt-6">
+            <CompaniesManagement />
+          </TabsContent>
+
           <TabsContent value="domains" className="mt-6">
             <CustomDomainsManagement />
           </TabsContent>
