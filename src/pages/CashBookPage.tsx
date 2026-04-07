@@ -300,11 +300,6 @@ export default function CashBookPage() {
   const [staffFilter, setStaffFilter] = useState('_all_');
   const [timePreset, setTimePreset] = useState('this_week');
   
-  // Shared time preset for summary cards + balance history
-  const [summaryTimePreset, setSummaryTimePreset] = useState('this_week');
-  const [summaryCustomFrom, setSummaryCustomFrom] = useState('');
-  const [summaryCustomTo, setSummaryCustomTo] = useState('');
-  
   // Category management dialog
   const [showCategoryManage, setShowCategoryManage] = useState(false);
   const [categoryManageType, setCategoryManageType] = useState<'expense' | 'income'>('expense');
@@ -517,21 +512,14 @@ export default function CashBookPage() {
     return map;
   }, [scopedEntries, balanceBySource]);
 
-  // Shared date range for summary + balance history
+  // Shared date range for summary + balance history (uses same dateFrom/dateTo as detail filter)
   const summaryDateRange = useMemo(() => {
-    if (summaryTimePreset === 'custom' && summaryCustomFrom && summaryCustomTo) {
-      return { from: parseISO(summaryCustomFrom), to: parseISO(summaryCustomTo) };
+    if (dateFrom && dateTo) {
+      return { from: parseISO(dateFrom), to: parseISO(dateTo) };
     }
     const today = new Date();
-    switch (summaryTimePreset) {
-      case 'today': return { from: today, to: today };
-      case 'yesterday': { const y = subDays(today, 1); return { from: y, to: y }; }
-      case 'this_week': return { from: startOfWeek(today, { weekStartsOn: 1 }), to: today };
-      case 'this_month': return { from: startOfMonth(today), to: today };
-      case 'this_year': return { from: startOfYear(today), to: today };
-      default: return { from: startOfMonth(today), to: today };
-    }
-  }, [summaryTimePreset, summaryCustomFrom, summaryCustomTo]);
+    return { from: startOfWeek(today, { weekStartsOn: 1 }), to: today };
+  }, [dateFrom, dateTo]);
 
   // Summary totals based on shared time preset
   const summaryTotals = useMemo(() => {
@@ -1225,12 +1213,15 @@ export default function CashBookPage() {
             ].map(p => (
               <Button
                 key={p.key}
-                variant={summaryTimePreset === p.key ? 'default' : 'outline'}
+                variant={timePreset === p.key ? 'default' : 'outline'}
                 size="sm"
                 className="text-xs h-7 px-2.5"
                 onClick={() => {
-                  setSummaryTimePreset(p.key);
-                  if (p.key !== 'custom') { setSummaryCustomFrom(''); setSummaryCustomTo(''); }
+                  if (p.key === 'custom') {
+                    setTimePreset('custom');
+                  } else {
+                    handleTimePreset(p.key);
+                  }
                 }}
               >
                 {p.label}
@@ -1238,11 +1229,11 @@ export default function CashBookPage() {
             ))}
           </div>
 
-          {summaryTimePreset === 'custom' && (
+          {timePreset === 'custom' && (
             <DateRangeApplyFilter
-              startDate={summaryCustomFrom}
-              endDate={summaryCustomTo}
-              onApply={(s, e) => { setSummaryCustomFrom(s); setSummaryCustomTo(e); }}
+              startDate={dateFrom}
+              endDate={dateTo}
+              onApply={(s, e) => { setDateFrom(s); setDateTo(e); setTimePreset('custom'); }}
               isLoading={false}
               layout="stacked"
               labelClassName="text-xs"
@@ -1356,38 +1347,7 @@ export default function CashBookPage() {
 
               {showFilters && (
                 <div className="space-y-4 pt-4 border-t">
-                  {/* Time Presets */}
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { key: 'today', label: 'Hôm nay' },
-                      { key: 'yesterday', label: 'Hôm qua' },
-                      { key: 'this_week', label: 'Tuần này' },
-                      { key: 'this_month', label: 'Tháng này' },
-                      { key: 'this_year', label: 'Năm nay' },
-                    ].map((p) => (
-                      <Button
-                        key={p.key}
-                        variant={timePreset === p.key ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => handleTimePreset(p.key)}
-                        className="text-xs"
-                      >
-                        {p.label}
-                      </Button>
-                    ))}
-                  </div>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
-                    <div className="sm:col-span-2 lg:col-span-3">
-                      <DateRangeApplyFilter
-                        startDate={dateFrom}
-                        endDate={dateTo}
-                        onApply={(s, e) => { setDateFrom(s); setDateTo(e); setTimePreset(''); }}
-                        isLoading={false}
-                        layout="stacked"
-                        labelClassName="text-xs"
-                      />
-                    </div>
                     <div className="space-y-2">
                       <Label className="text-xs">Danh mục</Label>
                       <Select value={categoryFilter} onValueChange={setCategoryFilter}>
