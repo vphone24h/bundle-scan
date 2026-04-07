@@ -218,9 +218,11 @@ export function AppSidebar() {
           <span className="text-lg font-bold text-sidebar-foreground">{currentTenant?.name || 'vkho.vn'}</span>
           <span className="text-xs text-sidebar-muted">{currentTenant?.subdomain ? `${currentTenant.subdomain}.vkho.vn` : t('sidebar.smartManagement')}</span>
         </div>
-        <div className="ml-auto hidden lg:flex items-center gap-0 shrink-0 [&_button]:text-sidebar-foreground [&_button]:hover:bg-sidebar-accent [&_button]:opacity-100 [&_button]:h-8 [&_button]:w-8 [&_.h-5]:h-4 [&_.w-5]:w-4">
-          <SystemNotificationBell />
-        </div>
+        {!isCompanyAdmin && (
+          <div className="ml-auto hidden lg:flex items-center gap-0 shrink-0 [&_button]:text-sidebar-foreground [&_button]:hover:bg-sidebar-accent [&_button]:opacity-100 [&_button]:h-8 [&_button]:w-8 [&_.h-5]:h-4 [&_.w-5]:w-4">
+            <SystemNotificationBell />
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
@@ -375,7 +377,7 @@ export function AppSidebar() {
         >
           {isMobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>
-        {!isMobileOpen && (
+        {!isMobileOpen && !isCompanyAdmin && (
           <div className="bg-card shadow-lg border-2 rounded-md flex items-center">
             <SystemNotificationBell />
           </div>
@@ -391,9 +393,11 @@ export function AppSidebar() {
             left: '17rem',
           }}
         >
-          <div className="bg-card shadow-lg border-2 rounded-md flex items-center">
-            <SystemNotificationBell />
-          </div>
+          {!isCompanyAdmin && (
+            <div className="bg-card shadow-lg border-2 rounded-md flex items-center">
+              <SystemNotificationBell />
+            </div>
+          )}
         </div>
       )}
 
