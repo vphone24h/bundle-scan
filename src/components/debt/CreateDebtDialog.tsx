@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createSafeDialogOpenChange, forceReleaseStuckInteraction, preventDialogAutoFocus } from '@/lib/dialogInteraction';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -37,6 +38,12 @@ export function CreateDebtDialog({
   onOpenChange,
   entityType,
 }: CreateDebtDialogProps) {
+  useEffect(() => {
+    if (!open) {
+      forceReleaseStuckInteraction();
+    }
+  }, [open]);
+
   const queryClient = useQueryClient();
   const { data: permissions } = usePermissions();
   const { data: branches } = useBranches();
@@ -283,12 +290,11 @@ export function CreateDebtDialog({
     setSupplierSearchQuery('');
   };
 
+  const handleDialogOpenChange = createSafeDialogOpenChange(onOpenChange, resetForm);
+
   return (
-    <Dialog open={open} onOpenChange={(o) => {
-      if (!o) resetForm();
-      onOpenChange(o);
-    }}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+    <Dialog modal open={open} onOpenChange={handleDialogOpenChange}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" onCloseAutoFocus={preventDialogAutoFocus}>
         <DialogHeader>
           <DialogTitle>
             {isCustomer ? 'Thêm công nợ khách hàng' : 'Thêm công nợ nhà cung cấp'}
