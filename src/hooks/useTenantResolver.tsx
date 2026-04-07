@@ -4,11 +4,13 @@ import {
   detectTenantFromHostname, 
   getStoreIdFromSubdomain 
 } from '@/lib/tenantResolver';
+import { getCurrentCompanyId } from '@/hooks/useCompanyResolver';
 
 export interface ResolvedTenant {
   tenantId: string | null;
   subdomain: string | null;
   tenantName: string | null;
+  companyId: string | null;
   status: 'loading' | 'resolved' | 'not_found' | 'main_domain';
   isMainDomain: boolean;
 }
