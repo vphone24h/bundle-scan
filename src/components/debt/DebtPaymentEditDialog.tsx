@@ -11,6 +11,7 @@ import { formatNumber, parseFormattedNumber, formatInputNumber } from '@/lib/for
 import { Loader2, ShieldAlert } from 'lucide-react';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
+import { createSafeDialogOpenChange, forceReleaseStuckInteraction, preventDialogAutoFocus } from '@/lib/dialogInteraction';
 
 interface DebtPaymentEditDialogProps {
   open: boolean;
@@ -41,6 +42,7 @@ export function DebtPaymentEditDialog({
   const [newAmount, setNewAmount] = useState('');
   const [reason, setReason] = useState('');
   const [saving, setSaving] = useState(false);
+  const handleDialogOpenChange = createSafeDialogOpenChange(onOpenChange);
 
   useEffect(() => {
     if (open && payment) {
@@ -48,6 +50,12 @@ export function DebtPaymentEditDialog({
       setReason('');
     }
   }, [open, payment]);
+
+  useEffect(() => {
+    if (!open) {
+      forceReleaseStuckInteraction();
+    }
+  }, [open]);
 
   const handleSave = async () => {
     if (!payment) return;
@@ -145,8 +153,8 @@ export function DebtPaymentEditDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-sm">
+      <Dialog modal open={open} onOpenChange={handleDialogOpenChange}>
+        <DialogContent className="max-w-sm z-[60]" onCloseAutoFocus={preventDialogAutoFocus}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <ShieldAlert className="h-5 w-5 text-orange-500" />

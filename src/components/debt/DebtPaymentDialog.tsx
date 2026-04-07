@@ -24,6 +24,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Trash2, Wallet } from 'lucide-react';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { createSafeDialogOpenChange, forceReleaseStuckInteraction, preventDialogAutoFocus } from '@/lib/dialogInteraction';
 
 interface PaymentSource {
   id: string;
@@ -76,26 +77,12 @@ export function DebtPaymentDialog({
   const [description, setDescription] = useState('');
   const createPayment = useCreateDebtPayment();
 
-  const forceReleaseStuckInteraction = () => {
-    requestAnimationFrame(() => {
-      if (document.body.style.pointerEvents === 'none') {
-        document.body.style.pointerEvents = '';
-      }
-    });
-  };
-
   const resetForm = () => {
     setPaymentSources([{ id: '1', source: 'cash', amount: '' }]);
     setDescription('');
   };
 
-  const handleDialogOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) {
-      resetForm();
-      forceReleaseStuckInteraction();
-    }
-    onOpenChange(nextOpen);
-  };
+  const handleDialogOpenChange = createSafeDialogOpenChange(onOpenChange, resetForm);
 
   useEffect(() => {
     if (!open) {
@@ -189,7 +176,7 @@ export function DebtPaymentDialog({
     <Dialog modal open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent
         className="max-w-md z-[60]"
-        onCloseAutoFocus={(e) => { e.preventDefault(); forceReleaseStuckInteraction(); }}
+        onCloseAutoFocus={preventDialogAutoFocus}
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

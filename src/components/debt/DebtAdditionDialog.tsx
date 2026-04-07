@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus } from 'lucide-react';
+import { createSafeDialogOpenChange, forceReleaseStuckInteraction, preventDialogAutoFocus } from '@/lib/dialogInteraction';
 
 interface DebtAdditionDialogProps {
   open: boolean;
@@ -43,26 +44,12 @@ export function DebtAdditionDialog({
   const [reason, setReason] = useState('');
   const createPayment = useCreateDebtPayment();
 
-  const forceReleaseStuckInteraction = () => {
-    requestAnimationFrame(() => {
-      if (document.body.style.pointerEvents === 'none') {
-        document.body.style.pointerEvents = '';
-      }
-    });
-  };
-
   const resetForm = () => {
     setAmount('');
     setReason('');
   };
 
-  const handleDialogOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) {
-      resetForm();
-      forceReleaseStuckInteraction();
-    }
-    onOpenChange(nextOpen);
-  };
+  const handleDialogOpenChange = createSafeDialogOpenChange(onOpenChange, resetForm);
 
   useEffect(() => {
     if (!open) {
@@ -106,7 +93,7 @@ export function DebtAdditionDialog({
     <Dialog modal open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent
         className="max-w-md z-[60]"
-        onCloseAutoFocus={(e) => { e.preventDefault(); forceReleaseStuckInteraction(); }}
+        onCloseAutoFocus={preventDialogAutoFocus}
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
+import { createSafeDialogOpenChange, forceReleaseStuckInteraction, preventDialogAutoFocus } from '@/lib/dialogInteraction';
 
 interface EditCustomerDebtDialogProps {
   open: boolean;
@@ -33,6 +34,7 @@ export function EditCustomerDebtDialog({
   const [phone, setPhone] = useState(customerPhone || '');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
+  const handleDialogOpenChange = createSafeDialogOpenChange(onOpenChange);
 
   useEffect(() => {
     if (open && customerId) {
@@ -50,6 +52,12 @@ export function EditCustomerDebtDialog({
         });
     }
   }, [open, customerId, customerName, customerPhone]);
+
+  useEffect(() => {
+    if (!open) {
+      forceReleaseStuckInteraction();
+    }
+  }, [open]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
@@ -78,8 +86,8 @@ export function EditCustomerDebtDialog({
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+    <Dialog modal open={open} onOpenChange={handleDialogOpenChange}>
+      <DialogContent className="max-w-md z-[60]" onCloseAutoFocus={preventDialogAutoFocus}>
         <DialogHeader>
           <DialogTitle>Chỉnh sửa khách nợ</DialogTitle>
         </DialogHeader>
@@ -128,7 +136,7 @@ export function EditCustomerDebtDialog({
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={updateMutation.isPending}>
+          <Button variant="outline" onClick={() => handleDialogOpenChange(false)} disabled={updateMutation.isPending}>
             Hủy
           </Button>
           <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
