@@ -86,6 +86,75 @@ export function CompaniesManagement() {
     return tenants.filter((t: any) => t.company_id !== showTenantsDialog.id);
   }, [showTenantsDialog, tenants]);
 
+  const handleCreateAdmin = async () => {
+    if (!showAdminDialog || !adminEmail || !adminPassword) {
+      toast({ title: 'Vui lòng nhập đủ email và mật khẩu', variant: 'destructive' });
+      return;
+    }
+    setAdminLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-company-admin', {
+        body: {
+          action: 'create',
+          email: adminEmail,
+          password: adminPassword,
+          company_id: showAdminDialog.id,
+          display_name: adminDisplayName || adminEmail.split('@')[0],
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: data.message || 'Đã tạo Company Admin' });
+      setShowAdminDialog(null);
+      setAdminEmail('');
+      setAdminPassword('');
+      setAdminDisplayName('');
+      queryClient.invalidateQueries({ queryKey: ['company-admins'] });
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  const handleDeleteAdmin = async () => {
+    if (!showDeleteAdminDialog) return;
+    setAdminLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-company-admin', {
+        body: { action: 'delete', user_id: showDeleteAdminDialog.user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'Đã xóa Company Admin' });
+      setShowDeleteAdminDialog(null);
+      queryClient.invalidateQueries({ queryKey: ['company-admins'] });
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!showChangePasswordDialog || !newPassword) return;
+    setAdminLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-company-admin', {
+        body: { action: 'update_password', user_id: showChangePasswordDialog.user_id, new_password: newPassword },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'Đã cập nhật mật khẩu' });
+      setShowChangePasswordDialog(null);
+      setNewPassword('');
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
   const openAdd = () => {
     setFormDomain('');
     setFormName('');
