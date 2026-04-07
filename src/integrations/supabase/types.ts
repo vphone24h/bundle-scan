@@ -7646,6 +7646,7 @@ export type Database = {
       generate_domain_verification_token: { Args: never; Returns: string }
       generate_shop_ctv_code: { Args: { _tenant_id: string }; Returns: string }
       generate_voucher_code: { Args: never; Returns: string }
+      get_admin_company_id: { Args: { _user_id: string }; Returns: string }
       get_automation_eligible_tenants: {
         Args: {
           p_target_audience: string
@@ -7997,6 +7998,10 @@ export type Database = {
         Returns: boolean
       }
       is_authenticated: { Args: never; Returns: boolean }
+      is_company_admin: {
+        Args: { _company_id?: string; _user_id: string }
+        Returns: boolean
+      }
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
       is_tenant_accessible: { Args: { _tenant_id: string }; Returns: boolean }
       is_tenant_admin: { Args: { _user_id: string }; Returns: boolean }
