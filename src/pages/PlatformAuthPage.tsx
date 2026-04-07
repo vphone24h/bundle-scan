@@ -56,7 +56,7 @@ export default function PlatformAuthPage() {
           .eq('user_id', user.id)
           .maybeSingle();
 
-        if (platformUser?.platform_role !== 'platform_admin') {
+        if (platformUser?.platform_role !== 'platform_admin' && platformUser?.platform_role !== 'company_admin') {
           await supabase.auth.signOut({ scope: 'local' });
           toast({
             title: t('pages.platformAuth.noAccess'),

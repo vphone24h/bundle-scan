@@ -160,13 +160,14 @@ export function AppSidebar() {
   }, []);
 
   const isPlatformAdmin = platformUser?.platform_role === 'platform_admin';
+  const isCompanyAdmin = platformUser?.platform_role === 'company_admin';
   const hasTenant = !!platformUser?.tenant_id;
   const isSecretMode = currentTenant?.business_mode === 'secret';
 
   // Lọc menu theo quyền và loại user
   const navItems = useMemo(() => {
-    // Platform Admin không có tenant -> chỉ hiện menu quản trị nền tảng
-    if (isPlatformAdmin && !hasTenant) {
+    // Platform Admin hoặc Company Admin không có tenant -> chỉ hiện menu quản trị nền tảng
+    if ((isPlatformAdmin || isCompanyAdmin) && !hasTenant) {
       return platformAdminNavItems;
     }
 
@@ -190,7 +191,7 @@ export function AppSidebar() {
       }
       return item;
     });
-  }, [permissions, isPlatformAdmin, hasTenant, isStandalone, isSecretMode]);
+  }, [permissions, isPlatformAdmin, isCompanyAdmin, hasTenant, isStandalone, isSecretMode]);
 
   const toggleExpand = useCallback((title: string) => {
     setExpandedItems((prev) =>

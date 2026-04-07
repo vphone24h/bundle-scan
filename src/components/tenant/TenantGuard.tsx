@@ -63,7 +63,7 @@ export function TenantGuard({ children, allowExpired = false }: TenantGuardProps
     return <>{children}</>;
   }
 
-  if (platformUser?.platform_role === 'platform_admin') {
+  if (platformUser?.platform_role === 'platform_admin' || platformUser?.platform_role === 'company_admin') {
     return <>{children}</>;
   }
 

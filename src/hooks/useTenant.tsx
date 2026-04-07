@@ -65,11 +65,12 @@ export interface PlatformUser {
   id: string;
   user_id: string;
   tenant_id: string | null;
-  platform_role: 'platform_admin' | 'tenant_admin';
+  platform_role: 'platform_admin' | 'tenant_admin' | 'company_admin';
   display_name: string;
   phone: string | null;
   email: string | null;
   is_active: boolean;
+  company_id?: string | null;
 }
 
 // Check if current user is platform admin
