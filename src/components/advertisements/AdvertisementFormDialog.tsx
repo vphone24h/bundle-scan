@@ -35,6 +35,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { usePlatformUser } from '@/hooks/useTenant';
+import { useAdminCompanyId } from '@/hooks/useAdminCompanyId';
 
 interface AdvertisementFormDialogProps {
   open: boolean;
@@ -54,6 +55,7 @@ export function AdvertisementFormDialog({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: platformUser } = usePlatformUser();
+  const { companyId, isPlatformAdmin: isPA } = useAdminCompanyId();
   const uploadImage = useUploadAdImage();
 
   const [title, setTitle] = useState('');
@@ -170,6 +172,7 @@ export function AdvertisementFormDialog({
       start_date: startDate.toISOString(),
       end_date: hasEndDate && endDate ? endDate.toISOString() : null,
       tenant_id: isPlatformAdmin ? null : platformUser?.tenant_id,
+      ...(advertisement ? {} : { company_id: isPA ? null : companyId }),
     };
 
     if (advertisement) {

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useAdminCompanyId } from './useAdminCompanyId';
 
 export interface Tenant {
   id: string;
@@ -196,12 +197,13 @@ export function useSubscriptionPlans(includeInactive = false) {
 // Create subscription plan
 export function useCreateSubscriptionPlan() {
   const queryClient = useQueryClient();
+  const { companyId, isPlatformAdmin } = useAdminCompanyId();
 
   return useMutation({
     mutationFn: async (planData: Omit<SubscriptionPlan, 'id'>) => {
       const { data, error } = await supabase
         .from('subscription_plans')
-        .insert(planData)
+        .insert({ ...planData, company_id: isPlatformAdmin ? null : companyId })
         .select()
         .single();
 

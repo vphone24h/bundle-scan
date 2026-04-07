@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from '@/hooks/use-toast';
+import { useAdminCompanyId } from './useAdminCompanyId';
 
 // Types
 export interface AffiliateSettings {
@@ -118,7 +119,9 @@ export interface AffiliateWithdrawal {
   affiliates?: Affiliate;
 }
 
-// Hooks
+/**
+ * For end-user contexts - returns affiliate settings visible via RLS.
+ */
 export function useAffiliateSettings() {
   return useQuery({
     queryKey: ['affiliate-settings'],
@@ -126,21 +129,59 @@ export function useAffiliateSettings() {
       const { data, error } = await supabase
         .from('affiliate_settings')
         .select('*')
-        .single();
+        .limit(1)
+        .maybeSingle();
       if (error) throw error;
-      return data as AffiliateSettings;
+      return data as AffiliateSettings | null;
+    },
+  });
+}
+
+/**
+ * For admin contexts - scoped by company_id.
+ */
+export function useAdminAffiliateSettings() {
+  const { companyId, isPlatformAdmin } = useAdminCompanyId();
+
+  return useQuery({
+    queryKey: ['affiliate-settings-admin', companyId],
+    queryFn: async () => {
+      let query = supabase
+        .from('affiliate_settings')
+        .select('*');
+      
+      if (isPlatformAdmin) {
+        query = query.is('company_id', null);
+      } else if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
+
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      return data as AffiliateSettings | null;
     },
   });
 }
 
 export function useUpdateAffiliateSettings() {
   const queryClient = useQueryClient();
+  const { companyId, isPlatformAdmin } = useAdminCompanyId();
+
   return useMutation({
     mutationFn: async (settings: Partial<AffiliateSettings>) => {
-      const { data: existing } = await supabase
+      const scopedCompanyId = isPlatformAdmin ? null : companyId;
+      
+      let query = supabase
         .from('affiliate_settings')
-        .select('id')
-        .single();
+        .select('id');
+      
+      if (isPlatformAdmin) {
+        query = query.is('company_id', null);
+      } else if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
+
+      const { data: existing } = await query.maybeSingle();
 
       if (existing) {
         const { data, error } = await supabase
@@ -151,8 +192,16 @@ export function useUpdateAffiliateSettings() {
           .single();
         if (error) throw error;
         return data;
+      } else {
+        // Create new for this scope
+        const { data, error } = await supabase
+          .from('affiliate_settings')
+          .insert({ ...settings, company_id: scopedCompanyId })
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
       }
-      throw new Error('No settings found');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['affiliate-settings'] });
@@ -180,6 +229,8 @@ export function useAffiliateCommissionRates() {
 
 export function useUpsertCommissionRate() {
   const queryClient = useQueryClient();
+  const { companyId, isPlatformAdmin } = useAdminCompanyId();
+
   return useMutation({
     mutationFn: async (rate: {
       plan_id: string;
@@ -188,7 +239,7 @@ export function useUpsertCommissionRate() {
     }) => {
       const { data, error } = await supabase
         .from('affiliate_commission_rates')
-        .upsert(rate, { onConflict: 'plan_id' })
+        .upsert({ ...rate, company_id: isPlatformAdmin ? null : companyId }, { onConflict: 'plan_id' })
         .select()
         .single();
       if (error) throw error;

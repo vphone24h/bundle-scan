@@ -5,13 +5,13 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Loader2, Megaphone, Info, Pin, Shuffle, MousePointerClick } from 'lucide-react';
-import { useAdGateSettings, useUpdateAdGateSettings } from '@/hooks/useAdGate';
+import { useAdminAdGateSettings, useUpdateAdGateSettings } from '@/hooks/useAdGate';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useActiveAdvertisements } from '@/hooks/useAdvertisements';
 import { Badge } from '@/components/ui/badge';
 
 export function AdGateManagement() {
-  const { data: settings, isLoading } = useAdGateSettings();
+  const { data: settings, isLoading } = useAdminAdGateSettings();
   const update = useUpdateAdGateSettings();
   const { data: activeAds } = useActiveAdvertisements();
 
@@ -38,8 +38,12 @@ export function AdGateManagement() {
   }, [settings]);
 
   const handleSave = () => {
-    if (!settings) return;
-    update.mutate({ id: settings.id, ...form } as any);
+    if (settings) {
+      update.mutate({ id: settings.id, ...form } as any);
+    } else {
+      // Create new settings for this admin scope
+      update.mutate({ ...form } as any);
+    }
   };
 
   const pinnedAd = activeAds?.find(a => a.id === form.pinned_ad_id);

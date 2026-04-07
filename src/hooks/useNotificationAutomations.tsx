@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminCompanyId } from './useAdminCompanyId';
 
 export interface NotificationAutomation {
   id: string;
@@ -15,13 +16,16 @@ export interface NotificationAutomation {
   send_frequency: string;
   target_audience: string;
   display_order: number;
+  company_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export function useNotificationAutomations() {
+  const { companyId, isPlatformAdmin } = useAdminCompanyId();
+
   return useQuery({
-    queryKey: ['notification-automations'],
+    queryKey: ['notification-automations', companyId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('notification_automations')
@@ -54,11 +58,13 @@ export function useUpdateAutomation() {
 
 export function useCreateAutomation() {
   const queryClient = useQueryClient();
+  const { companyId, isPlatformAdmin } = useAdminCompanyId();
+
   return useMutation({
     mutationFn: async (automation: Partial<NotificationAutomation>) => {
       const { data, error } = await supabase
         .from('notification_automations')
-        .insert(automation as any)
+        .insert({ ...automation, company_id: isPlatformAdmin ? null : companyId } as any)
         .select()
         .single();
       if (error) throw error;

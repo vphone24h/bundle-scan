@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useAdminCompanyId } from './useAdminCompanyId';
 
 export interface SystemNotification {
   id: string;
@@ -210,11 +211,13 @@ export function useAllSystemNotifications() {
 
 export function useCreateSystemNotification() {
   const queryClient = useQueryClient();
+  const { companyId, isPlatformAdmin } = useAdminCompanyId();
+
   return useMutation({
     mutationFn: async (notification: Partial<SystemNotification>) => {
       const { data, error } = await supabase
         .from('system_notifications')
-        .insert(notification as any)
+        .insert({ ...notification, company_id: isPlatformAdmin ? null : companyId } as any)
         .select()
         .single();
       if (error) throw error;
