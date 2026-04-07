@@ -944,23 +944,37 @@ export function useDeleteExportReceipt() {
         })),
       };
 
-      // 3. Restore products to in_stock (for sold items)
+      // 3. Clean up FK-dependent records for these products
       if (productIds.length > 0) {
-        await supabase
-          .from('products')
-          .update({ status: 'in_stock' })
-          .in('id', productIds)
-          .in('status', ['sold']);
+        for (let i = 0; i < productIds.length; i += 200) {
+          const chunk = productIds.slice(i, i + 200);
+          // Delete export_returns referencing these products in this receipt's items
+          await supabase.from('export_returns').delete().in('product_id', chunk);
+          // Delete imei_histories
+          await supabase.from('imei_histories').delete().in('product_id', chunk);
+        }
       }
 
-      // 4. Delete cash_book entries (optional)
+      // 4. Restore products to in_stock (for sold items)
+      if (productIds.length > 0) {
+        for (let i = 0; i < productIds.length; i += 200) {
+          const chunk = productIds.slice(i, i + 200);
+          await supabase
+            .from('products')
+            .update({ status: 'in_stock' })
+            .in('id', chunk)
+            .in('status', ['sold']);
+        }
+      }
+
+      // 5. Delete cash_book entries (optional)
       if (deleteCashBook) {
         await supabase.from('cash_book').delete()
           .eq('reference_id', receiptId)
           .eq('reference_type', 'export_receipt');
       }
 
-      // 5. Delete debt_payments (optional)
+      // 6. Delete debt_payments (optional)
       if (deleteDebt && receipt.customer_id) {
         await (supabase.from('debt_payments').delete() as any)
           .eq('entity_id', receipt.customer_id)
@@ -968,12 +982,15 @@ export function useDeleteExportReceipt() {
           .eq('description', `Thanh toán phiếu xuất ${receipt.code}`);
       }
 
-      // 6. Delete receipt items
+      // 7. Delete receipt items
       if (itemIds.length > 0) {
-        await supabase.from('export_receipt_items').delete().in('id', itemIds);
+        for (let i = 0; i < itemIds.length; i += 200) {
+          const chunk = itemIds.slice(i, i + 200);
+          await supabase.from('export_receipt_items').delete().in('id', chunk);
+        }
       }
 
-      // 7. Delete receipt payments
+      // 8. Delete receipt payments
       await supabase.from('export_receipt_payments').delete().eq('receipt_id', receiptId);
 
       // 8. Delete receipt
