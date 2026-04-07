@@ -241,16 +241,19 @@ export function CompaniesManagement() {
                 <TableHead>Domain</TableHead>
                 <TableHead>Tên công ty</TableHead>
                 <TableHead>Số shop</TableHead>
+                <TableHead>Admin</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead>Ngày tạo</TableHead>
-                <TableHead className="w-[150px]">Thao tác</TableHead>
+                <TableHead className="w-[180px]">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Chưa có công ty nào</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Chưa có công ty nào</TableCell></TableRow>
               )}
-              {filtered.map(c => (
+              {filtered.map(c => {
+                const admin = getAdminForCompany(c.id);
+                return (
                 <TableRow key={c.id}>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -265,6 +268,25 @@ export function CompaniesManagement() {
                       {c.tenant_count || 0} shop
                     </Button>
                   </TableCell>
+                  <TableCell>
+                    {admin ? (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium">{admin.email}</p>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" className="h-6 text-xs p-1" onClick={() => { setShowChangePasswordDialog(admin); setNewPassword(''); }}>
+                            <Key className="h-3 w-3 mr-0.5" />Đổi MK
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-6 text-xs p-1 text-destructive" onClick={() => setShowDeleteAdminDialog(admin)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => { setShowAdminDialog(c); setAdminEmail(''); setAdminPassword(''); setAdminDisplayName(''); }}>
+                        <UserCog className="h-3.5 w-3.5" />Tạo admin
+                      </Button>
+                    )}
+                  </TableCell>
                   <TableCell>{renderStatusBadge(c.status)}</TableCell>
                   <TableCell>{format(new Date(c.created_at), 'dd/MM/yyyy', { locale: vi })}</TableCell>
                   <TableCell>
@@ -278,7 +300,8 @@ export function CompaniesManagement() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </Card>
