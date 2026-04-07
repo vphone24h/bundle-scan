@@ -300,11 +300,6 @@ export default function CashBookPage() {
   const [staffFilter, setStaffFilter] = useState('_all_');
   const [timePreset, setTimePreset] = useState('this_week');
   
-  // Shared time preset for summary cards + balance history
-  const [summaryTimePreset, setSummaryTimePreset] = useState('this_week');
-  const [summaryCustomFrom, setSummaryCustomFrom] = useState('');
-  const [summaryCustomTo, setSummaryCustomTo] = useState('');
-  
   // Category management dialog
   const [showCategoryManage, setShowCategoryManage] = useState(false);
   const [categoryManageType, setCategoryManageType] = useState<'expense' | 'income'>('expense');
