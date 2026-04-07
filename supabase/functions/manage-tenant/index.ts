@@ -214,7 +214,6 @@ Deno.serve(async (req) => {
           console.error('Failed to send extension emails:', err)
         }
       }
-      }
 
       return new Response(
         JSON.stringify({ success: true, message: `Đã gia hạn ${successCount} DN thành công${failCount > 0 ? `, ${failCount} thất bại` : ''}`, successCount, failCount }),
