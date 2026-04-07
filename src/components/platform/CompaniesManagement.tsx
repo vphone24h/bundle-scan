@@ -60,7 +60,8 @@ export function CompaniesManagement() {
       const { data, error } = await supabase.functions.invoke('manage-company-admin', {
         body: { action: 'list' },
       });
-      if (error) throw error;
+      if (error) throw new Error(error.message || 'Không thể tải danh sách Company Admin');
+      if (data?.error) throw new Error(data.error);
       return data?.admins || [];
     },
   });
@@ -102,7 +103,10 @@ export function CompaniesManagement() {
           display_name: adminDisplayName || adminEmail.split('@')[0],
         },
       });
-      if (error) throw error;
+      if (error) {
+        console.error('manage-company-admin create error:', error);
+        throw new Error(error.message || 'Không thể gọi chức năng tạo admin');
+      }
       if (data?.error) throw new Error(data.error);
       toast({ title: data.message || 'Đã tạo Company Admin' });
       setShowAdminDialog(null);
@@ -111,7 +115,7 @@ export function CompaniesManagement() {
       setAdminDisplayName('');
       queryClient.invalidateQueries({ queryKey: ['company-admins'] });
     } catch (err: any) {
-      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+      toast({ title: 'Lỗi', description: err.message || 'Không thể tạo Company Admin', variant: 'destructive' });
     } finally {
       setAdminLoading(false);
     }
