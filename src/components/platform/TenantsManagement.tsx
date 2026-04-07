@@ -79,6 +79,8 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
   const [actionDialog, setActionDialog] = useState<'lock' | 'unlock' | 'extend' | 'set_days' | 'edit' | null>(null);
   const [reason, setReason] = useState('');
   const [days, setDays] = useState('30');
+  const [extendMaxBranches, setExtendMaxBranches] = useState('');
+  const [extendMaxUsers, setExtendMaxUsers] = useState('');
   const [setDaysValue, setSetDaysValue] = useState('0');
   const [settingDays, setSettingDays] = useState(false);
   const [togglingEinvoice, setTogglingEinvoice] = useState<string | null>(null);
@@ -153,6 +155,8 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
         tenantId: selectedTenant.id,
         reason: reason || undefined,
         days: actionDialog === 'extend' ? parseInt(days) : undefined,
+        max_branches: actionDialog === 'extend' && extendMaxBranches ? parseInt(extendMaxBranches) : undefined,
+        max_users: actionDialog === 'extend' && extendMaxUsers ? parseInt(extendMaxUsers) : undefined,
       });
 
       toast({
@@ -168,6 +172,8 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
       setSelectedTenant(null);
       setReason('');
       setDays('30');
+      setExtendMaxBranches('');
+      setExtendMaxUsers('');
     } catch (error: any) {
       toast({
         title: 'Lỗi',
@@ -919,15 +925,41 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
 
           <div className="space-y-4 py-4">
             {actionDialog === 'extend' && (
-              <div className="space-y-2">
-                <Label>Số ngày gia hạn</Label>
-                <Input
-                  type="number"
-                  value={days}
-                  onChange={(e) => setDays(e.target.value)}
-                  min="1"
-                />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label>Số ngày gia hạn</Label>
+                  <Input
+                    type="number"
+                    value={days}
+                    onChange={(e) => setDays(e.target.value)}
+                    min="1"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Số chi nhánh tối đa</Label>
+                    <Input
+                      type="number"
+                      value={extendMaxBranches}
+                      onChange={(e) => setExtendMaxBranches(e.target.value)}
+                      placeholder={String(selectedTenant?.max_branches || 1)}
+                      min="1"
+                    />
+                    <p className="text-xs text-muted-foreground">Hiện tại: {selectedTenant?.max_branches || 1}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Số thành viên tối đa</Label>
+                    <Input
+                      type="number"
+                      value={extendMaxUsers}
+                      onChange={(e) => setExtendMaxUsers(e.target.value)}
+                      placeholder={String(selectedTenant?.max_users || 5)}
+                      min="1"
+                    />
+                    <p className="text-xs text-muted-foreground">Hiện tại: {selectedTenant?.max_users || 5}</p>
+                  </div>
+                </div>
+              </>
             )}
             
             <div className="space-y-2">

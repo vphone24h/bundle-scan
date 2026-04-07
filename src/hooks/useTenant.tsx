@@ -354,6 +354,8 @@ export function useManageTenant() {
       reason?: string;
       days?: number;
       note?: string;
+      max_branches?: number;
+      max_users?: number;
     }) => {
       const { data: result, error } = await supabase.functions.invoke('manage-tenant', {
         body: data,
