@@ -114,12 +114,30 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Primary SMTP
-    const smtpUser = Deno.env.get('SMTP_USER')
-    const smtpPassword = Deno.env.get('SMTP_PASSWORD')
+    // Primary SMTP (platform default)
+    let smtpUser = Deno.env.get('SMTP_USER')
+    let smtpPassword = Deno.env.get('SMTP_PASSWORD')
     // Backup SMTP
     const smtpUser2 = Deno.env.get('SMTP_USER_2')
     const smtpPassword2 = Deno.env.get('SMTP_PASSWORD_2')
+    let fromName = 'VKHO'
+
+    // If company admin, check for company-specific SMTP config
+    if (platformUser.platform_role === 'company_admin' && platformUser.company_id) {
+      const { data: companyEmail } = await supabaseAdmin
+        .from('company_email_config')
+        .select('*')
+        .eq('company_id', platformUser.company_id)
+        .eq('is_enabled', true)
+        .maybeSingle()
+
+      if (companyEmail?.smtp_user && companyEmail?.smtp_pass) {
+        smtpUser = companyEmail.smtp_user
+        smtpPassword = companyEmail.smtp_pass
+        fromName = companyEmail.from_name || 'Admin'
+        console.log(`Using company SMTP: ${companyEmail.smtp_user}`)
+      }
+    }
 
     if (!smtpUser || !smtpPassword) {
       return new Response(JSON.stringify({ error: 'SMTP not configured' }), {
