@@ -25,6 +25,10 @@ export default function AuthPage() {
   
   const resolvedTenant = useTenantResolver();
   const isSubdomainMode = resolvedTenant.status === 'resolved' && resolvedTenant.subdomain;
+  const company = useCompany();
+  const { data: companySettings } = useCompanySettings();
+  const companyLogo = companySettings?.logo_url;
+  const companyDomain = company.domain || 'vkho.vn';
 
   const [storeId, setStoreId] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
