@@ -1,11 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminCompanyId } from './useAdminCompanyId';
 
 export interface PlatformArticleCategory {
   id: string;
   name: string;
   slug: string | null;
   display_order: number;
+  company_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -20,6 +22,7 @@ export interface PlatformArticle {
   content: string | null;
   is_published: boolean;
   display_order: number;
+  company_id: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -42,11 +45,13 @@ export function usePlatformArticleCategories() {
 
 export function useCreatePlatformArticleCategory() {
   const qc = useQueryClient();
+  const { companyId, isPlatformAdmin } = useAdminCompanyId();
+
   return useMutation({
     mutationFn: async (cat: { name: string; slug?: string }) => {
       const { data, error } = await supabase
         .from('platform_article_categories' as any)
-        .insert([cat])
+        .insert([{ ...cat, company_id: isPlatformAdmin ? null : companyId }])
         .select()
         .single();
       if (error) throw error;
@@ -114,11 +119,13 @@ export function usePublishedPlatformArticles() {
 
 export function useCreatePlatformArticle() {
   const qc = useQueryClient();
+  const { companyId, isPlatformAdmin } = useAdminCompanyId();
+
   return useMutation({
     mutationFn: async (article: Partial<PlatformArticle>) => {
       const { data, error } = await supabase
         .from('platform_articles' as any)
-        .insert([article])
+        .insert([{ ...article, company_id: isPlatformAdmin ? null : companyId }])
         .select()
         .single();
       if (error) throw error;
