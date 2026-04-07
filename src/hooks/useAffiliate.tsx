@@ -209,6 +209,8 @@ export function useAffiliateCommissionRates() {
 
 export function useUpsertCommissionRate() {
   const queryClient = useQueryClient();
+  const { companyId, isPlatformAdmin } = useAdminCompanyId();
+
   return useMutation({
     mutationFn: async (rate: {
       plan_id: string;
@@ -217,7 +219,7 @@ export function useUpsertCommissionRate() {
     }) => {
       const { data, error } = await supabase
         .from('affiliate_commission_rates')
-        .upsert(rate, { onConflict: 'plan_id' })
+        .upsert({ ...rate, company_id: isPlatformAdmin ? null : companyId }, { onConflict: 'plan_id' })
         .select()
         .single();
       if (error) throw error;
