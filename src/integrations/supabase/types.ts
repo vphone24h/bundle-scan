@@ -1084,6 +1084,33 @@ export type Database = {
           },
         ]
       }
+      companies: {
+        Row: {
+          created_at: string
+          domain: string
+          id: string
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+          id?: string
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+          id?: string
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       conversation_members: {
         Row: {
           conversation_id: string
@@ -6970,6 +6997,7 @@ export type Database = {
           business_mode: string
           business_need: string | null
           business_type: string | null
+          company_id: string | null
           created_at: string
           einvoice_enabled: boolean
           email: string | null
@@ -7002,6 +7030,7 @@ export type Database = {
           business_mode?: string
           business_need?: string | null
           business_type?: string | null
+          company_id?: string | null
           created_at?: string
           einvoice_enabled?: boolean
           email?: string | null
@@ -7034,6 +7063,7 @@ export type Database = {
           business_mode?: string
           business_need?: string | null
           business_type?: string | null
+          company_id?: string | null
           created_at?: string
           einvoice_enabled?: boolean
           email?: string | null
@@ -7060,7 +7090,15 @@ export type Database = {
           trial_start_date?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tenants_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_branch_access: {
         Row: {
@@ -7952,6 +7990,15 @@ export type Database = {
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
       is_tenant_accessible: { Args: { _tenant_id: string }; Returns: boolean }
       is_tenant_admin: { Args: { _user_id: string }; Returns: boolean }
+      lookup_company_by_domain: {
+        Args: { _domain: string }
+        Returns: {
+          domain: string
+          id: string
+          name: string
+          status: string
+        }[]
+      }
       lookup_customer_points_public: {
         Args: { _phone: string; _tenant_id: string }
         Returns: {
