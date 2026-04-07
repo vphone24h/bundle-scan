@@ -172,6 +172,8 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
       setSelectedTenant(null);
       setReason('');
       setDays('30');
+      setExtendMaxBranches('');
+      setExtendMaxUsers('');
     } catch (error: any) {
       toast({
         title: 'Lỗi',
