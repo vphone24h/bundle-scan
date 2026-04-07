@@ -205,12 +205,14 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Send notification emails
-      if (emailsToSend.length > 0) {
+      // Send notification emails - use first tenant's SMTP for bulk
+      if (emailsToSend.length > 0 && tenantIds?.length > 0) {
         try {
-          await sendExtensionEmails(emailsToSend, note)
+          const smtpConfig = await resolveSmtpForTenant(supabaseAdmin, tenantIds[0])
+          await sendExtensionEmails(emailsToSend, note, smtpConfig.smtpUser, smtpConfig.smtpPass, smtpConfig.fromName)
         } catch (err) {
           console.error('Failed to send extension emails:', err)
+        }
         }
       }
 
@@ -367,12 +369,13 @@ Deno.serve(async (req) => {
         // Send email notification for single extend too
         if (tenant.email) {
           try {
+            const smtpConfig = await resolveSmtpForTenant(supabaseAdmin, tenantId)
             await sendExtensionEmails([{
               email: tenant.email,
               name: tenant.name,
               newEndDate: newEndDate.toISOString(),
               daysAdded: days,
-            }], note)
+            }], note, smtpConfig.smtpUser, smtpConfig.smtpPass, smtpConfig.fromName)
           } catch (err) {
             console.error('Failed to send extension email:', err)
           }
