@@ -119,17 +119,27 @@ export default function PlatformAdminPage() {
             <TabsList className="inline-flex h-auto gap-1 p-1 min-w-max">
               <TabsTrigger value="overview" className="text-xs px-2.5 py-1.5">{t('pages.platformAdmin.overview')}</TabsTrigger>
               <TabsTrigger value="tenants" className="text-xs px-2.5 py-1.5">{t('pages.platformAdmin.tenants')}</TabsTrigger>
-              <TabsTrigger value="payments" className="text-xs px-2.5 py-1.5">{t('pages.platformAdmin.payments')}</TabsTrigger>
-              <TabsTrigger value="history" className="text-xs px-2.5 py-1.5">{t('pages.platformAdmin.history')}</TabsTrigger>
-              <TabsTrigger value="plans" className="text-xs px-2.5 py-1.5">{t('pages.platformAdmin.plans')}</TabsTrigger>
-              <TabsTrigger value="affiliate" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                <span className="hidden sm:inline">Cấu hình CTV</span>
-              </TabsTrigger>
-              <TabsTrigger value="ads" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
-                <Megaphone className="h-3 w-3" />
-                <span className="hidden sm:inline">{t('pages.platformAdmin.ads')}</span>
-              </TabsTrigger>
+              {isPlatformAdmin && (
+                <TabsTrigger value="payments" className="text-xs px-2.5 py-1.5">{t('pages.platformAdmin.payments')}</TabsTrigger>
+              )}
+              {isPlatformAdmin && (
+                <TabsTrigger value="history" className="text-xs px-2.5 py-1.5">{t('pages.platformAdmin.history')}</TabsTrigger>
+              )}
+              {isPlatformAdmin && (
+                <TabsTrigger value="plans" className="text-xs px-2.5 py-1.5">{t('pages.platformAdmin.plans')}</TabsTrigger>
+              )}
+              {isPlatformAdmin && (
+                <TabsTrigger value="affiliate" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  <span className="hidden sm:inline">Cấu hình CTV</span>
+                </TabsTrigger>
+              )}
+              {isPlatformAdmin && (
+                <TabsTrigger value="ads" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
+                  <Megaphone className="h-3 w-3" />
+                  <span className="hidden sm:inline">{t('pages.platformAdmin.ads')}</span>
+                </TabsTrigger>
+              )}
               {isPlatformAdmin && (
                 <TabsTrigger value="companies" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
                   <Building2 className="h-3 w-3" />
@@ -140,27 +150,39 @@ export default function PlatformAdminPage() {
                 <Globe className="h-3 w-3" />
                 <span className="hidden sm:inline">{t('pages.platformAdmin.domains')}</span>
               </TabsTrigger>
-              <TabsTrigger value="config" className="text-xs px-2.5 py-1.5">{t('pages.platformAdmin.config')}</TabsTrigger>
-              <TabsTrigger value="welcome-email" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
-                <MailPlus className="h-3 w-3" />
-                <span className="hidden sm:inline">{t('pages.platformAdmin.welcomeEmail')}</span>
-              </TabsTrigger>
-              <TabsTrigger value="email-history" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
-                <Mail className="h-3 w-3" />
-                <span className="hidden sm:inline">{t('pages.platformAdmin.emailHistory')}</span>
-              </TabsTrigger>
-              <TabsTrigger value="tax-article" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
-                <FileText className="h-3 w-3" />
-                <span className="hidden sm:inline">{t('pages.platformAdmin.taxArticle')}</span>
-              </TabsTrigger>
-              <TabsTrigger value="guides" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
-                <FileText className="h-3 w-3" />
-                <span className="hidden sm:inline">{t('pages.platformAdmin.guides')}</span>
-              </TabsTrigger>
-              <TabsTrigger value="system-notifications" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
-                <Bell className="h-3 w-3" />
-                <span className="hidden sm:inline">{t('pages.platformAdmin.notifications')}</span>
-              </TabsTrigger>
+              {isPlatformAdmin && (
+                <TabsTrigger value="config" className="text-xs px-2.5 py-1.5">{t('pages.platformAdmin.config')}</TabsTrigger>
+              )}
+              {isPlatformAdmin && (
+                <TabsTrigger value="welcome-email" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
+                  <MailPlus className="h-3 w-3" />
+                  <span className="hidden sm:inline">{t('pages.platformAdmin.welcomeEmail')}</span>
+                </TabsTrigger>
+              )}
+              {isPlatformAdmin && (
+                <TabsTrigger value="email-history" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
+                  <Mail className="h-3 w-3" />
+                  <span className="hidden sm:inline">{t('pages.platformAdmin.emailHistory')}</span>
+                </TabsTrigger>
+              )}
+              {isPlatformAdmin && (
+                <TabsTrigger value="tax-article" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
+                  <FileText className="h-3 w-3" />
+                  <span className="hidden sm:inline">{t('pages.platformAdmin.taxArticle')}</span>
+                </TabsTrigger>
+              )}
+              {isPlatformAdmin && (
+                <TabsTrigger value="guides" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
+                  <FileText className="h-3 w-3" />
+                  <span className="hidden sm:inline">{t('pages.platformAdmin.guides')}</span>
+                </TabsTrigger>
+              )}
+              {isPlatformAdmin && (
+                <TabsTrigger value="system-notifications" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
+                  <Bell className="h-3 w-3" />
+                  <span className="hidden sm:inline">{t('pages.platformAdmin.notifications')}</span>
+                </TabsTrigger>
+              )}
               <TabsTrigger value="export-all" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
                 <Database className="h-3 w-3" />
                 <span className="hidden sm:inline">{t('pages.platformAdmin.exportDB')}</span>
