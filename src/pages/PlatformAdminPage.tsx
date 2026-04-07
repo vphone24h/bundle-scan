@@ -16,12 +16,13 @@ import { EmailHistoryTable } from '@/components/platform/EmailHistoryTable';
 import { PlatformEmailAutomationManagement } from '@/components/platform/PlatformEmailAutomationManagement';
 import { AutoEmailHistoryTable } from '@/components/platform/AutoEmailHistoryTable';
 import { CustomDomainsManagement } from '@/components/platform/CustomDomainsManagement';
+import { CompaniesManagement } from '@/components/platform/CompaniesManagement';
 import { PlatformArticlesManagement } from '@/components/platform/PlatformArticlesManagement';
 import { WelcomeEmailConfig } from '@/components/platform/WelcomeEmailConfig';
 import { PlatformAISettings } from '@/components/platform/PlatformAISettings';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Navigate } from 'react-router-dom';
-import { Loader2, Users, Megaphone, FileText, Mail, Globe, MailPlus, Bell, Zap, Database, RefreshCw, ArrowDownToLine } from 'lucide-react';
+import { Loader2, Users, Megaphone, FileText, Mail, Globe, MailPlus, Bell, Zap, Database, RefreshCw, ArrowDownToLine, Building2 } from 'lucide-react';
 import { SystemNotificationsManagement } from '@/components/platform/SystemNotificationsManagement';
 import { AutomationNotificationsManagement } from '@/components/platform/AutomationNotificationsManagement';
 import { ManualNotificationHistoryTable, AutomationHistoryTable } from '@/components/platform/NotificationSendHistory';
@@ -125,6 +126,10 @@ export default function PlatformAdminPage() {
                 <Megaphone className="h-3 w-3" />
                 <span className="hidden sm:inline">{t('pages.platformAdmin.ads')}</span>
               </TabsTrigger>
+              <TabsTrigger value="companies" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
+                <Building2 className="h-3 w-3" />
+                <span className="hidden sm:inline">Công ty</span>
+              </TabsTrigger>
               <TabsTrigger value="domains" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
                 <Globe className="h-3 w-3" />
                 <span className="hidden sm:inline">{t('pages.platformAdmin.domains')}</span>
@@ -192,6 +197,10 @@ export default function PlatformAdminPage() {
                 <AdGateManagement />
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="companies" className="mt-6">
+            <CompaniesManagement />
           </TabsContent>
 
           <TabsContent value="domains" className="mt-6">
