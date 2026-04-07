@@ -324,6 +324,34 @@ Deno.serve(async (req) => {
 
     const staffName = staffProfile?.display_name || user.email || 'Nhân viên'
 
+    // Check if this tenant's company has its own email config
+    const { data: tenantInfo } = await supabase
+      .from('tenants')
+      .select('company_id')
+      .eq('id', tenant_id)
+      .maybeSingle()
+
+    let useSmtpUser = smtpUser!
+    let useSmtpPass = smtpPassword!
+    let useFromName = 'vKho'
+
+    if (tenantInfo?.company_id) {
+      const { data: companyEmail } = await supabase
+        .from('company_email_config')
+        .select('*')
+        .eq('company_id', tenantInfo.company_id)
+        .eq('is_enabled', true)
+        .maybeSingle()
+
+      if (companyEmail?.smtp_user && companyEmail?.smtp_pass) {
+        // Use company's own SMTP
+        useSmtpUser = companyEmail.smtp_user
+        useSmtpPass = companyEmail.smtp_pass
+        useFromName = companyEmail.from_name || 'Admin'
+        console.log(`Using company SMTP for tenant ${tenant_id}: ${companyEmail.smtp_user}`)
+      }
+    }
+
     let html = ''
     let subject = ''
 
@@ -360,11 +388,11 @@ Deno.serve(async (req) => {
       host: 'smtp.gmail.com',
       port: 465,
       secure: true,
-      auth: { user: smtpUser, pass: smtpPassword },
+      auth: { user: useSmtpUser, pass: useSmtpPass },
     })
 
     await transporter.sendMail({
-      from: `"vKho" <${smtpUser}>`,
+      from: `"${useFromName}" <${useSmtpUser}>`,
       to: platformUser.email,
       subject,
       html,

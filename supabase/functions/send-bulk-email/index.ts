@@ -77,15 +77,15 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Check platform admin
+    // Check platform admin OR company admin
     const { data: platformUser } = await supabaseAdmin
       .from('platform_users')
-      .select('platform_role')
+      .select('platform_role, company_id')
       .eq('user_id', user.id)
       .maybeSingle()
 
-    if (platformUser?.platform_role !== 'platform_admin') {
-      return new Response(JSON.stringify({ error: 'Forbidden: Only platform admin' }), {
+    if (!platformUser || (platformUser.platform_role !== 'platform_admin' && platformUser.platform_role !== 'company_admin')) {
+      return new Response(JSON.stringify({ error: 'Forbidden: Only platform/company admin' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
@@ -114,12 +114,30 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Primary SMTP
-    const smtpUser = Deno.env.get('SMTP_USER')
-    const smtpPassword = Deno.env.get('SMTP_PASSWORD')
+    // Primary SMTP (platform default)
+    let smtpUser = Deno.env.get('SMTP_USER')
+    let smtpPassword = Deno.env.get('SMTP_PASSWORD')
     // Backup SMTP
     const smtpUser2 = Deno.env.get('SMTP_USER_2')
     const smtpPassword2 = Deno.env.get('SMTP_PASSWORD_2')
+    let fromName = 'VKHO'
+
+    // If company admin, check for company-specific SMTP config
+    if (platformUser.platform_role === 'company_admin' && platformUser.company_id) {
+      const { data: companyEmail } = await supabaseAdmin
+        .from('company_email_config')
+        .select('*')
+        .eq('company_id', platformUser.company_id)
+        .eq('is_enabled', true)
+        .maybeSingle()
+
+      if (companyEmail?.smtp_user && companyEmail?.smtp_pass) {
+        smtpUser = companyEmail.smtp_user
+        smtpPassword = companyEmail.smtp_pass
+        fromName = companyEmail.from_name || 'Admin'
+        console.log(`Using company SMTP: ${companyEmail.smtp_user}`)
+      }
+    }
 
     if (!smtpUser || !smtpPassword) {
       return new Response(JSON.stringify({ error: 'SMTP not configured' }), {
@@ -179,7 +197,7 @@ Deno.serve(async (req) => {
           const personalizedHtml = fullHtml + trackingPixel
 
           const mailOptions = {
-            from: `"VKHO" <${currentSmtpUser}>`,
+            from: `"${fromName}" <${currentSmtpUser}>`,
             to: email,
             subject,
             html: personalizedHtml,
@@ -200,7 +218,7 @@ Deno.serve(async (req) => {
               try {
                 await currentTransporter.sendMail({
                   ...mailOptions,
-                  from: `"VKHO" <${currentSmtpUser}>`,
+                  from: `"${fromName}" <${currentSmtpUser}>`,
                 })
                 return { email, ok: true }
               } catch (retryErr: any) {

@@ -71,6 +71,15 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Get company IDs that have their own email config enabled
+    const { data: companyEmailConfigs } = await supabase
+      .from('company_email_config')
+      .select('company_id')
+      .eq('is_enabled', true);
+    const selfEmailCompanyIds = new Set(
+      (companyEmailConfigs || []).map((c: any) => c.company_id)
+    );
+
     let transporter = createSmtpTransporter(smtpUser, smtpPassword);
     let currentSmtpUser = smtpUser;
     let usingBackup = false;
@@ -101,6 +110,11 @@ Deno.serve(async (req) => {
       let sent = 0;
 
       for (const t of tenants) {
+        // Skip tenants belonging to companies that have their own email config
+        if (t.company_id && selfEmailCompanyIds.has(t.company_id)) {
+          continue;
+        }
+
         const daysSinceCreation = t.days_since_creation || 0;
         const daysSinceLogin = t.days_since_login || daysSinceCreation;
         const tenantName = t.tenant_name || t.subdomain || "Bạn";

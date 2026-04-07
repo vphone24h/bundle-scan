@@ -21,6 +21,7 @@ import { CompanySettingsForm } from '@/components/platform/CompanySettingsForm';
 import { PlatformArticlesManagement } from '@/components/platform/PlatformArticlesManagement';
 import { WelcomeEmailConfig } from '@/components/platform/WelcomeEmailConfig';
 import { PlatformAISettings } from '@/components/platform/PlatformAISettings';
+import { CompanyEmailConfigForm } from '@/components/platform/CompanyEmailConfigForm';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Navigate } from 'react-router-dom';
 import { Loader2, Users, Megaphone, FileText, Mail, Globe, MailPlus, Bell, Zap, Database, RefreshCw, ArrowDownToLine, Building2 } from 'lucide-react';
@@ -220,6 +221,7 @@ export default function PlatformAdminPage() {
 
           <TabsContent value="config" className="mt-6">
             <div className="space-y-6">
+              <CompanyEmailConfigForm />
               <PlatformAISettings />
               <PaymentConfigManagement />
             </div>
