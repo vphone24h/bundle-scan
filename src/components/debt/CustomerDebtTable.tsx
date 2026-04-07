@@ -14,7 +14,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Eye, Wallet, Plus, Printer, MoreHorizontal, UserPlus, Hash, Phone, MessageSquare, Settings, ArrowLeftRight, Pencil } from 'lucide-react';
+import { Eye, Wallet, Plus, Printer, MoreHorizontal, UserPlus, Hash, Phone, MessageSquare, Settings, ArrowLeftRight, Pencil, Trash2 } from 'lucide-react';
 import { DebtDetailDialog } from './DebtDetailDialog';
 import { DebtPaymentDialog } from './DebtPaymentDialog';
 import { DebtAdditionDialog } from './DebtAdditionDialog';
@@ -24,6 +24,7 @@ import { DebtOffsetDialog } from './DebtOffsetDialog';
 import { OverdueDaysDialog } from './OverdueDaysDialog';
 import { DebtEditAmountDialog } from './DebtEditAmountDialog';
 import { exportDebtToExcel } from './DebtExportExcel';
+import { DebtDeleteDialog } from './DebtDeleteDialog';
 import { useDebtOffsetMatches, DebtOffsetMatch } from '@/hooks/useDebtOffset';
 
 function getDebtStatusBadge(daysOverdue: number, remaining: number, overdueDays: number) {
@@ -80,6 +81,7 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
   const [showCreateDebt, setShowCreateDebt] = useState(false);
   const [showTagAssign, setShowTagAssign] = useState(false);
   const [showEditAmount, setShowEditAmount] = useState(false);
+  const [showDeleteDebt, setShowDeleteDebt] = useState(false);
   
   const [showOverdueDays, setShowOverdueDays] = useState(false);
   const [showOffset, setShowOffset] = useState(false);
@@ -145,6 +147,9 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => exportDebtToExcel(debt, 'customer')}>
           <Printer className="mr-2 h-4 w-4" /> In công nợ
+        </DropdownMenuItem>
+        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => { setSelectedDebt(debt); setShowDeleteDebt(true); }}>
+          <Trash2 className="mr-2 h-4 w-4" /> Xóa công nợ
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -348,6 +353,9 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
             customerId={selectedDebt.entity_id} customerName={selectedDebt.entity_name}
             globalOverdueDays={overdueDays} />
           <DebtEditAmountDialog open={showEditAmount} onOpenChange={setShowEditAmount} entityType="customer"
+            entityId={selectedDebt.entity_id} entityName={selectedDebt.entity_name}
+            remainingAmount={selectedDebt.remaining_amount} branchId={selectedDebt.branch_id} />
+          <DebtDeleteDialog open={showDeleteDebt} onOpenChange={setShowDeleteDebt} entityType="customer"
             entityId={selectedDebt.entity_id} entityName={selectedDebt.entity_name}
             remainingAmount={selectedDebt.remaining_amount} branchId={selectedDebt.branch_id} />
         </>
