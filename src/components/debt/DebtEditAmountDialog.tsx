@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Pencil, Loader2, ShieldAlert } from 'lucide-react';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
+import { createSafeDialogOpenChange, forceReleaseStuckInteraction, preventDialogAutoFocus } from '@/lib/dialogInteraction';
 
 interface DebtEditAmountDialogProps {
   open: boolean;
@@ -33,6 +34,7 @@ export function DebtEditAmountDialog({
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
   const { unlocked, unlock } = useSecurityUnlock('debt-edit');
+  const handleDialogOpenChange = createSafeDialogOpenChange(onOpenChange);
 
   useEffect(() => {
     if (open) {
@@ -40,6 +42,12 @@ export function DebtEditAmountDialog({
       setReason('');
     }
   }, [open, remainingAmount]);
+
+  useEffect(() => {
+    if (!open) {
+      forceReleaseStuckInteraction();
+    }
+  }, [open]);
 
   const editMutation = useMutation({
     mutationFn: async () => {
@@ -210,8 +218,8 @@ export function DebtEditAmountDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md z-[60]">
+      <Dialog modal open={open} onOpenChange={handleDialogOpenChange}>
+        <DialogContent className="max-w-md z-[60]" onCloseAutoFocus={preventDialogAutoFocus}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="h-5 w-5" />
@@ -275,7 +283,7 @@ export function DebtEditAmountDialog({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Hủy</Button>
+            <Button variant="outline" onClick={() => handleDialogOpenChange(false)}>Hủy</Button>
             <Button
               onClick={handleSubmit}
               disabled={editMutation.isPending || numAmount === remainingAmount || numAmount < 0 || !reason.trim()}

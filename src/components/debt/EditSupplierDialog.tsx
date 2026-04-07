@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
+import { createSafeDialogOpenChange, forceReleaseStuckInteraction, preventDialogAutoFocus } from '@/lib/dialogInteraction';
 
 interface EditSupplierDialogProps {
   open: boolean;
@@ -39,6 +40,7 @@ export function EditSupplierDialog({
   const [phone, setPhone] = useState(supplierPhone || '');
   const [note, setNote] = useState('');
   const [loadingNote, setLoadingNote] = useState(false);
+  const handleDialogOpenChange = createSafeDialogOpenChange(onOpenChange);
 
   // Load full supplier data when dialog opens
   useEffect(() => {
@@ -57,6 +59,12 @@ export function EditSupplierDialog({
         });
     }
   }, [open, supplierId, supplierName, supplierPhone]);
+
+  useEffect(() => {
+    if (!open) {
+      forceReleaseStuckInteraction();
+    }
+  }, [open]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
@@ -95,8 +103,8 @@ export function EditSupplierDialog({
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+    <Dialog modal open={open} onOpenChange={handleDialogOpenChange}>
+      <DialogContent className="max-w-md z-[60]" onCloseAutoFocus={preventDialogAutoFocus}>
         <DialogHeader>
           <DialogTitle>Sửa nhà cung cấp</DialogTitle>
         </DialogHeader>
@@ -151,7 +159,7 @@ export function EditSupplierDialog({
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={updateMutation.isPending}>
+          <Button variant="outline" onClick={() => handleDialogOpenChange(false)} disabled={updateMutation.isPending}>
             Hủy
           </Button>
           <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
