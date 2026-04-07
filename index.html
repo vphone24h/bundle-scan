@@ -169,15 +169,40 @@
         var isSubdomain = h !== 'bundle-scan.lovable.app' && h !== 'localhost' && h !== 'vkho.vn' && h !== 'www.vkho.vn' && !h.endsWith('.lovable.app') && !h.endsWith('.lovableproject.com');
         
         if (!isStore && !isSubdomain) return;
-        
-        var m = document.getElementById('static-manifest');
-        if (m) m.remove();
+
+        // If user is on /admin path, this is a company admin page - skip store prefetch
+        if (p === '/admin' || p.indexOf('/admin') === 0 || p === '/platform-admin' || p.indexOf('/platform-admin') === 0) return;
         
         var supaUrl = 'https://rodpbhesrwykmpywiiyd.supabase.co';
         var anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZHBiaGVzcnd5a21weXdpaXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MjM4MDMsImV4cCI6MjA4NDk5OTgwM30.P7Kc0pxkUdyHi8AgDBlRmPqxg0MWr2C_J_EUqORQY_s';
         var hdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey, 'Content-Type': 'application/json' };
         var getHdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey };
+
+        // Check if this hostname is a company domain (not a store subdomain)
+        // Company domains should show the landing page, not a store
+        if (isSubdomain && !h.endsWith('.vkho.vn')) {
+          // For non-vkho.vn domains, first check if it's a company domain
+          fetch(supaUrl + '/rest/v1/rpc/lookup_company_by_domain', {
+            method: 'POST', headers: hdrs,
+            body: JSON.stringify({ _domain: h.replace(/^www\./, '') })
+          }).then(function(r) { return r.json(); }).then(function(data) {
+            var company = Array.isArray(data) ? data[0] : data;
+            if (company && company.domain && company.domain.toLowerCase() === h.replace(/^www\./, '').toLowerCase()) {
+              // This IS a company domain - mark it so React knows
+              window.__STORE_PREFETCH__ = { isCompanyDomain: true, companyId: company.id, companyName: company.name };
+              return; // Don't fetch store data
+            }
+            // Not a company domain - proceed with store resolution
+            proceedWithStoreResolution();
+          }).catch(function() {
+            proceedWithStoreResolution();
+          });
+          return;
+        }
         
+        proceedWithStoreResolution();
+
+        function proceedWithStoreResolution() {
         var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
         
         // Preload IP immediately in standalone mode for faster warranty lookup
