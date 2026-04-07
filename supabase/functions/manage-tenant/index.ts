@@ -7,10 +7,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-async function sendExtensionEmails(recipients: { email: string; name: string; newEndDate: string; daysAdded: number }[], customNote?: string) {
-  const smtpUser = Deno.env.get('SMTP_USER')
-  const smtpPassword = Deno.env.get('SMTP_PASSWORD')
+async function sendExtensionEmails(
+  recipients: { email: string; name: string; newEndDate: string; daysAdded: number }[],
+  customNote?: string,
+  smtpUserOverride?: string,
+  smtpPassOverride?: string,
+  fromNameOverride?: string,
+) {
+  const smtpUser = smtpUserOverride || Deno.env.get('SMTP_USER')
+  const smtpPassword = smtpPassOverride || Deno.env.get('SMTP_PASSWORD')
   if (!smtpUser || !smtpPassword) return
+  const senderName = fromNameOverride || 'VKHO'
 
   const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
@@ -32,23 +39,23 @@ async function sendExtensionEmails(recipients: { email: string; name: string; ne
           '</div>',
           '<div style="background:#fff;padding:24px">',
             `<p style="margin:0 0 12px;color:#374151;font-size:15px">Xin chào <strong>${r.name}</strong>,</p>`,
-            `<p style="margin:0 0 12px;color:#374151;font-size:15px">Tài khoản VKHO của bạn vừa được <strong>tặng thêm ${r.daysAdded} ngày</strong> sử dụng! 🎊</p>`,
+            `<p style="margin:0 0 12px;color:#374151;font-size:15px">Tài khoản của bạn vừa được <strong>tặng thêm ${r.daysAdded} ngày</strong> sử dụng! 🎊</p>`,
             `<div style="background:#eff6ff;border-left:4px solid #2563eb;padding:16px;border-radius:0 8px 8px 0;margin:16px 0">`,
               `<p style="margin:0;font-size:14px;color:#1e40af"><strong>Hạn sử dụng mới:</strong> ${endDateStr}</p>`,
             '</div>',
             noteHtml,
-            '<p style="margin:16px 0 0;color:#374151;font-size:14px">Cảm ơn bạn đã sử dụng VKHO! 💙</p>',
+            '<p style="margin:16px 0 0;color:#374151;font-size:14px">Cảm ơn bạn đã sử dụng! 💙</p>',
           '</div>',
           '<div style="background:#f3f4f6;padding:16px 24px;text-align:center">',
-            '<p style="margin:0;font-size:12px;color:#9ca3af">© 2025 VKHO – Hệ thống quản lý kho hàng thông minh</p>',
+            `<p style="margin:0;font-size:12px;color:#9ca3af">© 2026 ${senderName}</p>`,
           '</div>',
         '</div>',
       ].join('')
 
       return transporter.sendMail({
-        from: `"VKHO" <${smtpUser}>`,
+        from: `"${senderName}" <${smtpUser}>`,
         to: r.email,
-        subject: `🎉 Tặng thêm ${r.daysAdded} ngày sử dụng VKHO`,
+        subject: `🎉 Tặng thêm ${r.daysAdded} ngày sử dụng`,
         html,
       })
     }))
