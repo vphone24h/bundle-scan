@@ -10,6 +10,8 @@ import { Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { cn } from '@/lib/utils';
 import { getCurrentCompanyDomain } from '@/hooks/useCompanyResolver';
+import { useCompany } from '@/hooks/useCompanyResolver';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
