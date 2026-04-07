@@ -1,6 +1,7 @@
 import { ReactNode, useMemo, useEffect } from 'react';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { useAuth } from '@/hooks/useAuth';
+import { useCompany } from '@/hooks/useCompanyResolver';
 import { useLocation } from 'react-router-dom';
 import { detectTenantFromHostname, buildStoreUrl } from '@/lib/tenantResolver';
 
@@ -16,26 +17,51 @@ interface SubdomainRouterProps {
 /**
  * Router component xử lý logic hiển thị:
  * - Main domain (vkho.vn) + chưa đăng nhập + path "/" → trang giới thiệu
- * - Subdomain + chưa đăng nhập → landing page cửa hàng
+ * - Company domain (cty.vphone.vn) + chưa đăng nhập + path "/" → trang giới thiệu công ty
+ * - Subdomain (shop1.vkho.vn) + chưa đăng nhập → landing page cửa hàng
  * - Đã đăng nhập → app chính
  */
 export function SubdomainRouter({ landingPage, publicLandingPage, children }: SubdomainRouterProps) {
   const resolvedTenant = useTenantResolver();
   const { user, loading: authLoading } = useAuth();
+  const company = useCompany();
   const location = useLocation();
   const hostInfo = useMemo(() => detectTenantFromHostname(), []);
+
+  // Check if current hostname IS a company domain (not a shop subdomain of a company domain)
+  const isCompanyDomain = useMemo(() => {
+    if (company.status !== 'resolved' || !company.domain) return false;
+    const hostname = window.location.hostname.toLowerCase().replace(/^www\./, '');
+    // If the hostname exactly matches the company domain, this is a company website
+    return hostname === company.domain.toLowerCase();
+  }, [company.status, company.domain]);
   
   const routerState = useMemo(() => {
 
     // CRITICAL: On custom domain/subdomain, ALWAYS show store landing while loading
     // Never show admin app to store visitors during loading states
-    if (!hostInfo.isMainDomain) {
+    if (!hostInfo.isMainDomain && !isCompanyDomain) {
       if (!user && (resolvedTenant.status === 'loading' || authLoading)) {
         return 'store_landing';
       }
       if (authLoading && !user) {
         return 'store_landing';
       }
+    }
+
+    // Company domain (e.g. cty.vphone.vn) → treat like main domain
+    // Show public landing page, not store landing
+    if (isCompanyDomain) {
+      if (authLoading) {
+        return 'app';
+      }
+      if (user) {
+        return 'app';
+      }
+      if (location.pathname === '/' && publicLandingPage) {
+        return 'public_landing';
+      }
+      return 'app';
     }
     
     // OPTIMIZATION: For main domains, skip loading state entirely
@@ -98,7 +124,7 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
     }
     
     return 'app';
-  }, [resolvedTenant, user, authLoading, location.pathname, publicLandingPage, hostInfo.isMainDomain]);
+  }, [resolvedTenant, user, authLoading, location.pathname, publicLandingPage, hostInfo.isMainDomain, isCompanyDomain]);
 
   // No loading spinner - app shell renders immediately
 
