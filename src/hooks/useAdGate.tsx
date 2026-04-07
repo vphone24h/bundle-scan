@@ -16,11 +16,33 @@ export interface AdGateSettings {
   updated_at: string;
 }
 
+/**
+ * For end-user contexts (MainLayout, TenantGuard, etc.)
+ * Returns ad gate settings visible to the current user via RLS.
+ */
 export function useAdGateSettings() {
+  return useQuery({
+    queryKey: ['ad-gate-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ad_gate_settings')
+        .select('*')
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as AdGateSettings | null;
+    },
+  });
+}
+
+/**
+ * For admin contexts - scoped by company_id.
+ */
+export function useAdminAdGateSettings() {
   const { companyId, isPlatformAdmin } = useAdminCompanyId();
 
   return useQuery({
-    queryKey: ['ad-gate-settings', companyId],
+    queryKey: ['ad-gate-settings-admin', companyId],
     queryFn: async () => {
       let query = supabase
         .from('ad_gate_settings')
@@ -49,7 +71,6 @@ export function useUpdateAdGateSettings() {
       const { id, ...rest } = updates;
       
       if (id) {
-        // Update existing
         const { data, error } = await supabase
           .from('ad_gate_settings')
           .update(rest)
@@ -59,7 +80,6 @@ export function useUpdateAdGateSettings() {
         if (error) throw error;
         return data;
       } else {
-        // Create new for this company scope
         const { data, error } = await supabase
           .from('ad_gate_settings')
           .insert({ ...rest, company_id: isPlatformAdmin ? null : companyId })
@@ -71,6 +91,7 @@ export function useUpdateAdGateSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ad-gate-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['ad-gate-settings-admin'] });
       toast({ title: 'Đã lưu cài đặt Ad Gate' });
     },
     onError: (error: Error) => {
