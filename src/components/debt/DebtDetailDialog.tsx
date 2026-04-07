@@ -746,6 +746,16 @@ export function DebtDetailDialog({
           branchName={branchName}
         />
       )}
+      {entityType === 'supplier' && (
+        <EditSupplierDialog
+          open={showEditCustomer}
+          onOpenChange={setShowEditCustomer}
+          supplierId={entityId}
+          supplierName={entityName}
+          supplierPhone={entityPhone}
+          branchName={branchName}
+        />
+      )}
 
       <DebtPaymentDialog
         open={showPayment}
