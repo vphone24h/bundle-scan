@@ -51,15 +51,22 @@ export function PlatformAISettings() {
 
   const saveContactMutation = useMutation({
     mutationFn: async () => {
-      if (!platformSettings?.id) return;
-      const { error } = await supabase
-        .from('platform_settings')
-        .update({ admin_phone: adminPhone, admin_zalo: adminZalo })
-        .eq('id', platformSettings.id);
-      if (error) throw error;
+      if (platformSettings?.id) {
+        const { error } = await supabase
+          .from('platform_settings')
+          .update({ admin_phone: adminPhone, admin_zalo: adminZalo })
+          .eq('id', platformSettings.id);
+        if (error) throw error;
+      } else {
+        // Create new record for this company
+        const { error } = await supabase
+          .from('platform_settings')
+          .insert({ admin_phone: adminPhone, admin_zalo: adminZalo, company_id: companyId } as any);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['platform-settings-contact'] });
+      queryClient.invalidateQueries({ queryKey: ['platform-settings-contact', companyId] });
       toast({ title: 'Đã lưu thông tin liên hệ' });
     },
     onError: () => toast({ title: 'Lỗi', variant: 'destructive' }),
