@@ -40,15 +40,21 @@ interface HistoryItem {
 }
 
 function useNotificationHistory() {
+  const { companyId, isPlatformAdmin } = useAdminCompanyId();
   return useQuery({
-    queryKey: ['notification-send-history'],
+    queryKey: ['notification-send-history', companyId],
     queryFn: async () => {
-      // Get all sent notifications (both manual and automation)
-      const { data: notifications, error } = await supabase
+      let query = supabase
         .from('system_notifications')
         .select('id, title, message, source, is_pinned, is_active, notification_type, created_at, target_audience')
         .order('created_at', { ascending: false })
         .limit(200);
+
+      if (!isPlatformAdmin) {
+        query = query.eq('company_id', companyId!);
+      }
+
+      const { data: notifications, error } = await query;
       if (error) throw error;
 
       // Get read counts per notification
