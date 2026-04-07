@@ -88,26 +88,33 @@ export function PaymentConfigManagement() {
     is_active: true,
   });
 
-  // Fetch payment config
+  // Fetch payment config scoped to company
   const { data: configs, isLoading: loadingConfigs } = useQuery({
-    queryKey: ['payment-config'],
+    queryKey: ['payment-config', companyId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('payment_config')
-        .select('*');
+      let query = supabase.from('payment_config').select('*');
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      } else {
+        query = query.is('company_id', null);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data as PaymentConfig[];
     },
   });
 
-  // Fetch bank accounts
+  // Fetch bank accounts scoped to company
   const { data: bankAccounts, isLoading: loadingBanks } = useQuery({
-    queryKey: ['bank-accounts'],
+    queryKey: ['bank-accounts', companyId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('bank_accounts')
-        .select('*')
-        .order('display_order');
+      let query = supabase.from('bank_accounts').select('*').order('display_order');
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      } else {
+        query = query.is('company_id', null);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data as BankAccount[];
     },
