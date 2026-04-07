@@ -90,7 +90,7 @@ export function BalanceHistorySection({ allEntries, totalBalance, dateRange }: B
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <History className="h-4 w-4" />
-            Lịch sử số dư
+            Lịch sử số dư cuối ngày
           </CardTitle>
           <div className="flex items-center gap-2">
             {!expanded && latestBalance !== undefined && (
