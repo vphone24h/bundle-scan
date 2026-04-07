@@ -483,6 +483,17 @@ export function TenantsManagement() {
               <SelectItem value="both">Cả 2</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={companyFilter} onValueChange={setCompanyFilter}>
+            <SelectTrigger className="w-[140px] h-9 text-xs sm:text-sm">
+              <SelectValue placeholder="Công ty" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all_">Tất cả CT</SelectItem>
+              {companies?.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
