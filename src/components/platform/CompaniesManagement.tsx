@@ -68,7 +68,6 @@ export function CompaniesManagement() {
   const getAdminForCompany = (companyId: string) => {
     return companyAdmins?.find((a: any) => a.company_id === companyId);
   };
-  const [formStatus, setFormStatus] = useState('active');
 
   const filtered = useMemo(() => {
     if (!companies) return [];
