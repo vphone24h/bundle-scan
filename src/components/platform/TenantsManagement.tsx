@@ -64,8 +64,12 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
   locked: { label: 'Bị khóa', variant: 'destructive' },
 };
 
-export function TenantsManagement() {
-  const { data: tenants, isLoading } = useAllTenants();
+export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: string }) {
+  const { data: allTenants, isLoading } = useAllTenants();
+  // If company admin, pre-filter tenants by company
+  const tenants = filterByCompanyId 
+    ? allTenants?.filter((t: any) => t.company_id === filterByCompanyId)
+    : allTenants;
   const { data: enrichmentMap } = useTenantEnrichment();
   const manageTenant = useManageTenant();
   const queryClient = useQueryClient();
