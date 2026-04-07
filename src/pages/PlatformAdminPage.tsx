@@ -126,6 +126,10 @@ export default function PlatformAdminPage() {
                 <Megaphone className="h-3 w-3" />
                 <span className="hidden sm:inline">{t('pages.platformAdmin.ads')}</span>
               </TabsTrigger>
+              <TabsTrigger value="companies" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
+                <Building2 className="h-3 w-3" />
+                <span className="hidden sm:inline">Công ty</span>
+              </TabsTrigger>
               <TabsTrigger value="domains" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
                 <Globe className="h-3 w-3" />
                 <span className="hidden sm:inline">{t('pages.platformAdmin.domains')}</span>
