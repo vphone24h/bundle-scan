@@ -350,7 +350,17 @@ export function CompaniesManagement() {
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Admin:</span>
                   {admin ? (
-                    <span className="text-xs">{admin.email}</span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-xs font-medium">{admin.email}</span>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" className="h-6 text-xs px-1.5" onClick={() => { setShowChangePasswordDialog(admin); setNewPassword(''); }}>
+                          <Key className="h-3 w-3 mr-0.5" />Đổi MK
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-6 text-xs px-1.5 text-destructive" onClick={() => setShowDeleteAdminDialog(admin)}>
+                          <Trash2 className="h-3 w-3" />Xóa
+                        </Button>
+                      </div>
+                    </div>
                   ) : (
                     <Button variant="outline" size="sm" className="h-6 text-xs gap-1" onClick={() => { setShowAdminDialog(c); setAdminEmail(''); setAdminPassword(''); setAdminDisplayName(''); }}>
                       <UserCog className="h-3 w-3" />Tạo
