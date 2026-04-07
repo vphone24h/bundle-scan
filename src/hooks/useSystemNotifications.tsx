@@ -194,15 +194,22 @@ export function useDismissStartupNotification() {
 
 // Admin hooks
 export function useAllSystemNotifications() {
+  const { companyId, isPlatformAdmin } = useAdminCompanyId();
   return useQuery({
-    queryKey: ['system-notifications-admin'],
+    queryKey: ['system-notifications-admin', companyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('system_notifications')
         .select('*')
         .or('source.eq.manual,source.is.null')
         .order('created_at', { ascending: false })
         .limit(200);
+
+      if (!isPlatformAdmin) {
+        query = query.eq('company_id', companyId!);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as SystemNotification[];
     },
