@@ -17,6 +17,7 @@ export type Database = {
       ad_gate_settings: {
         Row: {
           clicks_per_ad: number
+          company_id: string | null
           created_at: string
           display_duration_seconds: number
           id: string
@@ -28,6 +29,7 @@ export type Database = {
         }
         Insert: {
           clicks_per_ad?: number
+          company_id?: string | null
           created_at?: string
           display_duration_seconds?: number
           id?: string
@@ -39,6 +41,7 @@ export type Database = {
         }
         Update: {
           clicks_per_ad?: number
+          company_id?: string | null
           created_at?: string
           display_duration_seconds?: number
           id?: string
@@ -49,6 +52,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "ad_gate_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ad_gate_settings_pinned_ad_id_fkey"
             columns: ["pinned_ad_id"]
@@ -175,6 +185,7 @@ export type Database = {
         Row: {
           commission_type: Database["public"]["Enums"]["commission_type"]
           commission_value: number
+          company_id: string | null
           created_at: string
           id: string
           plan_id: string
@@ -183,6 +194,7 @@ export type Database = {
         Insert: {
           commission_type?: Database["public"]["Enums"]["commission_type"]
           commission_value?: number
+          company_id?: string | null
           created_at?: string
           id?: string
           plan_id: string
@@ -191,12 +203,20 @@ export type Database = {
         Update: {
           commission_type?: Database["public"]["Enums"]["commission_type"]
           commission_value?: number
+          company_id?: string | null
           created_at?: string
           id?: string
           plan_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "affiliate_commission_rates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "affiliate_commission_rates_plan_id_fkey"
             columns: ["plan_id"]
@@ -358,6 +378,7 @@ export type Database = {
           check_same_ip: boolean
           check_same_phone: boolean
           commission_description: string | null
+          company_id: string | null
           cookie_tracking_days: number
           created_at: string
           default_commission_rate: number
@@ -375,6 +396,7 @@ export type Database = {
           check_same_ip?: boolean
           check_same_phone?: boolean
           commission_description?: string | null
+          company_id?: string | null
           cookie_tracking_days?: number
           created_at?: string
           default_commission_rate?: number
@@ -392,6 +414,7 @@ export type Database = {
           check_same_ip?: boolean
           check_same_phone?: boolean
           commission_description?: string | null
+          company_id?: string | null
           cookie_tracking_days?: number
           created_at?: string
           default_commission_rate?: number
@@ -404,7 +427,15 @@ export type Database = {
           require_approval?: boolean
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       affiliate_withdrawals: {
         Row: {
@@ -639,6 +670,7 @@ export type Database = {
           account_holder: string
           account_number: string
           bank_name: string
+          company_id: string | null
           created_at: string
           display_order: number | null
           id: string
@@ -649,6 +681,7 @@ export type Database = {
           account_holder: string
           account_number: string
           bank_name: string
+          company_id?: string | null
           created_at?: string
           display_order?: number | null
           id?: string
@@ -659,13 +692,22 @@ export type Database = {
           account_holder?: string
           account_number?: string
           bank_name?: string
+          company_id?: string | null
           created_at?: string
           display_order?: number | null
           id?: string
           is_active?: boolean
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bank_accounts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       branches: {
         Row: {
@@ -1110,6 +1152,56 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      company_email_config: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          from_email: string | null
+          from_name: string | null
+          id: string
+          is_enabled: boolean | null
+          smtp_host: string | null
+          smtp_pass: string | null
+          smtp_port: number | null
+          smtp_user: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          smtp_host?: string | null
+          smtp_pass?: string | null
+          smtp_port?: number | null
+          smtp_user?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          smtp_host?: string | null
+          smtp_pass?: string | null
+          smtp_port?: number | null
+          smtp_user?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_email_config_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_settings: {
         Row: {
@@ -4265,6 +4357,7 @@ export type Database = {
         Row: {
           button_text: string | null
           channels: string[]
+          company_id: string | null
           created_at: string
           delay_minutes: number
           display_order: number | null
@@ -4282,6 +4375,7 @@ export type Database = {
         Insert: {
           button_text?: string | null
           channels?: string[]
+          company_id?: string | null
           created_at?: string
           delay_minutes?: number
           display_order?: number | null
@@ -4299,6 +4393,7 @@ export type Database = {
         Update: {
           button_text?: string | null
           channels?: string[]
+          company_id?: string | null
           created_at?: string
           delay_minutes?: number
           display_order?: number | null
@@ -4313,7 +4408,15 @@ export type Database = {
           trigger_type?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notification_automations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       onboarding_email_logs: {
         Row: {
@@ -4373,6 +4476,7 @@ export type Database = {
       }
       payment_config: {
         Row: {
+          company_id: string | null
           config_key: string
           config_value: string | null
           created_at: string
@@ -4380,6 +4484,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          company_id?: string | null
           config_key: string
           config_value?: string | null
           created_at?: string
@@ -4387,13 +4492,22 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          company_id?: string | null
           config_key?: string
           config_value?: string | null
           created_at?: string
           id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "payment_config_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payment_requests: {
         Row: {
@@ -4495,6 +4609,7 @@ export type Database = {
         Row: {
           banner_url: string | null
           category_id: string | null
+          company_id: string | null
           content: string | null
           created_at: string
           created_by: string | null
@@ -4509,6 +4624,7 @@ export type Database = {
         Insert: {
           banner_url?: string | null
           category_id?: string | null
+          company_id?: string | null
           content?: string | null
           created_at?: string
           created_by?: string | null
@@ -4523,6 +4639,7 @@ export type Database = {
         Update: {
           banner_url?: string | null
           category_id?: string | null
+          company_id?: string | null
           content?: string | null
           created_at?: string
           created_by?: string | null
@@ -4540,6 +4657,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "platform_article_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_articles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -4649,6 +4773,7 @@ export type Database = {
           admin_zalo: string | null
           ai_description_enabled: boolean
           auto_image_enabled: boolean
+          company_id: string | null
           id: string
           updated_at: string
           updated_by: string | null
@@ -4658,6 +4783,7 @@ export type Database = {
           admin_zalo?: string | null
           ai_description_enabled?: boolean
           auto_image_enabled?: boolean
+          company_id?: string | null
           id?: string
           updated_at?: string
           updated_by?: string | null
@@ -4667,11 +4793,20 @@ export type Database = {
           admin_zalo?: string | null
           ai_description_enabled?: boolean
           auto_image_enabled?: boolean
+          company_id?: string | null
           id?: string
           updated_at?: string
           updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "platform_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       platform_users: {
         Row: {
@@ -6506,6 +6641,7 @@ export type Database = {
       }
       subscription_plans: {
         Row: {
+          company_id: string | null
           created_at: string
           description: string | null
           discount_amount: number | null
@@ -6523,6 +6659,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           description?: string | null
           discount_amount?: number | null
@@ -6540,6 +6677,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           description?: string | null
           discount_amount?: number | null
@@ -6556,7 +6694,15 @@ export type Database = {
           price?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subscription_plans_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suppliers: {
         Row: {
@@ -6675,6 +6821,7 @@ export type Database = {
       }
       system_notifications: {
         Row: {
+          company_id: string | null
           created_at: string
           created_by: string | null
           full_content: string | null
@@ -6694,6 +6841,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           full_content?: string | null
@@ -6713,6 +6861,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           created_by?: string | null
           full_content?: string | null
@@ -6731,7 +6880,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "system_notifications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tax_policy_articles: {
         Row: {
@@ -8000,6 +8157,7 @@ export type Database = {
         Returns: string[]
       }
       get_user_branch: { Args: { _user_id: string }; Returns: string }
+      get_user_company_id: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
