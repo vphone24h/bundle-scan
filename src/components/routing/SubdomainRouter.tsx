@@ -44,7 +44,11 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
 
     // Company custom domains may need one async round to resolve.
     // Never push explicit admin entry to store website during that window.
-    if (isAdminEntryRoute && company.status === 'loading' && resolvedTenant.status === 'loading') {
+    if (company.status === 'loading' && !hostInfo.isMainDomain && !hostInfo.subdomain) {
+      // Unknown domain + company not resolved yet → don't show store landing prematurely
+      // Wait for company resolution to decide if this is a company domain or store
+      if (isAdminEntryRoute) return 'app';
+      if (location.pathname === '/' && publicLandingPage) return 'public_landing';
       return 'app';
     }
 
@@ -134,7 +138,7 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
     }
     
     return 'app';
-  }, [resolvedTenant, user, authLoading, publicLandingPage, hostInfo.isMainDomain, isCompanyDomain, isAdminEntryRoute, company.status]);
+  }, [resolvedTenant, user, authLoading, publicLandingPage, hostInfo.isMainDomain, isCompanyDomain, isAdminEntryRoute, company.status, hostInfo.subdomain, location.pathname]);
 
   // No loading spinner - app shell renders immediately
 
