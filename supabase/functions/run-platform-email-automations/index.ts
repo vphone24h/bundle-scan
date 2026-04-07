@@ -71,6 +71,15 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Get company IDs that have their own email config enabled
+    const { data: companyEmailConfigs } = await supabase
+      .from('company_email_config')
+      .select('company_id')
+      .eq('is_enabled', true);
+    const selfEmailCompanyIds = new Set(
+      (companyEmailConfigs || []).map((c: any) => c.company_id)
+    );
+
     let transporter = createSmtpTransporter(smtpUser, smtpPassword);
     let currentSmtpUser = smtpUser;
     let usingBackup = false;
