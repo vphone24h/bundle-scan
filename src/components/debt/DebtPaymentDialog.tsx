@@ -25,6 +25,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Trash2, Wallet } from 'lucide-react';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { createSafeDialogOpenChange, forceReleaseStuckInteraction, preventDialogAutoFocus } from '@/lib/dialogInteraction';
+import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
 
 interface PaymentSource {
   id: string;
@@ -75,11 +77,19 @@ export function DebtPaymentDialog({
     { id: '1', source: 'cash', amount: '' },
   ]);
   const [description, setDescription] = useState('');
+  const [transactionDate, setTransactionDate] = useState(() => {
+    const now = new Date();
+    now.setSeconds(0, 0);
+    return now;
+  });
   const createPayment = useCreateDebtPayment();
 
   const resetForm = () => {
     setPaymentSources([{ id: '1', source: 'cash', amount: '' }]);
     setDescription('');
+    const now = new Date();
+    now.setSeconds(0, 0);
+    setTransactionDate(now);
   };
 
   const handleDialogOpenChange = createSafeDialogOpenChange(onOpenChange, resetForm);
@@ -156,6 +166,7 @@ export function DebtPaymentDialog({
             description: description || defaultDescription,
             branch_id: branchId,
             merged_entity_ids: mergedEntityIds,
+            transaction_date: transactionDate.toISOString(),
           });
           currentRemaining -= amount;
         }
@@ -189,6 +200,20 @@ export function DebtPaymentDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Transaction date/time */}
+          <div className="space-y-2">
+            <Label>Ngày / Giờ giao dịch</Label>
+            <Input
+              type="datetime-local"
+              value={format(transactionDate, "yyyy-MM-dd'T'HH:mm")}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val) setTransactionDate(new Date(val));
+              }}
+              className="block"
+            />
+          </div>
+
           {/* Quick pay full */}
           <Button
             type="button"

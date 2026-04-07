@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus } from 'lucide-react';
 import { createSafeDialogOpenChange, forceReleaseStuckInteraction, preventDialogAutoFocus } from '@/lib/dialogInteraction';
+import { format } from 'date-fns';
 
 interface DebtAdditionDialogProps {
   open: boolean;
@@ -42,11 +43,19 @@ export function DebtAdditionDialog({
 }: DebtAdditionDialogProps) {
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
+  const [transactionDate, setTransactionDate] = useState(() => {
+    const now = new Date();
+    now.setSeconds(0, 0);
+    return now;
+  });
   const createPayment = useCreateDebtPayment();
 
   const resetForm = () => {
     setAmount('');
     setReason('');
+    const now = new Date();
+    now.setSeconds(0, 0);
+    setTransactionDate(now);
   };
 
   const handleDialogOpenChange = createSafeDialogOpenChange(onOpenChange, resetForm);
@@ -80,6 +89,7 @@ export function DebtAdditionDialog({
         remaining_amount: remainingAmount,
         description: reason,
         branch_id: branchId,
+        transaction_date: transactionDate.toISOString(),
       });
 
       toast.success('Đã cộng thêm nợ');
@@ -106,6 +116,20 @@ export function DebtAdditionDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Transaction date/time */}
+          <div className="space-y-2">
+            <Label>Ngày / Giờ giao dịch</Label>
+            <Input
+              type="datetime-local"
+              value={format(transactionDate, "yyyy-MM-dd'T'HH:mm")}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val) setTransactionDate(new Date(val));
+              }}
+              className="block"
+            />
+          </div>
+
           {/* Amount */}
           <div className="space-y-2">
             <Label htmlFor="amount">Số tiền <span className="text-destructive">*</span></Label>

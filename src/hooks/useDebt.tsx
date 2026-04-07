@@ -202,6 +202,7 @@ export function useCreateDebtPayment() {
       description: string;
       branch_id?: string | null;
       merged_entity_ids?: string[]; // For merged supplier debts
+      transaction_date?: string; // Optional custom date/time for the transaction
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -229,6 +230,7 @@ export function useCreateDebtPayment() {
           created_by: user?.id,
           tenant_id: tenantId,
           balance_after: Math.max(0, newDebt),
+          ...(payment.transaction_date ? { created_at: payment.transaction_date } : {}),
         }])
         .select()
         .single();
@@ -368,6 +370,7 @@ export function useCreateDebtPayment() {
           tenant_id: tenantId,
           created_by_name: staffName,
           recipient_name: payment.entity_name || null,
+          ...(payment.transaction_date ? { transaction_date: payment.transaction_date } : {}),
         }]);
         
         if (cashBookError) {
