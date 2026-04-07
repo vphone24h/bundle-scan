@@ -4616,6 +4616,7 @@ export type Database = {
       }
       platform_users: {
         Row: {
+          company_id: string | null
           created_at: string
           display_name: string
           email: string | null
@@ -4628,6 +4629,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           display_name: string
           email?: string | null
@@ -4640,6 +4642,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           display_name?: string
           email?: string | null
@@ -4652,6 +4655,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "platform_users_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "platform_users_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -8321,7 +8331,7 @@ export type Database = {
       membership_tier: "regular" | "silver" | "gold" | "vip"
       payment_status: "pending" | "approved" | "rejected" | "cancelled"
       payment_type: "cash" | "bank_card" | "e_wallet" | "debt"
-      platform_role: "platform_admin" | "tenant_admin"
+      platform_role: "platform_admin" | "tenant_admin" | "company_admin"
       point_status: "active" | "pending" | "expired"
       point_transaction_type: "earn" | "redeem" | "refund" | "adjust" | "expire"
       product_status:
@@ -8494,7 +8504,7 @@ export const Constants = {
       membership_tier: ["regular", "silver", "gold", "vip"],
       payment_status: ["pending", "approved", "rejected", "cancelled"],
       payment_type: ["cash", "bank_card", "e_wallet", "debt"],
-      platform_role: ["platform_admin", "tenant_admin"],
+      platform_role: ["platform_admin", "tenant_admin", "company_admin"],
       point_status: ["active", "pending", "expired"],
       point_transaction_type: ["earn", "redeem", "refund", "adjust", "expire"],
       product_status: [
