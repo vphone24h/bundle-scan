@@ -220,15 +220,16 @@ Deno.serve(async (req) => {
     const actionLabel = ACTION_TYPE_LABELS[action_type] || action_type || 'Đơn hàng'
     const subject = `🔔 ${actionLabel}: ${customer_name || 'Khách hàng'} – ${product_name || 'Sản phẩm'}`
 
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: { user: smtpUser, pass: smtpPassword },
-    })
+    const smtpConfig = await resolveSmtpForTenant(supabase, tenant_id)
+    if (!smtpConfig.smtpUser || !smtpConfig.smtpPass) {
+      return new Response(JSON.stringify({ ok: true, skipped: 'smtp_not_configured' }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    const transporter = createSmtpTransporter(smtpConfig)
 
     await transporter.sendMail({
-      from: `"vKho" <${smtpUser}>`,
+      from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
       to: platformUser.email,
       subject,
       html,
