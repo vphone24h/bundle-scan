@@ -351,7 +351,8 @@ export function CompaniesManagement() {
               </div>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
       </div>
 
       {/* Add/Edit Dialog */}
