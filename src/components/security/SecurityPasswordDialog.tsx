@@ -78,8 +78,8 @@ export function SecurityPasswordDialog({ open, onOpenChange, onSuccess, title, d
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setMode('verify'); setPassword(''); } }}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog modal open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) { setMode('verify'); setPassword(''); } }}>
+      <DialogContent className="sm:max-w-md z-[70]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Lock className="h-5 w-5 text-primary" />
