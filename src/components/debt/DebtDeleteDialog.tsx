@@ -130,14 +130,15 @@ export function DebtDeleteDialog({
         new_data: { sync_cash_book: syncCashBook, payment_source: syncCashBook ? paymentSource : null },
       }]);
 
-      // Invalidate all related queries
+      // Invalidate all related queries - removeQueries for cash-book to clear stale cache
       queryClient.invalidateQueries({ queryKey: ['debt'] });
       queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
       queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
       queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
       queryClient.invalidateQueries({ queryKey: ['debt-payment-history'] });
-      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
-      queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] });
+      queryClient.removeQueries({ queryKey: ['cash-book'] });
+      queryClient.removeQueries({ queryKey: ['cash-book-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
 
       toast.success(`Đã xóa công nợ của ${entityName}`);
       onOpenChange(false);

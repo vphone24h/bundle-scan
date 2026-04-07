@@ -159,8 +159,8 @@ export function DebtPaymentEditDialog({
       queryClient.invalidateQueries({ queryKey: ['debt-payment-history'] });
       queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
       queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
-      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
-      queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] });
+      queryClient.removeQueries({ queryKey: ['cash-book'] });
+      queryClient.removeQueries({ queryKey: ['cash-book-balances'] });
 
       toast.success(dateChanged ? 'Đã sửa phiếu' : `Đã sửa: ${formatNumber(oldAmount)}đ → ${formatNumber(numAmount)}đ`);
       onOpenChange(false);
