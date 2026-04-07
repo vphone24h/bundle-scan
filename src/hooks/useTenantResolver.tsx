@@ -4,7 +4,11 @@ import {
   detectTenantFromHostname, 
   getStoreIdFromSubdomain 
 } from '@/lib/tenantResolver';
-import { getCurrentCompanyId } from '@/hooks/useCompanyResolver';
+import {
+  getCachedCompanyForHostname,
+  getCurrentCompanyId,
+  resolveCompanyFromHostname,
+} from '@/hooks/useCompanyResolver';
 
 export interface ResolvedTenant {
   tenantId: string | null;
@@ -101,6 +105,17 @@ function persistResolvedTenant(hostname: string, result: ResolvedTenant) {
   }
 }
 
+function getExactCompanyDomainMatch(hostname: string) {
+  const normalizedHostname = hostname.toLowerCase().replace(/^www\./, '');
+  const company = getCachedCompanyForHostname(hostname);
+
+  if (company?.status === 'resolved' && company.domain && normalizedHostname === company.domain.toLowerCase()) {
+    return company;
+  }
+
+  return null;
+}
+
 /**
  * Resolve tenant - shared function that caches and deduplicates requests
  */
@@ -126,6 +141,21 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
         subdomain: hostInfo.subdomain,
         tenantName: null,
         companyId: getCurrentCompanyId(),
+        status: 'main_domain',
+        isMainDomain: true,
+      };
+      cachedResult = result;
+      cacheHostname = hostname;
+      return result;
+    }
+
+    const cachedCompanyMatch = getExactCompanyDomainMatch(hostname);
+    if (cachedCompanyMatch) {
+      const result: ResolvedTenant = {
+        tenantId: null,
+        subdomain: null,
+        tenantName: null,
+        companyId: cachedCompanyMatch.companyId,
         status: 'main_domain',
         isMainDomain: true,
       };
@@ -167,6 +197,33 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
         cacheHostname = hostname;
         persistResolvedTenant(hostname, result);
         return result;
+      }
+    }
+
+    if (!hostInfo.subdomain) {
+      try {
+        const resolvedCompany = await resolveCompanyFromHostname(hostname);
+        const normalizedHostname = hostname.toLowerCase().replace(/^www\./, '');
+
+        if (
+          resolvedCompany.status === 'resolved' &&
+          resolvedCompany.domain &&
+          normalizedHostname === resolvedCompany.domain.toLowerCase()
+        ) {
+          const result: ResolvedTenant = {
+            tenantId: null,
+            subdomain: null,
+            tenantName: null,
+            companyId: resolvedCompany.companyId,
+            status: 'main_domain',
+            isMainDomain: true,
+          };
+          cachedResult = result;
+          cacheHostname = hostname;
+          return result;
+        }
+      } catch {
+        // Ignore company resolution failures here and continue tenant resolution
       }
     }
 
@@ -355,6 +412,21 @@ export function useTenantResolver() {
         isMainDomain: true,
       };
       // Cache immediately
+      cachedResult = result;
+      cacheHostname = hostname;
+      return result;
+    }
+
+    const cachedCompanyMatch = getExactCompanyDomainMatch(hostname);
+    if (cachedCompanyMatch) {
+      const result: ResolvedTenant = {
+        tenantId: null,
+        subdomain: null,
+        tenantName: null,
+        companyId: cachedCompanyMatch.companyId,
+        status: 'main_domain',
+        isMainDomain: true,
+      };
       cachedResult = result;
       cacheHostname = hostname;
       return result;
