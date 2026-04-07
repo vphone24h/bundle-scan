@@ -13,7 +13,9 @@ import { useAllTenants } from '@/hooks/useTenant';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Plus, Trash2, Pencil, Globe, Loader2, Building2, Store, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Plus, Trash2, Pencil, Globe, Loader2, Building2, Store, CheckCircle, XCircle, Clock, UserCog, Key } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   active: { label: 'Hoạt động', variant: 'default' },
