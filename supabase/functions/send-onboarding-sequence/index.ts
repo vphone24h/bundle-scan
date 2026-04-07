@@ -300,9 +300,12 @@ Deno.serve(async (req) => {
         const admin = await getTenantAdmin(tenant.id)
         if (!admin) continue
 
+        const smtpConfig5 = await resolveSmtpForTenant(supabaseAdmin, tenant.id)
+        if (!smtpConfig5.smtpUser) continue
+        const transporter5 = createSmtpTransporter(smtpConfig5)
         const html = buildDay5Email(admin.name)
         const subject = `🎬 Video: Cách dùng vKho trong 3 phút`
-        await transporter.sendMail({ from: `"vKho" <${smtpUser}>`, to: admin.email, subject, html })
+        await transporter5.sendMail({ from: `"${smtpConfig5.fromName}" <${smtpConfig5.fromEmail}>`, to: admin.email, subject, html })
         await logSent(tenant.id, 'day_5_video', admin.email)
         results.day5++
       } catch (err) {
@@ -326,9 +329,12 @@ Deno.serve(async (req) => {
         const admin = await getTenantAdmin(tenant.id)
         if (!admin) continue
 
+        const smtpConfig10 = await resolveSmtpForTenant(supabaseAdmin, tenant.id)
+        if (!smtpConfig10.smtpUser) continue
+        const transporter10 = createSmtpTransporter(smtpConfig10)
         const html = buildDay10Email(admin.name)
         const subject = `🛒 ${admin.name || 'Anh/chị'} đã thử bán đơn đầu tiên chưa?`
-        await transporter.sendMail({ from: `"vKho" <${smtpUser}>`, to: admin.email, subject, html })
+        await transporter10.sendMail({ from: `"${smtpConfig10.fromName}" <${smtpConfig10.fromEmail}>`, to: admin.email, subject, html })
         await logSent(tenant.id, 'day_10_sell', admin.email)
         results.day10++
       } catch (err) {
