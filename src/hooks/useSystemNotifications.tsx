@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useAdminCompanyId } from './useAdminCompanyId';
 
 export interface SystemNotification {
   id: string;
