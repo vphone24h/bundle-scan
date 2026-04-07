@@ -77,15 +77,15 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Check platform admin
+    // Check platform admin OR company admin
     const { data: platformUser } = await supabaseAdmin
       .from('platform_users')
-      .select('platform_role')
+      .select('platform_role, company_id')
       .eq('user_id', user.id)
       .maybeSingle()
 
-    if (platformUser?.platform_role !== 'platform_admin') {
-      return new Response(JSON.stringify({ error: 'Forbidden: Only platform admin' }), {
+    if (!platformUser || (platformUser.platform_role !== 'platform_admin' && platformUser.platform_role !== 'company_admin')) {
+      return new Response(JSON.stringify({ error: 'Forbidden: Only platform/company admin' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
