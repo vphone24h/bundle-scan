@@ -15,6 +15,7 @@ import {
   Tenant,
   calculateRemainingDays 
 } from '@/hooks/useTenant';
+import { useCompanies } from '@/hooks/useCompanies';
 import { 
   Search, 
   Lock, 
@@ -97,7 +98,9 @@ export function TenantsManagement() {
   const [websiteFilter, setWebsiteFilter] = useState('_all_');
   const [einvoiceFilter, setEinvoiceFilter] = useState('_all_');
   const [needFilter, setNeedFilter] = useState('_all_');
-
+  const [companyFilter, setCompanyFilter] = useState('_all_');
+  
+  const { data: companies } = useCompanies();
   const filteredTenants = tenants?.filter(t => {
     // Text search
     const matchSearch = !search || 
@@ -129,7 +132,11 @@ export function TenantsManagement() {
     const matchNeed = needFilter === '_all_' ||
       (t as any).business_need === needFilter;
     
-    return matchSearch && matchStatus && matchUsage && matchWebsite && matchEinvoice && matchNeed;
+    // Company filter
+    const matchCompany = companyFilter === '_all_' ||
+      (t as any).company_id === companyFilter;
+    
+    return matchSearch && matchStatus && matchUsage && matchWebsite && matchEinvoice && matchNeed && matchCompany;
   });
 
   const handleAction = async () => {
@@ -476,6 +483,17 @@ export function TenantsManagement() {
               <SelectItem value="both">Cả 2</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={companyFilter} onValueChange={setCompanyFilter}>
+            <SelectTrigger className="w-[140px] h-9 text-xs sm:text-sm">
+              <SelectValue placeholder="Công ty" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all_">Tất cả CT</SelectItem>
+              {companies?.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -508,6 +526,7 @@ export function TenantsManagement() {
                 <TableHead>Gói dịch vụ</TableHead>
                 <TableHead>HĐĐT</TableHead>
                 <TableHead>Còn lại</TableHead>
+                <TableHead>Công ty</TableHead>
                 <TableHead>Ngày tạo</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
@@ -607,6 +626,11 @@ export function TenantsManagement() {
                     <TableCell>
                       <span className={remaining <= 7 ? 'text-destructive font-medium' : ''}>
                         {remaining > 36500 ? 'Vĩnh viễn' : `${remaining} ngày`}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs">
+                        {companies?.find(c => c.id === (tenant as any).company_id)?.name || '-'}
                       </span>
                     </TableCell>
                     <TableCell>

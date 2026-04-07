@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { registerCompanyDomain } from '@/lib/tenantResolver';
 
 interface CompanyInfo {
   companyId: string | null;
@@ -157,6 +158,10 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       cachedCompany = result;
       cachedForHostname = hostname;
       persistCompany(normalizeHostname(hostname), result);
+      // Register company domain so tenantResolver treats it as a primary domain
+      if (result.domain) {
+        registerCompanyDomain(result.domain);
+      }
       setCompany(result);
     });
     return () => { cancelled = true; };
