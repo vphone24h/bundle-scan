@@ -110,6 +110,11 @@ Deno.serve(async (req) => {
       let sent = 0;
 
       for (const t of tenants) {
+        // Skip tenants belonging to companies that have their own email config
+        if (t.company_id && selfEmailCompanyIds.has(t.company_id)) {
+          continue;
+        }
+
         const daysSinceCreation = t.days_since_creation || 0;
         const daysSinceLogin = t.days_since_login || daysSinceCreation;
         const tenantName = t.tenant_name || t.subdomain || "Bạn";
