@@ -266,7 +266,7 @@ export function PaymentConfigManagement() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bank-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['bank-accounts', companyId] });
     },
   });
 
@@ -283,7 +283,7 @@ export function PaymentConfigManagement() {
         title: 'Thành công',
         description: 'Đã xóa tài khoản ngân hàng',
       });
-      queryClient.invalidateQueries({ queryKey: ['bank-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['bank-accounts', companyId] });
     },
   });
 
