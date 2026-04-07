@@ -371,6 +371,7 @@ Deno.serve(async (req) => {
     const businessType = body.businessType ? sanitizeString(body.businessType, 100) : null
     const businessMode = body.businessMode === 'secret' ? 'secret' : 'public'
     const businessNeed = body.businessNeed ? sanitizeString(body.businessNeed, 50) : null
+    const companyDomain = body.companyDomain ? sanitizeString(body.companyDomain, 200).toLowerCase().replace(/^www\./, '') : 'vkho.vn'
 
     // Validate required fields
     if (!businessName || !subdomain || !adminName || !email || !password) {
@@ -496,6 +497,27 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Resolve company_id from domain
+    let companyId: string | null = null
+    const { data: companyData } = await supabaseAdmin
+      .from('companies')
+      .select('id')
+      .eq('domain', companyDomain)
+      .eq('status', 'active')
+      .maybeSingle()
+    
+    if (companyData) {
+      companyId = companyData.id
+    } else {
+      // Fallback to default company
+      const { data: defaultCompany } = await supabaseAdmin
+        .from('companies')
+        .select('id')
+        .eq('domain', 'vkho.vn')
+        .maybeSingle()
+      companyId = defaultCompany?.id || null
+    }
+
     // Create tenant
     const { data: tenant, error: tenantError } = await supabaseAdmin
       .from('tenants')
@@ -509,6 +531,7 @@ Deno.serve(async (req) => {
         business_type: businessType,
         business_mode: businessMode,
         business_need: businessNeed,
+        company_id: companyId,
       })
       .select()
       .single()
