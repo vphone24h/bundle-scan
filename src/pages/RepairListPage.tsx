@@ -568,7 +568,9 @@ export default function RepairListPage() {
                           </div>
                           <div className="text-muted-foreground text-xs mt-0.5">
                             {item.quantity} x {formatNumber(item.unit_price)}đ = {formatNumber(item.total_price)}đ
+                            {item.warranty && <span className="ml-2 text-primary">• BH: {item.warranty}</span>}
                           </div>
+                          {item.note && <div className="text-muted-foreground text-xs italic">{item.note}</div>}
                         </div>
                         {selectedOrder.status !== 'returned' && selectedOrder.status !== 'cancelled' && (
                           <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => deleteItem.mutate({ id: item.id, repairOrderId: selectedOrder.id })}>
