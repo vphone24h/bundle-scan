@@ -3083,12 +3083,14 @@ export type Database = {
           export_date: string
           export_date_modified: boolean
           id: string
+          is_repair: boolean | null
           note: string | null
           original_debt_amount: number | null
           paid_amount: number
           points_discount: number | null
           points_earned: number | null
           points_redeemed: number | null
+          repair_order_id: string | null
           sales_staff_id: string | null
           status: string
           tenant_id: string | null
@@ -3108,12 +3110,14 @@ export type Database = {
           export_date?: string
           export_date_modified?: boolean
           id?: string
+          is_repair?: boolean | null
           note?: string | null
           original_debt_amount?: number | null
           paid_amount?: number
           points_discount?: number | null
           points_earned?: number | null
           points_redeemed?: number | null
+          repair_order_id?: string | null
           sales_staff_id?: string | null
           status?: string
           tenant_id?: string | null
@@ -3133,12 +3137,14 @@ export type Database = {
           export_date?: string
           export_date_modified?: boolean
           id?: string
+          is_repair?: boolean | null
           note?: string | null
           original_debt_amount?: number | null
           paid_amount?: number
           points_discount?: number | null
           points_earned?: number | null
           points_redeemed?: number | null
+          repair_order_id?: string | null
           sales_staff_id?: string | null
           status?: string
           tenant_id?: string | null
@@ -3161,6 +3167,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_receipts_repair_order_id_fkey"
+            columns: ["repair_order_id"]
+            isOneToOne: false
+            referencedRelation: "repair_orders"
             referencedColumns: ["id"]
           },
           {

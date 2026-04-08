@@ -64,6 +64,7 @@ import { vi } from 'date-fns/locale';
 import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { useNavigate } from 'react-router-dom';
+import { RepairCheckoutDialog } from '@/components/repair/RepairCheckoutDialog';
 
 const STATUS_TABS: { key: RepairStatus | 'all'; label: string }[] = [
   { key: 'all', label: 'Tất cả' },
@@ -106,6 +107,9 @@ export default function RepairListPage() {
 
   const addItem = useAddRepairItem();
   const deleteItem = useDeleteRepairItem();
+
+  // Checkout dialog
+  const [showCheckout, setShowCheckout] = useState(false);
 
   // Filter orders by search
   const filteredOrders = useMemo(() => {
@@ -437,10 +441,7 @@ export default function RepairListPage() {
               {/* Action buttons */}
               <div className="flex gap-2 pt-2">
                 {selectedOrder.status === 'completed' && (
-                  <Button className="flex-1" onClick={() => {
-                    handleStatusChange(selectedOrder.id, 'returned');
-                    // TODO: navigate to export/sell with repair data
-                  }}>
+                  <Button className="flex-1" onClick={() => setShowCheckout(true)}>
                     <CheckCircle className="h-4 w-4 mr-1" /> Trả khách & Thanh toán
                   </Button>
                 )}
@@ -528,6 +529,19 @@ export default function RepairListPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Checkout Dialog */}
+      {selectedOrder && orderItems && showCheckout && (
+        <RepairCheckoutDialog
+          open={showCheckout}
+          onOpenChange={(open) => {
+            setShowCheckout(open);
+            if (!open) setSelectedOrderId(null);
+          }}
+          order={selectedOrder}
+          items={orderItems}
+        />
+      )}
     </MainLayout>
   );
 }

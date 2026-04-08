@@ -192,6 +192,7 @@ export default function ExportHistoryPage() {
   const [paymentSourceFilter, setPaymentSourceFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('_all_');
+  const [repairFilter, setRepairFilter] = useState('_all_');
 
   // Manual search trigger (no debounce)
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -852,6 +853,19 @@ export default function ExportHistoryPage() {
                           {src.name}
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Loại đơn</Label>
+                  <Select value={repairFilter} onValueChange={setRepairFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tất cả" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="_all_">Tất cả đơn</SelectItem>
+                      <SelectItem value="repair">Đơn sửa chữa</SelectItem>
+                      <SelectItem value="normal">Đơn bán hàng</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

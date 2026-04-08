@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import vkhoLogo from '@/assets/vkho-logo.png';
-import { Shield, Search, Package, Calendar, Store, Phone, ArrowLeft, Loader2, AlertCircle, CheckCircle2, MessageSquareText } from 'lucide-react';
+import { Shield, Search, Package, Calendar, Store, Phone, ArrowLeft, Loader2, AlertCircle, CheckCircle2, MessageSquareText, Wrench } from 'lucide-react';
 import { format, differenceInDays, addMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { readWarrantySession, writeWarrantySession } from '@/lib/warrantySession';
@@ -67,6 +68,7 @@ export default function WarrantyCheckPage() {
   const navigate = useNavigate();
   const [input, setInput] = useState('');
   const [searchValue, setSearchValue] = useState('');
+  const [searchTab, setSearchTab] = useState<'warranty' | 'repair'>('warranty');
   const [persistedResults, setPersistedResults] = useState<WarrantyItem[] | null>(null);
   const [lookupEnabled, setLookupEnabled] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -100,6 +102,31 @@ export default function WarrantyCheckPage() {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchOnMount: false,
+  });
+
+  // Repair lookup query
+  const { data: repairResults, isLoading: repairLoading } = useQuery({
+    queryKey: ['repair-lookup', searchValue, searchTab],
+    queryFn: async () => {
+      if (!searchValue || searchTab !== 'repair') return [];
+      const compact = searchValue.replace(/\s+/g, '');
+      const isPhone = /^0\d{9,10}$/.test(compact);
+      const isCode = compact.toUpperCase().startsWith('SC');
+      
+      let query = supabase.from('repair_orders').select('*').order('created_at', { ascending: false }).limit(20);
+      if (isCode) {
+        query = query.ilike('code', `%${compact}%`);
+      } else if (isPhone) {
+        query = query.eq('customer_phone', compact);
+      } else {
+        query = query.or(`device_imei.ilike.%${compact}%,device_name.ilike.%${compact}%`);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!searchValue && searchTab === 'repair',
+    staleTime: 1000 * 60 * 5,
   });
 
   useEffect(() => {
@@ -193,19 +220,26 @@ export default function WarrantyCheckPage() {
             Tra cứu bảo hành
           </h1>
           <p className="text-muted-foreground mb-8">
-            Nhập số IMEI hoặc số điện thoại mua hàng để kiểm tra thông tin bảo hành
+           Nhập số IMEI, SĐT hoặc mã phiếu sửa chữa để tra cứu
           </p>
+
+          <Tabs value={searchTab} onValueChange={v => setSearchTab(v as any)} className="mb-4">
+            <TabsList className="grid grid-cols-2 w-full">
+              <TabsTrigger value="warranty"><Shield className="h-3 w-3 mr-1" /> Bảo hành</TabsTrigger>
+              <TabsTrigger value="repair"><Wrench className="h-3 w-3 mr-1" /> Sửa chữa</TabsTrigger>
+            </TabsList>
+          </Tabs>
 
           <div className="flex gap-2">
             <Input
-              placeholder="Nhập IMEI hoặc SĐT (VD: 0912345678)"
+              placeholder={searchTab === 'repair' ? "Nhập SĐT, mã phiếu (SC...) hoặc IMEI" : "Nhập IMEI hoặc SĐT (VD: 0912345678)"}
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               className="h-12 text-base"
             />
-            <Button onClick={handleSearch} disabled={!input.trim() || isLoading} className="h-12 px-6">
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            <Button onClick={handleSearch} disabled={!input.trim() || isLoading || repairLoading} className="h-12 px-6">
+              {(isLoading || repairLoading) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             </Button>
           </div>
 
@@ -219,6 +253,43 @@ export default function WarrantyCheckPage() {
       {/* Results */}
       <section className="pb-20" ref={resultsRef}>
         <div className="container mx-auto px-4 max-w-2xl">
+          {/* Repair results */}
+          {searchTab === 'repair' && searchValue && repairResults && repairResults.length > 0 && (
+            <div className="space-y-3 mb-6">
+              <p className="text-sm text-muted-foreground">Tìm thấy <strong>{repairResults.length}</strong> phiếu sửa chữa</p>
+              {repairResults.map((r: any) => (
+                <Card key={r.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div>
+                        <h3 className="font-semibold text-sm">{r.device_name}</h3>
+                        <p className="text-xs text-muted-foreground font-mono">{r.code}</p>
+                      </div>
+                      <Badge variant={r.status === 'returned' ? 'default' : r.status === 'completed' ? 'destructive' : 'outline'} className="text-[11px]">
+                        {r.status === 'received' ? 'Tiếp nhận' : r.status === 'pending_check' ? 'Chờ kiểm tra' : r.status === 'repairing' ? 'Đang sửa' : r.status === 'waiting_parts' ? 'Chờ LK' : r.status === 'completed' ? 'Hoàn thành' : 'Đã trả'}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                      {r.device_imei && <div>IMEI: {r.device_imei}</div>}
+                      <div>Ngày nhận: {format(new Date(r.created_at), 'dd/MM/yyyy', { locale: vi })}</div>
+                      {r.due_date && <div>Hẹn trả: {format(new Date(r.due_date), 'dd/MM/yyyy', { locale: vi })}</div>}
+                      {r.device_condition && <div className="col-span-2">Tình trạng: {r.device_condition}</div>}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+          {searchTab === 'repair' && searchValue && repairResults && repairResults.length === 0 && !repairLoading && (
+            <Card><CardContent className="p-8 text-center text-muted-foreground">
+              <Wrench className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p className="font-medium">Không tìm thấy phiếu sửa chữa</p>
+            </CardContent></Card>
+          )}
+
+          {/* Warranty results (original) */}
+          {searchTab === 'warranty' && (
+          <>
           {showError && (
             <Card className="border-destructive/50 bg-destructive/5">
               <CardContent className="p-4 flex items-center gap-3 text-destructive">
@@ -301,6 +372,8 @@ export default function WarrantyCheckPage() {
                 );
               })}
             </div>
+          )}
+          </>
           )}
         </div>
       </section>
