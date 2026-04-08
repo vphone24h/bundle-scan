@@ -12,6 +12,8 @@ import { Switch } from '@/components/ui/switch';
 import { PriceInput } from '@/components/ui/price-input';
 import { SearchInput } from '@/components/ui/search-input';
 import { Badge } from '@/components/ui/badge';
+import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombobox';
+import { useUpsertCustomer } from '@/hooks/useCustomers';
 import {
   Select,
   SelectContent,
