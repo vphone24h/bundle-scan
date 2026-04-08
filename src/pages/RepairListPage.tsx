@@ -279,12 +279,14 @@ export default function RepairListPage() {
     const totalParts = allItems.filter(i => i.item_type === 'part').reduce((s, i) => s + (i.quantity || 1) * (i.unit_price || 0), 0);
     const totalPartsCost = allItems.filter(i => i.item_type === 'part').reduce((s, i) => s + (i.quantity || 1) * (i.cost_price || 0), 0);
 
+    const newTotal = totalService + totalParts;
     await updateOrder.mutateAsync({
       id: selectedOrderId,
       total_service_price: totalService,
       total_parts_price: totalParts,
       total_parts_cost: totalPartsCost,
-      total_amount: totalService + totalParts,
+      total_amount: newTotal,
+      estimated_price: newTotal,
     } as any);
 
     setShowAddItem(false);
