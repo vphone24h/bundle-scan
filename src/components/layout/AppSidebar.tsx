@@ -6,6 +6,7 @@ import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useUnreadReviewCount } from '@/hooks/useUnreadReviews';
 import { useUnreadSocialNotifCount } from '@/hooks/useSocial';
 import { useUnreadArticleCount } from '@/hooks/useUnreadArticles';
+import { useCompletedRepairCount } from '@/hooks/useCompletedRepairCount';
 import {
   LayoutDashboard,
   Package,
@@ -122,7 +123,7 @@ const allNavItems: NavItem[] = [
     permission: 'canCreateReturn',
     children: [
       { title: 'Tạo phiếu sửa', href: '/repair/new' },
-      { title: 'Danh sách sửa chữa', href: '/repair/list' },
+      { title: 'Danh sách sửa chữa', href: '/repair/list', badgeKey: 'completedRepair' },
     ],
   },
   { title: 'Trả hàng', titleKey: 'sidebar.returns', href: '/returns', icon: RotateCcw, permission: 'canCreateReturn' },
@@ -163,6 +164,7 @@ export function AppSidebar() {
   const { data: unreadReviewCount } = useUnreadReviewCount();
   const { data: unreadSocialCount } = useUnreadSocialNotifCount();
   const { data: unreadArticleCount } = useUnreadArticleCount();
+  const completedRepairCount = useCompletedRepairCount();
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -254,6 +256,11 @@ export function AppSidebar() {
                 >
                   <item.icon className="h-5 w-5" />
                   <span className="flex-1 text-left">{item.titleKey ? t(item.titleKey) : item.title}</span>
+                  {item.title === 'Sửa chữa' && completedRepairCount > 0 && (
+                    <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
+                      {completedRepairCount}
+                    </span>
+                  )}
                   <svg
                     className={cn('h-4 w-4 transition-transform', expandedItems.includes(item.title) && 'rotate-180')}
                     fill="none"
@@ -286,6 +293,11 @@ export function AppSidebar() {
                         {child.badgeKey === 'pendingTransfer' && (pendingTransferCount || 0) > 0 && (
                           <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
                             +{pendingTransferCount}
+                          </span>
+                        )}
+                        {child.badgeKey === 'completedRepair' && completedRepairCount > 0 && (
+                          <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
+                            {completedRepairCount}
                           </span>
                         )}
                       </Link>
