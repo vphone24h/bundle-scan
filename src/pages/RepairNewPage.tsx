@@ -74,13 +74,14 @@ export default function RepairNewPage() {
   const [ticketPassword, setTicketPassword] = useState('');
   const [branchId, setBranchId] = useState(defaultBranch?.id || '');
 
-  // Customer
-  const [customerSearch, setCustomerSearch] = useState('');
-  const [customerId, setCustomerId] = useState<string | null>(null);
+  // Customer (using CustomerSearchCombobox like sales page)
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [customerResults, setCustomerResults] = useState<any[]>([]);
-  const [showCustomerSearch, setShowCustomerSearch] = useState(false);
+  const [customerAddress, setCustomerAddress] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerSource, setCustomerSource] = useState('');
+  const [customerBirthday, setCustomerBirthday] = useState<Date | undefined>();
 
   // Product search  
   const [productSearch, setProductSearch] = useState('');
