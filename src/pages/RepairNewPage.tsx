@@ -316,6 +316,7 @@ export default function RepairNewPage() {
       <div class="row"><span class="label">Hẹn trả:</span><span>${createdOrder.due_date ? new Date(createdOrder.due_date).toLocaleDateString('vi') : '-'}</span></div>
       <div class="row"><span class="label">Giá dự kiến:</span><span>${formatNumber(createdOrder.estimated_price)}đ</span></div>
       <div class="row"><span class="label">NV tiếp nhận:</span><span>${createdOrder.received_by_name || '-'}</span></div>
+      ${createdOrder.note ? `<div class="row"><span class="label">Ghi chú:</span><span>${createdOrder.note}</span></div>` : ''}
       <div class="line"></div>
       <p style="text-align:center;font-size:11px;color:#999">Vui lòng giữ phiếu này để nhận máy</p>
       </body></html>
