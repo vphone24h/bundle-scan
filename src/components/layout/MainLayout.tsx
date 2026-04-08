@@ -11,6 +11,7 @@ import { PushPermissionPopup } from '@/components/notifications/PushPermissionPo
 import { InstallAppPrompt } from '@/components/notifications/InstallAppPrompt';
 import { PopupPriorityProvider, usePopupPriority } from '@/hooks/usePopupPriority';
 import { PullToRefresh } from './PullToRefresh';
+import { useDynamicPWABranding } from '@/hooks/useDynamicPWABranding';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -82,6 +83,7 @@ function MainLayoutInner({ children }: MainLayoutProps) {
   const { data: tenant } = useCurrentTenant();
   const { data: platformUser } = usePlatformUser();
   const needsBusinessType = !!tenant && !tenant.business_type && (platformUser?.platform_role as string) !== 'platform_admin';
+  useDynamicPWABranding();
 
   return (
     <div className="min-h-screen bg-background safe-x">
