@@ -786,11 +786,14 @@ export default function ImportHistoryPage() {
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
                         <SelectItem value="_all_">Tất cả NCC</SelectItem>
-                        {suppliers?.map((sup) => (
-                          <SelectItem key={sup.id} value={sup.id}>
-                            {sup.name}
-                          </SelectItem>
-                        ))}
+                        {suppliers?.map((sup) => {
+                          const branchName = branches?.find(b => b.id === sup.branch_id)?.name;
+                          return (
+                            <SelectItem key={sup.id} value={sup.id}>
+                              {sup.name}{branchName ? ` (${branchName})` : ''}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>
