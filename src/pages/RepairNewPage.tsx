@@ -39,6 +39,7 @@ export default function RepairNewPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: profile } = useProfile();
+  const displayName = profile?.display_name || '';
   const { data: platformUser } = usePlatformUser();
   const { data: branches } = useBranches();
   const { data: requestTypes } = useRepairRequestTypes();
