@@ -40,6 +40,7 @@ import {
   Star,
   MessageCircleMore,
   Settings,
+  Wrench,
 } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { cn } from '@/lib/utils';
@@ -115,6 +116,16 @@ const allNavItems: NavItem[] = [
     ],
   },
   { title: 'Trả hàng', titleKey: 'sidebar.returns', href: '/returns', icon: RotateCcw, permission: 'canCreateReturn' },
+  {
+    title: 'Sửa chữa', titleKey: 'sidebar.repair',
+    href: '/repair',
+    icon: Wrench,
+    permission: 'canCreateReturn',
+    children: [
+      { title: 'Tạo phiếu sửa', href: '/repair/new' },
+      { title: 'Danh sách sửa chữa', href: '/repair/list' },
+    ],
+  },
   { title: 'Nhà cung cấp', titleKey: 'sidebar.suppliers', href: '/suppliers', icon: Users, permission: 'canManageSuppliers' },
   { title: 'Khách hàng & CRM', titleKey: 'sidebar.customers', href: '/customers', icon: HeartHandshake, permission: 'canViewCRM' },
   { title: 'Công nợ', titleKey: 'sidebar.debt', href: '/debt', icon: Receipt, permission: 'canViewDebt' },
