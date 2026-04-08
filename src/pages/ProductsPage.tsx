@@ -416,9 +416,23 @@ export default function ProductsPage() {
   const handleDeleteTemplate = async (product: any) => {
     if (!confirm(`Bạn có chắc muốn xóa sản phẩm mẫu "${product.name}"${product.isTemplateGroup ? ` và ${product.variantCount} biến thể` : ''}?`)) return;
     
+    // Optimistic: xóa khỏi cache ngay lập tức
+    const idsToDelete = new Set<string>();
+    if (product.isTemplateGroup && product.childProducts?.length > 0) {
+      product.childProducts.forEach((c: any) => idsToDelete.add(c.id));
+    } else {
+      idsToDelete.add(product.id);
+    }
+
+    queryClient.setQueriesData({ queryKey: ['products'] }, (old: any) => {
+      if (!old?.items) return old;
+      return { ...old, items: old.items.filter((p: any) => !idsToDelete.has(p.id)), totalCount: Math.max(0, (old.totalCount || 0) - idsToDelete.size) };
+    });
+    toast({ title: 'Đã xóa sản phẩm mẫu' });
+
+    // Background: xóa thật trong DB
     try {
       if (product.isTemplateGroup && product.childProducts?.length > 0) {
-        // Delete all child variant products
         const ids = product.childProducts.map((c: any) => c.id);
         const { error } = await supabase.from('products').delete().in('id', ids);
         if (error) throw error;
@@ -426,9 +440,11 @@ export default function ProductsPage() {
         const { error } = await supabase.from('products').delete().eq('id', product.id);
         if (error) throw error;
       }
+      // Refresh in background to sync
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast({ title: 'Đã xóa sản phẩm mẫu' });
     } catch (err: any) {
+      // Rollback on error
+      queryClient.invalidateQueries({ queryKey: ['products'] });
       toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
     }
   };
