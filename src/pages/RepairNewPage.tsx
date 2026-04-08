@@ -651,6 +651,16 @@ export default function RepairNewPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Barcode/QR Print Dialog */}
+      <BarcodeDialog
+        open={barcodeDialogOpen}
+        onClose={() => {
+          setBarcodeDialogOpen(false);
+          setBarcodeProducts([]);
+        }}
+        products={barcodeProducts}
+      />
     </MainLayout>
   );
 }
