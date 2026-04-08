@@ -104,6 +104,31 @@ export default function WarrantyCheckPage() {
     refetchOnMount: false,
   });
 
+  // Repair lookup query
+  const { data: repairResults, isLoading: repairLoading } = useQuery({
+    queryKey: ['repair-lookup', searchValue, searchTab],
+    queryFn: async () => {
+      if (!searchValue || searchTab !== 'repair') return [];
+      const compact = searchValue.replace(/\s+/g, '');
+      const isPhone = /^0\d{9,10}$/.test(compact);
+      const isCode = compact.toUpperCase().startsWith('SC');
+      
+      let query = supabase.from('repair_orders').select('*').order('created_at', { ascending: false }).limit(20);
+      if (isCode) {
+        query = query.ilike('code', `%${compact}%`);
+      } else if (isPhone) {
+        query = query.eq('customer_phone', compact);
+      } else {
+        query = query.or(`device_imei.ilike.%${compact}%,device_name.ilike.%${compact}%`);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!searchValue && searchTab === 'repair',
+    staleTime: 1000 * 60 * 5,
+  });
+
   useEffect(() => {
     const restored = readWarrantySession<WarrantyItem>(WARRANTY_STORAGE_KEY);
     const restoredSearch = restored?.searchValue?.trim() || '';
