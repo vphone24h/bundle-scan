@@ -263,6 +263,7 @@ export default function RepairListPage() {
 
     setShowAddItem(false);
     resetItemForm();
+    invalidateReserved();
     toast.success('Đã thêm dịch vụ/linh kiện');
   };
 
