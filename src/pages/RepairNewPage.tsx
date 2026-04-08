@@ -631,6 +631,25 @@ export default function RepairNewPage() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Auto email toggle */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <Label htmlFor="auto-email-repair-create" className="flex items-center gap-2 cursor-pointer text-sm">
+                  <Mail className="h-4 w-4 text-primary" />
+                  Tự động gửi email cho khách
+                </Label>
+                <Switch
+                  id="auto-email-repair-create"
+                  checked={autoEmailEnabled}
+                  onCheckedChange={setAutoEmailEnabled}
+                />
+              </div>
+              {autoEmailEnabled && !(customerEmail?.trim() || selectedCustomer?.email) && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  <Mail className="h-3 w-3" />
+                  Khách chưa có email — sẽ không gửi được
+                </p>
+              )}
             </CardContent>
           </Card>
 
