@@ -108,6 +108,9 @@ export default function RepairListPage() {
   const addItem = useAddRepairItem();
   const deleteItem = useDeleteRepairItem();
 
+  // Checkout dialog
+  const [showCheckout, setShowCheckout] = useState(false);
+
   // Filter orders by search
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
