@@ -923,11 +923,77 @@ export default function ImportNewPage() {
       supplierId: selectedSupplierId || null,
       branchId: selectedBranchId || null,
       skipCashBook,
-    }).then(() => {
+    }).then(async (result: any) => {
       toast({
         title: t('tours.importNew.importSuccess'),
         description: t('tours.importNew.importSuccessDesc', { count: cartSnapshot.length, total: totalSnapshot.toLocaleString('vi-VN') }),
       });
+
+      // If from repair order context, add imported products as repair items
+      if (repairOrderId) {
+        try {
+          // Get tenant_id from the repair order
+          const { data: repairOrder } = await supabase
+            .from('repair_orders')
+            .select('tenant_id')
+            .eq('id', repairOrderId)
+            .single();
+          
+          const tenantId = repairOrder?.tenant_id;
+          
+          // Find newly imported products by name match
+          for (const item of cartSnapshot) {
+            const { data: products } = await supabase
+              .from('products')
+              .select('id, name, sku, imei, import_price, sale_price')
+              .eq('name', item.productName)
+              .order('created_at', { ascending: false })
+              .limit(1);
+            
+            const product = products?.[0];
+            if (product) {
+              await supabase.from('repair_order_items').insert({
+                repair_order_id: repairOrderId,
+                tenant_id: tenantId,
+                item_type: 'part',
+                product_id: product.id,
+                product_name: product.name,
+                product_sku: product.sku,
+                product_imei: product.imei,
+                quantity: item.quantity,
+                unit_price: item.salePrice || item.importPrice,
+                cost_price: item.importPrice,
+              } as any);
+            }
+          }
+
+          // Recalculate repair order totals
+          const { data: allItems } = await supabase
+            .from('repair_order_items')
+            .select('*')
+            .eq('repair_order_id', repairOrderId);
+
+          const totalService = (allItems || []).filter((i: any) => i.item_type === 'service').reduce((s: number, i: any) => s + (i.quantity || 1) * (i.unit_price || 0), 0);
+          const totalParts = (allItems || []).filter((i: any) => i.item_type === 'part').reduce((s: number, i: any) => s + (i.quantity || 1) * (i.unit_price || 0), 0);
+          const totalPartsCost = (allItems || []).filter((i: any) => i.item_type === 'part').reduce((s: number, i: any) => s + (i.quantity || 1) * (i.cost_price || 0), 0);
+
+          await supabase.from('repair_orders').update({
+            total_service_price: totalService,
+            total_parts_price: totalParts,
+            total_parts_cost: totalPartsCost,
+            total_amount: totalService + totalParts,
+          } as any).eq('id', repairOrderId);
+
+          toast({
+            title: 'Đã thêm linh kiện vào phiếu sửa',
+            description: `${cartSnapshot.length} linh kiện đã được thêm vào phiếu sửa chữa`,
+          });
+          navigate('/repair');
+          return;
+        } catch (err) {
+          console.error('Error adding repair items:', err);
+        }
+      }
     }).catch((error: any) => {
       toast({
         title: t('tours.importNew.importError'),
