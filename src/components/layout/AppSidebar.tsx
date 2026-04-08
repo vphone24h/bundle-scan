@@ -428,12 +428,12 @@ export function AppSidebar() {
         )}
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
-        <NavContent />
+        {navContent}
       </aside>
 
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-sidebar border-r border-sidebar-border">
-        <NavContent />
+        {navContent}
       </aside>
     </>
   );
