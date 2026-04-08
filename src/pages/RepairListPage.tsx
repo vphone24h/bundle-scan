@@ -529,6 +529,19 @@ export default function RepairListPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Checkout Dialog */}
+      {selectedOrder && orderItems && showCheckout && (
+        <RepairCheckoutDialog
+          open={showCheckout}
+          onOpenChange={(open) => {
+            setShowCheckout(open);
+            if (!open) setSelectedOrderId(null);
+          }}
+          order={selectedOrder}
+          items={orderItems}
+        />
+      )}
     </MainLayout>
   );
 }
