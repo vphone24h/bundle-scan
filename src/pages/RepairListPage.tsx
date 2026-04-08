@@ -143,6 +143,57 @@ export default function RepairListPage() {
   const addItem = useAddRepairItem();
   const deleteItem = useDeleteRepairItem();
 
+  // Print repair receipt
+  const handlePrintRepairReceipt = async (order: RepairOrder) => {
+    // Fetch items for this order
+    const { data: repairItems } = await supabase
+      .from('repair_order_items')
+      .select('*')
+      .eq('repair_order_id', order.id)
+      .order('created_at', { ascending: true });
+
+    const items = (repairItems || []) as unknown as RepairOrderItem[];
+    const receiptCode = order.export_receipt_id ? order.code : order.code;
+
+    // Fetch export receipt code if available
+    let exportCode = order.code;
+    if (order.export_receipt_id) {
+      const { data: receipt } = await supabase
+        .from('export_receipts')
+        .select('code')
+        .eq('id', order.export_receipt_id)
+        .maybeSingle();
+      if (receipt) exportCode = (receipt as any).code;
+    }
+
+    const printContent = `
+      <html><head><title>Biên nhận ${exportCode}</title>
+      <style>body{font-family:Arial;padding:20px;max-width:300px;margin:0 auto;font-size:13px}
+      h2{text-align:center;margin-bottom:5px}
+      .line{border-top:1px dashed #000;margin:8px 0}
+      .row{display:flex;justify-content:space-between;margin:3px 0}
+      .label{color:#666}.bold{font-weight:bold}
+      .item{padding:4px 0;border-bottom:1px dotted #ccc}
+      </style></head><body>
+      <h2>BIÊN NHẬN SỬA CHỮA</h2>
+      <p style="text-align:center">${exportCode}</p>
+      <div class="line"></div>
+      <div class="row"><span class="label">Khách:</span><span>${order.customer_name || 'Khách lẻ'}</span></div>
+      <div class="row"><span class="label">SĐT:</span><span>${order.customer_phone || '-'}</span></div>
+      <div class="row"><span class="label">Thiết bị:</span><span>${order.device_name}</span></div>
+      <div class="row"><span class="label">IMEI:</span><span>${order.device_imei || '-'}</span></div>
+      <div class="line"></div>
+      ${items.map(i => `<div class="item"><div class="bold">${i.product_name || i.description || 'Dịch vụ'}</div><div class="row"><span>${i.quantity} x ${formatNumber(i.unit_price)}đ</span><span class="bold">${formatNumber(i.total_price)}đ</span></div>${i.warranty ? `<div style="font-size:11px;color:#666">BH: ${i.warranty}</div>` : ''}</div>`).join('')}
+      <div class="line"></div>
+      <div class="row bold"><span>TỔNG:</span><span>${formatNumber(order.total_amount)}đ</span></div>
+      <div class="line"></div>
+      <p style="text-align:center;font-size:11px;color:#999">${new Date(order.updated_at).toLocaleString('vi')}</p>
+      </body></html>
+    `;
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(printContent); w.document.close(); w.print(); }
+  };
+
   // Checkout dialog
   const [showCheckout, setShowCheckout] = useState(false);
 
@@ -378,6 +429,7 @@ export default function RepairListPage() {
             ) : orders.map((order: RepairOrder) => {
               const st = REPAIR_STATUS_MAP[order.status];
               const isCompleted = order.status === 'completed';
+              const isReturned = order.status === 'returned';
               return (
                 <div
                   key={order.id}
@@ -393,7 +445,19 @@ export default function RepairListPage() {
                       <div className="font-medium text-sm mt-0.5 line-clamp-1">{order.device_name}</div>
                       {order.customer_name && <div className="text-xs text-muted-foreground mt-0.5">{order.customer_name} {order.customer_phone && `• ${order.customer_phone}`}</div>}
                     </div>
-                    <Badge className={`${st.color} text-[11px] shrink-0`}>{st.label}</Badge>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {isReturned && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={(e) => { e.stopPropagation(); handlePrintRepairReceipt(order); }}
+                        >
+                          <Printer className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      <Badge className={`${st.color} text-[11px]`}>{st.label}</Badge>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
                     <span>{format(new Date(order.created_at), 'dd/MM/yy HH:mm')}</span>
@@ -623,7 +687,12 @@ export default function RepairListPage() {
               )}
 
               {/* Action buttons */}
-              <div className="flex gap-2 pt-2">
+              <div className="flex gap-2 pt-2 flex-wrap">
+                {selectedOrder.status === 'returned' && (
+                  <Button variant="outline" onClick={() => handlePrintRepairReceipt(selectedOrder)}>
+                    <Printer className="h-4 w-4 mr-1" /> In biên nhận
+                  </Button>
+                )}
                 {selectedOrder.status === 'completed' && (
                   <Button className="flex-1" onClick={() => setShowCheckout(true)}>
                     <CheckCircle className="h-4 w-4 mr-1" /> Trả khách & Thanh toán
