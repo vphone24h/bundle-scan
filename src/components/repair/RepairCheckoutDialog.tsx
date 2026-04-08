@@ -115,6 +115,36 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
         .insert(receiptItems);
       if (itemsError) throw itemsError;
 
+      // === Trừ tồn kho cho linh kiện ===
+      const partItems = items.filter(i => i.item_type === 'part' && i.product_id);
+      for (const item of partItems) {
+        // Lấy thông tin sản phẩm hiện tại
+        const { data: prod } = await supabase
+          .from('products')
+          .select('id, imei, quantity, status')
+          .eq('id', item.product_id!)
+          .single();
+
+        if (prod) {
+          if (prod.imei) {
+            // Hàng IMEI: đổi trạng thái sang sold
+            await supabase.from('products').update({
+              status: 'sold',
+              quantity: 0,
+            }).eq('id', prod.id);
+          } else {
+            // Hàng không IMEI: trừ số lượng
+            const newQty = Math.max(0, (prod.quantity || 0) - (item.quantity || 1));
+            await supabase.from('products').update({
+              quantity: newQty,
+              total_import_cost: newQty > 0
+                ? Math.round(((prod as any).total_import_cost || 0) * newQty / Math.max(1, prod.quantity || 1))
+                : 0,
+            }).eq('id', prod.id);
+          }
+        }
+      }
+
       // Insert payment record
       if (actualPaid > 0) {
         await supabase.from('export_receipt_payments').insert({
@@ -187,6 +217,9 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
       queryClient.removeQueries({ queryKey: ['cash-book'] });
       queryClient.removeQueries({ queryKey: ['cash-book-balances'] });
       queryClient.invalidateQueries({ queryKey: ['debts'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['all-products'] });
 
       setCreatedReceiptCode(code);
       setIsDone(true);
