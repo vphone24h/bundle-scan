@@ -340,7 +340,7 @@ export default function ExportHistoryPage() {
     return result;
   }, [receipts, paymentSourceFilter, repairFilter]);
 
-  const hasActiveFilters = dateFilter || dateFromFilter || dateToFilter || statusFilter !== '_all_' || branchFilter !== '_all_' || categoryFilter !== '_all_' || paymentSourceFilter !== '_all_';
+  const hasActiveFilters = dateFilter || dateFromFilter || dateToFilter || statusFilter !== '_all_' || branchFilter !== '_all_' || categoryFilter !== '_all_' || paymentSourceFilter !== '_all_' || repairFilter !== '_all_';
 
   const clearFilters = () => {
     setDateFilter('');
@@ -350,6 +350,7 @@ export default function ExportHistoryPage() {
     setBranchFilter('_all_');
     setCategoryFilter('_all_');
     setPaymentSourceFilter('_all_');
+    setRepairFilter('_all_');
   };
 
   // Group non-IMEI items (items are already server-filtered)
