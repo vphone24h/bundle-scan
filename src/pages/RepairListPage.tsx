@@ -39,7 +39,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { Wrench, Plus, Trash2, Search, Play, CheckCircle, Package, ArrowRight, Printer, Eye } from 'lucide-react';
+import { Wrench, Plus, Trash2, Search, Play, CheckCircle, Package, ArrowRight, Printer, Eye, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -110,6 +110,33 @@ export default function RepairListPage() {
 
   // Checkout dialog
   const [showCheckout, setShowCheckout] = useState(false);
+
+  // Ticket password verification
+  const [showTicketPwDialog, setShowTicketPwDialog] = useState(false);
+  const [ticketPwInput, setTicketPwInput] = useState('');
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+
+  const handleOpenOrder = (order: any) => {
+    if (order.ticket_password_enabled && order.ticket_password) {
+      setPendingOrderId(order.id);
+      setTicketPwInput('');
+      setShowTicketPwDialog(true);
+    } else {
+      setSelectedOrderId(order.id);
+    }
+  };
+
+  const handleVerifyTicketPassword = () => {
+    const order = orders?.find(o => o.id === pendingOrderId);
+    if (order && ticketPwInput === order.ticket_password) {
+      setSelectedOrderId(pendingOrderId);
+      setShowTicketPwDialog(false);
+      setPendingOrderId(null);
+      setTicketPwInput('');
+    } else {
+      toast.error('Mật khẩu phiếu không đúng');
+    }
+  };
 
   // Filter orders by search
   const filteredOrders = useMemo(() => {
@@ -298,8 +325,9 @@ export default function RepairListPage() {
                       <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
                         {format(new Date(order.created_at), 'dd/MM/yy HH:mm')}
                       </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedOrderId(order.id)}>
+                      <TableCell className="flex items-center gap-1">
+                        {order.ticket_password_enabled && <Lock className="h-3 w-3 text-amber-500" />}
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenOrder(order)}>
                           <Eye className="h-4 w-4" />
                         </Button>
                       </TableCell>
