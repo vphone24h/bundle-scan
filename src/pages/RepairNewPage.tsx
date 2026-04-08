@@ -1,5 +1,6 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
+import QRCode from 'qrcode';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
@@ -85,6 +86,11 @@ export default function RepairNewPage() {
   // QR dialog
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<any>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+
+  // Device images
+  const [deviceImages, setDeviceImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Set default branch
   React.useEffect(() => {
@@ -139,6 +145,24 @@ export default function RepairNewPage() {
     setShowProductSearch(false);
   };
 
+  // Handle device image upload (convert to base64 data URLs for simplicity)
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach(file => {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Ảnh quá lớn (tối đa 5MB)');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setDeviceImages(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
   const handleSubmit = async () => {
     if (!deviceName.trim()) {
       toast.error('Vui lòng nhập tên thiết bị');
@@ -160,7 +184,7 @@ export default function RepairNewPage() {
       device_model: deviceModel || null,
       device_password: devicePassword || null,
       device_condition: deviceCondition || null,
-      device_images: [],
+      device_images: deviceImages,
       quantity,
       request_type_id: requestTypeId || null,
       request_type_name: requestTypeName,
@@ -172,12 +196,19 @@ export default function RepairNewPage() {
       note: note || null,
     } as any);
 
+    // Generate QR code
+    try {
+      const qrUrl = await QRCode.toDataURL(order.code, { width: 150, margin: 1 });
+      setQrDataUrl(qrUrl);
+    } catch { setQrDataUrl(''); }
+
     setCreatedOrder(order);
     setShowQRDialog(true);
   };
 
-  const handlePrintReceipt = () => {
+  const handlePrintReceipt = (includeQR = false) => {
     if (!createdOrder) return;
+    const qrSection = includeQR && qrDataUrl ? `<div style="text-align:center;margin:10px 0"><img src="${qrDataUrl}" style="width:120px;height:120px" /><p style="font-size:10px;color:#999;margin-top:4px">Quét để tra cứu</p></div>` : '';
     const printContent = `
       <html><head><title>Phiếu sửa chữa ${createdOrder.code}</title>
       <style>body{font-family:Arial;padding:20px;max-width:300px;margin:0 auto}
@@ -188,6 +219,7 @@ export default function RepairNewPage() {
       </style></head><body>
       <h2>PHIẾU SỬA CHỮA</h2>
       <p style="text-align:center;font-size:12px;color:#666">${createdOrder.code}</p>
+      ${qrSection}
       <div class="line"></div>
       <div class="row"><span class="label">Thiết bị:</span><span>${createdOrder.device_name}</span></div>
       <div class="row"><span class="label">IMEI/Serial:</span><span>${createdOrder.device_imei || '-'}</span></div>
@@ -347,6 +379,39 @@ export default function RepairNewPage() {
                 <Label>Ghi chú phiếu</Label>
                 <Textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Ghi chú thêm..." rows={2} />
               </div>
+
+              {/* Device images upload */}
+              <div>
+                <Label>Hình ảnh máy</Label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {deviceImages.map((img, idx) => (
+                    <div key={idx} className="relative w-16 h-16 rounded border overflow-hidden group">
+                      <img src={img} alt={`Device ${idx + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setDeviceImages(prev => prev.filter((_, i) => i !== idx))}
+                        className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-bl text-xs w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >×</button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-16 h-16 rounded border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                  >
+                    <Camera className="h-5 w-5" />
+                    <span className="text-[10px]">Thêm</span>
+                  </button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -420,6 +485,12 @@ export default function RepairNewPage() {
               <div className="text-center">
                 <Badge variant="outline" className="text-lg px-4 py-1">{createdOrder.code}</Badge>
               </div>
+              {qrDataUrl && (
+                <div className="text-center">
+                  <img src={qrDataUrl} alt="QR Code" className="mx-auto w-28 h-28" />
+                  <p className="text-xs text-muted-foreground mt-1">Dán mã này lên máy</p>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <div><span className="text-muted-foreground">Thiết bị:</span> {createdOrder.device_name}</div>
                 <div><span className="text-muted-foreground">IMEI:</span> {createdOrder.device_imei || '-'}</div>
@@ -429,14 +500,11 @@ export default function RepairNewPage() {
             </div>
           )}
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={handlePrintReceipt}>
+            <Button variant="outline" onClick={() => handlePrintReceipt(false)}>
               <Printer className="h-4 w-4 mr-2" /> In phiếu
             </Button>
-            <Button variant="outline" onClick={() => {
-              toast.info('QR Code sẽ được tạo khi in');
-              handlePrintReceipt();
-            }}>
-              <QrCode className="h-4 w-4 mr-2" /> In QR
+            <Button variant="outline" onClick={() => handlePrintReceipt(true)}>
+              <QrCode className="h-4 w-4 mr-2" /> In phiếu + QR
             </Button>
             <Button onClick={goToList}>
               Xem danh sách
