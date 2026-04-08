@@ -229,6 +229,11 @@ export function useAllProducts(filters?: {
         query = query.eq('branch_id', effectiveBranchId);
       }
 
+        // Lịch sử nhập không hiển thị sản phẩm mẫu chưa nhập thật
+        if (!filters?.status || filters.status === '_all_') {
+          query = query.neq('status', 'template');
+        }
+
       if (filters?.search) {
         const s = filters.search.trim();
         if (s) {

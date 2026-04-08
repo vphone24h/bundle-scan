@@ -29,6 +29,8 @@ interface EditProductDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const normalizeImei = (value: unknown): string => typeof value === 'string' ? value.trim() : '';
+
 export function EditProductDialog({ product, open, onOpenChange }: EditProductDialogProps) {
   const queryClient = useQueryClient();
   const { data: categories } = useCategories();
@@ -136,7 +138,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               const comboKey = [product.variant_1, product.variant_2, product.variant_3]
                 .filter(Boolean)
                 .join('|');
-              if (product.imei) {
+              if (product.status !== 'template' && normalizeImei(product.imei)) {
                 setVariantImeis(prev => ({ ...prev, [comboKey]: product.imei! }));
               }
               setVariantPrices(prev => ({ ...prev, [comboKey]: String(product.import_price || 0) }));
@@ -219,17 +221,20 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       oldData: Record<string, any>;
     }) => {
       // Kiểm tra IMEI trùng nếu có giá trị mới
-      if (updates.imei) {
+      const normalizedUpdatedImei = normalizeImei(updates.imei);
+      updates.imei = normalizedUpdatedImei || null;
+
+      if (normalizedUpdatedImei) {
         const { data: existing } = await supabase
           .from('products')
           .select('id, name, sku')
-          .eq('imei', updates.imei)
+          .eq('imei', normalizedUpdatedImei)
           .neq('id', productId)
           .in('status', ['in_stock', 'warranty'])
           .limit(1);
 
         if (existing && existing.length > 0) {
-          throw new Error(`IMEI "${updates.imei}" đã tồn tại trong kho (${existing[0].name} - ${existing[0].sku})`);
+          throw new Error(`IMEI "${normalizedUpdatedImei}" đã tồn tại trong kho (${existing[0].name} - ${existing[0].sku})`);
         }
       }
 
@@ -334,12 +339,13 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       };
 
       const hasVariants = vConfig.enabled && vConfig.levels.some(l => l.values.length > 0);
-      const productHasImei = !!(prod.imei || fData.imei.trim());
+      const normalizedFormImei = normalizeImei(fData.imei);
+      const productHasImei = !!(normalizeImei(prod.imei) || normalizedFormImei);
 
       const updates: Record<string, any> = {
         name: fData.name.trim(),
         sku: fData.sku.trim(),
-        imei: fData.imei.trim() || null,
+        imei: normalizedFormImei || null,
         note: fData.note.trim() || null,
         category_id: fData.category_id === '_none_' ? null : fData.category_id,
         supplier_id: fData.supplier_id === '_none_' ? null : fData.supplier_id,
@@ -369,8 +375,8 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
           let matchedCombo: string[] | null = null;
           for (const combo of combinations) {
             const key = combo.join('|');
-            const imeiVal = vImeis[key]?.trim();
-            if (imeiVal) {
+            const imeiVal = normalizeImei(vImeis[key]);
+            if (imeiVal.length > 0) {
               matchedCombo = combo;
               break;
             }
@@ -379,14 +385,17 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
 
           const variantName = `${baseName} ${matchedCombo.join(' ')}`.trim();
           const matchedKey = matchedCombo.join('|');
-          const matchedVariantImei = vImeis[matchedKey]?.trim();
+          const matchedVariantImei = normalizeImei(vImeis[matchedKey]);
+          const fallbackImei = prod.status === 'template'
+            ? ''
+            : (normalizeImei(prod.imei) || normalizedFormImei);
           const matchedPrice = vPrices[matchedKey];
 
           updates.name = variantName;
           updates.variant_1 = matchedCombo[0] || null;
           updates.variant_2 = matchedCombo[1] || null;
           updates.variant_3 = matchedCombo[2] || null;
-          updates.imei = matchedVariantImei || (prod.imei || fData.imei.trim() || null);
+          updates.imei = matchedVariantImei || fallbackImei || null;
           if (matchedPrice && !Number.isNaN(Number(matchedPrice))) {
             updates.import_price = Math.round(Number(matchedPrice));
             updates.total_import_cost = Math.round(Number(matchedPrice));
@@ -402,8 +411,8 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
 
       // Nếu SP mẫu (template) được thêm IMEI → tạo phiếu nhập tự động
       // Chỉ tạo phiếu nhập khi IMEI thực sự là chuỗi không rỗng
-      const newImei = (updates.imei || fData.imei || '').toString().trim();
-      const isTemplateGettingImei = prod.status === 'template' && !prod.imei && newImei.length > 0;
+      const newImei = normalizeImei(updates.imei);
+      const isTemplateGettingImei = prod.status === 'template' && normalizeImei(prod.imei).length === 0 && newImei.length > 0;
       let autoReceiptId: string | null = null;
 
       if (isTemplateGettingImei) {
@@ -494,8 +503,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               if (existingNames.has(fullName)) return null;
               const skuSuffix = combo.map(v => v.replace(/\s+/g, '')).join('-');
               const comboKey = combo.join('|');
-              // Chỉ gán IMEI nếu user thực sự nhập IMEI mới (không phải pre-fill từ sản phẩm gốc)
-              const rawImei = vImeis[comboKey]?.trim() || '';
+              const rawImei = normalizeImei(vImeis[comboKey]);
               const comboImei = (isOriginalTemplate && rawImei.length > 0) ? rawImei : null;
               const comboPrice = vPrices[comboKey] ? Math.round(Number(vPrices[comboKey])) : Math.round(Number(baseImportPrice));
               return {
@@ -715,12 +723,13 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                 config={variantConfig}
                 onChange={(newConfig) => {
                   setVariantConfig(newConfig);
-                  // Auto-populate current IMEI to first variant when enabling
-                  if (newConfig.enabled && !variantConfig.enabled && formData.imei.trim()) {
+                  // Chỉ auto-map IMEI cũ sang biến thể cho hàng đã có IMEI thật, không áp dụng cho template
+                  const currentImei = normalizeImei(formData.imei);
+                  if (newConfig.enabled && !variantConfig.enabled && product?.status !== 'template' && currentImei) {
                     const activeLevels = newConfig.levels.filter(l => l.values.length > 0);
                     const combos = generateVariantCombinations(activeLevels);
                     if (combos.length > 0 && combos[0].length > 0) {
-                      setVariantImeis({ [combos[0].join('|')]: formData.imei.trim() });
+                      setVariantImeis({ [combos[0].join('|')]: currentImei });
                     }
                   }
                 }}
