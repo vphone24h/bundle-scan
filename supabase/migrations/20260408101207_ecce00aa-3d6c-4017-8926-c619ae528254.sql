@@ -1,0 +1,1 @@
+ALTER TABLE public.export_returns ALTER COLUMN product_id DROP NOT NULL;

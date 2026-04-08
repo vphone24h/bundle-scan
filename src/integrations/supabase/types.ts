@@ -3233,7 +3233,7 @@ export type Database = {
           new_import_receipt_id: string | null
           note: string | null
           original_sale_date: string | null
-          product_id: string
+          product_id: string | null
           product_name: string
           quantity: number
           refund_amount: number
@@ -3262,7 +3262,7 @@ export type Database = {
           new_import_receipt_id?: string | null
           note?: string | null
           original_sale_date?: string | null
-          product_id: string
+          product_id?: string | null
           product_name: string
           quantity?: number
           refund_amount?: number
@@ -3291,7 +3291,7 @@ export type Database = {
           new_import_receipt_id?: string | null
           note?: string | null
           original_sale_date?: string | null
-          product_id?: string
+          product_id?: string | null
           product_name?: string
           quantity?: number
           refund_amount?: number
