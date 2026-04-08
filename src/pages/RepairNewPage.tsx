@@ -98,6 +98,7 @@ export default function RepairNewPage() {
   const [createdOrder, setCreatedOrder] = useState<any>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [autoEmailEnabled, setAutoEmailEnabled] = useState(true);
   const [barcodeDialogOpen, setBarcodeDialogOpen] = useState(false);
   const [barcodeProducts, setBarcodeProducts] = useState<{ id: string; name: string; sku: string; imei?: string; importPrice: number; salePrice?: number }[]>([]);
 
