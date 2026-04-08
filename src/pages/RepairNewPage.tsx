@@ -30,7 +30,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Wrench, QrCode, Printer, Plus, Trash2, Search, UserPlus, Camera, ChevronDown, ChevronUp, Mail, Loader2 } from 'lucide-react';
+import { Wrench, QrCode, Printer, Plus, Trash2, Search, UserPlus, Camera, ChevronDown, ChevronUp, Mail, Loader2, HelpCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
