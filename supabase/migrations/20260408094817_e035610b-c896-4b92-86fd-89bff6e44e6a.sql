@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.get_report_stats_aggregated(uuid, text, text, uuid, uuid);
