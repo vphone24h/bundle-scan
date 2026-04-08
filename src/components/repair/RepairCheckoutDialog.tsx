@@ -353,9 +353,13 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
             <h3 className="text-xl font-bold">Thanh toán thành công!</h3>
             <p className="text-muted-foreground">Mã hóa đơn: <span className="font-mono font-bold">{createdReceiptCode}</span></p>
-            <div className="flex gap-2 justify-center">
+            <div className="flex gap-2 justify-center flex-wrap">
               <Button variant="outline" onClick={handlePrint}>
                 <Printer className="h-4 w-4 mr-1" /> In hóa đơn
+              </Button>
+              <Button variant="outline" onClick={handleSendEmail} disabled={sendingEmail || !order.customer_id}>
+                {sendingEmail ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Mail className="h-4 w-4 mr-1" />}
+                Gửi mail
               </Button>
               <Button onClick={() => onOpenChange(false)}>Đóng</Button>
             </div>
