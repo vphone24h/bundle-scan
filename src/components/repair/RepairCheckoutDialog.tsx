@@ -105,7 +105,7 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
           status: 'completed',
           note: `Phiếu sửa chữa ${order.code}${note ? ` - ${note}` : ''}`,
           created_by: user?.id,
-          sales_staff_id: user?.id,
+          sales_staff_id: order.technician_id || user?.id,
           tenant_id: tenantId,
           repair_order_id: order.id,
           is_repair: true,
