@@ -416,6 +416,23 @@ export function ReceiptReturnDialog({
           }
         }
 
+        // If this receipt is linked to a repair order, mark it as cancelled
+        if (receipt.id) {
+          const { data: linkedRepair } = await supabase
+            .from('repair_orders')
+            .select('id')
+            .eq('export_receipt_id', receipt.id)
+            .maybeSingle();
+          
+          if (linkedRepair) {
+            await supabase
+              .from('repair_orders')
+              .update({ status: 'cancelled' })
+              .eq('id', linkedRepair.id);
+            queryClient.invalidateQueries({ queryKey: ['repair-orders'] });
+          }
+        }
+
         toast({
           title: 'Trả hàng thành công',
           description: `Đã hoàn ${formatCurrencyWithSpaces(refundAmount)} cho khách hàng (${selectedItemsCount} sản phẩm)`,
