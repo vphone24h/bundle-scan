@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { AutoEmailToggle } from '@/components/shared/AutoEmailToggle';
 import { PriceInput } from '@/components/ui/price-input';
 import { SearchInput } from '@/components/ui/search-input';
 import { Badge } from '@/components/ui/badge';
@@ -633,23 +634,12 @@ export default function RepairNewPage() {
               </div>
 
               {/* Auto email toggle */}
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <Label htmlFor="auto-email-repair-create" className="flex items-center gap-2 cursor-pointer text-sm">
-                  <Mail className="h-4 w-4 text-primary" />
-                  Tự động gửi email cho khách
-                </Label>
-                <Switch
-                  id="auto-email-repair-create"
-                  checked={autoEmailEnabled}
-                  onCheckedChange={setAutoEmailEnabled}
-                />
-              </div>
-              {autoEmailEnabled && !(customerEmail?.trim() || selectedCustomer?.email) && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                  <Mail className="h-3 w-3" />
-                  Khách chưa có email — sẽ không gửi được
-                </p>
-              )}
+              <AutoEmailToggle
+                id="auto-email-repair-create"
+                checked={autoEmailEnabled}
+                onCheckedChange={setAutoEmailEnabled}
+                hasCustomerEmail={!!(customerEmail?.trim() || selectedCustomer?.email)}
+              />
             </CardContent>
           </Card>
 
