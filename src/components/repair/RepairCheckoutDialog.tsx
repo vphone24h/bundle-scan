@@ -18,6 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { RepairOrder, RepairOrderItem, useUpdateRepairOrder, REPAIR_STATUS_MAP } from '@/hooks/useRepairOrders';
 import { formatNumber } from '@/lib/formatNumber';
 import { AutoEmailToggle } from '@/components/shared/AutoEmailToggle';
+import { useStaffList } from '@/hooks/useCRM';
 
 interface Props {
   open: boolean;
