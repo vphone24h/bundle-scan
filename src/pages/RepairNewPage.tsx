@@ -222,6 +222,33 @@ export default function RepairNewPage() {
 
     setCreatedOrder(order);
     setShowQRDialog(true);
+
+    // Auto send email if enabled
+    const email = customerEmail?.trim() || selectedCustomer?.email;
+    if (autoEmailEnabled && email) {
+      supabase.functions.invoke('send-export-email', {
+        body: {
+          tenant_id: tenantId,
+          customer_name: customerName || selectedCustomer?.name || 'Khách lẻ',
+          customer_email: email,
+          customer_phone: customerPhone || selectedCustomer?.phone || '',
+          items: [{
+            product_name: `[Sửa chữa] ${order.device_name}`,
+            imei: order.device_imei,
+            sale_price: order.estimated_price,
+            quantity: 1,
+            warranty: '',
+          }],
+          total_amount: order.estimated_price,
+          receipt_code: order.code,
+          branch_id: order.branch_id,
+          export_date: new Date().toISOString(),
+          sales_staff_id: user?.id,
+        },
+      }).then(({ error }) => {
+        if (error) console.warn('Auto repair email failed:', error.message);
+      }).catch(() => {});
+    }
   };
 
   const handleSendRepairEmail = async () => {
