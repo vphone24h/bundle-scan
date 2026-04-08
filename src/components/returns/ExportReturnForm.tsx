@@ -35,6 +35,7 @@ interface ExportReturnFormProps {
 }
 
 export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnFormProps) {
+  const queryClient = useQueryClient();
   const [feeType, setFeeType] = useState<'none' | 'percentage' | 'fixed_amount'>('none');
   const [feePercentage, setFeePercentage] = useState<number>(0);
   const [feeAmount, setFeeAmount] = useState<number>(0);
