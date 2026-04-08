@@ -196,8 +196,8 @@ export default function RepairNewPage() {
       status,
       estimated_price: estimatedPrice,
       due_date: dueDate || null,
-      received_by: user?.id || null,
-      received_by_name: displayName || null,
+      received_by: receivedById || user?.id || null,
+      received_by_name: receivedByName || displayName || null,
       note: note || null,
     } as any);
 
