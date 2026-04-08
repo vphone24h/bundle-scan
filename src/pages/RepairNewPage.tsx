@@ -223,7 +223,46 @@ export default function RepairNewPage() {
     setShowQRDialog(true);
   };
 
-  const handlePrintReceipt = (includeQR = false) => {
+  const handleSendRepairEmail = async () => {
+    if (!createdOrder) return;
+    const email = customerEmail?.trim() || selectedCustomer?.email;
+    if (!email) {
+      toast.error('Khách hàng chưa có email');
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-export-email', {
+        body: {
+          tenant_id: tenantId,
+          order_id: createdOrder.id,
+          customer_name: createdOrder.customer_name || 'Khách lẻ',
+          customer_email: email,
+          customer_phone: createdOrder.customer_phone || '',
+          items: [{
+            product_name: `[Sửa chữa] ${createdOrder.device_name}`,
+            imei: createdOrder.device_imei,
+            sale_price: createdOrder.estimated_price,
+            quantity: 1,
+            warranty: '',
+          }],
+          total_amount: createdOrder.estimated_price,
+          receipt_code: createdOrder.code,
+          branch_id: createdOrder.branch_id,
+          export_date: createdOrder.created_at,
+          sales_staff_id: user?.id,
+        },
+      });
+      if (error) throw error;
+      toast.success(`Đã gửi email biên nhận đến ${email}`);
+    } catch (err: any) {
+      toast.error('Gửi email thất bại: ' + (err?.message || 'Lỗi không xác định'));
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+
     if (!createdOrder) return;
     const qrSection = includeQR && qrDataUrl ? `<div style="text-align:center;margin:10px 0"><img src="${qrDataUrl}" style="width:120px;height:120px" /><p style="font-size:10px;color:#999;margin-top:4px">Quét để tra cứu</p></div>` : '';
     const printContent = `
