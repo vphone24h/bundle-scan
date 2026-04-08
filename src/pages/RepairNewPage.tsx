@@ -595,8 +595,19 @@ export default function RepairNewPage() {
             <Button variant="outline" onClick={() => handlePrintReceipt(false)}>
               <Printer className="h-4 w-4 mr-2" /> In phiếu
             </Button>
-            <Button variant="outline" onClick={() => handlePrintReceipt(true)}>
-              <QrCode className="h-4 w-4 mr-2" /> In phiếu + QR
+            <Button variant="outline" onClick={() => {
+              if (!createdOrder) return;
+              setBarcodeProducts([{
+                id: createdOrder.id,
+                name: createdOrder.device_name,
+                sku: createdOrder.code,
+                imei: createdOrder.device_imei || undefined,
+                importPrice: 0,
+                salePrice: createdOrder.estimated_price,
+              }]);
+              setBarcodeDialogOpen(true);
+            }}>
+              <QrCode className="h-4 w-4 mr-2" /> In QR
             </Button>
             <Button onClick={goToList}>
               Xem danh sách
