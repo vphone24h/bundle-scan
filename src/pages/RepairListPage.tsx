@@ -89,6 +89,7 @@ export default function RepairListPage() {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [search, setSearch] = useState('');
   const { data: orders, isLoading } = useRepairOrders(activeTab as any);
+  useRepairOrdersRealtime();
   const updateOrder = useUpdateRepairOrder();
 
   // Detail sheet
