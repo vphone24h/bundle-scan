@@ -37,6 +37,8 @@ export interface RepairOrder {
   export_receipt_id: string | null;
   note: string | null;
   send_email: boolean;
+  ticket_password_enabled: boolean;
+  ticket_password: string | null;
   created_at: string;
   updated_at: string;
 }
