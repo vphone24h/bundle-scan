@@ -366,6 +366,12 @@ export default function ReturnsPage() {
     setDetailDialogOpen(true);
   };
 
+  const handleQuickPrint = (item: CombinedReturn) => {
+    setSelectedReturnItem(item);
+    setDetailDialogOpen(true);
+    setTimeout(() => window.print(), 500);
+  };
+
   const openDeleteDialog = (item: CombinedReturn) => {
     setItemToDelete(item);
     setDeleteDialogOpen(true);
