@@ -48,6 +48,7 @@ export default function RepairNewPage() {
   const createOrder = useCreateRepairOrder();
   const createRequestType = useCreateRepairRequestType();
   const deleteRequestType = useDeleteRepairRequestType();
+  const { data: staffList } = useStaffList();
   
   const tenantId = platformUser?.tenant_id || '';
   const defaultBranch = branches?.find(b => b.is_default);
