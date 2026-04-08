@@ -6,6 +6,7 @@ import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useUnreadReviewCount } from '@/hooks/useUnreadReviews';
 import { useUnreadSocialNotifCount } from '@/hooks/useSocial';
 import { useUnreadArticleCount } from '@/hooks/useUnreadArticles';
+import { useCompletedRepairCount } from '@/hooks/useCompletedRepairCount';
 import {
   LayoutDashboard,
   Package,
