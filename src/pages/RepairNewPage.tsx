@@ -1,6 +1,7 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import QRCode from 'qrcode';
+import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
