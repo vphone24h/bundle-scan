@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { PriceInput } from '@/components/ui/price-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { CreditCard, Banknote, CheckCircle, Printer, Wallet, Mail, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,6 +43,16 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
   const [isDone, setIsDone] = useState(false);
   const [createdReceiptCode, setCreatedReceiptCode] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [autoEmailEnabled, setAutoEmailEnabled] = useState(true);
+  const [customerEmail, setCustomerEmail] = useState<string | null>(null);
+
+  // Fetch customer email on mount
+  React.useEffect(() => {
+    if (order.customer_id) {
+      supabase.from('customers').select('email').eq('id', order.customer_id).maybeSingle()
+        .then(({ data }) => setCustomerEmail(data?.email || null));
+    }
+  }, [order.customer_id]);
 
   const totalAmount = order.total_amount;
   const debtAmount = paymentMethod === 'debt' ? totalAmount : Math.max(0, totalAmount - paidAmount);
@@ -223,39 +234,31 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['all-products'] });
 
-      // Auto send email (like sales module)
-      if (order.customer_id) {
-        const { data: customer } = await supabase
-          .from('customers')
-          .select('email')
-          .eq('id', order.customer_id)
-          .maybeSingle();
-
-        if (customer?.email) {
-          supabase.functions.invoke('send-export-email', {
-            body: {
-              tenant_id: tenantId,
-              order_id: receipt.id,
-              customer_name: order.customer_name || 'Khách lẻ',
-              customer_email: customer.email,
-              customer_phone: order.customer_phone || '',
-              items: items.map(item => ({
-                product_name: item.product_name || item.description || 'Dịch vụ',
-                imei: item.product_imei,
-                sale_price: item.unit_price,
-                quantity: item.quantity,
-                warranty: item.warranty || warranty,
-              })),
-              total_amount: totalAmount,
-              receipt_code: code,
-              branch_id: order.branch_id,
-              export_date: new Date().toISOString(),
-              sales_staff_id: user?.id,
-            },
-          }).then(({ error }) => {
-            if (error) console.warn('Repair email failed:', error.message);
-          }).catch(() => {});
-        }
+      // Auto send email (like sales module) - only if toggle enabled
+      if (autoEmailEnabled && order.customer_id && customerEmail) {
+        supabase.functions.invoke('send-export-email', {
+          body: {
+            tenant_id: tenantId,
+            order_id: receipt.id,
+            customer_name: order.customer_name || 'Khách lẻ',
+            customer_email: customerEmail,
+            customer_phone: order.customer_phone || '',
+            items: items.map(item => ({
+              product_name: item.product_name || item.description || 'Dịch vụ',
+              imei: item.product_imei,
+              sale_price: item.unit_price,
+              quantity: item.quantity,
+              warranty: item.warranty || warranty,
+            })),
+            total_amount: totalAmount,
+            receipt_code: code,
+            branch_id: order.branch_id,
+            export_date: new Date().toISOString(),
+            sales_staff_id: user?.id,
+          },
+        }).then(({ error }) => {
+          if (error) console.warn('Repair email failed:', error.message);
+        }).catch(() => {});
       }
 
       setCreatedReceiptCode(code);
@@ -454,6 +457,25 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
               </SelectContent>
             </Select>
           </div>
+
+          {/* Auto email toggle */}
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+            <Label htmlFor="auto-email-repair" className="flex items-center gap-2 cursor-pointer text-sm">
+              <Mail className="h-4 w-4 text-primary" />
+              Tự động gửi email cho khách
+            </Label>
+            <Switch
+              id="auto-email-repair"
+              checked={autoEmailEnabled}
+              onCheckedChange={setAutoEmailEnabled}
+            />
+          </div>
+          {autoEmailEnabled && !customerEmail && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+              <Mail className="h-3 w-3" />
+              Khách chưa có email — sẽ không gửi được
+            </p>
+          )}
 
           <div>
             <Label>Ghi chú</Label>
