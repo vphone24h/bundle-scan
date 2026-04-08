@@ -355,8 +355,24 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
       <p style="text-align:center;font-size:11px;color:#999">${new Date().toLocaleString('vi')}</p>
       </body></html>
     `;
-    const w = window.open('', '_blank');
-    if (w) { w.document.write(printContent); w.document.close(); w.print(); }
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(printContent);
+      doc.close();
+      setTimeout(() => {
+        iframe.contentWindow?.print();
+        setTimeout(() => document.body.removeChild(iframe), 1000);
+      }, 300);
+    }
   };
 
   if (isDone) {
