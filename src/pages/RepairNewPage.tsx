@@ -346,8 +346,8 @@ export default function RepairNewPage() {
                     )}
                   </div>
                   <Button onClick={() => { setShowDeviceForm(true); setProductSearch(''); setShowProductSearch(false); }}>
-                    <Plus className="h-4 w-4 sm:mr-1" />
-                    <span className="hidden sm:inline">Thêm mới</span>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Thêm mới
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
