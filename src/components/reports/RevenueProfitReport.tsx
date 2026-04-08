@@ -288,6 +288,17 @@ export function RevenueProfitReport() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label className="flex items-center gap-1"><Wrench className="h-3.5 w-3.5" />Loại đơn</Label>
+              <Select value={repairFilter} onValueChange={setRepairFilter}>
+                <SelectTrigger className="w-40"><SelectValue placeholder={t('common.all')} /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="_all_">{t('common.all')}</SelectItem>
+                  <SelectItem value="repair">Sửa chữa</SelectItem>
+                  <SelectItem value="normal">Bán hàng</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
