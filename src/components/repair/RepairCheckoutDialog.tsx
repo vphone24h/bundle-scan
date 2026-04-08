@@ -84,6 +84,19 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
 
     setIsSubmitting(true);
     try {
+      // Find the technician from the "repairing" step for revenue attribution
+      let repairingTechId = order.technician_id;
+      const { data: historyData } = await supabase
+        .from('repair_status_history')
+        .select('technician_id')
+        .eq('repair_order_id', order.id)
+        .eq('new_status', 'repairing')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (historyData && historyData.length > 0 && (historyData[0] as any).technician_id) {
+        repairingTechId = (historyData[0] as any).technician_id;
+      }
+
       // Generate receipt code
       const date = new Date();
       const code = `SC-XH${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}${String(date.getHours()).padStart(2, '0')}${String(date.getMinutes()).padStart(2, '0')}${String(date.getSeconds()).padStart(2, '0')}`;
@@ -105,7 +118,7 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
           status: 'completed',
           note: `Phiếu sửa chữa ${order.code}${note ? ` - ${note}` : ''}`,
           created_by: user?.id,
-          sales_staff_id: order.technician_id || user?.id,
+          sales_staff_id: repairingTechId || user?.id,
           tenant_id: tenantId,
           repair_order_id: order.id,
           is_repair: true,
@@ -232,6 +245,8 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
         new_status: 'returned',
         changed_by: user?.id,
         changed_by_name: profile?.display_name,
+        technician_id: order.technician_id,
+        technician_name: order.technician_name,
         note: `Trả khách & Thanh toán - ${code}`,
       } as any);
 
