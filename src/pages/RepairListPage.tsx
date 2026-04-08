@@ -606,6 +606,7 @@ export default function RepairListPage() {
               <div>
                 <Label className="text-xs">Kỹ thuật viên</Label>
                 <Select
+                  disabled={selectedOrder.status === 'returned' || selectedOrder.status === 'cancelled'}
                   value={selectedOrder.technician_id || '_none_'}
                   onValueChange={(v) => {
                     const staffId = v === '_none_' ? null : v;
