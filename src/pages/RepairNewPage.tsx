@@ -452,6 +452,12 @@ export default function RepairNewPage() {
               <div className="text-center">
                 <Badge variant="outline" className="text-lg px-4 py-1">{createdOrder.code}</Badge>
               </div>
+              {qrDataUrl && (
+                <div className="text-center">
+                  <img src={qrDataUrl} alt="QR Code" className="mx-auto w-28 h-28" />
+                  <p className="text-xs text-muted-foreground mt-1">Dán mã này lên máy</p>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <div><span className="text-muted-foreground">Thiết bị:</span> {createdOrder.device_name}</div>
                 <div><span className="text-muted-foreground">IMEI:</span> {createdOrder.device_imei || '-'}</div>
@@ -461,14 +467,11 @@ export default function RepairNewPage() {
             </div>
           )}
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={handlePrintReceipt}>
+            <Button variant="outline" onClick={() => handlePrintReceipt(false)}>
               <Printer className="h-4 w-4 mr-2" /> In phiếu
             </Button>
-            <Button variant="outline" onClick={() => {
-              toast.info('QR Code sẽ được tạo khi in');
-              handlePrintReceipt();
-            }}>
-              <QrCode className="h-4 w-4 mr-2" /> In QR
+            <Button variant="outline" onClick={() => handlePrintReceipt(true)}>
+              <QrCode className="h-4 w-4 mr-2" /> In phiếu + QR
             </Button>
             <Button onClick={goToList}>
               Xem danh sách
