@@ -371,6 +371,17 @@ export default function RepairNewPage() {
 
   const [guideOpen, setGuideOpen] = useState(false);
   const [guideStep, setGuideStep] = useState(0);
+  const [highlightSearch, setHighlightSearch] = useState(false);
+  const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
+  const [editingTypeName, setEditingTypeName] = useState('');
+
+  const handleGuideClose = (open: boolean) => {
+    setGuideOpen(open);
+    if (!open) {
+      setHighlightSearch(true);
+      setTimeout(() => setHighlightSearch(false), 4000);
+    }
+  };
 
   const guideSteps = [
     {
@@ -403,19 +414,17 @@ export default function RepairNewPage() {
       />
 
       {/* Guide Dialog */}
-      <Dialog open={guideOpen} onOpenChange={setGuideOpen}>
+      <Dialog open={guideOpen} onOpenChange={handleGuideClose}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-center">📖 Hướng dẫn sửa chữa</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            {/* Step indicators */}
             <div className="flex items-center justify-center gap-2 mb-6">
               {guideSteps.map((_, i) => (
                 <div key={i} className={`h-2 rounded-full transition-all ${i === guideStep ? 'w-8 bg-primary' : i < guideStep ? 'w-2 bg-primary/50' : 'w-2 bg-muted'}`} />
               ))}
             </div>
-            
             <div className="text-center space-y-4">
               <div className="text-4xl">{guideSteps[guideStep].icon}</div>
               <h3 className="font-bold text-lg">{guideSteps[guideStep].title}</h3>
@@ -435,13 +444,24 @@ export default function RepairNewPage() {
                 Tiếp theo <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
             ) : (
-              <Button onClick={() => setGuideOpen(false)}>
+              <Button onClick={() => handleGuideClose(false)}>
                 <CheckCircle2 className="h-4 w-4 mr-1" /> Đã hiểu
               </Button>
             )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Blink animation style */}
+      {highlightSearch && (
+        <style>{`
+          @keyframes guide-blink {
+            0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+            50% { box-shadow: 0 0 0 4px hsl(var(--primary) / 0.4); }
+          }
+          .guide-blink { animation: guide-blink 0.8s ease-in-out infinite; }
+        `}</style>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left: Device Info */}
