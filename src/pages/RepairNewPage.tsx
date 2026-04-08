@@ -564,7 +564,7 @@ export default function RepairNewPage() {
       </div>
 
       {/* QR + Print Dialog */}
-      <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
+      <Dialog open={showQRDialog} onOpenChange={handleQRDialogClose}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Phiếu sửa chữa đã tạo</DialogTitle>
