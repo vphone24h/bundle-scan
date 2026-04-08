@@ -115,7 +115,6 @@ const allNavItems: NavItem[] = [
       { title: 'Mức Thuế 2026', titleKey: 'sidebar.taxPolicy', href: '/export/tax-policy', hideInSecretMode: true },
     ],
   },
-  { title: 'Trả hàng', titleKey: 'sidebar.returns', href: '/returns', icon: RotateCcw, permission: 'canCreateReturn' },
   {
     title: 'Sửa chữa',
     href: '/repair',
@@ -126,6 +125,7 @@ const allNavItems: NavItem[] = [
       { title: 'Danh sách sửa chữa', href: '/repair/list' },
     ],
   },
+  { title: 'Trả hàng', titleKey: 'sidebar.returns', href: '/returns', icon: RotateCcw, permission: 'canCreateReturn' },
   { title: 'Nhà cung cấp', titleKey: 'sidebar.suppliers', href: '/suppliers', icon: Users, permission: 'canManageSuppliers' },
   { title: 'Khách hàng & CRM', titleKey: 'sidebar.customers', href: '/customers', icon: HeartHandshake, permission: 'canViewCRM' },
   { title: 'Công nợ', titleKey: 'sidebar.debt', href: '/debt', icon: Receipt, permission: 'canViewDebt' },

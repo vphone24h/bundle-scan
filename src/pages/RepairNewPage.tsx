@@ -1,6 +1,7 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import QRCode from 'qrcode';
+import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
@@ -96,6 +97,8 @@ export default function RepairNewPage() {
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<any>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [barcodeDialogOpen, setBarcodeDialogOpen] = useState(false);
+  const [barcodeProducts, setBarcodeProducts] = useState<{ id: string; name: string; sku: string; imei?: string; importPrice: number; salePrice?: number }[]>([]);
 
   // Device images
   const [deviceImages, setDeviceImages] = useState<string[]>([]);
@@ -592,8 +595,19 @@ export default function RepairNewPage() {
             <Button variant="outline" onClick={() => handlePrintReceipt(false)}>
               <Printer className="h-4 w-4 mr-2" /> In phiếu
             </Button>
-            <Button variant="outline" onClick={() => handlePrintReceipt(true)}>
-              <QrCode className="h-4 w-4 mr-2" /> In phiếu + QR
+            <Button variant="outline" onClick={() => {
+              if (!createdOrder) return;
+              setBarcodeProducts([{
+                id: createdOrder.id,
+                name: createdOrder.device_name,
+                sku: createdOrder.code,
+                imei: createdOrder.device_imei || undefined,
+                importPrice: 0,
+                salePrice: createdOrder.estimated_price,
+              }]);
+              setBarcodeDialogOpen(true);
+            }}>
+              <QrCode className="h-4 w-4 mr-2" /> In QR
             </Button>
             <Button onClick={goToList}>
               Xem danh sách
@@ -637,6 +651,16 @@ export default function RepairNewPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Barcode/QR Print Dialog */}
+      <BarcodeDialog
+        open={barcodeDialogOpen}
+        onClose={() => {
+          setBarcodeDialogOpen(false);
+          setBarcodeProducts([]);
+        }}
+        products={barcodeProducts}
+      />
     </MainLayout>
   );
 }
