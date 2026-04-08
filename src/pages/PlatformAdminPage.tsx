@@ -37,8 +37,9 @@ import { useTranslation } from 'react-i18next';
 
 export default function PlatformAdminPage() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
   const { data: platformUser, isLoading } = usePlatformUser();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
   const [isExportingAll, setIsExportingAll] = useState(false);
   const [isExportingCross, setIsExportingCross] = useState(false);
 
