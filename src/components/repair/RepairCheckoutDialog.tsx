@@ -454,6 +454,28 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
             </div>
           )}
 
+          {/* Handover Staff - Required */}
+          <div>
+            <Label className="flex items-center gap-1">
+              <UserCheck className="h-3.5 w-3.5" /> Nhân viên bàn giao <span className="text-destructive">*</span>
+            </Label>
+            <Select value={handoverStaffId} onValueChange={setHandoverStaffId}>
+              <SelectTrigger className={!handoverStaffId ? 'border-destructive' : ''}>
+                <SelectValue placeholder="Chọn nhân viên bàn giao..." />
+              </SelectTrigger>
+              <SelectContent>
+                {staffList?.map((staff) => (
+                  <SelectItem key={staff.user_id} value={staff.user_id}>
+                    {staff.display_name || 'Nhân viên'}
+                    {staff.user_role === 'super_admin' && ' (Admin)'}
+                    {staff.user_role === 'branch_admin' && ' (QL)'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Người trực tiếp bàn giao máy cho khách. Doanh số thuộc kỹ thuật viên.</p>
+          </div>
+
           {/* Warranty */}
           <div>
             <Label>Bảo hành sau sửa</Label>
