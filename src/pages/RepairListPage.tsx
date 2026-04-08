@@ -378,7 +378,7 @@ export default function RepairListPage() {
 
 
   const handleStatusChange = async (orderId: string, newStatus: RepairStatus) => {
-    // Log status change
+    // Log status change with technician info
     const order = orders.find(o => o.id === orderId);
     if (order) {
       await supabase.from('repair_status_history').insert({
@@ -388,6 +388,8 @@ export default function RepairListPage() {
         new_status: newStatus,
         changed_by: user?.id,
         changed_by_name: profile?.display_name,
+        technician_id: order.technician_id,
+        technician_name: order.technician_name,
       } as any);
     }
 
@@ -700,13 +702,15 @@ export default function RepairListPage() {
                   <h4 className="font-semibold text-sm mb-2">Lịch sử trạng thái</h4>
                   <div className="space-y-1">
                     {statusHistory.map((h: any) => (
-                      <div key={h.id} className="text-xs flex items-center gap-2">
+                      <div key={h.id} className="text-xs flex items-center gap-2 flex-wrap">
                         <span className="text-muted-foreground">{format(new Date(h.created_at), 'dd/MM HH:mm')}</span>
                         <ArrowRight className="h-3 w-3" />
                         <Badge className={`${REPAIR_STATUS_MAP[h.new_status as RepairStatus]?.color || ''} text-[10px]`}>
                           {REPAIR_STATUS_MAP[h.new_status as RepairStatus]?.label || h.new_status}
                         </Badge>
-                        <span className="text-muted-foreground">{h.changed_by_name}</span>
+                        <span className="text-muted-foreground">
+                          {h.technician_name || h.changed_by_name}
+                        </span>
                       </div>
                     ))}
                   </div>
