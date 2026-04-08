@@ -5433,6 +5433,7 @@ export type Database = {
           id: string
           import_receipt_id: string | null
           item_type: string
+          note: string | null
           product_id: string | null
           product_imei: string | null
           product_name: string | null
@@ -5442,6 +5443,7 @@ export type Database = {
           tenant_id: string | null
           total_price: number | null
           unit_price: number
+          warranty: string | null
         }
         Insert: {
           cost_price?: number | null
@@ -5450,6 +5452,7 @@ export type Database = {
           id?: string
           import_receipt_id?: string | null
           item_type?: string
+          note?: string | null
           product_id?: string | null
           product_imei?: string | null
           product_name?: string | null
@@ -5459,6 +5462,7 @@ export type Database = {
           tenant_id?: string | null
           total_price?: number | null
           unit_price?: number
+          warranty?: string | null
         }
         Update: {
           cost_price?: number | null
@@ -5467,6 +5471,7 @@ export type Database = {
           id?: string
           import_receipt_id?: string | null
           item_type?: string
+          note?: string | null
           product_id?: string | null
           product_imei?: string | null
           product_name?: string | null
@@ -5476,6 +5481,7 @@ export type Database = {
           tenant_id?: string | null
           total_price?: number | null
           unit_price?: number
+          warranty?: string | null
         }
         Relationships: [
           {

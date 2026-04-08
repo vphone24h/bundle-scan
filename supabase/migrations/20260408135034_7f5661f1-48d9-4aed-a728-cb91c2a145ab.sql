@@ -1,0 +1,3 @@
+ALTER TABLE public.repair_order_items
+  ADD COLUMN IF NOT EXISTS warranty text DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS note text DEFAULT NULL;

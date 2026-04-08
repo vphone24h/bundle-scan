@@ -59,6 +59,8 @@ export interface RepairOrderItem {
   cost_price: number;
   total_price: number;
   import_receipt_id: string | null;
+  warranty: string | null;
+  note: string | null;
   created_at: string;
 }
 

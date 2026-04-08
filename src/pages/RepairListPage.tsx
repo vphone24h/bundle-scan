@@ -136,7 +136,9 @@ export default function RepairListPage() {
   const [partSearch, setPartSearch] = useState('');
   const [partResults, setPartResults] = useState<any[]>([]);
   const [selectedPart, setSelectedPart] = useState<any>(null);
-  
+  const [itemWarranty, setItemWarranty] = useState('Không BH');
+  const [itemNote, setItemNote] = useState('');
+
 
   const addItem = useAddRepairItem();
   const deleteItem = useDeleteRepairItem();
@@ -251,6 +253,13 @@ export default function RepairListPage() {
       unit_price: itemPrice,
     };
 
+    if (itemWarranty && itemWarranty !== 'Không BH') {
+      payload.warranty = itemWarranty;
+    }
+    if (itemNote.trim()) {
+      payload.note = itemNote.trim();
+    }
+
     if (itemType === 'part' && selectedPart) {
       payload.product_id = selectedPart.id;
       payload.product_name = selectedPart.name;
@@ -292,6 +301,8 @@ export default function RepairListPage() {
     setPartSearch('');
     setSelectedPart(null);
     setItemType('service');
+    setItemWarranty('Không BH');
+    setItemNote('');
   };
 
 
@@ -557,7 +568,9 @@ export default function RepairListPage() {
                           </div>
                           <div className="text-muted-foreground text-xs mt-0.5">
                             {item.quantity} x {formatNumber(item.unit_price)}đ = {formatNumber(item.total_price)}đ
+                            {item.warranty && <span className="ml-2 text-primary">• BH: {item.warranty}</span>}
                           </div>
+                          {item.note && <div className="text-muted-foreground text-xs italic">{item.note}</div>}
                         </div>
                         {selectedOrder.status !== 'returned' && selectedOrder.status !== 'cancelled' && (
                           <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => deleteItem.mutate({ id: item.id, repairOrderId: selectedOrder.id })}>
@@ -691,6 +704,25 @@ export default function RepairListPage() {
                 <Label>Đơn giá</Label>
                 <PriceInput value={itemPrice} onChange={setItemPrice} />
               </div>
+            </div>
+
+            <div>
+              <Label>Bảo hành</Label>
+              <Select value={itemWarranty} onValueChange={setItemWarranty}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Không BH">Không bảo hành</SelectItem>
+                  <SelectItem value="1 Tháng">1 Tháng</SelectItem>
+                  <SelectItem value="3 Tháng">3 Tháng</SelectItem>
+                  <SelectItem value="6 Tháng">6 Tháng</SelectItem>
+                  <SelectItem value="12 Tháng">12 Tháng</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Ghi chú</Label>
+              <Input value={itemNote} onChange={e => setItemNote(e.target.value)} placeholder="Ghi chú cho dịch vụ/linh kiện..." />
             </div>
           </div>
           <DialogFooter>
