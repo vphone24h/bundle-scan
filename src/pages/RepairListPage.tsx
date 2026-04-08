@@ -143,6 +143,57 @@ export default function RepairListPage() {
   const addItem = useAddRepairItem();
   const deleteItem = useDeleteRepairItem();
 
+  // Print repair receipt
+  const handlePrintRepairReceipt = async (order: RepairOrder) => {
+    // Fetch items for this order
+    const { data: repairItems } = await supabase
+      .from('repair_order_items')
+      .select('*')
+      .eq('repair_order_id', order.id)
+      .order('created_at', { ascending: true });
+
+    const items = (repairItems || []) as unknown as RepairOrderItem[];
+    const receiptCode = order.export_receipt_id ? order.code : order.code;
+
+    // Fetch export receipt code if available
+    let exportCode = order.code;
+    if (order.export_receipt_id) {
+      const { data: receipt } = await supabase
+        .from('export_receipts')
+        .select('code')
+        .eq('id', order.export_receipt_id)
+        .maybeSingle();
+      if (receipt) exportCode = (receipt as any).code;
+    }
+
+    const printContent = `
+      <html><head><title>Biên nhận ${exportCode}</title>
+      <style>body{font-family:Arial;padding:20px;max-width:300px;margin:0 auto;font-size:13px}
+      h2{text-align:center;margin-bottom:5px}
+      .line{border-top:1px dashed #000;margin:8px 0}
+      .row{display:flex;justify-content:space-between;margin:3px 0}
+      .label{color:#666}.bold{font-weight:bold}
+      .item{padding:4px 0;border-bottom:1px dotted #ccc}
+      </style></head><body>
+      <h2>BIÊN NHẬN SỬA CHỮA</h2>
+      <p style="text-align:center">${exportCode}</p>
+      <div class="line"></div>
+      <div class="row"><span class="label">Khách:</span><span>${order.customer_name || 'Khách lẻ'}</span></div>
+      <div class="row"><span class="label">SĐT:</span><span>${order.customer_phone || '-'}</span></div>
+      <div class="row"><span class="label">Thiết bị:</span><span>${order.device_name}</span></div>
+      <div class="row"><span class="label">IMEI:</span><span>${order.device_imei || '-'}</span></div>
+      <div class="line"></div>
+      ${items.map(i => `<div class="item"><div class="bold">${i.product_name || i.description || 'Dịch vụ'}</div><div class="row"><span>${i.quantity} x ${formatNumber(i.unit_price)}đ</span><span class="bold">${formatNumber(i.total_price)}đ</span></div>${i.warranty ? `<div style="font-size:11px;color:#666">BH: ${i.warranty}</div>` : ''}</div>`).join('')}
+      <div class="line"></div>
+      <div class="row bold"><span>TỔNG:</span><span>${formatNumber(order.total_amount)}đ</span></div>
+      <div class="line"></div>
+      <p style="text-align:center;font-size:11px;color:#999">${new Date(order.updated_at).toLocaleString('vi')}</p>
+      </body></html>
+    `;
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(printContent); w.document.close(); w.print(); }
+  };
+
   // Checkout dialog
   const [showCheckout, setShowCheckout] = useState(false);
 
