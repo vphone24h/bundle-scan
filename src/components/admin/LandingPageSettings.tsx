@@ -111,7 +111,11 @@ function OrderEmailConfigSection({ formData, handleChange, tenantId, onSave, onD
 
   return (
     <div id="email-config-section" className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className={`flex items-center justify-between transition-all duration-1000 ${
+        typeof window !== 'undefined' && window.location.hash === '#email-config-section'
+          ? 'rounded-lg ring-2 ring-destructive ring-offset-2 animate-pulse p-2 bg-destructive/5'
+          : ''
+      }`}>
         <div className="flex items-center gap-2">
           <Mail className="h-4 w-4 text-primary" />
           <Label className="text-sm font-medium">Email tự động đơn hàng</Label>
