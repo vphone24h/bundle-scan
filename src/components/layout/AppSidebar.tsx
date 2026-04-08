@@ -164,6 +164,7 @@ export function AppSidebar() {
   const { data: unreadReviewCount } = useUnreadReviewCount();
   const { data: unreadSocialCount } = useUnreadSocialNotifCount();
   const { data: unreadArticleCount } = useUnreadArticleCount();
+  const completedRepairCount = useCompletedRepairCount();
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches) {
