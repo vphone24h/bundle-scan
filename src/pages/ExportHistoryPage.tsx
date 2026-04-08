@@ -327,9 +327,18 @@ export default function ExportHistoryPage() {
 
   // Server-side filters handle search, status, date, branch. Only payment source is client-side.
   const filteredReceipts = useMemo(() => {
-    if (paymentSourceFilter === '_all_') return receipts;
-    return receipts?.filter(r => r.export_receipt_payments?.some(p => p.payment_type === paymentSourceFilter));
-  }, [receipts, paymentSourceFilter]);
+    let result = receipts;
+    if (paymentSourceFilter !== '_all_') {
+      result = result?.filter(r => r.export_receipt_payments?.some(p => p.payment_type === paymentSourceFilter));
+    }
+    if (repairFilter !== '_all_') {
+      result = result?.filter(r => {
+        const isRepair = !!(r as any).is_repair;
+        return repairFilter === 'repair' ? isRepair : !isRepair;
+      });
+    }
+    return result;
+  }, [receipts, paymentSourceFilter, repairFilter]);
 
   const hasActiveFilters = dateFilter || dateFromFilter || dateToFilter || statusFilter !== '_all_' || branchFilter !== '_all_' || categoryFilter !== '_all_' || paymentSourceFilter !== '_all_';
 
