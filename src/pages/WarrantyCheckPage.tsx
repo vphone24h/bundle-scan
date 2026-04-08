@@ -373,6 +373,8 @@ export default function WarrantyCheckPage() {
               })}
             </div>
           )}
+          </>
+          )}
         </div>
       </section>
     </div>
