@@ -563,8 +563,7 @@ export default function RepairListPage() {
                     className="w-full text-xs"
                     onClick={() => {
                       setShowAddItem(false);
-                      resetImportForm();
-                      setShowImportPart(true);
+                      navigate(`/import/new?repairOrderId=${selectedOrderId}`);
                     }}
                   >
                     <Package className="h-3 w-3 mr-1" /> Nhập linh kiện mới (chưa có trong kho)
