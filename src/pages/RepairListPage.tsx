@@ -647,7 +647,10 @@ export default function RepairListPage() {
                     </Button>
                   )}
                 </div>
-                
+
+                {!selectedOrder.technician_id && selectedOrder.status !== 'returned' && selectedOrder.status !== 'cancelled' && (
+                  <p className="text-xs text-destructive mb-2">⚠ Vui lòng chọn Kỹ thuật viên trước khi thêm dịch vụ/linh kiện</p>
+                )}
                 {orderItems && orderItems.length > 0 ? (
                   <div className="space-y-2">
                     {orderItems.map(item => (
