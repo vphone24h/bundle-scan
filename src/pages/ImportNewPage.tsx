@@ -1359,6 +1359,16 @@ export default function ImportNewPage() {
         }
       />
 
+      {repairOrderId && (
+        <div className="mx-3 sm:mx-6 lg:mx-8 mt-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800 flex items-center gap-2">
+          <Package className="h-4 w-4 shrink-0" />
+          <span>Đang nhập linh kiện cho phiếu sửa chữa. Sau khi nhập xong, linh kiện sẽ tự động được thêm vào phiếu sửa.</span>
+          <Button variant="ghost" size="sm" className="ml-auto h-6 text-xs" onClick={() => navigate('/repair')}>
+            Quay lại
+          </Button>
+        </div>
+      )}
+
       <div className="p-3 sm:p-6 lg:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* Form */}
