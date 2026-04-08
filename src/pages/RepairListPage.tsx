@@ -107,17 +107,6 @@ export default function RepairListPage() {
   const [partResults, setPartResults] = useState<any[]>([]);
   const [selectedPart, setSelectedPart] = useState<any>(null);
   
-  // Import part states
-  const [showImportPart, setShowImportPart] = useState(false);
-  const [importPartName, setImportPartName] = useState('');
-  const [importPartSku, setImportPartSku] = useState('');
-  const [importPartImei, setImportPartImei] = useState('');
-  const [importPartQty, setImportPartQty] = useState(1);
-  const [importPartCost, setImportPartCost] = useState(0);
-  const [importPartSalePrice, setImportPartSalePrice] = useState(0);
-  const [importPartPaymentSource, setImportPartPaymentSource] = useState('cash');
-  const [importPartRecordCashBook, setImportPartRecordCashBook] = useState(true);
-  const [isImporting, setIsImporting] = useState(false);
 
   const addItem = useAddRepairItem();
   const deleteItem = useDeleteRepairItem();
@@ -239,111 +228,6 @@ export default function RepairListPage() {
     setItemType('service');
   };
 
-  const resetImportForm = () => {
-    setImportPartName('');
-    setImportPartSku('');
-    setImportPartImei('');
-    setImportPartQty(1);
-    setImportPartCost(0);
-    setImportPartSalePrice(0);
-    setImportPartPaymentSource('cash');
-    setImportPartRecordCashBook(true);
-  };
-
-  const handleImportAndAddPart = async () => {
-    if (!selectedOrderId || !importPartName) return;
-    setIsImporting(true);
-    try {
-      // 1. Create product in inventory
-      const { data: newProduct, error: prodErr } = await supabase
-        .from('products')
-        .insert({
-          name: importPartName,
-          sku: importPartSku || null,
-          imei: importPartImei || null,
-          import_price: importPartCost,
-          sale_price: importPartSalePrice,
-          quantity: importPartQty,
-          status: 'in_stock',
-          tenant_id: tenantId,
-          branch_id: null,
-        } as any)
-        .select()
-        .single();
-      if (prodErr) throw prodErr;
-
-      // 2. Create import receipt
-      const { data: receipt, error: receiptErr } = await supabase
-        .from('import_receipts')
-        .insert({
-          tenant_id: tenantId,
-          branch_id: null,
-          supplier_id: null,
-          total_amount: importPartCost * importPartQty,
-          note: `Nhập linh kiện cho phiếu sửa chữa`,
-          created_by: user?.id,
-        } as any)
-        .select()
-        .single();
-      
-      if (receiptErr) throw receiptErr;
-
-      // 3. Record to cash book if enabled
-      if (importPartRecordCashBook && importPartCost > 0) {
-        await supabase.from('cash_book').insert({
-          tenant_id: tenantId,
-          branch_id: null,
-          type: 'expense',
-          category: 'Nhập hàng',
-          description: `Nhập linh kiện: ${importPartName}`,
-          amount: importPartCost * importPartQty,
-          payment_source: importPartPaymentSource,
-          created_by: user?.id,
-          created_by_name: profile?.display_name,
-          reference_type: 'import',
-          reference_id: receipt?.id,
-        } as any);
-      }
-
-      // 4. Add as repair item
-      const payload: any = {
-        repair_order_id: selectedOrderId,
-        tenant_id: tenantId,
-        item_type: 'part',
-        product_id: newProduct.id,
-        product_name: importPartName,
-        product_sku: importPartSku || null,
-        product_imei: importPartImei || null,
-        quantity: importPartQty,
-        unit_price: importPartSalePrice,
-        cost_price: importPartCost,
-        import_receipt_id: receipt?.id,
-      };
-      await addItem.mutateAsync(payload);
-
-      // 5. Recalculate totals
-      const allItems = [...(orderItems || []), payload];
-      const totalService = allItems.filter(i => i.item_type === 'service').reduce((s, i) => s + (i.quantity || 1) * (i.unit_price || 0), 0);
-      const totalParts = allItems.filter(i => i.item_type === 'part').reduce((s, i) => s + (i.quantity || 1) * (i.unit_price || 0), 0);
-      const totalPartsCost = allItems.filter(i => i.item_type === 'part').reduce((s, i) => s + (i.quantity || 1) * (i.cost_price || 0), 0);
-
-      await updateOrder.mutateAsync({
-        id: selectedOrderId,
-        total_service_price: totalService,
-        total_parts_price: totalParts,
-        total_parts_cost: totalPartsCost,
-        total_amount: totalService + totalParts,
-      } as any);
-
-      setShowImportPart(false);
-      resetImportForm();
-      toast.success('Đã nhập linh kiện và thêm vào phiếu sửa');
-    } catch (err: any) {
-      toast.error('Lỗi: ' + err.message);
-    } finally {
-      setIsImporting(false);
-    }
-  };
 
   const handleStatusChange = async (orderId: string, newStatus: RepairStatus) => {
     // Log status change
@@ -679,8 +563,7 @@ export default function RepairListPage() {
                     className="w-full text-xs"
                     onClick={() => {
                       setShowAddItem(false);
-                      resetImportForm();
-                      setShowImportPart(true);
+                      navigate(`/import/new?repairOrderId=${selectedOrderId}`);
                     }}
                   >
                     <Package className="h-3 w-3 mr-1" /> Nhập linh kiện mới (chưa có trong kho)
@@ -714,80 +597,6 @@ export default function RepairListPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Import Part Dialog */}
-      <Dialog open={showImportPart} onOpenChange={setShowImportPart}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Package className="h-4 w-4" /> Nhập linh kiện mới
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label>Tên linh kiện <span className="text-destructive">*</span></Label>
-              <Input value={importPartName} onChange={e => setImportPartName(e.target.value)} placeholder="VD: Màn hình iPhone 11..." />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>SKU</Label>
-                <Input value={importPartSku} onChange={e => setImportPartSku(e.target.value)} placeholder="Mã SKU (tuỳ chọn)" />
-              </div>
-              <div>
-                <Label>IMEI</Label>
-                <Input value={importPartImei} onChange={e => setImportPartImei(e.target.value)} placeholder="IMEI (tuỳ chọn)" />
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <Label>Số lượng</Label>
-                <Input type="number" min={1} value={importPartQty} onChange={e => setImportPartQty(Number(e.target.value))} />
-              </div>
-              <div>
-                <Label>Giá nhập</Label>
-                <PriceInput value={importPartCost} onChange={setImportPartCost} />
-              </div>
-              <div>
-                <Label>Giá sửa</Label>
-                <PriceInput value={importPartSalePrice} onChange={setImportPartSalePrice} />
-              </div>
-            </div>
-
-            <div className="border-t pt-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-medium">Ghi dòng tiền vào sổ quỹ</Label>
-                <input
-                  type="checkbox"
-                  checked={importPartRecordCashBook}
-                  onChange={e => setImportPartRecordCashBook(e.target.checked)}
-                  className="h-4 w-4 rounded border-input"
-                />
-              </div>
-              {importPartRecordCashBook && (
-                <div>
-                  <Label className="text-xs">Nguồn tiền</Label>
-                  <Select value={importPartPaymentSource} onValueChange={setImportPartPaymentSource}>
-                    <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cash">Tiền mặt</SelectItem>
-                      <SelectItem value="bank">Chuyển khoản</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
-
-            <div className="bg-muted/50 rounded p-2 text-xs text-muted-foreground">
-              💡 Linh kiện sẽ được nhập vào kho và tự động thêm vào phiếu sửa chữa
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowImportPart(false)}>Hủy</Button>
-            <Button onClick={handleImportAndAddPart} disabled={isImporting || !importPartName}>
-              {isImporting ? 'Đang nhập...' : 'Nhập & Thêm vào phiếu'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Checkout Dialog */}
       {selectedOrder && orderItems && showCheckout && (
