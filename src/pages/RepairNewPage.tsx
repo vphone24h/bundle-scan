@@ -264,11 +264,23 @@ export default function RepairNewPage() {
         <div className="lg:col-span-2 space-y-4">
           <Card>
             <CardContent className="pt-4 space-y-4">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Wrench className="h-4 w-4" /> Thông tin máy
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Wrench className="h-4 w-4" /> Thông tin máy
+                </h3>
+                {!showDeviceForm && (
+                  <Button variant="default" size="sm" onClick={() => setShowDeviceForm(true)}>
+                    <Plus className="h-4 w-4 mr-1" /> Thêm mới
+                  </Button>
+                )}
+                {showDeviceForm && (
+                  <Button variant="ghost" size="sm" onClick={() => setShowDeviceForm(false)}>
+                    <ChevronUp className="h-4 w-4 mr-1" /> Thu gọn
+                  </Button>
+                )}
+              </div>
 
-              {/* Product search */}
+              {/* Product search - always visible */}
               <div className="relative">
                 <Label>Tìm sản phẩm / lịch sử sửa</Label>
                 <SearchInput
@@ -279,7 +291,7 @@ export default function RepairNewPage() {
                 {showProductSearch && productResults.length > 0 && (
                   <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-auto">
                     {productResults.map(p => (
-                      <button key={p.id} onClick={() => selectProduct(p)}
+                      <button key={p.id} onClick={() => { selectProduct(p); setShowDeviceForm(true); }}
                         className="w-full text-left px-3 py-2 hover:bg-muted text-sm">
                         <div className="font-medium">{p.name}</div>
                         {p.imei && <span className="text-xs text-muted-foreground">IMEI: {p.imei}</span>}
@@ -289,6 +301,9 @@ export default function RepairNewPage() {
                 )}
               </div>
 
+              {/* Collapsible device form */}
+              {showDeviceForm && (
+                <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label>Tên thiết bị <span className="text-destructive">*</span></Label>
