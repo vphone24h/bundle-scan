@@ -44,6 +44,7 @@ export function useReportStats(filters?: {
   endDate?: string;
   branchId?: string;
   categoryId?: string;
+  repairFilter?: string;
 }) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
