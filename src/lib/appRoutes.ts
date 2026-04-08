@@ -15,6 +15,8 @@ export const APP_ROUTES: { value: string; label: string }[] = [
   { value: '/reports', label: '/reports (Báo cáo)' },
   { value: '/returns', label: '/returns (Trả hàng)' },
   { value: '/stock-transfer', label: '/stock-transfer (Chuyển kho)' },
+  { value: '/repair/new', label: '/repair/new (Tạo phiếu sửa chữa)' },
+  { value: '/repair/list', label: '/repair/list (Danh sách sửa chữa)' },
   { value: '/invoice-template', label: '/invoice-template (Mẫu hóa đơn)' },
   { value: '/e-invoice', label: '/e-invoice (Hóa đơn điện tử)' },
   { value: '/branches', label: '/branches (Chi nhánh)' },
