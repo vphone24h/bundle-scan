@@ -1,15 +1,63 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { useState, useCallback } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
+
+const SECURITY_UNLOCK_STORAGE_PREFIX = 'security-unlock:';
+const unlockedSessions: Record<string, boolean> = {};
+const unlockListeners = new Map<string, Set<() => void>>();
 
 // Client-side SHA-256 hash matching edge function logic
 async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(password + "vkho_security_salt_2024");
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const data = encoder.encode(password + 'vkho_security_salt_2024');
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function getStoredUnlockState(key: string): boolean {
+  if (typeof window === 'undefined') return unlockedSessions[key] || false;
+
+  if (key in unlockedSessions) {
+    return unlockedSessions[key];
+  }
+
+  const storedValue = window.sessionStorage.getItem(`${SECURITY_UNLOCK_STORAGE_PREFIX}${key}`) === 'true';
+  unlockedSessions[key] = storedValue;
+  return storedValue;
+}
+
+function emitUnlockChange(key: string) {
+  unlockListeners.get(key)?.forEach((listener) => listener());
+}
+
+function setUnlockState(key: string, value: boolean) {
+  unlockedSessions[key] = value;
+
+  if (typeof window !== 'undefined') {
+    const storageKey = `${SECURITY_UNLOCK_STORAGE_PREFIX}${key}`;
+    if (value) {
+      window.sessionStorage.setItem(storageKey, 'true');
+    } else {
+      window.sessionStorage.removeItem(storageKey);
+    }
+  }
+
+  emitUnlockChange(key);
+}
+
+function subscribeToUnlockState(key: string, listener: () => void) {
+  const listeners = unlockListeners.get(key) ?? new Set<() => void>();
+  listeners.add(listener);
+  unlockListeners.set(key, listeners);
+
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0) {
+      unlockListeners.delete(key);
+    }
+  };
 }
 
 export function useSecurityPasswordStatus() {
@@ -29,7 +77,7 @@ export function useSetSecurityPassword() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ password, oldPassword }: { password: string; oldPassword?: string }) => {
-      const { data: { session } } = await supabase.auth.getSession();
+      await supabase.auth.getSession();
       const res = await supabase.functions.invoke('security-password', {
         body: { action: 'set_password', password, old_password: oldPassword },
       });
@@ -101,20 +149,19 @@ export function useVerifyResetOTP() {
   });
 }
 
-// Session-level unlock state (lost on page refresh)
-let unlockedSessions: Record<string, boolean> = {};
-
 export function useSecurityUnlock(key: string) {
-  const [unlocked, setUnlocked] = useState(() => unlockedSessions[key] || false);
+  const unlocked = useSyncExternalStore(
+    (listener) => subscribeToUnlockState(key, listener),
+    () => getStoredUnlockState(key),
+    () => false
+  );
 
   const unlock = useCallback(() => {
-    unlockedSessions[key] = true;
-    setUnlocked(true);
+    setUnlockState(key, true);
   }, [key]);
 
   const lock = useCallback(() => {
-    unlockedSessions[key] = false;
-    setUnlocked(false);
+    setUnlockState(key, false);
   }, [key]);
 
   return { unlocked, unlock, lock };
