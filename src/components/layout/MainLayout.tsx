@@ -8,6 +8,7 @@ import { AdGateModal } from '@/components/tenant/AdGateModal';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { StartupNotificationPopup } from '@/components/notifications/StartupNotificationPopup';
 import { PushPermissionPopup } from '@/components/notifications/PushPermissionPopup';
+import { InstallAppPrompt } from '@/components/notifications/InstallAppPrompt';
 import { PopupPriorityProvider, usePopupPriority } from '@/hooks/usePopupPriority';
 import { PullToRefresh } from './PullToRefresh';
 
@@ -101,6 +102,7 @@ function MainLayoutInner({ children }: MainLayoutProps) {
       {/* Popup priority: tour → notification → push → adgate */}
       <StartupNotificationPopup />
       <PushPermissionPopup />
+      <InstallAppPrompt />
 
       {showAdGate && adGateSettings && !needsBusinessType && (
         <div data-ad-modal>
