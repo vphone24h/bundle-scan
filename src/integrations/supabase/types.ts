@@ -5412,6 +5412,273 @@ export type Database = {
           },
         ]
       }
+      repair_order_items: {
+        Row: {
+          cost_price: number | null
+          created_at: string
+          description: string | null
+          id: string
+          import_receipt_id: string | null
+          item_type: string
+          product_id: string | null
+          product_imei: string | null
+          product_name: string | null
+          product_sku: string | null
+          quantity: number
+          repair_order_id: string
+          tenant_id: string | null
+          total_price: number | null
+          unit_price: number
+        }
+        Insert: {
+          cost_price?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          import_receipt_id?: string | null
+          item_type?: string
+          product_id?: string | null
+          product_imei?: string | null
+          product_name?: string | null
+          product_sku?: string | null
+          quantity?: number
+          repair_order_id: string
+          tenant_id?: string | null
+          total_price?: number | null
+          unit_price?: number
+        }
+        Update: {
+          cost_price?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          import_receipt_id?: string | null
+          item_type?: string
+          product_id?: string | null
+          product_imei?: string | null
+          product_name?: string | null
+          product_sku?: string | null
+          quantity?: number
+          repair_order_id?: string
+          tenant_id?: string | null
+          total_price?: number | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repair_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repair_order_items_repair_order_id_fkey"
+            columns: ["repair_order_id"]
+            isOneToOne: false
+            referencedRelation: "repair_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      repair_orders: {
+        Row: {
+          branch_id: string | null
+          code: string
+          created_at: string
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          device_condition: string | null
+          device_images: string[] | null
+          device_imei: string | null
+          device_model: string | null
+          device_name: string
+          device_password: string | null
+          due_date: string | null
+          estimated_price: number | null
+          export_receipt_id: string | null
+          id: string
+          note: string | null
+          quantity: number
+          received_by: string | null
+          received_by_name: string | null
+          request_type_id: string | null
+          request_type_name: string | null
+          send_email: boolean | null
+          status: Database["public"]["Enums"]["repair_status"]
+          technician_id: string | null
+          technician_name: string | null
+          tenant_id: string | null
+          total_amount: number | null
+          total_parts_cost: number | null
+          total_parts_price: number | null
+          total_service_price: number | null
+          updated_at: string
+        }
+        Insert: {
+          branch_id?: string | null
+          code: string
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          device_condition?: string | null
+          device_images?: string[] | null
+          device_imei?: string | null
+          device_model?: string | null
+          device_name: string
+          device_password?: string | null
+          due_date?: string | null
+          estimated_price?: number | null
+          export_receipt_id?: string | null
+          id?: string
+          note?: string | null
+          quantity?: number
+          received_by?: string | null
+          received_by_name?: string | null
+          request_type_id?: string | null
+          request_type_name?: string | null
+          send_email?: boolean | null
+          status?: Database["public"]["Enums"]["repair_status"]
+          technician_id?: string | null
+          technician_name?: string | null
+          tenant_id?: string | null
+          total_amount?: number | null
+          total_parts_cost?: number | null
+          total_parts_price?: number | null
+          total_service_price?: number | null
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string | null
+          code?: string
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          device_condition?: string | null
+          device_images?: string[] | null
+          device_imei?: string | null
+          device_model?: string | null
+          device_name?: string
+          device_password?: string | null
+          due_date?: string | null
+          estimated_price?: number | null
+          export_receipt_id?: string | null
+          id?: string
+          note?: string | null
+          quantity?: number
+          received_by?: string | null
+          received_by_name?: string | null
+          request_type_id?: string | null
+          request_type_name?: string | null
+          send_email?: boolean | null
+          status?: Database["public"]["Enums"]["repair_status"]
+          technician_id?: string | null
+          technician_name?: string | null
+          tenant_id?: string | null
+          total_amount?: number | null
+          total_parts_cost?: number | null
+          total_parts_price?: number | null
+          total_service_price?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repair_orders_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repair_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repair_orders_request_type_id_fkey"
+            columns: ["request_type_id"]
+            isOneToOne: false
+            referencedRelation: "repair_request_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      repair_request_types: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          id: string
+          is_default: boolean | null
+          name: string
+          tenant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          tenant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          tenant_id?: string | null
+        }
+        Relationships: []
+      }
+      repair_status_history: {
+        Row: {
+          changed_by: string | null
+          changed_by_name: string | null
+          created_at: string
+          id: string
+          new_status: Database["public"]["Enums"]["repair_status"]
+          note: string | null
+          old_status: Database["public"]["Enums"]["repair_status"] | null
+          repair_order_id: string
+          tenant_id: string | null
+        }
+        Insert: {
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          id?: string
+          new_status: Database["public"]["Enums"]["repair_status"]
+          note?: string | null
+          old_status?: Database["public"]["Enums"]["repair_status"] | null
+          repair_order_id: string
+          tenant_id?: string | null
+        }
+        Update: {
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          id?: string
+          new_status?: Database["public"]["Enums"]["repair_status"]
+          note?: string | null
+          old_status?: Database["public"]["Enums"]["repair_status"] | null
+          repair_order_id?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repair_status_history_repair_order_id_fkey"
+            columns: ["repair_order_id"]
+            isOneToOne: false
+            referencedRelation: "repair_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       return_payments: {
         Row: {
           amount: number
@@ -8568,6 +8835,13 @@ export type Database = {
         | "warranty"
         | "template"
       receipt_status: "completed" | "cancelled"
+      repair_status:
+        | "received"
+        | "pending_check"
+        | "repairing"
+        | "waiting_parts"
+        | "completed"
+        | "returned"
       return_fee_type: "none" | "percentage" | "fixed_amount"
       return_type: "import_return" | "export_return"
       spin_result_type: "prize" | "no_prize"
@@ -8742,6 +9016,14 @@ export const Constants = {
         "template",
       ],
       receipt_status: ["completed", "cancelled"],
+      repair_status: [
+        "received",
+        "pending_check",
+        "repairing",
+        "waiting_parts",
+        "completed",
+        "returned",
+      ],
       return_fee_type: ["none", "percentage", "fixed_amount"],
       return_type: ["import_return", "export_return"],
       spin_result_type: ["prize", "no_prize"],

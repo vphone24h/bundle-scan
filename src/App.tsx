@@ -59,6 +59,8 @@ const SocialPage = lazy(() => import("./pages/SocialPage"));
 const WebsiteEditorPage = lazy(() => import("./pages/WebsiteEditorPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const WarrantyCheckPage = lazy(() => import("./pages/WarrantyCheckPage"));
+const RepairNewPage = lazy(() => import("./pages/RepairNewPage"));
+const RepairListPage = lazy(() => import("./pages/RepairListPage"));
 
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -237,6 +239,8 @@ const App = () => (
                 <Route path="/guides" element={<GuardedRoute><PlatformArticlesPage /></GuardedRoute>} />
                 
                 <Route path="/settings" element={<GuardedRoute><SettingsPage /></GuardedRoute>} />
+                <Route path="/repair/new" element={<GuardedRoute><RepairNewPage /></GuardedRoute>} />
+                <Route path="/repair/list" element={<GuardedRoute><RepairListPage /></GuardedRoute>} />
                 <Route path="/social" element={<GuardedRoute><SocialPage /></GuardedRoute>} />
                 {/* Platform Admin route - also guarded */}
                 <Route path="/platform-admin" element={<GuardedRoute><PlatformAdminPage /></GuardedRoute>} />
