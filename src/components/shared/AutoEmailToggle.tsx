@@ -25,9 +25,9 @@ export function AutoEmailToggle({ id, checked, onCheckedChange, hasCustomerEmail
         size="sm"
         className="w-full justify-start gap-2 text-sm border-dashed border-amber-400 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950"
         onClick={() => {
-          navigate('/platform-admin?tab=config');
+          navigate('/website-editor');
           setTimeout(() => {
-            const el = document.getElementById('company-email-config');
+            const el = document.getElementById('email-config-section');
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }, 800);
         }}
