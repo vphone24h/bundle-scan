@@ -564,6 +564,7 @@ export default function RepairListPage() {
                 <div><span className="text-muted-foreground">Khách:</span> {selectedOrder.customer_name || 'Khách lẻ'} {selectedOrder.customer_phone && `- ${selectedOrder.customer_phone}`}</div>
                 <div><span className="text-muted-foreground">NV tiếp nhận:</span> {selectedOrder.received_by_name || '-'}</div>
                 <div><span className="text-muted-foreground">Kỹ thuật viên:</span> {selectedOrder.technician_name || 'Chưa phân công'}</div>
+                {selectedOrder.handover_staff_name && <div><span className="text-muted-foreground">NV bàn giao:</span> {selectedOrder.handover_staff_name}</div>}
                 <div><span className="text-muted-foreground">Giá dự kiến:</span> {formatNumber(selectedOrder.estimated_price)}đ</div>
                 {selectedOrder.due_date && <div><span className="text-muted-foreground">Hẹn trả:</span> {format(new Date(selectedOrder.due_date), 'dd/MM/yyyy HH:mm')}</div>}
                 {selectedOrder.note && <div><span className="text-muted-foreground">Ghi chú:</span> {selectedOrder.note}</div>}
