@@ -220,7 +220,7 @@ export function AppSidebar() {
     navigate('/auth');
   }, [signOut, navigate]);
 
-  const NavContent = () => (
+  const navContent = (
     <>
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-6 border-b border-sidebar-border">
@@ -428,12 +428,12 @@ export function AppSidebar() {
         )}
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
-        <NavContent />
+        {navContent}
       </aside>
 
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-sidebar border-r border-sidebar-border">
-        <NavContent />
+        {navContent}
       </aside>
     </>
   );
