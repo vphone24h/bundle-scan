@@ -77,6 +77,10 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
       toast.error('Tổng tiền phải lớn hơn 0');
       return;
     }
+    if (!handoverStaffId) {
+      toast.error('Vui lòng chọn nhân viên bàn giao');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
