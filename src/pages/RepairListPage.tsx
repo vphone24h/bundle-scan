@@ -136,7 +136,9 @@ export default function RepairListPage() {
   const [partSearch, setPartSearch] = useState('');
   const [partResults, setPartResults] = useState<any[]>([]);
   const [selectedPart, setSelectedPart] = useState<any>(null);
-  
+  const [itemWarranty, setItemWarranty] = useState('Không BH');
+  const [itemNote, setItemNote] = useState('');
+
 
   const addItem = useAddRepairItem();
   const deleteItem = useDeleteRepairItem();
@@ -251,6 +253,13 @@ export default function RepairListPage() {
       unit_price: itemPrice,
     };
 
+    if (itemWarranty && itemWarranty !== 'Không BH') {
+      payload.warranty = itemWarranty;
+    }
+    if (itemNote.trim()) {
+      payload.note = itemNote.trim();
+    }
+
     if (itemType === 'part' && selectedPart) {
       payload.product_id = selectedPart.id;
       payload.product_name = selectedPart.name;
@@ -292,6 +301,8 @@ export default function RepairListPage() {
     setPartSearch('');
     setSelectedPart(null);
     setItemType('service');
+    setItemWarranty('Không BH');
+    setItemNote('');
   };
 
 
