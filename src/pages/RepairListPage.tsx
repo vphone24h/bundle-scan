@@ -485,9 +485,11 @@ export default function RepairListPage() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-semibold text-sm">Dịch vụ & Linh kiện</h4>
-                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { resetItemForm(); setShowAddItem(true); }}>
-                    <Plus className="h-3 w-3 mr-1" /> Thêm
-                  </Button>
+                  {selectedOrder.status !== 'returned' && selectedOrder.status !== 'cancelled' && (
+                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { resetItemForm(); setShowAddItem(true); }}>
+                      <Plus className="h-3 w-3 mr-1" /> Thêm
+                    </Button>
+                  )}
                 </div>
                 
                 {orderItems && orderItems.length > 0 ? (
