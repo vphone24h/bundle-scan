@@ -670,6 +670,22 @@ export default function RepairListPage() {
                     <Button variant="ghost" size="sm" className="h-5 text-xs mt-1" onClick={() => setSelectedPart(null)}>Chọn lại</Button>
                   </div>
                 )}
+                {/* Button to open import popup */}
+                <div className="border-t pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs"
+                    onClick={() => {
+                      setShowAddItem(false);
+                      resetImportForm();
+                      setShowImportPart(true);
+                    }}
+                  >
+                    <Package className="h-3 w-3 mr-1" /> Nhập linh kiện mới (chưa có trong kho)
+                  </Button>
+                </div>
               </div>
             ) : (
               <div>
@@ -693,6 +709,81 @@ export default function RepairListPage() {
             <Button variant="outline" onClick={() => setShowAddItem(false)}>Hủy</Button>
             <Button onClick={handleAddItem} disabled={addItem.isPending}>
               {addItem.isPending ? 'Đang thêm...' : 'Thêm'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Part Dialog */}
+      <Dialog open={showImportPart} onOpenChange={setShowImportPart}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-4 w-4" /> Nhập linh kiện mới
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Tên linh kiện <span className="text-destructive">*</span></Label>
+              <Input value={importPartName} onChange={e => setImportPartName(e.target.value)} placeholder="VD: Màn hình iPhone 11..." />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>SKU</Label>
+                <Input value={importPartSku} onChange={e => setImportPartSku(e.target.value)} placeholder="Mã SKU (tuỳ chọn)" />
+              </div>
+              <div>
+                <Label>IMEI</Label>
+                <Input value={importPartImei} onChange={e => setImportPartImei(e.target.value)} placeholder="IMEI (tuỳ chọn)" />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label>Số lượng</Label>
+                <Input type="number" min={1} value={importPartQty} onChange={e => setImportPartQty(Number(e.target.value))} />
+              </div>
+              <div>
+                <Label>Giá nhập</Label>
+                <PriceInput value={importPartCost} onChange={setImportPartCost} />
+              </div>
+              <div>
+                <Label>Giá sửa</Label>
+                <PriceInput value={importPartSalePrice} onChange={setImportPartSalePrice} />
+              </div>
+            </div>
+
+            <div className="border-t pt-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium">Ghi dòng tiền vào sổ quỹ</Label>
+                <input
+                  type="checkbox"
+                  checked={importPartRecordCashBook}
+                  onChange={e => setImportPartRecordCashBook(e.target.checked)}
+                  className="h-4 w-4 rounded border-input"
+                />
+              </div>
+              {importPartRecordCashBook && (
+                <div>
+                  <Label className="text-xs">Nguồn tiền</Label>
+                  <Select value={importPartPaymentSource} onValueChange={setImportPartPaymentSource}>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">Tiền mặt</SelectItem>
+                      <SelectItem value="bank">Chuyển khoản</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-muted/50 rounded p-2 text-xs text-muted-foreground">
+              💡 Linh kiện sẽ được nhập vào kho và tự động thêm vào phiếu sửa chữa
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowImportPart(false)}>Hủy</Button>
+            <Button onClick={handleImportAndAddPart} disabled={isImporting || !importPartName}>
+              {isImporting ? 'Đang nhập...' : 'Nhập & Thêm vào phiếu'}
             </Button>
           </DialogFooter>
         </DialogContent>
