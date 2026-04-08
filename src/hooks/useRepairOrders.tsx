@@ -81,28 +81,52 @@ export const REPAIR_STATUS_MAP: Record<RepairStatus, { label: string; color: str
   cancelled: { label: 'Đã hủy', color: 'bg-red-200 text-red-900' },
 };
 
-export function useRepairOrders(statusFilter?: RepairStatus | 'all') {
+export interface RepairOrdersFilters {
+  statusFilter?: RepairStatus | 'all';
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export function useRepairOrders(filters: RepairOrdersFilters = {}) {
   const { user } = useAuth();
+  const { statusFilter = 'all', search, page = 1, pageSize = 20 } = filters;
+
   return useQuery({
-    queryKey: ['repair-orders', statusFilter],
+    queryKey: ['repair-orders', statusFilter, search, page, pageSize],
     queryFn: async () => {
       let query = supabase
         .from('repair_orders')
-        .select('*')
+        .select('*', { count: 'exact' })
         .order('created_at', { ascending: false });
-      
+
       if (statusFilter && statusFilter !== 'all') {
         query = query.eq('status', statusFilter);
       }
-      
-      const { data, error } = await query;
+
+      if (search && search.trim().length >= 2) {
+        const s = search.trim();
+        query = query.or(
+          `code.ilike.%${s}%,device_name.ilike.%${s}%,device_imei.ilike.%${s}%,customer_name.ilike.%${s}%,customer_phone.ilike.%${s}%`
+        );
+      }
+
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
       if (error) throw error;
-      return (data || []) as unknown as RepairOrder[];
+      return {
+        items: (data || []) as unknown as RepairOrder[],
+        totalCount: count || 0,
+      };
     },
     enabled: !!user,
     staleTime: 30_000,
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
+    placeholderData: (prev) => prev,
   });
 }
 
