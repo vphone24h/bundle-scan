@@ -168,10 +168,26 @@ export default function RepairNewPage() {
       return;
     }
 
+    // Upsert customer if we have name+phone
+    let finalCustomerId = selectedCustomer?.id || null;
+    if (!finalCustomerId && customerName.trim() && customerPhone.trim()) {
+      try {
+        const customer = await upsertCustomer.mutateAsync({
+          name: customerName.trim(),
+          phone: customerPhone.trim(),
+          address: customerAddress.trim() || undefined,
+          email: customerEmail.trim() || undefined,
+          source: customerSource || undefined,
+          birthday: customerBirthday ? customerBirthday.toISOString().split('T')[0] : undefined,
+        } as any);
+        finalCustomerId = customer?.id || null;
+      } catch { /* ignore */ }
+    }
+
     const order = await createOrder.mutateAsync({
       tenant_id: tenantId,
       branch_id: branchId || null,
-      customer_id: customerId,
+      customer_id: finalCustomerId,
       customer_name: customerName || null,
       customer_phone: customerPhone || null,
       device_name: deviceName,
