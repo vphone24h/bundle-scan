@@ -1,5 +1,6 @@
 
 import React, { useState, useCallback, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import QRCode from 'qrcode';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -44,6 +45,7 @@ import { useNavigate } from 'react-router-dom';
 
 export default function RepairNewPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { data: profile } = useProfile();
   const displayName = profile?.display_name || '';
