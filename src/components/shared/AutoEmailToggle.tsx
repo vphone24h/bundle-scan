@@ -25,11 +25,17 @@ export function AutoEmailToggle({ id, checked, onCheckedChange, hasCustomerEmail
         size="sm"
         className="w-full justify-start gap-2 text-sm border-dashed border-amber-400 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950"
         onClick={() => {
-          navigate('/website-editor');
-          setTimeout(() => {
+          navigate('/website-editor?tab=settings');
+          // Wait for lazy-loaded settings tab to render, then scroll
+          const tryScroll = (attempts = 0) => {
             const el = document.getElementById('email-config-section');
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }, 800);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (attempts < 10) {
+              setTimeout(() => tryScroll(attempts + 1), 300);
+            }
+          };
+          setTimeout(() => tryScroll(), 500);
         }}
       >
         <Settings className="h-4 w-4" />
