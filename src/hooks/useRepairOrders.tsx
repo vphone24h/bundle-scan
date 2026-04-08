@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
-export type RepairStatus = 'received' | 'pending_check' | 'repairing' | 'waiting_parts' | 'completed' | 'returned';
+export type RepairStatus = 'received' | 'pending_check' | 'repairing' | 'waiting_parts' | 'completed' | 'returned' | 'cancelled';
 
 export interface RepairOrder {
   id: string;
@@ -78,6 +78,7 @@ export const REPAIR_STATUS_MAP: Record<RepairStatus, { label: string; color: str
   waiting_parts: { label: 'Chờ linh kiện', color: 'bg-purple-100 text-purple-800' },
   completed: { label: 'Hoàn thành', color: 'bg-red-100 text-red-800' },
   returned: { label: 'Đã trả khách', color: 'bg-green-100 text-green-800' },
+  cancelled: { label: 'Đã hủy', color: 'bg-red-200 text-red-900' },
 };
 
 export function useRepairOrders(statusFilter?: RepairStatus | 'all') {

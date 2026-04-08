@@ -76,6 +76,7 @@ const STATUS_TABS: { key: RepairStatus | 'all'; label: string }[] = [
   { key: 'waiting_parts', label: 'Chờ linh kiện' },
   { key: 'completed', label: 'Hoàn thành' },
   { key: 'returned', label: 'Đã trả khách' },
+  { key: 'cancelled', label: 'Đã hủy' },
 ];
 
 export default function RepairListPage() {
