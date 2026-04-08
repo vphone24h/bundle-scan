@@ -159,6 +159,7 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
           created_by_name: profile?.display_name,
           reference_id: receipt.id,
           reference_type: 'repair',
+          is_business_accounting: false,
         } as any);
       }
 
