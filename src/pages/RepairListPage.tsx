@@ -509,9 +509,11 @@ export default function RepairListPage() {
                             {item.quantity} x {formatNumber(item.unit_price)}đ = {formatNumber(item.total_price)}đ
                           </div>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => deleteItem.mutate({ id: item.id, repairOrderId: selectedOrder.id })}>
-                          <Trash2 className="h-3 w-3 text-destructive" />
-                        </Button>
+                        {selectedOrder.status !== 'returned' && selectedOrder.status !== 'cancelled' && (
+                          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => deleteItem.mutate({ id: item.id, repairOrderId: selectedOrder.id })}>
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
+                        )}
                       </div>
                     ))}
                     <div className="border-t pt-2 text-sm font-medium text-right">
