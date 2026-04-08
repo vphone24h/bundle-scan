@@ -23,7 +23,7 @@ import { WelcomeEmailConfig } from '@/components/platform/WelcomeEmailConfig';
 import { PlatformAISettings } from '@/components/platform/PlatformAISettings';
 import { CompanyEmailConfigForm } from '@/components/platform/CompanyEmailConfigForm';
 import { usePlatformUser } from '@/hooks/useTenant';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { Loader2, Users, Megaphone, FileText, Mail, Globe, MailPlus, Bell, Zap, Database, RefreshCw, ArrowDownToLine, Building2 } from 'lucide-react';
 import { SystemNotificationsManagement } from '@/components/platform/SystemNotificationsManagement';
 import { AutomationNotificationsManagement } from '@/components/platform/AutomationNotificationsManagement';
@@ -37,9 +37,8 @@ import { useTranslation } from 'react-i18next';
 
 export default function PlatformAdminPage() {
   const { t } = useTranslation();
-  const [searchParams] = useSearchParams();
   const { data: platformUser, isLoading } = usePlatformUser();
-  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
+  const [activeTab, setActiveTab] = useState('overview');
   const [isExportingAll, setIsExportingAll] = useState(false);
   const [isExportingCross, setIsExportingCross] = useState(false);
 
