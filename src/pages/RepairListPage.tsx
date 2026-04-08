@@ -595,7 +595,11 @@ export default function RepairListPage() {
               {/* Status control */}
               <div className="flex items-center gap-2 flex-wrap">
                 <Label className="text-xs">Trạng thái:</Label>
-                <Select value={selectedOrder.status} onValueChange={v => handleStatusChange(selectedOrder.id, v as RepairStatus)} disabled={selectedOrder.status === 'returned' || selectedOrder.status === 'cancelled'}>
+                <Select 
+                  value={pendingStatus || selectedOrder.status} 
+                  onValueChange={v => setPendingStatus(v as RepairStatus)} 
+                  disabled={selectedOrder.status === 'returned' || selectedOrder.status === 'cancelled'}
+                >
                   <SelectTrigger className="w-auto h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
@@ -605,6 +609,9 @@ export default function RepairListPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {pendingStatus && pendingStatus !== selectedOrder.status && (
+                  <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-600">Chưa lưu</Badge>
+                )}
               </div>
 
               {/* Technician - Staff Selector */}
