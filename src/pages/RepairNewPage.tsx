@@ -256,6 +256,42 @@ export default function RepairNewPage() {
     }
   };
 
+  const resetForm = () => {
+    setDeviceName('');
+    setDeviceImei('');
+    setDeviceModel('');
+    setDevicePassword('');
+    setDeviceCondition('');
+    setQuantity(1);
+    setDueDate('');
+    setRequestTypeId('');
+    setRequestTypeName('Sửa chữa');
+    setStatus('received');
+    setEstimatedPrice(0);
+    setNote('');
+    setTicketPasswordEnabled(false);
+    setTicketPassword('');
+    setSelectedCustomer(null);
+    setCustomerName('');
+    setCustomerPhone('');
+    setCustomerAddress('');
+    setCustomerEmail('');
+    setCustomerSource('');
+    setCustomerBirthday(undefined);
+    setDeviceImages([]);
+    setProductSearch('');
+    setProductResults([]);
+    setShowProductSearch(false);
+    setShowDeviceForm(false);
+  };
+
+  const handleQRDialogClose = (open: boolean) => {
+    if (!open) {
+      resetForm();
+    }
+    setShowQRDialog(open);
+  };
+
   const goToList = () => {
     navigate('/repair/list');
   };
