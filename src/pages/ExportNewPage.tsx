@@ -106,6 +106,7 @@ function useExportNewTourSteps(): TourStep[] {
 
 export default function ExportNewPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const exportNewTourSteps = useExportNewTourSteps();
   // Onboarding tour
   const { isCompleted: exportTourDone, isLoading: exportTourLoading, completeTour: completeExportTour } = useOnboardingTour('export_new');
