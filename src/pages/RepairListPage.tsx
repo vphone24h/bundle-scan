@@ -570,6 +570,32 @@ export default function RepairListPage() {
           items={orderItems}
         />
       )}
+
+      {/* Ticket Password Dialog */}
+      <Dialog open={showTicketPwDialog} onOpenChange={setShowTicketPwDialog}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-4 w-4" /> Nhập mật khẩu phiếu
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Phiếu này được bảo vệ bằng mật khẩu. Vui lòng nhập mật khẩu để mở.</p>
+            <Input
+              type="password"
+              value={ticketPwInput}
+              onChange={e => setTicketPwInput(e.target.value)}
+              placeholder="Mật khẩu..."
+              onKeyDown={e => e.key === 'Enter' && handleVerifyTicketPassword()}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTicketPwDialog(false)}>Hủy</Button>
+            <Button onClick={handleVerifyTicketPassword}>Xác nhận</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
