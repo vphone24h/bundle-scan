@@ -39,7 +39,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { Wrench, Plus, Trash2, Search, Play, CheckCircle, Package, ArrowRight, Printer, Eye, Lock } from 'lucide-react';
+import { Wrench, Plus, Trash2, Search, Play, CheckCircle, Package, ArrowRight, Printer, Eye, Lock, Save } from 'lucide-react';
 import { useStaffList } from '@/hooks/useCRM';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
