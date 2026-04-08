@@ -89,9 +89,36 @@ export default function RepairListPage() {
   const { data: staffList } = useStaffList();
   const [activeTab, setActiveTab] = useState<string>('all');
   const [search, setSearch] = useState('');
-  const { data: orders, isLoading } = useRepairOrders(activeTab as any);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const pagination = useServerPagination(20);
+
+  // Debounce search
+  React.useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      pagination.setPage(1);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Reset page on tab change
+  const handleTabChange = useCallback((tab: string) => {
+    setActiveTab(tab);
+    pagination.setPage(1);
+  }, [pagination]);
+
+  const { data: ordersData, isLoading } = useRepairOrders({
+    statusFilter: activeTab as any,
+    search: debouncedSearch || undefined,
+    page: pagination.page,
+    pageSize: pagination.pageSize,
+  });
   useRepairOrdersRealtime();
   const updateOrder = useUpdateRepairOrder();
+
+  const orders = ordersData?.items || [];
+  const totalCount = ordersData?.totalCount || 0;
+  const totalPages = Math.ceil(totalCount / pagination.pageSize);
 
   // Detail sheet
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -132,9 +159,15 @@ export default function RepairListPage() {
     }
   };
 
-  const handleVerifyTicketPassword = () => {
-    const order = orders?.find(o => o.id === pendingOrderId);
-    if (order && ticketPwInput === order.ticket_password) {
+  const handleVerifyTicketPassword = async () => {
+    if (!pendingOrderId) return;
+    // Fetch password from server for security
+    const { data } = await supabase
+      .from('repair_orders')
+      .select('ticket_password')
+      .eq('id', pendingOrderId)
+      .maybeSingle();
+    if (data && ticketPwInput === (data as any).ticket_password) {
       setSelectedOrderId(pendingOrderId);
       setShowTicketPwDialog(false);
       setPendingOrderId(null);
@@ -143,23 +176,6 @@ export default function RepairListPage() {
       toast.error('Mật khẩu phiếu không đúng');
     }
   };
-
-  // Filter orders by search
-  const filteredOrders = useMemo(() => {
-    if (!orders) return [];
-    if (!search) return orders;
-    const s = search.toLowerCase();
-    return orders.filter(o =>
-      o.code.toLowerCase().includes(s) ||
-      o.device_name.toLowerCase().includes(s) ||
-      (o.device_imei || '').toLowerCase().includes(s) ||
-      (o.customer_name || '').toLowerCase().includes(s) ||
-      (o.customer_phone || '').toLowerCase().includes(s)
-    );
-  }, [orders, search]);
-
-  const pagination = usePagination(filteredOrders, { defaultPageSize: 20 });
-  const pagedOrders = pagination.paginatedData;
 
   // Pre-fetch reserved items (cached, not per-keystroke)
   const reservedRef = React.useRef<{ ids: Set<string>; qtyMap: Map<string, number> }>({ ids: new Set(), qtyMap: new Map() });
