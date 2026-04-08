@@ -68,6 +68,7 @@ import { formatNumber, parseFormattedNumber, formatInputNumber } from '@/lib/for
 import { PriceInput } from '@/components/ui/price-input';
 import { cn } from '@/lib/utils';
 import { normalizeLooseSearchValue } from '@/lib/normalizeSearch';
+import { AutoEmailToggle } from '@/components/shared/AutoEmailToggle';
 
 interface SelectedCustomer {
   id: string;
