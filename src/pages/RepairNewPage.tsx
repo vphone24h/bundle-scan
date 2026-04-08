@@ -262,7 +262,7 @@ export default function RepairNewPage() {
     }
   };
 
-
+  const handlePrintReceipt = (includeQR = false) => {
     if (!createdOrder) return;
     const qrSection = includeQR && qrDataUrl ? `<div style="text-align:center;margin:10px 0"><img src="${qrDataUrl}" style="width:120px;height:120px" /><p style="font-size:10px;color:#999;margin-top:4px">Quét để tra cứu</p></div>` : '';
     const printContent = `
