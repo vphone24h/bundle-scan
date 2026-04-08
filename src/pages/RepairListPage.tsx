@@ -438,7 +438,7 @@ export default function RepairListPage() {
               {/* Status control */}
               <div className="flex items-center gap-2 flex-wrap">
                 <Label className="text-xs">Trạng thái:</Label>
-                <Select value={selectedOrder.status} onValueChange={v => handleStatusChange(selectedOrder.id, v as RepairStatus)}>
+                <Select value={selectedOrder.status} onValueChange={v => handleStatusChange(selectedOrder.id, v as RepairStatus)} disabled={selectedOrder.status === 'returned' || selectedOrder.status === 'cancelled'}>
                   <SelectTrigger className="w-auto h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
@@ -485,9 +485,11 @@ export default function RepairListPage() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-semibold text-sm">Dịch vụ & Linh kiện</h4>
-                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { resetItemForm(); setShowAddItem(true); }}>
-                    <Plus className="h-3 w-3 mr-1" /> Thêm
-                  </Button>
+                  {selectedOrder.status !== 'returned' && selectedOrder.status !== 'cancelled' && (
+                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { resetItemForm(); setShowAddItem(true); }}>
+                      <Plus className="h-3 w-3 mr-1" /> Thêm
+                    </Button>
+                  )}
                 </div>
                 
                 {orderItems && orderItems.length > 0 ? (
@@ -507,9 +509,11 @@ export default function RepairListPage() {
                             {item.quantity} x {formatNumber(item.unit_price)}đ = {formatNumber(item.total_price)}đ
                           </div>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => deleteItem.mutate({ id: item.id, repairOrderId: selectedOrder.id })}>
-                          <Trash2 className="h-3 w-3 text-destructive" />
-                        </Button>
+                        {selectedOrder.status !== 'returned' && selectedOrder.status !== 'cancelled' && (
+                          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => deleteItem.mutate({ id: item.id, repairOrderId: selectedOrder.id })}>
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
+                        )}
                       </div>
                     ))}
                     <div className="border-t pt-2 text-sm font-medium text-right">
