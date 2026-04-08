@@ -234,39 +234,31 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['all-products'] });
 
-      // Auto send email (like sales module)
-      if (order.customer_id) {
-        const { data: customer } = await supabase
-          .from('customers')
-          .select('email')
-          .eq('id', order.customer_id)
-          .maybeSingle();
-
-        if (customer?.email) {
-          supabase.functions.invoke('send-export-email', {
-            body: {
-              tenant_id: tenantId,
-              order_id: receipt.id,
-              customer_name: order.customer_name || 'Khách lẻ',
-              customer_email: customer.email,
-              customer_phone: order.customer_phone || '',
-              items: items.map(item => ({
-                product_name: item.product_name || item.description || 'Dịch vụ',
-                imei: item.product_imei,
-                sale_price: item.unit_price,
-                quantity: item.quantity,
-                warranty: item.warranty || warranty,
-              })),
-              total_amount: totalAmount,
-              receipt_code: code,
-              branch_id: order.branch_id,
-              export_date: new Date().toISOString(),
-              sales_staff_id: user?.id,
-            },
-          }).then(({ error }) => {
-            if (error) console.warn('Repair email failed:', error.message);
-          }).catch(() => {});
-        }
+      // Auto send email (like sales module) - only if toggle enabled
+      if (autoEmailEnabled && order.customer_id && customerEmail) {
+        supabase.functions.invoke('send-export-email', {
+          body: {
+            tenant_id: tenantId,
+            order_id: receipt.id,
+            customer_name: order.customer_name || 'Khách lẻ',
+            customer_email: customerEmail,
+            customer_phone: order.customer_phone || '',
+            items: items.map(item => ({
+              product_name: item.product_name || item.description || 'Dịch vụ',
+              imei: item.product_imei,
+              sale_price: item.unit_price,
+              quantity: item.quantity,
+              warranty: item.warranty || warranty,
+            })),
+            total_amount: totalAmount,
+            receipt_code: code,
+            branch_id: order.branch_id,
+            export_date: new Date().toISOString(),
+            sales_staff_id: user?.id,
+          },
+        }).then(({ error }) => {
+          if (error) console.warn('Repair email failed:', error.message);
+        }).catch(() => {});
       }
 
       setCreatedReceiptCode(code);
