@@ -229,6 +229,7 @@ export default function RepairListPage() {
       setShowTicketPwDialog(true);
     } else {
       setSelectedOrderId(order.id);
+      setPendingStatus(null);
     }
   };
 
