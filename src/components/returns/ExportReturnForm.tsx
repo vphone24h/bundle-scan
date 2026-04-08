@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,6 +35,7 @@ interface ExportReturnFormProps {
 }
 
 export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnFormProps) {
+  const queryClient = useQueryClient();
   const [feeType, setFeeType] = useState<'none' | 'percentage' | 'fixed_amount'>('none');
   const [feePercentage, setFeePercentage] = useState<number>(0);
   const [feeAmount, setFeeAmount] = useState<number>(0);
@@ -196,7 +198,25 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
     });
     onSuccess();
 
-    createExportReturn.mutateAsync(mutationData).then(() => {
+    createExportReturn.mutateAsync(mutationData).then(async () => {
+      // Check if this receipt is linked to a repair order
+      const { supabase } = await import('@/integrations/supabase/client');
+      const receiptId = item.receipt_id;
+      if (receiptId) {
+        const { data: linkedRepair } = await supabase
+          .from('repair_orders')
+          .select('id')
+          .eq('export_receipt_id', receiptId)
+          .maybeSingle();
+        if (linkedRepair) {
+          await supabase
+            .from('repair_orders')
+            .update({ status: 'cancelled' })
+            .eq('id', linkedRepair.id);
+          queryClient.invalidateQueries({ queryKey: ['repair-orders'] });
+        }
+      }
+
       toast({
         title: 'Trả hàng thành công',
         description: `Đã hoàn ${formatCurrencyWithSpaces(refundAmount)} cho khách hàng`,

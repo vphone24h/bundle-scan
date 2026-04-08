@@ -8862,6 +8862,7 @@ export type Database = {
         | "waiting_parts"
         | "completed"
         | "returned"
+        | "cancelled"
       return_fee_type: "none" | "percentage" | "fixed_amount"
       return_type: "import_return" | "export_return"
       spin_result_type: "prize" | "no_prize"
@@ -9043,6 +9044,7 @@ export const Constants = {
         "waiting_parts",
         "completed",
         "returned",
+        "cancelled",
       ],
       return_fee_type: ["none", "percentage", "fixed_amount"],
       return_type: ["import_return", "export_return"],

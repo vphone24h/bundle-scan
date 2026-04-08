@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
   DialogContent,
@@ -49,6 +50,7 @@ export function ReceiptReturnDialog({
   receipt,
   onSuccess,
 }: ReceiptReturnDialogProps) {
+  const queryClient = useQueryClient();
   // Require explicit user selection (no default)
   const [feeType, setFeeType] = useState<'' | 'none' | 'percentage' | 'fixed_amount'>('');
   const [feePercentage, setFeePercentage] = useState<number>(0);
@@ -413,6 +415,23 @@ export function ReceiptReturnDialog({
                 note: productDetails,
               }]);
             }
+          }
+        }
+
+        // If this receipt is linked to a repair order, mark it as cancelled
+        if (receipt.id) {
+          const { data: linkedRepair } = await supabase
+            .from('repair_orders')
+            .select('id')
+            .eq('export_receipt_id', receipt.id)
+            .maybeSingle();
+          
+          if (linkedRepair) {
+            await supabase
+              .from('repair_orders')
+              .update({ status: 'cancelled' })
+              .eq('id', linkedRepair.id);
+            queryClient.invalidateQueries({ queryKey: ['repair-orders'] });
           }
         }
 
