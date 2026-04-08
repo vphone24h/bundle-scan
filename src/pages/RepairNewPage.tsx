@@ -116,17 +116,6 @@ export default function RepairNewPage() {
     }
   }, [user?.id, displayName]);
 
-  // Search customers
-  const searchCustomers = useCallback(async (term: string) => {
-    if (!term || term.length < 2) { setCustomerResults([]); return; }
-    const { data } = await supabase
-      .from('customers')
-      .select('id, name, phone, email')
-      .or(`name.ilike.%${term}%,phone.ilike.%${term}%`)
-      .limit(10);
-    setCustomerResults(data || []);
-  }, []);
-
   // Search products for device suggestion
   const searchProducts = useCallback(async (term: string) => {
     if (!term || term.length < 2) { setProductResults([]); return; }
@@ -140,22 +129,9 @@ export default function RepairNewPage() {
   }, []);
 
   React.useEffect(() => {
-    const t = setTimeout(() => searchCustomers(customerSearch), 300);
-    return () => clearTimeout(t);
-  }, [customerSearch]);
-
-  React.useEffect(() => {
     const t = setTimeout(() => searchProducts(productSearch), 300);
     return () => clearTimeout(t);
   }, [productSearch]);
-
-  const selectCustomer = (c: any) => {
-    setCustomerId(c.id);
-    setCustomerName(c.name);
-    setCustomerPhone(c.phone);
-    setCustomerSearch('');
-    setShowCustomerSearch(false);
-  };
 
   const selectProduct = (p: any) => {
     setDeviceName(p.name);
