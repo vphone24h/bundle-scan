@@ -245,6 +245,8 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
         new_status: 'returned',
         changed_by: user?.id,
         changed_by_name: profile?.display_name,
+        technician_id: order.technician_id,
+        technician_name: order.technician_name,
         note: `Trả khách & Thanh toán - ${code}`,
       } as any);
 
