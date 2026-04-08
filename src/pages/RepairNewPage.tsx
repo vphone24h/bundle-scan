@@ -656,6 +656,14 @@ export default function RepairNewPage() {
             }}>
               <QrCode className="h-4 w-4 mr-2" /> In QR
             </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleSendRepairEmail}
+              disabled={sendingEmail || !(customerEmail?.trim() || selectedCustomer?.email)}
+            >
+              {sendingEmail ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
+              Gửi mail
+            </Button>
             <Button onClick={goToList}>
               Xem danh sách
             </Button>
