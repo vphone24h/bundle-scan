@@ -856,6 +856,19 @@ export default function ExportHistoryPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Loại đơn</Label>
+                  <Select value={repairFilter} onValueChange={setRepairFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tất cả" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="_all_">Tất cả đơn</SelectItem>
+                      <SelectItem value="repair">Đơn sửa chữa</SelectItem>
+                      <SelectItem value="normal">Đơn bán hàng</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex items-end">
                   <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full">
                     <X className="h-4 w-4 mr-1" />
