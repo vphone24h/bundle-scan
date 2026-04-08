@@ -11,6 +11,7 @@ import { PushPermissionPopup } from '@/components/notifications/PushPermissionPo
 import { InstallAppPrompt } from '@/components/notifications/InstallAppPrompt';
 import { PopupPriorityProvider, usePopupPriority } from '@/hooks/usePopupPriority';
 import { PullToRefresh } from './PullToRefresh';
+import { useDynamicPWABranding } from '@/hooks/useDynamicPWABranding';
 
 interface MainLayoutProps {
   children: ReactNode;
