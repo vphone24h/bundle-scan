@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { PriceInput } from '@/components/ui/price-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { CreditCard, Banknote, CheckCircle, Printer, Wallet, Mail, Loader2 } from 'lucide-react';
+import { CreditCard, Banknote, CheckCircle, Printer, Wallet, Mail, Loader2, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,6 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { RepairOrder, RepairOrderItem, useUpdateRepairOrder, REPAIR_STATUS_MAP } from '@/hooks/useRepairOrders';
 import { formatNumber } from '@/lib/formatNumber';
 import { AutoEmailToggle } from '@/components/shared/AutoEmailToggle';
+import { useStaffList } from '@/hooks/useCRM';
 
 interface Props {
   open: boolean;
@@ -46,6 +47,8 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
   const [sendingEmail, setSendingEmail] = useState(false);
   const [autoEmailEnabled, setAutoEmailEnabled] = useState(true);
   const [customerEmail, setCustomerEmail] = useState<string | null>(null);
+  const [handoverStaffId, setHandoverStaffId] = useState<string>('');
+  const { data: staffList } = useStaffList();
 
   // Fetch customer email on mount
   React.useEffect(() => {
@@ -74,6 +77,10 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
       toast.error('Tổng tiền phải lớn hơn 0');
       return;
     }
+    if (!handoverStaffId) {
+      toast.error('Vui lòng chọn nhân viên bàn giao');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -98,7 +105,7 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
           status: 'completed',
           note: `Phiếu sửa chữa ${order.code}${note ? ` - ${note}` : ''}`,
           created_by: user?.id,
-          sales_staff_id: user?.id,
+          sales_staff_id: order.technician_id || user?.id,
           tenant_id: tenantId,
           repair_order_id: order.id,
           is_repair: true,
@@ -207,11 +214,14 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
         } as any);
       }
 
-      // Update repair order status to returned
+      // Update repair order status to returned + handover staff
+      const handoverStaff = staffList?.find(s => s.user_id === handoverStaffId);
       await updateOrder.mutateAsync({
         id: order.id,
         status: 'returned',
         export_receipt_id: receipt.id,
+        handover_staff_id: handoverStaffId,
+        handover_staff_name: handoverStaff?.display_name || 'Nhân viên',
       } as any);
 
       // Log status change
@@ -443,6 +453,28 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
               )}
             </div>
           )}
+
+          {/* Handover Staff - Required */}
+          <div>
+            <Label className="flex items-center gap-1">
+              <UserCheck className="h-3.5 w-3.5" /> Nhân viên bàn giao <span className="text-destructive">*</span>
+            </Label>
+            <Select value={handoverStaffId} onValueChange={setHandoverStaffId}>
+              <SelectTrigger className={!handoverStaffId ? 'border-destructive' : ''}>
+                <SelectValue placeholder="Chọn nhân viên bàn giao..." />
+              </SelectTrigger>
+              <SelectContent>
+                {staffList?.map((staff) => (
+                  <SelectItem key={staff.user_id} value={staff.user_id}>
+                    {staff.display_name || 'Nhân viên'}
+                    {staff.user_role === 'super_admin' && ' (Admin)'}
+                    {staff.user_role === 'branch_admin' && ' (QL)'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Người trực tiếp bàn giao máy cho khách. Doanh số thuộc kỹ thuật viên.</p>
+          </div>
 
           {/* Warranty */}
           <div>

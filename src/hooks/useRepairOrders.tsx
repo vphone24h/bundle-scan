@@ -36,6 +36,8 @@ export interface RepairOrder {
   total_parts_cost: number;
   total_amount: number;
   export_receipt_id: string | null;
+  handover_staff_id: string | null;
+  handover_staff_name: string | null;
   note: string | null;
   send_email: boolean;
   ticket_password_enabled: boolean;

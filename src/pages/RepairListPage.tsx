@@ -182,6 +182,8 @@ export default function RepairListPage() {
       <div class="row"><span class="label">SĐT:</span><span>${order.customer_phone || '-'}</span></div>
       <div class="row"><span class="label">Thiết bị:</span><span>${order.device_name}</span></div>
       <div class="row"><span class="label">IMEI:</span><span>${order.device_imei || '-'}</span></div>
+      ${order.technician_name ? `<div class="row"><span class="label">KTV:</span><span>${order.technician_name}</span></div>` : ''}
+      ${order.handover_staff_name ? `<div class="row"><span class="label">NV bàn giao:</span><span>${order.handover_staff_name}</span></div>` : ''}
       <div class="line"></div>
       ${items.map(i => `<div class="item"><div class="bold">${i.product_name || i.description || 'Dịch vụ'}</div><div class="row"><span>${i.quantity} x ${formatNumber(i.unit_price)}đ</span><span class="bold">${formatNumber(i.total_price)}đ</span></div>${i.warranty ? `<div style="font-size:11px;color:#666">BH: ${i.warranty}</div>` : ''}</div>`).join('')}
       <div class="line"></div>
@@ -562,6 +564,7 @@ export default function RepairListPage() {
                 <div><span className="text-muted-foreground">Khách:</span> {selectedOrder.customer_name || 'Khách lẻ'} {selectedOrder.customer_phone && `- ${selectedOrder.customer_phone}`}</div>
                 <div><span className="text-muted-foreground">NV tiếp nhận:</span> {selectedOrder.received_by_name || '-'}</div>
                 <div><span className="text-muted-foreground">Kỹ thuật viên:</span> {selectedOrder.technician_name || 'Chưa phân công'}</div>
+                {selectedOrder.handover_staff_name && <div><span className="text-muted-foreground">NV bàn giao:</span> {selectedOrder.handover_staff_name}</div>}
                 <div><span className="text-muted-foreground">Giá dự kiến:</span> {formatNumber(selectedOrder.estimated_price)}đ</div>
                 {selectedOrder.due_date && <div><span className="text-muted-foreground">Hẹn trả:</span> {format(new Date(selectedOrder.due_date), 'dd/MM/yyyy HH:mm')}</div>}
                 {selectedOrder.note && <div><span className="text-muted-foreground">Ghi chú:</span> {selectedOrder.note}</div>}

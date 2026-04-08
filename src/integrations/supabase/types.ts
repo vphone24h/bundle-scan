@@ -5517,6 +5517,8 @@ export type Database = {
           due_date: string | null
           estimated_price: number | null
           export_receipt_id: string | null
+          handover_staff_id: string | null
+          handover_staff_name: string | null
           id: string
           note: string | null
           quantity: number
@@ -5553,6 +5555,8 @@ export type Database = {
           due_date?: string | null
           estimated_price?: number | null
           export_receipt_id?: string | null
+          handover_staff_id?: string | null
+          handover_staff_name?: string | null
           id?: string
           note?: string | null
           quantity?: number
@@ -5589,6 +5593,8 @@ export type Database = {
           due_date?: string | null
           estimated_price?: number | null
           export_receipt_id?: string | null
+          handover_staff_id?: string | null
+          handover_staff_name?: string | null
           id?: string
           note?: string | null
           quantity?: number
