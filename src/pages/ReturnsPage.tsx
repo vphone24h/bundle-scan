@@ -42,6 +42,7 @@ import {
   ChevronDown,
   ChevronRight,
   Pencil,
+  Printer,
 } from 'lucide-react';
 import { format, startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -365,6 +366,12 @@ export default function ReturnsPage() {
     setDetailDialogOpen(true);
   };
 
+  const handleQuickPrint = (item: CombinedReturn) => {
+    setSelectedReturnItem(item);
+    setDetailDialogOpen(true);
+    setTimeout(() => window.print(), 500);
+  };
+
   const openDeleteDialog = (item: CombinedReturn) => {
     setItemToDelete(item);
     setDeleteDialogOpen(true);
@@ -562,6 +569,14 @@ export default function ReturnsPage() {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); handleQuickPrint(firstItem); }}
+                        title="In phiếu trả hàng"
+                      >
+                        <Printer className="h-4 w-4" />
+                      </Button>
                       {isSingleItem && (
                         <>
                           <Button 
@@ -623,6 +638,14 @@ export default function ReturnsPage() {
                           onClick={() => openDetailDialog(r)}
                         >
                           <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleQuickPrint(r)}
+                          title="In phiếu trả hàng"
+                        >
+                          <Printer className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="ghost" 

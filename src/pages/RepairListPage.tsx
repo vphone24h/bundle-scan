@@ -160,45 +160,55 @@ export default function RepairListPage() {
   const pagination = usePagination(filteredOrders, { defaultPageSize: 20 });
   const pagedOrders = pagination.paginatedData;
 
-  // Search parts from inventory
-  const searchParts = async (term: string) => {
-    if (!term || term.length < 2) { setPartResults([]); return; }
+  // Pre-fetch reserved items (cached, not per-keystroke)
+  const reservedRef = React.useRef<{ ids: Set<string>; qtyMap: Map<string, number> }>({ ids: new Set(), qtyMap: new Map() });
+  const reservedLoaded = React.useRef(false);
 
-    // Lấy danh sách product_id đã được dùng trong phiếu sửa chữa đang hoạt động (treo hàng)
-    const { data: reservedItems } = await supabase
+  React.useEffect(() => {
+    if (!orders || reservedLoaded.current) return;
+    const activeOrderIds = new Set(
+      orders.filter(o => o.status !== 'returned').map(o => o.id)
+    );
+    if (activeOrderIds.size === 0) { reservedLoaded.current = true; return; }
+
+    supabase
       .from('repair_order_items')
       .select('product_id, quantity, repair_order_id')
       .not('product_id', 'is', null)
-      .eq('item_type', 'part');
-    
-    // Lọc chỉ giữ items thuộc phiếu sửa đang hoạt động (chưa trả khách)
-    const activeOrderIds = new Set(
-      (orders || []).filter(o => o.status !== 'returned').map(o => o.id)
-    );
-    const reservedProductIds = new Set<string>();
-    const reservedQtyMap = new Map<string, number>();
-    (reservedItems || []).forEach(item => {
-      if (item.product_id && activeOrderIds.has(item.repair_order_id)) {
-        reservedProductIds.add(item.product_id);
-        reservedQtyMap.set(item.product_id, (reservedQtyMap.get(item.product_id) || 0) + (item.quantity || 1));
-      }
+      .eq('item_type', 'part')
+      .then(({ data }) => {
+        const ids = new Set<string>();
+        const qtyMap = new Map<string, number>();
+        (data || []).forEach(item => {
+          if (item.product_id && activeOrderIds.has(item.repair_order_id)) {
+            ids.add(item.product_id);
+            qtyMap.set(item.product_id, (qtyMap.get(item.product_id) || 0) + (item.quantity || 1));
+          }
+        });
+        reservedRef.current = { ids, qtyMap };
+        reservedLoaded.current = true;
+      });
+  }, [orders]);
+
+  // Invalidate reserved cache when items change
+  const invalidateReserved = () => { reservedLoaded.current = false; };
+
+  // Search parts using fast RPC (same as sales page)
+  const searchParts = async (term: string) => {
+    if (!term || term.length < 2) { setPartResults([]); return; }
+
+    const { data, error } = await supabase.rpc('search_products_for_sale' as any, {
+      p_search: term.trim(),
+      p_limit: 20,
     });
+    if (error) { setPartResults([]); return; }
 
-    const { data } = await supabase
-      .from('products')
-      .select('id, name, sku, imei, import_price, sale_price, quantity')
-      .or(`name.ilike.%${term}%,imei.ilike.%${term}%,sku.ilike.%${term}%`)
-      .eq('status', 'in_stock')
-      .limit(20);
-
-    // Lọc bỏ sản phẩm IMEI đã treo, hoặc hàng không IMEI đã hết slot
-    const filtered = (data || []).filter(p => {
+    const { ids: reservedIds, qtyMap } = reservedRef.current;
+    const filtered = (data || []).filter((p: any) => {
       if (p.imei) {
-        // Sản phẩm IMEI: ẩn hoàn toàn nếu đã treo
-        return !reservedProductIds.has(p.id);
+        return !reservedIds.has(p.id);
       } else {
-        // Sản phẩm không IMEI: ẩn nếu tồn kho <= số đã treo
-        const reserved = reservedQtyMap.get(p.id) || 0;
+        const reserved = qtyMap.get(p.id) || 0;
         const available = (p.quantity || 0) - reserved;
         if (available <= 0) return false;
         (p as any).available_quantity = available;
@@ -209,7 +219,7 @@ export default function RepairListPage() {
   };
 
   React.useEffect(() => {
-    const t = setTimeout(() => searchParts(partSearch), 300);
+    const t = setTimeout(() => searchParts(partSearch), 150);
     return () => clearTimeout(t);
   }, [partSearch]);
 
@@ -253,6 +263,7 @@ export default function RepairListPage() {
 
     setShowAddItem(false);
     resetItemForm();
+    invalidateReserved();
     toast.success('Đã thêm dịch vụ/linh kiện');
   };
 
