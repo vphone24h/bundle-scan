@@ -1,4 +1,5 @@
 
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -287,4 +288,42 @@ export function useRepairStatusHistory(repairOrderId: string | undefined) {
     },
     enabled: !!repairOrderId,
   });
+}
+
+/** Realtime subscription for repair_orders - auto-invalidates queries on any change */
+export function useRepairOrdersRealtime() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('repair-orders-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'repair_orders' },
+        (payload) => {
+          // Invalidate list and specific order queries
+          queryClient.invalidateQueries({ queryKey: ['repair-orders'] });
+          const id = (payload.new as any)?.id || (payload.old as any)?.id;
+          if (id) {
+            queryClient.invalidateQueries({ queryKey: ['repair-order', id] });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'repair_order_items' },
+        (payload) => {
+          const repairOrderId = (payload.new as any)?.repair_order_id || (payload.old as any)?.repair_order_id;
+          if (repairOrderId) {
+            queryClient.invalidateQueries({ queryKey: ['repair-order-items', repairOrderId] });
+            queryClient.invalidateQueries({ queryKey: ['repair-orders'] });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 }
