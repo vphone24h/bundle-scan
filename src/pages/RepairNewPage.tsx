@@ -821,10 +821,40 @@ export default function RepairNewPage() {
               </div>
               {requestTypes?.map(t => (
                 <div key={t.id} className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-muted/50">
-                  <span className="text-sm">{t.name}</span>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => deleteRequestType.mutate(t.id)}>
-                    <Trash2 className="h-3 w-3 text-destructive" />
-                  </Button>
+                  {editingTypeId === t.id ? (
+                    <div className="flex items-center gap-1 flex-1">
+                      <Input 
+                        value={editingTypeName} 
+                        onChange={e => setEditingTypeName(e.target.value)} 
+                        className="h-7 text-sm flex-1"
+                        autoFocus
+                      />
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={async () => {
+                        if (!editingTypeName.trim()) return;
+                        await supabase.from('repair_request_types').update({ name: editingTypeName.trim() } as any).eq('id', t.id);
+                        setEditingTypeId(null);
+                        queryClient.invalidateQueries({ queryKey: ['repair-request-types'] });
+                        toast.success('Đã cập nhật');
+                      }}>
+                        <Check className="h-3 w-3 text-green-600" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingTypeId(null)}>
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-sm">{t.name}</span>
+                      <div className="flex gap-0.5">
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setEditingTypeId(t.id); setEditingTypeName(t.name); }}>
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => deleteRequestType.mutate(t.id)}>
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
