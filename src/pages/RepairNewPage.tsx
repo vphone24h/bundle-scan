@@ -97,10 +97,17 @@ export default function RepairNewPage() {
   const [receivedById, setReceivedById] = useState<string | null>(user?.id || null);
   const [receivedByName, setReceivedByName] = useState<string>(displayName || '');
 
-  // Set default branch
+  // Set defaults
   React.useEffect(() => {
     if (defaultBranch?.id && !branchId) setBranchId(defaultBranch.id);
   }, [defaultBranch]);
+
+  React.useEffect(() => {
+    if (user?.id && !receivedById) {
+      setReceivedById(user.id);
+      setReceivedByName(displayName || '');
+    }
+  }, [user?.id, displayName]);
 
   // Search customers
   const searchCustomers = useCallback(async (term: string) => {
