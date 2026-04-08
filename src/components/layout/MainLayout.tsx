@@ -102,6 +102,7 @@ function MainLayoutInner({ children }: MainLayoutProps) {
       {/* Popup priority: tour → notification → push → adgate */}
       <StartupNotificationPopup />
       <PushPermissionPopup />
+      <InstallAppPrompt />
 
       {showAdGate && adGateSettings && !needsBusinessType && (
         <div data-ad-modal>
