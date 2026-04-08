@@ -99,6 +99,9 @@ export function useRepairOrders(statusFilter?: RepairStatus | 'all') {
       return (data || []) as unknown as RepairOrder[];
     },
     enabled: !!user,
+    staleTime: 30_000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 }
 
