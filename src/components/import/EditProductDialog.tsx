@@ -164,14 +164,15 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     const combos = generateVariantCombinations(activeLevels);
     if (combos.length === 0 || (combos.length === 1 && combos[0].length === 0)) return;
 
-    const existingImei = (formData.imei || product?.imei || '').trim();
+    const existingImei = (product?.imei || '').trim(); // Chỉ lấy IMEI gốc từ product, không lấy từ formData
     const existingPrice = String(product?.import_price || 0);
     const validKeys = new Set(combos.map(combo => combo.join('|')));
 
     setVariantImeis(prev => {
       const next = Object.fromEntries(Object.entries(prev).filter(([key]) => validKeys.has(key)));
+      // Chỉ pre-fill IMEI nếu product gốc thực sự có IMEI và KHÔNG phải template
       const hasAnyImei = Object.values(next).some(value => (value || '').trim());
-      if (!hasAnyImei && existingImei) {
+      if (!hasAnyImei && existingImei && product?.status !== 'template') {
         next[combos[0].join('|')] = existingImei;
       }
       return next;
