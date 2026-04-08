@@ -483,8 +483,34 @@ export default function RepairNewPage() {
                 </div>
               )}
 
-              <div className="text-xs text-muted-foreground">
-                NV tiếp nhận: <span className="font-medium text-foreground">{displayName || 'Chưa xác định'}</span>
+              <div>
+                <Label className="text-xs">NV tiếp nhận</Label>
+                <Select
+                  value={receivedById || '_none_'}
+                  onValueChange={(v) => {
+                    if (v === '_none_') {
+                      setReceivedById(null);
+                      setReceivedByName('');
+                    } else {
+                      setReceivedById(v);
+                      const staff = staffList?.find(s => s.user_id === v);
+                      setReceivedByName(staff?.display_name || '');
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue placeholder="Chọn nhân viên..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {staffList?.map((staff) => (
+                      <SelectItem key={staff.user_id} value={staff.user_id}>
+                        {staff.display_name || 'Nhân viên'}
+                        {staff.user_role === 'super_admin' && ' (Admin)'}
+                        {staff.user_role === 'branch_admin' && ' (QL)'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>
