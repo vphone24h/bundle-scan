@@ -25,13 +25,14 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Wrench, QrCode, Printer, Plus, Trash2, Search, UserPlus, Camera } from 'lucide-react';
+import { Wrench, QrCode, Printer, Plus, Trash2, Search, UserPlus, Camera, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { useBranches } from '@/hooks/useBranches';
 import { useCreateRepairOrder, useRepairRequestTypes, useCreateRepairRequestType, useDeleteRepairRequestType, REPAIR_STATUS_MAP, RepairStatus } from '@/hooks/useRepairOrders';
+import { useStaffList } from '@/hooks/useCRM';
 import { supabase } from '@/integrations/supabase/client';
 import { formatNumber } from '@/lib/formatNumber';
 import { useNavigate } from 'react-router-dom';
