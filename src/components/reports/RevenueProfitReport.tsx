@@ -45,6 +45,7 @@ import {
   Calculator,
   Loader2,
   Download,
+  Wrench,
 } from 'lucide-react';
 import { format, subDays, startOfWeek, startOfMonth, subMonths, subWeeks } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -108,6 +109,7 @@ export function RevenueProfitReport() {
   const [endDate, setEndDate] = useState(today);
   const [branchId, setBranchId] = useState('_all_');
   const [categoryId, setCategoryId] = useState('_all_');
+  const [repairFilter, setRepairFilter] = useState('_all_');
   const [chartGroupBy, setChartGroupBy] = useState<'day' | 'week' | 'month'>('day');
   const [detailType, setDetailType] = useState<DetailType | null>(null);
   const [activePreset, setActivePreset] = useState<string | null>('today');
@@ -139,6 +141,7 @@ export function RevenueProfitReport() {
     endDate,
     branchId: branchId !== '_all_' ? branchId : undefined,
     categoryId: categoryId !== '_all_' ? categoryId : undefined,
+    repairFilter: repairFilter !== '_all_' ? repairFilter : undefined,
   };
 
   const { data: rawStats, isLoading: statsLoading } = useReportStats(filters);
