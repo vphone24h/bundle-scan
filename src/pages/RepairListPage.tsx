@@ -687,7 +687,12 @@ export default function RepairListPage() {
               )}
 
               {/* Action buttons */}
-              <div className="flex gap-2 pt-2">
+              <div className="flex gap-2 pt-2 flex-wrap">
+                {selectedOrder.status === 'returned' && (
+                  <Button variant="outline" onClick={() => handlePrintRepairReceipt(selectedOrder)}>
+                    <Printer className="h-4 w-4 mr-1" /> In biên nhận
+                  </Button>
+                )}
                 {selectedOrder.status === 'completed' && (
                   <Button className="flex-1" onClick={() => setShowCheckout(true)}>
                     <CheckCircle className="h-4 w-4 mr-1" /> Trả khách & Thanh toán
