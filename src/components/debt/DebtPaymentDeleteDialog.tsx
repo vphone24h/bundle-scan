@@ -60,7 +60,79 @@ export function DebtPaymentDeleteDialog({
           .eq('reference_type', 'debt_payment');
       }
 
-      // 2. Recalculate balance_after for subsequent payments
+      // 2. REVERSE FIFO ALLOCATION: Add back the payment amount to receipts/additions
+      if (isPayment) {
+        let remainingToReverse = payment.amount;
+
+        // Get receipts that have been paid (reverse: most recent first to undo FIFO)
+        if (payment.entity_type === 'customer') {
+          const { data: receipts } = await supabase
+            .from('export_receipts')
+            .select('id, export_date, debt_amount, paid_amount, original_debt_amount')
+            .eq('customer_id', payment.entity_id)
+            .in('status', ['completed', 'partial_return', 'full_return'])
+            .gt('paid_amount', 0)
+            .order('export_date', { ascending: false }); // Most recent first (reverse FIFO)
+
+          for (const r of (receipts || [])) {
+            if (remainingToReverse <= 0) break;
+            const canReverse = Math.min(remainingToReverse, Number(r.paid_amount));
+            if (canReverse > 0) {
+              await supabase.from('export_receipts').update({
+                paid_amount: Number(r.paid_amount) - canReverse,
+                debt_amount: Number(r.debt_amount) + canReverse,
+              }).eq('id', r.id);
+              remainingToReverse -= canReverse;
+            }
+          }
+        } else {
+          const { data: receipts } = await supabase
+            .from('import_receipts')
+            .select('id, import_date, debt_amount, paid_amount')
+            .eq('supplier_id', payment.entity_id)
+            .eq('status', 'completed')
+            .gt('paid_amount', 0)
+            .order('import_date', { ascending: false });
+
+          for (const r of (receipts || [])) {
+            if (remainingToReverse <= 0) break;
+            const canReverse = Math.min(remainingToReverse, Number(r.paid_amount));
+            if (canReverse > 0) {
+              await supabase.from('import_receipts').update({
+                paid_amount: Number(r.paid_amount) - canReverse,
+                debt_amount: Number(r.debt_amount) + canReverse,
+              }).eq('id', r.id);
+              remainingToReverse -= canReverse;
+            }
+          }
+        }
+
+        // If still remaining, reverse allocated_amount on addition notes
+        if (remainingToReverse > 0) {
+          const { data: additions } = await supabase
+            .from('debt_payments')
+            .select('id, amount, allocated_amount, created_at')
+            .eq('entity_type', payment.entity_type)
+            .eq('entity_id', payment.entity_id)
+            .eq('payment_type', 'addition')
+            .gt('allocated_amount', 0)
+            .order('created_at', { ascending: false });
+
+          for (const a of (additions || [])) {
+            if (remainingToReverse <= 0) break;
+            const allocated = Number(a.allocated_amount) || 0;
+            const canReverse = Math.min(remainingToReverse, allocated);
+            if (canReverse > 0) {
+              await supabase.from('debt_payments').update({
+                allocated_amount: allocated - canReverse,
+              }).eq('id', a.id);
+              remainingToReverse -= canReverse;
+            }
+          }
+        }
+      }
+
+      // 3. Recalculate balance_after for subsequent payments
       const { data: allPayments } = await supabase
         .from('debt_payments')
         .select('id, payment_type, amount, created_at, balance_after')
@@ -69,14 +141,13 @@ export function DebtPaymentDeleteDialog({
         .order('created_at', { ascending: true });
 
       if (allPayments && allPayments.length > 0) {
-        // Calculate adjustment: removing a payment means balance goes up; removing an addition means balance goes down
         const balanceAdjustment = isPayment ? payment.amount : -payment.amount;
         let foundDeleted = false;
 
         for (const p of allPayments) {
           if (p.id === payment.id) {
             foundDeleted = true;
-            continue; // skip the one being deleted
+            continue;
           }
           if (foundDeleted && p.balance_after != null) {
             const newBalance = (Number(p.balance_after) || 0) + balanceAdjustment;
@@ -87,7 +158,7 @@ export function DebtPaymentDeleteDialog({
         }
       }
 
-      // 3. Delete the payment record
+      // 4. Delete the payment record
       const { error } = await supabase
         .from('debt_payments')
         .delete()
@@ -95,7 +166,7 @@ export function DebtPaymentDeleteDialog({
 
       if (error) throw error;
 
-      // 4. Audit log
+      // 5. Audit log
       await supabase.from('audit_logs').insert([{
         user_id: user?.id,
         action_type: 'delete',
@@ -107,7 +178,7 @@ export function DebtPaymentDeleteDialog({
         new_data: null,
       }]);
 
-      // 5. Invalidate queries - use refetchType 'all' for cash-book so inactive queries also refetch
+      // 6. Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['debt'] });
       queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
       queryClient.invalidateQueries({ queryKey: ['debt-payment-history'] });
@@ -116,6 +187,8 @@ export function DebtPaymentDeleteDialog({
       queryClient.removeQueries({ queryKey: ['cash-book'] });
       queryClient.removeQueries({ queryKey: ['cash-book-balances'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['export-receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['import-receipts'] });
 
       toast.success(`Đã xóa ${typeLabel}`);
       onOpenChange(false);
