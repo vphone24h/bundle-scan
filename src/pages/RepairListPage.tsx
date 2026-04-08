@@ -341,18 +341,54 @@ export default function RepairListPage() {
             </TabsList>
           </Tabs>
 
-          <div className="overflow-auto mt-3">
+          {/* Mobile card layout */}
+          <div className="sm:hidden mt-3 space-y-2">
+            {isLoading ? (
+              <div className="text-center py-8 text-muted-foreground">Đang tải...</div>
+            ) : pagedOrders.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">Chưa có phiếu sửa chữa nào</div>
+            ) : pagedOrders.map(order => {
+              const st = REPAIR_STATUS_MAP[order.status];
+              const isCompleted = order.status === 'completed';
+              return (
+                <div
+                  key={order.id}
+                  className={`border rounded-lg p-3 cursor-pointer active:bg-muted/70 transition-colors ${isCompleted ? 'bg-red-50/50 border-red-200' : ''}`}
+                  onClick={() => handleOpenOrder(order)}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs text-muted-foreground">{order.code}</span>
+                        {order.ticket_password_enabled && <Lock className="h-3 w-3 text-amber-500 shrink-0" />}
+                      </div>
+                      <div className="font-medium text-sm mt-0.5 line-clamp-1">{order.device_name}</div>
+                      {order.customer_name && <div className="text-xs text-muted-foreground mt-0.5">{order.customer_name} {order.customer_phone && `• ${order.customer_phone}`}</div>}
+                    </div>
+                    <Badge className={`${st.color} text-[11px] shrink-0`}>{st.label}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                    <span>{format(new Date(order.created_at), 'dd/MM/yy HH:mm')}</span>
+                    <span className="font-medium text-foreground">{formatNumber(order.estimated_price)}đ</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop table layout */}
+          <div className="hidden sm:block overflow-auto mt-3">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[100px]">Mã phiếu</TableHead>
                   <TableHead>Thiết bị</TableHead>
-                  <TableHead className="hidden sm:table-cell">IMEI</TableHead>
+                  <TableHead>IMEI</TableHead>
                   <TableHead className="hidden md:table-cell">Khách hàng</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead className="hidden md:table-cell text-right">Giá DK</TableHead>
                   <TableHead className="hidden lg:table-cell">Ngày nhận</TableHead>
-                  <TableHead className="w-[80px]"></TableHead>
+                  <TableHead className="w-[40px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -364,10 +400,10 @@ export default function RepairListPage() {
                   const st = REPAIR_STATUS_MAP[order.status];
                   const isCompleted = order.status === 'completed';
                   return (
-                    <TableRow key={order.id} className={isCompleted ? 'bg-red-50/50' : ''}>
+                    <TableRow key={order.id} className={`cursor-pointer hover:bg-muted/50 ${isCompleted ? 'bg-red-50/50' : ''}`} onClick={() => handleOpenOrder(order)}>
                       <TableCell className="font-mono text-xs">{order.code}</TableCell>
                       <TableCell className="font-medium text-sm max-w-[200px] truncate">{order.device_name}</TableCell>
-                      <TableCell className="hidden sm:table-cell text-xs text-muted-foreground">{order.device_imei || '-'}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{order.device_imei || '-'}</TableCell>
                       <TableCell className="hidden md:table-cell text-sm">
                         {order.customer_name || '-'}
                         {order.customer_phone && <div className="text-xs text-muted-foreground">{order.customer_phone}</div>}
@@ -379,28 +415,26 @@ export default function RepairListPage() {
                       <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
                         {format(new Date(order.created_at), 'dd/MM/yy HH:mm')}
                       </TableCell>
-                      <TableCell className="flex items-center gap-1">
+                      <TableCell>
                         {order.ticket_password_enabled && <Lock className="h-3 w-3 text-amber-500" />}
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenOrder(order)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
                       </TableCell>
                     </TableRow>
                   );
                 })}
               </TableBody>
             </Table>
-            {filteredOrders.length > 20 && <TablePagination 
-              currentPage={pagination.currentPage}
-              totalPages={pagination.totalPages}
-              pageSize={pagination.pageSize}
-              totalItems={pagination.totalItems}
-              startIndex={pagination.startIndex}
-              endIndex={pagination.endIndex}
-              onPageChange={pagination.setPage}
-              onPageSizeChange={pagination.setPageSize}
-            />}
           </div>
+
+          <TablePagination 
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            pageSize={pagination.pageSize}
+            totalItems={pagination.totalItems}
+            startIndex={pagination.startIndex}
+            endIndex={pagination.endIndex}
+            onPageChange={pagination.setPage}
+            onPageSizeChange={pagination.setPageSize}
+          />
         </CardContent>
       </Card>
 
