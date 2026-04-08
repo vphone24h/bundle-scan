@@ -239,6 +239,112 @@ export default function RepairListPage() {
     setItemType('service');
   };
 
+  const resetImportForm = () => {
+    setImportPartName('');
+    setImportPartSku('');
+    setImportPartImei('');
+    setImportPartQty(1);
+    setImportPartCost(0);
+    setImportPartSalePrice(0);
+    setImportPartPaymentSource('cash');
+    setImportPartRecordCashBook(true);
+  };
+
+  const handleImportAndAddPart = async () => {
+    if (!selectedOrderId || !importPartName) return;
+    setIsImporting(true);
+    try {
+      // 1. Create product in inventory
+      const { data: newProduct, error: prodErr } = await supabase
+        .from('products')
+        .insert({
+          name: importPartName,
+          sku: importPartSku || null,
+          imei: importPartImei || null,
+          import_price: importPartCost,
+          sale_price: importPartSalePrice,
+          quantity: importPartQty,
+          status: 'in_stock',
+          tenant_id: tenantId,
+          branch_id: platformUser?.branch_id || null,
+        } as any)
+        .select()
+        .single();
+      if (prodErr) throw prodErr;
+
+      // 2. Create import receipt
+      const { data: receipt, error: receiptErr } = await supabase
+        .from('import_receipts')
+        .insert({
+          tenant_id: tenantId,
+          branch_id: platformUser?.branch_id || null,
+          supplier_id: null,
+          total_amount: importPartCost * importPartQty,
+          note: `Nhập linh kiện cho phiếu sửa chữa`,
+          created_by: user?.id,
+        } as any)
+        .select()
+        .single();
+      
+      if (receiptErr) throw receiptErr;
+
+      // 3. Record to cash book if enabled
+      if (importPartRecordCashBook && importPartCost > 0) {
+        await supabase.from('cash_book').insert({
+          tenant_id: tenantId,
+          branch_id: platformUser?.branch_id || null,
+          type: 'expense',
+          category: 'Nhập hàng',
+          description: `Nhập linh kiện: ${importPartName}`,
+          amount: importPartCost * importPartQty,
+          payment_source: importPartPaymentSource,
+          created_by: user?.id,
+          created_by_name: profile?.display_name,
+          reference_type: 'import',
+          reference_id: receipt?.id,
+        } as any);
+      }
+
+      // 4. Add as repair item
+      const payload: any = {
+        repair_order_id: selectedOrderId,
+        tenant_id: tenantId,
+        item_type: 'part',
+        product_id: newProduct.id,
+        product_name: importPartName,
+        product_sku: importPartSku || null,
+        product_imei: importPartImei || null,
+        quantity: importPartQty,
+        unit_price: importPartSalePrice,
+        cost_price: importPartCost,
+        import_receipt_id: receipt?.id,
+      };
+      await addItem.mutateAsync(payload);
+
+      // 5. Recalculate totals
+      const allItems = [...(orderItems || []), payload];
+      const totalService = allItems.filter(i => i.item_type === 'service').reduce((s, i) => s + (i.quantity || 1) * (i.unit_price || 0), 0);
+      const totalParts = allItems.filter(i => i.item_type === 'part').reduce((s, i) => s + (i.quantity || 1) * (i.unit_price || 0), 0);
+      const totalPartsCost = allItems.filter(i => i.item_type === 'part').reduce((s, i) => s + (i.quantity || 1) * (i.cost_price || 0), 0);
+
+      await updateOrder.mutateAsync({
+        id: selectedOrderId,
+        total_service_price: totalService,
+        total_parts_price: totalParts,
+        total_parts_cost: totalPartsCost,
+        total_amount: totalService + totalParts,
+      } as any);
+
+      setShowImportPart(false);
+      resetImportForm();
+      toast.success('Đã nhập linh kiện và thêm vào phiếu sửa');
+    } catch (err: any) {
+      toast.error('Lỗi: ' + err.message);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const handleStatusChange = async (orderId: string, newStatus: RepairStatus) => {
     // Log status change
     const order = orders?.find(o => o.id === orderId);
