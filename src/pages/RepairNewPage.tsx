@@ -482,8 +482,8 @@ export default function RepairNewPage() {
               {/* Product search - like sales page */}
               <div className="relative">
                 <Label>Tìm sản phẩm / lịch sử sửa</Label>
-                <div className="flex gap-2 mt-1">
-                  <div className="flex-1 relative">
+               <div className="flex gap-2 mt-1">
+                  <div className={`flex-1 relative ${highlightSearch ? 'guide-blink rounded-md' : ''}`}>
                     <SearchInput
                       value={productSearch}
                       onChange={(v) => { setProductSearch(v); setShowProductSearch(true); }}
@@ -502,7 +502,7 @@ export default function RepairNewPage() {
                       </div>
                     )}
                   </div>
-                  <Button onClick={() => { setShowDeviceForm(true); setProductSearch(''); setShowProductSearch(false); }}>
+                  <Button className={highlightSearch ? 'guide-blink' : ''} onClick={() => { setShowDeviceForm(true); setProductSearch(''); setShowProductSearch(false); }}>
                     <Plus className="h-4 w-4 mr-1" />
                     Thêm mới
                   </Button>
