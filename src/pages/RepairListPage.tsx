@@ -397,7 +397,10 @@ export default function RepairListPage() {
                   </div>
                   <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
                     <span>{format(new Date(order.created_at), 'dd/MM/yy HH:mm')}</span>
-                    <span className="font-medium text-foreground">{formatNumber(order.estimated_price)}đ</span>
+                    <div className="text-right">
+                      <div className="text-muted-foreground">DK: {formatNumber(order.estimated_price)}đ</div>
+                      <div className="font-medium text-foreground">TT: {formatNumber(order.total_amount)}đ</div>
+                    </div>
                   </div>
                 </div>
               );
@@ -439,7 +442,10 @@ export default function RepairListPage() {
                       <TableCell>
                         <Badge className={`${st.color} text-[11px]`}>{st.label}</Badge>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-right text-sm">{formatNumber(order.estimated_price)}đ</TableCell>
+                      <TableCell className="hidden md:table-cell text-right text-sm">
+                        <div className="text-muted-foreground text-xs">DK: {formatNumber(order.estimated_price)}đ</div>
+                        <div className="font-medium">TT: {formatNumber(order.total_amount)}đ</div>
+                      </TableCell>
                       <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
                         {format(new Date(order.created_at), 'dd/MM/yy HH:mm')}
                       </TableCell>
