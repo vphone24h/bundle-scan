@@ -266,7 +266,7 @@ export default function RepairListPage() {
           quantity: importPartQty,
           status: 'in_stock',
           tenant_id: tenantId,
-          branch_id: platformUser?.branch_id || null,
+          branch_id: null,
         } as any)
         .select()
         .single();
@@ -277,7 +277,7 @@ export default function RepairListPage() {
         .from('import_receipts')
         .insert({
           tenant_id: tenantId,
-          branch_id: platformUser?.branch_id || null,
+          branch_id: null,
           supplier_id: null,
           total_amount: importPartCost * importPartQty,
           note: `Nhập linh kiện cho phiếu sửa chữa`,
@@ -292,7 +292,7 @@ export default function RepairListPage() {
       if (importPartRecordCashBook && importPartCost > 0) {
         await supabase.from('cash_book').insert({
           tenant_id: tenantId,
-          branch_id: platformUser?.branch_id || null,
+          branch_id: null,
           type: 'expense',
           category: 'Nhập hàng',
           description: `Nhập linh kiện: ${importPartName}`,
