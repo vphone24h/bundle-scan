@@ -694,11 +694,11 @@ export function useCreateExportReturn() {
         .from('export_returns')
         .insert([{
           code,
-          product_id: item.product_id || '',
+          product_id: item.product_id || null,
           export_receipt_id: item.export_receipt_id,
           export_receipt_item_id: item.export_receipt_item_id,
-          customer_id: item.customer_id,
-          branch_id: item.branch_id,
+          customer_id: item.customer_id || null,
+          branch_id: item.branch_id || null,
           product_name: item.product_name,
           sku: item.sku,
           imei: item.imei,
