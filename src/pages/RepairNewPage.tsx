@@ -167,7 +167,7 @@ export default function RepairNewPage() {
       estimated_price: estimatedPrice,
       due_date: dueDate || null,
       received_by: user?.id || null,
-      received_by_name: profile?.full_name || null,
+      received_by_name: displayName || null,
       note: note || null,
     } as any);
 
@@ -396,7 +396,7 @@ export default function RepairNewPage() {
               )}
 
               <div className="text-xs text-muted-foreground">
-                NV tiếp nhận: <span className="font-medium text-foreground">{profile?.full_name || 'Chưa xác định'}</span>
+                NV tiếp nhận: <span className="font-medium text-foreground">{displayName || 'Chưa xác định'}</span>
               </div>
             </CardContent>
           </Card>
