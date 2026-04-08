@@ -156,6 +156,12 @@ export default function ImportNewPage() {
   const [manualTourActive, setManualTourActive] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Detect repair order context from URL
+  const repairOrderId = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('repairOrderId');
+  }, [location.search]);
   const { data: categories } = useCategories();
   const { data: products } = useProducts();
   const { data: productGroups } = useProductGroups();
