@@ -369,12 +369,79 @@ export default function RepairNewPage() {
     navigate('/repair/list');
   };
 
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [guideStep, setGuideStep] = useState(0);
+
+  const guideSteps = [
+    {
+      title: 'Bước 1: Tiếp nhận',
+      icon: '📋',
+      content: 'Tạo phiếu sửa chữa: tìm hoặc thêm mới thiết bị, bổ sung tên sản phẩm, tình trạng máy, và báo giá sơ bộ cho khách hàng.',
+    },
+    {
+      title: 'Bước 2: Sửa chữa',
+      icon: '🔧',
+      content: 'Nhân viên kỹ thuật kiểm tra, sửa chữa thiết bị và cập nhật báo giá cụ thể (dịch vụ & linh kiện thực tế).',
+    },
+    {
+      title: 'Bước 3: Bàn giao & Thu tiền',
+      icon: '💰',
+      content: 'Chọn nhân viên bàn giao, thanh toán và trả máy cho khách. Hệ thống tự động tạo phiếu xuất và gửi hóa đơn email.',
+    },
+  ];
+
   return (
     <MainLayout>
       <PageHeader 
         title="Tạo phiếu sửa chữa" 
         description="Tiếp nhận thiết bị sửa chữa / bảo hành"
+        actions={
+          <Button variant="outline" size="sm" onClick={() => { setGuideStep(0); setGuideOpen(true); }}>
+            <HelpCircle className="h-4 w-4 mr-1" /> Hướng dẫn
+          </Button>
+        }
       />
+
+      {/* Guide Dialog */}
+      <Dialog open={guideOpen} onOpenChange={setGuideOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">📖 Hướng dẫn sửa chữa</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {/* Step indicators */}
+            <div className="flex items-center justify-center gap-2 mb-6">
+              {guideSteps.map((_, i) => (
+                <div key={i} className={`h-2 rounded-full transition-all ${i === guideStep ? 'w-8 bg-primary' : i < guideStep ? 'w-2 bg-primary/50' : 'w-2 bg-muted'}`} />
+              ))}
+            </div>
+            
+            <div className="text-center space-y-4">
+              <div className="text-4xl">{guideSteps[guideStep].icon}</div>
+              <h3 className="font-bold text-lg">{guideSteps[guideStep].title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed px-2">
+                {guideSteps[guideStep].content}
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="flex-row gap-2 sm:justify-between">
+            {guideStep > 0 ? (
+              <Button variant="outline" onClick={() => setGuideStep(s => s - 1)}>
+                Quay lại
+              </Button>
+            ) : <div />}
+            {guideStep < guideSteps.length - 1 ? (
+              <Button onClick={() => setGuideStep(s => s + 1)}>
+                Tiếp theo <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            ) : (
+              <Button onClick={() => setGuideOpen(false)}>
+                <CheckCircle2 className="h-4 w-4 mr-1" /> Đã hiểu
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left: Device Info */}
