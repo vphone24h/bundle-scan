@@ -438,7 +438,7 @@ export default function RepairListPage() {
               {/* Status control */}
               <div className="flex items-center gap-2 flex-wrap">
                 <Label className="text-xs">Trạng thái:</Label>
-                <Select value={selectedOrder.status} onValueChange={v => handleStatusChange(selectedOrder.id, v as RepairStatus)}>
+                <Select value={selectedOrder.status} onValueChange={v => handleStatusChange(selectedOrder.id, v as RepairStatus)} disabled={selectedOrder.status === 'returned' || selectedOrder.status === 'cancelled'}>
                   <SelectTrigger className="w-auto h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
