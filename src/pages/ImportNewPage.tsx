@@ -988,7 +988,7 @@ export default function ImportNewPage() {
             title: 'Đã thêm linh kiện vào phiếu sửa',
             description: `${cartSnapshot.length} linh kiện đã được thêm vào phiếu sửa chữa`,
           });
-          navigate('/repair');
+          navigate('/repair/list');
           return;
         } catch (err) {
           console.error('Error adding repair items:', err);
@@ -1363,7 +1363,7 @@ export default function ImportNewPage() {
         <div className="mx-3 sm:mx-6 lg:mx-8 mt-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800 flex items-center gap-2">
           <Package className="h-4 w-4 shrink-0" />
           <span>Đang nhập linh kiện cho phiếu sửa chữa. Sau khi nhập xong, linh kiện sẽ tự động được thêm vào phiếu sửa.</span>
-          <Button variant="ghost" size="sm" className="ml-auto h-6 text-xs" onClick={() => navigate('/repair')}>
+          <Button variant="ghost" size="sm" className="ml-auto h-6 text-xs" onClick={() => navigate('/repair/list')}>
             Quay lại
           </Button>
         </div>
