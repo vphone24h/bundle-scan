@@ -3,6 +3,7 @@ import { DetailedProfitTable } from '@/components/reports/DetailedProfitTable';
 import { ReportStatDetailDialog, type DetailType } from '@/components/reports/ReportStatDetailDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { DateRangeApplyFilter } from '@/components/ui/date-range-apply-filter';
@@ -144,7 +145,7 @@ export function RevenueProfitReport() {
     repairFilter: repairFilter !== '_all_' ? repairFilter : undefined,
   };
 
-  const { data: rawStats, isLoading: statsLoading } = useReportStats(filters);
+  const { data: rawStats, isLoading: statsLoading, error: statsError, isError: hasStatsError } = useReportStats(filters);
   const { data: reportDetails, isLoading: detailsLoading } = useReportDetails(filters, !!detailType);
   const { data: chartData, isLoading: chartLoading } = useReportChartData({
     ...filters,
@@ -254,7 +255,7 @@ export function RevenueProfitReport() {
               })}
             </div>
             <div className="flex-1" />
-            <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!stats}>
+            <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!stats || hasStatsError}>
               <Download className="h-4 w-4 mr-1" />
               {t('common.exportExcel')}
             </Button>
@@ -303,7 +304,14 @@ export function RevenueProfitReport() {
         </CardContent>
       </Card>
 
-      {isInitialLoad ? (
+      {hasStatsError ? (
+        <Alert variant="destructive">
+          <AlertTitle>Không tải được báo cáo</AlertTitle>
+          <AlertDescription>
+            {(statsError as Error)?.message || 'Đã có lỗi khi lấy dữ liệu báo cáo. Vui lòng thử lại bộ lọc hoặc tải lại trang.'}
+          </AlertDescription>
+        </Alert>
+      ) : isInitialLoad ? (
         <div className="min-h-[400px] flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
