@@ -703,6 +703,25 @@ export default function RepairListPage() {
                 <PriceInput value={itemPrice} onChange={setItemPrice} />
               </div>
             </div>
+
+            <div>
+              <Label>Bảo hành</Label>
+              <Select value={itemWarranty} onValueChange={setItemWarranty}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Không BH">Không bảo hành</SelectItem>
+                  <SelectItem value="1 Tháng">1 Tháng</SelectItem>
+                  <SelectItem value="3 Tháng">3 Tháng</SelectItem>
+                  <SelectItem value="6 Tháng">6 Tháng</SelectItem>
+                  <SelectItem value="12 Tháng">12 Tháng</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Ghi chú</Label>
+              <Input value={itemNote} onChange={e => setItemNote(e.target.value)} placeholder="Ghi chú cho dịch vụ/linh kiện..." />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddItem(false)}>Hủy</Button>
