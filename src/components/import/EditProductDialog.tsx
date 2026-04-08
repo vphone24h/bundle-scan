@@ -400,7 +400,9 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       }
 
       // Nếu SP mẫu (template) được thêm IMEI → tạo phiếu nhập tự động
-      const isTemplateGettingImei = prod.status === 'template' && !prod.imei && (updates.imei || fData.imei.trim());
+      // Chỉ tạo phiếu nhập khi IMEI thực sự là chuỗi không rỗng
+      const newImei = (updates.imei || fData.imei || '').toString().trim();
+      const isTemplateGettingImei = prod.status === 'template' && !prod.imei && newImei.length > 0;
       let autoReceiptId: string | null = null;
 
       if (isTemplateGettingImei) {
@@ -491,7 +493,9 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               if (existingNames.has(fullName)) return null;
               const skuSuffix = combo.map(v => v.replace(/\s+/g, '')).join('-');
               const comboKey = combo.join('|');
-              const comboImei = isOriginalTemplate ? (vImeis[comboKey]?.trim() || null) : null;
+              // Chỉ gán IMEI nếu user thực sự nhập IMEI mới (không phải pre-fill từ sản phẩm gốc)
+              const rawImei = vImeis[comboKey]?.trim() || '';
+              const comboImei = (isOriginalTemplate && rawImei.length > 0) ? rawImei : null;
               const comboPrice = vPrices[comboKey] ? Math.round(Number(vPrices[comboKey])) : Math.round(Number(baseImportPrice));
               return {
                 name: fullName,
