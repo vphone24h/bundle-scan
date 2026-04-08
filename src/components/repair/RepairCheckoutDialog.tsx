@@ -214,11 +214,14 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
         } as any);
       }
 
-      // Update repair order status to returned
+      // Update repair order status to returned + handover staff
+      const handoverStaff = staffList?.find(s => s.user_id === handoverStaffId);
       await updateOrder.mutateAsync({
         id: order.id,
         status: 'returned',
         export_receipt_id: receipt.id,
+        handover_staff_id: handoverStaffId,
+        handover_staff_name: handoverStaff?.display_name || 'Nhân viên',
       } as any);
 
       // Log status change
