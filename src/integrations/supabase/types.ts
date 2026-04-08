@@ -5523,6 +5523,8 @@ export type Database = {
           technician_id: string | null
           technician_name: string | null
           tenant_id: string | null
+          ticket_password: string | null
+          ticket_password_enabled: boolean | null
           total_amount: number | null
           total_parts_cost: number | null
           total_parts_price: number | null
@@ -5557,6 +5559,8 @@ export type Database = {
           technician_id?: string | null
           technician_name?: string | null
           tenant_id?: string | null
+          ticket_password?: string | null
+          ticket_password_enabled?: boolean | null
           total_amount?: number | null
           total_parts_cost?: number | null
           total_parts_price?: number | null
@@ -5591,6 +5595,8 @@ export type Database = {
           technician_id?: string | null
           technician_name?: string | null
           tenant_id?: string | null
+          ticket_password?: string | null
+          ticket_password_enabled?: boolean | null
           total_amount?: number | null
           total_parts_cost?: number | null
           total_parts_price?: number | null
