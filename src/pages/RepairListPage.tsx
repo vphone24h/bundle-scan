@@ -64,6 +64,7 @@ import { vi } from 'date-fns/locale';
 import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { useNavigate } from 'react-router-dom';
+import { RepairCheckoutDialog } from '@/components/repair/RepairCheckoutDialog';
 
 const STATUS_TABS: { key: RepairStatus | 'all'; label: string }[] = [
   { key: 'all', label: 'Tất cả' },
