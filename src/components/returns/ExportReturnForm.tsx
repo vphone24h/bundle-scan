@@ -198,7 +198,25 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
     });
     onSuccess();
 
-    createExportReturn.mutateAsync(mutationData).then(() => {
+    createExportReturn.mutateAsync(mutationData).then(async () => {
+      // Check if this receipt is linked to a repair order
+      const { supabase } = await import('@/integrations/supabase/client');
+      const receiptId = item.receipt_id;
+      if (receiptId) {
+        const { data: linkedRepair } = await supabase
+          .from('repair_orders')
+          .select('id')
+          .eq('export_receipt_id', receiptId)
+          .maybeSingle();
+        if (linkedRepair) {
+          await supabase
+            .from('repair_orders')
+            .update({ status: 'cancelled' })
+            .eq('id', linkedRepair.id);
+          queryClient.invalidateQueries({ queryKey: ['repair-orders'] });
+        }
+      }
+
       toast({
         title: 'Trả hàng thành công',
         description: `Đã hoàn ${formatCurrencyWithSpaces(refundAmount)} cho khách hàng`,
