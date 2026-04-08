@@ -295,6 +295,11 @@ export function AppSidebar() {
                             +{pendingTransferCount}
                           </span>
                         )}
+                        {child.badgeKey === 'completedRepair' && completedRepairCount > 0 && (
+                          <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
+                            {completedRepairCount}
+                          </span>
+                        )}
                       </Link>
                     ))}
                   </div>
