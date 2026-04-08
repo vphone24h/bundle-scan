@@ -123,7 +123,7 @@ const allNavItems: NavItem[] = [
     permission: 'canCreateReturn',
     children: [
       { title: 'Tạo phiếu sửa', href: '/repair/new' },
-      { title: 'Danh sách sửa chữa', href: '/repair/list' },
+      { title: 'Danh sách sửa chữa', href: '/repair/list', badgeKey: 'completedRepair' },
     ],
   },
   { title: 'Trả hàng', titleKey: 'sidebar.returns', href: '/returns', icon: RotateCcw, permission: 'canCreateReturn' },
