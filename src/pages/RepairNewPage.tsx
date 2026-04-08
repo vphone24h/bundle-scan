@@ -379,6 +379,39 @@ export default function RepairNewPage() {
                 <Label>Ghi chú phiếu</Label>
                 <Textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Ghi chú thêm..." rows={2} />
               </div>
+
+              {/* Device images upload */}
+              <div>
+                <Label>Hình ảnh máy</Label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {deviceImages.map((img, idx) => (
+                    <div key={idx} className="relative w-16 h-16 rounded border overflow-hidden group">
+                      <img src={img} alt={`Device ${idx + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setDeviceImages(prev => prev.filter((_, i) => i !== idx))}
+                        className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-bl text-xs w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >×</button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-16 h-16 rounded border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                  >
+                    <Camera className="h-5 w-5" />
+                    <span className="text-[10px]">Thêm</span>
+                  </button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
