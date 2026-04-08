@@ -728,23 +728,39 @@ export default function RepairListPage() {
               )}
 
               {/* Action buttons */}
-              <div className="flex gap-2 pt-2 flex-wrap">
+              <div className="flex flex-col gap-2 pt-2">
+                {/* Bắt đầu sửa - only for received/pending_check */}
+                {(selectedOrder.status === 'received' || selectedOrder.status === 'pending_check') && !pendingStatus && (
+                  <Button variant="outline" className="w-full" 
+                    disabled={!selectedOrder.technician_id}
+                    title={!selectedOrder.technician_id ? 'Vui lòng chọn kỹ thuật viên trước' : ''}
+                    onClick={() => {
+                      setPendingStatus('repairing');
+                    }}>
+                    <Play className="h-4 w-4 mr-1" /> Bắt đầu sửa
+                  </Button>
+                )}
+
+                {/* Lưu trạng thái button */}
+                {pendingStatus && pendingStatus !== selectedOrder.status && selectedOrder.status !== 'returned' && selectedOrder.status !== 'cancelled' && (
+                  <Button className="w-full" 
+                    disabled={pendingStatus === 'repairing' && !selectedOrder.technician_id}
+                    onClick={async () => {
+                      await handleStatusChange(selectedOrder.id, pendingStatus);
+                      setPendingStatus(null);
+                    }}>
+                    <Save className="h-4 w-4 mr-1" /> Lưu trạng thái
+                  </Button>
+                )}
+
                 {selectedOrder.status === 'returned' && (
                   <Button variant="outline" onClick={() => handlePrintRepairReceipt(selectedOrder)}>
                     <Printer className="h-4 w-4 mr-1" /> In biên nhận
                   </Button>
                 )}
                 {selectedOrder.status === 'completed' && (
-                  <Button className="flex-1" onClick={() => setShowCheckout(true)}>
+                  <Button className="w-full" onClick={() => setShowCheckout(true)}>
                     <CheckCircle className="h-4 w-4 mr-1" /> Trả khách & Thanh toán
-                  </Button>
-                )}
-                {(selectedOrder.status === 'received' || selectedOrder.status === 'pending_check') && (
-                  <Button variant="outline" className="flex-1" 
-                    disabled={!selectedOrder.technician_id}
-                    title={!selectedOrder.technician_id ? 'Vui lòng chọn kỹ thuật viên trước' : ''}
-                    onClick={() => handleStatusChange(selectedOrder.id, 'repairing')}>
-                    <Play className="h-4 w-4 mr-1" /> Bắt đầu sửa
                   </Button>
                 )}
               </div>
