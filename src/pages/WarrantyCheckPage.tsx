@@ -220,19 +220,26 @@ export default function WarrantyCheckPage() {
             Tra cứu bảo hành
           </h1>
           <p className="text-muted-foreground mb-8">
-            Nhập số IMEI hoặc số điện thoại mua hàng để kiểm tra thông tin bảo hành
+           Nhập số IMEI, SĐT hoặc mã phiếu sửa chữa để tra cứu
           </p>
+
+          <Tabs value={searchTab} onValueChange={v => setSearchTab(v as any)} className="mb-4">
+            <TabsList className="grid grid-cols-2 w-full">
+              <TabsTrigger value="warranty"><Shield className="h-3 w-3 mr-1" /> Bảo hành</TabsTrigger>
+              <TabsTrigger value="repair"><Wrench className="h-3 w-3 mr-1" /> Sửa chữa</TabsTrigger>
+            </TabsList>
+          </Tabs>
 
           <div className="flex gap-2">
             <Input
-              placeholder="Nhập IMEI hoặc SĐT (VD: 0912345678)"
+              placeholder={searchTab === 'repair' ? "Nhập SĐT, mã phiếu (SC...) hoặc IMEI" : "Nhập IMEI hoặc SĐT (VD: 0912345678)"}
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               className="h-12 text-base"
             />
-            <Button onClick={handleSearch} disabled={!input.trim() || isLoading} className="h-12 px-6">
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            <Button onClick={handleSearch} disabled={!input.trim() || isLoading || repairLoading} className="h-12 px-6">
+              {(isLoading || repairLoading) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             </Button>
           </div>
 
