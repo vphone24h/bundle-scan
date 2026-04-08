@@ -53,6 +53,7 @@ import {
   useAddRepairItem,
   useDeleteRepairItem,
   useRepairStatusHistory,
+  useRepairOrdersRealtime,
   REPAIR_STATUS_MAP,
   RepairStatus,
   RepairOrder,
