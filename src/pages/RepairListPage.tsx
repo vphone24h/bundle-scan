@@ -463,7 +463,8 @@ export default function RepairListPage() {
                         <span className="font-mono text-xs text-muted-foreground">{order.code}</span>
                         {order.ticket_password_enabled && <Lock className="h-3 w-3 text-amber-500 shrink-0" />}
                       </div>
-                      <div className="font-medium text-sm mt-0.5 line-clamp-1">{order.device_name}</div>
+                      <div className="font-bold text-sm mt-0.5 line-clamp-1">{order.device_name}</div>
+                      {order.request_type_name && <div className="text-xs font-semibold mt-0.5">{order.request_type_name}</div>}
                       {order.customer_name && <div className="text-xs text-muted-foreground mt-0.5">{order.customer_name} {order.customer_phone && `• ${order.customer_phone}`}</div>}
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
