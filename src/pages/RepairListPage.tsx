@@ -63,7 +63,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatNumber } from '@/lib/formatNumber';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { usePagination } from '@/hooks/usePagination';
+import { useServerPagination } from '@/hooks/useProducts';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { useNavigate } from 'react-router-dom';
 import { RepairCheckoutDialog } from '@/components/repair/RepairCheckoutDialog';
