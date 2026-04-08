@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { PriceInput } from '@/components/ui/price-input';
 import { SearchInput } from '@/components/ui/search-input';
 import { Badge } from '@/components/ui/badge';
@@ -66,6 +67,8 @@ export default function RepairNewPage() {
   const [status, setStatus] = useState<RepairStatus>('received');
   const [estimatedPrice, setEstimatedPrice] = useState(0);
   const [note, setNote] = useState('');
+  const [ticketPasswordEnabled, setTicketPasswordEnabled] = useState(false);
+  const [ticketPassword, setTicketPassword] = useState('');
   const [branchId, setBranchId] = useState(defaultBranch?.id || '');
 
   // Customer
@@ -206,6 +209,8 @@ export default function RepairNewPage() {
       received_by: receivedById || user?.id || null,
       received_by_name: receivedByName || displayName || null,
       note: note || null,
+      ticket_password_enabled: ticketPasswordEnabled,
+      ticket_password: ticketPasswordEnabled ? ticketPassword : null,
     } as any);
 
     // Generate QR code
@@ -406,6 +411,26 @@ export default function RepairNewPage() {
                 <Label>Ghi chú phiếu</Label>
                 <Textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Ghi chú thêm..." rows={2} />
               </div>
+
+              {/* Ticket password */}
+              <div className="flex items-center justify-between p-3 rounded-md border bg-muted/30">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium">Mật khẩu phiếu</Label>
+                  <p className="text-xs text-muted-foreground">Kỹ thuật viên phải nhập đúng mật khẩu mới mở được phiếu</p>
+                </div>
+                <Switch checked={ticketPasswordEnabled} onCheckedChange={setTicketPasswordEnabled} />
+              </div>
+              {ticketPasswordEnabled && (
+                <div>
+                  <Label>Nhập mật khẩu phiếu</Label>
+                  <Input
+                    type="text"
+                    value={ticketPassword}
+                    onChange={e => setTicketPassword(e.target.value)}
+                    placeholder="Nhập mật khẩu..."
+                  />
+                </div>
+              )}
 
               {/* Device images upload */}
               <div>
