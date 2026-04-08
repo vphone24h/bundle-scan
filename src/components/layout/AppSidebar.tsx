@@ -243,7 +243,7 @@ export function AppSidebar() {
             {item.children ? (
               <>
                 <button
-                  onClick={() => toggleExpand(item.title)}
+                  onClick={(e) => { e.preventDefault(); toggleExpand(item.title); }}
                   data-tour={`sidebar-${item.href.replace(/\//g, '').replace(/-/g, '')}`}
                   className={cn(
                     'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
