@@ -206,8 +206,9 @@ export default function RepairNewPage() {
     setShowQRDialog(true);
   };
 
-  const handlePrintReceipt = () => {
+  const handlePrintReceipt = (includeQR = false) => {
     if (!createdOrder) return;
+    const qrSection = includeQR && qrDataUrl ? `<div style="text-align:center;margin:10px 0"><img src="${qrDataUrl}" style="width:120px;height:120px" /><p style="font-size:10px;color:#999;margin-top:4px">Quét để tra cứu</p></div>` : '';
     const printContent = `
       <html><head><title>Phiếu sửa chữa ${createdOrder.code}</title>
       <style>body{font-family:Arial;padding:20px;max-width:300px;margin:0 auto}
@@ -218,6 +219,7 @@ export default function RepairNewPage() {
       </style></head><body>
       <h2>PHIẾU SỬA CHỮA</h2>
       <p style="text-align:center;font-size:12px;color:#666">${createdOrder.code}</p>
+      ${qrSection}
       <div class="line"></div>
       <div class="row"><span class="label">Thiết bị:</span><span>${createdOrder.device_name}</span></div>
       <div class="row"><span class="label">IMEI/Serial:</span><span>${createdOrder.device_imei || '-'}</span></div>
