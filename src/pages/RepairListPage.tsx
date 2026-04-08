@@ -122,6 +122,7 @@ export default function RepairListPage() {
 
   // Detail sheet
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [pendingStatus, setPendingStatus] = useState<RepairStatus | null>(null);
   const { data: selectedOrder } = useRepairOrder(selectedOrderId || undefined);
   const { data: orderItems } = useRepairOrderItems(selectedOrderId || undefined);
   const { data: statusHistory } = useRepairStatusHistory(selectedOrderId || undefined);
