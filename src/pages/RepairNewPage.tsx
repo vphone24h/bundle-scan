@@ -12,6 +12,8 @@ import { Switch } from '@/components/ui/switch';
 import { PriceInput } from '@/components/ui/price-input';
 import { SearchInput } from '@/components/ui/search-input';
 import { Badge } from '@/components/ui/badge';
+import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombobox';
+import { useUpsertCustomer } from '@/hooks/useCustomers';
 import {
   Select,
   SelectContent,
@@ -50,6 +52,7 @@ export default function RepairNewPage() {
   const createRequestType = useCreateRepairRequestType();
   const deleteRequestType = useDeleteRepairRequestType();
   const { data: staffList } = useStaffList();
+  const upsertCustomer = useUpsertCustomer();
   
   const tenantId = platformUser?.tenant_id || '';
   const defaultBranch = branches?.find(b => b.is_default);
@@ -71,13 +74,14 @@ export default function RepairNewPage() {
   const [ticketPassword, setTicketPassword] = useState('');
   const [branchId, setBranchId] = useState(defaultBranch?.id || '');
 
-  // Customer
-  const [customerSearch, setCustomerSearch] = useState('');
-  const [customerId, setCustomerId] = useState<string | null>(null);
+  // Customer (using CustomerSearchCombobox like sales page)
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [customerResults, setCustomerResults] = useState<any[]>([]);
-  const [showCustomerSearch, setShowCustomerSearch] = useState(false);
+  const [customerAddress, setCustomerAddress] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerSource, setCustomerSource] = useState('');
+  const [customerBirthday, setCustomerBirthday] = useState<Date | undefined>();
 
   // Product search  
   const [productSearch, setProductSearch] = useState('');
@@ -112,17 +116,6 @@ export default function RepairNewPage() {
     }
   }, [user?.id, displayName]);
 
-  // Search customers
-  const searchCustomers = useCallback(async (term: string) => {
-    if (!term || term.length < 2) { setCustomerResults([]); return; }
-    const { data } = await supabase
-      .from('customers')
-      .select('id, name, phone, email')
-      .or(`name.ilike.%${term}%,phone.ilike.%${term}%`)
-      .limit(10);
-    setCustomerResults(data || []);
-  }, []);
-
   // Search products for device suggestion
   const searchProducts = useCallback(async (term: string) => {
     if (!term || term.length < 2) { setProductResults([]); return; }
@@ -136,22 +129,9 @@ export default function RepairNewPage() {
   }, []);
 
   React.useEffect(() => {
-    const t = setTimeout(() => searchCustomers(customerSearch), 300);
-    return () => clearTimeout(t);
-  }, [customerSearch]);
-
-  React.useEffect(() => {
     const t = setTimeout(() => searchProducts(productSearch), 300);
     return () => clearTimeout(t);
   }, [productSearch]);
-
-  const selectCustomer = (c: any) => {
-    setCustomerId(c.id);
-    setCustomerName(c.name);
-    setCustomerPhone(c.phone);
-    setCustomerSearch('');
-    setShowCustomerSearch(false);
-  };
 
   const selectProduct = (p: any) => {
     setDeviceName(p.name);
@@ -188,10 +168,26 @@ export default function RepairNewPage() {
       return;
     }
 
+    // Upsert customer if we have name+phone
+    let finalCustomerId = selectedCustomer?.id || null;
+    if (!finalCustomerId && customerName.trim() && customerPhone.trim()) {
+      try {
+        const customer = await upsertCustomer.mutateAsync({
+          name: customerName.trim(),
+          phone: customerPhone.trim(),
+          address: customerAddress.trim() || undefined,
+          email: customerEmail.trim() || undefined,
+          source: customerSource || undefined,
+          birthday: customerBirthday ? customerBirthday.toISOString().split('T')[0] : undefined,
+        } as any);
+        finalCustomerId = customer?.id || null;
+      } catch { /* ignore */ }
+    }
+
     const order = await createOrder.mutateAsync({
       tenant_id: tenantId,
       branch_id: branchId || null,
-      customer_id: customerId,
+      customer_id: finalCustomerId,
       customer_name: customerName || null,
       customer_phone: customerPhone || null,
       device_name: deviceName,
@@ -258,6 +254,42 @@ export default function RepairNewPage() {
       w.document.close();
       w.print();
     }
+  };
+
+  const resetForm = () => {
+    setDeviceName('');
+    setDeviceImei('');
+    setDeviceModel('');
+    setDevicePassword('');
+    setDeviceCondition('');
+    setQuantity(1);
+    setDueDate('');
+    setRequestTypeId('');
+    setRequestTypeName('Sửa chữa');
+    setStatus('received');
+    setEstimatedPrice(0);
+    setNote('');
+    setTicketPasswordEnabled(false);
+    setTicketPassword('');
+    setSelectedCustomer(null);
+    setCustomerName('');
+    setCustomerPhone('');
+    setCustomerAddress('');
+    setCustomerEmail('');
+    setCustomerSource('');
+    setCustomerBirthday(undefined);
+    setDeviceImages([]);
+    setProductSearch('');
+    setProductResults([]);
+    setShowProductSearch(false);
+    setShowDeviceForm(false);
+  };
+
+  const handleQRDialogClose = (open: boolean) => {
+    if (!open) {
+      resetForm();
+    }
+    setShowQRDialog(open);
   };
 
   const goToList = () => {
@@ -472,48 +504,25 @@ export default function RepairNewPage() {
 
         {/* Right: Customer + Actions */}
         <div className="space-y-4">
-          <Card>
+           <Card>
             <CardContent className="pt-4 space-y-3">
-              <h3 className="font-semibold">Khách hàng</h3>
-              <div className="relative">
-                <SearchInput
-                  value={customerSearch}
-                  onChange={v => { setCustomerSearch(v); setShowCustomerSearch(true); }}
-                  placeholder="Tìm theo tên, SĐT..."
-                />
-                {showCustomerSearch && customerResults.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-40 overflow-auto">
-                    {customerResults.map(c => (
-                      <button key={c.id} onClick={() => selectCustomer(c)}
-                        className="w-full text-left px-3 py-2 hover:bg-muted text-sm">
-                        <span className="font-medium">{c.name}</span>
-                        <span className="text-muted-foreground ml-2">{c.phone}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {customerId ? (
-                <div className="bg-muted/50 rounded-md p-3 text-sm space-y-1">
-                  <div className="font-medium">{customerName}</div>
-                  <div className="text-muted-foreground">{customerPhone}</div>
-                  <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => {
-                    setCustomerId(null); setCustomerName(''); setCustomerPhone('');
-                  }}>Bỏ chọn</Button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-2">
-                  <div>
-                    <Label className="text-xs">Tên khách</Label>
-                    <Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Nhập tên" className="h-8 text-sm" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">SĐT</Label>
-                    <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Nhập SĐT" className="h-8 text-sm" />
-                  </div>
-                </div>
-              )}
+              <CustomerSearchCombobox
+                selectedCustomer={selectedCustomer}
+                onSelect={setSelectedCustomer}
+                onCustomerInfoChange={() => {}}
+                customerName={customerName}
+                customerPhone={customerPhone}
+                customerAddress={customerAddress}
+                customerEmail={customerEmail}
+                customerSource={customerSource}
+                customerBirthday={customerBirthday}
+                setCustomerName={setCustomerName}
+                setCustomerPhone={setCustomerPhone}
+                setCustomerAddress={setCustomerAddress}
+                setCustomerEmail={setCustomerEmail}
+                setCustomerSource={setCustomerSource}
+                setCustomerBirthday={setCustomerBirthday}
+              />
 
               <div>
                 <Label className="text-xs">NV tiếp nhận</Label>
@@ -555,7 +564,7 @@ export default function RepairNewPage() {
       </div>
 
       {/* QR + Print Dialog */}
-      <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
+      <Dialog open={showQRDialog} onOpenChange={handleQRDialogClose}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Phiếu sửa chữa đã tạo</DialogTitle>
