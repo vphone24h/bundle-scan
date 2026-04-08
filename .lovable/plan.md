@@ -1,24 +1,43 @@
 
-## Bước 1: Database + Admin UI cho Companies
+## Module Sửa chữa (Repair Management System)
 
-### 1.1 Database Migration
-- Tạo bảng `companies` (id, domain, name, status, default_domain_id, created_at, updated_at)
-- Thêm cột `company_id` vào bảng `tenants` (nullable ban đầu để không break dữ liệu cũ)
-- Tạo record company mặc định cho "vkho.vn" và gán tất cả tenant hiện tại vào company đó
-- RLS policies cho bảng companies (chỉ platform_admin CRUD)
+### Giai đoạn 1: Database & Cấu trúc dữ liệu
+- Tạo bảng `repair_orders` (phiếu sửa chữa chính)
+- Tạo bảng `repair_order_items` (dịch vụ & linh kiện)
+- Tạo bảng `repair_request_types` (loại yêu cầu: sửa chữa, bảo hành...)
+- Tạo bảng `repair_status_history` (lịch sử trạng thái)
+- RLS policies theo tenant_id
+- Enum trạng thái: received, pending_check, repairing, waiting_parts, completed, returned
 
-### 1.2 Admin UI - Tab "Công ty" trong Platform Admin
-- Danh sách companies: domain, name, status, số shop, ngày tạo
-- Thêm company mới (domain, name)
-- Sửa company (đổi domain, name, status)
-- Xóa company (confirm + reset tenants về company mặc định)
-- Gán/bỏ gán tenant vào company
+### Giai đoạn 2: Menu & Routing
+- Thêm menu "Sửa chữa" vào sidebar
+- Route `/repair/new` - Tạo phiếu sửa
+- Route `/repair/list` - Danh sách sửa chữa
+- Cập nhật appRoutes, phân quyền
 
-### 1.3 Cập nhật tab Domains hiện tại
-- Liên kết custom_domains với companies thay vì trực tiếp tenant
-- Hoặc giữ nguyên custom_domains hiện tại và companies là tầng logic riêng
+### Giai đoạn 3: Tạo phiếu sửa (Check-in - B1)
+- Form tiếp nhận: search sản phẩm, IMEI, model, khách hàng
+- Loại yêu cầu (CRUD)
+- Trạng thái, giá dự kiến, ghi chú, upload hình
+- Thông tin khách hàng (tìm/thêm)
+- Nhân viên tiếp nhận, ngày hẹn trả
+- In phiếu + QR code
 
-### Chưa làm ở bước này (bước sau):
-- Runtime domain resolution (detect company từ hostname)
-- Refactor queries thêm company_id filter
-- RLS policies cho data tables theo company_id
+### Giai đoạn 4: Xử lý sửa chữa (Processing - B2)
+- Danh sách phiếu theo trạng thái
+- Kỹ thuật viên cập nhật trạng thái realtime
+- Thêm dịch vụ/linh kiện (2 loại: thay linh kiện từ kho, chỉ sửa)
+- Popup nhập linh kiện mới → ghi sổ quỹ
+- Highlight khi hoàn thành
+
+### Giai đoạn 5: Trả khách & Thanh toán (B3)
+- Chuyển phiếu sửa → đơn bán hàng
+- Thanh toán (tiền mặt, CK, combo)
+- Logic tài chính: lợi nhuận sửa vs thay linh kiện
+- Ghi sổ quỹ, doanh thu, lịch sử bán
+- Filter "Đơn sửa chữa" trong bán hàng & báo cáo
+
+### Giai đoạn 6: Tra cứu & Bảo hành
+- Tra cứu online: SĐT, mã phiếu (dùng chung hệ thống bảo hành)
+- Bảo hành sau sửa: chọn lại phiếu cũ, xem lịch sử
+- Bộ lọc "Sửa chữa" trong báo cáo doanh thu/lợi nhuận
