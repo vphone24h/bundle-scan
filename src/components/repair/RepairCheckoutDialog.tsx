@@ -47,6 +47,8 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
   const [sendingEmail, setSendingEmail] = useState(false);
   const [autoEmailEnabled, setAutoEmailEnabled] = useState(true);
   const [customerEmail, setCustomerEmail] = useState<string | null>(null);
+  const [handoverStaffId, setHandoverStaffId] = useState<string>('');
+  const { data: staffList } = useStaffList();
 
   // Fetch customer email on mount
   React.useEffect(() => {
