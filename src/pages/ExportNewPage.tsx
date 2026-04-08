@@ -753,7 +753,6 @@ export default function ExportNewPage() {
     }
     exportDraft.acceptDraft();
   }, [exportDraft.pendingDraft]);
-import { AutoEmailToggle } from '@/components/shared/AutoEmailToggle';
 
   // Add to cart
   const handleAddToCart = () => {
