@@ -1735,25 +1735,12 @@ export default function ExportNewPage() {
                </div>
 
               {/* Auto email toggle */}
-              {landingSettings?.order_email_enabled && (
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <Label htmlFor="auto-email-export" className="flex items-center gap-2 cursor-pointer text-sm">
-                    <Mail className="h-4 w-4 text-primary" />
-                    Tự động gửi email cho khách
-                  </Label>
-                  <Switch
-                    id="auto-email-export"
-                    checked={autoEmailEnabled}
-                    onCheckedChange={setAutoEmailEnabled}
-                  />
-                </div>
-              )}
-              {autoEmailEnabled && !customerEmail && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                  <Mail className="h-3 w-3" />
-                  Khách chưa có email — sẽ không gửi được
-                </p>
-              )}
+              <AutoEmailToggle
+                id="auto-email-export"
+                checked={autoEmailEnabled}
+                onCheckedChange={setAutoEmailEnabled}
+                hasCustomerEmail={!!customerEmail}
+              />
 
               {/* Auto Zalo toggle - tạm ẩn đang nghiên cứu */}
               {/* {(landingSettings as any)?.zalo_enabled && (landingSettings as any)?.zalo_on_export && (
