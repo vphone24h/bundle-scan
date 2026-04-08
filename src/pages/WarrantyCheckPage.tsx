@@ -68,6 +68,7 @@ export default function WarrantyCheckPage() {
   const navigate = useNavigate();
   const [input, setInput] = useState('');
   const [searchValue, setSearchValue] = useState('');
+  const [searchTab, setSearchTab] = useState<'warranty' | 'repair'>('warranty');
   const [persistedResults, setPersistedResults] = useState<WarrantyItem[] | null>(null);
   const [lookupEnabled, setLookupEnabled] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
