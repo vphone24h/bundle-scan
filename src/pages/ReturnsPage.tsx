@@ -642,6 +642,14 @@ export default function ReturnsPage() {
                         <Button 
                           variant="ghost" 
                           size="sm"
+                          onClick={() => handleQuickPrint(r)}
+                          title="In phiếu trả hàng"
+                        >
+                          <Printer className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
                           onClick={(e) => { e.stopPropagation(); setItemToEdit(r); setEditDialogOpen(true); }}
                         >
                           <Pencil className="h-4 w-4" />
