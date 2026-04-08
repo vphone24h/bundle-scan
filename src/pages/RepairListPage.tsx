@@ -378,6 +378,7 @@ export default function RepairListPage() {
             ) : orders.map((order: RepairOrder) => {
               const st = REPAIR_STATUS_MAP[order.status];
               const isCompleted = order.status === 'completed';
+              const isReturned = order.status === 'returned';
               return (
                 <div
                   key={order.id}
@@ -393,7 +394,19 @@ export default function RepairListPage() {
                       <div className="font-medium text-sm mt-0.5 line-clamp-1">{order.device_name}</div>
                       {order.customer_name && <div className="text-xs text-muted-foreground mt-0.5">{order.customer_name} {order.customer_phone && `• ${order.customer_phone}`}</div>}
                     </div>
-                    <Badge className={`${st.color} text-[11px] shrink-0`}>{st.label}</Badge>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {isReturned && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={(e) => { e.stopPropagation(); handlePrintRepairReceipt(order); }}
+                        >
+                          <Printer className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      <Badge className={`${st.color} text-[11px]`}>{st.label}</Badge>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
                     <span>{format(new Date(order.created_at), 'dd/MM/yy HH:mm')}</span>
