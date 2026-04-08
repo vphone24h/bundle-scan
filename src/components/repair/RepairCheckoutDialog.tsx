@@ -43,6 +43,16 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
   const [isDone, setIsDone] = useState(false);
   const [createdReceiptCode, setCreatedReceiptCode] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [autoEmailEnabled, setAutoEmailEnabled] = useState(true);
+  const [customerEmail, setCustomerEmail] = useState<string | null>(null);
+
+  // Fetch customer email on mount
+  React.useEffect(() => {
+    if (order.customer_id) {
+      supabase.from('customers').select('email').eq('id', order.customer_id).maybeSingle()
+        .then(({ data }) => setCustomerEmail(data?.email || null));
+    }
+  }, [order.customer_id]);
 
   const totalAmount = order.total_amount;
   const debtAmount = paymentMethod === 'debt' ? totalAmount : Math.max(0, totalAmount - paidAmount);
