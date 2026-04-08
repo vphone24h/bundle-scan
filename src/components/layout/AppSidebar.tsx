@@ -117,7 +117,7 @@ const allNavItems: NavItem[] = [
   },
   { title: 'Trả hàng', titleKey: 'sidebar.returns', href: '/returns', icon: RotateCcw, permission: 'canCreateReturn' },
   {
-    title: 'Sửa chữa', titleKey: 'sidebar.repair',
+    title: 'Sửa chữa',
     href: '/repair',
     icon: Wrench,
     permission: 'canCreateReturn',
