@@ -50,6 +50,7 @@ export function ReceiptReturnDialog({
   receipt,
   onSuccess,
 }: ReceiptReturnDialogProps) {
+  const queryClient = useQueryClient();
   // Require explicit user selection (no default)
   const [feeType, setFeeType] = useState<'' | 'none' | 'percentage' | 'fixed_amount'>('');
   const [feePercentage, setFeePercentage] = useState<number>(0);
