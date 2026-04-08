@@ -432,6 +432,8 @@ export default function RepairNewPage() {
                   </button>
                 </div>
               </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
