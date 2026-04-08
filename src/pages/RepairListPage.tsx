@@ -297,7 +297,7 @@ export default function RepairListPage() {
 
   const handleStatusChange = async (orderId: string, newStatus: RepairStatus) => {
     // Log status change
-    const order = orders?.find(o => o.id === orderId);
+    const order = orders.find(o => o.id === orderId);
     if (order) {
       await supabase.from('repair_status_history').insert({
         repair_order_id: orderId,
