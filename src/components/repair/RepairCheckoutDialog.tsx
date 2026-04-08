@@ -41,6 +41,7 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [createdReceiptCode, setCreatedReceiptCode] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const totalAmount = order.total_amount;
   const debtAmount = paymentMethod === 'debt' ? totalAmount : Math.max(0, totalAmount - paidAmount);
