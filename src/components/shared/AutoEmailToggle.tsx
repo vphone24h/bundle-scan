@@ -25,7 +25,7 @@ export function AutoEmailToggle({ id, checked, onCheckedChange, hasCustomerEmail
         size="sm"
         className="w-full justify-start gap-2 text-sm border-dashed border-amber-400 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950"
         onClick={() => {
-          navigate('/website-editor?tab=settings');
+          navigate('/landing-settings?tab=settings');
           // Wait for lazy-loaded settings tab to render, then scroll
           const tryScroll = (attempts = 0) => {
             const el = document.getElementById('email-config-section');
