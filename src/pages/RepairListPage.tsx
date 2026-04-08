@@ -441,10 +441,7 @@ export default function RepairListPage() {
               {/* Action buttons */}
               <div className="flex gap-2 pt-2">
                 {selectedOrder.status === 'completed' && (
-                  <Button className="flex-1" onClick={() => {
-                    handleStatusChange(selectedOrder.id, 'returned');
-                    // TODO: navigate to export/sell with repair data
-                  }}>
+                  <Button className="flex-1" onClick={() => setShowCheckout(true)}>
                     <CheckCircle className="h-4 w-4 mr-1" /> Trả khách & Thanh toán
                   </Button>
                 )}
