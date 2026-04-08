@@ -29,7 +29,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Wrench, QrCode, Printer, Plus, Trash2, Search, UserPlus, Camera, ChevronDown, ChevronUp } from 'lucide-react';
+import { Wrench, QrCode, Printer, Plus, Trash2, Search, UserPlus, Camera, ChevronDown, ChevronUp, Mail, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -97,6 +97,7 @@ export default function RepairNewPage() {
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<any>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [sendingEmail, setSendingEmail] = useState(false);
   const [barcodeDialogOpen, setBarcodeDialogOpen] = useState(false);
   const [barcodeProducts, setBarcodeProducts] = useState<{ id: string; name: string; sku: string; imei?: string; importPrice: number; salePrice?: number }[]>([]);
 
@@ -220,6 +221,45 @@ export default function RepairNewPage() {
 
     setCreatedOrder(order);
     setShowQRDialog(true);
+  };
+
+  const handleSendRepairEmail = async () => {
+    if (!createdOrder) return;
+    const email = customerEmail?.trim() || selectedCustomer?.email;
+    if (!email) {
+      toast.error('Khách hàng chưa có email');
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-export-email', {
+        body: {
+          tenant_id: tenantId,
+          order_id: createdOrder.id,
+          customer_name: createdOrder.customer_name || 'Khách lẻ',
+          customer_email: email,
+          customer_phone: createdOrder.customer_phone || '',
+          items: [{
+            product_name: `[Sửa chữa] ${createdOrder.device_name}`,
+            imei: createdOrder.device_imei,
+            sale_price: createdOrder.estimated_price,
+            quantity: 1,
+            warranty: '',
+          }],
+          total_amount: createdOrder.estimated_price,
+          receipt_code: createdOrder.code,
+          branch_id: createdOrder.branch_id,
+          export_date: createdOrder.created_at,
+          sales_staff_id: user?.id,
+        },
+      });
+      if (error) throw error;
+      toast.success(`Đã gửi email biên nhận đến ${email}`);
+    } catch (err: any) {
+      toast.error('Gửi email thất bại: ' + (err?.message || 'Lỗi không xác định'));
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   const handlePrintReceipt = (includeQR = false) => {
@@ -615,6 +655,14 @@ export default function RepairNewPage() {
               setBarcodeDialogOpen(true);
             }}>
               <QrCode className="h-4 w-4 mr-2" /> In QR
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleSendRepairEmail}
+              disabled={sendingEmail || !(customerEmail?.trim() || selectedCustomer?.email)}
+            >
+              {sendingEmail ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
+              Gửi mail
             </Button>
             <Button onClick={goToList}>
               Xem danh sách
