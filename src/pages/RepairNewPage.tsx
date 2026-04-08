@@ -315,11 +315,6 @@ export default function RepairNewPage() {
                 <h3 className="font-semibold flex items-center gap-2">
                   <Wrench className="h-4 w-4" /> Thông tin máy
                 </h3>
-                {!showDeviceForm && (
-                  <Button variant="default" size="sm" onClick={() => setShowDeviceForm(true)}>
-                    <Plus className="h-4 w-4 mr-1" /> Thêm mới
-                  </Button>
-                )}
                 {showDeviceForm && (
                   <Button variant="ghost" size="sm" onClick={() => setShowDeviceForm(false)}>
                     <ChevronUp className="h-4 w-4 mr-1" /> Thu gọn
@@ -327,25 +322,37 @@ export default function RepairNewPage() {
                 )}
               </div>
 
-              {/* Product search - always visible */}
+              {/* Product search - like sales page */}
               <div className="relative">
                 <Label>Tìm sản phẩm / lịch sử sửa</Label>
-                <SearchInput
-                  value={productSearch}
-                  onChange={(v) => { setProductSearch(v); setShowProductSearch(true); }}
-                  placeholder="Tìm theo tên, IMEI, SKU..."
-                />
-                {showProductSearch && productResults.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-auto">
-                    {productResults.map(p => (
-                      <button key={p.id} onClick={() => { selectProduct(p); setShowDeviceForm(true); }}
-                        className="w-full text-left px-3 py-2 hover:bg-muted text-sm">
-                        <div className="font-medium">{p.name}</div>
-                        {p.imei && <span className="text-xs text-muted-foreground">IMEI: {p.imei}</span>}
-                      </button>
-                    ))}
+                <div className="flex gap-2 mt-1">
+                  <div className="flex-1 relative">
+                    <SearchInput
+                      value={productSearch}
+                      onChange={(v) => { setProductSearch(v); setShowProductSearch(true); }}
+                      placeholder="Nhập IMEI/Serial hoặc tên sản phẩm..."
+                    />
+                    {showProductSearch && productResults.length > 0 && (
+                      <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
+                        {productResults.map(p => (
+                          <button key={p.id} onClick={() => { selectProduct(p); setShowDeviceForm(true); }}
+                            className="w-full text-left px-4 py-2 hover:bg-accent text-sm">
+                            <div className="font-medium">{p.name}</div>
+                            {p.imei && <div className="text-muted-foreground text-xs">IMEI: {p.imei}</div>}
+                            {p.sku && !p.imei && <div className="text-muted-foreground text-xs">SKU: {p.sku}</div>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
+                  <Button onClick={() => { setShowDeviceForm(true); setProductSearch(''); setShowProductSearch(false); }}>
+                    <Plus className="h-4 w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Thêm mới</span>
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Nhập IMEI hoặc tên sản phẩm để tìm nhanh. Nếu máy mới, bấm "Thêm mới".
+                </p>
               </div>
 
               {/* Collapsible device form */}
