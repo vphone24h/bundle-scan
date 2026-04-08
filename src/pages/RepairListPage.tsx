@@ -106,6 +106,18 @@ export default function RepairListPage() {
   const [partSearch, setPartSearch] = useState('');
   const [partResults, setPartResults] = useState<any[]>([]);
   const [selectedPart, setSelectedPart] = useState<any>(null);
+  
+  // Import part states
+  const [showImportPart, setShowImportPart] = useState(false);
+  const [importPartName, setImportPartName] = useState('');
+  const [importPartSku, setImportPartSku] = useState('');
+  const [importPartImei, setImportPartImei] = useState('');
+  const [importPartQty, setImportPartQty] = useState(1);
+  const [importPartCost, setImportPartCost] = useState(0);
+  const [importPartSalePrice, setImportPartSalePrice] = useState(0);
+  const [importPartPaymentSource, setImportPartPaymentSource] = useState('cash');
+  const [importPartRecordCashBook, setImportPartRecordCashBook] = useState(true);
+  const [isImporting, setIsImporting] = useState(false);
 
   const addItem = useAddRepairItem();
   const deleteItem = useDeleteRepairItem();
