@@ -145,6 +145,24 @@ export default function RepairNewPage() {
     setShowProductSearch(false);
   };
 
+  // Handle device image upload (convert to base64 data URLs for simplicity)
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach(file => {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Ảnh quá lớn (tối đa 5MB)');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setDeviceImages(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
   const handleSubmit = async () => {
     if (!deviceName.trim()) {
       toast.error('Vui lòng nhập tên thiết bị');
@@ -166,7 +184,7 @@ export default function RepairNewPage() {
       device_model: deviceModel || null,
       device_password: devicePassword || null,
       device_condition: deviceCondition || null,
-      device_images: [],
+      device_images: deviceImages,
       quantity,
       request_type_id: requestTypeId || null,
       request_type_name: requestTypeName,
@@ -177,6 +195,12 @@ export default function RepairNewPage() {
       received_by_name: displayName || null,
       note: note || null,
     } as any);
+
+    // Generate QR code
+    try {
+      const qrUrl = await QRCode.toDataURL(order.code, { width: 150, margin: 1 });
+      setQrDataUrl(qrUrl);
+    } catch { setQrDataUrl(''); }
 
     setCreatedOrder(order);
     setShowQRDialog(true);
