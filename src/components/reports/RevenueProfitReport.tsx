@@ -45,6 +45,7 @@ import {
   Calculator,
   Loader2,
   Download,
+  Wrench,
 } from 'lucide-react';
 import { format, subDays, startOfWeek, startOfMonth, subMonths, subWeeks } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -108,6 +109,7 @@ export function RevenueProfitReport() {
   const [endDate, setEndDate] = useState(today);
   const [branchId, setBranchId] = useState('_all_');
   const [categoryId, setCategoryId] = useState('_all_');
+  const [repairFilter, setRepairFilter] = useState('_all_');
   const [chartGroupBy, setChartGroupBy] = useState<'day' | 'week' | 'month'>('day');
   const [detailType, setDetailType] = useState<DetailType | null>(null);
   const [activePreset, setActivePreset] = useState<string | null>('today');
@@ -139,6 +141,7 @@ export function RevenueProfitReport() {
     endDate,
     branchId: branchId !== '_all_' ? branchId : undefined,
     categoryId: categoryId !== '_all_' ? categoryId : undefined,
+    repairFilter: repairFilter !== '_all_' ? repairFilter : undefined,
   };
 
   const { data: rawStats, isLoading: statsLoading } = useReportStats(filters);
@@ -282,6 +285,17 @@ export function RevenueProfitReport() {
                 <SelectContent className="bg-popover">
                   <SelectItem value="_all_">{t('common.all')}</SelectItem>
                   {categories?.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="flex items-center gap-1"><Wrench className="h-3.5 w-3.5" />Loại đơn</Label>
+              <Select value={repairFilter} onValueChange={setRepairFilter}>
+                <SelectTrigger className="w-40"><SelectValue placeholder={t('common.all')} /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="_all_">{t('common.all')}</SelectItem>
+                  <SelectItem value="repair">Sửa chữa</SelectItem>
+                  <SelectItem value="normal">Bán hàng</SelectItem>
                 </SelectContent>
               </Select>
             </div>

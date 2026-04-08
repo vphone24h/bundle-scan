@@ -44,6 +44,7 @@ export function useReportStats(filters?: {
   endDate?: string;
   branchId?: string;
   categoryId?: string;
+  repairFilter?: string;
 }) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
@@ -79,6 +80,7 @@ export function useReportStats(filters?: {
           p_end_iso: endISO,
           p_branch_id: effectiveBranchId || null,
           p_category_id: filters?.categoryId || null,
+          p_is_repair: filters?.repairFilter || null,
         }
       );
 
