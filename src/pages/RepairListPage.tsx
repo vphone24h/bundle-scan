@@ -286,7 +286,6 @@ export default function RepairListPage() {
       total_parts_price: totalParts,
       total_parts_cost: totalPartsCost,
       total_amount: newTotal,
-      estimated_price: newTotal,
     } as any);
 
     setShowAddItem(false);
