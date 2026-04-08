@@ -253,6 +253,43 @@ export default function WarrantyCheckPage() {
       {/* Results */}
       <section className="pb-20" ref={resultsRef}>
         <div className="container mx-auto px-4 max-w-2xl">
+          {/* Repair results */}
+          {searchTab === 'repair' && searchValue && repairResults && repairResults.length > 0 && (
+            <div className="space-y-3 mb-6">
+              <p className="text-sm text-muted-foreground">Tìm thấy <strong>{repairResults.length}</strong> phiếu sửa chữa</p>
+              {repairResults.map((r: any) => (
+                <Card key={r.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div>
+                        <h3 className="font-semibold text-sm">{r.device_name}</h3>
+                        <p className="text-xs text-muted-foreground font-mono">{r.code}</p>
+                      </div>
+                      <Badge variant={r.status === 'returned' ? 'default' : r.status === 'completed' ? 'destructive' : 'outline'} className="text-[11px]">
+                        {r.status === 'received' ? 'Tiếp nhận' : r.status === 'pending_check' ? 'Chờ kiểm tra' : r.status === 'repairing' ? 'Đang sửa' : r.status === 'waiting_parts' ? 'Chờ LK' : r.status === 'completed' ? 'Hoàn thành' : 'Đã trả'}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                      {r.device_imei && <div>IMEI: {r.device_imei}</div>}
+                      <div>Ngày nhận: {format(new Date(r.created_at), 'dd/MM/yyyy', { locale: vi })}</div>
+                      {r.due_date && <div>Hẹn trả: {format(new Date(r.due_date), 'dd/MM/yyyy', { locale: vi })}</div>}
+                      {r.device_condition && <div className="col-span-2">Tình trạng: {r.device_condition}</div>}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+          {searchTab === 'repair' && searchValue && repairResults && repairResults.length === 0 && !repairLoading && (
+            <Card><CardContent className="p-8 text-center text-muted-foreground">
+              <Wrench className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p className="font-medium">Không tìm thấy phiếu sửa chữa</p>
+            </CardContent></Card>
+          )}
+
+          {/* Warranty results (original) */}
+          {searchTab === 'warranty' && (
+          <>
           {showError && (
             <Card className="border-destructive/50 bg-destructive/5">
               <CardContent className="p-4 flex items-center gap-3 text-destructive">
