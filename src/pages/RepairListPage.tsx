@@ -575,7 +575,15 @@ export default function RepairListPage() {
                           {item.note && <div className="text-muted-foreground text-xs italic">{item.note}</div>}
                         </div>
                         {selectedOrder.status !== 'returned' && selectedOrder.status !== 'cancelled' && (
-                          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => deleteItem.mutate({ id: item.id, repairOrderId: selectedOrder.id })}>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={async () => {
+                            await deleteItem.mutateAsync({ id: item.id, repairOrderId: selectedOrder.id });
+                            const remaining = (orderItems || []).filter(i => i.id !== item.id);
+                            const totalService = remaining.filter(i => i.item_type === 'service').reduce((s, i) => s + (i.quantity || 1) * (i.unit_price || 0), 0);
+                            const totalParts = remaining.filter(i => i.item_type === 'part').reduce((s, i) => s + (i.quantity || 1) * (i.unit_price || 0), 0);
+                            const totalPartsCost = remaining.filter(i => i.item_type === 'part').reduce((s, i) => s + (i.quantity || 1) * (i.cost_price || 0), 0);
+                            const newTotal = totalService + totalParts;
+                            await updateOrder.mutateAsync({ id: selectedOrder.id, total_service_price: totalService, total_parts_price: totalParts, total_parts_cost: totalPartsCost, total_amount: newTotal, estimated_price: newTotal } as any);
+                          }}>
                             <Trash2 className="h-3 w-3 text-destructive" />
                           </Button>
                         )}
