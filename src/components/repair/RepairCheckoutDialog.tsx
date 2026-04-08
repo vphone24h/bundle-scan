@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { PriceInput } from '@/components/ui/price-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CreditCard, Banknote, CheckCircle, Printer, Wallet } from 'lucide-react';
+import { CreditCard, Banknote, CheckCircle, Printer, Wallet, Mail, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -41,6 +41,7 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [createdReceiptCode, setCreatedReceiptCode] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const totalAmount = order.total_amount;
   const debtAmount = paymentMethod === 'debt' ? totalAmount : Math.max(0, totalAmount - paidAmount);
@@ -267,6 +268,51 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
     }
   };
 
+  const handleSendEmail = async () => {
+    if (!order.customer_id) return;
+    setSendingEmail(true);
+    try {
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('email')
+        .eq('id', order.customer_id)
+        .maybeSingle();
+
+      if (!customer?.email) {
+        toast.error('Khách hàng chưa có email');
+        return;
+      }
+
+      const { error } = await supabase.functions.invoke('send-export-email', {
+        body: {
+          tenant_id: tenantId,
+          customer_name: order.customer_name || 'Khách lẻ',
+          customer_email: customer.email,
+          customer_phone: order.customer_phone || '',
+          items: items.map(item => ({
+            product_name: item.product_name || item.description || 'Dịch vụ',
+            imei: item.product_imei,
+            sale_price: item.unit_price,
+            quantity: item.quantity,
+            warranty: item.warranty || warranty,
+          })),
+          total_amount: totalAmount,
+          receipt_code: createdReceiptCode,
+          branch_id: order.branch_id,
+          export_date: new Date().toISOString(),
+          sales_staff_id: user?.id,
+        },
+      });
+
+      if (error) throw error;
+      toast.success('Đã gửi email cho khách hàng!');
+    } catch (err: any) {
+      toast.error('Gửi email thất bại: ' + err.message);
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   const handlePrint = () => {
     const printContent = `
       <html><head><title>Hóa đơn ${createdReceiptCode}</title>
@@ -285,11 +331,12 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
       <div class="row"><span class="label">Thiết bị:</span><span>${order.device_name}</span></div>
       <div class="row"><span class="label">IMEI:</span><span>${order.device_imei || '-'}</span></div>
       <div class="line"></div>
-      ${items.map(i => `<div class="item"><div class="bold">${i.product_name || i.description || 'Dịch vụ'}</div><div class="row"><span>${i.quantity} x ${formatNumber(i.unit_price)}đ</span><span class="bold">${formatNumber(i.total_price)}đ</span></div></div>`).join('')}
+      ${items.map(i => `<div class="item"><div class="bold">${i.product_name || i.description || 'Dịch vụ'}</div><div class="row"><span>${i.quantity} x ${formatNumber(i.unit_price)}đ</span><span class="bold">${formatNumber(i.total_price)}đ</span></div>${(i.warranty || (i.item_type === 'part' ? warranty : null)) ? `<div style="font-size:11px;color:#666">BH: ${i.warranty || warranty}</div>` : ''}</div>`).join('')}
       <div class="line"></div>
       <div class="row bold"><span>TỔNG:</span><span>${formatNumber(totalAmount)}đ</span></div>
       <div class="row"><span>Thanh toán:</span><span>${formatNumber(paidAmount)}đ</span></div>
       ${debtAmount > 0 ? `<div class="row"><span>Còn nợ:</span><span>${formatNumber(debtAmount)}đ</span></div>` : ''}
+      <div class="row"><span class="label">Bảo hành:</span><span>${warranty}</span></div>
       <div class="line"></div>
       <p style="text-align:center;font-size:11px;color:#999">${new Date().toLocaleString('vi')}</p>
       </body></html>
@@ -306,9 +353,13 @@ export function RepairCheckoutDialog({ open, onOpenChange, order, items }: Props
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
             <h3 className="text-xl font-bold">Thanh toán thành công!</h3>
             <p className="text-muted-foreground">Mã hóa đơn: <span className="font-mono font-bold">{createdReceiptCode}</span></p>
-            <div className="flex gap-2 justify-center">
+            <div className="flex gap-2 justify-center flex-wrap">
               <Button variant="outline" onClick={handlePrint}>
                 <Printer className="h-4 w-4 mr-1" /> In hóa đơn
+              </Button>
+              <Button variant="outline" onClick={handleSendEmail} disabled={sendingEmail || !order.customer_id}>
+                {sendingEmail ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Mail className="h-4 w-4 mr-1" />}
+                Gửi mail
               </Button>
               <Button onClick={() => onOpenChange(false)}>Đóng</Button>
             </div>
