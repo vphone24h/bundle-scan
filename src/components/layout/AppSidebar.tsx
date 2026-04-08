@@ -220,7 +220,7 @@ export function AppSidebar() {
     navigate('/auth');
   }, [signOut, navigate]);
 
-  const NavContent = () => (
+  const navContent = (
     <>
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-6 border-b border-sidebar-border">
