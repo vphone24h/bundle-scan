@@ -93,6 +93,9 @@ export default function RepairNewPage() {
   // Device images
   const [deviceImages, setDeviceImages] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showDeviceForm, setShowDeviceForm] = useState(false);
+  const [receivedById, setReceivedById] = useState<string | null>(user?.id || null);
+  const [receivedByName, setReceivedByName] = useState<string>(displayName || '');
 
   // Set default branch
   React.useEffect(() => {
