@@ -256,6 +256,11 @@ export function AppSidebar() {
                 >
                   <item.icon className="h-5 w-5" />
                   <span className="flex-1 text-left">{item.titleKey ? t(item.titleKey) : item.title}</span>
+                  {item.title === 'Sửa chữa' && completedRepairCount > 0 && (
+                    <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
+                      {completedRepairCount}
+                    </span>
+                  )}
                   <svg
                     className={cn('h-4 w-4 transition-transform', expandedItems.includes(item.title) && 'rotate-180')}
                     fill="none"
