@@ -192,6 +192,7 @@ export default function ExportHistoryPage() {
   const [paymentSourceFilter, setPaymentSourceFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('_all_');
+  const [repairFilter, setRepairFilter] = useState('_all_');
 
   // Manual search trigger (no debounce)
   const [debouncedSearch, setDebouncedSearch] = useState('');
