@@ -398,15 +398,35 @@ export default function RepairListPage() {
                 </Select>
               </div>
 
-              {/* Technician */}
+              {/* Technician - Staff Selector */}
               <div>
                 <Label className="text-xs">Kỹ thuật viên</Label>
-                <Input
-                  value={selectedOrder.technician_name || ''}
-                  onChange={e => updateOrder.mutate({ id: selectedOrder.id, technician_name: e.target.value, technician_id: user?.id } as any)}
-                  placeholder="Nhập tên KTV"
-                  className="h-8 text-sm"
-                />
+                <Select
+                  value={selectedOrder.technician_id || '_none_'}
+                  onValueChange={(v) => {
+                    const staffId = v === '_none_' ? null : v;
+                    const staff = staffList?.find(s => s.user_id === staffId);
+                    updateOrder.mutate({
+                      id: selectedOrder.id,
+                      technician_id: staffId,
+                      technician_name: staff?.display_name || null,
+                    } as any);
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue placeholder="Chọn kỹ thuật viên..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none_">Chưa phân công</SelectItem>
+                    {staffList?.map((staff) => (
+                      <SelectItem key={staff.user_id} value={staff.user_id}>
+                        {staff.display_name || 'Nhân viên'}
+                        {staff.user_role === 'super_admin' && ' (Admin)'}
+                        {staff.user_role === 'branch_admin' && ' (QL)'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Services & Parts */}
