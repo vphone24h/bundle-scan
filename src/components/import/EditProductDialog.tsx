@@ -164,14 +164,15 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     const combos = generateVariantCombinations(activeLevels);
     if (combos.length === 0 || (combos.length === 1 && combos[0].length === 0)) return;
 
-    const existingImei = (formData.imei || product?.imei || '').trim();
+    const existingImei = (product?.imei || '').trim(); // Chỉ lấy IMEI gốc từ product, không lấy từ formData
     const existingPrice = String(product?.import_price || 0);
     const validKeys = new Set(combos.map(combo => combo.join('|')));
 
     setVariantImeis(prev => {
       const next = Object.fromEntries(Object.entries(prev).filter(([key]) => validKeys.has(key)));
+      // Chỉ pre-fill IMEI nếu product gốc thực sự có IMEI và KHÔNG phải template
       const hasAnyImei = Object.values(next).some(value => (value || '').trim());
-      if (!hasAnyImei && existingImei) {
+      if (!hasAnyImei && existingImei && product?.status !== 'template') {
         next[combos[0].join('|')] = existingImei;
       }
       return next;
@@ -400,7 +401,9 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       }
 
       // Nếu SP mẫu (template) được thêm IMEI → tạo phiếu nhập tự động
-      const isTemplateGettingImei = prod.status === 'template' && !prod.imei && (updates.imei || fData.imei.trim());
+      // Chỉ tạo phiếu nhập khi IMEI thực sự là chuỗi không rỗng
+      const newImei = (updates.imei || fData.imei || '').toString().trim();
+      const isTemplateGettingImei = prod.status === 'template' && !prod.imei && newImei.length > 0;
       let autoReceiptId: string | null = null;
 
       if (isTemplateGettingImei) {
@@ -491,7 +494,9 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               if (existingNames.has(fullName)) return null;
               const skuSuffix = combo.map(v => v.replace(/\s+/g, '')).join('-');
               const comboKey = combo.join('|');
-              const comboImei = isOriginalTemplate ? (vImeis[comboKey]?.trim() || null) : null;
+              // Chỉ gán IMEI nếu user thực sự nhập IMEI mới (không phải pre-fill từ sản phẩm gốc)
+              const rawImei = vImeis[comboKey]?.trim() || '';
+              const comboImei = (isOriginalTemplate && rawImei.length > 0) ? rawImei : null;
               const comboPrice = vPrices[comboKey] ? Math.round(Number(vPrices[comboKey])) : Math.round(Number(baseImportPrice));
               return {
                 name: fullName,
