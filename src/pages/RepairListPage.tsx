@@ -313,13 +313,13 @@ export default function RepairListPage() {
     toast.success(`Đã chuyển trạng thái: ${REPAIR_STATUS_MAP[newStatus].label}`);
   };
 
-  const completedCount = orders?.filter(o => o.status === 'completed').length || 0;
+  const completedCount = orders.filter(o => o.status === 'completed').length || 0;
 
   return (
     <MainLayout>
       <PageHeader
         title="Danh sách sửa chữa"
-        description={`${filteredOrders.length} phiếu`}
+        description={`${totalCount} phiếu`}
         actions={
           <Button onClick={() => navigate('/repair/new')} size="sm">
             <Plus className="h-4 w-4 mr-1" /> Tạo phiếu mới
@@ -344,7 +344,7 @@ export default function RepairListPage() {
             />
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList className="flex-wrap h-auto">
               {STATUS_TABS.map(t => (
                 <TabsTrigger key={t.key} value={t.key} className="text-xs">
@@ -361,9 +361,9 @@ export default function RepairListPage() {
           <div className="sm:hidden mt-3 space-y-2">
             {isLoading ? (
               <div className="text-center py-8 text-muted-foreground">Đang tải...</div>
-            ) : pagedOrders.length === 0 ? (
+            ) : orders.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">Chưa có phiếu sửa chữa nào</div>
-            ) : pagedOrders.map(order => {
+            ) : orders.map((order: RepairOrder) => {
               const st = REPAIR_STATUS_MAP[order.status];
               const isCompleted = order.status === 'completed';
               return (
@@ -410,9 +410,9 @@ export default function RepairListPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Đang tải...</TableCell></TableRow>
-                ) : pagedOrders.length === 0 ? (
+                ) : orders.length === 0 ? (
                   <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Chưa có phiếu sửa chữa nào</TableCell></TableRow>
-                ) : pagedOrders.map(order => {
+                ) : orders.map((order: RepairOrder) => {
                   const st = REPAIR_STATUS_MAP[order.status];
                   const isCompleted = order.status === 'completed';
                   return (
@@ -442,12 +442,12 @@ export default function RepairListPage() {
           </div>
 
           <TablePagination 
-            currentPage={pagination.currentPage}
-            totalPages={pagination.totalPages}
+            currentPage={pagination.page}
+            totalPages={totalPages}
             pageSize={pagination.pageSize}
-            totalItems={pagination.totalItems}
-            startIndex={pagination.startIndex}
-            endIndex={pagination.endIndex}
+            totalItems={totalCount}
+            startIndex={totalCount === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1}
+            endIndex={Math.min(pagination.page * pagination.pageSize, totalCount)}
             onPageChange={pagination.setPage}
             onPageSizeChange={pagination.setPageSize}
           />
