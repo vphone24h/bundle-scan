@@ -163,13 +163,49 @@ export default function RepairListPage() {
   // Search parts from inventory
   const searchParts = async (term: string) => {
     if (!term || term.length < 2) { setPartResults([]); return; }
+
+    // Lấy danh sách product_id đã được dùng trong phiếu sửa chữa đang hoạt động (treo hàng)
+    const { data: reservedItems } = await supabase
+      .from('repair_order_items')
+      .select('product_id, quantity, repair_order_id')
+      .not('product_id', 'is', null)
+      .eq('item_type', 'part');
+    
+    // Lọc chỉ giữ items thuộc phiếu sửa đang hoạt động (chưa trả khách)
+    const activeOrderIds = new Set(
+      (orders || []).filter(o => o.status !== 'returned').map(o => o.id)
+    );
+    const reservedProductIds = new Set<string>();
+    const reservedQtyMap = new Map<string, number>();
+    (reservedItems || []).forEach(item => {
+      if (item.product_id && activeOrderIds.has(item.repair_order_id)) {
+        reservedProductIds.add(item.product_id);
+        reservedQtyMap.set(item.product_id, (reservedQtyMap.get(item.product_id) || 0) + (item.quantity || 1));
+      }
+    });
+
     const { data } = await supabase
       .from('products')
-      .select('id, name, sku, imei, import_price, sale_price')
+      .select('id, name, sku, imei, import_price, sale_price, quantity')
       .or(`name.ilike.%${term}%,imei.ilike.%${term}%,sku.ilike.%${term}%`)
       .eq('status', 'in_stock')
       .limit(20);
-    setPartResults(data || []);
+
+    // Lọc bỏ sản phẩm IMEI đã treo, hoặc hàng không IMEI đã hết slot
+    const filtered = (data || []).filter(p => {
+      if (p.imei) {
+        // Sản phẩm IMEI: ẩn hoàn toàn nếu đã treo
+        return !reservedProductIds.has(p.id);
+      } else {
+        // Sản phẩm không IMEI: ẩn nếu tồn kho <= số đã treo
+        const reserved = reservedQtyMap.get(p.id) || 0;
+        const available = (p.quantity || 0) - reserved;
+        if (available <= 0) return false;
+        (p as any).available_quantity = available;
+        return true;
+      }
+    });
+    setPartResults(filtered);
   };
 
   React.useEffect(() => {
@@ -542,6 +578,7 @@ export default function RepairListPage() {
                         <div className="font-medium">{p.name}</div>
                         <div className="text-xs text-muted-foreground">
                           {p.imei && `IMEI: ${p.imei} • `}Giá nhập: {formatNumber(p.import_price || 0)}đ
+                          {!p.imei && (p as any).available_quantity != null && ` • Còn: ${(p as any).available_quantity}`}
                         </div>
                       </button>
                     ))}
