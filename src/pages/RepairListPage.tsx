@@ -286,7 +286,6 @@ export default function RepairListPage() {
       total_parts_price: totalParts,
       total_parts_cost: totalPartsCost,
       total_amount: newTotal,
-      estimated_price: newTotal,
     } as any);
 
     setShowAddItem(false);
@@ -582,7 +581,7 @@ export default function RepairListPage() {
                             const totalParts = remaining.filter(i => i.item_type === 'part').reduce((s, i) => s + (i.quantity || 1) * (i.unit_price || 0), 0);
                             const totalPartsCost = remaining.filter(i => i.item_type === 'part').reduce((s, i) => s + (i.quantity || 1) * (i.cost_price || 0), 0);
                             const newTotal = totalService + totalParts;
-                            await updateOrder.mutateAsync({ id: selectedOrder.id, total_service_price: totalService, total_parts_price: totalParts, total_parts_cost: totalPartsCost, total_amount: newTotal, estimated_price: newTotal } as any);
+                            await updateOrder.mutateAsync({ id: selectedOrder.id, total_service_price: totalService, total_parts_price: totalParts, total_parts_cost: totalPartsCost, total_amount: newTotal } as any);
                           }}>
                             <Trash2 className="h-3 w-3 text-destructive" />
                           </Button>
