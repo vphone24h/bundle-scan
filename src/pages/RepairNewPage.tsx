@@ -25,13 +25,14 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Wrench, QrCode, Printer, Plus, Trash2, Search, UserPlus, Camera } from 'lucide-react';
+import { Wrench, QrCode, Printer, Plus, Trash2, Search, UserPlus, Camera, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { useBranches } from '@/hooks/useBranches';
 import { useCreateRepairOrder, useRepairRequestTypes, useCreateRepairRequestType, useDeleteRepairRequestType, REPAIR_STATUS_MAP, RepairStatus } from '@/hooks/useRepairOrders';
+import { useStaffList } from '@/hooks/useCRM';
 import { supabase } from '@/integrations/supabase/client';
 import { formatNumber } from '@/lib/formatNumber';
 import { useNavigate } from 'react-router-dom';
@@ -47,6 +48,7 @@ export default function RepairNewPage() {
   const createOrder = useCreateRepairOrder();
   const createRequestType = useCreateRepairRequestType();
   const deleteRequestType = useDeleteRepairRequestType();
+  const { data: staffList } = useStaffList();
   
   const tenantId = platformUser?.tenant_id || '';
   const defaultBranch = branches?.find(b => b.is_default);
@@ -91,11 +93,21 @@ export default function RepairNewPage() {
   // Device images
   const [deviceImages, setDeviceImages] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showDeviceForm, setShowDeviceForm] = useState(false);
+  const [receivedById, setReceivedById] = useState<string | null>(user?.id || null);
+  const [receivedByName, setReceivedByName] = useState<string>(displayName || '');
 
-  // Set default branch
+  // Set defaults
   React.useEffect(() => {
     if (defaultBranch?.id && !branchId) setBranchId(defaultBranch.id);
   }, [defaultBranch]);
+
+  React.useEffect(() => {
+    if (user?.id && !receivedById) {
+      setReceivedById(user.id);
+      setReceivedByName(displayName || '');
+    }
+  }, [user?.id, displayName]);
 
   // Search customers
   const searchCustomers = useCallback(async (term: string) => {
@@ -191,8 +203,8 @@ export default function RepairNewPage() {
       status,
       estimated_price: estimatedPrice,
       due_date: dueDate || null,
-      received_by: user?.id || null,
-      received_by_name: displayName || null,
+      received_by: receivedById || user?.id || null,
+      received_by_name: receivedByName || displayName || null,
       note: note || null,
     } as any);
 
@@ -259,11 +271,23 @@ export default function RepairNewPage() {
         <div className="lg:col-span-2 space-y-4">
           <Card>
             <CardContent className="pt-4 space-y-4">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Wrench className="h-4 w-4" /> Thông tin máy
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Wrench className="h-4 w-4" /> Thông tin máy
+                </h3>
+                {!showDeviceForm && (
+                  <Button variant="default" size="sm" onClick={() => setShowDeviceForm(true)}>
+                    <Plus className="h-4 w-4 mr-1" /> Thêm mới
+                  </Button>
+                )}
+                {showDeviceForm && (
+                  <Button variant="ghost" size="sm" onClick={() => setShowDeviceForm(false)}>
+                    <ChevronUp className="h-4 w-4 mr-1" /> Thu gọn
+                  </Button>
+                )}
+              </div>
 
-              {/* Product search */}
+              {/* Product search - always visible */}
               <div className="relative">
                 <Label>Tìm sản phẩm / lịch sử sửa</Label>
                 <SearchInput
@@ -274,7 +298,7 @@ export default function RepairNewPage() {
                 {showProductSearch && productResults.length > 0 && (
                   <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-auto">
                     {productResults.map(p => (
-                      <button key={p.id} onClick={() => selectProduct(p)}
+                      <button key={p.id} onClick={() => { selectProduct(p); setShowDeviceForm(true); }}
                         className="w-full text-left px-3 py-2 hover:bg-muted text-sm">
                         <div className="font-medium">{p.name}</div>
                         {p.imei && <span className="text-xs text-muted-foreground">IMEI: {p.imei}</span>}
@@ -284,6 +308,9 @@ export default function RepairNewPage() {
                 )}
               </div>
 
+              {/* Collapsible device form */}
+              {showDeviceForm && (
+                <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label>Tên thiết bị <span className="text-destructive">*</span></Label>
@@ -412,6 +439,8 @@ export default function RepairNewPage() {
                   </button>
                 </div>
               </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -461,8 +490,34 @@ export default function RepairNewPage() {
                 </div>
               )}
 
-              <div className="text-xs text-muted-foreground">
-                NV tiếp nhận: <span className="font-medium text-foreground">{displayName || 'Chưa xác định'}</span>
+              <div>
+                <Label className="text-xs">NV tiếp nhận</Label>
+                <Select
+                  value={receivedById || '_none_'}
+                  onValueChange={(v) => {
+                    if (v === '_none_') {
+                      setReceivedById(null);
+                      setReceivedByName('');
+                    } else {
+                      setReceivedById(v);
+                      const staff = staffList?.find(s => s.user_id === v);
+                      setReceivedByName(staff?.display_name || '');
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue placeholder="Chọn nhân viên..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {staffList?.map((staff) => (
+                      <SelectItem key={staff.user_id} value={staff.user_id}>
+                        {staff.display_name || 'Nhân viên'}
+                        {staff.user_role === 'super_admin' && ' (Admin)'}
+                        {staff.user_role === 'branch_admin' && ' (QL)'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>
