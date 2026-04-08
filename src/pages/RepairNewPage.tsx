@@ -98,6 +98,7 @@ export default function RepairNewPage() {
   const [createdOrder, setCreatedOrder] = useState<any>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [autoEmailEnabled, setAutoEmailEnabled] = useState(true);
   const [barcodeDialogOpen, setBarcodeDialogOpen] = useState(false);
   const [barcodeProducts, setBarcodeProducts] = useState<{ id: string; name: string; sku: string; imei?: string; importPrice: number; salePrice?: number }[]>([]);
 
@@ -221,6 +222,33 @@ export default function RepairNewPage() {
 
     setCreatedOrder(order);
     setShowQRDialog(true);
+
+    // Auto send email if enabled
+    const email = customerEmail?.trim() || selectedCustomer?.email;
+    if (autoEmailEnabled && email) {
+      supabase.functions.invoke('send-export-email', {
+        body: {
+          tenant_id: tenantId,
+          customer_name: customerName || selectedCustomer?.name || 'Khách lẻ',
+          customer_email: email,
+          customer_phone: customerPhone || selectedCustomer?.phone || '',
+          items: [{
+            product_name: `[Sửa chữa] ${order.device_name}`,
+            imei: order.device_imei,
+            sale_price: order.estimated_price,
+            quantity: 1,
+            warranty: '',
+          }],
+          total_amount: order.estimated_price,
+          receipt_code: order.code,
+          branch_id: order.branch_id,
+          export_date: new Date().toISOString(),
+          sales_staff_id: user?.id,
+        },
+      }).then(({ error }) => {
+        if (error) console.warn('Auto repair email failed:', error.message);
+      }).catch(() => {});
+    }
   };
 
   const handleSendRepairEmail = async () => {
@@ -603,6 +631,25 @@ export default function RepairNewPage() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Auto email toggle */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <Label htmlFor="auto-email-repair-create" className="flex items-center gap-2 cursor-pointer text-sm">
+                  <Mail className="h-4 w-4 text-primary" />
+                  Tự động gửi email cho khách
+                </Label>
+                <Switch
+                  id="auto-email-repair-create"
+                  checked={autoEmailEnabled}
+                  onCheckedChange={setAutoEmailEnabled}
+                />
+              </div>
+              {autoEmailEnabled && !(customerEmail?.trim() || selectedCustomer?.email) && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  <Mail className="h-3 w-3" />
+                  Khách chưa có email — sẽ không gửi được
+                </p>
+              )}
             </CardContent>
           </Card>
 
