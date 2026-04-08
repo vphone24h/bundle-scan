@@ -84,6 +84,7 @@ export default function RepairListPage() {
   const { data: platformUser } = usePlatformUser();
   const tenantId = platformUser?.tenant_id || '';
 
+  const { data: staffList } = useStaffList();
   const [activeTab, setActiveTab] = useState<string>('all');
   const [search, setSearch] = useState('');
   const { data: orders, isLoading } = useRepairOrders(activeTab as any);
