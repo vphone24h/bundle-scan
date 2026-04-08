@@ -86,6 +86,11 @@ export default function RepairNewPage() {
   // QR dialog
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<any>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+
+  // Device images
+  const [deviceImages, setDeviceImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Set default branch
   React.useEffect(() => {
