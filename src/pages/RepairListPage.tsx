@@ -639,7 +639,10 @@ export default function RepairListPage() {
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-semibold text-sm">Dịch vụ & Linh kiện</h4>
                   {selectedOrder.status !== 'returned' && selectedOrder.status !== 'cancelled' && (
-                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { resetItemForm(); setShowAddItem(true); }}>
+                    <Button size="sm" variant="outline" className="h-7 text-xs" 
+                      disabled={!selectedOrder.technician_id}
+                      title={!selectedOrder.technician_id ? 'Vui lòng chọn kỹ thuật viên trước' : ''}
+                      onClick={() => { resetItemForm(); setShowAddItem(true); }}>
                       <Plus className="h-3 w-3 mr-1" /> Thêm
                     </Button>
                   )}
@@ -720,7 +723,10 @@ export default function RepairListPage() {
                   </Button>
                 )}
                 {(selectedOrder.status === 'received' || selectedOrder.status === 'pending_check') && (
-                  <Button variant="outline" className="flex-1" onClick={() => handleStatusChange(selectedOrder.id, 'repairing')}>
+                  <Button variant="outline" className="flex-1" 
+                    disabled={!selectedOrder.technician_id}
+                    title={!selectedOrder.technician_id ? 'Vui lòng chọn kỹ thuật viên trước' : ''}
+                    onClick={() => handleStatusChange(selectedOrder.id, 'repairing')}>
                     <Play className="h-4 w-4 mr-1" /> Bắt đầu sửa
                   </Button>
                 )}
