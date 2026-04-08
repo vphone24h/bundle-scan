@@ -83,6 +83,7 @@ function MainLayoutInner({ children }: MainLayoutProps) {
   const { data: tenant } = useCurrentTenant();
   const { data: platformUser } = usePlatformUser();
   const needsBusinessType = !!tenant && !tenant.business_type && (platformUser?.platform_role as string) !== 'platform_admin';
+  useDynamicPWABranding();
 
   return (
     <div className="min-h-screen bg-background safe-x">
