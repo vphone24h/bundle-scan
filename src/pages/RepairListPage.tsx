@@ -121,11 +121,8 @@ export default function RepairListPage() {
     );
   }, [orders, search]);
 
-  const pagination = usePagination({ totalItems: filteredOrders.length, itemsPerPage: 20 });
-  const pagedOrders = filteredOrders.slice(
-    (pagination.currentPage - 1) * 20,
-    pagination.currentPage * 20
-  );
+  const pagination = usePagination(filteredOrders, { defaultPageSize: 20 });
+  const pagedOrders = pagination.paginatedData;
 
   // Search parts from inventory
   const searchParts = async (term: string) => {
@@ -207,7 +204,7 @@ export default function RepairListPage() {
         old_status: order.status,
         new_status: newStatus,
         changed_by: user?.id,
-        changed_by_name: profile?.full_name,
+        changed_by_name: profile?.display_name,
       } as any);
     }
 
@@ -307,7 +304,16 @@ export default function RepairListPage() {
                 })}
               </TableBody>
             </Table>
-            {filteredOrders.length > 20 && <TablePagination {...pagination} />}
+            {filteredOrders.length > 20 && <TablePagination 
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              pageSize={pagination.pageSize}
+              totalItems={pagination.totalItems}
+              startIndex={pagination.startIndex}
+              endIndex={pagination.endIndex}
+              onPageChange={pagination.setPage}
+              onPageSizeChange={pagination.setPageSize}
+            />}
           </div>
         </CardContent>
       </Card>
