@@ -5676,6 +5676,8 @@ export type Database = {
           note: string | null
           old_status: Database["public"]["Enums"]["repair_status"] | null
           repair_order_id: string
+          technician_id: string | null
+          technician_name: string | null
           tenant_id: string | null
         }
         Insert: {
@@ -5687,6 +5689,8 @@ export type Database = {
           note?: string | null
           old_status?: Database["public"]["Enums"]["repair_status"] | null
           repair_order_id: string
+          technician_id?: string | null
+          technician_name?: string | null
           tenant_id?: string | null
         }
         Update: {
@@ -5698,6 +5702,8 @@ export type Database = {
           note?: string | null
           old_status?: Database["public"]["Enums"]["repair_status"] | null
           repair_order_id?: string
+          technician_id?: string | null
+          technician_name?: string | null
           tenant_id?: string | null
         }
         Relationships: [
