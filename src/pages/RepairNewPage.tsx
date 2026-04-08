@@ -468,48 +468,25 @@ export default function RepairNewPage() {
 
         {/* Right: Customer + Actions */}
         <div className="space-y-4">
-          <Card>
+           <Card>
             <CardContent className="pt-4 space-y-3">
-              <h3 className="font-semibold">Khách hàng</h3>
-              <div className="relative">
-                <SearchInput
-                  value={customerSearch}
-                  onChange={v => { setCustomerSearch(v); setShowCustomerSearch(true); }}
-                  placeholder="Tìm theo tên, SĐT..."
-                />
-                {showCustomerSearch && customerResults.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-40 overflow-auto">
-                    {customerResults.map(c => (
-                      <button key={c.id} onClick={() => selectCustomer(c)}
-                        className="w-full text-left px-3 py-2 hover:bg-muted text-sm">
-                        <span className="font-medium">{c.name}</span>
-                        <span className="text-muted-foreground ml-2">{c.phone}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {customerId ? (
-                <div className="bg-muted/50 rounded-md p-3 text-sm space-y-1">
-                  <div className="font-medium">{customerName}</div>
-                  <div className="text-muted-foreground">{customerPhone}</div>
-                  <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => {
-                    setCustomerId(null); setCustomerName(''); setCustomerPhone('');
-                  }}>Bỏ chọn</Button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-2">
-                  <div>
-                    <Label className="text-xs">Tên khách</Label>
-                    <Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Nhập tên" className="h-8 text-sm" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">SĐT</Label>
-                    <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Nhập SĐT" className="h-8 text-sm" />
-                  </div>
-                </div>
-              )}
+              <CustomerSearchCombobox
+                selectedCustomer={selectedCustomer}
+                onSelect={setSelectedCustomer}
+                onCustomerInfoChange={() => {}}
+                customerName={customerName}
+                customerPhone={customerPhone}
+                customerAddress={customerAddress}
+                customerEmail={customerEmail}
+                customerSource={customerSource}
+                customerBirthday={customerBirthday}
+                setCustomerName={setCustomerName}
+                setCustomerPhone={setCustomerPhone}
+                setCustomerAddress={setCustomerAddress}
+                setCustomerEmail={setCustomerEmail}
+                setCustomerSource={setCustomerSource}
+                setCustomerBirthday={setCustomerBirthday}
+              />
 
               <div>
                 <Label className="text-xs">NV tiếp nhận</Label>
