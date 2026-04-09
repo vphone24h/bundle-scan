@@ -354,6 +354,19 @@ export default function MyAttendancePage() {
           </TabsContent>
 
           {/* Correction Requests Tab */}
+          {/* Schedule Tab - Employee Shift Calendar */}
+          <TabsContent value="schedule" className="space-y-3">
+            <Card>
+              <CardHeader className="p-3 pb-1">
+                <CardTitle className="text-sm">Lịch ca làm việc</CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <EmployeeShiftCalendar month={currentMonth} assignments={allShiftAssignments || []} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Correction Requests Tab */}
           <TabsContent value="corrections">
             <EmployeeCorrectionRequests userId={user?.id} tenantId={tenantId} />
           </TabsContent>
