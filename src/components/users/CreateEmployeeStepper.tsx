@@ -81,6 +81,11 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
     allowances: [], deductions: [],
   });
 
+  // Step 5 data
+  const [attendanceData, setAttendanceData] = useState<AttendanceSetupData>({
+    allowGps: true, allowQr: true, allowPos: false, maxDevices: 2, requireDeviceApproval: true,
+  });
+
   const [memberLimitError, setMemberLimitError] = useState<{
     currentCount: number; maxUsers: number; message: string;
   } | null>(null);
@@ -298,7 +303,7 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
                 />
               )}
               {currentStep === 1 && (
-                <StepAssignShift
+                <StepCreateShift
                   shifts={shifts || []}
                   selectedShiftId={selectedShiftId}
                   onSelect={setSelectedShiftId}
@@ -320,14 +325,9 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
                 />
               )}
               {currentStep === 4 && (
-                <StepReview
-                  basicInfo={basicInfo}
-                  selectedShiftId={selectedShiftId}
-                  shifts={shifts || []}
-                  scheduleData={scheduleData}
-                  salaryData={salaryData}
-                  templates={salaryTemplates || []}
-                  branches={branches}
+                <StepAttendanceSetup
+                  data={attendanceData}
+                  onChange={setAttendanceData}
                 />
               )}
             </div>
