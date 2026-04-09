@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Clock, Smartphone, QrCode, CheckCircle2, XCircle, Loader2, AlertTriangle } from 'lucide-react';
+import { MapPin, Clock, Smartphone, QrCode, CheckCircle2, XCircle, Loader2, AlertTriangle, Navigation, Signal, Wifi, WifiOff, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { usePlatformUser } from '@/hooks/useTenant';
@@ -10,6 +10,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
+import { Progress } from '@/components/ui/progress';
 
 // Haversine distance in meters
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -44,6 +47,7 @@ export default function CheckInPage() {
   const { data: pu } = usePlatformUser();
   const tenantId = pu?.tenant_id;
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [gpsPos, setGpsPos] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
@@ -52,6 +56,7 @@ export default function CheckInPage() {
   const [checking, setChecking] = useState(false);
   const [nearestLocation, setNearestLocation] = useState<any>(null);
   const [distance, setDistance] = useState<number | null>(null);
+  const [allDistances, setAllDistances] = useState<{ loc: any; dist: number }[]>([]);
   const deviceFP = useRef(getDeviceFingerprint());
 
   // Clock
@@ -74,7 +79,7 @@ export default function CheckInPage() {
         setGpsLoading(false);
       },
       err => {
-        setGpsError(err.code === 1 ? 'Vui lòng cho phép truy cập vị trí' : 'Không thể lấy vị trí GPS');
+        setGpsError(err.code === 1 ? 'Vui lòng cho phép truy cập vị trí' : err.code === 2 ? 'Không tìm thấy vị trí' : 'GPS timeout');
         setGpsLoading(false);
       },
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
@@ -97,17 +102,17 @@ export default function CheckInPage() {
     enabled: !!tenantId,
   });
 
-  // Find nearest location
+  // Find nearest location + all distances
   useEffect(() => {
-    if (!gpsPos || !locations?.length) { setNearestLocation(null); setDistance(null); return; }
-    let minDist = Infinity;
-    let nearest: any = null;
-    for (const loc of locations) {
-      const d = haversineDistance(gpsPos.lat, gpsPos.lng, loc.latitude, loc.longitude);
-      if (d < minDist) { minDist = d; nearest = loc; }
-    }
-    setNearestLocation(nearest);
-    setDistance(Math.round(minDist));
+    if (!gpsPos || !locations?.length) { setNearestLocation(null); setDistance(null); setAllDistances([]); return; }
+    const dists = locations.map(loc => ({
+      loc,
+      dist: Math.round(haversineDistance(gpsPos.lat, gpsPos.lng, loc.latitude, loc.longitude)),
+    })).sort((a, b) => a.dist - b.dist);
+    
+    setAllDistances(dists);
+    setNearestLocation(dists[0].loc);
+    setDistance(dists[0].dist);
   }, [gpsPos, locations]);
 
   // Today's record
@@ -125,6 +130,25 @@ export default function CheckInPage() {
     },
     enabled: !!user?.id,
     refetchInterval: 10000,
+  });
+
+  // Today's shift
+  const dayOfWeek = new Date().getDay();
+  const { data: todayShift } = useQuery({
+    queryKey: ['my-shift-checkin', user?.id, tenantId, today],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('shift_assignments')
+        .select('*, work_shifts(name, start_time, end_time, break_minutes, late_threshold_minutes)')
+        .eq('user_id', user!.id)
+        .eq('tenant_id', tenantId!)
+        .eq('is_active', true)
+        .or(`specific_date.eq.${today},and(assignment_type.eq.fixed,day_of_week.eq.${dayOfWeek})`)
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user?.id && !!tenantId,
   });
 
   // Device check
@@ -146,9 +170,26 @@ export default function CheckInPage() {
   const deviceOk = myDevice?.status === 'approved';
   const hasCheckedIn = !!todayRecord?.check_in_time;
   const hasCheckedOut = !!todayRecord?.check_out_time;
-
   const canCheckIn = !hasCheckedIn && isInRange && user;
   const canCheckOut = hasCheckedIn && !hasCheckedOut && user;
+
+  // Working time elapsed
+  const [workingMinutes, setWorkingMinutes] = useState(0);
+  useEffect(() => {
+    if (!hasCheckedIn || hasCheckedOut || !todayRecord?.check_in_time) return;
+    const update = () => {
+      const mins = Math.round((Date.now() - new Date(todayRecord.check_in_time!).getTime()) / 60000);
+      setWorkingMinutes(mins);
+    };
+    update();
+    const t = setInterval(update, 30000);
+    return () => clearInterval(t);
+  }, [hasCheckedIn, hasCheckedOut, todayRecord?.check_in_time]);
+
+  const shiftInfo = todayShift?.work_shifts as any;
+  const distancePercent = nearestLocation && distance !== null
+    ? Math.max(0, Math.min(100, 100 - (distance / nearestLocation.radius_meters * 100)))
+    : 0;
 
   const registerDevice = useCallback(async () => {
     if (!user?.id || !tenantId) return;
@@ -173,27 +214,13 @@ export default function CheckInPage() {
     if (!user?.id || !tenantId || !gpsPos || !nearestLocation) return;
     setChecking(true);
     try {
-      // Get assigned shift for today
-      const dayOfWeek = new Date().getDay();
-      const { data: assignment } = await supabase
-        .from('shift_assignments')
-        .select('shift_id, work_shifts(start_time, late_threshold_minutes)')
-        .eq('user_id', user.id)
-        .eq('tenant_id', tenantId)
-        .eq('is_active', true)
-        .or(`specific_date.eq.${today},and(assignment_type.eq.fixed,day_of_week.eq.${dayOfWeek})`)
-        .limit(1)
-        .maybeSingle();
-
-      // Calculate status
       let status = 'on_time';
       let lateMinutes = 0;
       const now = new Date();
-      if (assignment?.work_shifts) {
-        const ws = assignment.work_shifts as any;
-        const [h, m] = ws.start_time.split(':').map(Number);
+      if (shiftInfo) {
+        const [h, m] = shiftInfo.start_time.split(':').map(Number);
         const shiftStart = new Date(); shiftStart.setHours(h, m, 0, 0);
-        const threshold = (ws.late_threshold_minutes || 15) * 60 * 1000;
+        const threshold = (shiftInfo.late_threshold_minutes || 15) * 60 * 1000;
         const diff = now.getTime() - shiftStart.getTime();
         if (diff > threshold) { status = 'late'; lateMinutes = Math.round(diff / 60000); }
       }
@@ -202,7 +229,7 @@ export default function CheckInPage() {
         tenant_id: tenantId,
         user_id: user.id,
         date: today,
-        shift_id: assignment?.shift_id || null,
+        shift_id: todayShift?.shift_id || null,
         location_id: nearestLocation.id,
         branch_id: nearestLocation.branch_id,
         check_in_time: now.toISOString(),
@@ -223,7 +250,7 @@ export default function CheckInPage() {
     } finally {
       setChecking(false);
     }
-  }, [user?.id, tenantId, gpsPos, nearestLocation, myDevice, today, qc]);
+  }, [user?.id, tenantId, gpsPos, nearestLocation, myDevice, todayShift, shiftInfo, today, qc]);
 
   const handleCheckOut = useCallback(async () => {
     if (!todayRecord?.id || !gpsPos) return;
@@ -254,49 +281,108 @@ export default function CheckInPage() {
   }, [todayRecord, gpsPos, myDevice, qc]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center px-4 py-6 safe-x safe-bottom">
+    <div className="min-h-screen bg-background flex flex-col items-center px-4 py-4 safe-x safe-bottom">
+      {/* Header with back button */}
+      <div className="w-full max-w-md flex items-center justify-between mb-4">
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <span className="text-sm font-medium text-muted-foreground">Chấm công</span>
+        <div className="w-8" />
+      </div>
+
       {/* Clock */}
-      <div className="text-center mb-6">
+      <div className="text-center mb-4">
         <p className="text-5xl sm:text-6xl font-bold tabular-nums text-foreground">
           {format(currentTime, 'HH:mm:ss')}
         </p>
-        <p className="text-sm text-muted-foreground mt-1">{format(currentTime, 'EEEE, dd/MM/yyyy')}</p>
-        <p className="text-base font-medium text-foreground mt-2">{profile?.display_name || user?.email}</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          {format(currentTime, 'EEEE, dd/MM/yyyy', { locale: vi })}
+        </p>
+        <p className="text-base font-medium text-foreground mt-1">{profile?.display_name || user?.email}</p>
       </div>
 
-      {/* Status Cards */}
-      <div className="w-full max-w-md space-y-3 mb-6">
-        {/* GPS Status */}
-        <Card>
-          <CardContent className="p-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MapPin className={`h-4 w-4 ${gpsPos ? 'text-green-600' : 'text-destructive'}`} />
-              <span className="text-sm">Vị trí GPS</span>
+      {/* Shift Info */}
+      {shiftInfo && (
+        <Card className="w-full max-w-md mb-3 border-primary/20">
+          <CardContent className="p-3 flex items-center gap-3">
+            <Clock className="h-5 w-5 text-primary shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium">Ca: {shiftInfo.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {shiftInfo.start_time?.slice(0, 5)} - {shiftInfo.end_time?.slice(0, 5)}
+                {shiftInfo.break_minutes > 0 && ` · Nghỉ ${shiftInfo.break_minutes}p`}
+              </p>
             </div>
-            {gpsLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : gpsPos ? (
-              <Badge variant="outline" className="text-[10px] text-green-600">OK</Badge>
-            ) : (
-              <Badge variant="destructive" className="text-[10px]">{gpsError || 'Lỗi'}</Badge>
-            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Status Cards */}
+      <div className="w-full max-w-md space-y-2 mb-4">
+        {/* GPS Status with signal quality */}
+        <Card>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-2">
+                {gpsLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                ) : gpsPos ? (
+                  <Signal className="h-4 w-4 text-green-600" />
+                ) : (
+                  <WifiOff className="h-4 w-4 text-destructive" />
+                )}
+                <span className="text-sm">GPS</span>
+              </div>
+              {gpsPos ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-muted-foreground">±{Math.round(gpsPos.accuracy)}m</span>
+                  <Badge variant="outline" className={`text-[10px] ${gpsPos.accuracy <= 20 ? 'text-green-600 border-green-200' : gpsPos.accuracy <= 50 ? 'text-yellow-600 border-yellow-200' : 'text-orange-600 border-orange-200'}`}>
+                    {gpsPos.accuracy <= 20 ? 'Chính xác' : gpsPos.accuracy <= 50 ? 'Tốt' : 'Trung bình'}
+                  </Badge>
+                </div>
+              ) : (
+                <Badge variant="destructive" className="text-[10px]">{gpsError || 'Lỗi'}</Badge>
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Nearest Location */}
+        {/* Location with distance progress */}
         <Card>
-          <CardContent className="p-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-primary" />
-              <div>
-                <span className="text-sm">{nearestLocation?.name || 'Đang tìm kho...'}</span>
-                {distance !== null && (
-                  <p className={`text-xs ${isInRange ? 'text-green-600' : 'text-destructive'}`}>
-                    Cách {distance}m {isInRange ? '✓ Trong phạm vi' : `✗ Ngoài phạm vi (${nearestLocation?.radius_meters}m)`}
-                  </p>
-                )}
+          <CardContent className="p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Navigation className={`h-4 w-4 ${isInRange ? 'text-green-600' : 'text-destructive'}`} />
+                <span className="text-sm font-medium">{nearestLocation?.name || 'Đang tìm...'}</span>
               </div>
+              {distance !== null && (
+                <Badge className={`text-[10px] ${isInRange ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
+                  {distance}m
+                </Badge>
+              )}
             </div>
+            {nearestLocation && distance !== null && (
+              <div className="space-y-1">
+                <Progress value={distancePercent} className="h-1.5" />
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>{isInRange ? '✓ Trong phạm vi' : '✗ Ngoài phạm vi'}</span>
+                  <span>Cho phép: {nearestLocation.radius_meters}m</span>
+                </div>
+              </div>
+            )}
+            {/* Show other locations */}
+            {allDistances.length > 1 && (
+              <div className="pt-1 border-t space-y-0.5">
+                <p className="text-[10px] text-muted-foreground">Điểm CC khác:</p>
+                {allDistances.slice(1, 3).map(d => (
+                  <div key={d.loc.id} className="flex justify-between text-[10px]">
+                    <span className="text-muted-foreground truncate">{d.loc.name}</span>
+                    <span className={d.dist <= d.loc.radius_meters ? 'text-green-600' : 'text-muted-foreground'}>{d.dist}m</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -319,19 +405,45 @@ export default function CheckInPage() {
           </CardContent>
         </Card>
 
-        {/* Today Status */}
-        {todayRecord && (
-          <Card className="border-primary/30">
+        {/* Working time card (when checked in) */}
+        {hasCheckedIn && !hasCheckedOut && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Đang làm việc</span>
+                </div>
+                <span className="text-lg font-bold text-primary tabular-nums">
+                  {Math.floor(workingMinutes / 60)}h{String(workingMinutes % 60).padStart(2, '0')}p
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Check-in: {todayRecord?.check_in_time ? format(new Date(todayRecord.check_in_time), 'HH:mm') : '--'}
+                {todayRecord?.status === 'late' && todayRecord.late_minutes && (
+                  <span className="text-yellow-600 ml-2">· Trễ {todayRecord.late_minutes}p</span>
+                )}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Today completed */}
+        {todayRecord && hasCheckedOut && (
+          <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Hôm nay</span>
                 <Badge className={todayRecord.status === 'late' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}>
-                  {todayRecord.status === 'late' ? 'Đi trễ' : todayRecord.status === 'on_time' ? 'Đúng giờ' : todayRecord.status}
+                  {todayRecord.status === 'late' ? 'Đi trễ' : 'Đúng giờ'}
                 </Badge>
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                Check-in: {todayRecord.check_in_time ? format(new Date(todayRecord.check_in_time), 'HH:mm') : '--:--'}
-                {todayRecord.check_out_time && ` → Check-out: ${format(new Date(todayRecord.check_out_time), 'HH:mm')}`}
+              <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                <span>Vào: {format(new Date(todayRecord.check_in_time), 'HH:mm')}</span>
+                <span>Ra: {format(new Date(todayRecord.check_out_time!), 'HH:mm')}</span>
+                <span className="font-medium text-foreground">
+                  {Math.floor((todayRecord.total_work_minutes || 0) / 60)}h{(todayRecord.total_work_minutes || 0) % 60}p
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -341,21 +453,16 @@ export default function CheckInPage() {
       {/* Action Buttons */}
       <div className="w-full max-w-md space-y-3">
         {hasCheckedOut ? (
-          <div className="text-center p-6">
-            <CheckCircle2 className="h-16 w-16 text-green-600 mx-auto mb-3" />
-            <p className="text-lg font-semibold text-green-600">Đã hoàn thành chấm công hôm nay!</p>
-            {todayRecord?.total_work_minutes && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Tổng thời gian: {Math.floor(todayRecord.total_work_minutes/60)}h{todayRecord.total_work_minutes%60}p
-              </p>
-            )}
+          <div className="text-center py-4">
+            <CheckCircle2 className="h-14 w-14 text-green-600 mx-auto mb-2" />
+            <p className="text-lg font-semibold text-green-600">Đã hoàn thành!</p>
           </div>
         ) : (
           <>
             {!hasCheckedIn ? (
               <Button
                 size="lg"
-                className="w-full h-16 text-lg font-bold rounded-2xl gap-2"
+                className="w-full h-16 text-lg font-bold rounded-2xl gap-2 shadow-lg"
                 disabled={!canCheckIn || checking}
                 onClick={handleCheckIn}
               >
@@ -366,7 +473,7 @@ export default function CheckInPage() {
               <Button
                 size="lg"
                 variant="destructive"
-                className="w-full h-16 text-lg font-bold rounded-2xl gap-2"
+                className="w-full h-16 text-lg font-bold rounded-2xl gap-2 shadow-lg"
                 disabled={!canCheckOut || checking}
                 onClick={handleCheckOut}
               >
@@ -379,7 +486,7 @@ export default function CheckInPage() {
             {!isInRange && gpsPos && nearestLocation && (
               <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-lg text-sm text-destructive">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
-                <span>Bạn đang ở ngoài phạm vi cho phép ({distance}m / {nearestLocation.radius_meters}m)</span>
+                <span>Ngoài phạm vi ({distance}m / {nearestLocation.radius_meters}m)</span>
               </div>
             )}
             {!deviceOk && myDevice?.status === 'pending' && (
