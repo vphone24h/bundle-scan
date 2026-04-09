@@ -677,3 +677,61 @@ function EmployeeCorrectionRequests({ userId, tenantId }: { userId?: string; ten
     </div>
   );
 }
+
+// Employee shift calendar showing assigned shifts
+function EmployeeShiftCalendar({ month, assignments }: { month: Date; assignments: any[] }) {
+  const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
+  const startDay = startOfMonth(month).getDay();
+  const today = new Date();
+  const dayLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+
+  // Build map: dateStr -> shift info
+  const shiftMap = new Map<string, any>();
+  for (const a of assignments) {
+    const ws = a.work_shifts as any;
+    if (!ws) continue;
+    if (a.assignment_type === 'fixed' && a.day_of_week != null) {
+      // Fixed assignment: apply to all matching days in month
+      for (const day of days) {
+        if (day.getDay() === a.day_of_week) {
+          shiftMap.set(format(day, 'yyyy-MM-dd'), ws);
+        }
+      }
+    } else if (a.specific_date) {
+      shiftMap.set(a.specific_date, ws);
+    }
+  }
+
+  return (
+    <div>
+      <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] text-muted-foreground mb-1">
+        {dayLabels.map(d => <div key={d} className="py-1">{d}</div>)}
+      </div>
+      <div className="grid grid-cols-7 gap-0.5">
+        {Array.from({ length: startDay }).map((_, i) => <div key={`e-${i}`} />)}
+        {days.map(day => {
+          const dateStr = format(day, 'yyyy-MM-dd');
+          const shift = shiftMap.get(dateStr);
+          const isToday = isSameDay(day, today);
+
+          return (
+            <div
+              key={dateStr}
+              className={`min-h-[44px] flex flex-col items-center justify-center rounded text-[10px] p-0.5 ${isToday ? 'ring-1 ring-primary font-bold' : ''} ${isWeekend(day) ? 'bg-muted/20 text-muted-foreground/50' : shift ? 'bg-primary/10' : 'bg-muted/30'}`}
+            >
+              <span>{day.getDate()}</span>
+              {shift && (
+                <span className="text-[8px] text-primary font-medium truncate max-w-full leading-tight mt-0.5">
+                  {shift.name}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {assignments.length === 0 && (
+        <p className="text-center text-xs text-muted-foreground mt-3">Chưa có lịch ca nào được gán</p>
+      )}
+    </div>
+  );
+}
