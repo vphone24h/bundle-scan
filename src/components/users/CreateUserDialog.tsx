@@ -113,7 +113,7 @@ export function CreateUserDialog({
         },
       });
 
-      // Check structured error in data first (e.g. 403 MEMBER_LIMIT_REACHED)
+      // Check structured error in data first (e.g. MEMBER_LIMIT_REACHED)
       if (response.data?.errorCode) {
         const err = new Error(response.data.error) as any;
         err.errorCode = response.data.errorCode;
@@ -121,8 +121,8 @@ export function CreateUserDialog({
         err.currentCount = response.data.currentCount;
         throw err;
       }
-      if (response.data?.error) {
-        throw new Error(response.data.error);
+      if (response.data?.ok === false || response.data?.error) {
+        throw new Error(response.data.error || 'Lỗi không xác định');
       }
       if (response.error) throw new Error(response.error.message);
 
