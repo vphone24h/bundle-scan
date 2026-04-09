@@ -27,6 +27,7 @@ import { useCurrentTenant } from '@/hooks/useTenant';
 import { useUsersGuideUrl } from '@/hooks/useAppConfig';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
+import { useAttendanceEnabled } from '@/hooks/useAttendanceEnabled';
 // Attendance tabs
 import { AttendanceDashboardTab } from '@/components/attendance/AttendanceDashboardTab';
 import { WorkShiftsTab } from '@/components/attendance/WorkShiftsTab';
@@ -144,6 +145,7 @@ export default function UsersPage() {
   const { data: currentTenant } = useCurrentTenant();
   const usersGuideUrl = useUsersGuideUrl();
   const { user } = useAuth();
+  const { enabled: attendanceEnabled } = useAttendanceEnabled();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
@@ -263,18 +265,22 @@ export default function UsersPage() {
                 <Shield className="h-3.5 w-3.5" />
                 <span>Danh sách</span>
               </TabsTrigger>
-              <TabsTrigger value="attendance" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-                <Fingerprint className="h-3.5 w-3.5" />
-                <span>Chấm công</span>
-              </TabsTrigger>
-              <TabsTrigger value="payroll" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-                <CreditCard className="h-3.5 w-3.5" />
-                <span>Bảng lương</span>
-              </TabsTrigger>
-              <TabsTrigger value="setup" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-                <Settings2 className="h-3.5 w-3.5" />
-                <span>Cài đặt</span>
-              </TabsTrigger>
+              {attendanceEnabled && (
+                <>
+                  <TabsTrigger value="attendance" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                    <Fingerprint className="h-3.5 w-3.5" />
+                    <span>Chấm công</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="payroll" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                    <CreditCard className="h-3.5 w-3.5" />
+                    <span>Bảng lương</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="setup" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                    <Settings2 className="h-3.5 w-3.5" />
+                    <span>Cài đặt</span>
+                  </TabsTrigger>
+                </>
+              )}
             </TabsList>
           </div>
         )}
