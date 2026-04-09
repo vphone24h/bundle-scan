@@ -89,6 +89,14 @@ export function CompaniesManagement() {
     return tenants.filter((t: any) => t.company_id !== showTenantsDialog.id);
   }, [showTenantsDialog, tenants]);
 
+  const filteredUnassigned = useMemo(() => {
+    if (!shopSearch.trim()) return unassignedTenants;
+    const q = shopSearch.toLowerCase();
+    return unassignedTenants.filter((t: any) =>
+      t.name?.toLowerCase().includes(q) || t.subdomain?.toLowerCase().includes(q)
+    );
+  }, [unassignedTenants, shopSearch]);
+
   const handleCreateAdmin = async () => {
     if (!showAdminDialog || !adminEmail || !adminPassword) {
       toast({ title: 'Vui lòng nhập đủ email và mật khẩu', variant: 'destructive' });
