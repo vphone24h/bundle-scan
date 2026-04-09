@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Clock, Smartphone, QrCode, CheckCircle2, XCircle, Loader2, AlertTriangle, Navigation, Signal, Wifi, WifiOff, ArrowLeft } from 'lucide-react';
+import { MapPin, Clock, Smartphone, QrCode, CheckCircle2, XCircle, Loader2, AlertTriangle, Navigation, Signal, Wifi, WifiOff, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { usePlatformUser } from '@/hooks/useTenant';
@@ -524,9 +526,49 @@ export default function CheckInPage() {
                 <span>Thiết bị đang chờ admin duyệt</span>
               </div>
             )}
+            {gpsFraudWarning.length > 0 && (
+              <div className="flex items-center gap-2 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-sm text-orange-700 dark:text-orange-400">
+                <ShieldAlert className="h-4 w-4 shrink-0" />
+                <span>Cảnh báo bảo mật: {gpsFraudWarning.join(', ')}</span>
+              </div>
+            )}
           </>
         )}
       </div>
+
+      {/* Random Verification Dialog */}
+      <Dialog open={showRandomVerify} onOpenChange={setShowRandomVerify}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-primary" />
+              Xác minh tại chỗ
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Hệ thống kiểm tra ngẫu nhiên. Vui lòng nhập mã xác nhận hiển thị trên màn hình quản lý hoặc gõ "OK" để xác nhận bạn đang tại nơi làm việc.
+          </p>
+          <Input
+            placeholder='Gõ "OK" để xác nhận'
+            value={verifyAnswer}
+            onChange={e => setVerifyAnswer(e.target.value)}
+            className="h-10"
+          />
+          <DialogFooter>
+            <Button
+              size="sm"
+              disabled={verifyAnswer.trim().toLowerCase() !== 'ok'}
+              onClick={() => {
+                setShowRandomVerify(false);
+                setVerifyAnswer('');
+                toast.success('Xác minh thành công!');
+              }}
+            >
+              Xác nhận
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
