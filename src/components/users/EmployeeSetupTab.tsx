@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import {
-  User, Clock, Calendar, DollarSign, MapPin, Search, ArrowLeft,
+  User, Clock, Calendar, DollarSign, MapPin, Search,
   ChevronRight, ArrowLeft, Check, Settings2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
