@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, memo } from 'react';
+import { useCompany } from '@/hooks/useCompanyResolver';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePendingTransferCount } from '@/hooks/useStockTransfers';
