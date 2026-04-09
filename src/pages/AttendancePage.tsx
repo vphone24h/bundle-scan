@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, Calendar, MapPin, Smartphone, BarChart3, Lock, FileText, FileEdit } from 'lucide-react';
+import { Clock, Calendar, MapPin, Smartphone, BarChart3, Lock, FileText, FileEdit, Monitor } from 'lucide-react';
 import { WorkShiftsTab } from '@/components/attendance/WorkShiftsTab';
 import { ShiftScheduleTab } from '@/components/attendance/ShiftScheduleTab';
 import { AttendanceHistoryTab } from '@/components/attendance/AttendanceHistoryTab';
@@ -11,6 +11,7 @@ import { AttendanceDashboardTab } from '@/components/attendance/AttendanceDashbo
 import { AttendanceLocksTab } from '@/components/attendance/AttendanceLocksTab';
 import { AttendanceReportTab } from '@/components/attendance/AttendanceReportTab';
 import { CorrectionRequestsTab } from '@/components/attendance/CorrectionRequestsTab';
+import { PosCheckInTab } from '@/components/attendance/PosCheckInTab';
 
 export default function AttendancePage() {
   const { t } = useTranslation();
@@ -71,6 +72,11 @@ export default function AttendancePage() {
               <span className="hidden sm:inline">Chốt công</span>
               <span className="sm:hidden">Khóa</span>
             </TabsTrigger>
+            <TabsTrigger value="pos" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+              <Monitor className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">POS</span>
+              <span className="sm:hidden">POS</span>
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -83,6 +89,7 @@ export default function AttendancePage() {
         <TabsContent value="locations" className="mt-4"><AttendanceLocationsTab /></TabsContent>
         <TabsContent value="devices" className="mt-4"><TrustedDevicesTab /></TabsContent>
         <TabsContent value="locks" className="mt-4"><AttendanceLocksTab /></TabsContent>
+        <TabsContent value="pos" className="mt-4"><PosCheckInTab /></TabsContent>
       </Tabs>
     </div>
   );
