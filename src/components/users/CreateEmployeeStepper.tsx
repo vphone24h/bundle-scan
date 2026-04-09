@@ -16,10 +16,10 @@ import { useAuditLog } from '@/hooks/usePermissions';
 import { useWorkShifts } from '@/hooks/useAttendance';
 import { useSalaryTemplates } from '@/hooks/usePayroll';
 import { StepBasicInfo, type BasicInfoData } from './steps/StepBasicInfo';
-import { StepAssignShift } from './steps/StepAssignShift';
+import { StepCreateShift } from './steps/StepCreateShift';
 import { StepSchedule } from './steps/StepSchedule';
 import { StepSalary } from './steps/StepSalary';
-import { StepReview } from './steps/StepReview';
+import { StepAttendanceSetup, type AttendanceSetupData } from './steps/StepAttendanceSetup';
 import { cn } from '@/lib/utils';
 
 interface Branch { id: string; name: string; }
@@ -32,10 +32,10 @@ interface CreateEmployeeStepperProps {
 
 const STEPS = [
   { key: 'info', label: 'Thông tin', icon: User },
-  { key: 'shift', label: 'Ca làm', icon: Clock },
-  { key: 'schedule', label: 'Lịch trình', icon: Calendar },
+  { key: 'shift', label: 'Tạo ca', icon: Clock },
+  { key: 'schedule', label: 'Xếp lịch', icon: Calendar },
   { key: 'salary', label: 'Bảng lương', icon: DollarSign },
-  { key: 'review', label: 'Hoàn tất', icon: CheckCircle2 },
+  { key: 'attendance', label: 'Chấm công', icon: CheckCircle2 },
 ] as const;
 
 export interface ScheduleData {
