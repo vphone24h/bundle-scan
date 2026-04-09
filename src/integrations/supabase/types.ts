@@ -1547,6 +1547,7 @@ export type Database = {
       }
       companies: {
         Row: {
+          attendance_enabled: boolean
           created_at: string
           domain: string
           id: string
@@ -1555,6 +1556,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attendance_enabled?: boolean
           created_at?: string
           domain: string
           id?: string
@@ -1563,6 +1565,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attendance_enabled?: boolean
           created_at?: string
           domain?: string
           id?: string
