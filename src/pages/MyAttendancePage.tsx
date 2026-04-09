@@ -523,3 +523,124 @@ function MiniCalendar({ month, records }: { month: Date; records: any[] }) {
     </div>
   );
 }
+
+// Employee correction requests component
+function EmployeeCorrectionRequests({ userId, tenantId }: { userId?: string; tenantId?: string | null }) {
+  const [showForm, setShowForm] = useState(false);
+  const [requestDate, setRequestDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  const [reason, setReason] = useState('');
+  const qc = useQueryClient();
+
+  const { data: myRequests, isLoading } = useQuery({
+    queryKey: ['my-correction-requests', userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('attendance_correction_requests')
+        .select('*')
+        .eq('user_id', userId!)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!userId,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('attendance_correction_requests').insert({
+        tenant_id: tenantId!,
+        user_id: userId!,
+        request_date: requestDate,
+        requested_check_in: checkIn ? `${requestDate}T${checkIn}:00` : null,
+        requested_check_out: checkOut ? `${requestDate}T${checkOut}:00` : null,
+        reason,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['my-correction-requests'] });
+      toast.success('Đã gửi yêu cầu sửa công');
+      setShowForm(false);
+      setCheckIn(''); setCheckOut(''); setReason('');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const statusMap: Record<string, { label: string; class: string }> = {
+    pending: { label: 'Chờ duyệt', class: 'bg-yellow-100 text-yellow-800' },
+    approved: { label: 'Đã duyệt', class: 'bg-green-100 text-green-800' },
+    rejected: { label: 'Từ chối', class: 'bg-red-100 text-red-800' },
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">Yêu cầu sửa công</h3>
+        <Dialog open={showForm} onOpenChange={setShowForm}>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="outline" className="gap-1 text-xs h-7">
+              <FileEdit className="h-3 w-3" /> Tạo yêu cầu
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-sm">
+            <DialogHeader><DialogTitle>Yêu cầu sửa công</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs">Ngày cần sửa</Label>
+                <Input type="date" value={requestDate} onChange={e => setRequestDate(e.target.value)} className="h-8 text-sm" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Check-in đúng</Label>
+                  <Input type="time" value={checkIn} onChange={e => setCheckIn(e.target.value)} className="h-8 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs">Check-out đúng</Label>
+                  <Input type="time" value={checkOut} onChange={e => setCheckOut(e.target.value)} className="h-8 text-sm" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Lý do</Label>
+                <Textarea placeholder="Nhập lý do sửa công..." value={reason} onChange={e => setReason(e.target.value)} className="text-sm" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button size="sm" onClick={() => createMutation.mutate()} disabled={!reason.trim() || createMutation.isPending}>
+                Gửi yêu cầu
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {isLoading ? (
+        <div className="text-center py-6 text-muted-foreground text-sm">Đang tải...</div>
+      ) : !myRequests?.length ? (
+        <div className="text-center py-6 text-muted-foreground text-sm">Chưa có yêu cầu sửa công</div>
+      ) : (
+        myRequests.map(r => {
+          const st = statusMap[r.status] || statusMap.pending;
+          return (
+            <Card key={r.id}>
+              <CardContent className="p-3 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{format(new Date(r.request_date), 'dd/MM/yyyy')}</span>
+                  <Badge className={`text-[10px] ${st.class}`}>{st.label}</Badge>
+                </div>
+                <div className="flex gap-3 text-xs text-muted-foreground">
+                  {r.requested_check_in && <span>Vào: {format(new Date(r.requested_check_in), 'HH:mm')}</span>}
+                  {r.requested_check_out && <span>Ra: {format(new Date(r.requested_check_out), 'HH:mm')}</span>}
+                </div>
+                <p className="text-xs text-muted-foreground">{r.reason}</p>
+                {r.review_note && <p className="text-xs italic text-muted-foreground">Phản hồi: {r.review_note}</p>}
+              </CardContent>
+            </Card>
+          );
+        })
+      )}
+    </div>
+  );
+}
