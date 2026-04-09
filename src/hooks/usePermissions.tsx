@@ -39,6 +39,7 @@ export interface UserPermissions {
   canCreateExportReceipt: boolean;
   canTransferStock: boolean;
   canCreateReturn: boolean;
+  canManageRepair: boolean;
   canManageProducts: boolean;
   canManageCategories: boolean;
   canManageSuppliers: boolean;
@@ -89,6 +90,7 @@ const DEFAULT_PERMISSIONS: UserPermissions = {
   canCreateExportReceipt: false,
   canTransferStock: false,
   canCreateReturn: false,
+  canManageRepair: false,
   canManageProducts: false,
   canManageCategories: false,
   canManageSuppliers: false,
@@ -142,6 +144,7 @@ function mapGranularToLegacy(role: UserRole, branchId: string | null, granular: 
     canCreateExportReceipt: !!granular.create_export,
     canTransferStock: !!granular.transfer_stock,
     canCreateReturn: !!granular.create_return,
+    canManageRepair: !!granular.manage_repair,
     canManageProducts: role === 'super_admin' || role === 'branch_admin',
     canManageCategories: role === 'super_admin' || role === 'branch_admin',
     canManageSuppliers: !!granular.view_suppliers,
