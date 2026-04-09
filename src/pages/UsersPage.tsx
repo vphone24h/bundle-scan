@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Shield, Edit2, UserPlus, Info, ChevronDown, ChevronUp, Star, ExternalLink, Settings2 } from 'lucide-react';
+import { Shield, Edit2, UserPlus, Info, ChevronDown, ChevronUp, Star, ExternalLink, Settings2, Fingerprint, CreditCard } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions, UserRole } from '@/hooks/usePermissions';
@@ -27,6 +27,22 @@ import { useCurrentTenant } from '@/hooks/useTenant';
 import { useUsersGuideUrl } from '@/hooks/useAppConfig';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
+// Attendance tabs
+import { AttendanceDashboardTab } from '@/components/attendance/AttendanceDashboardTab';
+import { WorkShiftsTab } from '@/components/attendance/WorkShiftsTab';
+import { ShiftScheduleTab } from '@/components/attendance/ShiftScheduleTab';
+import { AttendanceHistoryTab } from '@/components/attendance/AttendanceHistoryTab';
+import { AttendanceLocationsTab } from '@/components/attendance/AttendanceLocationsTab';
+import { TrustedDevicesTab } from '@/components/attendance/TrustedDevicesTab';
+import { AttendanceLocksTab } from '@/components/attendance/AttendanceLocksTab';
+import { AttendanceReportTab } from '@/components/attendance/AttendanceReportTab';
+import { CorrectionRequestsTab } from '@/components/attendance/CorrectionRequestsTab';
+import { PosCheckInTab } from '@/components/attendance/PosCheckInTab';
+// Payroll tabs
+import { SalaryTemplatesTab } from '@/components/payroll/SalaryTemplatesTab';
+import { CommissionRulesTab } from '@/components/payroll/CommissionRulesTab';
+import { PayrollPeriodsTab } from '@/components/payroll/PayrollPeriodsTab';
+import { SalaryAdvancesTab } from '@/components/payroll/SalaryAdvancesTab';
 
 interface UserWithRole {
   id: string;
