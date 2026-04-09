@@ -261,7 +261,7 @@ export default function CheckInPage() {
           {format(currentTime, 'HH:mm:ss')}
         </p>
         <p className="text-sm text-muted-foreground mt-1">{format(currentTime, 'EEEE, dd/MM/yyyy')}</p>
-        <p className="text-base font-medium text-foreground mt-2">{profile?.full_name || user?.email}</p>
+        <p className="text-base font-medium text-foreground mt-2">{profile?.display_name || user?.email}</p>
       </div>
 
       {/* Status Cards */}

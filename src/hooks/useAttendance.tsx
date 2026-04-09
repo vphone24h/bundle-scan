@@ -3,6 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { usePlatformUser } from './useTenant';
 import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
+
+type WorkShiftInsert = Database['public']['Tables']['work_shifts']['Insert'];
+type AttendanceLocationInsert = Database['public']['Tables']['attendance_locations']['Insert'];
+type ShiftAssignmentInsert = Database['public']['Tables']['shift_assignments']['Insert'];
 
 // ============ Work Shifts ============
 export function useWorkShifts() {
@@ -28,7 +33,7 @@ export function useWorkShifts() {
 export function useCreateWorkShift() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (shift: Record<string, unknown>) => {
+    mutationFn: async (shift: WorkShiftInsert) => {
       const { data, error } = await supabase.from('work_shifts').insert([shift]).select().single();
       if (error) throw error;
       return data;
@@ -44,7 +49,7 @@ export function useCreateWorkShift() {
 export function useUpdateWorkShift() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Record<string, unknown> & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: { id: string } & Partial<WorkShiftInsert>) => {
       const { error } = await supabase.from('work_shifts').update(updates).eq('id', id);
       if (error) throw error;
     },
@@ -95,7 +100,7 @@ export function useAttendanceLocations() {
 export function useCreateAttendanceLocation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (loc: Record<string, unknown>) => {
+    mutationFn: async (loc: AttendanceLocationInsert) => {
       const { data, error } = await supabase.from('attendance_locations').insert([loc]).select().single();
       if (error) throw error;
       return data;
@@ -111,7 +116,7 @@ export function useCreateAttendanceLocation() {
 export function useUpdateAttendanceLocation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Record<string, unknown> & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: { id: string } & Partial<AttendanceLocationInsert>) => {
       const { error } = await supabase.from('attendance_locations').update(updates).eq('id', id);
       if (error) throw error;
     },
@@ -262,7 +267,7 @@ export function useShiftAssignments(filters?: { userId?: string; date?: string }
 export function useCreateShiftAssignment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (assignment: Record<string, unknown>) => {
+    mutationFn: async (assignment: ShiftAssignmentInsert) => {
       const { data, error } = await supabase.from('shift_assignments').insert([assignment]).select().single();
       if (error) throw error;
       return data;
