@@ -7,11 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import {
-  User, Clock, Calendar, DollarSign, MapPin, Search,
+  User, Clock, Calendar, DollarSign, MapPin, Search, ArrowLeft,
   ChevronRight, ArrowLeft, Check, Settings2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useCurrentTenant } from '@/hooks/useTenant';
+import { useCurrentTenant, usePlatformUser } from '@/hooks/useTenant';
 import { useWorkShifts } from '@/hooks/useAttendance';
 import { useSalaryTemplates } from '@/hooks/usePayroll';
 import { StepCreateShift } from './steps/StepCreateShift';
@@ -62,7 +62,8 @@ function getStepStatus(emp: EmployeeSetup, stepIdx: number): 'completed' | 'curr
 
 export function EmployeeSetupTab() {
   const { data: currentTenant } = useCurrentTenant();
-  const tenantId = currentTenant?.id;
+  const { data: pu } = usePlatformUser();
+  const tenantId = currentTenant?.id || pu?.tenant_id;
   const qc = useQueryClient();
   const { data: shifts } = useWorkShifts();
   const { data: salaryTemplates } = useSalaryTemplates();
@@ -146,12 +147,18 @@ export function EmployeeSetupTab() {
     setSaving(true);
     try {
       if (activeStep === 1 && selectedShiftId) {
-        const { error } = await supabase.from('shift_assignments').upsert({
+        // Delete existing then insert to avoid unique constraint issues
+        await supabase.from('shift_assignments')
+          .delete()
+          .eq('tenant_id', tenantId)
+          .eq('user_id', selectedEmployee.userId);
+        
+        const { error } = await supabase.from('shift_assignments').insert({
           tenant_id: tenantId,
           user_id: selectedEmployee.userId,
           shift_id: selectedShiftId,
           assignment_type: scheduleData.type === 'fixed' ? 'fixed' : 'daily',
-        }, { onConflict: 'tenant_id,user_id,shift_id' });
+        });
         if (error) throw error;
         toast.success('Đã lưu ca làm!');
       } else if (activeStep === 2) {
