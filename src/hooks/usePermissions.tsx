@@ -39,6 +39,7 @@ export interface UserPermissions {
   canCreateExportReceipt: boolean;
   canTransferStock: boolean;
   canCreateReturn: boolean;
+  canManageRepair: boolean;
   canManageProducts: boolean;
   canManageCategories: boolean;
   canManageSuppliers: boolean;
