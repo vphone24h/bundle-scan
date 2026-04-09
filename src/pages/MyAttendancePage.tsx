@@ -14,7 +14,12 @@ import { Button } from '@/components/ui/button';
 import { Calendar, Clock, TrendingUp, ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertTriangle, DollarSign, Bell, FileText, Briefcase, Banknote, FileEdit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { SalaryAdvancesTab } from '@/components/payroll/SalaryAdvancesTab';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 function formatMoney(n: number) {
   return n.toLocaleString('vi-VN') + 'đ';
