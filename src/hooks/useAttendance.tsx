@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { usePlatformUser } from './useTenant';
+import { usePlatformUser, useCurrentTenant } from './useTenant';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -12,7 +12,8 @@ type ShiftAssignmentInsert = Database['public']['Tables']['shift_assignments']['
 // ============ Work Shifts ============
 export function useWorkShifts() {
   const { data: pu } = usePlatformUser();
-  const tenantId = pu?.tenant_id;
+  const { data: ct } = useCurrentTenant();
+  const tenantId = ct?.id || pu?.tenant_id;
 
   return useQuery({
     queryKey: ['work-shifts', tenantId],
@@ -79,7 +80,8 @@ export function useDeleteWorkShift() {
 // ============ Attendance Locations ============
 export function useAttendanceLocations() {
   const { data: pu } = usePlatformUser();
-  const tenantId = pu?.tenant_id;
+  const { data: ct } = useCurrentTenant();
+  const tenantId = ct?.id || pu?.tenant_id;
 
   return useQuery({
     queryKey: ['attendance-locations', tenantId],
@@ -131,7 +133,8 @@ export function useUpdateAttendanceLocation() {
 // ============ Trusted Devices ============
 export function useTrustedDevices() {
   const { data: pu } = usePlatformUser();
-  const tenantId = pu?.tenant_id;
+  const { data: ct } = useCurrentTenant();
+  const tenantId = ct?.id || pu?.tenant_id;
 
   return useQuery({
     queryKey: ['trusted-devices', tenantId],
@@ -186,7 +189,8 @@ export function useRejectDevice() {
 // ============ Attendance Records ============
 export function useAttendanceRecords(filters?: { date?: string; userId?: string; locationId?: string }) {
   const { data: pu } = usePlatformUser();
-  const tenantId = pu?.tenant_id;
+  const { data: ct } = useCurrentTenant();
+  const tenantId = ct?.id || pu?.tenant_id;
 
   return useQuery({
     queryKey: ['attendance-records', tenantId, filters],
@@ -213,7 +217,8 @@ export function useAttendanceRecords(filters?: { date?: string; userId?: string;
 
 export function useTodayAttendanceSummary() {
   const { data: pu } = usePlatformUser();
-  const tenantId = pu?.tenant_id;
+  const { data: ct } = useCurrentTenant();
+  const tenantId = ct?.id || pu?.tenant_id;
   const today = new Date().toISOString().split('T')[0];
 
   return useQuery({
@@ -242,7 +247,8 @@ export function useTodayAttendanceSummary() {
 // ============ Shift Assignments ============
 export function useShiftAssignments(filters?: { userId?: string; date?: string }) {
   const { data: pu } = usePlatformUser();
-  const tenantId = pu?.tenant_id;
+  const { data: ct } = useCurrentTenant();
+  const tenantId = ct?.id || pu?.tenant_id;
 
   return useQuery({
     queryKey: ['shift-assignments', tenantId, filters],

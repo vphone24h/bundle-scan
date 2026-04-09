@@ -1,12 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { usePlatformUser } from './useTenant';
+import { usePlatformUser, useCurrentTenant } from './useTenant';
 import { toast } from 'sonner';
 
 // ============ Salary Templates ============
 export function useSalaryTemplates() {
   const { data: pu } = usePlatformUser();
-  const tenantId = pu?.tenant_id;
+  const { data: ct } = useCurrentTenant();
+  const tenantId = ct?.id || pu?.tenant_id;
 
   return useQuery({
     queryKey: ['salary-templates', tenantId],
@@ -53,7 +54,8 @@ export function useUpdateSalaryTemplate() {
 // ============ Employee Salary Configs ============
 export function useEmployeeSalaryConfigs() {
   const { data: pu } = usePlatformUser();
-  const tenantId = pu?.tenant_id;
+  const { data: ct } = useCurrentTenant();
+  const tenantId = ct?.id || pu?.tenant_id;
 
   return useQuery({
     queryKey: ['employee-salary-configs', tenantId],
@@ -72,7 +74,8 @@ export function useEmployeeSalaryConfigs() {
 // ============ Commission Rules ============
 export function useCommissionRules() {
   const { data: pu } = usePlatformUser();
-  const tenantId = pu?.tenant_id;
+  const { data: ct } = useCurrentTenant();
+  const tenantId = ct?.id || pu?.tenant_id;
 
   return useQuery({
     queryKey: ['commission-rules', tenantId],
@@ -106,7 +109,8 @@ export function useCreateCommissionRule() {
 // ============ Payroll Periods ============
 export function usePayrollPeriods() {
   const { data: pu } = usePlatformUser();
-  const tenantId = pu?.tenant_id;
+  const { data: ct } = useCurrentTenant();
+  const tenantId = ct?.id || pu?.tenant_id;
 
   return useQuery({
     queryKey: ['payroll-periods', tenantId],
@@ -160,7 +164,8 @@ export function useCalculatePayroll() {
 // ============ Payroll Records ============
 export function usePayrollRecords(periodId?: string) {
   const { data: pu } = usePlatformUser();
-  const tenantId = pu?.tenant_id;
+  const { data: ct } = useCurrentTenant();
+  const tenantId = ct?.id || pu?.tenant_id;
 
   return useQuery({
     queryKey: ['payroll-records', tenantId, periodId],
