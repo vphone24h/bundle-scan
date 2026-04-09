@@ -436,7 +436,7 @@ export function CompaniesManagement() {
       </Dialog>
 
       {/* Tenants of Company Dialog */}
-      <Dialog open={!!showTenantsDialog} onOpenChange={() => setShowTenantsDialog(null)}>
+      <Dialog open={!!showTenantsDialog} onOpenChange={() => { setShowTenantsDialog(null); setShopSearch(''); setConfirmReassign(null); }}>
         <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -457,11 +457,9 @@ export function CompaniesManagement() {
                     <p className="text-sm font-medium">{t.name}</p>
                     <p className="text-xs text-muted-foreground">{t.subdomain}</p>
                   </div>
-                  {showTenantsDialog?.domain !== 'vkho.vn' && (
-                    <Button variant="ghost" size="sm" className="text-destructive text-xs" onClick={() => handleUnassign(t.id)}>
-                      Bỏ gán
-                    </Button>
-                  )}
+                  <Button variant="ghost" size="sm" className="text-destructive text-xs" onClick={() => handleUnassign(t.id)}>
+                    Bỏ gán
+                  </Button>
                 </div>
               ))}
             </div>
@@ -470,21 +468,75 @@ export function CompaniesManagement() {
           {showTenantsDialog && unassignedTenants.length > 0 && (
             <div className="space-y-2 mt-4 pt-4 border-t">
               <h4 className="text-sm font-medium">Gán thêm shop</h4>
-              <div className="max-h-40 overflow-y-auto space-y-1">
-                {unassignedTenants.slice(0, 20).map((t: any) => (
-                  <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-accent">
-                    <div>
-                      <p className="text-sm">{t.name}</p>
-                      <p className="text-xs text-muted-foreground">{t.subdomain}</p>
+              <Input
+                placeholder="Tìm shop theo tên hoặc subdomain..."
+                value={shopSearch}
+                onChange={e => setShopSearch(e.target.value)}
+                className="mb-2"
+              />
+              <div className="max-h-48 overflow-y-auto space-y-1">
+                {filteredUnassigned.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-2">Không tìm thấy shop</p>
+                )}
+                {filteredUnassigned.slice(0, 30).map((t: any) => {
+                  const currentCompany = companies?.find(c => c.id === t.company_id);
+                  return (
+                    <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-accent">
+                      <div>
+                        <p className="text-sm">{t.name}</p>
+                        <p className="text-xs text-muted-foreground">{t.subdomain}</p>
+                        {currentCompany && (
+                          <p className="text-xs text-orange-600 dark:text-orange-400">
+                            Đang thuộc: {currentCompany.name}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs shrink-0"
+                        onClick={() => {
+                          if (t.company_id && t.company_id !== showTenantsDialog.id) {
+                            setConfirmReassign(t);
+                          } else {
+                            handleAssign(t.id, showTenantsDialog.id);
+                          }
+                        }}
+                      >
+                        Gán
+                      </Button>
                     </div>
-                    <Button variant="outline" size="sm" className="text-xs" onClick={() => handleAssign(t.id, showTenantsDialog.id)}>
-                      Gán
-                    </Button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Reassign Dialog */}
+      <Dialog open={!!confirmReassign} onOpenChange={() => setConfirmReassign(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xác nhận chuyển shop</DialogTitle>
+            <DialogDescription>
+              Shop <strong>{confirmReassign?.name}</strong> ({confirmReassign?.subdomain}) đang thuộc công ty <strong>{companies?.find(c => c.id === confirmReassign?.company_id)?.name}</strong>.
+              <br /><br />
+              Bạn có muốn chuyển shop này sang <strong>{showTenantsDialog?.name}</strong>? Dữ liệu shop sẽ được giữ nguyên, chỉ thay đổi tên miền đăng nhập.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmReassign(null)}>Hủy</Button>
+            <Button onClick={async () => {
+              if (confirmReassign && showTenantsDialog) {
+                await handleAssign(confirmReassign.id, showTenantsDialog.id);
+                setConfirmReassign(null);
+              }
+            }} disabled={assignTenant.isPending}>
+              {assignTenant.isPending && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+              Xác nhận chuyển
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
