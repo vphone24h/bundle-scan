@@ -451,12 +451,56 @@ export default function UsersPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="setup">
-          <EmployeeSetupTab />
+        {/* Attendance Tab */}
+        <TabsContent value="attendance" className="space-y-4">
+          <Tabs value={attendanceSubTab} onValueChange={setAttendanceSubTab} className="w-full">
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+              <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 h-auto p-1 gap-1">
+                <TabsTrigger value="dashboard" className="gap-1 text-xs px-2 py-1.5">Tổng quan</TabsTrigger>
+                <TabsTrigger value="shifts" className="gap-1 text-xs px-2 py-1.5">Ca làm</TabsTrigger>
+                <TabsTrigger value="schedule" className="gap-1 text-xs px-2 py-1.5">Xếp ca</TabsTrigger>
+                <TabsTrigger value="history" className="gap-1 text-xs px-2 py-1.5">Lịch sử</TabsTrigger>
+                <TabsTrigger value="corrections" className="gap-1 text-xs px-2 py-1.5">Sửa công</TabsTrigger>
+                <TabsTrigger value="report" className="gap-1 text-xs px-2 py-1.5">Báo cáo</TabsTrigger>
+                <TabsTrigger value="locations" className="gap-1 text-xs px-2 py-1.5">Điểm CC</TabsTrigger>
+                <TabsTrigger value="devices" className="gap-1 text-xs px-2 py-1.5">Thiết bị</TabsTrigger>
+                <TabsTrigger value="locks" className="gap-1 text-xs px-2 py-1.5">Chốt công</TabsTrigger>
+                <TabsTrigger value="pos" className="gap-1 text-xs px-2 py-1.5">POS</TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="dashboard"><AttendanceDashboardTab /></TabsContent>
+            <TabsContent value="shifts"><WorkShiftsTab /></TabsContent>
+            <TabsContent value="schedule"><ShiftScheduleTab /></TabsContent>
+            <TabsContent value="history"><AttendanceHistoryTab /></TabsContent>
+            <TabsContent value="corrections"><CorrectionRequestsTab /></TabsContent>
+            <TabsContent value="report"><AttendanceReportTab /></TabsContent>
+            <TabsContent value="locations"><AttendanceLocationsTab /></TabsContent>
+            <TabsContent value="devices"><TrustedDevicesTab /></TabsContent>
+            <TabsContent value="locks"><AttendanceLocksTab /></TabsContent>
+            <TabsContent value="pos"><PosCheckInTab /></TabsContent>
+          </Tabs>
         </TabsContent>
 
-        <TabsContent value="reviews">
-          <StaffReviewsTab />
+        {/* Payroll Tab */}
+        <TabsContent value="payroll" className="space-y-4">
+          <Tabs value={payrollSubTab} onValueChange={setPayrollSubTab} className="w-full">
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+              <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 h-auto p-1 gap-1">
+                <TabsTrigger value="templates" className="gap-1 text-xs px-2 py-1.5">Mẫu lương</TabsTrigger>
+                <TabsTrigger value="commission" className="gap-1 text-xs px-2 py-1.5">Hoa hồng</TabsTrigger>
+                <TabsTrigger value="payroll-periods" className="gap-1 text-xs px-2 py-1.5">Kỳ lương</TabsTrigger>
+                <TabsTrigger value="advances" className="gap-1 text-xs px-2 py-1.5">Tạm ứng</TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="templates"><SalaryTemplatesTab /></TabsContent>
+            <TabsContent value="commission"><CommissionRulesTab /></TabsContent>
+            <TabsContent value="payroll-periods"><PayrollPeriodsTab /></TabsContent>
+            <TabsContent value="advances"><SalaryAdvancesTab mode="admin" /></TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        <TabsContent value="setup">
+          <EmployeeSetupTab />
         </TabsContent>
       </Tabs>
 
