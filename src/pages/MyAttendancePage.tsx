@@ -11,8 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, TrendingUp, ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertTriangle, DollarSign } from 'lucide-react';
+import { Calendar, Clock, TrendingUp, ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertTriangle, DollarSign, Bell, FileText, Briefcase } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Separator } from '@/components/ui/separator';
 
 function formatMoney(n: number) {
   return n.toLocaleString('vi-VN') + 'đ';
@@ -64,6 +65,61 @@ export default function MyAttendancePage() {
     enabled: !!user?.id && !!tenantId,
   });
 
+  // Today's shift assignment
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const dayOfWeek = new Date().getDay();
+  const { data: todayShift } = useQuery({
+    queryKey: ['my-shift-today', user?.id, tenantId, today],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('shift_assignments')
+        .select('*, work_shifts(name, start_time, end_time, break_minutes)')
+        .eq('user_id', user!.id)
+        .eq('tenant_id', tenantId!)
+        .eq('is_active', true)
+        .or(`specific_date.eq.${today},and(assignment_type.eq.fixed,day_of_week.eq.${dayOfWeek})`)
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id && !!tenantId,
+  });
+
+  // Attendance notifications (from crm_notifications)
+  const { data: notifications } = useQuery({
+    queryKey: ['my-attendance-notifications', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('crm_notifications')
+        .select('*')
+        .eq('user_id', user!.id)
+        .in('notification_type', ['attendance_late', 'attendance_absent', 'shift_reminder', 'payslip_ready'])
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  // Payslips (payroll_records for this user)
+  const { data: payslips } = useQuery({
+    queryKey: ['my-payslips', user?.id, tenantId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payroll_records')
+        .select('*, payroll_periods(name, start_date, end_date, status)')
+        .eq('user_id', user!.id)
+        .eq('tenant_id', tenantId!)
+        .order('created_at', { ascending: false })
+        .limit(12);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id && !!tenantId,
+  });
+
   // Stats
   const stats = useMemo(() => {
     if (!records) return { total: 0, onTime: 0, late: 0, absent: 0, totalMinutes: 0, totalOT: 0, totalLate: 0 };
@@ -91,18 +147,13 @@ export default function MyAttendancePage() {
     const salaryType = template?.salary_type || 'monthly';
 
     if (salaryType === 'monthly') {
-      // Estimate based on work days ratio
       const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
       const totalWorkDays = daysInMonth.filter(d => !isWeekend(d)).length;
       const ratio = totalWorkDays > 0 ? stats.total / totalWorkDays : 0;
       return Math.round(baseAmount * ratio);
     }
-    if (salaryType === 'daily') {
-      return baseAmount * stats.total;
-    }
-    if (salaryType === 'hourly') {
-      return Math.round(baseAmount * (stats.totalMinutes / 60));
-    }
+    if (salaryType === 'daily') return baseAmount * stats.total;
+    if (salaryType === 'hourly') return Math.round(baseAmount * (stats.totalMinutes / 60));
     return baseAmount;
   }, [salaryConfig, stats, monthStart, monthEnd]);
 
@@ -115,6 +166,9 @@ export default function MyAttendancePage() {
     if (status === 'absent') return <Badge variant="destructive" className="text-[10px]">Vắng</Badge>;
     return <Badge variant="secondary" className="text-[10px]">{status}</Badge>;
   };
+
+  const unreadNotifs = notifications?.filter(n => !n.is_read).length || 0;
+  const shiftInfo = todayShift?.work_shifts as any;
 
   return (
     <MainLayout>
@@ -129,6 +183,22 @@ export default function MyAttendancePage() {
             <Clock className="h-4 w-4" /> Chấm công
           </Button>
         </div>
+
+        {/* Today's Shift Info */}
+        {shiftInfo && (
+          <Card className="border-primary/20">
+            <CardContent className="p-3 flex items-center gap-3">
+              <Briefcase className="h-5 w-5 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Ca hôm nay: {shiftInfo.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {shiftInfo.start_time?.slice(0, 5)} - {shiftInfo.end_time?.slice(0, 5)}
+                  {shiftInfo.break_minutes > 0 && ` (nghỉ ${shiftInfo.break_minutes}p)`}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Month navigator */}
         <div className="flex items-center justify-center gap-3">
@@ -197,15 +267,27 @@ export default function MyAttendancePage() {
 
         {/* Tabs */}
         <Tabs defaultValue="history" className="space-y-3">
-          <TabsList className="w-full grid grid-cols-2">
+          <TabsList className="w-full grid grid-cols-4">
             <TabsTrigger value="history" className="text-xs">
-              <Calendar className="h-3.5 w-3.5 mr-1" /> Lịch sử
+              <Calendar className="h-3.5 w-3.5 mr-1" /> Công
             </TabsTrigger>
             <TabsTrigger value="calendar" className="text-xs">
               <TrendingUp className="h-3.5 w-3.5 mr-1" /> Thống kê
             </TabsTrigger>
+            <TabsTrigger value="payslips" className="text-xs">
+              <FileText className="h-3.5 w-3.5 mr-1" /> Phiếu lương
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="text-xs relative">
+              <Bell className="h-3.5 w-3.5 mr-1" /> TB
+              {unreadNotifs > 0 && (
+                <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-4 h-4 text-[9px] flex items-center justify-center">
+                  {unreadNotifs}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
+          {/* History Tab */}
           <TabsContent value="history" className="space-y-2">
             {isLoading ? (
               <div className="text-center py-8 text-muted-foreground">Đang tải...</div>
@@ -239,21 +321,17 @@ export default function MyAttendancePage() {
             )}
           </TabsContent>
 
+          {/* Stats Tab */}
           <TabsContent value="calendar" className="space-y-3">
-            {/* Mini calendar view */}
             <Card>
               <CardHeader className="p-3 pb-1">
                 <CardTitle className="text-sm">Bảng chấm công tháng</CardTitle>
               </CardHeader>
               <CardContent className="p-3 pt-0">
-                <MiniCalendar
-                  month={currentMonth}
-                  records={records || []}
-                />
+                <MiniCalendar month={currentMonth} records={records || []} />
               </CardContent>
             </Card>
 
-            {/* Work hours breakdown */}
             <Card>
               <CardHeader className="p-3 pb-1">
                 <CardTitle className="text-sm">Chi tiết giờ làm</CardTitle>
@@ -280,16 +358,108 @@ export default function MyAttendancePage() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Payslips Tab */}
+          <TabsContent value="payslips" className="space-y-2">
+            {!payslips?.length ? (
+              <div className="text-center py-8 text-muted-foreground">Chưa có phiếu lương</div>
+            ) : (
+              payslips.map(ps => {
+                const period = ps.payroll_periods as any;
+                return (
+                  <Card key={ps.id}>
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">{period?.name || 'Kỳ lương'}</span>
+                        <Badge variant={ps.status === 'paid' ? 'default' : 'secondary'} className="text-[10px]">
+                          {ps.status === 'paid' ? 'Đã trả' : ps.status === 'approved' ? 'Đã duyệt' : ps.status === 'draft' ? 'Nháp' : ps.status}
+                        </Badge>
+                      </div>
+                      {period && (
+                        <p className="text-[10px] text-muted-foreground mb-2">
+                          {format(new Date(period.start_date), 'dd/MM/yyyy')} - {format(new Date(period.end_date), 'dd/MM/yyyy')}
+                        </p>
+                      )}
+                      <Separator className="my-2" />
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <p className="text-muted-foreground">Lương cơ bản</p>
+                          <p className="font-medium">{formatMoney(Number(ps.base_salary || 0))}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Ngày công</p>
+                          <p className="font-medium">{ps.total_work_days || 0} ngày</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Phụ cấp</p>
+                          <p className="font-medium text-green-600">+{formatMoney(Number(ps.allowances || 0))}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Hoa hồng</p>
+                          <p className="font-medium text-green-600">+{formatMoney(Number(ps.commission_amount || 0))}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Tăng ca</p>
+                          <p className="font-medium text-green-600">+{formatMoney(Number(ps.overtime_pay || 0))}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Khấu trừ</p>
+                          <p className="font-medium text-destructive">-{formatMoney(Number(ps.deductions || 0))}</p>
+                        </div>
+                      </div>
+                      <Separator className="my-2" />
+                      <div className="flex justify-between text-sm">
+                        <span className="font-semibold">Thực nhận</span>
+                        <span className="font-bold text-primary">{formatMoney(Number(ps.net_salary || 0))}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
+          </TabsContent>
+
+          {/* Notifications Tab */}
+          <TabsContent value="notifications" className="space-y-2">
+            {!notifications?.length ? (
+              <div className="text-center py-8 text-muted-foreground">Không có thông báo</div>
+            ) : (
+              notifications.map(n => (
+                <Card key={n.id} className={!n.is_read ? 'border-primary/30 bg-primary/5' : ''}>
+                  <CardContent className="p-3">
+                    <div className="flex items-start gap-2">
+                      <NotifIcon type={n.notification_type} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{n.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{n.message}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          {format(new Date(n.created_at), 'HH:mm dd/MM/yyyy')}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
         </Tabs>
       </div>
     </MainLayout>
   );
 }
 
+function NotifIcon({ type }: { type: string }) {
+  if (type === 'attendance_late') return <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />;
+  if (type === 'attendance_absent') return <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />;
+  if (type === 'shift_reminder') return <Clock className="h-4 w-4 text-primary mt-0.5 shrink-0" />;
+  if (type === 'payslip_ready') return <DollarSign className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />;
+  return <Bell className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />;
+}
+
 // Mini calendar component
 function MiniCalendar({ month, records }: { month: Date; records: any[] }) {
   const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
-  const startDay = startOfMonth(month).getDay(); // 0=Sun
+  const startDay = startOfMonth(month).getDay();
   const recordMap = new Map(records.map(r => [r.date, r]));
   const today = new Date();
 
