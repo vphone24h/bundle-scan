@@ -8,14 +8,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCompanies, useCreateCompany, useUpdateCompany, useDeleteCompany, useAssignTenantToCompany } from '@/hooks/useCompanies';
+import { useCompanies, useCreateCompany, useUpdateCompany, useDeleteCompany, useAssignTenantToCompany, useToggleAttendance } from '@/hooks/useCompanies';
 import { useAllTenants } from '@/hooks/useTenant';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Plus, Trash2, Pencil, Globe, Loader2, Building2, Store, CheckCircle, XCircle, Clock, UserCog, Key } from 'lucide-react';
+import { Plus, Trash2, Pencil, Globe, Loader2, Building2, Store, CheckCircle, XCircle, Clock, UserCog, Key, Fingerprint } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Switch } from '@/components/ui/switch';
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   active: { label: 'Hoạt động', variant: 'default' },
@@ -31,6 +32,7 @@ export function CompaniesManagement() {
   const deleteCompany = useDeleteCompany();
   const assignTenant = useAssignTenantToCompany();
   const queryClient = useQueryClient();
+  const toggleAttendance = useToggleAttendance();
 
   const [search, setSearch] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -263,6 +265,7 @@ export function CompaniesManagement() {
                 <TableHead>Số shop</TableHead>
                 <TableHead>Admin</TableHead>
                 <TableHead>Trạng thái</TableHead>
+                <TableHead>Chấm công</TableHead>
                 <TableHead>Ngày tạo</TableHead>
                 <TableHead className="w-[180px]">Thao tác</TableHead>
               </TableRow>
@@ -308,6 +311,16 @@ export function CompaniesManagement() {
                     )}
                   </TableCell>
                   <TableCell>{renderStatusBadge(c.status)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1.5">
+                      <Switch
+                        checked={c.attendance_enabled}
+                        onCheckedChange={(checked) => toggleAttendance.mutate({ id: c.id, enabled: checked })}
+                        disabled={toggleAttendance.isPending}
+                      />
+                      <span className="text-xs text-muted-foreground">{c.attendance_enabled ? 'Bật' : 'Tắt'}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>{format(new Date(c.created_at), 'dd/MM/yyyy', { locale: vi })}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
@@ -378,6 +391,17 @@ export function CompaniesManagement() {
                   )}
                 </div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Trạng thái:</span>{renderStatusBadge(c.status)}</div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Chấm công:</span>
+                  <div className="flex items-center gap-1.5">
+                    <Switch
+                      checked={c.attendance_enabled}
+                      onCheckedChange={(checked) => toggleAttendance.mutate({ id: c.id, enabled: checked })}
+                      disabled={toggleAttendance.isPending}
+                    />
+                    <span className="text-xs">{c.attendance_enabled ? 'Bật' : 'Tắt'}</span>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
