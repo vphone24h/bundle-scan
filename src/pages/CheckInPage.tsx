@@ -24,6 +24,22 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+// Detect mock GPS / developer mode
+function detectGpsFraud(pos: GeolocationPosition): { isSuspicious: boolean; reasons: string[] } {
+  const reasons: string[] = [];
+  // Mock location: accuracy is often exactly 20m or altitude is 0/null
+  if (pos.coords.accuracy === 20 && pos.coords.altitude === null) reasons.push('Mock location suspected');
+  if (pos.coords.altitudeAccuracy === null && pos.coords.speed === null && pos.coords.heading === null) {
+    // All optional fields null might indicate emulator/mock
+    if (pos.coords.accuracy <= 5) reasons.push('Emulator GPS pattern');
+  }
+  // Check for developer mode indicators
+  if ((navigator as any).webdriver) reasons.push('WebDriver detected');
+  if ((window as any).__SELENIUM_IDE_RECORDER) reasons.push('Selenium detected');
+  if ((window as any).callPhantom || (window as any)._phantom) reasons.push('PhantomJS detected');
+  return { isSuspicious: reasons.length > 0, reasons };
+}
+
 // Simple device fingerprint
 function getDeviceFingerprint(): string {
   const nav = navigator;
