@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ChevronLeft, ChevronRight, Plus, Calendar, Copy, Users, X } from 'lucide-react';
 import { useShiftAssignments, useWorkShifts, useCreateShiftAssignment, useDeleteShiftAssignment } from '@/hooks/useAttendance';
-import { usePlatformUser } from '@/hooks/useTenant';
+import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
 import { format, addDays, startOfWeek, eachDayOfInterval } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -20,7 +20,8 @@ const DAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
 export function ShiftScheduleTab() {
   const { data: pu } = usePlatformUser();
-  const tenantId = pu?.tenant_id;
+  const { data: currentTenant } = useCurrentTenant();
+  const tenantId = currentTenant?.id || pu?.tenant_id;
   const qc = useQueryClient();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const weekDays = useMemo(() => eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) }), [weekStart]);
