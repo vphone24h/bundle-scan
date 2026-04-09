@@ -392,19 +392,19 @@ export default function MyAttendancePage() {
                         </div>
                         <div>
                           <p className="text-muted-foreground">Phụ cấp</p>
-                          <p className="font-medium text-green-600">+{formatMoney(Number(ps.allowances || 0))}</p>
+                          <p className="font-medium text-green-600">+{formatMoney(Number(ps.total_allowance || 0))}</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">Hoa hồng</p>
-                          <p className="font-medium text-green-600">+{formatMoney(Number(ps.commission_amount || 0))}</p>
+                          <p className="font-medium text-green-600">+{formatMoney(Number(ps.total_commission || 0))}</p>
                         </div>
                         <div>
-                          <p className="text-muted-foreground">Tăng ca</p>
-                          <p className="font-medium text-green-600">+{formatMoney(Number(ps.overtime_pay || 0))}</p>
+                          <p className="text-muted-foreground">Thưởng</p>
+                          <p className="font-medium text-green-600">+{formatMoney(Number(ps.total_bonus || 0))}</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">Khấu trừ</p>
-                          <p className="font-medium text-destructive">-{formatMoney(Number(ps.deductions || 0))}</p>
+                          <p className="font-medium text-destructive">-{formatMoney(Number(ps.total_deduction || 0))}</p>
                         </div>
                       </div>
                       <Separator className="my-2" />
