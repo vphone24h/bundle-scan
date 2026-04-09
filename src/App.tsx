@@ -246,10 +246,10 @@ const App = () => (
                 <Route path="/repair/new" element={<GuardedRoute><RepairNewPage /></GuardedRoute>} />
                 <Route path="/repair/list" element={<GuardedRoute><RepairListPage /></GuardedRoute>} />
                 <Route path="/social" element={<GuardedRoute><SocialPage /></GuardedRoute>} />
-                <Route path="/attendance" element={<GuardedRoute><AttendancePage /></GuardedRoute>} />
+                <Route path="/attendance" element={<Navigate to="/users" replace />} />
                 <Route path="/checkin" element={<ProtectedRoute><CheckInPage /></ProtectedRoute>} />
                 <Route path="/my-attendance" element={<ProtectedRoute><MyAttendancePage /></ProtectedRoute>} />
-                <Route path="/payroll" element={<GuardedRoute><PayrollPage /></GuardedRoute>} />
+                <Route path="/payroll" element={<Navigate to="/users" replace />} />
                 {/* Platform Admin route - also guarded */}
                 <Route path="/platform-admin" element={<GuardedRoute><PlatformAdminPage /></GuardedRoute>} />
                 
