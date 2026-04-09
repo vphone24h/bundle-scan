@@ -136,6 +136,27 @@ export function useCreatePayrollPeriod() {
   });
 }
 
+// ============ Calculate Payroll (Background) ============
+export function useCalculatePayroll() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ period_id, tenant_id }: { period_id: string; tenant_id: string }) => {
+      const { data, error } = await supabase.functions.invoke('calculate-payroll', {
+        body: { period_id, tenant_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['payroll-records'] });
+      qc.invalidateQueries({ queryKey: ['payroll-periods'] });
+      toast.success(`Đã tính lương cho ${data.count} nhân viên`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 // ============ Payroll Records ============
 export function usePayrollRecords(periodId?: string) {
   const { data: pu } = usePlatformUser();

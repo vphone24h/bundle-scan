@@ -427,7 +427,10 @@ export default function CheckInPage() {
             {!myDevice ? (
               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={registerDevice}>Đăng ký</Button>
             ) : myDevice.status === 'pending' ? (
-              <Badge variant="secondary" className="text-[10px]">Chờ duyệt</Badge>
+              <div className="flex items-center gap-1.5">
+                <Badge variant="secondary" className="text-[10px]">Chờ duyệt</Badge>
+                <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => setShowOtpVerify(true)}>OTP</Button>
+              </div>
             ) : myDevice.status === 'approved' ? (
               <Badge variant="outline" className="text-[10px] text-green-600">Đã xác nhận</Badge>
             ) : (
