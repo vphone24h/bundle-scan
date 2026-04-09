@@ -750,9 +750,11 @@ export function useUpdateImportReceipt() {
         if (update.category_id !== undefined) updateData.category_id = update.category_id;
         if (update.unit) updateData.unit = update.unit;
         if (update.import_price !== undefined) {
+          const qty = update.quantity || 1;
           updateData.import_price = update.import_price;
-          updateData.total_import_cost = update.import_price;
-          totalPriceDiff += update.import_price - (update.oldImportPrice || 0);
+          // For IMEI products, total_import_cost = import_price; for non-IMEI = import_price * quantity
+          updateData.total_import_cost = update.hasImei ? update.import_price : update.import_price * qty;
+          totalPriceDiff += (update.import_price - (update.oldImportPrice || 0)) * qty;
         }
 
         if (Object.keys(updateData).length > 0) {
