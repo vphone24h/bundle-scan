@@ -864,6 +864,10 @@ export function useUpdateImportReceipt() {
       queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
       queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
       queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
+      queryClient.invalidateQueries({ queryKey: ['detailed-profit-report'] });
+      queryClient.invalidateQueries({ queryKey: ['product-report'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-stats'] });
     },
   });
 }
