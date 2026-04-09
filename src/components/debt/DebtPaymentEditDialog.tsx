@@ -66,6 +66,191 @@ export function DebtPaymentEditDialog({
     }
   }, [open]);
 
+  const applyAdditionalPaymentToDebt = async (
+    target: NonNullable<DebtPaymentEditDialogProps['payment']>,
+    amount: number
+  ) => {
+    let remainingPayment = amount;
+    if (remainingPayment <= 0) return;
+
+    if (target.entity_type === 'customer') {
+      const { data: receipts, error } = await supabase
+        .from('export_receipts')
+        .select('id, debt_amount, paid_amount')
+        .eq('customer_id', target.entity_id)
+        .in('status', ['completed', 'partial_return', 'full_return'])
+        .gt('debt_amount', 0)
+        .order('export_date', { ascending: true });
+
+      if (error) throw error;
+
+      for (const receipt of receipts || []) {
+        if (remainingPayment <= 0) break;
+        const payAmount = Math.min(remainingPayment, Number(receipt.debt_amount) || 0);
+        if (payAmount <= 0) continue;
+
+        const { error: updateError } = await supabase
+          .from('export_receipts')
+          .update({
+            paid_amount: (Number(receipt.paid_amount) || 0) + payAmount,
+            debt_amount: Math.max(0, (Number(receipt.debt_amount) || 0) - payAmount),
+          })
+          .eq('id', receipt.id);
+
+        if (updateError) throw updateError;
+        remainingPayment -= payAmount;
+      }
+    } else {
+      const { data: receipts, error } = await supabase
+        .from('import_receipts')
+        .select('id, debt_amount, paid_amount')
+        .eq('supplier_id', target.entity_id)
+        .eq('status', 'completed')
+        .gt('debt_amount', 0)
+        .order('import_date', { ascending: true });
+
+      if (error) throw error;
+
+      for (const receipt of receipts || []) {
+        if (remainingPayment <= 0) break;
+        const payAmount = Math.min(remainingPayment, Number(receipt.debt_amount) || 0);
+        if (payAmount <= 0) continue;
+
+        const { error: updateError } = await supabase
+          .from('import_receipts')
+          .update({
+            paid_amount: (Number(receipt.paid_amount) || 0) + payAmount,
+            debt_amount: Math.max(0, (Number(receipt.debt_amount) || 0) - payAmount),
+          })
+          .eq('id', receipt.id);
+
+        if (updateError) throw updateError;
+        remainingPayment -= payAmount;
+      }
+    }
+
+    if (remainingPayment > 0) {
+      const { data: additions, error } = await supabase
+        .from('debt_payments')
+        .select('id, amount, allocated_amount, created_at')
+        .eq('entity_type', target.entity_type)
+        .eq('entity_id', target.entity_id)
+        .eq('payment_type', 'addition')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      for (const addition of additions || []) {
+        if (remainingPayment <= 0) break;
+        const total = Number(addition.amount) || 0;
+        const allocated = Number(addition.allocated_amount) || 0;
+        const unpaid = total - allocated;
+        const payAmount = Math.min(remainingPayment, unpaid);
+        if (payAmount <= 0) continue;
+
+        const { error: updateError } = await supabase
+          .from('debt_payments')
+          .update({ allocated_amount: allocated + payAmount })
+          .eq('id', addition.id);
+
+        if (updateError) throw updateError;
+        remainingPayment -= payAmount;
+      }
+    }
+  };
+
+  const reversePaymentAllocationFromDebt = async (
+    target: NonNullable<DebtPaymentEditDialogProps['payment']>,
+    amount: number
+  ) => {
+    let remainingToReverse = amount;
+    if (remainingToReverse <= 0) return;
+
+    if (target.entity_type === 'customer') {
+      const { data: receipts, error } = await supabase
+        .from('export_receipts')
+        .select('id, debt_amount, paid_amount')
+        .eq('customer_id', target.entity_id)
+        .in('status', ['completed', 'partial_return', 'full_return'])
+        .gt('paid_amount', 0)
+        .order('export_date', { ascending: false });
+
+      if (error) throw error;
+
+      for (const receipt of receipts || []) {
+        if (remainingToReverse <= 0) break;
+        const canReverse = Math.min(remainingToReverse, Number(receipt.paid_amount) || 0);
+        if (canReverse <= 0) continue;
+
+        const { error: updateError } = await supabase
+          .from('export_receipts')
+          .update({
+            paid_amount: Math.max(0, (Number(receipt.paid_amount) || 0) - canReverse),
+            debt_amount: (Number(receipt.debt_amount) || 0) + canReverse,
+          })
+          .eq('id', receipt.id);
+
+        if (updateError) throw updateError;
+        remainingToReverse -= canReverse;
+      }
+    } else {
+      const { data: receipts, error } = await supabase
+        .from('import_receipts')
+        .select('id, debt_amount, paid_amount')
+        .eq('supplier_id', target.entity_id)
+        .eq('status', 'completed')
+        .gt('paid_amount', 0)
+        .order('import_date', { ascending: false });
+
+      if (error) throw error;
+
+      for (const receipt of receipts || []) {
+        if (remainingToReverse <= 0) break;
+        const canReverse = Math.min(remainingToReverse, Number(receipt.paid_amount) || 0);
+        if (canReverse <= 0) continue;
+
+        const { error: updateError } = await supabase
+          .from('import_receipts')
+          .update({
+            paid_amount: Math.max(0, (Number(receipt.paid_amount) || 0) - canReverse),
+            debt_amount: (Number(receipt.debt_amount) || 0) + canReverse,
+          })
+          .eq('id', receipt.id);
+
+        if (updateError) throw updateError;
+        remainingToReverse -= canReverse;
+      }
+    }
+
+    if (remainingToReverse > 0) {
+      const { data: additions, error } = await supabase
+        .from('debt_payments')
+        .select('id, allocated_amount, created_at')
+        .eq('entity_type', target.entity_type)
+        .eq('entity_id', target.entity_id)
+        .eq('payment_type', 'addition')
+        .gt('allocated_amount', 0)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      for (const addition of additions || []) {
+        if (remainingToReverse <= 0) break;
+        const allocated = Number(addition.allocated_amount) || 0;
+        const canReverse = Math.min(remainingToReverse, allocated);
+        if (canReverse <= 0) continue;
+
+        const { error: updateError } = await supabase
+          .from('debt_payments')
+          .update({ allocated_amount: allocated - canReverse })
+          .eq('id', addition.id);
+
+        if (updateError) throw updateError;
+        remainingToReverse -= canReverse;
+      }
+    }
+  };
+
   const handleSave = async () => {
     if (!payment) return;
 
@@ -96,8 +281,7 @@ export function DebtPaymentEditDialog({
 
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Update the payment amount and date
-      const updateData: any = { amount: numAmount };
+      const updateData: Record<string, any> = { amount: numAmount };
       if (dateChanged && newDate) {
         updateData.created_at = new Date(newDate).toISOString();
       }
@@ -108,7 +292,14 @@ export function DebtPaymentEditDialog({
 
       if (error) throw error;
 
-      // Recalculate balance_after for this and subsequent payments
+      if (payment.payment_type === 'payment' && diff !== 0) {
+        if (diff > 0) {
+          await applyAdditionalPaymentToDebt(payment, diff);
+        } else {
+          await reversePaymentAllocationFromDebt(payment, Math.abs(diff));
+        }
+      }
+
       const { data: allPayments } = await supabase
         .from('debt_payments')
         .select('id, payment_type, amount, created_at, balance_after')
@@ -134,7 +325,6 @@ export function DebtPaymentEditDialog({
         }
       }
 
-      // Audit log
       await supabase.from('audit_logs').insert([{
         user_id: user?.id,
         action_type: 'update',
@@ -146,12 +336,21 @@ export function DebtPaymentEditDialog({
         new_data: { amount: numAmount, reason: reason.trim(), ...(dateChanged ? { created_at: new Date(newDate).toISOString() } : {}) },
       }]);
 
-      // Also update cash_book entry if date changed and it's a payment
-      if (dateChanged && payment.payment_type === 'payment') {
-        await supabase.from('cash_book')
-          .update({ transaction_date: new Date(newDate).toISOString() })
-          .eq('reference_id', payment.id)
-          .eq('reference_type', 'debt_payment');
+      if (payment.payment_type === 'payment') {
+        const cashBookUpdate: Record<string, any> = {};
+        if (numAmount !== payment.amount) {
+          cashBookUpdate.amount = numAmount;
+        }
+        if (dateChanged && newDate) {
+          cashBookUpdate.transaction_date = new Date(newDate).toISOString();
+        }
+
+        if (Object.keys(cashBookUpdate).length > 0) {
+          await supabase.from('cash_book')
+            .update(cashBookUpdate)
+            .eq('reference_id', payment.id)
+            .eq('reference_type', 'debt_payment');
+        }
       }
 
       queryClient.invalidateQueries({ queryKey: ['debt'] });
@@ -159,6 +358,9 @@ export function DebtPaymentEditDialog({
       queryClient.invalidateQueries({ queryKey: ['debt-payment-history'] });
       queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
       queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['export-receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['import-receipts'] });
       queryClient.removeQueries({ queryKey: ['cash-book'] });
       queryClient.removeQueries({ queryKey: ['cash-book-balances'] });
 
