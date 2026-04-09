@@ -20,7 +20,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions, UserRole } from '@/hooks/usePermissions';
 import { EditUserDialog } from '@/components/users/EditUserDialog';
-import { CreateUserDialog } from '@/components/users/CreateUserDialog';
+import { CreateEmployeeStepper } from '@/components/users/CreateEmployeeStepper';
 import { StaffReviewsTab } from '@/components/users/StaffReviewsTab';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useUsersGuideUrl } from '@/hooks/useAppConfig';
