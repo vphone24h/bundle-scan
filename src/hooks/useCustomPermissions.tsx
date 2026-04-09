@@ -47,36 +47,24 @@ export function useSaveCustomPermissions() {
       tenantId: string;
       permissions: PermissionMap;
     }) => {
-      // Check if exists first
-      const { data: existing } = await supabase
+      const { error } = await supabase
         .from('user_custom_permissions')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('tenant_id', tenantId)
-        .maybeSingle();
-
-      if (existing) {
-        const { error: updateErr } = await supabase
-          .from('user_custom_permissions')
-          .update({
-            permissions: permissions as unknown as Json,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existing.id);
-        if (updateErr) throw updateErr;
-      } else {
-        const { error: insertErr } = await supabase
-          .from('user_custom_permissions')
-          .insert([{
+        .upsert(
+          {
             user_id: userId,
             tenant_id: tenantId,
             permissions: permissions as unknown as Json,
-          }]);
-        if (insertErr) throw insertErr;
-      }
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: 'user_id,tenant_id',
+          }
+        );
+
+      if (error) throw error;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['user-custom-permissions', variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ['user-custom-permissions', variables.userId, variables.tenantId] });
       queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
     },
   });
