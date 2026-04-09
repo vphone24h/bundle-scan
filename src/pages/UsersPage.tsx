@@ -149,6 +149,8 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
   const [isRoleDescOpen, setIsRoleDescOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('users');
+  const [attendanceSubTab, setAttendanceSubTab] = useState('dashboard');
+  const [payrollSubTab, setPayrollSubTab] = useState('templates');
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['users-with-roles', currentTenant?.id, permissions?.role, permissions?.branchId],
@@ -255,20 +257,26 @@ export default function UsersPage() {
 
       <Tabs value={effectiveTab} onValueChange={setActiveTab} className="space-y-4">
         {!isStaffOnly && (
-          <TabsList className="w-full grid grid-cols-3">
-            <TabsTrigger value="users" className="flex items-center gap-1.5 text-xs sm:text-sm">
-              <Shield className="h-4 w-4" />
-              Danh sách
-            </TabsTrigger>
-            <TabsTrigger value="setup" className="flex items-center gap-1.5 text-xs sm:text-sm">
-              <Settings2 className="h-4 w-4" />
-              Cài đặt
-            </TabsTrigger>
-            <TabsTrigger value="reviews" className="flex items-center gap-1.5 text-xs sm:text-sm">
-              <Star className="h-4 w-4" />
-              Đánh giá
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 h-auto p-1 gap-1">
+              <TabsTrigger value="users" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                <Shield className="h-3.5 w-3.5" />
+                <span>Danh sách</span>
+              </TabsTrigger>
+              <TabsTrigger value="attendance" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                <Fingerprint className="h-3.5 w-3.5" />
+                <span>Chấm công</span>
+              </TabsTrigger>
+              <TabsTrigger value="payroll" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                <CreditCard className="h-3.5 w-3.5" />
+                <span>Bảng lương</span>
+              </TabsTrigger>
+              <TabsTrigger value="setup" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                <Settings2 className="h-3.5 w-3.5" />
+                <span>Cài đặt</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
         )}
 
         <TabsContent value="users" className="space-y-4">
