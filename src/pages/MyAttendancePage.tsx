@@ -273,12 +273,15 @@ export default function MyAttendancePage() {
 
         {/* Tabs */}
         <Tabs defaultValue="history" className="space-y-3">
-          <TabsList className="w-full grid grid-cols-5">
+          <TabsList className="w-full grid grid-cols-6">
             <TabsTrigger value="history" className="text-xs">
               <Calendar className="h-3.5 w-3.5 mr-1" /> Công
             </TabsTrigger>
             <TabsTrigger value="calendar" className="text-xs">
               <TrendingUp className="h-3.5 w-3.5 mr-1" /> TK
+            </TabsTrigger>
+            <TabsTrigger value="corrections" className="text-xs">
+              <FileEdit className="h-3.5 w-3.5 mr-1" /> SC
             </TabsTrigger>
             <TabsTrigger value="payslips" className="text-xs">
               <FileText className="h-3.5 w-3.5 mr-1" /> Lương
