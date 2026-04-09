@@ -692,6 +692,8 @@ export function useUpdateImportReceipt() {
         import_price?: number;
         oldImportPrice?: number;
         unit?: string;
+        quantity?: number;
+        hasImei?: boolean;
       }[];
       newSupplierId?: string | null;
       importDate?: string; // New ISO date string for import date change
