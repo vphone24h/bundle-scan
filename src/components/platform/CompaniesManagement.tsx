@@ -37,6 +37,8 @@ export function CompaniesManagement() {
   const [editingCompany, setEditingCompany] = useState<any>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState<string | null>(null);
   const [showTenantsDialog, setShowTenantsDialog] = useState<any>(null);
+  const [shopSearch, setShopSearch] = useState('');
+  const [confirmReassign, setConfirmReassign] = useState<any>(null);
 
   // Add/Edit form
   const [formDomain, setFormDomain] = useState('');
