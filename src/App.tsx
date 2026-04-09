@@ -64,6 +64,7 @@ const RepairListPage = lazy(() => import("./pages/RepairListPage"));
 const AttendancePage = lazy(() => import("./pages/AttendancePage"));
 const CheckInPage = lazy(() => import("./pages/CheckInPage"));
 const PayrollPage = lazy(() => import("./pages/PayrollPage"));
+const MyAttendancePage = lazy(() => import("./pages/MyAttendancePage"));
 
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -247,6 +248,7 @@ const App = () => (
                 <Route path="/social" element={<GuardedRoute><SocialPage /></GuardedRoute>} />
                 <Route path="/attendance" element={<GuardedRoute><AttendancePage /></GuardedRoute>} />
                 <Route path="/checkin" element={<ProtectedRoute><CheckInPage /></ProtectedRoute>} />
+                <Route path="/my-attendance" element={<ProtectedRoute><MyAttendancePage /></ProtectedRoute>} />
                 <Route path="/payroll" element={<GuardedRoute><PayrollPage /></GuardedRoute>} />
                 {/* Platform Admin route - also guarded */}
                 <Route path="/platform-admin" element={<GuardedRoute><PlatformAdminPage /></GuardedRoute>} />
