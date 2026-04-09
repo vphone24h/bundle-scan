@@ -176,7 +176,6 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
           user_id: userId,
           shift_id: selectedShiftId,
           assignment_type: scheduleData.type === 'fixed' ? 'fixed' : 'daily',
-          start_date: new Date().toISOString().split('T')[0],
         });
       }
 
