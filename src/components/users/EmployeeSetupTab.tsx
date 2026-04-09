@@ -151,7 +151,6 @@ export function EmployeeSetupTab() {
           user_id: selectedEmployee.userId,
           shift_id: selectedShiftId,
           assignment_type: scheduleData.type === 'fixed' ? 'fixed' : 'daily',
-          start_date: new Date().toISOString().split('T')[0],
         }, { onConflict: 'tenant_id,user_id,shift_id' });
         if (error) throw error;
         toast.success('Đã lưu ca làm!');
