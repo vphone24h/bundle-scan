@@ -55,6 +55,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { usePermissions, UserRole } from '@/hooks/usePermissions';
 import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
+import { useAttendanceEnabled } from '@/hooks/useAttendanceEnabled';
 import { Badge } from '@/components/ui/badge';
 import { NotificationBell } from '@/components/crm/NotificationBell';
 import { SystemNotificationBell } from '@/components/notifications/SystemNotificationBell';
@@ -73,6 +74,7 @@ interface NavItem {
   children?: { title: string; titleKey?: string; href: string; permission?: string; badgeKey?: string; hideInSecretMode?: boolean }[];
   permission?: string;
   badge?: string;
+  requireAttendance?: boolean;
 }
 
 const getRoleKey = (role: UserRole | undefined): string => {
@@ -140,6 +142,7 @@ const allNavItems: NavItem[] = [
   { title: 'Quản lý chi nhánh', titleKey: 'sidebar.branches', href: '/branches', icon: Building2, permission: 'canManageBranches' },
   { title: 'Quản lý người dùng', titleKey: 'sidebar.users', href: '/users', icon: Shield, permission: 'canManageUsers' },
   { title: 'Công của tôi', titleKey: 'sidebar.myAttendance', href: '/my-attendance', icon: CalendarDays },
+
   { title: 'Đánh giá nhân viên', titleKey: 'sidebar.staffReviews', href: '/users', icon: Star, permission: 'canViewStaffReviews' },
   { title: 'Lịch sử thao tác', titleKey: 'sidebar.auditLogs', href: '/audit-logs', icon: History, permission: 'canViewAuditLogs' },
   { title: 'Website bán hàng', titleKey: 'sidebar.website', href: '/landing-settings', icon: Globe, permission: 'canViewWebsite', badge: 'HOT' },
@@ -172,6 +175,7 @@ export function AppSidebar() {
   const { data: unreadSocialCount } = useUnreadSocialNotifCount();
   const { data: unreadArticleCount } = useUnreadArticleCount();
   const completedRepairCount = useCompletedRepairCount();
+  const { enabled: attendanceEnabled } = useAttendanceEnabled();
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -196,6 +200,7 @@ export function AppSidebar() {
     
     return allNavItems.filter(item => {
       if (isStandalone && item.href === '/install-app') return false;
+      if (item.requireAttendance && !attendanceEnabled) return false;
       if (!item.permission) return true;
       return permissions[item.permission as keyof typeof permissions] === true;
     }).map(item => {
@@ -211,7 +216,7 @@ export function AppSidebar() {
       }
       return item;
     });
-  }, [permissions, isPlatformAdmin, isCompanyAdmin, hasTenant, isStandalone, isSecretMode]);
+  }, [permissions, isPlatformAdmin, isCompanyAdmin, hasTenant, isStandalone, isSecretMode, attendanceEnabled]);
 
   const toggleExpand = useCallback((title: string) => {
     setExpandedItems((prev) =>
