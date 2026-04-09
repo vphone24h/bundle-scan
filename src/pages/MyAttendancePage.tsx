@@ -93,6 +93,22 @@ export default function MyAttendancePage() {
     enabled: !!user?.id && !!tenantId,
   });
 
+  // All shift assignments for calendar view
+  const { data: allShiftAssignments } = useQuery({
+    queryKey: ['my-shift-assignments', user?.id, tenantId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('shift_assignments')
+        .select('*, work_shifts(name, start_time, end_time, color)')
+        .eq('user_id', user!.id)
+        .eq('tenant_id', tenantId!)
+        .eq('is_active', true);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id && !!tenantId,
+  });
+
   // Attendance notifications (from crm_notifications)
   const { data: notifications } = useQuery({
     queryKey: ['my-attendance-notifications', user?.id],
