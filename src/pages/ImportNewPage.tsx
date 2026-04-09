@@ -673,7 +673,7 @@ export default function ImportNewPage() {
     if (!form.productName.trim()) errors.productName = t('tours.importNew.enterProductName');
     if (!form.sku.trim()) errors.sku = t('tours.importNew.enterSku');
     if (!form.categoryId) errors.categoryId = t('tours.importNew.selectCategoryError');
-    if (!form.importPrice) errors.importPrice = t('tours.importNew.enterImportPrice');
+    if (form.importPrice === '' || form.importPrice === undefined || form.importPrice === null) errors.importPrice = t('tours.importNew.enterImportPrice');
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -736,7 +736,7 @@ export default function ImportNewPage() {
     const importPrice = Number(form.importPrice);
     // Auto-calculate sale price if not manually set
     let salePrice = form.salePrice ? Number(form.salePrice) : undefined;
-    if (!salePrice || salePrice <= 0) {
+    if ((!salePrice || salePrice <= 0) && importPrice > 0) {
       salePrice = form.imei ? importPrice + 2000000 : importPrice * 2;
     }
 
