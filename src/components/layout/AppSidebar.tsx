@@ -158,6 +158,8 @@ export function AppSidebar() {
   const { data: permissions, isLoading: permissionsLoading } = usePermissions();
   const { data: platformUser } = usePlatformUser();
   const { data: currentTenant } = useCurrentTenant();
+  const company = useCompany();
+  const { data: companySettings } = useCompanySettings();
   const [expandedItems, setExpandedItems] = useState<string[]>(['Nhập hàng', 'Xuất hàng / Bán hàng']);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -228,10 +230,10 @@ export function AppSidebar() {
     <>
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-6 border-b border-sidebar-border">
-        <img src={vkhoLogo} alt="vkho.vn" className="h-10 w-10 object-contain rounded-lg" />
+        <img src={companySettings?.logo_url || vkhoLogo} alt={company.domain || 'vkho.vn'} className="h-10 w-10 object-contain rounded-lg" />
         <div className="flex flex-col">
-          <span className="text-lg font-bold text-sidebar-foreground">{currentTenant?.name || 'vkho.vn'}</span>
-          <span className="text-xs text-sidebar-muted">{currentTenant?.subdomain ? `${currentTenant.subdomain}.vkho.vn` : t('sidebar.smartManagement')}</span>
+          <span className="text-lg font-bold text-sidebar-foreground">{currentTenant?.name || company.name || 'vkho.vn'}</span>
+          <span className="text-xs text-sidebar-muted">{currentTenant?.subdomain ? `${currentTenant.subdomain}.${company.domain || 'vkho.vn'}` : (companySettings?.display_name || t('sidebar.smartManagement'))}</span>
         </div>
         {!isCompanyAdmin && (
           <div className="ml-auto hidden lg:flex items-center gap-0 shrink-0 [&_button]:text-sidebar-foreground [&_button]:hover:bg-sidebar-accent [&_button]:opacity-100 [&_button]:h-8 [&_button]:w-8 [&_.h-5]:h-4 [&_.w-5]:w-4">
