@@ -37,13 +37,8 @@ export function DebtPaymentDeleteDialog({
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const handleDelete = async () => {
+  const doDelete = async () => {
     if (!payment) return;
-
-    if (hasSecurityPassword && !unlocked) {
-      setShowPasswordDialog(true);
-      return;
-    }
 
     setDeleting(true);
     try {
