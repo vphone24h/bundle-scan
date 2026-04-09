@@ -333,6 +333,11 @@ export default function MyAttendancePage() {
             )}
           </TabsContent>
 
+          {/* Correction Requests Tab */}
+          <TabsContent value="corrections">
+            <EmployeeCorrectionRequests userId={user?.id} tenantId={tenantId} />
+          </TabsContent>
+
           {/* Stats Tab */}
           <TabsContent value="calendar" className="space-y-3">
             <Card>
