@@ -44,6 +44,7 @@ import {
   MessageCircleMore,
   Settings,
   Wrench,
+  Fingerprint,
 } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { cn } from '@/lib/utils';
