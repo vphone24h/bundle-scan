@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Clock, Smartphone, QrCode, CheckCircle2, XCircle, Loader2, AlertTriangle, Navigation, Signal, Wifi, WifiOff, ArrowLeft, ShieldAlert } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { DeviceOtpVerification } from '@/components/attendance/DeviceOtpVerification';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -76,6 +77,7 @@ export default function CheckInPage() {
   const [distance, setDistance] = useState<number | null>(null);
   const [gpsFraudWarning, setGpsFraudWarning] = useState<string[]>([]);
   const [showRandomVerify, setShowRandomVerify] = useState(false);
+  const [showOtpVerify, setShowOtpVerify] = useState(false);
   const [verifyAnswer, setVerifyAnswer] = useState('');
   const [allDistances, setAllDistances] = useState<{ loc: any; dist: number }[]>([]);
   const deviceFP = useRef(getDeviceFingerprint());
@@ -427,7 +429,10 @@ export default function CheckInPage() {
             {!myDevice ? (
               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={registerDevice}>Đăng ký</Button>
             ) : myDevice.status === 'pending' ? (
-              <Badge variant="secondary" className="text-[10px]">Chờ duyệt</Badge>
+              <div className="flex items-center gap-1.5">
+                <Badge variant="secondary" className="text-[10px]">Chờ duyệt</Badge>
+                <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => setShowOtpVerify(true)}>OTP</Button>
+              </div>
             ) : myDevice.status === 'approved' ? (
               <Badge variant="outline" className="text-[10px] text-green-600">Đã xác nhận</Badge>
             ) : (
@@ -569,6 +574,15 @@ export default function CheckInPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* OTP Device Verification */}
+      {myDevice?.id && (
+        <DeviceOtpVerification
+          deviceId={myDevice.id}
+          open={showOtpVerify}
+          onOpenChange={setShowOtpVerify}
+        />
+      )}
     </div>
   );
 }

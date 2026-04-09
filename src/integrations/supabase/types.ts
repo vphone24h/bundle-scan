@@ -8430,6 +8430,8 @@ export type Database = {
           id: string
           ip_address: string | null
           last_used_at: string | null
+          otp_code: string | null
+          otp_expires_at: string | null
           status: string
           tenant_id: string
           updated_at: string
@@ -8446,6 +8448,8 @@ export type Database = {
           id?: string
           ip_address?: string | null
           last_used_at?: string | null
+          otp_code?: string | null
+          otp_expires_at?: string | null
           status?: string
           tenant_id: string
           updated_at?: string
@@ -8462,6 +8466,8 @@ export type Database = {
           id?: string
           ip_address?: string | null
           last_used_at?: string | null
+          otp_code?: string | null
+          otp_expires_at?: string | null
           status?: string
           tenant_id?: string
           updated_at?: string
