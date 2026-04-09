@@ -1,0 +1,12 @@
+CREATE OR REPLACE FUNCTION public.refresh_materialized_views()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  REFRESH MATERIALIZED VIEW CONCURRENTLY mv_revenue_daily;
+  REFRESH MATERIALIZED VIEW CONCURRENTLY mv_revenue_monthly;
+  REFRESH MATERIALIZED VIEW CONCURRENTLY mv_top_products;
+END;
+$$;
