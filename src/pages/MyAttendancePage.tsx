@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, TrendingUp, ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertTriangle, DollarSign, Bell, FileText, Briefcase, Banknote, FileEdit } from 'lucide-react';
+import { Calendar, Clock, TrendingUp, ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertTriangle, DollarSign, Bell, FileText, Briefcase, Banknote, FileEdit, CalendarDays } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
@@ -89,6 +89,22 @@ export default function MyAttendancePage() {
         .maybeSingle();
       if (error) throw error;
       return data;
+    },
+    enabled: !!user?.id && !!tenantId,
+  });
+
+  // All shift assignments for calendar view
+  const { data: allShiftAssignments } = useQuery({
+    queryKey: ['my-shift-assignments', user?.id, tenantId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('shift_assignments')
+        .select('*, work_shifts(name, start_time, end_time, color)')
+        .eq('user_id', user!.id)
+        .eq('tenant_id', tenantId!)
+        .eq('is_active', true);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!user?.id && !!tenantId,
   });
@@ -274,24 +290,27 @@ export default function MyAttendancePage() {
 
         {/* Tabs */}
         <Tabs defaultValue="history" className="space-y-3">
-          <TabsList className="w-full grid grid-cols-6">
-            <TabsTrigger value="history" className="text-xs">
-              <Calendar className="h-3.5 w-3.5 mr-1" /> Công
+          <TabsList className="w-full grid grid-cols-7">
+            <TabsTrigger value="history" className="text-xs px-1">
+              <Calendar className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Công</span>
             </TabsTrigger>
-            <TabsTrigger value="calendar" className="text-xs">
-              <TrendingUp className="h-3.5 w-3.5 mr-1" /> TK
+            <TabsTrigger value="calendar" className="text-xs px-1">
+              <TrendingUp className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">TK</span>
             </TabsTrigger>
-            <TabsTrigger value="corrections" className="text-xs">
-              <FileEdit className="h-3.5 w-3.5 mr-1" /> SC
+            <TabsTrigger value="schedule" className="text-xs px-1">
+              <CalendarDays className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Lịch</span>
             </TabsTrigger>
-            <TabsTrigger value="payslips" className="text-xs">
-              <FileText className="h-3.5 w-3.5 mr-1" /> Lương
+            <TabsTrigger value="corrections" className="text-xs px-1">
+              <FileEdit className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">SC</span>
             </TabsTrigger>
-            <TabsTrigger value="advances" className="text-xs">
-              <Banknote className="h-3.5 w-3.5 mr-1" /> TƯ
+            <TabsTrigger value="payslips" className="text-xs px-1">
+              <FileText className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Lương</span>
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="text-xs relative">
-              <Bell className="h-3.5 w-3.5 mr-1" /> TB
+            <TabsTrigger value="advances" className="text-xs px-1">
+              <Banknote className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">TƯ</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="text-xs px-1 relative">
+              <Bell className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">TB</span>
               {unreadNotifs > 0 && (
                 <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-4 h-4 text-[9px] flex items-center justify-center">
                   {unreadNotifs}
@@ -332,6 +351,19 @@ export default function MyAttendancePage() {
                 </Card>
               ))
             )}
+          </TabsContent>
+
+          {/* Correction Requests Tab */}
+          {/* Schedule Tab - Employee Shift Calendar */}
+          <TabsContent value="schedule" className="space-y-3">
+            <Card>
+              <CardHeader className="p-3 pb-1">
+                <CardTitle className="text-sm">Lịch ca làm việc</CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <EmployeeShiftCalendar month={currentMonth} assignments={allShiftAssignments || []} />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Correction Requests Tab */}
@@ -641,6 +673,64 @@ function EmployeeCorrectionRequests({ userId, tenantId }: { userId?: string; ten
             </Card>
           );
         })
+      )}
+    </div>
+  );
+}
+
+// Employee shift calendar showing assigned shifts
+function EmployeeShiftCalendar({ month, assignments }: { month: Date; assignments: any[] }) {
+  const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
+  const startDay = startOfMonth(month).getDay();
+  const today = new Date();
+  const dayLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+
+  // Build map: dateStr -> shift info
+  const shiftMap = new Map<string, any>();
+  for (const a of assignments) {
+    const ws = a.work_shifts as any;
+    if (!ws) continue;
+    if (a.assignment_type === 'fixed' && a.day_of_week != null) {
+      // Fixed assignment: apply to all matching days in month
+      for (const day of days) {
+        if (day.getDay() === a.day_of_week) {
+          shiftMap.set(format(day, 'yyyy-MM-dd'), ws);
+        }
+      }
+    } else if (a.specific_date) {
+      shiftMap.set(a.specific_date, ws);
+    }
+  }
+
+  return (
+    <div>
+      <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] text-muted-foreground mb-1">
+        {dayLabels.map(d => <div key={d} className="py-1">{d}</div>)}
+      </div>
+      <div className="grid grid-cols-7 gap-0.5">
+        {Array.from({ length: startDay }).map((_, i) => <div key={`e-${i}`} />)}
+        {days.map(day => {
+          const dateStr = format(day, 'yyyy-MM-dd');
+          const shift = shiftMap.get(dateStr);
+          const isToday = isSameDay(day, today);
+
+          return (
+            <div
+              key={dateStr}
+              className={`min-h-[44px] flex flex-col items-center justify-center rounded text-[10px] p-0.5 ${isToday ? 'ring-1 ring-primary font-bold' : ''} ${isWeekend(day) ? 'bg-muted/20 text-muted-foreground/50' : shift ? 'bg-primary/10' : 'bg-muted/30'}`}
+            >
+              <span>{day.getDate()}</span>
+              {shift && (
+                <span className="text-[8px] text-primary font-medium truncate max-w-full leading-tight mt-0.5">
+                  {shift.name}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {assignments.length === 0 && (
+        <p className="text-center text-xs text-muted-foreground mt-3">Chưa có lịch ca nào được gán</p>
       )}
     </div>
   );

@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Clock, Smartphone, QrCode, CheckCircle2, XCircle, Loader2, AlertTriangle, Navigation, Signal, Wifi, WifiOff, ArrowLeft } from 'lucide-react';
+import { MapPin, Clock, Smartphone, QrCode, CheckCircle2, XCircle, Loader2, AlertTriangle, Navigation, Signal, Wifi, WifiOff, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { usePlatformUser } from '@/hooks/useTenant';
@@ -22,6 +24,22 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   const dLon = toRad(lon2 - lon1);
   const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// Detect mock GPS / developer mode
+function detectGpsFraud(pos: GeolocationPosition): { isSuspicious: boolean; reasons: string[] } {
+  const reasons: string[] = [];
+  // Mock location: accuracy is often exactly 20m or altitude is 0/null
+  if (pos.coords.accuracy === 20 && pos.coords.altitude === null) reasons.push('Mock location suspected');
+  if (pos.coords.altitudeAccuracy === null && pos.coords.speed === null && pos.coords.heading === null) {
+    // All optional fields null might indicate emulator/mock
+    if (pos.coords.accuracy <= 5) reasons.push('Emulator GPS pattern');
+  }
+  // Check for developer mode indicators
+  if ((navigator as any).webdriver) reasons.push('WebDriver detected');
+  if ((window as any).__SELENIUM_IDE_RECORDER) reasons.push('Selenium detected');
+  if ((window as any).callPhantom || (window as any)._phantom) reasons.push('PhantomJS detected');
+  return { isSuspicious: reasons.length > 0, reasons };
 }
 
 // Simple device fingerprint
@@ -56,6 +74,9 @@ export default function CheckInPage() {
   const [checking, setChecking] = useState(false);
   const [nearestLocation, setNearestLocation] = useState<any>(null);
   const [distance, setDistance] = useState<number | null>(null);
+  const [gpsFraudWarning, setGpsFraudWarning] = useState<string[]>([]);
+  const [showRandomVerify, setShowRandomVerify] = useState(false);
+  const [verifyAnswer, setVerifyAnswer] = useState('');
   const [allDistances, setAllDistances] = useState<{ loc: any; dist: number }[]>([]);
   const deviceFP = useRef(getDeviceFingerprint());
 
@@ -77,6 +98,9 @@ export default function CheckInPage() {
         setGpsPos({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
         setGpsError('');
         setGpsLoading(false);
+        // Fraud detection
+        const fraud = detectGpsFraud(pos);
+        setGpsFraudWarning(fraud.reasons);
       },
       err => {
         setGpsError(err.code === 1 ? 'Vui lòng cho phép truy cập vị trí' : err.code === 2 ? 'Không tìm thấy vị trí' : 'GPS timeout');
@@ -238,12 +262,19 @@ export default function CheckInPage() {
         check_in_accuracy: gpsPos.accuracy,
         check_in_device_id: myDevice?.id || null,
         check_in_method: 'gps',
+        check_in_ip: null,
         status,
         late_minutes: lateMinutes,
+        note: gpsFraudWarning.length > 0 ? `⚠️ GPS flags: ${gpsFraudWarning.join(', ')}` : null,
       }]);
       if (error) throw error;
       toast.success(status === 'late' ? `Check-in thành công (trễ ${lateMinutes} phút)` : 'Check-in thành công!');
       qc.invalidateQueries({ queryKey: ['my-attendance-today'] });
+      qc.invalidateQueries({ queryKey: ['attendance-records'] });
+      // Random post-checkin verification (20% chance)
+      if (Math.random() < 0.2) {
+        setTimeout(() => setShowRandomVerify(true), 3000);
+      }
       qc.invalidateQueries({ queryKey: ['attendance-records'] });
     } catch (e: any) {
       toast.error(e.message);
@@ -495,9 +526,49 @@ export default function CheckInPage() {
                 <span>Thiết bị đang chờ admin duyệt</span>
               </div>
             )}
+            {gpsFraudWarning.length > 0 && (
+              <div className="flex items-center gap-2 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-sm text-orange-700 dark:text-orange-400">
+                <ShieldAlert className="h-4 w-4 shrink-0" />
+                <span>Cảnh báo bảo mật: {gpsFraudWarning.join(', ')}</span>
+              </div>
+            )}
           </>
         )}
       </div>
+
+      {/* Random Verification Dialog */}
+      <Dialog open={showRandomVerify} onOpenChange={setShowRandomVerify}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-primary" />
+              Xác minh tại chỗ
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Hệ thống kiểm tra ngẫu nhiên. Vui lòng nhập mã xác nhận hiển thị trên màn hình quản lý hoặc gõ "OK" để xác nhận bạn đang tại nơi làm việc.
+          </p>
+          <Input
+            placeholder='Gõ "OK" để xác nhận'
+            value={verifyAnswer}
+            onChange={e => setVerifyAnswer(e.target.value)}
+            className="h-10"
+          />
+          <DialogFooter>
+            <Button
+              size="sm"
+              disabled={verifyAnswer.trim().toLowerCase() !== 'ok'}
+              onClick={() => {
+                setShowRandomVerify(false);
+                setVerifyAnswer('');
+                toast.success('Xác minh thành công!');
+              }}
+            >
+              Xác nhận
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

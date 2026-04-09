@@ -64,11 +64,10 @@ Deno.serve(async (req) => {
     }
 
     // 3. Check for staff who haven't checked in yet today
-    // Get all active shift assignments for today
     const dayOfWeek = now.getDay();
     const { data: todayAssignments } = await supabase
       .from('shift_assignments')
-      .select('user_id, tenant_id, shift_id, work_shifts(start_time, name)')
+      .select('user_id, tenant_id, shift_id, work_shifts(start_time, end_time, name)')
       .eq('is_active', true)
       .or(`specific_date.eq.${today},and(assignment_type.eq.fixed,day_of_week.eq.${dayOfWeek})`);
 
@@ -79,6 +78,7 @@ Deno.serve(async (req) => {
 
     const checkedInUsers = new Set((todayRecords || []).map(r => r.user_id));
     let remindersSent = 0;
+    let absentMarked = 0;
 
     for (const assignment of (todayAssignments || [])) {
       if (checkedInUsers.has(assignment.user_id)) continue;
@@ -91,6 +91,41 @@ Deno.serve(async (req) => {
       shiftStart.setHours(h, m, 0, 0);
       
       const minutesLate = (now.getTime() - shiftStart.getTime()) / 60000;
+
+      // Auto-mark absent if shift has ended and no check-in
+      if (ws.end_time) {
+        const [eh, em] = ws.end_time.split(':').map(Number);
+        const shiftEnd = new Date();
+        shiftEnd.setHours(eh, em, 0, 0);
+        const minutesPastEnd = (now.getTime() - shiftEnd.getTime()) / 60000;
+        
+        if (minutesPastEnd > 30) {
+          // Shift ended 30+ min ago, mark as absent
+          const { error: absentErr } = await supabase.from('attendance_records').insert({
+            tenant_id: assignment.tenant_id,
+            user_id: assignment.user_id,
+            date: today,
+            shift_id: assignment.shift_id,
+            status: 'absent',
+            note: 'Tự động đánh dấu vắng - không chấm công',
+            is_auto_checkout: true,
+          });
+          if (!absentErr) {
+            absentMarked++;
+            // Notify
+            await supabase.from('crm_notifications').insert({
+              tenant_id: assignment.tenant_id,
+              user_id: assignment.user_id,
+              notification_type: 'attendance_absent',
+              title: 'Vắng mặt',
+              message: `Bạn đã bị đánh dấu vắng cho ca ${ws.name} ngày ${today}.`,
+              reference_type: 'shift_assignment',
+              reference_id: assignment.shift_id,
+            });
+          }
+          continue;
+        }
+      }
 
       // Send reminder if 30+ minutes late and hasn't checked in
       if (minutesLate >= 30 && minutesLate < 45) {
@@ -113,6 +148,7 @@ Deno.serve(async (req) => {
         auto_checkout: 'completed',
         checkout_warnings: warningsSent,
         checkin_reminders: remindersSent,
+        absent_marked: absentMarked,
         timestamp: now.toISOString(),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
