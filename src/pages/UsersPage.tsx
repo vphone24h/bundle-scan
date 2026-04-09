@@ -239,18 +239,18 @@ export default function UsersPage() {
 
       <Tabs value={effectiveTab} onValueChange={setActiveTab} className="space-y-4">
         {!isStaffOnly && (
-          <TabsList>
-            <TabsTrigger value="users" className="flex items-center gap-1.5">
+          <TabsList className="w-full grid grid-cols-3">
+            <TabsTrigger value="users" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <Shield className="h-4 w-4" />
-              <span className="hidden sm:inline">Danh sách</span>
+              Danh sách
             </TabsTrigger>
-            <TabsTrigger value="setup" className="flex items-center gap-1.5">
+            <TabsTrigger value="setup" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <Settings2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Cài đặt</span>
+              Cài đặt
             </TabsTrigger>
-            <TabsTrigger value="reviews" className="flex items-center gap-1.5">
+            <TabsTrigger value="reviews" className="flex items-center gap-1.5 text-xs sm:text-sm">
               <Star className="h-4 w-4" />
-              <span className="hidden sm:inline">Đánh giá</span>
+              Đánh giá
             </TabsTrigger>
           </TabsList>
         )}
