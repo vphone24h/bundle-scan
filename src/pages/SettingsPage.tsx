@@ -173,11 +173,13 @@ export default function SettingsPage() {
     if (!tenant) return;
     setSaving(true);
     try {
+      const changedFields: string[] = [];
+
       // Validate subdomain if changed
       if (storeSubdomain !== tenant.subdomain) {
         const subdomainRegex = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
         if (storeSubdomain.length < 2 || !subdomainRegex.test(storeSubdomain)) {
-          toast({ title: 'ID cửa hàng chỉ chứa chữ thường, số và dấu gạch ngang', variant: 'destructive' });
+          toast({ title: 'ID cửa hàng chỉ chứa chữ thường, số và dấu gạch ngang (tối thiểu 2 ký tự)', variant: 'destructive' });
           setSaving(false);
           return;
         }
@@ -187,24 +189,27 @@ export default function SettingsPage() {
           _exclude_tenant_id: tenant.id,
         });
         if (isDuplicate) {
-          toast({ title: 'ID cửa hàng đã tồn tại', variant: 'destructive' });
+          toast({ title: 'ID cửa hàng đã tồn tại trong hệ thống', description: 'Vui lòng chọn ID khác.', variant: 'destructive' });
           setSaving(false);
           return;
         }
+        changedFields.push('ID cửa hàng');
       }
 
       // Validate email uniqueness if changed
-      if (storeEmail.trim() && storeEmail.trim() !== (tenant.email || '')) {
+      const newEmail = storeEmail.trim();
+      if (newEmail && newEmail !== (tenant.email || '')) {
         const { data: isDuplicateEmail } = await supabase.rpc('check_tenant_unique_field', {
           _field: 'email',
-          _value: storeEmail.trim(),
+          _value: newEmail,
           _exclude_tenant_id: tenant.id,
         });
         if (isDuplicateEmail) {
-          toast({ title: 'Email đã được sử dụng bởi cửa hàng khác', variant: 'destructive' });
+          toast({ title: 'Email đã được sử dụng bởi cửa hàng khác trong hệ thống', description: 'Vui lòng dùng email khác.', variant: 'destructive' });
           setSaving(false);
           return;
         }
+        changedFields.push('Email');
       }
 
       const { error } = await supabase
@@ -213,14 +218,13 @@ export default function SettingsPage() {
           name: storeName, 
           phone: storePhone,
           subdomain: storeSubdomain.trim().toLowerCase(),
-          email: storeEmail.trim() || null,
+          email: newEmail || null,
         })
         .eq('id', tenant.id);
 
       if (error) throw error;
 
       // Đồng bộ email đăng nhập (auth) khi email cửa hàng thay đổi
-      const newEmail = storeEmail.trim();
       if (newEmail && newEmail !== (tenant.email || '')) {
         const { error: authError } = await supabase.auth.updateUser({ email: newEmail });
         if (authError) {
@@ -233,13 +237,13 @@ export default function SettingsPage() {
         } else {
           toast({ 
             title: 'Đã gửi email xác nhận', 
-            description: `Vui lòng kiểm tra hộp thư ${newEmail} để xác nhận thay đổi email đăng nhập.`,
+            description: `Vui lòng kiểm tra hộp thư ${newEmail} để xác nhận. Sau khi xác nhận, lần đăng nhập sau hãy dùng email mới.`,
           });
         }
       }
 
       const normalizedSubdomain = storeSubdomain.trim().toLowerCase();
-      const normalizedEmail = storeEmail.trim() || null;
+      const normalizedEmail = newEmail || null;
 
       queryClient.setQueriesData({ queryKey: ['current-tenant-combined'] }, (old: any) => {
         if (!old || old.id !== tenant.id) return old;
@@ -272,7 +276,15 @@ export default function SettingsPage() {
         queryClient.invalidateQueries({ queryKey: ['all-tenants'], refetchType: 'all' }),
       ]);
 
-      toast({ title: t('settings.saved') });
+      // Thông báo rõ ràng khi đổi thông tin đăng nhập
+      if (changedFields.length > 0) {
+        toast({ 
+          title: '✅ Đã lưu thành công', 
+          description: `Đã thay đổi: ${changedFields.join(', ')}. Lần đăng nhập sau vui lòng sử dụng thông tin mới.`,
+        });
+      } else {
+        toast({ title: t('settings.saved') });
+      }
     } catch {
       toast({ title: 'Error', variant: 'destructive' });
     } finally {
