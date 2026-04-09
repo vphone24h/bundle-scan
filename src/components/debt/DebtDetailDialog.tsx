@@ -129,35 +129,30 @@ export function DebtDetailDialog({
   const enrichedHistory = useMemo(() => {
     if (!paymentHistory) return [];
 
-    // Sort descending (newest first)
-    const sorted = [...paymentHistory].sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    // Sort ascending (oldest first) to calculate running balance forward
+    const sortedAsc = [...paymentHistory].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
 
-    // For records without stored balance_after, calculate dynamically as fallback
-    // Work backwards from current remaining amount
-    let balance = liveRemaining;
-    const enriched = sorted.map(payment => {
+    // Calculate balance forward chronologically for records without stored balance_after
+    let runningBalance = 0;
+    const enrichedAsc = sortedAsc.map(payment => {
       const storedBalance = (payment as any).balance_after;
       if (storedBalance != null) {
-        // Use permanently stored value - immutable history
-        return {
-          ...payment,
-          balance_after: Number(storedBalance),
-        };
+        runningBalance = Number(storedBalance);
+        return { ...payment, balance_after: runningBalance };
       }
-      // Fallback for old records without stored balance
-      const balanceAfterThis = balance;
+      // Calculate: additions increase debt, payments decrease debt
       if (payment.payment_type === 'addition') {
-        balance -= Number(payment.amount);
+        runningBalance += Number(payment.amount);
       } else {
-        balance += Number(payment.amount);
+        runningBalance = Math.max(0, runningBalance - Number(payment.amount));
       }
-      return {
-        ...payment,
-        balance_after: balanceAfterThis,
-      };
+      return { ...payment, balance_after: runningBalance };
     });
+
+    // Reverse to newest first for display
+    const enriched = enrichedAsc.reverse();
 
     // Apply filter
     if (historyFilter === 'all') return enriched;
