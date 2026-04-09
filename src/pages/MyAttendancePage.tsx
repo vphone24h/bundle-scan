@@ -11,9 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, TrendingUp, ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertTriangle, DollarSign, Bell, FileText, Briefcase } from 'lucide-react';
+import { Calendar, Clock, TrendingUp, ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertTriangle, DollarSign, Bell, FileText, Briefcase, Banknote } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
+import { SalaryAdvancesTab } from '@/components/payroll/SalaryAdvancesTab';
 
 function formatMoney(n: number) {
   return n.toLocaleString('vi-VN') + 'đ';
@@ -267,15 +268,18 @@ export default function MyAttendancePage() {
 
         {/* Tabs */}
         <Tabs defaultValue="history" className="space-y-3">
-          <TabsList className="w-full grid grid-cols-4">
+          <TabsList className="w-full grid grid-cols-5">
             <TabsTrigger value="history" className="text-xs">
               <Calendar className="h-3.5 w-3.5 mr-1" /> Công
             </TabsTrigger>
             <TabsTrigger value="calendar" className="text-xs">
-              <TrendingUp className="h-3.5 w-3.5 mr-1" /> Thống kê
+              <TrendingUp className="h-3.5 w-3.5 mr-1" /> TK
             </TabsTrigger>
             <TabsTrigger value="payslips" className="text-xs">
-              <FileText className="h-3.5 w-3.5 mr-1" /> Phiếu lương
+              <FileText className="h-3.5 w-3.5 mr-1" /> Lương
+            </TabsTrigger>
+            <TabsTrigger value="advances" className="text-xs">
+              <Banknote className="h-3.5 w-3.5 mr-1" /> TƯ
             </TabsTrigger>
             <TabsTrigger value="notifications" className="text-xs relative">
               <Bell className="h-3.5 w-3.5 mr-1" /> TB
@@ -417,6 +421,11 @@ export default function MyAttendancePage() {
                 );
               })
             )}
+          </TabsContent>
+
+          {/* Advances Tab */}
+          <TabsContent value="advances">
+            <SalaryAdvancesTab mode="employee" />
           </TabsContent>
 
           {/* Notifications Tab */}

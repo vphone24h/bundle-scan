@@ -678,6 +678,47 @@ export type Database = {
           },
         ]
       }
+      attendance_locks: {
+        Row: {
+          created_at: string
+          id: string
+          locked_at: string
+          locked_by: string
+          note: string | null
+          period_end: string
+          period_start: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          locked_at?: string
+          locked_by: string
+          note?: string | null
+          period_end: string
+          period_start: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          locked_at?: string
+          locked_by?: string
+          note?: string | null
+          period_end?: string
+          period_start?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_locks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance_records: {
         Row: {
           branch_id: string | null
@@ -6247,6 +6288,87 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "return_payments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salary_advances: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          id: string
+          note: string | null
+          paid_at: string | null
+          paid_by: string | null
+          payroll_period_id: string | null
+          reason: string | null
+          reject_reason: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          requested_at: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          paid_at?: string | null
+          paid_by?: string | null
+          payroll_period_id?: string | null
+          reason?: string | null
+          reject_reason?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          requested_at?: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          paid_at?: string | null
+          paid_by?: string | null
+          payroll_period_id?: string | null
+          reason?: string | null
+          reject_reason?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          requested_at?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_advances_payroll_period_id_fkey"
+            columns: ["payroll_period_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_advances_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

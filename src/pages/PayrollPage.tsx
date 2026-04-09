@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DollarSign, Settings, BarChart3, Users } from 'lucide-react';
+import { DollarSign, Settings, BarChart3, Banknote } from 'lucide-react';
 import { SalaryTemplatesTab } from '@/components/payroll/SalaryTemplatesTab';
 import { CommissionRulesTab } from '@/components/payroll/CommissionRulesTab';
 import { PayrollPeriodsTab } from '@/components/payroll/PayrollPeriodsTab';
+import { SalaryAdvancesTab } from '@/components/payroll/SalaryAdvancesTab';
 
 export default function PayrollPage() {
   const [activeTab, setActiveTab] = useState('templates');
@@ -14,7 +15,7 @@ export default function PayrollPage() {
     <MainLayout>
       <PageHeader
         title="Bảng lương"
-        description="Quản lý mẫu lương, hoa hồng và kỳ lương"
+        description="Quản lý mẫu lương, hoa hồng, kỳ lương và tạm ứng"
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -31,11 +32,16 @@ export default function PayrollPage() {
             <DollarSign className="h-4 w-4" />
             <span className="hidden sm:inline">Kỳ lương</span>
           </TabsTrigger>
+          <TabsTrigger value="advances" className="flex items-center gap-1.5">
+            <Banknote className="h-4 w-4" />
+            <span className="hidden sm:inline">Tạm ứng</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="templates"><SalaryTemplatesTab /></TabsContent>
         <TabsContent value="commission"><CommissionRulesTab /></TabsContent>
         <TabsContent value="payroll"><PayrollPeriodsTab /></TabsContent>
+        <TabsContent value="advances"><SalaryAdvancesTab mode="admin" /></TabsContent>
       </Tabs>
     </MainLayout>
   );

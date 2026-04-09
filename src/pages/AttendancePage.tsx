@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, Calendar, MapPin, Smartphone, BarChart3 } from 'lucide-react';
+import { Clock, Calendar, MapPin, Smartphone, BarChart3, Lock } from 'lucide-react';
 import { WorkShiftsTab } from '@/components/attendance/WorkShiftsTab';
 import { ShiftScheduleTab } from '@/components/attendance/ShiftScheduleTab';
 import { AttendanceHistoryTab } from '@/components/attendance/AttendanceHistoryTab';
 import { AttendanceLocationsTab } from '@/components/attendance/AttendanceLocationsTab';
 import { TrustedDevicesTab } from '@/components/attendance/TrustedDevicesTab';
 import { AttendanceDashboardTab } from '@/components/attendance/AttendanceDashboardTab';
+import { AttendanceLocksTab } from '@/components/attendance/AttendanceLocksTab';
 
 export default function AttendancePage() {
   const { t } = useTranslation();
@@ -53,6 +54,11 @@ export default function AttendancePage() {
               <span className="hidden sm:inline">Thiết bị</span>
               <span className="sm:hidden">TB</span>
             </TabsTrigger>
+            <TabsTrigger value="locks" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+              <Lock className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Chốt công</span>
+              <span className="sm:hidden">Khóa</span>
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -73,6 +79,9 @@ export default function AttendancePage() {
         </TabsContent>
         <TabsContent value="devices" className="mt-4">
           <TrustedDevicesTab />
+        </TabsContent>
+        <TabsContent value="locks" className="mt-4">
+          <AttendanceLocksTab />
         </TabsContent>
       </Tabs>
     </div>
