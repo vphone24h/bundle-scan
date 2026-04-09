@@ -59,6 +59,7 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
       { key: 'create_export', label: 'Tạo đơn' },
       { key: 'view_export_history', label: 'Lịch sử bán' },
       { key: 'view_export_customer_info', label: 'Xem thông tin khách', description: 'Con của "Lịch sử bán"' },
+      { key: 'manage_repair', label: 'Sửa chữa', description: 'Bật/tắt chức năng sửa chữa' },
       { key: 'create_return', label: 'Trả hàng' },
     ],
   },
