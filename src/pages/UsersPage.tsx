@@ -244,6 +244,10 @@ export default function UsersPage() {
               <Shield className="h-4 w-4" />
               <span className="hidden sm:inline">Danh sách</span>
             </TabsTrigger>
+            <TabsTrigger value="setup" className="flex items-center gap-1.5">
+              <Settings2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Cài đặt</span>
+            </TabsTrigger>
             <TabsTrigger value="reviews" className="flex items-center gap-1.5">
               <Star className="h-4 w-4" />
               <span className="hidden sm:inline">Đánh giá</span>
@@ -421,6 +425,10 @@ export default function UsersPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="setup">
+          <EmployeeSetupTab />
         </TabsContent>
 
         <TabsContent value="reviews">
