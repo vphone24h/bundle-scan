@@ -96,6 +96,9 @@ export default function CheckInPage() {
         setGpsPos({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
         setGpsError('');
         setGpsLoading(false);
+        // Fraud detection
+        const fraud = detectGpsFraud(pos);
+        setGpsFraudWarning(fraud.reasons);
       },
       err => {
         setGpsError(err.code === 1 ? 'Vui lòng cho phép truy cập vị trí' : err.code === 2 ? 'Không tìm thấy vị trí' : 'GPS timeout');
@@ -257,12 +260,19 @@ export default function CheckInPage() {
         check_in_accuracy: gpsPos.accuracy,
         check_in_device_id: myDevice?.id || null,
         check_in_method: 'gps',
+        check_in_ip: null,
         status,
         late_minutes: lateMinutes,
+        note: gpsFraudWarning.length > 0 ? `⚠️ GPS flags: ${gpsFraudWarning.join(', ')}` : null,
       }]);
       if (error) throw error;
       toast.success(status === 'late' ? `Check-in thành công (trễ ${lateMinutes} phút)` : 'Check-in thành công!');
       qc.invalidateQueries({ queryKey: ['my-attendance-today'] });
+      qc.invalidateQueries({ queryKey: ['attendance-records'] });
+      // Random post-checkin verification (20% chance)
+      if (Math.random() < 0.2) {
+        setTimeout(() => setShowRandomVerify(true), 3000);
+      }
       qc.invalidateQueries({ queryKey: ['attendance-records'] });
     } catch (e: any) {
       toast.error(e.message);
