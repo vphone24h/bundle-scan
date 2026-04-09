@@ -61,6 +61,8 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const WarrantyCheckPage = lazy(() => import("./pages/WarrantyCheckPage"));
 const RepairNewPage = lazy(() => import("./pages/RepairNewPage"));
 const RepairListPage = lazy(() => import("./pages/RepairListPage"));
+const AttendancePage = lazy(() => import("./pages/AttendancePage"));
+const CheckInPage = lazy(() => import("./pages/CheckInPage"));
 
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -242,6 +244,8 @@ const App = () => (
                 <Route path="/repair/new" element={<GuardedRoute><RepairNewPage /></GuardedRoute>} />
                 <Route path="/repair/list" element={<GuardedRoute><RepairListPage /></GuardedRoute>} />
                 <Route path="/social" element={<GuardedRoute><SocialPage /></GuardedRoute>} />
+                <Route path="/attendance" element={<GuardedRoute><AttendancePage /></GuardedRoute>} />
+                <Route path="/checkin" element={<ProtectedRoute><CheckInPage /></ProtectedRoute>} />
                 {/* Platform Admin route - also guarded */}
                 <Route path="/platform-admin" element={<GuardedRoute><PlatformAdminPage /></GuardedRoute>} />
                 

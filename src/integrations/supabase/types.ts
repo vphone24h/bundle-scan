@@ -570,6 +570,259 @@ export type Database = {
           },
         ]
       }
+      attendance_corrections: {
+        Row: {
+          attendance_id: string
+          corrected_by: string
+          created_at: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          reason: string
+          tenant_id: string
+        }
+        Insert: {
+          attendance_id: string
+          corrected_by: string
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          reason: string
+          tenant_id: string
+        }
+        Update: {
+          attendance_id?: string
+          corrected_by?: string
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          reason?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_corrections_attendance_id_fkey"
+            columns: ["attendance_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_corrections_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attendance_locations: {
+        Row: {
+          address: string | null
+          branch_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          latitude: number
+          longitude: number
+          name: string
+          qr_code: string
+          radius_meters: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          branch_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          latitude: number
+          longitude: number
+          name: string
+          qr_code?: string
+          radius_meters?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          branch_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          latitude?: number
+          longitude?: number
+          name?: string
+          qr_code?: string
+          radius_meters?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_locations_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_locations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attendance_records: {
+        Row: {
+          branch_id: string | null
+          check_in_accuracy: number | null
+          check_in_device_id: string | null
+          check_in_ip: string | null
+          check_in_lat: number | null
+          check_in_lng: number | null
+          check_in_method: string | null
+          check_in_time: string | null
+          check_out_accuracy: number | null
+          check_out_device_id: string | null
+          check_out_ip: string | null
+          check_out_lat: number | null
+          check_out_lng: number | null
+          check_out_method: string | null
+          check_out_time: string | null
+          created_at: string
+          date: string
+          early_leave_minutes: number | null
+          id: string
+          is_auto_checkout: boolean | null
+          is_locked: boolean | null
+          late_minutes: number | null
+          location_id: string | null
+          note: string | null
+          overtime_minutes: number | null
+          shift_id: string | null
+          status: string
+          tenant_id: string
+          total_work_minutes: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          branch_id?: string | null
+          check_in_accuracy?: number | null
+          check_in_device_id?: string | null
+          check_in_ip?: string | null
+          check_in_lat?: number | null
+          check_in_lng?: number | null
+          check_in_method?: string | null
+          check_in_time?: string | null
+          check_out_accuracy?: number | null
+          check_out_device_id?: string | null
+          check_out_ip?: string | null
+          check_out_lat?: number | null
+          check_out_lng?: number | null
+          check_out_method?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          date: string
+          early_leave_minutes?: number | null
+          id?: string
+          is_auto_checkout?: boolean | null
+          is_locked?: boolean | null
+          late_minutes?: number | null
+          location_id?: string | null
+          note?: string | null
+          overtime_minutes?: number | null
+          shift_id?: string | null
+          status?: string
+          tenant_id: string
+          total_work_minutes?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          branch_id?: string | null
+          check_in_accuracy?: number | null
+          check_in_device_id?: string | null
+          check_in_ip?: string | null
+          check_in_lat?: number | null
+          check_in_lng?: number | null
+          check_in_method?: string | null
+          check_in_time?: string | null
+          check_out_accuracy?: number | null
+          check_out_device_id?: string | null
+          check_out_ip?: string | null
+          check_out_lat?: number | null
+          check_out_lng?: number | null
+          check_out_method?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          date?: string
+          early_leave_minutes?: number | null
+          id?: string
+          is_auto_checkout?: boolean | null
+          is_locked?: boolean | null
+          late_minutes?: number | null
+          location_id?: string | null
+          note?: string | null
+          overtime_minutes?: number | null
+          shift_id?: string | null
+          status?: string
+          tenant_id?: string
+          total_work_minutes?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_records_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_check_in_device_id_fkey"
+            columns: ["check_in_device_id"]
+            isOneToOne: false
+            referencedRelation: "trusted_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_check_out_device_id_fkey"
+            columns: ["check_out_device_id"]
+            isOneToOne: false
+            referencedRelation: "trusted_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "work_shifts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action_type: string
@@ -5792,6 +6045,60 @@ export type Database = {
           },
         ]
       }
+      shift_assignments: {
+        Row: {
+          assignment_type: string
+          created_at: string
+          day_of_week: number | null
+          id: string
+          is_active: boolean
+          shift_id: string
+          specific_date: string | null
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assignment_type?: string
+          created_at?: string
+          day_of_week?: number | null
+          id?: string
+          is_active?: boolean
+          shift_id: string
+          specific_date?: string | null
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assignment_type?: string
+          created_at?: string
+          day_of_week?: number | null
+          id?: string
+          is_active?: boolean
+          shift_id?: string
+          specific_date?: string | null
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_assignments_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "work_shifts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_assignments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shop_collaborators: {
         Row: {
           available_balance: number
@@ -7630,6 +7937,65 @@ export type Database = {
           },
         ]
       }
+      trusted_devices: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          device_fingerprint: string
+          device_name: string | null
+          device_type: string | null
+          id: string
+          ip_address: string | null
+          last_used_at: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          device_fingerprint: string
+          device_name?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address?: string | null
+          last_used_at?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          device_fingerprint?: string
+          device_name?: string | null
+          device_type?: string | null
+          id?: string
+          ip_address?: string | null
+          last_used_at?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trusted_devices_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_branch_access: {
         Row: {
           branch_id: string
@@ -7875,6 +8241,93 @@ export type Database = {
           tenant_id?: string
         }
         Relationships: []
+      }
+      work_shifts: {
+        Row: {
+          allow_early_checkin_minutes: number
+          branch_id: string | null
+          break_minutes: number
+          color: string | null
+          created_at: string
+          device_required: boolean
+          early_leave_threshold_minutes: number
+          end_time: string
+          gps_radius_meters: number
+          gps_required: boolean
+          id: string
+          is_active: boolean
+          late_threshold_minutes: number
+          max_overtime_minutes: number | null
+          name: string
+          overtime_enabled: boolean
+          start_time: string
+          tenant_id: string
+          updated_at: string
+          wifi_required: boolean
+          wifi_ssid: string | null
+        }
+        Insert: {
+          allow_early_checkin_minutes?: number
+          branch_id?: string | null
+          break_minutes?: number
+          color?: string | null
+          created_at?: string
+          device_required?: boolean
+          early_leave_threshold_minutes?: number
+          end_time: string
+          gps_radius_meters?: number
+          gps_required?: boolean
+          id?: string
+          is_active?: boolean
+          late_threshold_minutes?: number
+          max_overtime_minutes?: number | null
+          name: string
+          overtime_enabled?: boolean
+          start_time: string
+          tenant_id: string
+          updated_at?: string
+          wifi_required?: boolean
+          wifi_ssid?: string | null
+        }
+        Update: {
+          allow_early_checkin_minutes?: number
+          branch_id?: string | null
+          break_minutes?: number
+          color?: string | null
+          created_at?: string
+          device_required?: boolean
+          early_leave_threshold_minutes?: number
+          end_time?: string
+          gps_radius_meters?: number
+          gps_required?: boolean
+          id?: string
+          is_active?: boolean
+          late_threshold_minutes?: number
+          max_overtime_minutes?: number | null
+          name?: string
+          overtime_enabled?: boolean
+          start_time?: string
+          tenant_id?: string
+          updated_at?: string
+          wifi_required?: boolean
+          wifi_ssid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_shifts_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_shifts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       zalo_message_logs: {
         Row: {
