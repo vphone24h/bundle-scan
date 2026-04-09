@@ -423,6 +423,11 @@ export default function MyAttendancePage() {
             )}
           </TabsContent>
 
+          {/* Advances Tab */}
+          <TabsContent value="advances">
+            <SalaryAdvancesTab mode="employee" />
+          </TabsContent>
+
           {/* Notifications Tab */}
           <TabsContent value="notifications" className="space-y-2">
             {!notifications?.length ? (
