@@ -46,12 +46,23 @@ export function ShiftScheduleTab() {
   const { data: staffList } = useQuery({
     queryKey: ['staff-list', tenantId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: roles, error: rolesErr } = await supabase
         .from('user_roles')
-        .select('user_id, user_role, profiles(full_name)')
+        .select('user_id, user_role')
         .eq('tenant_id', tenantId!);
-      if (error) throw error;
-      return data;
+      if (rolesErr) throw rolesErr;
+      if (!roles?.length) return [];
+
+      const userIds = roles.map(r => r.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name')
+        .in('user_id', userIds);
+
+      return roles.map(r => ({
+        ...r,
+        display_name: profiles?.find(p => p.user_id === r.user_id)?.display_name || r.user_id.slice(0, 8),
+      }));
     },
     enabled: !!tenantId,
   });
@@ -230,7 +241,7 @@ export function ShiftScheduleTab() {
                             >
                               <X className="h-2 w-2" />
                             </button>
-                            <div className="font-medium truncate">{(staffName?.profiles as any)?.full_name || a.user_id.slice(0, 6)}</div>
+                            <div className="font-medium truncate">{staffName?.display_name || a.user_id.slice(0, 6)}</div>
                             <div className="text-muted-foreground">{a.work_shifts?.name} {a.work_shifts?.start_time?.slice(0,5)}-{a.work_shifts?.end_time?.slice(0,5)}</div>
                           </div>
                         );
@@ -264,7 +275,7 @@ export function ShiftScheduleTab() {
                 <SelectContent>
                   {staffList?.map((s: any) => (
                     <SelectItem key={s.user_id} value={s.user_id}>
-                      {(s.profiles as any)?.full_name || s.user_id.slice(0, 8)}
+                      {s.display_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -307,7 +318,7 @@ export function ShiftScheduleTab() {
                       checked={bulkUsers.includes(s.user_id)}
                       onCheckedChange={() => toggleBulkUser(s.user_id)}
                     />
-                    {(s.profiles as any)?.full_name || s.user_id.slice(0, 8)}
+                    {s.display_name}
                   </label>
                 ))}
               </div>
