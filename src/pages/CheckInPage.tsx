@@ -574,6 +574,15 @@ export default function CheckInPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* OTP Device Verification */}
+      {myDevice?.id && (
+        <DeviceOtpVerification
+          deviceId={myDevice.id}
+          open={showOtpVerify}
+          onOpenChange={setShowOtpVerify}
+        />
+      )}
     </div>
   );
 }
