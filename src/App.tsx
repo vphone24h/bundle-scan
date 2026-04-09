@@ -9,7 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, keepPreviousData } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CompanyProvider } from "@/hooks/useCompanyResolver";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -246,10 +246,10 @@ const App = () => (
                 <Route path="/repair/new" element={<GuardedRoute><RepairNewPage /></GuardedRoute>} />
                 <Route path="/repair/list" element={<GuardedRoute><RepairListPage /></GuardedRoute>} />
                 <Route path="/social" element={<GuardedRoute><SocialPage /></GuardedRoute>} />
-                <Route path="/attendance" element={<GuardedRoute><AttendancePage /></GuardedRoute>} />
+                <Route path="/attendance" element={<Navigate to="/users" replace />} />
                 <Route path="/checkin" element={<ProtectedRoute><CheckInPage /></ProtectedRoute>} />
                 <Route path="/my-attendance" element={<ProtectedRoute><MyAttendancePage /></ProtectedRoute>} />
-                <Route path="/payroll" element={<GuardedRoute><PayrollPage /></GuardedRoute>} />
+                <Route path="/payroll" element={<Navigate to="/users" replace />} />
                 {/* Platform Admin route - also guarded */}
                 <Route path="/platform-admin" element={<GuardedRoute><PlatformAdminPage /></GuardedRoute>} />
                 
