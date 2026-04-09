@@ -19,7 +19,7 @@ export default function AttendancePage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div>
+      <div className="pl-14 lg:pl-0">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground">Chấm công & Ca làm</h1>
         <p className="text-sm text-muted-foreground mt-1">Quản lý ca làm việc, xếp ca, chấm công và thiết bị</p>
       </div>
