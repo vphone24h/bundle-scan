@@ -87,7 +87,6 @@ export default function AttendancePage() {
     </div>
   );
 }
-  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('dashboard');
 
   return (
