@@ -233,7 +233,13 @@ export function DebtPaymentDeleteDialog({
 
           <AlertDialogFooter>
             <AlertDialogCancel>Hủy</AlertDialogCancel>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+            <Button variant="destructive" onClick={() => {
+              if (hasSecurityPassword && !unlocked) {
+                setShowPasswordDialog(true);
+                return;
+              }
+              doDelete();
+            }} disabled={deleting}>
               {deleting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               {hasSecurityPassword && !unlocked ? 'Nhập mật khẩu' : 'Xóa phiếu'}
             </Button>
@@ -247,7 +253,7 @@ export function DebtPaymentDeleteDialog({
         onSuccess={() => {
           unlock();
           setShowPasswordDialog(false);
-          handleDelete();
+          doDelete();
         }}
       />
     </>
