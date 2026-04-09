@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, TrendingUp, ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertTriangle, DollarSign, Bell, FileText, Briefcase, Banknote, FileEdit } from 'lucide-react';
+import { Calendar, Clock, TrendingUp, ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertTriangle, DollarSign, Bell, FileText, Briefcase, Banknote, FileEdit, CalendarDays } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
@@ -290,24 +290,27 @@ export default function MyAttendancePage() {
 
         {/* Tabs */}
         <Tabs defaultValue="history" className="space-y-3">
-          <TabsList className="w-full grid grid-cols-6">
-            <TabsTrigger value="history" className="text-xs">
-              <Calendar className="h-3.5 w-3.5 mr-1" /> Công
+          <TabsList className="w-full grid grid-cols-7">
+            <TabsTrigger value="history" className="text-xs px-1">
+              <Calendar className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Công</span>
             </TabsTrigger>
-            <TabsTrigger value="calendar" className="text-xs">
-              <TrendingUp className="h-3.5 w-3.5 mr-1" /> TK
+            <TabsTrigger value="calendar" className="text-xs px-1">
+              <TrendingUp className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">TK</span>
             </TabsTrigger>
-            <TabsTrigger value="corrections" className="text-xs">
-              <FileEdit className="h-3.5 w-3.5 mr-1" /> SC
+            <TabsTrigger value="schedule" className="text-xs px-1">
+              <CalendarDays className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Lịch</span>
             </TabsTrigger>
-            <TabsTrigger value="payslips" className="text-xs">
-              <FileText className="h-3.5 w-3.5 mr-1" /> Lương
+            <TabsTrigger value="corrections" className="text-xs px-1">
+              <FileEdit className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">SC</span>
             </TabsTrigger>
-            <TabsTrigger value="advances" className="text-xs">
-              <Banknote className="h-3.5 w-3.5 mr-1" /> TƯ
+            <TabsTrigger value="payslips" className="text-xs px-1">
+              <FileText className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Lương</span>
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="text-xs relative">
-              <Bell className="h-3.5 w-3.5 mr-1" /> TB
+            <TabsTrigger value="advances" className="text-xs px-1">
+              <Banknote className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">TƯ</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="text-xs px-1 relative">
+              <Bell className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">TB</span>
               {unreadNotifs > 0 && (
                 <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-4 h-4 text-[9px] flex items-center justify-center">
                   {unreadNotifs}
