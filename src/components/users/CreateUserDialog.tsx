@@ -113,14 +113,18 @@ export function CreateUserDialog({
         },
       });
 
-      if (response.error) throw new Error(response.error.message);
-      if (response.data?.error) {
+      // Check structured error in data first (e.g. 403 MEMBER_LIMIT_REACHED)
+      if (response.data?.errorCode) {
         const err = new Error(response.data.error) as any;
         err.errorCode = response.data.errorCode;
         err.maxUsers = response.data.maxUsers;
         err.currentCount = response.data.currentCount;
         throw err;
       }
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+      if (response.error) throw new Error(response.error.message);
 
       // Save custom permissions
       const userId = response.data?.userId;
