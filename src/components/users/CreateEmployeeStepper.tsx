@@ -16,10 +16,10 @@ import { useAuditLog } from '@/hooks/usePermissions';
 import { useWorkShifts } from '@/hooks/useAttendance';
 import { useSalaryTemplates } from '@/hooks/usePayroll';
 import { StepBasicInfo, type BasicInfoData } from './steps/StepBasicInfo';
-import { StepAssignShift } from './steps/StepAssignShift';
+import { StepCreateShift } from './steps/StepCreateShift';
 import { StepSchedule } from './steps/StepSchedule';
 import { StepSalary } from './steps/StepSalary';
-import { StepReview } from './steps/StepReview';
+import { StepAttendanceSetup, type AttendanceSetupData } from './steps/StepAttendanceSetup';
 import { cn } from '@/lib/utils';
 
 interface Branch { id: string; name: string; }
@@ -32,10 +32,10 @@ interface CreateEmployeeStepperProps {
 
 const STEPS = [
   { key: 'info', label: 'Thông tin', icon: User },
-  { key: 'shift', label: 'Ca làm', icon: Clock },
-  { key: 'schedule', label: 'Lịch trình', icon: Calendar },
+  { key: 'shift', label: 'Tạo ca', icon: Clock },
+  { key: 'schedule', label: 'Xếp lịch', icon: Calendar },
   { key: 'salary', label: 'Bảng lương', icon: DollarSign },
-  { key: 'review', label: 'Hoàn tất', icon: CheckCircle2 },
+  { key: 'attendance', label: 'Chấm công', icon: CheckCircle2 },
 ] as const;
 
 export interface ScheduleData {
@@ -79,6 +79,11 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
   // Step 4 data
   const [salaryData, setSalaryData] = useState<SalaryData>({
     allowances: [], deductions: [],
+  });
+
+  // Step 5 data
+  const [attendanceData, setAttendanceData] = useState<AttendanceSetupData>({
+    allowGps: true, allowQr: true, allowPos: false, maxDevices: 2, requireDeviceApproval: true,
   });
 
   const [memberLimitError, setMemberLimitError] = useState<{
@@ -298,7 +303,7 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
                 />
               )}
               {currentStep === 1 && (
-                <StepAssignShift
+                <StepCreateShift
                   shifts={shifts || []}
                   selectedShiftId={selectedShiftId}
                   onSelect={setSelectedShiftId}
@@ -320,14 +325,9 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
                 />
               )}
               {currentStep === 4 && (
-                <StepReview
-                  basicInfo={basicInfo}
-                  selectedShiftId={selectedShiftId}
-                  shifts={shifts || []}
-                  scheduleData={scheduleData}
-                  salaryData={salaryData}
-                  templates={salaryTemplates || []}
-                  branches={branches}
+                <StepAttendanceSetup
+                  data={attendanceData}
+                  onChange={setAttendanceData}
                 />
               )}
             </div>
