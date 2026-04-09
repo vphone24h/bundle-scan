@@ -1379,6 +1379,62 @@ export type Database = {
           },
         ]
       }
+      commission_rules: {
+        Row: {
+          applies_to_user_id: string | null
+          commission_type: string
+          commission_value: number
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          priority: number
+          rule_type: string
+          target_id: string | null
+          target_name: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          applies_to_user_id?: string | null
+          commission_type?: string
+          commission_value?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          priority?: number
+          rule_type?: string
+          target_id?: string | null
+          target_name?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          applies_to_user_id?: string | null
+          commission_type?: string
+          commission_value?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          priority?: number
+          rule_type?: string
+          target_id?: string | null
+          target_name?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           created_at: string
@@ -3220,6 +3276,60 @@ export type Database = {
           },
         ]
       }
+      employee_salary_configs: {
+        Row: {
+          allowances: Json
+          created_at: string
+          custom_base_amount: number | null
+          deductions: Json
+          id: string
+          is_active: boolean
+          salary_template_id: string | null
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allowances?: Json
+          created_at?: string
+          custom_base_amount?: number | null
+          deductions?: Json
+          id?: string
+          is_active?: boolean
+          salary_template_id?: string | null
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allowances?: Json
+          created_at?: string
+          custom_base_amount?: number | null
+          deductions?: Json
+          id?: string
+          is_active?: boolean
+          salary_template_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_salary_configs_salary_template_id_fkey"
+            columns: ["salary_template_id"]
+            isOneToOne: false
+            referencedRelation: "salary_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_salary_configs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       export_receipt_items: {
         Row: {
           category_id: string | null
@@ -4844,6 +4954,143 @@ export type Database = {
           },
         ]
       }
+      payroll_periods: {
+        Row: {
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          end_date: string
+          id: string
+          name: string
+          notes: string | null
+          period_type: string
+          start_date: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          end_date: string
+          id?: string
+          name: string
+          notes?: string | null
+          period_type?: string
+          start_date: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          end_date?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          period_type?: string
+          start_date?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_periods_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_records: {
+        Row: {
+          allowance_details: Json | null
+          base_salary: number
+          commission_details: Json | null
+          created_at: string
+          deduction_details: Json | null
+          id: string
+          net_salary: number
+          notes: string | null
+          payroll_period_id: string
+          status: string
+          tenant_id: string
+          total_allowance: number
+          total_bonus: number
+          total_commission: number
+          total_deduction: number
+          total_work_days: number
+          total_work_hours: number
+          updated_at: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          allowance_details?: Json | null
+          base_salary?: number
+          commission_details?: Json | null
+          created_at?: string
+          deduction_details?: Json | null
+          id?: string
+          net_salary?: number
+          notes?: string | null
+          payroll_period_id: string
+          status?: string
+          tenant_id: string
+          total_allowance?: number
+          total_bonus?: number
+          total_commission?: number
+          total_deduction?: number
+          total_work_days?: number
+          total_work_hours?: number
+          updated_at?: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          allowance_details?: Json | null
+          base_salary?: number
+          commission_details?: Json | null
+          created_at?: string
+          deduction_details?: Json | null
+          id?: string
+          net_salary?: number
+          notes?: string | null
+          payroll_period_id?: string
+          status?: string
+          tenant_id?: string
+          total_allowance?: number
+          total_bonus?: number
+          total_commission?: number
+          total_deduction?: number
+          total_work_days?: number
+          total_work_hours?: number
+          updated_at?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_records_payroll_period_id_fkey"
+            columns: ["payroll_period_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_records_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_article_categories: {
         Row: {
           created_at: string
@@ -6000,6 +6247,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "return_payments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salary_templates: {
+        Row: {
+          base_amount: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          salary_type: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          base_amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          salary_type?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          base_amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          salary_type?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_templates_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

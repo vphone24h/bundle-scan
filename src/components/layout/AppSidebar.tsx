@@ -139,6 +139,7 @@ const allNavItems: NavItem[] = [
   { title: 'Quản lý chi nhánh', titleKey: 'sidebar.branches', href: '/branches', icon: Building2, permission: 'canManageBranches' },
   { title: 'Quản lý người dùng', titleKey: 'sidebar.users', href: '/users', icon: Shield, permission: 'canManageUsers' },
   { title: 'Chấm công & Ca làm', titleKey: 'sidebar.attendance', href: '/attendance', icon: Fingerprint, permission: 'canManageUsers' },
+  { title: 'Bảng lương', titleKey: 'sidebar.payroll', href: '/payroll', icon: CreditCard, permission: 'canManageUsers' },
   { title: 'Đánh giá nhân viên', titleKey: 'sidebar.staffReviews', href: '/users', icon: Star, permission: 'canViewStaffReviews' },
   { title: 'Lịch sử thao tác', titleKey: 'sidebar.auditLogs', href: '/audit-logs', icon: History, permission: 'canViewAuditLogs' },
   { title: 'Website bán hàng', titleKey: 'sidebar.website', href: '/landing-settings', icon: Globe, permission: 'canViewWebsite', badge: 'HOT' },
