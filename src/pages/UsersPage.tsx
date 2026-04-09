@@ -436,7 +436,7 @@ export default function UsersPage() {
         tenantId={currentTenant?.id || null}
       />
 
-      <CreateUserDialog
+      <CreateEmployeeStepper
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         branches={branches}
