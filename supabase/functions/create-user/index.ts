@@ -148,12 +148,13 @@ Deno.serve(async (req) => {
     if ((currentUserCount || 0) >= maxUsers) {
       return new Response(
         JSON.stringify({ 
-          error: `Cửa hàng đã đạt giới hạn ${maxUsers} thành viên. Vui lòng nâng cấp lên gói cao hơn để thêm thành viên.`,
+          ok: false,
+          error: `Đã đạt giới hạn ${maxUsers} thành viên, vui lòng nâng cấp gói để được nhiều nhân viên hơn`,
           errorCode: 'MEMBER_LIMIT_REACHED',
           currentCount: currentUserCount,
           maxUsers: maxUsers,
         }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
