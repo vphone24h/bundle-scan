@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, Calendar, MapPin, Smartphone, BarChart3, Lock } from 'lucide-react';
+import { Clock, Calendar, MapPin, Smartphone, BarChart3, Lock, FileText, FileEdit } from 'lucide-react';
 import { WorkShiftsTab } from '@/components/attendance/WorkShiftsTab';
 import { ShiftScheduleTab } from '@/components/attendance/ShiftScheduleTab';
 import { AttendanceHistoryTab } from '@/components/attendance/AttendanceHistoryTab';
@@ -9,6 +9,8 @@ import { AttendanceLocationsTab } from '@/components/attendance/AttendanceLocati
 import { TrustedDevicesTab } from '@/components/attendance/TrustedDevicesTab';
 import { AttendanceDashboardTab } from '@/components/attendance/AttendanceDashboardTab';
 import { AttendanceLocksTab } from '@/components/attendance/AttendanceLocksTab';
+import { AttendanceReportTab } from '@/components/attendance/AttendanceReportTab';
+import { CorrectionRequestsTab } from '@/components/attendance/CorrectionRequestsTab';
 
 export default function AttendancePage() {
   const { t } = useTranslation();
@@ -31,7 +33,7 @@ export default function AttendancePage() {
             </TabsTrigger>
             <TabsTrigger value="shifts" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
               <Clock className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Ca làm việc</span>
+              <span className="hidden sm:inline">Ca làm</span>
               <span className="sm:hidden">Ca</span>
             </TabsTrigger>
             <TabsTrigger value="schedule" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
@@ -43,6 +45,16 @@ export default function AttendancePage() {
               <Clock className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Lịch sử</span>
               <span className="sm:hidden">LS</span>
+            </TabsTrigger>
+            <TabsTrigger value="corrections" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+              <FileEdit className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Sửa công</span>
+              <span className="sm:hidden">SC</span>
+            </TabsTrigger>
+            <TabsTrigger value="report" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+              <FileText className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Báo cáo</span>
+              <span className="sm:hidden">BC</span>
             </TabsTrigger>
             <TabsTrigger value="locations" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
               <MapPin className="h-3.5 w-3.5" />
@@ -62,27 +74,15 @@ export default function AttendancePage() {
           </TabsList>
         </div>
 
-        <TabsContent value="dashboard" className="mt-4">
-          <AttendanceDashboardTab />
-        </TabsContent>
-        <TabsContent value="shifts" className="mt-4">
-          <WorkShiftsTab />
-        </TabsContent>
-        <TabsContent value="schedule" className="mt-4">
-          <ShiftScheduleTab />
-        </TabsContent>
-        <TabsContent value="history" className="mt-4">
-          <AttendanceHistoryTab />
-        </TabsContent>
-        <TabsContent value="locations" className="mt-4">
-          <AttendanceLocationsTab />
-        </TabsContent>
-        <TabsContent value="devices" className="mt-4">
-          <TrustedDevicesTab />
-        </TabsContent>
-        <TabsContent value="locks" className="mt-4">
-          <AttendanceLocksTab />
-        </TabsContent>
+        <TabsContent value="dashboard" className="mt-4"><AttendanceDashboardTab /></TabsContent>
+        <TabsContent value="shifts" className="mt-4"><WorkShiftsTab /></TabsContent>
+        <TabsContent value="schedule" className="mt-4"><ShiftScheduleTab /></TabsContent>
+        <TabsContent value="history" className="mt-4"><AttendanceHistoryTab /></TabsContent>
+        <TabsContent value="corrections" className="mt-4"><CorrectionRequestsTab /></TabsContent>
+        <TabsContent value="report" className="mt-4"><AttendanceReportTab /></TabsContent>
+        <TabsContent value="locations" className="mt-4"><AttendanceLocationsTab /></TabsContent>
+        <TabsContent value="devices" className="mt-4"><TrustedDevicesTab /></TabsContent>
+        <TabsContent value="locks" className="mt-4"><AttendanceLocksTab /></TabsContent>
       </Tabs>
     </div>
   );

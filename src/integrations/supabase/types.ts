@@ -570,6 +570,75 @@ export type Database = {
           },
         ]
       }
+      attendance_correction_requests: {
+        Row: {
+          attendance_id: string | null
+          created_at: string
+          id: string
+          reason: string
+          request_date: string
+          request_type: string
+          requested_check_in: string | null
+          requested_check_out: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attendance_id?: string | null
+          created_at?: string
+          id?: string
+          reason: string
+          request_date: string
+          request_type?: string
+          requested_check_in?: string | null
+          requested_check_out?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attendance_id?: string | null
+          created_at?: string
+          id?: string
+          reason?: string
+          request_date?: string
+          request_type?: string
+          requested_check_in?: string | null
+          requested_check_out?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_correction_requests_attendance_id_fkey"
+            columns: ["attendance_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_correction_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance_corrections: {
         Row: {
           attendance_id: string
@@ -8969,6 +9038,7 @@ export type Database = {
           points_added: number
         }[]
       }
+      auto_checkout_expired: { Args: never; Returns: undefined }
       backfill_warehouse_snapshots_v2: {
         Args: { _tid: string }
         Returns: number
