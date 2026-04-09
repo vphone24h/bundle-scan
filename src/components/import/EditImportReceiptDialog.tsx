@@ -124,6 +124,8 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
       import_price: edit.import_price,
       oldImportPrice: edit.originalPrice,
       unit: edit.unit,
+      quantity: edit.quantity,
+      hasImei: !!edit.imei,
     }));
 
     try {
