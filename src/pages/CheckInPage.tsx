@@ -70,6 +70,8 @@ export default function CheckInPage() {
   const [gpsError, setGpsError] = useState('');
   const [gpsLoading, setGpsLoading] = useState(true);
   const [checking, setChecking] = useState(false);
+  const [nearestLocation, setNearestLocation] = useState<any>(null);
+  const [distance, setDistance] = useState<number | null>(null);
   const [gpsFraudWarning, setGpsFraudWarning] = useState<string[]>([]);
   const [showRandomVerify, setShowRandomVerify] = useState(false);
   const [verifyAnswer, setVerifyAnswer] = useState('');
