@@ -287,7 +287,9 @@ export function useDetailedProfitReport(filters?: {
           const itemsTotal = receiptItemsMap.get(receipt.id) || 0;
           const diff = receiptTotal - itemsTotal;
 
-          if (diff <= 0 || receiptTotal <= 0) return;
+          // Only generate service fee entry when receipt HAS items but total doesn't match
+          // Skip receipts with NO items - they are legacy/data anomalies
+          if (diff <= 0 || receiptTotal <= 0 || itemsTotal <= 0) return;
 
           results.push({
             id: `service-${receipt.id}`,

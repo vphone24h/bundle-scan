@@ -129,7 +129,7 @@ export function useReportDetails(filters?: {
           const itemsTotal = receiptItemsMap.get(receipt.id) || 0;
           const diff = receiptTotal - itemsTotal;
 
-          if (diff > 0 && receiptTotal > 0) {
+          if (diff > 0 && receiptTotal > 0 && itemsTotal > 0) {
             salesDetails.push({
               date: receipt.export_date || '',
               productName: receipt.is_repair ? `Phí sửa chữa/dịch vụ` : `Phí dịch vụ khác`,
