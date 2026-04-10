@@ -34,8 +34,9 @@ export function useDetailedProfitReport(filters?: {
   const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
-    queryKey: ['detailed-profit-report', 'return-rule-v2', filters, isDataHidden],
+    queryKey: ['detailed-profit-report', 'return-rule-v3', filters, isDataHidden],
     queryFn: async () => {
+      const normalizeFeeType = (value: unknown) => String(value ?? '').trim().toLowerCase();
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) {
         return {
@@ -317,6 +318,7 @@ export function useDetailedProfitReport(filters?: {
       returnItems?.forEach((item: any) => {
         const productInfo = item.product_id ? productsMap[item.product_id] : null;
         const isRepairReceipt = !!item.export_receipts?.is_repair;
+        const feeType = normalizeFeeType(item.fee_type);
 
         if (filters?.repairFilter === 'repair' && !isRepairReceipt) {
           return;
@@ -330,9 +332,13 @@ export function useDetailedProfitReport(filters?: {
           return;
         }
 
+        if (feeType && feeType !== 'none') {
+          return;
+        }
+
         const itemQty = Number(item.quantity ?? 1) || 1;
         if (!doesReturnAffectRevenue({
-          feeType: item.fee_type,
+          feeType: feeType || null,
           refundAmount: item.refund_amount,
           salePrice: item.sale_price,
           quantity: itemQty,
