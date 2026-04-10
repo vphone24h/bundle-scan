@@ -44,6 +44,7 @@ export interface SubscriptionPlan {
   max_purchases: number | null;
   description: string | null;
   is_active: boolean;
+  company_id?: string | null;
 }
 
 export interface PaymentRequest {
@@ -414,17 +415,23 @@ export function useManageTenant() {
 // Update subscription plan (platform admin)
 export function useUpdateSubscriptionPlan() {
   const queryClient = useQueryClient();
+  const { companyId, isPlatformAdmin } = useAdminCompanyId();
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<SubscriptionPlan> & { id: string }) => {
+      // Company Admin can only update plans belonging to their company
+      // Remove company_id from updates to prevent scope change
+      const { company_id, ...safeUpdates } = updates as any;
+      
       const { data, error } = await supabase
         .from('subscription_plans')
-        .update(updates)
+        .update(safeUpdates)
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) throw new Error('Không có quyền cập nhật gói này hoặc gói không tồn tại');
       return data;
     },
     onSuccess: () => {

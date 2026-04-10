@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSubscriptionPlans, useUpdateSubscriptionPlan, useCreateSubscriptionPlan, useDeleteSubscriptionPlan, SubscriptionPlan } from '@/hooks/useTenant';
 import { Loader2, Save, Package, Plus, Trash2 } from 'lucide-react';
+import { useAdminCompanyId } from '@/hooks/useAdminCompanyId';
 import { toast } from '@/hooks/use-toast';
 import { formatNumber } from '@/lib/formatNumber';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -19,10 +20,17 @@ export function PlansManagement() {
   const updatePlan = useUpdateSubscriptionPlan();
   const createPlan = useCreateSubscriptionPlan();
   const deletePlan = useDeleteSubscriptionPlan();
+  const { companyId, isPlatformAdmin } = useAdminCompanyId();
   
   const [formMode, setFormMode] = useState<FormMode>('idle');
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
   const [formData, setFormData] = useState<Partial<SubscriptionPlan>>({});
+
+  const canManagePlan = (plan: SubscriptionPlan) => {
+    if (isPlatformAdmin) return true;
+    // Company Admin can only manage plans belonging to their company
+    return plan.company_id === companyId;
+  };
 
   const handleCreate = () => {
     setFormMode('create');
@@ -156,7 +164,7 @@ export function PlansManagement() {
                   {!plan.is_active && (
                     <span className="text-xs text-muted-foreground">Đã ẩn</span>
                   )}
-                  <AlertDialog>
+                  {canManagePlan(plan) && <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
                         <Trash2 className="h-4 w-4" />
@@ -176,7 +184,7 @@ export function PlansManagement() {
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
-                  </AlertDialog>
+                  </AlertDialog>}
                 </div>
               </div>
             </CardHeader>
@@ -216,8 +224,9 @@ export function PlansManagement() {
                 variant="outline" 
                 className="w-full"
                 onClick={() => handleEdit(plan)}
+                disabled={!canManagePlan(plan)}
               >
-                Chỉnh sửa
+                {canManagePlan(plan) ? 'Chỉnh sửa' : 'Gói hệ thống'}
               </Button>
             </CardContent>
           </Card>
