@@ -98,33 +98,8 @@ export function useDetailedProfitReport(filters?: {
         return q.order('created_at', { ascending: false });
       };
 
-      const buildReceiptsQuery = () => {
-        let q = supabase
-          .from('export_receipts')
-          .select(`
-            id,
-            code,
-            total_amount,
-            export_date,
-            branch_id,
-            customer_id,
-            is_repair,
-            branches(name),
-            customers(name)
-          `)
-          .neq('status', 'cancelled')
-          .gte('export_date', startISO)
-          .lte('export_date', endISO);
-
-        if (effectiveBranchId) {
-          q = q.eq('branch_id', effectiveBranchId);
-        }
-        return q.order('export_date', { ascending: false });
-      };
-
-      const [soldItems, receipts] = await Promise.all([
+      const [soldItems] = await Promise.all([
         fetchAllRows<any>(() => buildSoldQuery()),
-        filters?.categoryId ? Promise.resolve([]) : fetchAllRows<any>(() => buildReceiptsQuery()),
       ]);
 
       // 2. Lấy TOÀN BỘ dữ liệu trả hàng từ export_returns (không giới hạn 1000 dòng)
@@ -267,49 +242,7 @@ export function useDetailedProfitReport(filters?: {
         results.push(group);
       });
 
-      if (!filters?.categoryId && receipts?.length) {
-        const receiptItemsMap = new Map<string, number>();
-        soldItems?.forEach((item: any) => {
-          const receiptId = item.receipt_id || item.export_receipts?.id;
-          if (!receiptId) return;
-
-          const qty = Number(item.quantity ?? 1) || 1;
-          const current = receiptItemsMap.get(receiptId) || 0;
-          receiptItemsMap.set(receiptId, current + Number(item.sale_price || 0) * qty);
-        });
-
-        receipts.forEach((receipt: any) => {
-          const isRepairReceipt = !!receipt?.is_repair;
-          if (filters?.repairFilter === 'repair' && !isRepairReceipt) return;
-          if (filters?.repairFilter === 'normal' && isRepairReceipt) return;
-
-          const receiptTotal = Number(receipt.total_amount || 0);
-          const itemsTotal = receiptItemsMap.get(receipt.id) || 0;
-          const diff = receiptTotal - itemsTotal;
-
-          // Only generate service fee entry when receipt HAS items but total doesn't match
-          // Skip receipts with NO items - they are legacy/data anomalies
-          if (diff <= 0 || receiptTotal <= 0 || itemsTotal <= 0) return;
-
-          results.push({
-            id: `service-${receipt.id}`,
-            productName: receipt.is_repair ? 'Phí sửa chữa/dịch vụ' : 'Phí dịch vụ khác',
-            sku: receipt.code || '',
-            imei: null,
-            branchId: receipt.branch_id,
-            branchName: (receipt.branches as any)?.name || 'N/A',
-            importPrice: 0,
-            salePrice: diff,
-            quantity: 0,
-            profit: diff,
-            saleDate: receipt.export_date,
-            status: 'sold',
-            customerId: receipt.customer_id,
-            customerName: (receipt.customers as any)?.name || null,
-            receiptCode: receipt.code || '',
-          });
-        });
-      }
+      // Removed: phantom "Phí dịch vụ khác" generation - it caused inflated profit from receipts with missing items
 
       // 5. Xử lý dữ liệu trả hàng
       returnItems?.forEach((item: any) => {
