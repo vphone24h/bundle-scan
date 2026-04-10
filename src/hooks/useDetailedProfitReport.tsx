@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { fetchAllRows } from '@/lib/fetchAllRows';
+import { doesReturnAffectRevenue } from '@/lib/reportReturnRules';
 
 export interface DetailedProfitItem {
   id: string;
@@ -330,6 +331,15 @@ export function useDetailedProfitReport(filters?: {
         }
 
         const itemQty = Number(item.quantity ?? 1) || 1;
+        if (!doesReturnAffectRevenue({
+          feeType: item.fee_type,
+          refundAmount: item.refund_amount,
+          salePrice: item.sale_price,
+          quantity: itemQty,
+        })) {
+          return;
+        }
+
         const lineSalePrice = Number(item.refund_amount || 0) || Number(item.sale_price) * itemQty;
         const lineImportPrice = (productInfo?.import_price || 0) * itemQty;
         const profit = -(lineSalePrice - lineImportPrice);
