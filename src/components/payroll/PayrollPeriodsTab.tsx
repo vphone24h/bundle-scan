@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,9 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Loader2, Calculator, Lock, FileSpreadsheet, Eye, ChevronRight, Clock, AlertTriangle, UserX, Timer } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Loader2, Calculator, Lock, FileSpreadsheet, Eye, ChevronRight, Clock, UserX, Timer, Search, Users, DollarSign, Gift, AlertTriangle, Download, ArrowUpDown, ChevronLeft, ChevronRight as ChevronRightIcon } from 'lucide-react';
 import { usePayrollPeriods, useCreatePayrollPeriod, useCalculatePayroll, usePayrollRecords, useLockPayrollPeriod } from '@/hooks/usePayroll';
 import { usePlatformUser } from '@/hooks/useTenant';
+import { useBranches } from '@/hooks/useBranches';
 import { formatNumber } from '@/lib/formatNumber';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -22,12 +24,15 @@ const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondar
   finalized: { label: 'Đã chốt', variant: 'default' },
 };
 
+const PAGE_SIZE = 20;
+
 export function PayrollPeriodsTab() {
   const { data: periods, isLoading } = usePayrollPeriods();
   const createPeriod = useCreatePayrollPeriod();
   const calculatePayroll = useCalculatePayroll();
   const lockPeriod = useLockPayrollPeriod();
   const { data: pu } = usePlatformUser();
+  const { data: branches } = useBranches();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [periodName, setPeriodName] = useState('');
@@ -37,6 +42,12 @@ export function PayrollPeriodsTab() {
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const { data: records } = usePayrollRecords(selectedPeriodId || undefined);
   const [detailRecord, setDetailRecord] = useState<any>(null);
+
+  // Filters & search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('name');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const handleCreate = () => {
     if (!periodName || !startDate || !endDate || !pu?.tenant_id) return;
@@ -58,33 +69,71 @@ export function PayrollPeriodsTab() {
     lockPeriod.mutate({ periodId, status: 'finalized' });
   };
 
-  const handleExportExcel = () => {
+  // Filtered & sorted records
+  const filteredRecords = useMemo(() => {
+    if (!records) return [];
+    let result = [...records];
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(r => (r.user_name || '').toLowerCase().includes(q));
+    }
+    // Sort
+    result.sort((a, b) => {
+      const ra = a as any, rb = b as any;
+      switch (sortBy) {
+        case 'salary_desc': return (b.net_salary || 0) - (a.net_salary || 0);
+        case 'salary_asc': return (a.net_salary || 0) - (b.net_salary || 0);
+        case 'work_days': return (b.total_work_days || 0) - (a.total_work_days || 0);
+        default: return (a.user_name || '').localeCompare(b.user_name || '');
+      }
+    });
+    return result;
+  }, [records, searchQuery, sortBy]);
+
+  const totalPages = Math.ceil(filteredRecords.length / PAGE_SIZE);
+  const paginatedRecords = filteredRecords.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  // Summary stats
+  const summary = useMemo(() => {
+    if (!records) return { count: 0, totalNet: 0, totalBonus: 0, totalPenalty: 0, totalCommission: 0, totalAllowance: 0 };
+    return {
+      count: records.length,
+      totalNet: records.reduce((s, r) => s + (r.net_salary || 0), 0),
+      totalBonus: records.reduce((s, r) => s + (r.total_bonus || 0), 0),
+      totalPenalty: records.reduce((s, r) => s + ((r as any).total_penalty || 0), 0),
+      totalCommission: records.reduce((s, r) => s + (r.total_commission || 0), 0),
+      totalAllowance: records.reduce((s, r) => s + (r.total_allowance || 0), 0),
+    };
+  }, [records]);
+
+  // Export all employees
+  const handleExportAll = () => {
     if (!records?.length) return;
     const period = periods?.find(p => p.id === selectedPeriodId);
+    const ws1Data = records.map(r => {
+      const rec = r as any;
+      return {
+        'Nhân viên': r.user_name || r.user_id,
+        'Công chuẩn': rec.expected_work_days || 0,
+        'Ngày công': r.total_work_days,
+        'Giờ công': r.total_work_hours,
+        'Đi trễ': rec.late_count || 0,
+        'Về sớm': rec.early_leave_count || 0,
+        'Vắng': rec.absent_count || 0,
+        'Tăng ca (h)': rec.overtime_hours || 0,
+        'Lương chính': r.base_salary,
+        'Thưởng': r.total_bonus,
+        'Hoa hồng': r.total_commission,
+        'Phụ cấp': r.total_allowance,
+        'Lễ': rec.holiday_bonus || 0,
+        'Tăng ca': rec.overtime_pay || 0,
+        'Phạt': rec.total_penalty || 0,
+        'Tạm ứng': rec.advance_deduction || 0,
+        'Thực nhận': r.net_salary,
+      };
+    });
+    const ws1 = XLSX.utils.json_to_sheet(ws1Data);
 
-    // Sheet 1: Summary
-    const summaryData = records.map(r => ({
-      'Nhân viên': r.user_name || r.user_id,
-      'Công chuẩn': (r as any).expected_work_days || 0,
-      'Ngày công': r.total_work_days,
-      'Giờ công': r.total_work_hours,
-      'Đi trễ': (r as any).late_count || 0,
-      'Về sớm': (r as any).early_leave_count || 0,
-      'Vắng': (r as any).absent_count || 0,
-      'Tăng ca (h)': (r as any).overtime_hours || 0,
-      'Lương chính': r.base_salary,
-      'Thưởng': r.total_bonus,
-      'Hoa hồng': r.total_commission,
-      'Phụ cấp': r.total_allowance,
-      'Lễ': (r as any).holiday_bonus || 0,
-      'Tăng ca': (r as any).overtime_pay || 0,
-      'Phạt': (r as any).total_penalty || 0,
-      'Tạm ứng': (r as any).advance_deduction || 0,
-      'Thực nhận': r.net_salary,
-    }));
-    const ws1 = XLSX.utils.json_to_sheet(summaryData);
-
-    // Sheet 2: Attendance details
     const attendanceRows: any[] = [];
     for (const r of records) {
       const details = (r as any).attendance_details || [];
@@ -100,38 +149,115 @@ export function PayrollPeriodsTab() {
           'Sớm (phút)': d.early_leave_minutes,
           'Tăng ca (phút)': d.overtime_minutes,
           'Tổng (phút)': d.total_work_minutes,
-          'Ghi chú': d.note || '',
         });
       }
     }
-    const ws2 = XLSX.utils.json_to_sheet(attendanceRows);
+    const ws2 = XLSX.utils.json_to_sheet(attendanceRows.length ? attendanceRows : [{ 'Ghi chú': 'Không có dữ liệu' }]);
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws1, 'Bảng lương');
     XLSX.utils.book_append_sheet(wb, ws2, 'Chi tiết công');
-    XLSX.writeFile(wb, `BangLuong_${period?.name || 'export'}.xlsx`);
-    toast.success('Đã xuất Excel (2 sheets)');
+    XLSX.writeFile(wb, `bang_luong_${(period?.name || 'export').replace(/\s/g, '_')}.xlsx`);
+    toast.success('Đã xuất Excel toàn bộ nhân viên');
+  };
+
+  // Export single employee
+  const handleExportSingle = (record: any) => {
+    const rec = record as any;
+    const period = periods?.find(p => p.id === selectedPeriodId);
+    const name = (record.user_name || 'nhan_vien').replace(/\s/g, '_');
+
+    // Sheet 1: Salary info
+    const salarySheet = [
+      ['BẢNG LƯƠNG CHI TIẾT'],
+      ['Nhân viên', record.user_name],
+      ['Kỳ lương', period?.name || ''],
+      [''],
+      ['Khoản mục', 'Giá trị'],
+      ['Lương chính', record.base_salary || 0],
+      ['Thưởng', record.total_bonus || 0],
+      ['Hoa hồng', record.total_commission || 0],
+      ['Phụ cấp', record.total_allowance || 0],
+      ['Ngày lễ', rec.holiday_bonus || 0],
+      ['Tăng ca', rec.overtime_pay || 0],
+      ['Phạt', -(rec.total_penalty || 0)],
+      ['Tạm ứng', -(rec.advance_deduction || 0)],
+      [''],
+      ['THỰC NHẬN', record.net_salary || 0],
+    ];
+    const ws1 = XLSX.utils.aoa_to_sheet(salarySheet);
+    ws1['!cols'] = [{ wch: 20 }, { wch: 20 }];
+
+    // Sheet 2: Breakdown
+    const bonusDetails = rec.bonus_details || [];
+    const allowanceDetails = rec.allowance_details_v2 || [];
+    const penaltyDetails = rec.penalty_details || [];
+    const breakdownRows: any[][] = [['Loại', 'Tên', 'Số tiền']];
+    bonusDetails.forEach((b: any) => breakdownRows.push(['Thưởng', b.name, b.amount]));
+    allowanceDetails.forEach((a: any) => breakdownRows.push(['Phụ cấp', a.name, a.amount]));
+    penaltyDetails.forEach((p: any) => breakdownRows.push(['Phạt', `${p.name} (×${p.count})`, -p.amount]));
+    const ws2 = XLSX.utils.aoa_to_sheet(breakdownRows);
+    ws2['!cols'] = [{ wch: 12 }, { wch: 25 }, { wch: 15 }];
+
+    // Sheet 3: Attendance
+    const attendanceDetails = rec.attendance_details || [];
+    const attRows: any[][] = [['Ngày', 'Ca', 'Giờ vào', 'Giờ ra', 'Trạng thái', 'Trễ (phút)', 'Tổng (phút)']];
+    attendanceDetails.forEach((d: any) => {
+      attRows.push([
+        d.date, d.shift_name || '-',
+        d.check_in ? format(new Date(d.check_in), 'HH:mm') : '-',
+        d.check_out ? format(new Date(d.check_out), 'HH:mm') : '-',
+        d.status, d.late_minutes || 0, d.total_work_minutes || 0,
+      ]);
+    });
+    const ws3 = XLSX.utils.aoa_to_sheet(attRows);
+    ws3['!cols'] = [{ wch: 12 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws1, 'Lương');
+    XLSX.utils.book_append_sheet(wb, ws2, 'Chi tiết');
+    XLSX.utils.book_append_sheet(wb, ws3, 'Ngày công');
+    XLSX.writeFile(wb, `luong_${name}.xlsx`);
+    toast.success(`Đã xuất lương: ${record.user_name}`);
   };
 
   // ===== Period List =====
   if (!selectedPeriodId) {
+    // Filter periods by status
+    const filteredPeriods = periods?.filter(p => filterStatus === 'all' || p.status === filterStatus) || [];
+
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-semibold text-base">Danh sách kỳ lương</h3>
           <Button size="sm" onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4 mr-1" />Tạo kỳ lương
           </Button>
         </div>
 
+        {/* Filter by status */}
+        <div className="flex gap-2">
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-[150px] h-8 text-xs">
+              <SelectValue placeholder="Trạng thái" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
+              <SelectItem value="draft">Nháp</SelectItem>
+              <SelectItem value="calculated">Đã tính</SelectItem>
+              <SelectItem value="finalized">Đã chốt</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         {isLoading ? (
           <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-        ) : periods?.length === 0 ? (
+        ) : filteredPeriods.length === 0 ? (
           <Card><CardContent className="py-8 text-center text-muted-foreground text-sm">Chưa có kỳ lương.</CardContent></Card>
         ) : (
           <div className="grid gap-3">
-            {periods?.map(p => (
-              <Card key={p.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setSelectedPeriodId(p.id)}>
+            {filteredPeriods.map(p => (
+              <Card key={p.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => { setSelectedPeriodId(p.id); setCurrentPage(1); setSearchQuery(''); }}>
                 <CardContent className="py-3">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -192,15 +318,12 @@ export function PayrollPeriodsTab() {
     );
   }
 
-  // ===== Period Detail =====
+  // ===== Period Detail (Payroll Summary) =====
   const period = periods?.find(p => p.id === selectedPeriodId);
-  const totalNetSalary = records?.reduce((s, r) => s + (r.net_salary || 0), 0) || 0;
-  const totalLate = records?.reduce((s, r) => s + ((r as any).late_count || 0), 0) || 0;
-  const totalAbsent = records?.reduce((s, r) => s + ((r as any).absent_count || 0), 0) || 0;
-  const totalOT = records?.reduce((s, r) => s + ((r as any).overtime_hours || 0), 0) || 0;
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => setSelectedPeriodId(null)}>← Quay lại</Button>
@@ -221,126 +344,175 @@ export function PayrollPeriodsTab() {
               <Lock className="h-3.5 w-3.5 mr-1" />Chốt bảng lương
             </Button>
           )}
-          <Button size="sm" variant="outline" onClick={handleExportExcel} disabled={!records?.length}>
-            <FileSpreadsheet className="h-3.5 w-3.5 mr-1" />Excel
+          <Button size="sm" variant="outline" onClick={handleExportAll} disabled={!records?.length}>
+            <FileSpreadsheet className="h-3.5 w-3.5 mr-1" />Xuất tất cả
           </Button>
         </div>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
         <Card>
           <CardContent className="py-3 text-center">
-            <p className="text-xs text-muted-foreground">Tổng chi phí</p>
-            <p className="font-bold text-primary text-lg">{formatNumber(totalNetSalary)}đ</p>
+            <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground"><Users className="h-3 w-3" />Nhân viên</div>
+            <p className="font-bold text-lg">{summary.count}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="py-3 text-center">
-            <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-              <Clock className="h-3 w-3" />Đi trễ
-            </div>
-            <p className="font-bold text-orange-600 text-lg">{totalLate}</p>
+            <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground"><DollarSign className="h-3 w-3" />Tổng lương</div>
+            <p className="font-bold text-primary text-lg">{formatNumber(summary.totalNet)}đ</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="py-3 text-center">
-            <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-              <UserX className="h-3 w-3" />Vắng
-            </div>
-            <p className="font-bold text-destructive text-lg">{totalAbsent}</p>
+            <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground"><Gift className="h-3 w-3" />Thưởng</div>
+            <p className="font-bold text-green-600 text-lg">{formatNumber(summary.totalBonus)}đ</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="py-3 text-center">
-            <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-              <Timer className="h-3 w-3" />Tăng ca
-            </div>
-            <p className="font-bold text-blue-600 text-lg">{totalOT}h</p>
+            <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">Hoa hồng</div>
+            <p className="font-bold text-blue-600 text-lg">{formatNumber(summary.totalCommission)}đ</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="py-3 text-center">
+            <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">Phụ cấp</div>
+            <p className="font-bold text-lg">{formatNumber(summary.totalAllowance)}đ</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="py-3 text-center">
+            <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground"><AlertTriangle className="h-3 w-3" />Phạt</div>
+            <p className="font-bold text-destructive text-lg">{formatNumber(summary.totalPenalty)}đ</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Records table */}
+      {/* Search & Sort */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Tìm nhân viên..."
+            className="pl-8 h-8 text-xs"
+            value={searchQuery}
+            onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+          />
+        </div>
+        <Select value={sortBy} onValueChange={v => { setSortBy(v); setCurrentPage(1); }}>
+          <SelectTrigger className="w-[180px] h-8 text-xs">
+            <ArrowUpDown className="h-3 w-3 mr-1" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="name">Tên A-Z</SelectItem>
+            <SelectItem value="salary_desc">Lương cao → thấp</SelectItem>
+            <SelectItem value="salary_asc">Lương thấp → cao</SelectItem>
+            <SelectItem value="work_days">Ngày công nhiều nhất</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Records Table */}
       {!records?.length ? (
         <Card><CardContent className="py-8 text-center text-muted-foreground text-sm">
           {period?.status === 'draft' ? 'Nhấn "Tính lương" để hệ thống tự động lấy dữ liệu chấm công và tính lương.' : 'Không có dữ liệu.'}
         </CardContent></Card>
+      ) : filteredRecords.length === 0 ? (
+        <Card><CardContent className="py-8 text-center text-muted-foreground text-sm">Không tìm thấy nhân viên.</CardContent></Card>
       ) : (
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-xs">Nhân viên</TableHead>
-                <TableHead className="text-xs text-center">Công</TableHead>
-                <TableHead className="text-xs text-center">Trễ</TableHead>
-                <TableHead className="text-xs text-center">Vắng</TableHead>
-                <TableHead className="text-xs text-right">Lương</TableHead>
-                <TableHead className="text-xs text-right">Thưởng</TableHead>
-                <TableHead className="text-xs text-right">HH</TableHead>
-                <TableHead className="text-xs text-right">PC</TableHead>
-                <TableHead className="text-xs text-right text-destructive">Phạt</TableHead>
-                <TableHead className="text-xs text-right font-bold">Nhận</TableHead>
-                <TableHead className="w-8"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {records.map(r => {
-                const rec = r as any;
-                return (
-                  <TableRow key={r.id}>
-                    <TableCell className="text-xs font-medium max-w-[100px] truncate">{r.user_name || r.user_id?.slice(0, 8)}</TableCell>
-                    <TableCell className="text-xs text-center">
-                      <span className="font-medium">{r.total_work_days}</span>
-                      <span className="text-muted-foreground">/{rec.expected_work_days || '-'}</span>
-                    </TableCell>
-                    <TableCell className="text-xs text-center">
-                      {rec.late_count > 0 ? (
-                        <Badge variant="outline" className="text-orange-600 border-orange-300 text-[10px] px-1.5">
-                          {rec.late_count}
-                        </Badge>
-                      ) : <span className="text-muted-foreground">0</span>}
-                    </TableCell>
-                    <TableCell className="text-xs text-center">
-                      {rec.absent_count > 0 ? (
-                        <Badge variant="outline" className="text-destructive border-destructive/30 text-[10px] px-1.5">
-                          {rec.absent_count}
-                        </Badge>
-                      ) : <span className="text-muted-foreground">0</span>}
-                    </TableCell>
-                    <TableCell className="text-xs text-right">{formatNumber(r.base_salary)}</TableCell>
-                    <TableCell className="text-xs text-right">{formatNumber(r.total_bonus || 0)}</TableCell>
-                    <TableCell className="text-xs text-right">{formatNumber(r.total_commission || 0)}</TableCell>
-                    <TableCell className="text-xs text-right">{formatNumber(r.total_allowance || 0)}</TableCell>
-                    <TableCell className="text-xs text-right text-destructive">{formatNumber(rec.total_penalty || 0)}</TableCell>
-                    <TableCell className="text-xs text-right font-bold text-primary">{formatNumber(r.net_salary)}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setDetailRecord(r)}>
-                        <Eye className="h-3.5 w-3.5" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+        <>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Nhân viên</TableHead>
+                  <TableHead className="text-xs text-center">Ngày công</TableHead>
+                  <TableHead className="text-xs text-center">Giờ công</TableHead>
+                  <TableHead className="text-xs text-right">Lương chính</TableHead>
+                  <TableHead className="text-xs text-right">Thưởng</TableHead>
+                  <TableHead className="text-xs text-right">Hoa hồng</TableHead>
+                  <TableHead className="text-xs text-right">Phụ cấp</TableHead>
+                  <TableHead className="text-xs text-right text-destructive">Phạt</TableHead>
+                  <TableHead className="text-xs text-right font-bold">Thực nhận</TableHead>
+                  <TableHead className="w-16"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedRecords.map(r => {
+                  const rec = r as any;
+                  return (
+                    <TableRow key={r.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setDetailRecord(r)}>
+                      <TableCell className="text-xs font-medium max-w-[120px] truncate">{r.user_name || r.user_id?.slice(0, 8)}</TableCell>
+                      <TableCell className="text-xs text-center">
+                        <span className="font-medium">{r.total_work_days}</span>
+                        <span className="text-muted-foreground">/{rec.expected_work_days || '-'}</span>
+                      </TableCell>
+                      <TableCell className="text-xs text-center">{r.total_work_hours || 0}h</TableCell>
+                      <TableCell className="text-xs text-right">{formatNumber(r.base_salary)}</TableCell>
+                      <TableCell className="text-xs text-right">{formatNumber(r.total_bonus || 0)}</TableCell>
+                      <TableCell className="text-xs text-right">{formatNumber(r.total_commission || 0)}</TableCell>
+                      <TableCell className="text-xs text-right">{formatNumber(r.total_allowance || 0)}</TableCell>
+                      <TableCell className="text-xs text-right text-destructive">{formatNumber(rec.total_penalty || 0)}</TableCell>
+                      <TableCell className="text-xs text-right font-bold text-primary">{formatNumber(r.net_salary)}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); setDetailRecord(r); }}>
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); handleExportSingle(r); }}>
+                            <Download className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{filteredRecords.length} nhân viên</span>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={currentPage <= 1} onClick={() => setCurrentPage(p => p - 1)}>
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </Button>
+                <span>Trang {currentPage}/{totalPages}</span>
+                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(p => p + 1)}>
+                  <ChevronRightIcon className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Detail Dialog */}
       <Dialog open={!!detailRecord} onOpenChange={() => setDetailRecord(null)}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle className="text-sm">Chi tiết lương - {detailRecord?.user_name}</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-sm">Chi tiết lương - {detailRecord?.user_name}</DialogTitle>
+              {detailRecord && (
+                <Button size="sm" variant="outline" className="text-xs" onClick={() => handleExportSingle(detailRecord)}>
+                  <Download className="h-3 w-3 mr-1" />Excel
+                </Button>
+              )}
+            </div>
           </DialogHeader>
-          {detailRecord && <PayrollDetailContent record={detailRecord} />}
+          {detailRecord && <PayrollDetailContent record={detailRecord} periodName={period?.name} />}
         </DialogContent>
       </Dialog>
     </div>
   );
 }
 
-function PayrollDetailContent({ record }: { record: any }) {
+function PayrollDetailContent({ record, periodName }: { record: any; periodName?: string }) {
   const rec = record as any;
   const attendanceDetails = rec.attendance_details || [];
   const bonusDetails = rec.bonus_details || [];
@@ -353,12 +525,23 @@ function PayrollDetailContent({ record }: { record: any }) {
     <Tabs defaultValue="salary" className="flex-1 overflow-hidden flex flex-col">
       <TabsList className="w-full grid grid-cols-3">
         <TabsTrigger value="salary" className="text-xs">Bảng lương</TabsTrigger>
-        <TabsTrigger value="attendance" className="text-xs">Chấm công</TabsTrigger>
+        <TabsTrigger value="attendance" className="text-xs">Ngày công</TabsTrigger>
         <TabsTrigger value="breakdown" className="text-xs">Chi tiết</TabsTrigger>
       </TabsList>
 
       <ScrollArea className="flex-1 mt-3">
         <TabsContent value="salary" className="mt-0 space-y-3">
+          {/* Employee info */}
+          <div className="p-3 bg-muted/50 rounded-lg space-y-1">
+            <p className="text-xs"><span className="text-muted-foreground">Nhân viên:</span> <span className="font-medium">{record.user_name}</span></p>
+            {periodName && <p className="text-xs"><span className="text-muted-foreground">Kỳ lương:</span> <span className="font-medium">{periodName}</span></p>}
+            {configSnapshot.template_name && (
+              <p className="text-xs"><span className="text-muted-foreground">Mẫu lương:</span> <span className="font-medium">{configSnapshot.template_name}</span>
+                {configSnapshot.salary_type && ` (${configSnapshot.salary_type === 'fixed' ? 'Cố định' : configSnapshot.salary_type === 'hourly' ? 'Theo giờ' : configSnapshot.salary_type === 'daily' ? 'Theo ngày' : 'Theo ca'})`}
+              </p>
+            )}
+          </div>
+
           {/* Attendance summary */}
           <div className="grid grid-cols-4 gap-2 p-3 bg-muted/50 rounded-lg">
             <div className="text-center">
@@ -378,14 +561,6 @@ function PayrollDetailContent({ record }: { record: any }) {
               <p className="font-bold text-sm text-blue-600">{rec.overtime_hours || 0}h</p>
             </div>
           </div>
-
-          {/* Config info */}
-          {configSnapshot.template_name && (
-            <div className="text-xs text-muted-foreground px-1">
-              Mẫu lương: <span className="font-medium text-foreground">{configSnapshot.template_name}</span>
-              {configSnapshot.salary_type && ` (${configSnapshot.salary_type === 'fixed' ? 'Cố định' : configSnapshot.salary_type === 'hourly' ? 'Theo giờ' : configSnapshot.salary_type === 'daily' ? 'Theo ngày' : 'Theo ca'})`}
-            </div>
-          )}
 
           {/* Salary breakdown */}
           <div className="space-y-1.5 text-sm">
@@ -415,10 +590,10 @@ function PayrollDetailContent({ record }: { record: any }) {
                   <TableRow>
                     <TableHead className="text-[10px]">Ngày</TableHead>
                     <TableHead className="text-[10px]">Ca</TableHead>
-                    <TableHead className="text-[10px]">Vào</TableHead>
-                    <TableHead className="text-[10px]">Ra</TableHead>
+                    <TableHead className="text-[10px]">Check-in</TableHead>
+                    <TableHead className="text-[10px]">Check-out</TableHead>
+                    <TableHead className="text-[10px]">Giờ làm</TableHead>
                     <TableHead className="text-[10px]">TT</TableHead>
-                    <TableHead className="text-[10px] text-right">Phút</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -428,10 +603,10 @@ function PayrollDetailContent({ record }: { record: any }) {
                       <TableCell className="text-[10px] max-w-[60px] truncate">{d.shift_name || '-'}</TableCell>
                       <TableCell className="text-[10px]">{d.check_in ? format(new Date(d.check_in), 'HH:mm') : '-'}</TableCell>
                       <TableCell className="text-[10px]">{d.check_out ? format(new Date(d.check_out), 'HH:mm') : '-'}</TableCell>
+                      <TableCell className="text-[10px]">{d.total_work_minutes ? `${Math.floor(d.total_work_minutes / 60)}h${d.total_work_minutes % 60}p` : '-'}</TableCell>
                       <TableCell className="text-[10px]">
                         <AttendanceStatusBadge status={d.status} lateMinutes={d.late_minutes} />
                       </TableCell>
-                      <TableCell className="text-[10px] text-right">{d.total_work_minutes || 0}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -441,23 +616,33 @@ function PayrollDetailContent({ record }: { record: any }) {
         </TabsContent>
 
         <TabsContent value="breakdown" className="mt-0 space-y-3">
-          {/* Bonus details */}
           {bonusDetails.length > 0 && (
             <div>
-              <p className="text-xs font-semibold mb-1">Thưởng</p>
+              <p className="text-xs font-semibold mb-1">🎁 Thưởng</p>
               {bonusDetails.map((b: any, i: number) => (
                 <div key={i} className="flex justify-between text-xs py-0.5">
                   <span className="text-muted-foreground">{b.name} ({b.type})</span>
-                  <span>+{formatNumber(b.amount)}đ</span>
+                  <span className="text-green-600">+{formatNumber(b.amount)}đ</span>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Allowance details */}
+          {(rec.commission_details || []).length > 0 && (
+            <div>
+              <p className="text-xs font-semibold mb-1">💰 Hoa hồng</p>
+              {(rec.commission_details || []).map((c: any, i: number) => (
+                <div key={i} className="flex justify-between text-xs py-0.5">
+                  <span className="text-muted-foreground">{c.name || c.product_name || 'Hoa hồng'}</span>
+                  <span className="text-blue-600">+{formatNumber(c.amount)}đ</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {allowanceDetails.length > 0 && (
             <div>
-              <p className="text-xs font-semibold mb-1">Phụ cấp</p>
+              <p className="text-xs font-semibold mb-1">📋 Phụ cấp</p>
               {allowanceDetails.map((a: any, i: number) => (
                 <div key={i} className="flex justify-between text-xs py-0.5">
                   <span className="text-muted-foreground">{a.name}</span>
@@ -467,10 +652,9 @@ function PayrollDetailContent({ record }: { record: any }) {
             </div>
           )}
 
-          {/* Holiday details */}
           {holidayDetails.length > 0 && (
             <div>
-              <p className="text-xs font-semibold mb-1">Ngày lễ</p>
+              <p className="text-xs font-semibold mb-1">🎌 Ngày lễ</p>
               {holidayDetails.map((h: any, i: number) => (
                 <div key={i} className="flex justify-between text-xs py-0.5">
                   <span className="text-muted-foreground">{h.holiday} ({h.multiplier}%, {h.days} ngày)</span>
@@ -480,10 +664,9 @@ function PayrollDetailContent({ record }: { record: any }) {
             </div>
           )}
 
-          {/* Penalty details */}
           {penaltyDetails.length > 0 && (
             <div>
-              <p className="text-xs font-semibold mb-1 text-destructive">Phạt</p>
+              <p className="text-xs font-semibold mb-1 text-destructive">⚠️ Phạt</p>
               {penaltyDetails.map((p: any, i: number) => (
                 <div key={i} className="flex justify-between text-xs py-0.5">
                   <span className="text-muted-foreground">{p.name} (×{p.count})</span>
