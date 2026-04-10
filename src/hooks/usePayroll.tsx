@@ -155,9 +155,9 @@ export function useTemplateOvertimes(templateId?: string) {
 export function useSaveTemplateConfigs() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ templateId, tenantId, bonuses, commissions, allowances, holidays, penalties }: {
+    mutationFn: async ({ templateId, tenantId, bonuses, commissions, allowances, holidays, penalties, overtimes }: {
       templateId: string; tenantId: string;
-      bonuses: any[]; commissions: any[]; allowances: any[]; holidays: any[]; penalties: any[];
+      bonuses: any[]; commissions: any[]; allowances: any[]; holidays: any[]; penalties: any[]; overtimes?: any[];
     }) => {
       // Delete existing and re-insert
       await Promise.all([
@@ -166,6 +166,7 @@ export function useSaveTemplateConfigs() {
         supabase.from('salary_template_allowances').delete().eq('template_id', templateId),
         supabase.from('salary_template_holidays').delete().eq('template_id', templateId),
         supabase.from('salary_template_penalties').delete().eq('template_id', templateId),
+        supabase.from('salary_template_overtimes').delete().eq('template_id', templateId),
       ]);
 
       const inserts = [];
@@ -174,6 +175,7 @@ export function useSaveTemplateConfigs() {
       if (allowances.length) inserts.push(supabase.from('salary_template_allowances').insert(allowances.map((a, i) => ({ ...a, template_id: templateId, tenant_id: tenantId, display_order: i }))));
       if (holidays.length) inserts.push(supabase.from('salary_template_holidays').insert(holidays.map((h, i) => ({ ...h, template_id: templateId, tenant_id: tenantId, display_order: i }))));
       if (penalties.length) inserts.push(supabase.from('salary_template_penalties').insert(penalties.map((p, i) => ({ ...p, template_id: templateId, tenant_id: tenantId, display_order: i }))));
+      if (overtimes?.length) inserts.push(supabase.from('salary_template_overtimes').insert(overtimes.map((o, i) => ({ ...o, template_id: templateId, tenant_id: tenantId, display_order: i }))));
 
       const results = await Promise.all(inserts);
       for (const r of results) if (r.error) throw r.error;
@@ -184,6 +186,7 @@ export function useSaveTemplateConfigs() {
       qc.invalidateQueries({ queryKey: ['template-allowances'] });
       qc.invalidateQueries({ queryKey: ['template-holidays'] });
       qc.invalidateQueries({ queryKey: ['template-penalties'] });
+      qc.invalidateQueries({ queryKey: ['template-overtimes'] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
