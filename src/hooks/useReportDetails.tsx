@@ -50,18 +50,6 @@ export function useReportDetails(filters?: {
         return q;
       };
 
-      // Also fetch receipts to find ones without items (services, repairs, etc.)
-      const buildReceiptsQuery = () => {
-        let q = supabase
-          .from('export_receipts')
-          .select('id, code, total_amount, export_date, branch_id, is_repair')
-          .neq('status', 'cancelled')
-          .gte('export_date', startISO)
-          .lte('export_date', endISO)
-          .order('export_date', { ascending: false });
-        if (effectiveBranchId) q = q.eq('branch_id', effectiveBranchId);
-        return q;
-      };
 
       const buildReturnDetailQuery = () => {
         let q = supabase
@@ -86,9 +74,8 @@ export function useReportDetails(filters?: {
         return q;
       };
 
-      const [salesRaw, receiptsRaw, returnsRaw, cashRaw] = await Promise.all([
+      const [salesRaw, returnsRaw, cashRaw] = await Promise.all([
         fetchAllRows<any>(() => buildSalesDetailQuery()),
-        filters?.categoryId ? Promise.resolve([]) : fetchAllRows<any>(() => buildReceiptsQuery()),
         fetchAllRows<any>(() => buildReturnDetailQuery()),
         fetchAllRows<any>(() => buildCashDetailQuery()),
       ]);
@@ -110,42 +97,7 @@ export function useReportDetails(filters?: {
         };
       });
 
-      // Find receipts that have no items or have extra amount beyond items
-      if (!filters?.categoryId && receiptsRaw && receiptsRaw.length > 0) {
-        // Group items by receipt id to find receipts without items
-        const receiptItemsMap = new Map<string, number>();
-        (salesRaw || []).forEach((item: any) => {
-          const receiptId = item.export_receipts?.id;
-          if (receiptId) {
-            const qty = Number(item.quantity ?? 1) || 1;
-            const current = receiptItemsMap.get(receiptId) || 0;
-            receiptItemsMap.set(receiptId, current + Number(item.sale_price) * qty);
-          }
-        });
-
-        // Add entries for receipts with unaccounted amounts
-        (receiptsRaw || []).forEach((receipt: any) => {
-          const receiptTotal = Number(receipt.total_amount || 0);
-          const itemsTotal = receiptItemsMap.get(receipt.id) || 0;
-          const diff = receiptTotal - itemsTotal;
-
-          if (diff > 0 && receiptTotal > 0 && itemsTotal > 0) {
-            salesDetails.push({
-              date: receipt.export_date || '',
-              productName: receipt.is_repair ? `Phí sửa chữa/dịch vụ` : `Phí dịch vụ khác`,
-              sku: receipt.code || '',
-              salePrice: diff,
-              importPrice: 0,
-              profit: diff,
-              branchName: '',
-              categoryName: receipt.is_repair ? 'Sửa chữa' : 'Dịch vụ',
-            });
-          }
-        });
-
-        // Re-sort by date
-        salesDetails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      }
+      // Removed: phantom "Phí dịch vụ khác" generation - it caused inflated profit from receipts with missing items
 
       const returnDetails: ReturnDetailItem[] = (returnsRaw || [])
         .filter((item: any) => {
