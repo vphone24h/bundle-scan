@@ -41,6 +41,7 @@ import { CorrectionRequestsTab } from '@/components/attendance/CorrectionRequest
 import { PosCheckInTab } from '@/components/attendance/PosCheckInTab';
 // Payroll tabs
 import { SalaryTemplatesTab } from '@/components/payroll/SalaryTemplatesTab';
+import { PayrollPeriodsTab } from '@/components/payroll/PayrollPeriodsTab';
 
 interface UserWithRole {
   id: string;
@@ -492,7 +493,20 @@ export default function UsersPage() {
 
         {/* Payroll Tab */}
         <TabsContent value="payroll" className="space-y-4">
-          <SalaryTemplatesTab />
+          <Tabs defaultValue="payroll-periods">
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+              <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 h-auto p-1 gap-1">
+                <TabsTrigger value="payroll-periods" className="text-xs px-3 py-1.5">Bảng lương</TabsTrigger>
+                <TabsTrigger value="payroll-templates" className="text-xs px-3 py-1.5">Mẫu lương</TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="payroll-periods" className="mt-4">
+              <PayrollPeriodsTab />
+            </TabsContent>
+            <TabsContent value="payroll-templates" className="mt-4">
+              <SalaryTemplatesTab />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="setup">
