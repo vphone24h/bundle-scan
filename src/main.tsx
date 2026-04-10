@@ -3,7 +3,7 @@ import App from "./App.tsx";
 import "./index.css";
 import "./i18n";
 
-const APP_RUNTIME_VERSION = '2026-04-10-attendance-rpc-v3';
+const APP_RUNTIME_VERSION = '2026-04-10-attendance-company-source-v4';
 const APP_RUNTIME_VERSION_KEY = 'vkho_app_runtime_version';
 const PERSISTED_QUERY_CACHE_KEY = 'vkho_query_cache_v1';
 const CACHE_PREFIXES_TO_CLEAR = ['tenant_resolver_cache_v1:', 'company_resolver_cache_v1:'];

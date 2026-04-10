@@ -8,6 +8,7 @@ export interface Tenant {
   id: string;
   name: string;
   subdomain: string;
+  company_id: string | null;
   owner_id: string;
   status: 'trial' | 'active' | 'expired' | 'locked';
   trial_start_date: string;
