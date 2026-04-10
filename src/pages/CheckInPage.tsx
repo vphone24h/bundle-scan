@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Clock, Smartphone, QrCode, CheckCircle2, XCircle, Loader2, AlertTriangle, Navigation, Signal, Wifi, WifiOff, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { MapPin, Clock, Smartphone, QrCode, CheckCircle2, XCircle, Loader2, AlertTriangle, Navigation, Signal, Wifi, WifiOff, ArrowLeft, ShieldAlert, Send } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { DeviceOtpVerification } from '@/components/attendance/DeviceOtpVerification';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { usePlatformUser } from '@/hooks/useTenant';
@@ -30,13 +31,10 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 // Detect mock GPS / developer mode
 function detectGpsFraud(pos: GeolocationPosition): { isSuspicious: boolean; reasons: string[] } {
   const reasons: string[] = [];
-  // Mock location: accuracy is often exactly 20m or altitude is 0/null
   if (pos.coords.accuracy === 20 && pos.coords.altitude === null) reasons.push('Mock location suspected');
   if (pos.coords.altitudeAccuracy === null && pos.coords.speed === null && pos.coords.heading === null) {
-    // All optional fields null might indicate emulator/mock
     if (pos.coords.accuracy <= 5) reasons.push('Emulator GPS pattern');
   }
-  // Check for developer mode indicators
   if ((navigator as any).webdriver) reasons.push('WebDriver detected');
   if ((window as any).__SELENIUM_IDE_RECORDER) reasons.push('Selenium detected');
   if ((window as any).callPhantom || (window as any)._phantom) reasons.push('PhantomJS detected');
@@ -82,6 +80,11 @@ export default function CheckInPage() {
   const [allDistances, setAllDistances] = useState<{ loc: any; dist: number }[]>([]);
   const deviceFP = useRef(getDeviceFingerprint());
 
+  // Remote check-in request state
+  const [showRemoteRequest, setShowRemoteRequest] = useState(false);
+  const [remoteReason, setRemoteReason] = useState('');
+  const [sendingRemote, setSendingRemote] = useState(false);
+
   // Clock
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -100,7 +103,6 @@ export default function CheckInPage() {
         setGpsPos({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
         setGpsError('');
         setGpsLoading(false);
-        // Fraud detection
         const fraud = detectGpsFraud(pos);
         setGpsFraudWarning(fraud.reasons);
       },
@@ -158,6 +160,24 @@ export default function CheckInPage() {
     refetchInterval: 10000,
   });
 
+  // Check pending remote request for today
+  const { data: pendingRemoteRequest } = useQuery({
+    queryKey: ['my-remote-request', user?.id, today],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('attendance_correction_requests')
+        .select('*')
+        .eq('user_id', user!.id)
+        .eq('request_date', today)
+        .in('request_type', ['remote_checkin', 'remote_checkout'])
+        .eq('status', 'pending')
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user?.id,
+    refetchInterval: 10000,
+  });
+
   // Today's shift
   const dayOfWeek = new Date().getDay();
   const { data: todayShift } = useQuery({
@@ -196,8 +216,15 @@ export default function CheckInPage() {
   const deviceOk = myDevice?.status === 'approved';
   const hasCheckedIn = !!todayRecord?.check_in_time;
   const hasCheckedOut = !!todayRecord?.check_out_time;
-  const canCheckIn = !hasCheckedIn && isInRange && user;
-  const canCheckOut = hasCheckedIn && !hasCheckedOut && user;
+  
+  // ENFORCED CONDITIONS:
+  // 1. Must be logged in (user)
+  // 2. Must have approved device (deviceOk)
+  // 3. Must be in range (isInRange) — OR can request remote approval
+  const canCheckIn = !hasCheckedIn && isInRange && user && deviceOk;
+  const canCheckOut = hasCheckedIn && !hasCheckedOut && user && deviceOk;
+  const canRequestRemote = user && deviceOk && !isInRange && gpsPos && nearestLocation && !hasCheckedIn && !pendingRemoteRequest;
+  const canRequestRemoteCheckout = user && deviceOk && !isInRange && gpsPos && hasCheckedIn && !hasCheckedOut && !pendingRemoteRequest;
 
   // Working time elapsed
   const [workingMinutes, setWorkingMinutes] = useState(0);
@@ -237,7 +264,7 @@ export default function CheckInPage() {
   }, [user?.id, tenantId, qc]);
 
   const handleCheckIn = useCallback(async () => {
-    if (!user?.id || !tenantId || !gpsPos || !nearestLocation) return;
+    if (!user?.id || !tenantId || !gpsPos || !nearestLocation || !deviceOk) return;
     setChecking(true);
     try {
       let status = 'on_time';
@@ -277,16 +304,15 @@ export default function CheckInPage() {
       if (Math.random() < 0.2) {
         setTimeout(() => setShowRandomVerify(true), 3000);
       }
-      qc.invalidateQueries({ queryKey: ['attendance-records'] });
     } catch (e: any) {
       toast.error(e.message);
     } finally {
       setChecking(false);
     }
-  }, [user?.id, tenantId, gpsPos, nearestLocation, myDevice, todayShift, shiftInfo, today, qc]);
+  }, [user?.id, tenantId, gpsPos, nearestLocation, myDevice, todayShift, shiftInfo, today, qc, deviceOk, gpsFraudWarning]);
 
   const handleCheckOut = useCallback(async () => {
-    if (!todayRecord?.id || !gpsPos) return;
+    if (!todayRecord?.id || !gpsPos || !deviceOk) return;
     setChecking(true);
     try {
       const now = new Date();
@@ -311,7 +337,41 @@ export default function CheckInPage() {
     } finally {
       setChecking(false);
     }
-  }, [todayRecord, gpsPos, myDevice, qc]);
+  }, [todayRecord, gpsPos, myDevice, qc, deviceOk]);
+
+  // Send remote check-in/out request to admin
+  const handleSendRemoteRequest = useCallback(async (type: 'remote_checkin' | 'remote_checkout') => {
+    if (!user?.id || !tenantId || !gpsPos || !nearestLocation) return;
+    if (!remoteReason.trim()) {
+      toast.error('Vui lòng nhập lý do');
+      return;
+    }
+    setSendingRemote(true);
+    try {
+      const now = new Date();
+      const { error } = await supabase.from('attendance_correction_requests').insert([{
+        tenant_id: tenantId,
+        user_id: user.id,
+        request_date: today,
+        request_type: type,
+        requested_check_in: type === 'remote_checkin' ? now.toISOString() : null,
+        requested_check_out: type === 'remote_checkout' ? now.toISOString() : null,
+        reason: `[Ngoài phạm vi: ${distance}m / ${nearestLocation.radius_meters}m - ${nearestLocation.name}] ${remoteReason}`,
+        status: 'pending',
+        attendance_id: type === 'remote_checkout' ? todayRecord?.id : null,
+      }]);
+      if (error) throw error;
+      toast.success('Đã gửi yêu cầu chấm công từ xa. Chờ admin duyệt.');
+      setShowRemoteRequest(false);
+      setRemoteReason('');
+      qc.invalidateQueries({ queryKey: ['my-remote-request'] });
+      qc.invalidateQueries({ queryKey: ['correction-requests'] });
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSendingRemote(false);
+    }
+  }, [user?.id, tenantId, gpsPos, nearestLocation, distance, remoteReason, today, todayRecord, qc]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center px-4 py-4 safe-x safe-bottom">
@@ -441,6 +501,21 @@ export default function CheckInPage() {
           </CardContent>
         </Card>
 
+        {/* Pending remote request */}
+        {pendingRemoteRequest && (
+          <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <Send className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
+                  Đã gửi yêu cầu {pendingRemoteRequest.request_type === 'remote_checkin' ? 'check-in' : 'check-out'} từ xa
+                </span>
+              </div>
+              <p className="text-xs text-blue-600/70 mt-1">Đang chờ admin duyệt...</p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Working time card (when checked in) */}
         {hasCheckedIn && !hasCheckedOut && (
           <Card className="border-primary/30 bg-primary/5">
@@ -496,39 +571,93 @@ export default function CheckInPage() {
         ) : (
           <>
             {!hasCheckedIn ? (
-              <Button
-                size="lg"
-                className="w-full h-16 text-lg font-bold rounded-2xl gap-2 shadow-lg"
-                disabled={!canCheckIn || checking}
-                onClick={handleCheckIn}
-              >
-                {checking ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-6 w-6" />}
-                CHECK-IN
-              </Button>
+              <>
+                <Button
+                  size="lg"
+                  className="w-full h-16 text-lg font-bold rounded-2xl gap-2 shadow-lg"
+                  disabled={!canCheckIn || checking}
+                  onClick={handleCheckIn}
+                >
+                  {checking ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-6 w-6" />}
+                  CHECK-IN
+                </Button>
+
+                {/* Remote check-in request button - shown when out of range but device OK */}
+                {canRequestRemote && !pendingRemoteRequest && (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full h-12 text-sm font-medium rounded-2xl gap-2 border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400"
+                    onClick={() => setShowRemoteRequest(true)}
+                  >
+                    <Send className="h-4 w-4" />
+                    Gửi yêu cầu check-in từ xa
+                  </Button>
+                )}
+              </>
             ) : (
-              <Button
-                size="lg"
-                variant="destructive"
-                className="w-full h-16 text-lg font-bold rounded-2xl gap-2 shadow-lg"
-                disabled={!canCheckOut || checking}
-                onClick={handleCheckOut}
-              >
-                {checking ? <Loader2 className="h-5 w-5 animate-spin" /> : <XCircle className="h-6 w-6" />}
-                CHECK-OUT
-              </Button>
+              <>
+                {isInRange ? (
+                  <Button
+                    size="lg"
+                    variant="destructive"
+                    className="w-full h-16 text-lg font-bold rounded-2xl gap-2 shadow-lg"
+                    disabled={!canCheckOut || checking}
+                    onClick={handleCheckOut}
+                  >
+                    {checking ? <Loader2 className="h-5 w-5 animate-spin" /> : <XCircle className="h-6 w-6" />}
+                    CHECK-OUT
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      size="lg"
+                      variant="destructive"
+                      className="w-full h-16 text-lg font-bold rounded-2xl gap-2 shadow-lg"
+                      disabled
+                    >
+                      <XCircle className="h-6 w-6" />
+                      CHECK-OUT
+                    </Button>
+                    {canRequestRemoteCheckout && !pendingRemoteRequest && (
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="w-full h-12 text-sm font-medium rounded-2xl gap-2 border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400"
+                        onClick={() => setShowRemoteRequest(true)}
+                      >
+                        <Send className="h-4 w-4" />
+                        Gửi yêu cầu check-out từ xa
+                      </Button>
+                    )}
+                  </>
+                )}
+              </>
             )}
 
             {/* Warnings */}
-            {!isInRange && gpsPos && nearestLocation && (
+            {!deviceOk && !myDevice && (
               <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-lg text-sm text-destructive">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
-                <span>Ngoài phạm vi ({distance}m / {nearestLocation.radius_meters}m)</span>
+                <span>Bạn chưa đăng ký thiết bị. Vui lòng đăng ký trước khi chấm công.</span>
               </div>
             )}
             {!deviceOk && myDevice?.status === 'pending' && (
               <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-sm text-yellow-700 dark:text-yellow-400">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
-                <span>Thiết bị đang chờ admin duyệt</span>
+                <span>Thiết bị đang chờ admin duyệt. Chưa thể chấm công.</span>
+              </div>
+            )}
+            {!deviceOk && myDevice?.status === 'rejected' && (
+              <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-lg text-sm text-destructive">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span>Thiết bị bị từ chối. Liên hệ admin để được hỗ trợ.</span>
+              </div>
+            )}
+            {deviceOk && !isInRange && gpsPos && nearestLocation && (
+              <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-lg text-sm text-destructive">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span>Ngoài phạm vi ({distance}m / {nearestLocation.radius_meters}m). Bạn có thể gửi yêu cầu từ xa.</span>
               </div>
             )}
             {gpsFraudWarning.length > 0 && (
@@ -540,6 +669,46 @@ export default function CheckInPage() {
           </>
         )}
       </div>
+
+      {/* Remote Check-in/out Request Dialog */}
+      <Dialog open={showRemoteRequest} onOpenChange={setShowRemoteRequest}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5 text-blue-600" />
+              Yêu cầu chấm công từ xa
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="p-3 bg-muted rounded-lg text-xs space-y-1">
+              <p><span className="font-medium">Vị trí gần nhất:</span> {nearestLocation?.name}</p>
+              <p><span className="font-medium">Khoảng cách:</span> {distance}m (cho phép: {nearestLocation?.radius_meters}m)</p>
+              <p className="text-muted-foreground">Bạn đang ngoài phạm vi cho phép. Yêu cầu sẽ được gửi đến admin để duyệt.</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Lý do *</label>
+              <Textarea
+                placeholder="VD: Đi giao hàng ngoài kho, công tác xa..."
+                value={remoteReason}
+                onChange={e => setRemoteReason(e.target.value)}
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRemoteRequest(false)}>Hủy</Button>
+            <Button
+              onClick={() => handleSendRemoteRequest(hasCheckedIn ? 'remote_checkout' : 'remote_checkin')}
+              disabled={sendingRemote || !remoteReason.trim()}
+              className="gap-1.5"
+            >
+              {sendingRemote ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Gửi yêu cầu
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Random Verification Dialog */}
       <Dialog open={showRandomVerify} onOpenChange={setShowRandomVerify}>
