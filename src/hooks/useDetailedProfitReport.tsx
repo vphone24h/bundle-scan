@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
+import { useBranchFilter } from './useBranchFilter';
 import { fetchAllRows } from '@/lib/fetchAllRows';
 import { doesReturnAffectRevenue } from '@/lib/reportReturnRules';
+import { getLocalDateString, getLocalDateRangeISO } from '@/lib/vietnamTime';
 
 export interface DetailedProfitItem {
   id: string;
@@ -32,9 +34,11 @@ export function useDetailedProfitReport(filters?: {
 }) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
+  const { branchId: userBranchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+  const effectiveBranchId = filters?.branchId || (shouldFilter ? userBranchId || undefined : undefined);
 
   return useQuery({
-    queryKey: ['detailed-profit-report', 'return-rule-v3', filters, isDataHidden],
+    queryKey: ['detailed-profit-report', 'return-rule-v4', tenant?.id, effectiveBranchId, filters, isDataHidden],
     queryFn: async () => {
       const normalizeFeeType = (value: unknown) => String(value ?? '').trim().toLowerCase();
       // Chế độ test: trả về dữ liệu rỗng
@@ -45,20 +49,10 @@ export function useDetailedProfitReport(filters?: {
         };
       }
 
-      // Use local timezone for date filtering (same as Dashboard)
-      const getLocalDateString = (date: Date) => {
-        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-      };
-      
       const now = new Date();
       const startDate = filters?.startDate || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
       const endDate = filters?.endDate || getLocalDateString(now);
-      
-      // Create proper local timezone boundaries for queries
-      const startDateTime = new Date(startDate + 'T00:00:00');
-      const endDateTime = new Date(endDate + 'T23:59:59.999');
-      const startISO = startDateTime.toISOString();
-      const endISO = endDateTime.toISOString();
+      const { startISO, endISO } = getLocalDateRangeISO(startDate, endDate);
 
       const buildSoldQuery = () => {
         let q = supabase
@@ -87,13 +81,13 @@ export function useDetailedProfitReport(filters?: {
               customers(name)
             )
           `)
-          .in('status', ['sold', 'returned'])
+          .eq('status', 'sold')
           .neq('export_receipts.status', 'cancelled')
           .gte('export_receipts.export_date', startISO)
           .lte('export_receipts.export_date', endISO);
 
-        if (filters?.branchId) {
-          q = q.eq('export_receipts.branch_id', filters.branchId);
+        if (effectiveBranchId) {
+          q = q.eq('export_receipts.branch_id', effectiveBranchId);
         }
         if (filters?.categoryId) {
           q = q.eq('category_id', filters.categoryId);
@@ -122,8 +116,8 @@ export function useDetailedProfitReport(filters?: {
           .gte('export_date', startISO)
           .lte('export_date', endISO);
 
-        if (filters?.branchId) {
-          q = q.eq('branch_id', filters.branchId);
+        if (effectiveBranchId) {
+          q = q.eq('branch_id', effectiveBranchId);
         }
         return q.order('export_date', { ascending: false });
       };
@@ -161,8 +155,8 @@ export function useDetailedProfitReport(filters?: {
           .lte('return_date', endISO)
           .order('return_date', { ascending: false });
 
-        if (filters?.branchId) {
-          q = q.eq('branch_id', filters.branchId);
+        if (effectiveBranchId) {
+          q = q.eq('branch_id', effectiveBranchId);
         }
         if (filters?.search) {
           q = q.or(`product_name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,imei.ilike.%${filters.search}%`);
@@ -393,7 +387,7 @@ export function useDetailedProfitReport(filters?: {
         totals,
       };
     },
-    enabled: !isTenantLoading,
+    enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
     refetchOnWindowFocus: false,
   });
 }
