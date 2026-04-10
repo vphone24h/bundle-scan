@@ -66,7 +66,7 @@ export function useReportDetails(filters?: {
       const buildReturnDetailQuery = () => {
         let q = supabase
           .from('export_returns')
-          .select('product_name, imei, import_price, sale_price, quantity, return_date, branch_id, refund_amount, fee_type, product_id, products(import_price)')
+          .select('product_name, imei, import_price, sale_price, quantity, return_date, branch_id, refund_amount, fee_type, product_id, new_import_receipt_id, products(import_price)')
           .gte('return_date', startISO)
           .lte('return_date', endISO)
           .order('return_date', { ascending: false });
@@ -160,6 +160,7 @@ export function useReportDetails(filters?: {
             refundAmount: item.refund_amount,
             salePrice: item.sale_price,
             quantity: item.quantity,
+            hasNewImportReceipt: !!item.new_import_receipt_id,
           });
         })
         .map((item: any) => {

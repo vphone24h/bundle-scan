@@ -152,6 +152,7 @@ export function useDetailedProfitReport(filters?: {
             customer_id,
             product_id,
             fee_type,
+            new_import_receipt_id,
             branches(name),
             customers(name),
             export_receipts:export_returns_export_receipt_id_fkey(is_repair)
@@ -342,6 +343,7 @@ export function useDetailedProfitReport(filters?: {
           refundAmount: item.refund_amount,
           salePrice: item.sale_price,
           quantity: itemQty,
+          hasNewImportReceipt: !!item.new_import_receipt_id,
         })) {
           return;
         }
