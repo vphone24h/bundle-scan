@@ -81,11 +81,12 @@ function formatDate(d: string) {
   }
 }
 
-function SalesTable({ items }: { items: SaleDetailItem[] }) {
-  const total = items.reduce((s, i) => s + i.salePrice, 0);
+function SalesTable({ items, statsTotal }: { items: SaleDetailItem[]; statsTotal?: number }) {
+  const itemsTotal = items.reduce((s, i) => s + i.salePrice, 0);
+  const displayTotal = statsTotal != null ? statsTotal : itemsTotal;
   return (
     <div>
-      <p className="text-sm text-muted-foreground mb-2">{items.length} sản phẩm · Tổng: {formatCurrency(total)}</p>
+      <p className="text-sm text-muted-foreground mb-2">{items.length} sản phẩm · Tổng: {formatCurrency(displayTotal)}</p>
       <div className="space-y-2 md:hidden">
         {items.map((item, idx) => (
           <div key={idx} className="border rounded-lg p-3 space-y-1">
