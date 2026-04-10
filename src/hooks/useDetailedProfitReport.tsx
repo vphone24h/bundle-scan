@@ -38,7 +38,7 @@ export function useDetailedProfitReport(filters?: {
   const effectiveBranchId = filters?.branchId || (shouldFilter ? userBranchId || undefined : undefined);
 
   return useQuery({
-    queryKey: ['detailed-profit-report', 'return-rule-v4', tenant?.id, effectiveBranchId, filters, isDataHidden],
+    queryKey: ['detailed-profit-report', 'return-rule-v5', tenant?.id, effectiveBranchId, filters, isDataHidden],
     queryFn: async () => {
       const normalizeFeeType = (value: unknown) => String(value ?? '').trim().toLowerCase();
       // Chế độ test: trả về dữ liệu rỗng
@@ -81,7 +81,7 @@ export function useDetailedProfitReport(filters?: {
               customers(name)
             )
           `)
-          .eq('status', 'sold')
+          .in('status', ['sold', 'returned'])
           .neq('export_receipts.status', 'cancelled')
           .gte('export_receipts.export_date', startISO)
           .lte('export_receipts.export_date', endISO);
