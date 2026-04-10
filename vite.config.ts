@@ -27,6 +27,10 @@ export default defineConfig(({ mode }) => ({
         navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
           {
+            urlPattern: /^https:\/\/rodpbhesrwykmpywiiyd\.supabase\.co\/rest\/v1\/rpc\/(get_company_attendance_enabled|lookup_company_by_domain)$/i,
+            handler: "NetworkOnly",
+          },
+          {
             urlPattern: /^https:\/\/rodpbhesrwykmpywiiyd\.supabase\.co\/rest\/v1\/.*/i,
             handler: "NetworkFirst",
             options: {

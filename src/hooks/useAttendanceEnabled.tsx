@@ -39,7 +39,7 @@ export function useAttendanceEnabled() {
     setValidatedIdentity(null);
   }, [queryIdentity]);
 
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['attendance-enabled', companyId, source],
     queryFn: async () => {
       if (!companyId) return false;
@@ -57,7 +57,37 @@ export function useAttendanceEnabled() {
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   });
+
+  useEffect(() => {
+    if (!canQuery || !companyId) return;
+
+    const refreshAttendanceState = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      setValidatedIdentity(null);
+      void refetch();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshAttendanceState();
+      }
+    };
+
+    window.addEventListener('focus', refreshAttendanceState);
+    window.addEventListener('online', refreshAttendanceState);
+    window.addEventListener('pageshow', refreshAttendanceState);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', refreshAttendanceState);
+      window.removeEventListener('online', refreshAttendanceState);
+      window.removeEventListener('pageshow', refreshAttendanceState);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [canQuery, companyId, queryIdentity, refetch]);
 
   useEffect(() => {
     if (!canQuery) {
