@@ -135,6 +135,22 @@ export function useTemplatePenalties(templateId?: string) {
   });
 }
 
+export function useTemplateOvertimes(templateId?: string) {
+  return useQuery({
+    queryKey: ['template-overtimes', templateId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('salary_template_overtimes')
+        .select('*')
+        .eq('template_id', templateId!)
+        .order('display_order');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!templateId,
+  });
+}
+
 // ============ Save all sub-configs ============
 export function useSaveTemplateConfigs() {
   const qc = useQueryClient();
