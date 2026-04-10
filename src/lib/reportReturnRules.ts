@@ -8,7 +8,9 @@ interface ReturnRevenueCheckInput {
 }
 
 export function doesReturnAffectRevenue(input: ReturnRevenueCheckInput) {
-  if (input.feeType && input.feeType !== 'none') {
+  const normalizedFeeType = String(input.feeType ?? '').trim().toLowerCase();
+
+  if (normalizedFeeType && normalizedFeeType !== 'none') {
     return false;
   }
 

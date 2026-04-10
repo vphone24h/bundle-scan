@@ -23,8 +23,9 @@ export function useReportDetails(filters?: {
   const effectiveBranchId = filters?.branchId || (shouldFilter ? userBranchId : undefined);
 
   return useQuery({
-    queryKey: ['report-details', 'return-rule-v2', tenant?.id, effectiveBranchId, filters],
+    queryKey: ['report-details', 'return-rule-v3', tenant?.id, effectiveBranchId, filters],
     queryFn: async () => {
+      const normalizeFeeType = (value: unknown) => String(value ?? '').trim().toLowerCase();
       const now = new Date();
       const startDate = filters?.startDate || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
       const endDate = filters?.endDate || getLocalDateString(now);
@@ -147,12 +148,20 @@ export function useReportDetails(filters?: {
       }
 
       const returnDetails: ReturnDetailItem[] = (returnsRaw || [])
-        .filter((item: any) => doesReturnAffectRevenue({
-          feeType: item.fee_type,
-          refundAmount: item.refund_amount,
-          salePrice: item.sale_price,
-          quantity: item.quantity,
-        }))
+        .filter((item: any) => {
+          const feeType = normalizeFeeType(item.fee_type);
+
+          if (feeType && feeType !== 'none') {
+            return false;
+          }
+
+          return doesReturnAffectRevenue({
+            feeType: feeType || null,
+            refundAmount: item.refund_amount,
+            salePrice: item.sale_price,
+            quantity: item.quantity,
+          });
+        })
         .map((item: any) => {
           const qty = Number(item.quantity ?? 1) || 1;
           const refundAmount = Number(item.refund_amount || 0);
