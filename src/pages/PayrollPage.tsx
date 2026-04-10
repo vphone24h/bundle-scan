@@ -1,3 +1,5 @@
+import { MainLayout } from '@/components/layout/MainLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SalaryTemplatesTab } from '@/components/payroll/SalaryTemplatesTab';
@@ -7,7 +9,11 @@ export default function PayrollPage() {
   const [tab, setTab] = useState('templates');
 
   return (
-    <div className="space-y-4">
+    <MainLayout>
+      <PageHeader
+        title="Bảng lương"
+        description="Quản lý mẫu lương và tính lương tự động"
+      />
       <Tabs value={tab} onValueChange={setTab}>
         <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
           <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 h-auto p-1 gap-1">
@@ -15,14 +21,13 @@ export default function PayrollPage() {
             <TabsTrigger value="periods" className="text-xs px-3 py-1.5">Bảng lương</TabsTrigger>
           </TabsList>
         </div>
-
-        <TabsContent value="templates">
+        <TabsContent value="templates" className="mt-4">
           <SalaryTemplatesTab />
         </TabsContent>
-        <TabsContent value="periods">
+        <TabsContent value="periods" className="mt-4">
           <PayrollPeriodsTab />
         </TabsContent>
       </Tabs>
-    </div>
+    </MainLayout>
   );
 }
