@@ -6450,33 +6450,45 @@ export type Database = {
       }
       salary_templates: {
         Row: {
+          allowance_amount: number
           base_amount: number
+          bonus_amount: number
+          commission_percent: number
           created_at: string
           description: string | null
           id: string
           is_active: boolean
+          kpi_bonus_amount: number
           name: string
           salary_type: string
           tenant_id: string
           updated_at: string
         }
         Insert: {
+          allowance_amount?: number
           base_amount?: number
+          bonus_amount?: number
+          commission_percent?: number
           created_at?: string
           description?: string | null
           id?: string
           is_active?: boolean
+          kpi_bonus_amount?: number
           name: string
           salary_type?: string
           tenant_id: string
           updated_at?: string
         }
         Update: {
+          allowance_amount?: number
           base_amount?: number
+          bonus_amount?: number
+          commission_percent?: number
           created_at?: string
           description?: string | null
           id?: string
           is_active?: boolean
+          kpi_bonus_amount?: number
           name?: string
           salary_type?: string
           tenant_id?: string

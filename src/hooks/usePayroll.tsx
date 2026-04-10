@@ -28,7 +28,7 @@ export function useSalaryTemplates() {
 export function useCreateSalaryTemplate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (template: { tenant_id: string; name: string; salary_type: string; base_amount: number; description?: string }) => {
+    mutationFn: async (template: { tenant_id: string; name: string; salary_type: string; base_amount: number; bonus_amount?: number; allowance_amount?: number; commission_percent?: number; kpi_bonus_amount?: number; description?: string }) => {
       const { data, error } = await supabase.from('salary_templates').insert([template]).select().single();
       if (error) throw error;
       return data;
@@ -41,7 +41,7 @@ export function useCreateSalaryTemplate() {
 export function useUpdateSalaryTemplate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; name?: string; salary_type?: string; base_amount?: number; description?: string; is_active?: boolean }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; salary_type?: string; base_amount?: number; bonus_amount?: number; allowance_amount?: number; commission_percent?: number; kpi_bonus_amount?: number; description?: string; is_active?: boolean }) => {
       const { data, error } = await supabase.from('salary_templates').update(updates).eq('id', id).select().single();
       if (error) throw error;
       return data;
