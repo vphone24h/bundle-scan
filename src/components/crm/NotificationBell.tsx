@@ -1,34 +1,40 @@
  import { useState } from 'react';
- import { Bell, Check, CheckCheck, Clock, AlertTriangle, UserPlus, BarChart3, Settings } from 'lucide-react';
- import { Button } from '@/components/ui/button';
- import { Badge } from '@/components/ui/badge';
- import {
-   Popover,
-   PopoverContent,
-   PopoverTrigger,
- } from '@/components/ui/popover';
- import { ScrollArea } from '@/components/ui/scroll-area';
- import { Separator } from '@/components/ui/separator';
- import {
-   useCRMNotifications,
-   useUnreadNotificationCount,
-   useMarkNotificationRead,
-   useMarkAllNotificationsRead,
-   NOTIFICATION_TYPE_LABELS,
-   NOTIFICATION_TYPE_COLORS,
-   type CRMNotification,
- } from '@/hooks/useCRMNotifications';
- import { formatDistanceToNow } from 'date-fns';
- import { vi } from 'date-fns/locale';
- import { cn } from '@/lib/utils';
- 
- const notificationIcons: Record<CRMNotification['notification_type'], React.ReactNode> = {
-   care_reminder: <Clock className="h-4 w-4" />,
-   overdue_care: <AlertTriangle className="h-4 w-4" />,
-   new_customer: <UserPlus className="h-4 w-4" />,
-   kpi_update: <BarChart3 className="h-4 w-4" />,
-   system: <Settings className="h-4 w-4" />,
- };
+import { Bell, Check, CheckCheck, Clock, AlertTriangle, UserPlus, BarChart3, Settings, LogOut, LogIn, CalendarClock, DollarSign } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import {
+  useCRMNotifications,
+  useUnreadNotificationCount,
+  useMarkNotificationRead,
+  useMarkAllNotificationsRead,
+  NOTIFICATION_TYPE_LABELS,
+  NOTIFICATION_TYPE_COLORS,
+  type CRMNotification,
+} from '@/hooks/useCRMNotifications';
+import { formatDistanceToNow } from 'date-fns';
+import { vi } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+
+const notificationIcons: Record<CRMNotification['notification_type'], React.ReactNode> = {
+  care_reminder: <Clock className="h-4 w-4" />,
+  overdue_care: <AlertTriangle className="h-4 w-4" />,
+  new_customer: <UserPlus className="h-4 w-4" />,
+  kpi_update: <BarChart3 className="h-4 w-4" />,
+  system: <Settings className="h-4 w-4" />,
+  checkout_reminder: <LogOut className="h-4 w-4" />,
+  attendance_absent: <AlertTriangle className="h-4 w-4" />,
+  checkin_reminder: <LogIn className="h-4 w-4" />,
+  attendance_late: <Clock className="h-4 w-4" />,
+  shift_reminder: <CalendarClock className="h-4 w-4" />,
+  payslip_ready: <DollarSign className="h-4 w-4" />,
+};
  
  export function NotificationBell() {
    const [open, setOpen] = useState(false);

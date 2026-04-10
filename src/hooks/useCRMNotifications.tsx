@@ -22,21 +22,33 @@ export interface CRMNotification {
    created_at: string;
  }
  
- export const NOTIFICATION_TYPE_LABELS: Record<CRMNotification['notification_type'], string> = {
-   care_reminder: 'Nhắc chăm sóc',
-   overdue_care: 'Quá hạn',
-   new_customer: 'Khách mới',
-   kpi_update: 'Cập nhật KPI',
-   system: 'Hệ thống',
- };
- 
- export const NOTIFICATION_TYPE_COLORS: Record<CRMNotification['notification_type'], string> = {
-   care_reminder: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
-   overdue_care: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
-   new_customer: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
-   kpi_update: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300',
-   system: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
- };
+export const NOTIFICATION_TYPE_LABELS: Record<CRMNotification['notification_type'], string> = {
+  care_reminder: 'Nhắc chăm sóc',
+  overdue_care: 'Quá hạn',
+  new_customer: 'Khách mới',
+  kpi_update: 'Cập nhật KPI',
+  system: 'Hệ thống',
+  checkout_reminder: 'Nhắc checkout',
+  attendance_absent: 'Vắng mặt',
+  checkin_reminder: 'Nhắc chấm công',
+  attendance_late: 'Đi trễ',
+  shift_reminder: 'Nhắc ca làm',
+  payslip_ready: 'Bảng lương',
+};
+
+export const NOTIFICATION_TYPE_COLORS: Record<CRMNotification['notification_type'], string> = {
+  care_reminder: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
+  overdue_care: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+  new_customer: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+  kpi_update: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300',
+  system: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+  checkout_reminder: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
+  attendance_absent: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+  checkin_reminder: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
+  attendance_late: 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300',
+  shift_reminder: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300',
+  payslip_ready: 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300',
+};
  
  // =====================================================
  // NOTIFICATION HOOKS
