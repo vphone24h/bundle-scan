@@ -2,17 +2,17 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronLeft, ChevronRight, Plus, Calendar, Copy, Users, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Copy, Users, X } from 'lucide-react';
 import { useShiftAssignments, useWorkShifts, useCreateShiftAssignment, useDeleteShiftAssignment } from '@/hooks/useAttendance';
 import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
+import { useTenantStaffList } from '@/hooks/useTenantStaffList';
 import { format, addDays, startOfWeek, eachDayOfInterval } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
@@ -43,30 +43,7 @@ export function ShiftScheduleTab() {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [copyLoading, setCopyLoading] = useState(false);
 
-  // Fetch staff list
-  const { data: staffList } = useQuery({
-    queryKey: ['staff-list', tenantId],
-    queryFn: async () => {
-      const { data: roles, error: rolesErr } = await supabase
-        .from('user_roles')
-        .select('user_id, user_role')
-        .eq('tenant_id', tenantId!);
-      if (rolesErr) throw rolesErr;
-      if (!roles?.length) return [];
-
-      const userIds = roles.map(r => r.user_id);
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, display_name')
-        .in('user_id', userIds);
-
-      return roles.map(r => ({
-        ...r,
-        display_name: profiles?.find(p => p.user_id === r.user_id)?.display_name || r.user_id.slice(0, 8),
-      }));
-    },
-    enabled: !!tenantId,
-  });
+  const { data: staffList } = useTenantStaffList();
 
   const getAssignmentsForDay = (date: string) => {
     return assignments?.filter((a: any) => {

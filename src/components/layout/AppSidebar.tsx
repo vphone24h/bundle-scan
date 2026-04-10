@@ -92,6 +92,8 @@ const platformAdminNavItems: NavItem[] = [
   { title: 'Quản trị nền tảng', titleKey: 'sidebar.platformAdmin', href: '/platform-admin', icon: Crown },
 ];
 
+const ATTENDANCE_HIDDEN_ROUTES = new Set(['/attendance', '/payroll', '/my-attendance', '/checkin']);
+
 // Menu cho Tenant users
 const allNavItems: NavItem[] = [
   { title: 'Tổng quan', titleKey: 'sidebar.overview', href: '/', icon: LayoutDashboard },
@@ -200,7 +202,7 @@ export function AppSidebar() {
     
     return allNavItems.filter(item => {
       if (isStandalone && item.href === '/install-app') return false;
-      if (item.requireAttendance && !attendanceEnabled) return false;
+      if (!attendanceEnabled && (item.requireAttendance || ATTENDANCE_HIDDEN_ROUTES.has(item.href))) return false;
       if (!item.permission) return true;
       return permissions[item.permission as keyof typeof permissions] === true;
     }).map(item => {

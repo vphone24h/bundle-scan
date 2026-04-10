@@ -11,7 +11,7 @@ import { Loader2, ArrowRight, ArrowLeft, Check, Crown, User, Clock, Calendar, Do
 import { UserRole } from '@/hooks/usePermissions';
 import { PermissionMap, getDefaultPermissionsForRole } from '@/config/permissionDefinitions';
 import { useSaveCustomPermissions } from '@/hooks/useCustomPermissions';
-import { useCurrentTenant } from '@/hooks/useTenant';
+import { useCurrentTenant, usePlatformUser } from '@/hooks/useTenant';
 import { useAuditLog } from '@/hooks/usePermissions';
 import { useWorkShifts } from '@/hooks/useAttendance';
 import { useSalaryTemplates } from '@/hooks/usePayroll';
@@ -21,6 +21,7 @@ import { StepSchedule } from './steps/StepSchedule';
 import { StepSalary } from './steps/StepSalary';
 import { StepAttendanceSetup, type AttendanceSetupData } from './steps/StepAttendanceSetup';
 import { cn } from '@/lib/utils';
+import { buildRecurringShiftAssignments } from '@/lib/attendanceSchedule';
 
 interface Branch { id: string; name: string; }
 
@@ -55,6 +56,8 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: currentTenant } = useCurrentTenant();
+  const { data: platformUser } = usePlatformUser();
+  const tenantId = currentTenant?.id || platformUser?.tenant_id;
   const savePermissions = useSaveCustomPermissions();
   const { logAction } = useAuditLog();
   const { data: shifts } = useWorkShifts();
@@ -164,31 +167,35 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
       if (response.error) throw new Error(response.error.message);
 
       const userId = response.data?.userId;
-      if (!userId || !currentTenant?.id) return response.data;
+      if (!userId || !tenantId) return response.data;
 
       // Save permissions
-      await savePermissions.mutateAsync({ userId, tenantId: currentTenant.id, permissions });
+      await savePermissions.mutateAsync({ userId, tenantId, permissions });
 
       // Step 2: Assign shift
-      if (selectedShiftId) {
-        await supabase.from('shift_assignments').insert({
-          tenant_id: currentTenant.id,
-          user_id: userId,
-          shift_id: selectedShiftId,
-          assignment_type: scheduleData.type === 'fixed' ? 'fixed' : 'daily',
-        });
+      const scheduleAssignments = buildRecurringShiftAssignments({
+        tenantId,
+        userId,
+        selectedShiftId,
+        scheduleData,
+      });
+
+      if (scheduleAssignments.length) {
+        const { error } = await supabase.from('shift_assignments').insert(scheduleAssignments);
+        if (error) throw error;
       }
 
       // Step 4: Save salary config
       if (salaryData.templateId || salaryData.customBaseAmount) {
-        await supabase.from('employee_salary_configs').insert({
-          tenant_id: currentTenant.id,
+        const { error } = await supabase.from('employee_salary_configs').insert({
+          tenant_id: tenantId,
           user_id: userId,
           salary_template_id: salaryData.templateId || null,
           custom_base_amount: salaryData.customBaseAmount || null,
           allowances: salaryData.allowances,
           deductions: salaryData.deductions,
         });
+        if (error) throw error;
       }
 
       await logAction({
