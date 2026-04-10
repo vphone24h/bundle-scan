@@ -23,7 +23,7 @@ export function useReportDetails(filters?: {
   const effectiveBranchId = filters?.branchId || (shouldFilter ? userBranchId : undefined);
 
   return useQuery({
-    queryKey: ['report-details', tenant?.id, effectiveBranchId, filters],
+    queryKey: ['report-details', 'return-rule-v2', tenant?.id, effectiveBranchId, filters],
     queryFn: async () => {
       const now = new Date();
       const startDate = filters?.startDate || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;

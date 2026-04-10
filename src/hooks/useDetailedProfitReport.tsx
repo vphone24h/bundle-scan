@@ -34,7 +34,7 @@ export function useDetailedProfitReport(filters?: {
   const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
-    queryKey: ['detailed-profit-report', filters, isDataHidden],
+    queryKey: ['detailed-profit-report', 'return-rule-v2', filters, isDataHidden],
     queryFn: async () => {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) {

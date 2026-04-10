@@ -8,15 +8,17 @@ interface ReturnRevenueCheckInput {
 }
 
 export function doesReturnAffectRevenue(input: ReturnRevenueCheckInput) {
+  if (input.feeType && input.feeType !== 'none') {
+    return false;
+  }
+
   const quantity = Number(input.quantity ?? 1) || 1;
   const refundAmount = Number(input.refundAmount ?? 0) || 0;
   const originalSaleTotal = (Number(input.salePrice ?? 0) || 0) * quantity;
 
   if (originalSaleTotal <= 0) return false;
 
-  if (refundAmount <= 0) {
-    return input.feeType === 'none';
-  }
+  if (refundAmount <= 0) return true;
 
   return Math.abs(refundAmount - originalSaleTotal) <= FULL_REFUND_TOLERANCE;
 }
