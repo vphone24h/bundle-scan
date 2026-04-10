@@ -540,6 +540,12 @@ function PayrollDetailContent({ record, periodName }: { record: any; periodName?
                 {configSnapshot.salary_type && ` (${configSnapshot.salary_type === 'fixed' ? 'Cố định' : configSnapshot.salary_type === 'hourly' ? 'Theo giờ' : configSnapshot.salary_type === 'daily' ? 'Theo ngày' : 'Theo ca'})`}
               </p>
             )}
+            {configSnapshot.user_revenue > 0 && (
+              <p className="text-xs"><span className="text-muted-foreground">Doanh thu cá nhân:</span> <span className="font-medium text-blue-600">{formatNumber(configSnapshot.user_revenue)}đ</span> ({configSnapshot.sale_count || 0} đơn)</p>
+            )}
+            {configSnapshot.branch_revenue > 0 && (
+              <p className="text-xs"><span className="text-muted-foreground">Doanh thu chi nhánh:</span> <span className="font-medium">{formatNumber(configSnapshot.branch_revenue)}đ</span></p>
+            )}
           </div>
 
           {/* Attendance summary */}
