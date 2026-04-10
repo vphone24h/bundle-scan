@@ -5,10 +5,15 @@ interface ReturnRevenueCheckInput {
   refundAmount?: number | string | null;
   salePrice?: number | string | null;
   quantity?: number | string | null;
+  hasNewImportReceipt?: boolean | null;
 }
 
 export function doesReturnAffectRevenue(input: ReturnRevenueCheckInput) {
   const normalizedFeeType = String(input.feeType ?? '').trim().toLowerCase();
+
+  if (input.hasNewImportReceipt) {
+    return false;
+  }
 
   if (normalizedFeeType && normalizedFeeType !== 'none') {
     return false;
