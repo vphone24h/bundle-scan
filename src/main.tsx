@@ -17,17 +17,8 @@ function hidePreloader() {
 // Expose globally so StoreLandingPage can call it
 (window as any).__hideAppPreloader = hidePreloader;
 
-if (import.meta.env.PROD) {
-  import('virtual:pwa-register').then(({ registerSW }) => {
-    const updateSW = registerSW({
-      immediate: true,
-      onNeedRefresh() {
-        updateSW(true);
-      },
-      onOfflineReady() {},
-    });
-  }).catch(() => {});
-}
+// PWA service worker registration is handled automatically by vite-plugin-pwa
+// with injectRegister: 'auto' in vite.config.ts (production builds only)
 
 const root = createRoot(document.getElementById("root")!);
 root.render(<App />);
