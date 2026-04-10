@@ -44,6 +44,7 @@ export interface SubscriptionPlan {
   max_purchases: number | null;
   description: string | null;
   is_active: boolean;
+  company_id?: string | null;
 }
 
 export interface PaymentRequest {
