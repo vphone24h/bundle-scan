@@ -5122,20 +5122,28 @@ export type Database = {
       }
       payroll_records: {
         Row: {
+          absent_count: number | null
           advance_deduction: number
           allowance_details: Json | null
           allowance_details_v2: Json | null
+          attendance_details: Json | null
           base_salary: number
           bonus_details: Json | null
           commission_details: Json | null
           config_snapshot: Json | null
           created_at: string
           deduction_details: Json | null
+          early_leave_count: number | null
+          early_leave_minutes_total: number | null
+          expected_work_days: number | null
           holiday_bonus: number
           holiday_details: Json | null
           id: string
+          late_count: number | null
+          late_minutes_total: number | null
           net_salary: number
           notes: string | null
+          overtime_hours: number | null
           overtime_pay: number
           payroll_period_id: string
           penalty_details: Json | null
@@ -5153,20 +5161,28 @@ export type Database = {
           user_name: string | null
         }
         Insert: {
+          absent_count?: number | null
           advance_deduction?: number
           allowance_details?: Json | null
           allowance_details_v2?: Json | null
+          attendance_details?: Json | null
           base_salary?: number
           bonus_details?: Json | null
           commission_details?: Json | null
           config_snapshot?: Json | null
           created_at?: string
           deduction_details?: Json | null
+          early_leave_count?: number | null
+          early_leave_minutes_total?: number | null
+          expected_work_days?: number | null
           holiday_bonus?: number
           holiday_details?: Json | null
           id?: string
+          late_count?: number | null
+          late_minutes_total?: number | null
           net_salary?: number
           notes?: string | null
+          overtime_hours?: number | null
           overtime_pay?: number
           payroll_period_id: string
           penalty_details?: Json | null
@@ -5184,20 +5200,28 @@ export type Database = {
           user_name?: string | null
         }
         Update: {
+          absent_count?: number | null
           advance_deduction?: number
           allowance_details?: Json | null
           allowance_details_v2?: Json | null
+          attendance_details?: Json | null
           base_salary?: number
           bonus_details?: Json | null
           commission_details?: Json | null
           config_snapshot?: Json | null
           created_at?: string
           deduction_details?: Json | null
+          early_leave_count?: number | null
+          early_leave_minutes_total?: number | null
+          expected_work_days?: number | null
           holiday_bonus?: number
           holiday_details?: Json | null
           id?: string
+          late_count?: number | null
+          late_minutes_total?: number | null
           net_salary?: number
           notes?: string | null
+          overtime_hours?: number | null
           overtime_pay?: number
           payroll_period_id?: string
           penalty_details?: Json | null
