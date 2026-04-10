@@ -59,9 +59,17 @@ export function PayrollPeriodsTab() {
     });
   };
 
-  const handleCalculate = (periodId: string) => {
+  const handleCalculate = (periodId: string, navigateAfter = false) => {
     if (!pu?.tenant_id) return;
-    calculatePayroll.mutate({ period_id: periodId, tenant_id: pu.tenant_id });
+    calculatePayroll.mutate({ period_id: periodId, tenant_id: pu.tenant_id }, {
+      onSuccess: () => {
+        if (navigateAfter) {
+          setSelectedPeriodId(periodId);
+          setCurrentPage(1);
+          setSearchQuery('');
+        }
+      },
+    });
   };
 
   const handleLock = (periodId: string) => {
@@ -273,7 +281,7 @@ export function PayrollPeriodsTab() {
                     </div>
                     <div className="flex items-center gap-2">
                       {p.status === 'draft' && (
-                        <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); handleCalculate(p.id); }} disabled={calculatePayroll.isPending}>
+                        <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); handleCalculate(p.id, true); }} disabled={calculatePayroll.isPending}>
                           {calculatePayroll.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Calculator className="h-3.5 w-3.5" />}
                           <span className="ml-1 text-xs hidden sm:inline">Tính lương</span>
                         </Button>
