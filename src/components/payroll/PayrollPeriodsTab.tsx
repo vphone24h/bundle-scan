@@ -540,6 +540,12 @@ function PayrollDetailContent({ record, periodName }: { record: any; periodName?
                 {configSnapshot.salary_type && ` (${configSnapshot.salary_type === 'fixed' ? 'Cố định' : configSnapshot.salary_type === 'hourly' ? 'Theo giờ' : configSnapshot.salary_type === 'daily' ? 'Theo ngày' : 'Theo ca'})`}
               </p>
             )}
+            {configSnapshot.user_revenue > 0 && (
+              <p className="text-xs"><span className="text-muted-foreground">Doanh thu cá nhân:</span> <span className="font-medium text-blue-600">{formatNumber(configSnapshot.user_revenue)}đ</span> ({configSnapshot.sale_count || 0} đơn)</p>
+            )}
+            {configSnapshot.branch_revenue > 0 && (
+              <p className="text-xs"><span className="text-muted-foreground">Doanh thu chi nhánh:</span> <span className="font-medium">{formatNumber(configSnapshot.branch_revenue)}đ</span></p>
+            )}
           </div>
 
           {/* Attendance summary */}
@@ -676,7 +682,19 @@ function PayrollDetailContent({ record, periodName }: { record: any; periodName?
             </div>
           )}
 
-          {bonusDetails.length === 0 && allowanceDetails.length === 0 && holidayDetails.length === 0 && penaltyDetails.length === 0 && (
+          {(configSnapshot.overtime_details || []).length > 0 && (
+            <div>
+              <p className="text-xs font-semibold mb-1">⏰ Tăng ca</p>
+              {(configSnapshot.overtime_details || []).map((o: any, i: number) => (
+                <div key={i} className="flex justify-between text-xs py-0.5">
+                  <span className="text-muted-foreground">{o.name} {o.type === 'full_day' ? `(${o.count} ngày)` : `(${o.hours}h)`}</span>
+                  <span>+{formatNumber(o.amount)}đ</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {bonusDetails.length === 0 && allowanceDetails.length === 0 && holidayDetails.length === 0 && penaltyDetails.length === 0 && (configSnapshot.overtime_details || []).length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-4">Không có chi tiết bổ sung.</p>
           )}
         </TabsContent>
