@@ -26,6 +26,7 @@ export function useDetailedProfitReport(filters?: {
   endDate?: string;
   branchId?: string;
   categoryId?: string;
+  repairFilter?: string;
   search?: string;
 }) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
@@ -77,6 +78,8 @@ export function useDetailedProfitReport(filters?: {
               export_date,
               branch_id,
               customer_id,
+              is_repair,
+              total_amount,
               status,
               branches(name),
               customers(name)
@@ -93,13 +96,51 @@ export function useDetailedProfitReport(filters?: {
         if (filters?.categoryId) {
           q = q.eq('category_id', filters.categoryId);
         }
+        if (filters?.repairFilter === 'repair') {
+          q = q.eq('export_receipts.is_repair', true);
+        } else if (filters?.repairFilter === 'normal') {
+          q = q.or('export_receipts.is_repair.is.null,export_receipts.is_repair.eq.false');
+        }
         if (filters?.search) {
           q = q.or(`product_name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,imei.ilike.%${filters.search}%`);
         }
         return q.order('created_at', { ascending: false });
       };
 
-      const soldItems = await fetchAllRows<any>(() => buildSoldQuery());
+      const buildReceiptsQuery = () => {
+        let q = supabase
+          .from('export_receipts')
+          .select(`
+            id,
+            code,
+            total_amount,
+            export_date,
+            branch_id,
+            customer_id,
+            is_repair,
+            branches(name),
+            customers(name)
+          `)
+          .neq('status', 'cancelled')
+          .gte('export_date', startISO)
+          .lte('export_date', endISO);
+
+        if (filters?.branchId) {
+          q = q.eq('branch_id', filters.branchId);
+        }
+        if (filters?.repairFilter === 'repair') {
+          q = q.eq('is_repair', true);
+        } else if (filters?.repairFilter === 'normal') {
+          q = q.or('is_repair.is.null,is_repair.eq.false');
+        }
+
+        return q.order('export_date', { ascending: false });
+      };
+
+      const [soldItems, receipts] = await Promise.all([
+        fetchAllRows<any>(() => buildSoldQuery()),
+        filters?.categoryId ? Promise.resolve([]) : fetchAllRows<any>(() => buildReceiptsQuery()),
+      ]);
 
       // 2. Lấy TOÀN BỘ dữ liệu trả hàng từ export_returns (không giới hạn 1000 dòng)
       const buildReturnQuery = () => {
@@ -113,21 +154,28 @@ export function useDetailedProfitReport(filters?: {
             imei,
             import_price,
             sale_price,
+            quantity,
+            refund_amount,
             return_date,
             branch_id,
             customer_id,
             product_id,
             fee_type,
             branches(name),
-            customers(name)
+            customers(name),
+            export_receipts:export_returns_export_receipt_id_fkey(is_repair)
           `)
-          .eq('fee_type', 'none')
           .gte('return_date', startISO)
           .lte('return_date', endISO)
           .order('return_date', { ascending: false });
 
         if (filters?.branchId) {
           q = q.eq('branch_id', filters.branchId);
+        }
+        if (filters?.repairFilter === 'repair') {
+          q = q.eq('export_receipts.is_repair', true);
+        } else if (filters?.repairFilter === 'normal') {
+          q = q.or('export_receipts.is_repair.is.null,export_receipts.is_repair.eq.false');
         }
 
         if (filters?.search) {
@@ -235,6 +283,44 @@ export function useDetailedProfitReport(filters?: {
         results.push(group);
       });
 
+      if (!filters?.categoryId && receipts?.length) {
+        const receiptItemsMap = new Map<string, number>();
+        soldItems?.forEach((item: any) => {
+          const receiptId = item.receipt_id || item.export_receipts?.id;
+          if (!receiptId) return;
+
+          const qty = Number(item.quantity ?? 1) || 1;
+          const current = receiptItemsMap.get(receiptId) || 0;
+          receiptItemsMap.set(receiptId, current + Number(item.sale_price || 0) * qty);
+        });
+
+        receipts.forEach((receipt: any) => {
+          const receiptTotal = Number(receipt.total_amount || 0);
+          const itemsTotal = receiptItemsMap.get(receipt.id) || 0;
+          const diff = receiptTotal - itemsTotal;
+
+          if (diff <= 0 || receiptTotal <= 0) return;
+
+          results.push({
+            id: `service-${receipt.id}`,
+            productName: receipt.is_repair ? 'Phí sửa chữa/dịch vụ' : 'Phí dịch vụ khác',
+            sku: receipt.code || '',
+            imei: null,
+            branchId: receipt.branch_id,
+            branchName: (receipt.branches as any)?.name || 'N/A',
+            importPrice: 0,
+            salePrice: diff,
+            quantity: 0,
+            profit: diff,
+            saleDate: receipt.export_date,
+            status: 'sold',
+            customerId: receipt.customer_id,
+            customerName: (receipt.customers as any)?.name || null,
+            receiptCode: receipt.code || '',
+          });
+        });
+      }
+
       // 5. Xử lý dữ liệu trả hàng
       returnItems?.forEach((item: any) => {
         const productInfo = item.product_id ? productsMap[item.product_id] : null;
@@ -245,7 +331,7 @@ export function useDetailedProfitReport(filters?: {
         }
 
         const itemQty = Number(item.quantity ?? 1) || 1;
-        const lineSalePrice = Number(item.sale_price) * itemQty;
+        const lineSalePrice = Number(item.refund_amount || 0) || Number(item.sale_price) * itemQty;
         const lineImportPrice = (productInfo?.import_price || 0) * itemQty;
         const profit = -(lineSalePrice - lineImportPrice);
 
