@@ -1,15 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useCurrentTenant, usePlatformUser } from './useTenant';
+import { useCompany } from './useCompanyResolver';
 
 /**
- * Check if attendance system is enabled for the current tenant's company.
- * Returns { enabled, isLoading }
+ * Check if attendance system is enabled for the current company.
+ * Uses the global CompanyContext (resolved from hostname) — works for ALL accounts
+ * under the same domain, regardless of tenant/user role.
  */
 export function useAttendanceEnabled() {
-  const { data: tenant } = useCurrentTenant();
-  const { data: platformUser } = usePlatformUser();
-  const companyId = ((tenant as any)?.company_id as string | null | undefined) ?? platformUser?.company_id ?? null;
+  const { companyId, status } = useCompany();
 
   const { data, isLoading } = useQuery({
     queryKey: ['attendance-enabled', companyId],
@@ -23,9 +22,12 @@ export function useAttendanceEnabled() {
       if (error) return false;
       return data?.attendance_enabled ?? false;
     },
-    enabled: !!companyId,
+    enabled: !!companyId && status === 'resolved',
     staleTime: 60_000,
   });
 
-  return { enabled: !!data, isLoading };
+  // While company is still loading, treat as loading (don't flash menu items)
+  const resolving = status === 'loading' || isLoading;
+
+  return { enabled: !!data, isLoading: resolving };
 }
