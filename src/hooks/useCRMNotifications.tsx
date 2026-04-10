@@ -6,11 +6,11 @@
  // TYPES
  // =====================================================
  
- export interface CRMNotification {
-   id: string;
-   tenant_id: string;
-   user_id: string;
-   notification_type: 'care_reminder' | 'overdue_care' | 'new_customer' | 'kpi_update' | 'system';
+export interface CRMNotification {
+  id: string;
+  tenant_id: string;
+  user_id: string;
+  notification_type: 'care_reminder' | 'overdue_care' | 'new_customer' | 'kpi_update' | 'system' | 'checkout_reminder' | 'attendance_absent' | 'checkin_reminder' | 'attendance_late' | 'shift_reminder' | 'payslip_ready';
    title: string;
    message: string;
    reference_type: string | null;
