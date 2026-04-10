@@ -149,7 +149,7 @@ export default function UsersPage() {
   const [isRoleDescOpen, setIsRoleDescOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('users');
   const [attendanceSubTab, setAttendanceSubTab] = useState('dashboard');
-  const [payrollSubTab, setPayrollSubTab] = useState('templates');
+  
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['users-with-roles', currentTenant?.id, permissions?.role, permissions?.branchId],
