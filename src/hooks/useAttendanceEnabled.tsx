@@ -14,13 +14,13 @@ export function useAttendanceEnabled() {
     queryKey: ['attendance-enabled', companyId],
     queryFn: async () => {
       if (!companyId) return false;
-      const { data, error } = await supabase
-        .from('companies')
-        .select('attendance_enabled')
-        .eq('id', companyId)
-        .maybeSingle();
-      if (error) return false;
-      return data?.attendance_enabled ?? false;
+      const { data: enabled, error } = await supabase
+        .rpc('get_company_attendance_enabled', { _company_id: companyId });
+      if (error) {
+        console.warn('attendance check failed:', error.message);
+        return false;
+      }
+      return enabled ?? false;
     },
     enabled: !!companyId && status === 'resolved',
     staleTime: 60_000,
