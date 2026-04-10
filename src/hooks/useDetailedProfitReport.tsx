@@ -96,11 +96,6 @@ export function useDetailedProfitReport(filters?: {
         if (filters?.categoryId) {
           q = q.eq('category_id', filters.categoryId);
         }
-        if (filters?.repairFilter === 'repair') {
-          q = q.eq('export_receipts.is_repair', true);
-        } else if (filters?.repairFilter === 'normal') {
-          q = q.or('export_receipts.is_repair.is.null,export_receipts.is_repair.eq.false');
-        }
         if (filters?.search) {
           q = q.or(`product_name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,imei.ilike.%${filters.search}%`);
         }
@@ -128,12 +123,6 @@ export function useDetailedProfitReport(filters?: {
         if (filters?.branchId) {
           q = q.eq('branch_id', filters.branchId);
         }
-        if (filters?.repairFilter === 'repair') {
-          q = q.eq('is_repair', true);
-        } else if (filters?.repairFilter === 'normal') {
-          q = q.or('is_repair.is.null,is_repair.eq.false');
-        }
-
         return q.order('export_date', { ascending: false });
       };
 
@@ -172,12 +161,6 @@ export function useDetailedProfitReport(filters?: {
         if (filters?.branchId) {
           q = q.eq('branch_id', filters.branchId);
         }
-        if (filters?.repairFilter === 'repair') {
-          q = q.eq('export_receipts.is_repair', true);
-        } else if (filters?.repairFilter === 'normal') {
-          q = q.or('export_receipts.is_repair.is.null,export_receipts.is_repair.eq.false');
-        }
-
         if (filters?.search) {
           q = q.or(`product_name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,imei.ilike.%${filters.search}%`);
         }
@@ -226,6 +209,10 @@ export function useDetailedProfitReport(filters?: {
 
       soldItems?.forEach(item => {
         const receipt = item.export_receipts as any;
+        const isRepairReceipt = !!receipt?.is_repair;
+        if (filters?.repairFilter === 'repair' && !isRepairReceipt) return;
+        if (filters?.repairFilter === 'normal' && isRepairReceipt) return;
+
         const productInfo = item.product_id ? productsMap[item.product_id] : null;
         const itemQty = Number(item.quantity ?? 1) || 1;
         const unitImportPrice = productInfo?.import_price || 0;
@@ -295,6 +282,10 @@ export function useDetailedProfitReport(filters?: {
         });
 
         receipts.forEach((receipt: any) => {
+          const isRepairReceipt = !!receipt?.is_repair;
+          if (filters?.repairFilter === 'repair' && !isRepairReceipt) return;
+          if (filters?.repairFilter === 'normal' && isRepairReceipt) return;
+
           const receiptTotal = Number(receipt.total_amount || 0);
           const itemsTotal = receiptItemsMap.get(receipt.id) || 0;
           const diff = receiptTotal - itemsTotal;
@@ -324,6 +315,14 @@ export function useDetailedProfitReport(filters?: {
       // 5. Xử lý dữ liệu trả hàng
       returnItems?.forEach((item: any) => {
         const productInfo = item.product_id ? productsMap[item.product_id] : null;
+        const isRepairReceipt = !!item.export_receipts?.is_repair;
+
+        if (filters?.repairFilter === 'repair' && !isRepairReceipt) {
+          return;
+        }
+        if (filters?.repairFilter === 'normal' && isRepairReceipt) {
+          return;
+        }
 
         // Lọc theo danh mục nếu có filter
         if (filters?.categoryId && productInfo?.category_id !== filters.categoryId) {
