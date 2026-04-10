@@ -65,9 +65,10 @@ interface Props {
   templateId: string | null;
   tenantId?: string;
   onClose: () => void;
+  onSaved?: (templateId: string) => void;
 }
 
-export function SalaryTemplateEditor({ templateId, tenantId, onClose }: Props) {
+export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }: Props) {
   const { data: templates } = useSalaryTemplates();
   const createTemplate = useCreateSalaryTemplate();
   const updateTemplate = useUpdateSalaryTemplate();
@@ -76,27 +77,23 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose }: Props) {
 
   const existing = templates?.find(t => t.id === templateId);
 
-  // Base fields
   const [name, setName] = useState('');
   const [salaryType, setSalaryType] = useState('fixed');
   const [baseAmount, setBaseAmount] = useState('');
   const [description, setDescription] = useState('');
 
-  // Toggles
   const [bonusEnabled, setBonusEnabled] = useState(false);
   const [commissionEnabled, setCommissionEnabled] = useState(false);
   const [allowanceEnabled, setAllowanceEnabled] = useState(false);
   const [holidayEnabled, setHolidayEnabled] = useState(false);
   const [penaltyEnabled, setPenaltyEnabled] = useState(false);
 
-  // Sub-config arrays
   const [bonuses, setBonuses] = useState<BonusRow[]>([]);
   const [commissions, setCommissions] = useState<CommissionRow[]>([]);
   const [allowances, setAllowances] = useState<AllowanceRow[]>([]);
   const [holidays, setHolidays] = useState<HolidayRow[]>([]);
   const [penalties, setPenalties] = useState<PenaltyRow[]>([]);
 
-  // Load existing sub-configs
   const { data: exBonuses } = useTemplateBonuses(templateId || undefined);
   const { data: exCommissions } = useTemplateCommissions(templateId || undefined);
   const { data: exAllowances } = useTemplateAllowances(templateId || undefined);
@@ -126,30 +123,39 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose }: Props) {
   const handleSave = async () => {
     if (!name || !tenantId) return;
     const payload: any = {
-      name, salary_type: salaryType, base_amount: Number(baseAmount) || 0,
+      name,
+      salary_type: salaryType,
+      base_amount: Number(baseAmount) || 0,
       description: description || null,
-      bonus_enabled: bonusEnabled, commission_enabled: commissionEnabled,
-      allowance_enabled: allowanceEnabled, holiday_enabled: holidayEnabled, penalty_enabled: penaltyEnabled,
+      bonus_enabled: bonusEnabled,
+      commission_enabled: commissionEnabled,
+      allowance_enabled: allowanceEnabled,
+      holiday_enabled: holidayEnabled,
+      penalty_enabled: penaltyEnabled,
     };
 
     try {
       let id = templateId;
       if (templateId) {
-        await updateTemplate.mutateAsync({ id: templateId, ...payload });
+        const updated = await updateTemplate.mutateAsync({ id: templateId, ...payload });
+        id = updated.id;
       } else {
-        const result = await createTemplate.mutateAsync({ tenant_id: tenantId, ...payload });
-        id = result.id;
+        const created = await createTemplate.mutateAsync({ tenant_id: tenantId, ...payload });
+        id = created.id;
       }
 
       if (id) {
         await saveConfigs.mutateAsync({
-          templateId: id, tenantId,
+          templateId: id,
+          tenantId,
           bonuses: bonusEnabled ? bonuses : [],
           commissions: commissionEnabled ? commissions : [],
           allowances: allowanceEnabled ? allowances : [],
           holidays: holidayEnabled ? holidays : [],
           penalties: penaltyEnabled ? penalties : [],
         });
+
+        onSaved?.(id);
       }
 
       toast.success('Lưu mẫu lương thành công');
