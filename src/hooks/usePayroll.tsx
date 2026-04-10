@@ -3,12 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePlatformUser, useCurrentTenant } from './useTenant';
 import { toast } from 'sonner';
 
-// ============ Salary Templates ============
-export function useSalaryTemplates() {
+function useTenantId() {
   const { data: pu } = usePlatformUser();
   const { data: ct } = useCurrentTenant();
-  const tenantId = ct?.id || pu?.tenant_id;
+  return ct?.id || pu?.tenant_id;
+}
 
+// ============ Salary Templates ============
+export function useSalaryTemplates() {
+  const tenantId = useTenantId();
   return useQuery({
     queryKey: ['salary-templates', tenantId],
     queryFn: async () => {
@@ -28,7 +31,7 @@ export function useSalaryTemplates() {
 export function useCreateSalaryTemplate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (template: { tenant_id: string; name: string; salary_type: string; base_amount: number; bonus_amount?: number; allowance_amount?: number; commission_percent?: number; kpi_bonus_amount?: number; description?: string }) => {
+    mutationFn: async (template: any) => {
       const { data, error } = await supabase.from('salary_templates').insert([template]).select().single();
       if (error) throw error;
       return data;
@@ -41,7 +44,7 @@ export function useCreateSalaryTemplate() {
 export function useUpdateSalaryTemplate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; name?: string; salary_type?: string; base_amount?: number; bonus_amount?: number; allowance_amount?: number; commission_percent?: number; kpi_bonus_amount?: number; description?: string; is_active?: boolean }) => {
+    mutationFn: async ({ id, ...updates }: any) => {
       const { data, error } = await supabase.from('salary_templates').update(updates).eq('id', id).select().single();
       if (error) throw error;
       return data;
@@ -51,32 +54,128 @@ export function useUpdateSalaryTemplate() {
   });
 }
 
-// ============ Employee Salary Configs ============
-export function useEmployeeSalaryConfigs() {
-  const { data: pu } = usePlatformUser();
-  const { data: ct } = useCurrentTenant();
-  const tenantId = ct?.id || pu?.tenant_id;
-
+// ============ Template Sub-configs ============
+export function useTemplateBonuses(templateId?: string) {
   return useQuery({
-    queryKey: ['employee-salary-configs', tenantId],
+    queryKey: ['template-bonuses', templateId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('employee_salary_configs')
-        .select('*, salary_templates(name, salary_type, base_amount)')
-        .eq('tenant_id', tenantId!);
+        .from('salary_template_bonuses')
+        .select('*')
+        .eq('template_id', templateId!)
+        .order('display_order');
       if (error) throw error;
       return data;
     },
-    enabled: !!tenantId,
+    enabled: !!templateId,
   });
 }
 
-// ============ Commission Rules ============
-export function useCommissionRules() {
-  const { data: pu } = usePlatformUser();
-  const { data: ct } = useCurrentTenant();
-  const tenantId = ct?.id || pu?.tenant_id;
+export function useTemplateCommissions(templateId?: string) {
+  return useQuery({
+    queryKey: ['template-commissions', templateId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('salary_template_commissions')
+        .select('*')
+        .eq('template_id', templateId!)
+        .order('display_order');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!templateId,
+  });
+}
 
+export function useTemplateAllowances(templateId?: string) {
+  return useQuery({
+    queryKey: ['template-allowances', templateId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('salary_template_allowances')
+        .select('*')
+        .eq('template_id', templateId!)
+        .order('display_order');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!templateId,
+  });
+}
+
+export function useTemplateHolidays(templateId?: string) {
+  return useQuery({
+    queryKey: ['template-holidays', templateId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('salary_template_holidays')
+        .select('*')
+        .eq('template_id', templateId!)
+        .order('display_order');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!templateId,
+  });
+}
+
+export function useTemplatePenalties(templateId?: string) {
+  return useQuery({
+    queryKey: ['template-penalties', templateId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('salary_template_penalties')
+        .select('*')
+        .eq('template_id', templateId!)
+        .order('display_order');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!templateId,
+  });
+}
+
+// ============ Save all sub-configs ============
+export function useSaveTemplateConfigs() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ templateId, tenantId, bonuses, commissions, allowances, holidays, penalties }: {
+      templateId: string; tenantId: string;
+      bonuses: any[]; commissions: any[]; allowances: any[]; holidays: any[]; penalties: any[];
+    }) => {
+      // Delete existing and re-insert
+      await Promise.all([
+        supabase.from('salary_template_bonuses').delete().eq('template_id', templateId),
+        supabase.from('salary_template_commissions').delete().eq('template_id', templateId),
+        supabase.from('salary_template_allowances').delete().eq('template_id', templateId),
+        supabase.from('salary_template_holidays').delete().eq('template_id', templateId),
+        supabase.from('salary_template_penalties').delete().eq('template_id', templateId),
+      ]);
+
+      const inserts = [];
+      if (bonuses.length) inserts.push(supabase.from('salary_template_bonuses').insert(bonuses.map((b, i) => ({ ...b, template_id: templateId, tenant_id: tenantId, display_order: i }))));
+      if (commissions.length) inserts.push(supabase.from('salary_template_commissions').insert(commissions.map((c, i) => ({ ...c, template_id: templateId, tenant_id: tenantId, display_order: i }))));
+      if (allowances.length) inserts.push(supabase.from('salary_template_allowances').insert(allowances.map((a, i) => ({ ...a, template_id: templateId, tenant_id: tenantId, display_order: i }))));
+      if (holidays.length) inserts.push(supabase.from('salary_template_holidays').insert(holidays.map((h, i) => ({ ...h, template_id: templateId, tenant_id: tenantId, display_order: i }))));
+      if (penalties.length) inserts.push(supabase.from('salary_template_penalties').insert(penalties.map((p, i) => ({ ...p, template_id: templateId, tenant_id: tenantId, display_order: i }))));
+
+      const results = await Promise.all(inserts);
+      for (const r of results) if (r.error) throw r.error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['template-bonuses'] });
+      qc.invalidateQueries({ queryKey: ['template-commissions'] });
+      qc.invalidateQueries({ queryKey: ['template-allowances'] });
+      qc.invalidateQueries({ queryKey: ['template-holidays'] });
+      qc.invalidateQueries({ queryKey: ['template-penalties'] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ============ Commission Rules (legacy) ============
+export function useCommissionRules() {
+  const tenantId = useTenantId();
   return useQuery({
     queryKey: ['commission-rules', tenantId],
     queryFn: async () => {
@@ -96,7 +195,7 @@ export function useCommissionRules() {
 export function useCreateCommissionRule() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (rule: { tenant_id: string; name: string; rule_type: string; target_id?: string; target_name?: string; commission_type: string; commission_value: number; priority?: number }) => {
+    mutationFn: async (rule: any) => {
       const { data, error } = await supabase.from('commission_rules').insert([rule]).select().single();
       if (error) throw error;
       return data;
@@ -108,10 +207,7 @@ export function useCreateCommissionRule() {
 
 // ============ Payroll Periods ============
 export function usePayrollPeriods() {
-  const { data: pu } = usePlatformUser();
-  const { data: ct } = useCurrentTenant();
-  const tenantId = ct?.id || pu?.tenant_id;
-
+  const tenantId = useTenantId();
   return useQuery({
     queryKey: ['payroll-periods', tenantId],
     queryFn: async () => {
@@ -130,7 +226,7 @@ export function usePayrollPeriods() {
 export function useCreatePayrollPeriod() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (period: { tenant_id: string; name: string; period_type: string; start_date: string; end_date: string }) => {
+    mutationFn: async (period: any) => {
       const { data, error } = await supabase.from('payroll_periods').insert([period]).select().single();
       if (error) throw error;
       return data;
@@ -140,7 +236,7 @@ export function useCreatePayrollPeriod() {
   });
 }
 
-// ============ Calculate Payroll (Background) ============
+// ============ Calculate Payroll ============
 export function useCalculatePayroll() {
   const qc = useQueryClient();
   return useMutation({
@@ -163,10 +259,7 @@ export function useCalculatePayroll() {
 
 // ============ Payroll Records ============
 export function usePayrollRecords(periodId?: string) {
-  const { data: pu } = usePlatformUser();
-  const { data: ct } = useCurrentTenant();
-  const tenantId = ct?.id || pu?.tenant_id;
-
+  const tenantId = useTenantId();
   return useQuery({
     queryKey: ['payroll-records', tenantId, periodId],
     queryFn: async () => {
@@ -174,6 +267,51 @@ export function usePayrollRecords(periodId?: string) {
       if (periodId) q = q.eq('payroll_period_id', periodId);
       q = q.order('user_name');
       const { data, error } = await q;
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!tenantId,
+  });
+}
+
+// ============ Lock/Finalize Payroll Period ============
+export function useLockPayrollPeriod() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ periodId, status }: { periodId: string; status: string }) => {
+      const { error } = await supabase
+        .from('payroll_periods')
+        .update({ status })
+        .eq('id', periodId);
+      if (error) throw error;
+      // Lock all records
+      if (status === 'finalized') {
+        const { error: lockErr } = await supabase
+          .from('payroll_records')
+          .update({ status: 'finalized' })
+          .eq('payroll_period_id', periodId);
+        if (lockErr) throw lockErr;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payroll-periods'] });
+      qc.invalidateQueries({ queryKey: ['payroll-records'] });
+      toast.success('Cập nhật trạng thái kỳ lương thành công');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ============ Employee Salary Configs ============
+export function useEmployeeSalaryConfigs() {
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: ['employee-salary-configs', tenantId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('employee_salary_configs')
+        .select('*, salary_templates(name, salary_type, base_amount)')
+        .eq('tenant_id', tenantId!);
       if (error) throw error;
       return data;
     },
