@@ -1,196 +1,277 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Loader2, Eye } from 'lucide-react';
-import { usePayrollPeriods, useCreatePayrollPeriod, usePayrollRecords } from '@/hooks/usePayroll';
+import { Plus, Loader2, Calculator, Lock, FileSpreadsheet, Eye, ChevronRight } from 'lucide-react';
+import { usePayrollPeriods, useCreatePayrollPeriod, useCalculatePayroll, usePayrollRecords, useLockPayrollPeriod } from '@/hooks/usePayroll';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { formatNumber } from '@/lib/formatNumber';
 import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 
-const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
-  draft: { label: 'Nháp', variant: 'secondary' },
-  confirmed: { label: 'Đã chốt', variant: 'default' },
-  paid: { label: 'Đã trả', variant: 'outline' },
-  cancelled: { label: 'Hủy', variant: 'destructive' },
+const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+  draft: { label: 'Nháp', variant: 'outline' },
+  calculated: { label: 'Đã tính', variant: 'secondary' },
+  finalized: { label: 'Đã chốt', variant: 'default' },
 };
-
-const PERIOD_TYPES = [
-  { value: 'weekly', label: 'Tuần' },
-  { value: 'biweekly', label: '2 tuần' },
-  { value: 'monthly', label: 'Tháng' },
-];
 
 export function PayrollPeriodsTab() {
   const { data: periods, isLoading } = usePayrollPeriods();
   const createPeriod = useCreatePayrollPeriod();
+  const calculatePayroll = useCalculatePayroll();
+  const lockPeriod = useLockPayrollPeriod();
   const { data: pu } = usePlatformUser();
-  const [open, setOpen] = useState(false);
-  const [detailPeriodId, setDetailPeriodId] = useState<string | null>(null);
-  const { data: records } = usePayrollRecords(detailPeriodId || undefined);
 
-  const [name, setName] = useState('');
-  const [periodType, setPeriodType] = useState('monthly');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [periodName, setPeriodName] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
+  const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
+  const { data: records } = usePayrollRecords(selectedPeriodId || undefined);
+  const [detailRecord, setDetailRecord] = useState<any>(null);
+
   const handleCreate = () => {
-    if (!name || !startDate || !endDate || !pu?.tenant_id) return;
+    if (!periodName || !startDate || !endDate || !pu?.tenant_id) return;
     createPeriod.mutate({
-      tenant_id: pu.tenant_id,
-      name,
-      period_type: periodType,
-      start_date: startDate,
-      end_date: endDate,
+      tenant_id: pu.tenant_id, name: periodName, period_type: 'monthly',
+      start_date: startDate, end_date: endDate,
     }, {
-      onSuccess: () => { setOpen(false); setName(''); setStartDate(''); setEndDate(''); },
+      onSuccess: () => { setCreateOpen(false); setPeriodName(''); setStartDate(''); setEndDate(''); },
     });
   };
 
-  return (
-    <>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Kỳ lương</CardTitle>
-          <Button size="sm" onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1" />Tạo kỳ lương</Button>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-          ) : (
-            <>
-              <div className="hidden md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Kỳ lương</TableHead>
-                      <TableHead>Loại</TableHead>
-                      <TableHead>Thời gian</TableHead>
-                      <TableHead>Trạng thái</TableHead>
-                      <TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {periods?.map(p => {
-                      const st = STATUS_MAP[p.status] || { label: p.status, variant: 'outline' as const };
-                      return (
-                        <TableRow key={p.id}>
-                          <TableCell className="font-medium">{p.name}</TableCell>
-                          <TableCell>{PERIOD_TYPES.find(t => t.value === p.period_type)?.label}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {format(new Date(p.start_date), 'dd/MM/yyyy', { locale: vi })} - {format(new Date(p.end_date), 'dd/MM/yyyy', { locale: vi })}
-                          </TableCell>
-                          <TableCell><Badge variant={st.variant}>{st.label}</Badge></TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="sm" onClick={() => setDetailPeriodId(p.id)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                    {periods?.length === 0 && (
-                      <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Chưa có kỳ lương</TableCell></TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-              <div className="md:hidden space-y-2">
-                {periods?.map(p => {
-                  const st = STATUS_MAP[p.status] || { label: p.status, variant: 'outline' as const };
-                  return (
-                    <div key={p.id} className="border rounded-lg p-3 space-y-2" onClick={() => setDetailPeriodId(p.id)}>
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium text-sm">{p.name}</p>
-                        <Badge variant={st.variant} className="text-xs">{st.label}</Badge>
+  const handleCalculate = (periodId: string) => {
+    if (!pu?.tenant_id) return;
+    calculatePayroll.mutate({ period_id: periodId, tenant_id: pu.tenant_id });
+  };
+
+  const handleLock = (periodId: string) => {
+    if (!confirm('Chốt bảng lương? Sau khi chốt sẽ không thể chỉnh sửa.')) return;
+    lockPeriod.mutate({ periodId, status: 'finalized' });
+  };
+
+  const handleExportExcel = () => {
+    if (!records?.length) return;
+    const period = periods?.find(p => p.id === selectedPeriodId);
+    const ws = XLSX.utils.json_to_sheet(records.map(r => ({
+      'Nhân viên': r.user_name || r.user_id,
+      'Ngày công': r.work_days,
+      'Giờ công': r.work_hours,
+      'Lương chính': r.base_salary,
+      'Thưởng': r.bonus,
+      'Hoa hồng': r.total_commission,
+      'Phụ cấp': r.total_allowance,
+      'Phạt': (r as any).total_penalty || 0,
+      'Tạm ứng': (r as any).advance_deduction || 0,
+      'Khấu trừ': r.total_deduction,
+      'Thực nhận': r.net_salary,
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Bảng lương');
+    XLSX.writeFile(wb, `BangLuong_${period?.name || 'export'}.xlsx`);
+    toast.success('Đã xuất Excel');
+  };
+
+  if (!selectedPeriodId) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-base">Danh sách kỳ lương</h3>
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />Tạo kỳ lương
+          </Button>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        ) : periods?.length === 0 ? (
+          <Card><CardContent className="py-8 text-center text-muted-foreground text-sm">Chưa có kỳ lương.</CardContent></Card>
+        ) : (
+          <div className="grid gap-3">
+            {periods?.map(p => (
+              <Card key={p.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setSelectedPeriodId(p.id)}>
+                <CardContent className="py-3">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm">{p.name}</span>
+                        <Badge variant={STATUS_MAP[p.status]?.variant || 'outline'}>
+                          {STATUS_MAP[p.status]?.label || p.status}
+                        </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {format(new Date(p.start_date), 'dd/MM/yyyy')} - {format(new Date(p.end_date), 'dd/MM/yyyy')}
+                        {format(new Date(p.start_date), 'dd/MM/yyyy')} → {format(new Date(p.end_date), 'dd/MM/yyyy')}
                       </p>
                     </div>
-                  );
-                })}
-                {periods?.length === 0 && <p className="text-center py-8 text-muted-foreground text-sm">Chưa có kỳ lương</p>}
+                    <div className="flex items-center gap-2">
+                      {p.status === 'draft' && (
+                        <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); handleCalculate(p.id); }} disabled={calculatePayroll.isPending}>
+                          {calculatePayroll.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Calculator className="h-3.5 w-3.5" />}
+                          <span className="ml-1 text-xs hidden sm:inline">Tính lương</span>
+                        </Button>
+                      )}
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader><DialogTitle>Tạo kỳ lương</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Tên kỳ lương</Label>
+                <Input placeholder="VD: Tháng 03/2026" value={periodName} onChange={e => setPeriodName(e.target.value)} />
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Từ ngày</Label>
+                  <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Đến ngày</Label>
+                  <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCreateOpen(false)}>Hủy</Button>
+              <Button onClick={handleCreate} disabled={createPeriod.isPending || !periodName || !startDate || !endDate}>
+                {createPeriod.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Tạo
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
+  const period = periods?.find(p => p.id === selectedPeriodId);
+  const totalNetSalary = records?.reduce((s, r) => s + (r.net_salary || 0), 0) || 0;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setSelectedPeriodId(null)}>← Quay lại</Button>
+          <h3 className="font-semibold text-sm">{period?.name}</h3>
+          <Badge variant={STATUS_MAP[period?.status || 'draft']?.variant || 'outline'}>
+            {STATUS_MAP[period?.status || 'draft']?.label}
+          </Badge>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {period?.status === 'draft' && (
+            <Button size="sm" variant="outline" onClick={() => handleCalculate(selectedPeriodId)} disabled={calculatePayroll.isPending}>
+              <Calculator className="h-3.5 w-3.5 mr-1" />Tính lương
+            </Button>
+          )}
+          {period?.status === 'calculated' && (
+            <>
+              <Button size="sm" variant="outline" onClick={() => handleCalculate(selectedPeriodId)} disabled={calculatePayroll.isPending}>
+                <Calculator className="h-3.5 w-3.5 mr-1" />Tính lại
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => handleLock(selectedPeriodId)} disabled={lockPeriod.isPending}>
+                <Lock className="h-3.5 w-3.5 mr-1" />Chốt bảng lương
+              </Button>
             </>
           )}
+          <Button size="sm" variant="outline" onClick={handleExportExcel} disabled={!records?.length}>
+            <FileSpreadsheet className="h-3.5 w-3.5 mr-1" />Excel
+          </Button>
+        </div>
+      </div>
+
+      <Card>
+        <CardContent className="py-3 flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Tổng chi phí lương:</span>
+          <span className="font-bold text-primary text-lg">{formatNumber(totalNetSalary)}đ</span>
         </CardContent>
       </Card>
 
-      {/* Create dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Tạo kỳ lương</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Tên kỳ lương <span className="text-destructive">*</span></Label>
-              <Input placeholder="VD: Lương T6/2026" value={name} onChange={e => setName(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Loại</Label>
-              <Select value={periodType} onValueChange={setPeriodType}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{PERIOD_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Từ ngày</Label>
-                <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Đến ngày</Label>
-                <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Hủy</Button>
-            <Button onClick={handleCreate} disabled={createPeriod.isPending}>
-              {createPeriod.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Tạo
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {!records?.length ? (
+        <Card><CardContent className="py-8 text-center text-muted-foreground text-sm">
+          {period?.status === 'draft' ? 'Nhấn "Tính lương" để hệ thống tự động tính.' : 'Không có dữ liệu.'}
+        </CardContent></Card>
+      ) : (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Nhân viên</TableHead>
+                <TableHead className="text-xs text-right">Công</TableHead>
+                <TableHead className="text-xs text-right">Lương</TableHead>
+                <TableHead className="text-xs text-right">Thưởng</TableHead>
+                <TableHead className="text-xs text-right">HH</TableHead>
+                <TableHead className="text-xs text-right">PC</TableHead>
+                <TableHead className="text-xs text-right">Phạt</TableHead>
+                <TableHead className="text-xs text-right font-bold">Nhận</TableHead>
+                <TableHead className="w-8"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {records.map(r => (
+                <TableRow key={r.id}>
+                  <TableCell className="text-xs font-medium max-w-[100px] truncate">{r.user_name || r.user_id?.slice(0, 8)}</TableCell>
+                  <TableCell className="text-xs text-right">{r.work_days}</TableCell>
+                  <TableCell className="text-xs text-right">{formatNumber(r.base_salary)}</TableCell>
+                  <TableCell className="text-xs text-right">{formatNumber(r.bonus || 0)}</TableCell>
+                  <TableCell className="text-xs text-right">{formatNumber(r.total_commission || 0)}</TableCell>
+                  <TableCell className="text-xs text-right">{formatNumber(r.total_allowance || 0)}</TableCell>
+                  <TableCell className="text-xs text-right text-destructive">{formatNumber((r as any).total_penalty || r.total_deduction || 0)}</TableCell>
+                  <TableCell className="text-xs text-right font-bold text-primary">{formatNumber(r.net_salary)}</TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setDetailRecord(r)}>
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
-      {/* Detail dialog */}
-      <Dialog open={!!detailPeriodId} onOpenChange={() => setDetailPeriodId(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Chi tiết kỳ lương</DialogTitle></DialogHeader>
-          <div className="max-h-[60vh] overflow-y-auto">
-            {records?.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground text-sm">Chưa có dữ liệu lương. Hãy tính lương từ dữ liệu chấm công.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nhân viên</TableHead>
-                    <TableHead className="text-right">Lương CB</TableHead>
-                    <TableHead className="text-right">Hoa hồng</TableHead>
-                    <TableHead className="text-right">Thực nhận</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {records?.map(r => (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-medium">{r.user_name || 'N/A'}</TableCell>
-                      <TableCell className="text-right">{formatNumber(r.base_salary)}đ</TableCell>
-                      <TableCell className="text-right">{formatNumber(r.total_commission)}đ</TableCell>
-                      <TableCell className="text-right font-semibold">{formatNumber(r.net_salary)}đ</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
+      {/* Detail Dialog */}
+      <Dialog open={!!detailRecord} onOpenChange={() => setDetailRecord(null)}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle className="text-sm">Chi tiết lương - {detailRecord?.user_name}</DialogTitle></DialogHeader>
+          {detailRecord && (
+            <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-2 gap-2 border-b pb-2">
+                <div><span className="text-muted-foreground">Ngày công:</span> <strong>{detailRecord.work_days}</strong></div>
+                <div><span className="text-muted-foreground">Giờ công:</span> <strong>{detailRecord.work_hours}h</strong></div>
+                <div><span className="text-muted-foreground">Đi trễ:</span> <strong>{detailRecord.late_count} lần</strong></div>
+                <div><span className="text-muted-foreground">Tăng ca:</span> <strong>{detailRecord.overtime_hours}h</strong></div>
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between"><span className="text-muted-foreground">+ Lương chính</span><span>{formatNumber(detailRecord.base_salary)}đ</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">+ Thưởng</span><span>{formatNumber(detailRecord.bonus || 0)}đ</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">+ Hoa hồng</span><span>{formatNumber(detailRecord.total_commission || 0)}đ</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">+ Phụ cấp</span><span>{formatNumber(detailRecord.total_allowance || 0)}đ</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">+ Ngày lễ</span><span>{formatNumber((detailRecord as any).holiday_bonus || 0)}đ</span></div>
+                <div className="flex justify-between text-destructive"><span>- Phạt</span><span>{formatNumber((detailRecord as any).total_penalty || 0)}đ</span></div>
+                <div className="flex justify-between text-destructive"><span>- Tạm ứng</span><span>{formatNumber((detailRecord as any).advance_deduction || 0)}đ</span></div>
+                <div className="flex justify-between text-destructive"><span>- Khấu trừ khác</span><span>{formatNumber(detailRecord.total_deduction || 0)}đ</span></div>
+                <div className="flex justify-between border-t pt-2 font-bold text-base">
+                  <span>Thực nhận</span>
+                  <span className="text-primary">{formatNumber(detailRecord.net_salary)}đ</span>
+                </div>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
