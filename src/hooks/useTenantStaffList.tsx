@@ -20,35 +20,38 @@ export function useTenantStaffList() {
     queryKey: ['tenant-staff-list', tenantId],
     enabled: !!tenantId,
     queryFn: async () => {
-      const { data: platformUsers, error: platformUsersError } = await supabase
-        .from('platform_users')
-        .select('user_id, email')
-        .eq('tenant_id', tenantId!);
-
-      if (platformUsersError) throw platformUsersError;
-
-      const scopedUsers = platformUsers || [];
-      const userIds = [...new Set(scopedUsers.map((item) => item.user_id))];
-
-      if (!userIds.length) return [] as TenantStaffListItem[];
-
-      const [{ data: roles, error: rolesError }, { data: profiles, error: profilesError }] = await Promise.all([
+      const [{ data: platformUsers, error: platformUsersError }, { data: roles, error: rolesError }] = await Promise.all([
+        supabase
+          .from('platform_users')
+          .select('user_id, email')
+          .eq('tenant_id', tenantId!),
         supabase
           .from('user_roles')
           .select('user_id, user_role, branch_id, tenant_id')
-          .in('user_id', userIds)
-          .or(`tenant_id.eq.${tenantId},tenant_id.is.null`),
-        supabase
-          .from('profiles')
-          .select('user_id, display_name, phone')
-          .in('user_id', userIds),
+          .eq('tenant_id', tenantId!),
       ]);
 
+      if (platformUsersError) throw platformUsersError;
       if (rolesError) throw rolesError;
+
+      const scopedUsers = platformUsers || [];
+      const scopedRoles = roles || [];
+      const userIds = [...new Set([
+        ...scopedUsers.map((item) => item.user_id),
+        ...scopedRoles.map((item) => item.user_id),
+      ])];
+
+      if (!userIds.length) return [] as TenantStaffListItem[];
+
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, phone')
+        .in('user_id', userIds);
+
       if (profilesError) throw profilesError;
 
-      const preferredRoles = new Map<string, (typeof roles)[number]>();
-      for (const role of roles || []) {
+      const preferredRoles = new Map<string, (typeof scopedRoles)[number]>();
+      for (const role of scopedRoles) {
         const existing = preferredRoles.get(role.user_id);
         if (!existing || (!existing.tenant_id && role.tenant_id)) {
           preferredRoles.set(role.user_id, role);

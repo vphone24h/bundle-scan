@@ -73,30 +73,37 @@ export function StepCreateShift({ shifts, selectedShiftId, onSelect }: Props) {
       toast.error('Vui lòng nhập tên ca');
       return;
     }
+
+    const normalizedBreakMinutes = Number.isFinite(form.break_minutes) ? Math.max(0, Number(form.break_minutes)) : 0;
+    const payload = {
+      name: form.name.trim(),
+      start_time: form.start_time,
+      end_time: form.end_time,
+      break_minutes: normalizedBreakMinutes,
+    };
+
+    if (!payload.name) {
+      toast.error('Vui lòng nhập tên ca');
+      return;
+    }
+
     setSaving(true);
     try {
       if (editId) {
-        const { error } = await supabase.from('work_shifts').update({
-          name: form.name,
-          start_time: form.start_time,
-          end_time: form.end_time,
-          break_minutes: form.break_minutes,
-        }).eq('id', editId);
+        const { error } = await supabase.from('work_shifts').update(payload).eq('id', editId);
         if (error) throw error;
         toast.success('Đã cập nhật ca làm!');
       } else {
         const { data, error } = await supabase.from('work_shifts').insert({
           tenant_id: tenantId,
-          name: form.name,
-          start_time: form.start_time,
-          end_time: form.end_time,
-          break_minutes: form.break_minutes,
+          ...payload,
         }).select('id').single();
         if (error) throw error;
         toast.success('Đã tạo ca làm!');
         if (data?.id) onSelect(data.id);
       }
       qc.invalidateQueries({ queryKey: ['work-shifts'] });
+      qc.invalidateQueries({ queryKey: ['work-shifts', tenantId] });
       setShowForm(false);
       setEditId(null);
       setForm(emptyForm);
