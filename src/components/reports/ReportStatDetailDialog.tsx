@@ -281,7 +281,7 @@ function NetProfitSummary({ stats, salesDetails, returnDetails, expenseDetails, 
 function DetailContent({ type, salesDetails, returnDetails, expenseDetails, incomeDetails, stats, customSources }: Omit<Props, 'open' | 'onOpenChange'> & { customSources?: Array<{ id: string; name: string }> }) {
   switch (type) {
     case 'sales':
-      return <SalesTable items={salesDetails} />;
+      return <SalesTable items={salesDetails} statsTotal={stats?.totalSalesRevenue} />;
     case 'returns':
       return <ReturnsTable items={returnDetails} />;
     case 'netRevenue':
