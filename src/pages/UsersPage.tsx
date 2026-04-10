@@ -41,9 +41,6 @@ import { CorrectionRequestsTab } from '@/components/attendance/CorrectionRequest
 import { PosCheckInTab } from '@/components/attendance/PosCheckInTab';
 // Payroll tabs
 import { SalaryTemplatesTab } from '@/components/payroll/SalaryTemplatesTab';
-import { CommissionRulesTab } from '@/components/payroll/CommissionRulesTab';
-import { PayrollPeriodsTab } from '@/components/payroll/PayrollPeriodsTab';
-import { SalaryAdvancesTab } from '@/components/payroll/SalaryAdvancesTab';
 
 interface UserWithRole {
   id: string;
