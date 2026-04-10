@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CheckCircle2, XCircle, Clock, FileEdit } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, FileEdit, Send, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,6 +17,12 @@ const statusMap: Record<string, { label: string; class: string }> = {
   pending: { label: 'Chờ duyệt', class: 'bg-yellow-100 text-yellow-800' },
   approved: { label: 'Đã duyệt', class: 'bg-green-100 text-green-800' },
   rejected: { label: 'Từ chối', class: 'bg-red-100 text-red-800' },
+};
+
+const typeLabels: Record<string, { label: string; icon: typeof FileEdit }> = {
+  correction: { label: 'Sửa công', icon: FileEdit },
+  remote_checkin: { label: 'Check-in từ xa', icon: Send },
+  remote_checkout: { label: 'Check-out từ xa', icon: MapPin },
 };
 
 export function CorrectionRequestsTab() {
@@ -54,7 +60,8 @@ export function CorrectionRequestsTab() {
   });
 
   const reviewMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status, request }: { id: string; status: string; request?: any }) => {
+      // Update the request status
       const { error } = await supabase
         .from('attendance_correction_requests')
         .update({
@@ -65,10 +72,89 @@ export function CorrectionRequestsTab() {
         })
         .eq('id', id);
       if (error) throw error;
+
+      // If approving a remote check-in, create the attendance record
+      if (status === 'approved' && request?.request_type === 'remote_checkin' && request.requested_check_in) {
+        const checkInTime = new Date(request.requested_check_in);
+        
+        // Determine late status
+        let recordStatus = 'on_time';
+        let lateMinutes = 0;
+        
+        // Try to find the user's shift for that day
+        const dayOfWeek = checkInTime.getDay();
+        const { data: shift } = await supabase
+          .from('shift_assignments')
+          .select('*, work_shifts(start_time, late_threshold_minutes)')
+          .eq('user_id', request.user_id)
+          .eq('tenant_id', request.tenant_id)
+          .eq('is_active', true)
+          .or(`specific_date.eq.${request.request_date},and(assignment_type.eq.fixed,day_of_week.eq.${dayOfWeek})`)
+          .limit(1)
+          .maybeSingle();
+
+        if (shift?.work_shifts) {
+          const ws = shift.work_shifts as any;
+          const [h, m] = ws.start_time.split(':').map(Number);
+          const shiftStart = new Date(checkInTime);
+          shiftStart.setHours(h, m, 0, 0);
+          const threshold = (ws.late_threshold_minutes || 15) * 60 * 1000;
+          const diff = checkInTime.getTime() - shiftStart.getTime();
+          if (diff > threshold) {
+            recordStatus = 'late';
+            lateMinutes = Math.round(diff / 60000);
+          }
+        }
+
+        const { error: insertError } = await supabase.from('attendance_records').insert([{
+          tenant_id: request.tenant_id,
+          user_id: request.user_id,
+          date: request.request_date,
+          shift_id: shift?.shift_id || null,
+          check_in_time: request.requested_check_in,
+          check_in_method: 'remote_approved',
+          status: recordStatus,
+          late_minutes: lateMinutes,
+          note: `✅ Check-in từ xa được duyệt bởi admin. Lý do: ${request.reason}`,
+        }]);
+        if (insertError) throw insertError;
+      }
+
+      // If approving a remote check-out, update the attendance record
+      if (status === 'approved' && request?.request_type === 'remote_checkout' && request.requested_check_out) {
+        // Find today's attendance record for this user
+        const { data: record } = await supabase
+          .from('attendance_records')
+          .select('*')
+          .eq('user_id', request.user_id)
+          .eq('date', request.request_date)
+          .maybeSingle();
+
+        if (record && !record.check_out_time) {
+          const checkOutTime = new Date(request.requested_check_out);
+          const checkInTime = new Date(record.check_in_time);
+          const totalMinutes = Math.round((checkOutTime.getTime() - checkInTime.getTime()) / 60000);
+          
+          const { error: updateError } = await supabase.from('attendance_records').update({
+            check_out_time: request.requested_check_out,
+            check_out_method: 'remote_approved',
+            total_work_minutes: totalMinutes,
+            note: (record.note ? record.note + ' | ' : '') + `✅ Check-out từ xa được duyệt bởi admin.`,
+          }).eq('id', record.id);
+          if (updateError) throw updateError;
+        }
+      }
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['correction-requests'] });
-      toast.success(vars.status === 'approved' ? 'Đã duyệt yêu cầu sửa công' : 'Đã từ chối yêu cầu');
+      qc.invalidateQueries({ queryKey: ['attendance-records'] });
+      qc.invalidateQueries({ queryKey: ['my-attendance-today'] });
+      const isRemote = vars.request?.request_type?.startsWith('remote_');
+      toast.success(
+        vars.status === 'approved'
+          ? isRemote ? 'Đã duyệt yêu cầu chấm công từ xa' : 'Đã duyệt yêu cầu sửa công'
+          : 'Đã từ chối yêu cầu'
+      );
       setReviewingId(null);
       setReviewNote('');
     },
@@ -78,10 +164,12 @@ export function CorrectionRequestsTab() {
   const pendingRequests = requests?.filter(r => r.status === 'pending') || [];
   const otherRequests = requests?.filter(r => r.status !== 'pending') || [];
 
+  const getTypeInfo = (type: string) => typeLabels[type] || typeLabels.correction;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold">Yêu cầu sửa công</h3>
+        <h3 className="text-base font-semibold">Yêu cầu sửa công & chấm công từ xa</h3>
         {pendingRequests.length > 0 && (
           <Badge variant="destructive" className="text-xs">{pendingRequests.length} chờ duyệt</Badge>
         )}
@@ -90,7 +178,7 @@ export function CorrectionRequestsTab() {
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">Đang tải...</div>
       ) : !requests?.length ? (
-        <div className="text-center py-8 text-muted-foreground">Chưa có yêu cầu sửa công</div>
+        <div className="text-center py-8 text-muted-foreground">Chưa có yêu cầu nào</div>
       ) : (
         <div className="space-y-4">
           {/* Pending */}
@@ -100,44 +188,58 @@ export function CorrectionRequestsTab() {
                 <CardTitle className="text-sm text-yellow-700">Chờ duyệt ({pendingRequests.length})</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {pendingRequests.map(r => (
-                  <div key={r.id} className="border rounded-lg p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">{profiles?.[r.user_id] || r.user_id.slice(0, 8)}</span>
-                      <span className="text-xs text-muted-foreground">{format(new Date(r.created_at), 'HH:mm dd/MM')}</span>
-                    </div>
-                    <p className="text-xs"><span className="text-muted-foreground">Ngày:</span> {format(new Date(r.request_date), 'dd/MM/yyyy')}</p>
-                    <div className="flex gap-4 text-xs">
-                      {r.requested_check_in && <span>Check-in: {format(new Date(r.requested_check_in), 'HH:mm')}</span>}
-                      {r.requested_check_out && <span>Check-out: {format(new Date(r.requested_check_out), 'HH:mm')}</span>}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Lý do: {r.reason}</p>
-                    
-                    {isAdmin && (
-                      <div className="flex gap-2 pt-1">
-                        <Button size="sm" variant="outline" className="gap-1 text-xs h-7 text-green-700" onClick={() => reviewMutation.mutate({ id: r.id, status: 'approved' })}>
-                          <CheckCircle2 className="h-3 w-3" /> Duyệt
-                        </Button>
-                        <Dialog open={reviewingId === r.id} onOpenChange={open => { if (!open) setReviewingId(null); }}>
-                          <DialogTrigger asChild>
-                            <Button size="sm" variant="outline" className="gap-1 text-xs h-7 text-destructive" onClick={() => setReviewingId(r.id)}>
-                              <XCircle className="h-3 w-3" /> Từ chối
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-sm">
-                            <DialogHeader><DialogTitle>Từ chối yêu cầu sửa công</DialogTitle></DialogHeader>
-                            <Textarea placeholder="Lý do từ chối..." value={reviewNote} onChange={e => setReviewNote(e.target.value)} />
-                            <DialogFooter>
-                              <Button variant="destructive" size="sm" onClick={() => reviewMutation.mutate({ id: r.id, status: 'rejected' })} disabled={!reviewNote.trim()}>
-                                Xác nhận từ chối
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
+                {pendingRequests.map(r => {
+                  const typeInfo = getTypeInfo(r.request_type);
+                  const isRemote = r.request_type.startsWith('remote_');
+                  return (
+                    <div key={r.id} className={`border rounded-lg p-3 space-y-2 ${isRemote ? 'border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-900/10' : ''}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{profiles?.[r.user_id] || r.user_id.slice(0, 8)}</span>
+                          <Badge variant="outline" className={`text-[10px] ${isRemote ? 'border-blue-300 text-blue-700' : ''}`}>
+                            {typeInfo.label}
+                          </Badge>
+                        </div>
+                        <span className="text-xs text-muted-foreground">{format(new Date(r.created_at), 'HH:mm dd/MM')}</span>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      <p className="text-xs"><span className="text-muted-foreground">Ngày:</span> {format(new Date(r.request_date), 'dd/MM/yyyy')}</p>
+                      <div className="flex gap-4 text-xs">
+                        {r.requested_check_in && <span>Check-in: {format(new Date(r.requested_check_in), 'HH:mm')}</span>}
+                        {r.requested_check_out && <span>Check-out: {format(new Date(r.requested_check_out), 'HH:mm')}</span>}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Lý do: {r.reason}</p>
+                      
+                      {isAdmin && (
+                        <div className="flex gap-2 pt-1">
+                          <Button
+                            size="sm" variant="outline"
+                            className="gap-1 text-xs h-7 text-green-700"
+                            onClick={() => reviewMutation.mutate({ id: r.id, status: 'approved', request: r })}
+                            disabled={reviewMutation.isPending}
+                          >
+                            <CheckCircle2 className="h-3 w-3" /> Duyệt
+                          </Button>
+                          <Dialog open={reviewingId === r.id} onOpenChange={open => { if (!open) setReviewingId(null); }}>
+                            <DialogTrigger asChild>
+                              <Button size="sm" variant="outline" className="gap-1 text-xs h-7 text-destructive" onClick={() => setReviewingId(r.id)}>
+                                <XCircle className="h-3 w-3" /> Từ chối
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-sm">
+                              <DialogHeader><DialogTitle>Từ chối yêu cầu</DialogTitle></DialogHeader>
+                              <Textarea placeholder="Lý do từ chối..." value={reviewNote} onChange={e => setReviewNote(e.target.value)} />
+                              <DialogFooter>
+                                <Button variant="destructive" size="sm" onClick={() => reviewMutation.mutate({ id: r.id, status: 'rejected', request: r })} disabled={!reviewNote.trim()}>
+                                  Xác nhận từ chối
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </CardContent>
             </Card>
           )}
@@ -152,6 +254,7 @@ export function CorrectionRequestsTab() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Nhân viên</TableHead>
+                        <TableHead>Loại</TableHead>
                         <TableHead>Ngày</TableHead>
                         <TableHead>Lý do</TableHead>
                         <TableHead>Trạng thái</TableHead>
@@ -161,9 +264,11 @@ export function CorrectionRequestsTab() {
                     <TableBody>
                       {otherRequests.map(r => {
                         const st = statusMap[r.status] || statusMap.pending;
+                        const typeInfo = getTypeInfo(r.request_type);
                         return (
                           <TableRow key={r.id}>
                             <TableCell className="font-medium text-sm">{profiles?.[r.user_id] || r.user_id.slice(0, 8)}</TableCell>
+                            <TableCell><Badge variant="outline" className="text-[10px]">{typeInfo.label}</Badge></TableCell>
                             <TableCell className="text-sm">{format(new Date(r.request_date), 'dd/MM/yyyy')}</TableCell>
                             <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">{r.reason}</TableCell>
                             <TableCell><Badge className={`text-[10px] ${st.class}`}>{st.label}</Badge></TableCell>
@@ -177,10 +282,14 @@ export function CorrectionRequestsTab() {
                 <div className="md:hidden space-y-2">
                   {otherRequests.map(r => {
                     const st = statusMap[r.status] || statusMap.pending;
+                    const typeInfo = getTypeInfo(r.request_type);
                     return (
                       <div key={r.id} className="border rounded-lg p-2.5 space-y-1">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{profiles?.[r.user_id] || r.user_id.slice(0, 8)}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-medium">{profiles?.[r.user_id] || r.user_id.slice(0, 8)}</span>
+                            <Badge variant="outline" className="text-[10px]">{typeInfo.label}</Badge>
+                          </div>
                           <Badge className={`text-[10px] ${st.class}`}>{st.label}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">{format(new Date(r.request_date), 'dd/MM/yyyy')} - {r.reason}</p>
