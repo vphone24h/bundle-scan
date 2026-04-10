@@ -50,18 +50,6 @@ export function useReportDetails(filters?: {
         return q;
       };
 
-      // Also fetch receipts to find ones without items (services, repairs, etc.)
-      const buildReceiptsQuery = () => {
-        let q = supabase
-          .from('export_receipts')
-          .select('id, code, total_amount, export_date, branch_id, is_repair')
-          .neq('status', 'cancelled')
-          .gte('export_date', startISO)
-          .lte('export_date', endISO)
-          .order('export_date', { ascending: false });
-        if (effectiveBranchId) q = q.eq('branch_id', effectiveBranchId);
-        return q;
-      };
 
       const buildReturnDetailQuery = () => {
         let q = supabase
