@@ -9141,6 +9141,10 @@ export type Database = {
         Args: { p_tenant_id: string }
         Returns: Json
       }
+      get_company_attendance_enabled: {
+        Args: { _company_id: string }
+        Returns: boolean
+      }
       get_current_tenant: { Args: never; Returns: string }
       get_customer_debt_summary: {
         Args: { _branch_id?: string; _show_settled?: boolean }
