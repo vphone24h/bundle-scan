@@ -61,10 +61,10 @@ export function PayrollPeriodsTab() {
     const period = periods?.find(p => p.id === selectedPeriodId);
     const ws = XLSX.utils.json_to_sheet(records.map(r => ({
       'Nhân viên': r.user_name || r.user_id,
-      'Ngày công': r.work_days,
-      'Giờ công': r.work_hours,
+      'Ngày công': r.total_work_days,
+      'Giờ công': r.total_work_hours,
       'Lương chính': r.base_salary,
-      'Thưởng': r.bonus,
+      'Thưởng': r.total_bonus,
       'Hoa hồng': r.total_commission,
       'Phụ cấp': r.total_allowance,
       'Phạt': (r as any).total_penalty || 0,
@@ -223,9 +223,9 @@ export function PayrollPeriodsTab() {
               {records.map(r => (
                 <TableRow key={r.id}>
                   <TableCell className="text-xs font-medium max-w-[100px] truncate">{r.user_name || r.user_id?.slice(0, 8)}</TableCell>
-                  <TableCell className="text-xs text-right">{r.work_days}</TableCell>
+                  <TableCell className="text-xs text-right">{r.total_work_days}</TableCell>
                   <TableCell className="text-xs text-right">{formatNumber(r.base_salary)}</TableCell>
-                  <TableCell className="text-xs text-right">{formatNumber(r.bonus || 0)}</TableCell>
+                  <TableCell className="text-xs text-right">{formatNumber(r.total_bonus || 0)}</TableCell>
                   <TableCell className="text-xs text-right">{formatNumber(r.total_commission || 0)}</TableCell>
                   <TableCell className="text-xs text-right">{formatNumber(r.total_allowance || 0)}</TableCell>
                   <TableCell className="text-xs text-right text-destructive">{formatNumber((r as any).total_penalty || r.total_deduction || 0)}</TableCell>
@@ -249,14 +249,14 @@ export function PayrollPeriodsTab() {
           {detailRecord && (
             <div className="space-y-2 text-sm">
               <div className="grid grid-cols-2 gap-2 border-b pb-2">
-                <div><span className="text-muted-foreground">Ngày công:</span> <strong>{detailRecord.work_days}</strong></div>
-                <div><span className="text-muted-foreground">Giờ công:</span> <strong>{detailRecord.work_hours}h</strong></div>
+                <div><span className="text-muted-foreground">Ngày công:</span> <strong>{detailRecord.total_work_days}</strong></div>
+                <div><span className="text-muted-foreground">Giờ công:</span> <strong>{detailRecord.total_work_hours}h</strong></div>
                 <div><span className="text-muted-foreground">Đi trễ:</span> <strong>{detailRecord.late_count} lần</strong></div>
                 <div><span className="text-muted-foreground">Tăng ca:</span> <strong>{detailRecord.overtime_hours}h</strong></div>
               </div>
               <div className="space-y-1">
                 <div className="flex justify-between"><span className="text-muted-foreground">+ Lương chính</span><span>{formatNumber(detailRecord.base_salary)}đ</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">+ Thưởng</span><span>{formatNumber(detailRecord.bonus || 0)}đ</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">+ Thưởng</span><span>{formatNumber(detailRecord.total_bonus || 0)}đ</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">+ Hoa hồng</span><span>{formatNumber(detailRecord.total_commission || 0)}đ</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">+ Phụ cấp</span><span>{formatNumber(detailRecord.total_allowance || 0)}đ</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">+ Ngày lễ</span><span>{formatNumber((detailRecord as any).holiday_bonus || 0)}đ</span></div>
