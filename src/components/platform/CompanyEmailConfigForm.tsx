@@ -14,12 +14,8 @@ export function CompanyEmailConfigForm() {
   const { companyId, isCompanyAdmin } = useAdminCompanyId();
   const queryClient = useQueryClient();
 
-  const [smtpHost, setSmtpHost] = useState('smtp.gmail.com');
-  const [smtpPort, setSmtpPort] = useState(465);
   const [smtpUser, setSmtpUser] = useState('');
   const [smtpPass, setSmtpPass] = useState('');
-  const [fromEmail, setFromEmail] = useState('');
-  const [fromName, setFromName] = useState('');
   const [isEnabled, setIsEnabled] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [testing, setTesting] = useState(false);
