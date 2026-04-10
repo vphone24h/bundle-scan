@@ -4,6 +4,7 @@ import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
 import { getLocalDateString, getLocalDateRangeISO } from '@/lib/vietnamTime';
 import { fetchAllRows } from '@/lib/fetchAllRows';
+import { doesReturnAffectRevenue } from '@/lib/reportReturnRules';
 import type { SaleDetailItem, ReturnDetailItem, CashBookDetailItem } from '@/components/reports/ReportStatDetailDialog';
 
 /**
@@ -145,21 +146,28 @@ export function useReportDetails(filters?: {
         salesDetails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       }
 
-      const returnDetails: ReturnDetailItem[] = (returnsRaw || []).map((item: any) => {
-        const qty = Number(item.quantity ?? 1) || 1;
-        const refundAmount = Number(item.refund_amount || 0);
-        const salePrice = refundAmount > 0 ? refundAmount : Number(item.sale_price) * qty;
-        const importPrice = Number(item.products?.import_price || item.import_price || 0) * qty;
-        return {
-          date: item.return_date,
-          productName: item.product_name || 'Sản phẩm',
-          imei: item.imei || null,
-          salePrice,
-          importPrice,
-          profit: salePrice - importPrice,
-          branchName: '',
-        };
-      });
+      const returnDetails: ReturnDetailItem[] = (returnsRaw || [])
+        .filter((item: any) => doesReturnAffectRevenue({
+          feeType: item.fee_type,
+          refundAmount: item.refund_amount,
+          salePrice: item.sale_price,
+          quantity: item.quantity,
+        }))
+        .map((item: any) => {
+          const qty = Number(item.quantity ?? 1) || 1;
+          const refundAmount = Number(item.refund_amount || 0);
+          const salePrice = refundAmount > 0 ? refundAmount : Number(item.sale_price) * qty;
+          const importPrice = Number(item.products?.import_price || item.import_price || 0) * qty;
+          return {
+            date: item.return_date,
+            productName: item.product_name || 'Sản phẩm',
+            imei: item.imei || null,
+            salePrice,
+            importPrice,
+            profit: salePrice - importPrice,
+            branchName: '',
+          };
+        });
 
       const expenseDetails: CashBookDetailItem[] = [];
       const incomeDetails: CashBookDetailItem[] = [];

@@ -169,10 +169,13 @@ export function RevenueProfitReport() {
       totalSalesRevenue,
       totalReturnRevenue,
       netRevenue: totalSalesRevenue - totalReturnRevenue,
+      businessProfit: Number(detailedProfitData.totals.totalProfit || 0),
+      netProfit: Number(detailedProfitData.totals.totalProfit || 0) + Number(rawStats?.otherIncome || 0) - Number(rawStats?.totalExpenses || 0),
+      returnCount: returnedItems.length,
       productsSold,
       productsReturned,
     };
-  }, [detailedProfitData]);
+  }, [detailedProfitData, rawStats?.otherIncome, rawStats?.totalExpenses]);
 
   const stats = rawStats
     ? {
