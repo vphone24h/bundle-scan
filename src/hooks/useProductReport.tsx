@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
-// fetchAllRows removed - using server-side limited queries
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 export interface ProductReportItem {
   productName: string;
@@ -75,8 +75,54 @@ export function useProductReport(filters?: {
         return q;
       };
 
-      const { data: soldItems, error: soldError } = await buildSoldQuery().limit(5000);
-      if (soldError) throw soldError;
+      const buildStockQuery = () => {
+        let q = supabase
+          .from('products')
+          .select('name, sku, quantity, import_price, total_import_cost, branch_id, category_id, import_date, status, branches(name), categories(name)')
+          .in('status', ['in_stock', 'warranty']);
+
+        if (effectiveBranchId) {
+          q = q.eq('branch_id', effectiveBranchId);
+        }
+
+        return q;
+      };
+
+      const buildSoldDeletedQuery = () => {
+        let q = supabase
+          .from('products')
+          .select('name, sku, import_price, branch_id, category_id, import_date, status, branches(name), categories(name)')
+          .in('status', ['sold', 'deleted']);
+
+        if (effectiveBranchId) {
+          q = q.eq('branch_id', effectiveBranchId);
+        }
+
+        return q;
+      };
+
+      const buildMonthlySoldQuery = () => {
+        let q = supabase
+          .from('export_receipt_items')
+          .select('product_name, sku, export_receipts!inner(branch_id, export_date, status)')
+          .eq('status', 'sold')
+          .neq('export_receipts.status', 'cancelled')
+          .gte('export_receipts.export_date', monthStartISO)
+          .lte('export_receipts.export_date', monthEndISO);
+
+        if (effectiveBranchId) {
+          q = q.eq('export_receipts.branch_id', effectiveBranchId);
+        }
+
+        return q;
+      };
+
+      const [soldItems, stockItems, soldDeletedItems, monthlySoldItems] = await Promise.all([
+        fetchAllRows<any>(() => buildSoldQuery()),
+        fetchAllRows<any>(() => buildStockQuery()),
+        fetchAllRows<any>(() => buildSoldDeletedQuery()),
+        fetchAllRows<any>(() => buildMonthlySoldQuery()),
+      ]);
 
       // Get product import prices by product_id
       const productIds = Array.from(new Set(soldItems?.map(i => i.product_id).filter(Boolean) || []));
@@ -110,48 +156,6 @@ export function useProductReport(filters?: {
           });
         }
       }
-
-      // Get current stock (in_stock + warranty)
-      let stockQuery = supabase
-        .from('products')
-        .select('name, sku, quantity, import_price, total_import_cost, branch_id, category_id, import_date, status, branches(name), categories(name)')
-        .in('status', ['in_stock', 'warranty'])
-        .limit(10000);
-
-      if (effectiveBranchId) {
-        stockQuery = stockQuery.eq('branch_id', effectiveBranchId);
-      }
-
-      const { data: stockItems } = await stockQuery;
-
-      // Get sold/deleted products to find "out of stock" items (products that existed but now have 0 in stock)
-      let soldDeletedQuery = supabase
-        .from('products')
-        .select('name, sku, import_price, branch_id, category_id, import_date, status, branches(name), categories(name)')
-        .in('status', ['sold', 'deleted'])
-        .limit(10000);
-
-      if (effectiveBranchId) {
-        soldDeletedQuery = soldDeletedQuery.eq('branch_id', effectiveBranchId);
-      }
-
-      const { data: soldDeletedItems } = await soldDeletedQuery;
-
-      // Get monthly sold counts for reorder suggestions
-      let monthlySoldQuery = supabase
-        .from('export_receipt_items')
-        .select('product_name, sku, export_receipts!inner(branch_id, export_date, status)')
-        .eq('status', 'sold')
-        .neq('export_receipts.status', 'cancelled')
-        .gte('export_receipts.export_date', monthStartISO)
-        .lte('export_receipts.export_date', monthEndISO)
-        .limit(10000);
-
-      if (effectiveBranchId) {
-        monthlySoldQuery = monthlySoldQuery.eq('export_receipts.branch_id', effectiveBranchId);
-      }
-
-      const { data: monthlySoldItems } = await monthlySoldQuery;
 
       // Build monthly sold count map: name||sku||branchId -> count
       const monthlySoldMap: Record<string, number> = {};

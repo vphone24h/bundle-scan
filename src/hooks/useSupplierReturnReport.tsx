@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 export interface SupplierReturnItem {
   supplierId: string;
@@ -50,18 +51,21 @@ export function useSupplierReturnReport(filters?: {
       const startISO = new Date(startDate + 'T00:00:00').toISOString();
       const endISO = new Date(endDate + 'T23:59:59.999').toISOString();
 
-      let query = supabase
-        .from('import_returns')
-        .select('id, code, return_date, product_id, supplier_id, branch_id, product_name, sku, imei, import_price, total_refund_amount, note, suppliers(id, name, phone)')
-        .gte('return_date', startISO)
-        .lte('return_date', endISO);
+      const buildQuery = () => {
+        let query = supabase
+          .from('import_returns')
+          .select('id, code, return_date, product_id, supplier_id, branch_id, product_name, sku, imei, import_price, total_refund_amount, note, suppliers(id, name, phone)')
+          .gte('return_date', startISO)
+          .lte('return_date', endISO);
 
-      if (effectiveBranchId) {
-        query = query.eq('branch_id', effectiveBranchId);
-      }
+        if (effectiveBranchId) {
+          query = query.eq('branch_id', effectiveBranchId);
+        }
 
-      const { data: returns, error } = await query;
-      if (error) throw error;
+        return query;
+      };
+
+      const returns = await fetchAllRows<any>(() => buildQuery());
 
       // Aggregate by supplier
       const supplierMap: Record<string, SupplierReturnItem> = {};

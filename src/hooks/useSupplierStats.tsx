@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 export interface SupplierStat {
   supplierId: string;
@@ -21,23 +22,26 @@ export function useSupplierStats(filters?: {
   return useQuery({
     queryKey: ['supplier-stats', user?.id, filters?.startDate, filters?.endDate, filters?.branchId],
     queryFn: async () => {
-      let query = supabase
-        .from('import_receipts')
-        .select('id, supplier_id, total_amount, debt_amount, import_date, branch_id, suppliers(id, name)')
-        .eq('status', 'completed');
+      const buildQuery = () => {
+        let query = supabase
+          .from('import_receipts')
+          .select('id, supplier_id, total_amount, debt_amount, import_date, branch_id, suppliers(id, name)')
+          .eq('status', 'completed');
 
-      if (filters?.startDate) {
-        query = query.gte('import_date', filters.startDate);
-      }
-      if (filters?.endDate) {
-        query = query.lte('import_date', filters.endDate);
-      }
-      if (filters?.branchId) {
-        query = query.eq('branch_id', filters.branchId);
-      }
+        if (filters?.startDate) {
+          query = query.gte('import_date', filters.startDate);
+        }
+        if (filters?.endDate) {
+          query = query.lte('import_date', filters.endDate);
+        }
+        if (filters?.branchId) {
+          query = query.eq('branch_id', filters.branchId);
+        }
 
-      const { data, error } = await query;
-      if (error) throw error;
+        return query;
+      };
+
+      const data = await fetchAllRows<any>(() => buildQuery());
 
       // Aggregate by supplier
       const supplierMap = new Map<string, SupplierStat>();

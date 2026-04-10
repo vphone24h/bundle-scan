@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
-// fetchAllRows removed - using server-side limited queries
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 export interface SupplierReportItem {
   supplierId: string;
@@ -39,27 +39,30 @@ export function useSupplierReport(filters?: {
       const startISO = new Date(startDate + 'T00:00:00').toISOString();
       const endISO = new Date(endDate + 'T23:59:59.999').toISOString();
 
-      // Get import receipts
-      let query = supabase
-        .from('import_receipts')
-        .select('id, supplier_id, total_amount, paid_amount, debt_amount, import_date, branch_id, status, suppliers(id, name, phone)')
-        .neq('status', 'cancelled')
-        .gte('import_date', startISO)
-        .lte('import_date', endISO);
+      const buildReceiptsQuery = () => {
+        let query = supabase
+          .from('import_receipts')
+          .select('id, supplier_id, total_amount, paid_amount, debt_amount, import_date, branch_id, status, suppliers(id, name, phone)')
+          .neq('status', 'cancelled')
+          .gte('import_date', startISO)
+          .lte('import_date', endISO);
 
-      if (effectiveBranchId) {
-        query = query.eq('branch_id', effectiveBranchId);
-      }
+        if (effectiveBranchId) {
+          query = query.eq('branch_id', effectiveBranchId);
+        }
 
-      const { data: receipts, error } = await query;
-      if (error) throw error;
+        return query;
+      };
 
-      // Get product counts per supplier
-      const { data: productCounts } = await supabase
+      const buildProductCountsQuery = () => supabase
         .from('products')
         .select('supplier_id, id')
-        .not('supplier_id', 'is', null)
-        .limit(5000);
+        .not('supplier_id', 'is', null);
+
+      const [receipts, productCounts] = await Promise.all([
+        fetchAllRows<any>(() => buildReceiptsQuery()),
+        fetchAllRows<any>(() => buildProductCountsQuery()),
+      ]);
 
       const productCountMap: Record<string, number> = {};
       productCounts?.forEach(p => {
