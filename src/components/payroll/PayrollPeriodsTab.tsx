@@ -59,9 +59,17 @@ export function PayrollPeriodsTab() {
     });
   };
 
-  const handleCalculate = (periodId: string) => {
+  const handleCalculate = (periodId: string, navigateAfter = false) => {
     if (!pu?.tenant_id) return;
-    calculatePayroll.mutate({ period_id: periodId, tenant_id: pu.tenant_id });
+    calculatePayroll.mutate({ period_id: periodId, tenant_id: pu.tenant_id }, {
+      onSuccess: () => {
+        if (navigateAfter) {
+          setSelectedPeriodId(periodId);
+          setCurrentPage(1);
+          setSearchQuery('');
+        }
+      },
+    });
   };
 
   const handleLock = (periodId: string) => {
