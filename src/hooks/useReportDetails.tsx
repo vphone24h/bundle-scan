@@ -35,7 +35,7 @@ export function useReportDetails(filters?: {
           .select(`
             product_name, sku, sale_price, quantity, status, product_id, category_id,
             categories(name),
-            export_receipts!inner(export_date, branch_id, status),
+            export_receipts!inner(id, export_date, branch_id, status, total_amount),
             products(import_price)
           `)
           .in('status', ['sold', 'returned'])
@@ -48,11 +48,23 @@ export function useReportDetails(filters?: {
         return q;
       };
 
+      // Also fetch receipts to find ones without items (services, repairs, etc.)
+      const buildReceiptsQuery = () => {
+        let q = supabase
+          .from('export_receipts')
+          .select('id, code, total_amount, export_date, branch_id, is_repair')
+          .neq('status', 'cancelled')
+          .gte('export_date', startISO)
+          .lte('export_date', endISO)
+          .order('export_date', { ascending: false });
+        if (effectiveBranchId) q = q.eq('branch_id', effectiveBranchId);
+        return q;
+      };
+
       const buildReturnDetailQuery = () => {
         let q = supabase
           .from('export_returns')
-          .select('product_name, imei, import_price, sale_price, quantity, return_date, branch_id, fee_type, product_id, products(import_price)')
-          .eq('fee_type', 'none')
+          .select('product_name, imei, import_price, sale_price, quantity, return_date, branch_id, refund_amount, fee_type, product_id, products(import_price)')
           .gte('return_date', startISO)
           .lte('return_date', endISO)
           .order('return_date', { ascending: false });
@@ -72,12 +84,14 @@ export function useReportDetails(filters?: {
         return q;
       };
 
-      const [salesRaw, returnsRaw, cashRaw] = await Promise.all([
+      const [salesRaw, receiptsRaw, returnsRaw, cashRaw] = await Promise.all([
         fetchAllRows<any>(() => buildSalesDetailQuery()),
+        filters?.categoryId ? Promise.resolve([]) : fetchAllRows<any>(() => buildReceiptsQuery()),
         fetchAllRows<any>(() => buildReturnDetailQuery()),
         fetchAllRows<any>(() => buildCashDetailQuery()),
       ]);
 
+      // Build sales details from items
       const salesDetails: SaleDetailItem[] = (salesRaw || []).map((item: any) => {
         const qty = Number(item.quantity ?? 1) || 1;
         const salePrice = Number(item.sale_price) * qty;
@@ -94,9 +108,47 @@ export function useReportDetails(filters?: {
         };
       });
 
+      // Find receipts that have no items or have extra amount beyond items
+      if (!filters?.categoryId && receiptsRaw && receiptsRaw.length > 0) {
+        // Group items by receipt id to find receipts without items
+        const receiptItemsMap = new Map<string, number>();
+        (salesRaw || []).forEach((item: any) => {
+          const receiptId = item.export_receipts?.id;
+          if (receiptId) {
+            const qty = Number(item.quantity ?? 1) || 1;
+            const current = receiptItemsMap.get(receiptId) || 0;
+            receiptItemsMap.set(receiptId, current + Number(item.sale_price) * qty);
+          }
+        });
+
+        // Add entries for receipts with unaccounted amounts
+        (receiptsRaw || []).forEach((receipt: any) => {
+          const receiptTotal = Number(receipt.total_amount || 0);
+          const itemsTotal = receiptItemsMap.get(receipt.id) || 0;
+          const diff = receiptTotal - itemsTotal;
+
+          if (diff > 0 && receiptTotal > 0) {
+            salesDetails.push({
+              date: receipt.export_date || '',
+              productName: receipt.is_repair ? `Phí sửa chữa/dịch vụ` : `Phí dịch vụ khác`,
+              sku: receipt.code || '',
+              salePrice: diff,
+              importPrice: 0,
+              profit: diff,
+              branchName: '',
+              categoryName: receipt.is_repair ? 'Sửa chữa' : 'Dịch vụ',
+            });
+          }
+        });
+
+        // Re-sort by date
+        salesDetails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      }
+
       const returnDetails: ReturnDetailItem[] = (returnsRaw || []).map((item: any) => {
         const qty = Number(item.quantity ?? 1) || 1;
-        const salePrice = Number(item.sale_price) * qty;
+        const refundAmount = Number(item.refund_amount || 0);
+        const salePrice = refundAmount > 0 ? refundAmount : Number(item.sale_price) * qty;
         const importPrice = Number(item.products?.import_price || item.import_price || 0) * qty;
         return {
           date: item.return_date,
@@ -128,6 +180,6 @@ export function useReportDetails(filters?: {
     },
     enabled: enabled && !!tenant?.id,
     refetchOnWindowFocus: false,
-    staleTime: 2 * 60 * 1000, // cache 2 minutes
+    staleTime: 2 * 60 * 1000,
   });
 }
