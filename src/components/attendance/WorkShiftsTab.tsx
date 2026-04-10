@@ -8,9 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Pencil, Trash2, Clock, MapPin } from 'lucide-react';
 import { useWorkShifts, useCreateWorkShift, useUpdateWorkShift, useDeleteWorkShift } from '@/hooks/useAttendance';
-import { usePlatformUser } from '@/hooks/useTenant';
+import { useCurrentTenant, usePlatformUser } from '@/hooks/useTenant';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 interface ShiftForm {
   name: string;
@@ -46,6 +47,7 @@ const defaultForm: ShiftForm = {
 
 export function WorkShiftsTab() {
   const { data: shifts, isLoading } = useWorkShifts();
+  const { data: currentTenant } = useCurrentTenant();
   const { data: pu } = usePlatformUser();
   const createShift = useCreateWorkShift();
   const updateShift = useUpdateWorkShift();
@@ -53,6 +55,7 @@ export function WorkShiftsTab() {
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<ShiftForm>(defaultForm);
+  const tenantId = currentTenant?.id || pu?.tenant_id;
 
   const handleOpen = (shift?: any) => {
     if (shift) {
@@ -81,7 +84,13 @@ export function WorkShiftsTab() {
 
   const handleSave = async () => {
     if (!form.name.trim()) return;
-    const payload = { ...form, tenant_id: pu?.tenant_id };
+
+    if (!tenantId) {
+      toast.error('Không xác định được cửa hàng để lưu ca làm');
+      return;
+    }
+
+    const payload = { ...form, tenant_id: tenantId };
     if (editId) {
       await updateShift.mutateAsync({ id: editId, ...form });
     } else {

@@ -3,9 +3,10 @@ import App from "./App.tsx";
 import "./index.css";
 import "./i18n";
 
-const APP_RUNTIME_VERSION = '2026-04-10-attendance-fix';
+const APP_RUNTIME_VERSION = '2026-04-10-attendance-fix-v2';
 const APP_RUNTIME_VERSION_KEY = 'vkho_app_runtime_version';
 const PERSISTED_QUERY_CACHE_KEY = 'vkho_query_cache_v1';
+const CACHE_PREFIXES_TO_CLEAR = ['tenant_resolver_cache_v1:', 'company_resolver_cache_v1:'];
 
 async function syncAppRuntimeVersion() {
   if (typeof window === 'undefined') return;
@@ -15,6 +16,13 @@ async function syncAppRuntimeVersion() {
 
   window.localStorage.setItem(APP_RUNTIME_VERSION_KEY, APP_RUNTIME_VERSION);
   window.localStorage.removeItem(PERSISTED_QUERY_CACHE_KEY);
+
+   for (let i = window.localStorage.length - 1; i >= 0; i -= 1) {
+    const key = window.localStorage.key(i);
+    if (key && CACHE_PREFIXES_TO_CLEAR.some((prefix) => key.startsWith(prefix))) {
+      window.localStorage.removeItem(key);
+    }
+  }
 
   if ('serviceWorker' in navigator) {
     const registrations = await navigator.serviceWorker.getRegistrations();
