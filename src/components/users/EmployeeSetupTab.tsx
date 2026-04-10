@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,10 +14,12 @@ import { cn } from '@/lib/utils';
 import { useCurrentTenant, usePlatformUser } from '@/hooks/useTenant';
 import { useWorkShifts } from '@/hooks/useAttendance';
 import { useSalaryTemplates } from '@/hooks/usePayroll';
+import { useTenantStaffList } from '@/hooks/useTenantStaffList';
 import { StepCreateShift } from './steps/StepCreateShift';
 import { StepSchedule } from './steps/StepSchedule';
 import { StepSalary } from './steps/StepSalary';
 import { StepAttendanceSetup, type AttendanceSetupData } from './steps/StepAttendanceSetup';
+import { buildRecurringShiftAssignments } from '@/lib/attendanceSchedule';
 import { toast } from 'sonner';
 import type { ScheduleData, SalaryData } from './CreateEmployeeStepper';
 
@@ -67,6 +69,7 @@ export function EmployeeSetupTab() {
   const qc = useQueryClient();
   const { data: shifts } = useWorkShifts();
   const { data: salaryTemplates } = useSalaryTemplates();
+  const { data: staffList = [], isLoading: staffLoading } = useTenantStaffList();
 
   const [search, setSearch] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeSetup | null>(null);
@@ -82,55 +85,75 @@ export function EmployeeSetupTab() {
   });
   const [saving, setSaving] = useState(false);
 
-  const { data: employees, isLoading } = useQuery({
-    queryKey: ['employee-setup', tenantId, search],
+  const { data: employeeSetupData, isLoading: setupLoading } = useQuery({
+    queryKey: ['employee-setup-configs', tenantId],
     queryFn: async () => {
-      let rolesQ = supabase.from('user_roles').select('user_id, user_role').eq('tenant_id', tenantId!);
-      const { data: roles } = await rolesQ;
-      if (!roles?.length) return [];
-
-      const userIds = roles.map(r => r.user_id);
-
-      const [profilesRes, platformRes, shiftsRes, salaryRes] = await Promise.all([
-        supabase.from('profiles').select('user_id, display_name, phone').in('user_id', userIds),
-        supabase.from('platform_users').select('user_id, email').eq('tenant_id', tenantId!).in('user_id', userIds),
-        supabase.from('shift_assignments').select('user_id, shift_id').eq('tenant_id', tenantId!).in('user_id', userIds),
-        supabase.from('employee_salary_configs').select('user_id, salary_template_id, custom_base_amount').eq('tenant_id', tenantId!).in('user_id', userIds),
+      const [shiftsRes, salaryRes] = await Promise.all([
+        supabase
+          .from('shift_assignments')
+          .select('user_id, shift_id')
+          .eq('tenant_id', tenantId!)
+          .eq('is_active', true),
+        supabase
+          .from('employee_salary_configs')
+          .select('user_id, salary_template_id, custom_base_amount')
+          .eq('tenant_id', tenantId!)
+          .eq('is_active', true),
       ]);
 
-      const profileMap = new Map(profilesRes.data?.map(p => [p.user_id, p]) || []);
-      const emailMap = new Map(platformRes.data?.map(p => [p.user_id, p.email]) || []);
-      const shiftMap = new Map(shiftsRes.data?.map(s => [s.user_id, s.shift_id]) || []);
-      const salaryMap = new Map(salaryRes.data?.map(s => [s.user_id, s]) || []);
+      if (shiftsRes.error) throw shiftsRes.error;
+      if (salaryRes.error) throw salaryRes.error;
 
-      let result: EmployeeSetup[] = roles.map(r => {
-        const p = profileMap.get(r.user_id);
-        const hasShift = shiftMap.has(r.user_id);
-        const hasSalary = salaryMap.has(r.user_id);
-        return {
-          userId: r.user_id,
-          displayName: p?.display_name || 'Chưa cập nhật',
-          email: emailMap.get(r.user_id) || null,
-          phone: p?.phone || null,
-          role: r.user_role,
-          hasShift,
-          hasSchedule: hasShift,
-          hasSalary,
-          hasAttendance: hasShift && hasSalary, // consider setup done when core config exists
-          shiftId: shiftMap.get(r.user_id) || undefined,
-          salaryConfig: salaryMap.get(r.user_id) || undefined,
-        };
-      });
-
-      if (search) {
-        const s = search.toLowerCase();
-        result = result.filter(e => e.displayName.toLowerCase().includes(s) || e.email?.toLowerCase().includes(s) || e.phone?.includes(s));
-      }
-
-      return result;
+      return {
+        shiftAssignments: shiftsRes.data || [],
+        salaryConfigs: salaryRes.data || [],
+      };
     },
     enabled: !!tenantId,
   });
+
+  const employees = useMemo(() => {
+    const shiftMap = new Map<string, string>();
+    for (const assignment of employeeSetupData?.shiftAssignments || []) {
+      if (!shiftMap.has(assignment.user_id)) {
+        shiftMap.set(assignment.user_id, assignment.shift_id);
+      }
+    }
+
+    const salaryMap = new Map((employeeSetupData?.salaryConfigs || []).map((item) => [item.user_id, item]));
+
+    let result: EmployeeSetup[] = staffList.map((staff) => {
+      const hasShift = shiftMap.has(staff.user_id);
+      const hasSalary = salaryMap.has(staff.user_id);
+
+      return {
+        userId: staff.user_id,
+        displayName: staff.display_name || 'Chưa cập nhật',
+        email: staff.email,
+        phone: staff.phone,
+        role: staff.user_role || 'staff',
+        hasShift,
+        hasSchedule: hasShift,
+        hasSalary,
+        hasAttendance: hasShift && hasSalary,
+        shiftId: shiftMap.get(staff.user_id) || undefined,
+        salaryConfig: salaryMap.get(staff.user_id) || undefined,
+      };
+    });
+
+    if (search) {
+      const keyword = search.toLowerCase();
+      result = result.filter((employee) =>
+        employee.displayName.toLowerCase().includes(keyword) ||
+        employee.email?.toLowerCase().includes(keyword) ||
+        employee.phone?.includes(search)
+      );
+    }
+
+    return result;
+  }, [employeeSetupData, search, staffList]);
+
+  const isLoading = staffLoading || setupLoading;
 
   const selectEmployee = (emp: EmployeeSetup) => {
     setSelectedEmployee(emp);
@@ -146,25 +169,31 @@ export function EmployeeSetupTab() {
     if (!selectedEmployee || !tenantId) return;
     setSaving(true);
     try {
-      if (activeStep === 1 && selectedShiftId) {
-        // Delete existing then insert to avoid unique constraint issues
-        await supabase.from('shift_assignments')
+      if (activeStep === 1) {
+        toast.success(selectedShiftId ? 'Đã chọn ca làm!' : 'Đã lưu bước tạo ca!');
+      } else if (activeStep === 2) {
+        const inserts = buildRecurringShiftAssignments({
+          tenantId,
+          userId: selectedEmployee.userId,
+          selectedShiftId,
+          scheduleData,
+        });
+
+        if (!inserts.length) {
+          throw new Error('Vui lòng chọn ít nhất một ca để xếp lịch');
+        }
+
+        const { error: deleteError } = await supabase
+          .from('shift_assignments')
           .delete()
           .eq('tenant_id', tenantId)
           .eq('user_id', selectedEmployee.userId);
-        
-        const { error } = await supabase.from('shift_assignments').insert({
-          tenant_id: tenantId,
-          user_id: selectedEmployee.userId,
-          shift_id: selectedShiftId,
-          assignment_type: scheduleData.type === 'fixed' ? 'fixed' : 'daily',
-        });
+
+        if (deleteError) throw deleteError;
+
+        const { error } = await supabase.from('shift_assignments').insert(inserts);
         if (error) throw error;
-        toast.success('Đã lưu ca làm!');
-      } else if (activeStep === 2) {
-        if (selectedShiftId) {
-          toast.success('Đã lưu lịch trình!');
-        }
+        toast.success('Đã lưu lịch trình!');
       } else if (activeStep === 3) {
         if (salaryData.templateId || salaryData.customBaseAmount) {
           const { error } = await supabase.from('employee_salary_configs').upsert({

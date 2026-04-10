@@ -1,5 +1,6 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, type ReactNode } from "react";
 import { startGlobalInteractionWatcher } from "@/lib/dialogInteraction";
+import { useAttendanceEnabled } from "@/hooks/useAttendanceEnabled";
 
 // Start global watcher to auto-recover from stuck pointer-events
 startGlobalInteractionWatcher();
@@ -67,6 +68,14 @@ const PayrollPage = lazy(() => import("./pages/PayrollPage"));
 const MyAttendancePage = lazy(() => import("./pages/MyAttendancePage"));
 
 const NotFound = lazy(() => import("./pages/NotFound"));
+
+function AttendanceEnabledRoute({ children }: { children: ReactNode }) {
+  const { enabled, isLoading } = useAttendanceEnabled();
+
+  if (isLoading) return null;
+
+  return enabled ? <>{children}</> : <Navigate to="/" replace />;
+}
 
 // Only preload admin pages when user is logged in (not on store landing / CTV pages)
 function preloadAdminPages() {
@@ -247,8 +256,8 @@ const App = () => (
                 <Route path="/repair/list" element={<GuardedRoute><RepairListPage /></GuardedRoute>} />
                 <Route path="/social" element={<GuardedRoute><SocialPage /></GuardedRoute>} />
                 <Route path="/attendance" element={<Navigate to="/users" replace />} />
-                <Route path="/checkin" element={<ProtectedRoute><CheckInPage /></ProtectedRoute>} />
-                <Route path="/my-attendance" element={<ProtectedRoute><MyAttendancePage /></ProtectedRoute>} />
+                <Route path="/checkin" element={<ProtectedRoute><AttendanceEnabledRoute><CheckInPage /></AttendanceEnabledRoute></ProtectedRoute>} />
+                <Route path="/my-attendance" element={<ProtectedRoute><AttendanceEnabledRoute><MyAttendancePage /></AttendanceEnabledRoute></ProtectedRoute>} />
                 <Route path="/payroll" element={<Navigate to="/users" replace />} />
                 {/* Platform Admin route - also guarded */}
                 <Route path="/platform-admin" element={<GuardedRoute><PlatformAdminPage /></GuardedRoute>} />

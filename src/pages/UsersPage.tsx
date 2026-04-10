@@ -231,6 +231,12 @@ export default function UsersPage() {
 
   const isSuperAdmin = permissions?.role === 'super_admin';
 
+  useEffect(() => {
+    if (!attendanceEnabled && ['attendance', 'payroll', 'setup'].includes(activeTab)) {
+      setActiveTab('users');
+    }
+  }, [activeTab, attendanceEnabled]);
+
   const canEditUser = (user: UserWithRole) => {
     if (user.user_role === 'super_admin') return false;
     if (isSuperAdmin) return true;

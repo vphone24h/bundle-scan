@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Clock, Check, Plus, X, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { useCurrentTenant } from '@/hooks/useTenant';
+import { useCurrentTenant, usePlatformUser } from '@/hooks/useTenant';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -30,6 +30,8 @@ const emptyForm = { name: '', start_time: '08:00', end_time: '17:00', break_minu
 
 export function StepCreateShift({ shifts, selectedShiftId, onSelect }: Props) {
   const { data: currentTenant } = useCurrentTenant();
+  const { data: platformUser } = usePlatformUser();
+  const tenantId = currentTenant?.id || platformUser?.tenant_id;
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -67,7 +69,7 @@ export function StepCreateShift({ shifts, selectedShiftId, onSelect }: Props) {
   };
 
   const handleSave = async () => {
-    if (!form.name || !currentTenant?.id) {
+    if (!form.name || !tenantId) {
       toast.error('Vui lòng nhập tên ca');
       return;
     }
@@ -84,7 +86,7 @@ export function StepCreateShift({ shifts, selectedShiftId, onSelect }: Props) {
         toast.success('Đã cập nhật ca làm!');
       } else {
         const { data, error } = await supabase.from('work_shifts').insert({
-          tenant_id: currentTenant.id,
+          tenant_id: tenantId,
           name: form.name,
           start_time: form.start_time,
           end_time: form.end_time,
