@@ -2,13 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useAdminCompanyId } from './useAdminCompanyId';
-import { useTenantResolver } from './useTenantResolver';
 
 export interface Tenant {
   id: string;
   name: string;
   subdomain: string;
-  company_id: string | null;
   owner_id: string;
   status: 'trial' | 'active' | 'expired' | 'locked';
   trial_start_date: string;
@@ -106,10 +104,9 @@ export function usePlatformUser() {
 // This eliminates the waterfall effect
 export function useCurrentTenant() {
   const { user } = useAuth();
-  const resolvedTenant = useTenantResolver();
   
   return useQuery({
-    queryKey: ['current-tenant-combined', user?.id, resolvedTenant.tenantId],
+    queryKey: ['current-tenant-combined', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       
@@ -121,24 +118,11 @@ export function useCurrentTenant() {
         .maybeSingle();
 
       if (error) throw error;
-      if (data?.tenants) {
-        return data.tenants as unknown as Tenant;
-      }
-
-      if (!resolvedTenant.tenantId) return null;
-
-      const { data: resolvedData, error: resolvedError } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('id', resolvedTenant.tenantId)
-        .maybeSingle();
-
-      if (resolvedError) throw resolvedError;
-      if (!resolvedData) return null;
+      if (!data?.tenants) return null;
       
-      return resolvedData as Tenant;
+      return data.tenants as unknown as Tenant;
     },
-    enabled: !!user?.id && resolvedTenant.status !== 'loading',
+    enabled: !!user?.id,
     staleTime: 1000 * 30, // 30s — use persisted cache on startup, refetch in background
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: true,

@@ -1,4 +1,4 @@
-import nodemailer from 'https://esm.sh/nodemailer@6.9.10'
+import nodemailer from 'npm:nodemailer@6.9.10'
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
 import { resolveSmtpForTenant, createSmtpTransporter } from '../_shared/smtp.ts'
 
