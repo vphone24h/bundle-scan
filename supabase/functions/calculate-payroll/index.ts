@@ -2,8 +2,39 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+function throwIfQueryError(label: string, result: { error: any }) {
+  if (result.error) {
+    throw new Error(`${label}: ${result.error.message || "Unknown error"}`);
+  }
+}
+
+async function persistPayrollResults(supabase: any, periodId: string, tenantId: string, results: any[]) {
+  const { error: upsertErr } = await supabase
+    .from("payroll_records")
+    .upsert(results, { onConflict: "payroll_period_id,user_id" });
+
+  if (!upsertErr) return;
+
+  const conflictMissing = upsertErr.code === "42P10"
+    || String(upsertErr.message || "").includes("no unique or exclusion constraint matching the ON CONFLICT specification");
+
+  if (!conflictMissing) throw upsertErr;
+
+  const { error: deleteErr } = await supabase
+    .from("payroll_records")
+    .delete()
+    .eq("tenant_id", tenantId)
+    .eq("payroll_period_id", periodId);
+  if (deleteErr) throw deleteErr;
+
+  const { error: insertErr } = await supabase
+    .from("payroll_records")
+    .insert(results);
+  if (insertErr) throw insertErr;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -67,6 +98,18 @@ Deno.serve(async (req) => {
         .select("receipt_id, product_id, product_name, category_id, sale_price, quantity")
         .eq("status", "active"),
     ]);
+
+    [
+      ["platform_users", platformUsersRes],
+      ["user_roles", rolesRes],
+      ["employee_salary_configs", empConfigsRes],
+      ["salary_templates", templatesRes],
+      ["attendance_records", attendanceRes],
+      ["salary_advances", advancesRes],
+      ["shift_assignments", shiftAssignmentsRes],
+      ["export_receipts", salesRes],
+      ["export_receipt_items", salesItemsRes],
+    ].forEach(([label, result]) => throwIfQueryError(label as string, result as { error: any }));
 
     const scopedUsers = platformUsersRes.data || [];
     const scopedRoles = rolesRes.data || [];
@@ -138,6 +181,15 @@ Deno.serve(async (req) => {
           { data: [], error: null },
           { data: [], error: null },
         ];
+
+    [
+      ["salary_template_bonuses", bonusRes],
+      ["salary_template_commissions", commRes],
+      ["salary_template_allowances", allowRes],
+      ["salary_template_holidays", holidayRes],
+      ["salary_template_penalties", penaltyRes],
+      ["salary_template_overtimes", overtimeRes],
+    ].forEach(([label, result]) => throwIfQueryError(label as string, result as { error: any }));
 
     const bonusesByTemplate = groupBy(bonusRes.data || [], "template_id");
     const commsByTemplate = groupBy(commRes.data || [], "template_id");
@@ -602,10 +654,7 @@ Deno.serve(async (req) => {
 
     // Upsert
     if (results.length > 0) {
-      const { error: insertErr } = await supabase
-        .from("payroll_records")
-        .upsert(results, { onConflict: "payroll_period_id,user_id" });
-      if (insertErr) throw insertErr;
+      await persistPayrollResults(supabase, period_id, tenant_id, results);
     }
 
     // Update period status
@@ -621,8 +670,8 @@ Deno.serve(async (req) => {
   } catch (e: any) {
     console.error("Calculate payroll error:", e);
     return new Response(
-      JSON.stringify({ error: e.message }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ success: false, error: e?.message || "Tính lương thất bại" }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
