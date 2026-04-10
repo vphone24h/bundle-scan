@@ -14,15 +14,10 @@ export function CompanyEmailConfigForm() {
   const { companyId, isCompanyAdmin } = useAdminCompanyId();
   const queryClient = useQueryClient();
 
-  const [smtpHost, setSmtpHost] = useState('smtp.gmail.com');
-  const [smtpPort, setSmtpPort] = useState(465);
   const [smtpUser, setSmtpUser] = useState('');
   const [smtpPass, setSmtpPass] = useState('');
-  const [fromEmail, setFromEmail] = useState('');
-  const [fromName, setFromName] = useState('');
   const [isEnabled, setIsEnabled] = useState(false);
   const [showPass, setShowPass] = useState(false);
-  const [testing, setTesting] = useState(false);
 
   const { data: config, isLoading } = useQuery({
     queryKey: ['company-email-config', companyId],
@@ -40,12 +35,8 @@ export function CompanyEmailConfigForm() {
 
   useEffect(() => {
     if (config) {
-      setSmtpHost(config.smtp_host || 'smtp.gmail.com');
-      setSmtpPort(config.smtp_port || 465);
       setSmtpUser(config.smtp_user || '');
       setSmtpPass(config.smtp_pass || '');
-      setFromEmail(config.from_email || '');
-      setFromName(config.from_name || '');
       setIsEnabled(config.is_enabled || false);
     }
   }, [config]);
@@ -56,12 +47,12 @@ export function CompanyEmailConfigForm() {
 
       const payload = {
         company_id: companyId,
-        smtp_host: smtpHost || null,
-        smtp_port: smtpPort || null,
+        smtp_host: 'smtp.gmail.com',
+        smtp_port: 465,
         smtp_user: smtpUser || null,
         smtp_pass: smtpPass || null,
-        from_email: fromEmail || smtpUser || null,
-        from_name: fromName || null,
+        from_email: smtpUser || null,
+        from_name: null,
         is_enabled: isEnabled,
         updated_at: new Date().toISOString(),
       };
@@ -102,10 +93,10 @@ export function CompanyEmailConfigForm() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Mail className="h-5 w-5" />
-          Cấu hình Email (SMTP / App Password)
+          Cấu hình Email gửi thông báo
         </CardTitle>
         <CardDescription>
-          Cấu hình email riêng cho công ty. Khi bật, hệ thống sẽ sử dụng email này thay cho email hệ thống gốc để gửi thông báo tự động cho tài khoản thuộc công ty.
+          Nhập email Gmail và App Password để hệ thống gửi thông báo tự động cho tài khoản thuộc công ty.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -118,32 +109,21 @@ export function CompanyEmailConfigForm() {
               </p>
               <p className="text-xs text-muted-foreground">
                 {isEnabled
-                  ? 'Hệ thống gốc sẽ không gửi email cho tài khoản thuộc công ty này'
-                  : 'Hệ thống gốc vẫn gửi email thông báo cho tài khoản thuộc công ty này'}
+                  ? 'Hệ thống sẽ dùng email này để gửi thông báo'
+                  : 'Hệ thống gốc vẫn gửi email thông báo'}
               </p>
             </div>
           </div>
           <Switch checked={isEnabled} onCheckedChange={setIsEnabled} />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label>SMTP Host</Label>
-            <Input value={smtpHost} onChange={e => setSmtpHost(e.target.value)} placeholder="smtp.gmail.com" />
-          </div>
-          <div className="space-y-2">
-            <Label>SMTP Port</Label>
-            <Input type="number" value={smtpPort} onChange={e => setSmtpPort(Number(e.target.value))} />
-          </div>
-        </div>
-
         <div className="space-y-2">
-          <Label>Email đăng nhập (SMTP User)</Label>
+          <Label>Email Gmail</Label>
           <Input value={smtpUser} onChange={e => setSmtpUser(e.target.value)} placeholder="your-email@gmail.com" />
         </div>
 
         <div className="space-y-2">
-          <Label>App Password / Mật khẩu ứng dụng</Label>
+          <Label>App Password (Mật khẩu ứng dụng)</Label>
           <div className="relative">
             <Input
               type={showPass ? 'text' : 'password'}
@@ -164,19 +144,8 @@ export function CompanyEmailConfigForm() {
           </div>
           <p className="text-xs text-muted-foreground flex items-start gap-1">
             <Info className="h-3 w-3 mt-0.5 shrink-0" />
-            Với Gmail: Vào Google Account → Bảo mật → Xác minh 2 bước → Mật khẩu ứng dụng → Tạo mật khẩu cho "Mail"
+            Vào Google Account → Bảo mật → Xác minh 2 bước → Mật khẩu ứng dụng → Tạo mật khẩu cho "Mail"
           </p>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Tên hiển thị (From Name)</Label>
-            <Input value={fromName} onChange={e => setFromName(e.target.value)} placeholder="Tên công ty" />
-          </div>
-          <div className="space-y-2">
-            <Label>Email gửi (From Email)</Label>
-            <Input value={fromEmail} onChange={e => setFromEmail(e.target.value)} placeholder="Mặc định = SMTP User" />
-          </div>
         </div>
 
         <div className="flex gap-2 pt-2">
