@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DetailedProfitTable } from '@/components/reports/DetailedProfitTable';
 import { ReportStatDetailDialog, type DetailType } from '@/components/reports/ReportStatDetailDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,6 +52,7 @@ import { format, subDays, startOfWeek, startOfMonth, subMonths, subWeeks } from 
 import { vi } from 'date-fns/locale';
 import { useReportStats, useReportChartData } from '@/hooks/useReportStats';
 import { useReportDetails } from '@/hooks/useReportDetails';
+import { useDetailedProfitReport } from '@/hooks/useDetailedProfitReport';
 
 import { useBranches } from '@/hooks/useBranches';
 import { useCategories } from '@/hooks/useCategories';
@@ -147,13 +148,38 @@ export function RevenueProfitReport() {
 
   const { data: rawStats, isLoading: statsLoading, error: statsError, isError: hasStatsError } = useReportStats(filters);
   const { data: reportDetails, isLoading: detailsLoading } = useReportDetails(filters, !!detailType);
+  const { data: detailedProfitData } = useDetailedProfitReport(filters);
   const { data: chartData, isLoading: chartLoading } = useReportChartData({
     ...filters,
     groupBy: chartGroupBy,
   });
 
-  // Use RPC stats directly - no need to load heavy detail data for stat cards
-  const stats = rawStats;
+  const derivedRevenueStats = useMemo(() => {
+    if (!detailedProfitData?.items) return null;
+
+    const soldItems = detailedProfitData.items.filter((item) => item.status === 'sold');
+    const returnedItems = detailedProfitData.items.filter((item) => item.status === 'returned');
+
+    const totalSalesRevenue = soldItems.reduce((sum, item) => sum + Number(item.salePrice || 0), 0);
+    const totalReturnRevenue = returnedItems.reduce((sum, item) => sum + Math.abs(Number(item.salePrice || 0)), 0);
+    const productsSold = soldItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+    const productsReturned = returnedItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+
+    return {
+      totalSalesRevenue,
+      totalReturnRevenue,
+      netRevenue: totalSalesRevenue - totalReturnRevenue,
+      productsSold,
+      productsReturned,
+    };
+  }, [detailedProfitData]);
+
+  const stats = rawStats
+    ? {
+        ...rawStats,
+        ...(derivedRevenueStats || {}),
+      }
+    : rawStats;
 
   const handleTimePreset = (preset: string) => {
     const now = new Date();
