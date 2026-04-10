@@ -36,7 +36,8 @@ Deno.serve(async (req) => {
 
     // Parallel fetch all needed data
     const [
-      profilesRes,
+      platformUsersRes,
+      rolesRes,
       empConfigsRes,
       templatesRes,
       attendanceRes,
@@ -45,7 +46,8 @@ Deno.serve(async (req) => {
       salesRes,
       salesItemsRes,
     ] = await Promise.all([
-      supabase.from("profiles").select("id, display_name, tenant_id, branch_id").eq("tenant_id", tenant_id),
+      supabase.from("platform_users").select("user_id, email, display_name").eq("tenant_id", tenant_id),
+      supabase.from("user_roles").select("user_id, user_role, branch_id, tenant_id").eq("tenant_id", tenant_id),
       supabase.from("employee_salary_configs").select("*, salary_templates(*)").eq("tenant_id", tenant_id),
       supabase.from("salary_templates").select("*").eq("tenant_id", tenant_id).eq("is_active", true),
       supabase.from("attendance_records")
@@ -55,7 +57,6 @@ Deno.serve(async (req) => {
         .lte("date", period.end_date),
       supabase.from("salary_advances").select("*").eq("tenant_id", tenant_id).eq("payroll_period_id", period_id).in("status", ["approved", "paid"]),
       supabase.from("shift_assignments").select("*, work_shifts(name, start_time, end_time)").eq("tenant_id", tenant_id).eq("is_active", true),
-      // Sales data for commission/KPI calculation
       supabase.from("export_receipts")
         .select("id, created_by, total_amount, branch_id, status")
         .eq("tenant_id", tenant_id)
@@ -67,12 +68,47 @@ Deno.serve(async (req) => {
         .eq("status", "active"),
     ]);
 
-    const profiles = profilesRes.data || [];
-    if (!profiles.length) {
+    const scopedUsers = platformUsersRes.data || [];
+    const scopedRoles = rolesRes.data || [];
+    const scopedUserIds = [...new Set([
+      ...scopedUsers.map((item: any) => item.user_id),
+      ...scopedRoles.map((item: any) => item.user_id),
+    ])];
+
+    if (!scopedUserIds.length) {
       return new Response(JSON.stringify({ success: true, count: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const { data: profilesData, error: profilesErr } = await supabase
+      .from("profiles")
+      .select("user_id, display_name, phone")
+      .in("user_id", scopedUserIds);
+
+    if (profilesErr) throw profilesErr;
+
+    const preferredRoles = new Map<string, any>();
+    for (const role of scopedRoles) {
+      const existing = preferredRoles.get(role.user_id);
+      if (!existing || (!existing.tenant_id && role.tenant_id)) {
+        preferredRoles.set(role.user_id, role);
+      }
+    }
+
+    const profileMap = new Map((profilesData || []).map((profile: any) => [profile.user_id, profile]));
+    const platformUserMap = new Map(scopedUsers.map((item: any) => [item.user_id, item]));
+    const employees = scopedUserIds.map((userId) => {
+      const profile = profileMap.get(userId);
+      const role = preferredRoles.get(userId);
+      const platformUser = platformUserMap.get(userId);
+
+      return {
+        user_id: userId,
+        display_name: profile?.display_name || platformUser?.display_name || platformUser?.email || userId.slice(0, 8),
+        branch_id: role?.branch_id || null,
+      };
+    });
 
     const attendance = attendanceRes.data || [];
     const advances = advancesRes.data || [];
@@ -85,14 +121,23 @@ Deno.serve(async (req) => {
 
     // Get template sub-configs including overtimes
     const templateIds = (templatesRes.data || []).map((t: any) => t.id);
-    const [bonusRes, commRes, allowRes, holidayRes, penaltyRes, overtimeRes] = await Promise.all([
-      supabase.from("salary_template_bonuses").select("*").in("template_id", templateIds),
-      supabase.from("salary_template_commissions").select("*").in("template_id", templateIds),
-      supabase.from("salary_template_allowances").select("*").in("template_id", templateIds),
-      supabase.from("salary_template_holidays").select("*").in("template_id", templateIds),
-      supabase.from("salary_template_penalties").select("*").in("template_id", templateIds),
-      supabase.from("salary_template_overtimes").select("*").in("template_id", templateIds),
-    ]);
+    const [bonusRes, commRes, allowRes, holidayRes, penaltyRes, overtimeRes] = templateIds.length
+      ? await Promise.all([
+          supabase.from("salary_template_bonuses").select("*").in("template_id", templateIds),
+          supabase.from("salary_template_commissions").select("*").in("template_id", templateIds),
+          supabase.from("salary_template_allowances").select("*").in("template_id", templateIds),
+          supabase.from("salary_template_holidays").select("*").in("template_id", templateIds),
+          supabase.from("salary_template_penalties").select("*").in("template_id", templateIds),
+          supabase.from("salary_template_overtimes").select("*").in("template_id", templateIds),
+        ])
+      : [
+          { data: [], error: null },
+          { data: [], error: null },
+          { data: [], error: null },
+          { data: [], error: null },
+          { data: [], error: null },
+          { data: [], error: null },
+        ];
 
     const bonusesByTemplate = groupBy(bonusRes.data || [], "template_id");
     const commsByTemplate = groupBy(commRes.data || [], "template_id");
@@ -131,15 +176,14 @@ Deno.serve(async (req) => {
 
     const results: any[] = [];
 
-    for (const profile of profiles) {
-      const template = empTemplateMap.get(profile.id);
-      // If no salary template assigned, still include employee with zero base
-      const empConfig = empConfigMap.get(profile.id);
+    for (const employee of employees) {
+      const template = empTemplateMap.get(employee.user_id);
+      const empConfig = empConfigMap.get(employee.user_id);
       const templateId = template?.id || null;
       const baseAmount = empConfig?.custom_base_amount || template?.base_amount || 0;
 
       // ===== ATTENDANCE DATA =====
-      const userAttendance = attendance.filter((a: any) => a.user_id === profile.id);
+      const userAttendance = attendance.filter((a: any) => a.user_id === employee.user_id);
       const workDays = userAttendance.filter((a: any) => a.check_in_time && a.status !== "absent").length;
       const totalMinutes = userAttendance.reduce((s: number, a: any) => s + (a.total_work_minutes || 0), 0);
       const lateRecords = userAttendance.filter((a: any) => a.status === "late" || (a.late_minutes && a.late_minutes > 0));
@@ -151,11 +195,19 @@ Deno.serve(async (req) => {
       const absentCount = userAttendance.filter((a: any) => a.status === "absent").length;
       const overtimeMinutes = userAttendance.reduce((s: number, a: any) => s + (a.overtime_minutes || 0), 0);
       const overtimeHours = Math.round(overtimeMinutes / 60 * 10) / 10;
-      const expectedWorkDays = getExpectedWorkDays(profile.id);
+      const expectedWorkDays = getExpectedWorkDays(employee.user_id);
 
       // Days with overtime (full-day OT = worked on unscheduled day)
       const scheduledDates = new Set<string>();
-      const userAssignments = shiftAssignments.filter((sa: any) => sa.user_id === profile.id);
+      const userAssignments = shiftAssignments.filter((sa: any) => sa.user_id === employee.user_id);
+      const hasSchedule = userAssignments.length > 0;
+      const hasSalaryTemplate = !!templateId;
+      const isPayrollReady = hasSchedule && hasSalaryTemplate;
+      const missingSetupReasons = [
+        ...(!hasSchedule ? ["missing_schedule"] : []),
+        ...(!hasSalaryTemplate ? ["missing_salary_template"] : []),
+      ];
+
       for (let d = new Date(period.start_date); d <= new Date(period.end_date); d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().split("T")[0];
         const dow = d.getDay();
@@ -192,7 +244,7 @@ Deno.serve(async (req) => {
       }).sort((a: any, b: any) => a.date.localeCompare(b.date));
 
       // ===== SALES DATA =====
-      const userSales = allSales.filter((s: any) => s.created_by === profile.id);
+      const userSales = allSales.filter((s: any) => s.created_by === employee.user_id);
       const userRevenue = userSales.reduce((s: number, r: any) => s + (r.total_amount || 0), 0);
       const userSaleIds = new Set(userSales.map((s: any) => s.id));
 
@@ -220,7 +272,7 @@ Deno.serve(async (req) => {
       }
 
       // Branch revenue (for branch KPI)
-      const userBranchId = (profile as any).branch_id;
+      const userBranchId = employee.branch_id;
       const branchSales = userBranchId
         ? allSales.filter((s: any) => s.branch_id === userBranchId)
         : [];
@@ -228,8 +280,10 @@ Deno.serve(async (req) => {
 
       // ===== 1. BASE SALARY =====
       let baseSalary = 0;
-      const salaryType = template.salary_type || "fixed";
-      if (salaryType === "fixed") {
+      const salaryType = template?.salary_type || "fixed";
+      if (!isPayrollReady) {
+        baseSalary = 0;
+      } else if (salaryType === "fixed") {
         baseSalary = baseAmount;
       } else if (salaryType === "daily") {
         baseSalary = baseAmount * workDays;
@@ -243,7 +297,7 @@ Deno.serve(async (req) => {
       // ===== 2. BONUS (with real sales data) =====
       let totalBonus = 0;
       const bonusDetails: any[] = [];
-      if (template.bonus_enabled) {
+      if (isPayrollReady && template?.bonus_enabled) {
         const tBonuses = bonusesByTemplate[templateId] || [];
         for (const b of tBonuses) {
           let amount = 0;
@@ -285,7 +339,7 @@ Deno.serve(async (req) => {
       // ===== 3. COMMISSION (from actual sales) =====
       let totalCommission = 0;
       const commissionDetails: any[] = [];
-      if (template.commission_enabled) {
+      if (isPayrollReady && template?.commission_enabled) {
         const tComms = commsByTemplate[templateId] || [];
         // Priority: product > category > general revenue
         const processedProducts = new Set<string>();
@@ -357,7 +411,7 @@ Deno.serve(async (req) => {
       // ===== 4. ALLOWANCE =====
       let totalAllowance = 0;
       const allowanceDetailsV2: any[] = [];
-      if (template.allowance_enabled) {
+      if (isPayrollReady && template?.allowance_enabled) {
         const tAllows = allowsByTemplate[templateId] || [];
         for (const a of tAllows) {
           let amount = 0;
@@ -382,7 +436,7 @@ Deno.serve(async (req) => {
       // ===== 5. HOLIDAY BONUS =====
       let holidayBonus = 0;
       const holidayDetails: any[] = [];
-      if (template.holiday_enabled) {
+      if (isPayrollReady && template?.holiday_enabled) {
         const tHolidays = holidaysByTemplate[templateId] || [];
         for (const h of tHolidays) {
           const holidayDates = userAttendance.filter((a: any) => {
@@ -409,7 +463,7 @@ Deno.serve(async (req) => {
       // ===== 6. PENALTY (synced with attendance) =====
       let totalPenalty = 0;
       const penaltyDetails: any[] = [];
-      if (template.penalty_enabled) {
+      if (isPayrollReady && template?.penalty_enabled) {
         const tPenalties = penaltiesByTemplate[templateId] || [];
         for (const p of tPenalties) {
           let count = 0;
@@ -445,7 +499,7 @@ Deno.serve(async (req) => {
       let overtimePay = 0;
       const overtimeDetails: any[] = [];
       const tOvertimes = overtimesByTemplate[templateId] || [];
-      if (tOvertimes.length > 0) {
+      if (isPayrollReady && tOvertimes.length > 0) {
         const dailyRate = salaryType === "fixed"
           ? baseAmount / (expectedWorkDays || 22)
           : baseAmount;
@@ -478,7 +532,7 @@ Deno.serve(async (req) => {
             });
           }
         }
-      } else {
+      } else if (isPayrollReady) {
         // Fallback: 150% OT rate if no config
         if (overtimeHours > 0) {
           const dailyRateForOT = salaryType === "fixed"
@@ -492,16 +546,18 @@ Deno.serve(async (req) => {
       }
 
       // ===== ADVANCES =====
-      const userAdvances = advances.filter((a: any) => a.user_id === profile.id);
-      const totalAdvances = userAdvances.reduce((s: number, a: any) => s + (a.amount || 0), 0);
+      const userAdvances = advances.filter((a: any) => a.user_id === employee.user_id);
+      const totalAdvances = isPayrollReady
+        ? userAdvances.reduce((s: number, a: any) => s + (a.amount || 0), 0)
+        : 0;
 
       const netSalary = baseSalary + totalBonus + totalCommission + totalAllowance + holidayBonus + overtimePay - totalPenalty - totalAdvances;
 
       results.push({
         payroll_period_id: period_id,
         tenant_id,
-        user_id: profile.id,
-        user_name: profile.display_name || "N/A",
+        user_id: employee.user_id,
+        user_name: employee.display_name || "N/A",
         base_salary: Math.round(baseSalary),
         total_bonus: Math.round(totalBonus),
         total_commission: Math.round(totalCommission),
@@ -529,7 +585,7 @@ Deno.serve(async (req) => {
         penalty_details: penaltyDetails,
         config_snapshot: {
           template_id: templateId,
-          template_name: template.name,
+          template_name: template?.name || null,
           salary_type: salaryType,
           base_amount: baseAmount,
           expected_work_days: expectedWorkDays,
@@ -537,6 +593,8 @@ Deno.serve(async (req) => {
           branch_revenue: branchRevenue,
           overtime_details: overtimeDetails,
           sale_count: userSales.length,
+          is_payroll_ready: isPayrollReady,
+          missing_setup_reasons: missingSetupReasons,
         },
         status: "draft",
       });
