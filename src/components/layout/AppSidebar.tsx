@@ -192,17 +192,26 @@ export function AppSidebar() {
 
   // Lọc menu theo quyền và loại user
   const navItems = useMemo(() => {
+    const shouldHideAttendanceItem = (item: NavItem) =>
+      !attendanceEnabled && (item.requireAttendance || ATTENDANCE_HIDDEN_ROUTES.has(item.href));
+
     // Platform Admin hoặc Company Admin không có tenant -> chỉ hiện menu quản trị nền tảng
     if ((isPlatformAdmin || isCompanyAdmin) && !hasTenant) {
       return platformAdminNavItems;
     }
 
     // Tenant users -> hiện menu kho hàng
-    if (!permissions) return allNavItems.filter(item => !item.permission && !(isStandalone && item.href === '/install-app'));
+    if (!permissions) {
+      return allNavItems.filter(item => {
+        if (isStandalone && item.href === '/install-app') return false;
+        if (shouldHideAttendanceItem(item)) return false;
+        return !item.permission;
+      });
+    }
     
     return allNavItems.filter(item => {
       if (isStandalone && item.href === '/install-app') return false;
-      if (!attendanceEnabled && (item.requireAttendance || ATTENDANCE_HIDDEN_ROUTES.has(item.href))) return false;
+      if (shouldHideAttendanceItem(item)) return false;
       if (!item.permission) return true;
       return permissions[item.permission as keyof typeof permissions] === true;
     }).map(item => {

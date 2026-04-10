@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import "./i18n";
+import { registerSW } from 'virtual:pwa-register';
 
 // Hide the HTML preloader
 // For store pages: StoreLandingPage will call hideAppPreloader() when content is ready
@@ -16,6 +17,16 @@ function hidePreloader() {
 
 // Expose globally so StoreLandingPage can call it
 (window as any).__hideAppPreloader = hidePreloader;
+
+if (import.meta.env.PROD) {
+  const updateSW = registerSW({
+    immediate: true,
+    onNeedRefresh() {
+      updateSW(true);
+    },
+    onOfflineReady() {},
+  });
+}
 
 const root = createRoot(document.getElementById("root")!);
 root.render(<App />);
