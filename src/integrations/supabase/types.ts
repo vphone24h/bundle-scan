@@ -6706,6 +6706,60 @@ export type Database = {
           },
         ]
       }
+      salary_template_overtimes: {
+        Row: {
+          calc_type: string
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          name: string
+          overtime_type: string
+          template_id: string
+          tenant_id: string
+          value: number
+        }
+        Insert: {
+          calc_type?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+          overtime_type?: string
+          template_id: string
+          tenant_id: string
+          value?: number
+        }
+        Update: {
+          calc_type?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+          overtime_type?: string
+          template_id?: string
+          tenant_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_template_overtimes_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "salary_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_template_overtimes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salary_template_penalties: {
         Row: {
           amount: number
@@ -6773,6 +6827,7 @@ export type Database = {
           is_active: boolean
           kpi_bonus_amount: number
           name: string
+          overtime_enabled: boolean
           penalty_enabled: boolean
           salary_type: string
           tenant_id: string
@@ -6793,6 +6848,7 @@ export type Database = {
           is_active?: boolean
           kpi_bonus_amount?: number
           name: string
+          overtime_enabled?: boolean
           penalty_enabled?: boolean
           salary_type?: string
           tenant_id: string
@@ -6813,6 +6869,7 @@ export type Database = {
           is_active?: boolean
           kpi_bonus_amount?: number
           name?: string
+          overtime_enabled?: boolean
           penalty_enabled?: boolean
           salary_type?: string
           tenant_id?: string

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Loader2, Plus, Trash2, Save } from 'lucide-react';
-import { useSalaryTemplates, useCreateSalaryTemplate, useUpdateSalaryTemplate, useTemplateBonuses, useTemplateCommissions, useTemplateAllowances, useTemplateHolidays, useTemplatePenalties, useSaveTemplateConfigs } from '@/hooks/usePayroll';
+import { useSalaryTemplates, useCreateSalaryTemplate, useUpdateSalaryTemplate, useTemplateBonuses, useTemplateCommissions, useTemplateAllowances, useTemplateHolidays, useTemplatePenalties, useTemplateOvertimes, useSaveTemplateConfigs } from '@/hooks/usePayroll';
 import { useCategories } from '@/hooks/useCategories';
 import { toast } from 'sonner';
 import { formatNumber } from '@/lib/formatNumber';
@@ -22,8 +22,12 @@ const BONUS_TYPES = [
   { value: 'fixed', label: 'Thưởng cố định' },
   { value: 'kpi_personal', label: 'KPI doanh thu cá nhân' },
   { value: 'branch_revenue', label: 'Doanh thu chi nhánh' },
-  { value: 'overtime', label: 'Tăng ca' },
   { value: 'gross_profit', label: 'Lợi nhuận gộp' },
+];
+
+const OVERTIME_TYPES = [
+  { value: 'full_day', label: 'Tăng ca nguyên ngày' },
+  { value: 'hourly', label: 'Tăng ca theo giờ' },
 ];
 
 const COMMISSION_TYPES = [
@@ -60,6 +64,7 @@ interface CommissionRow { target_type: string; target_id: string; target_name: s
 interface AllowanceRow { allowance_type: string; name: string; amount: number; is_fixed: boolean; }
 interface HolidayRow { holiday_name: string; holiday_date: string; multiplier_percent: number; }
 interface PenaltyRow { penalty_type: string; name: string; amount: number; description: string; }
+interface OvertimeRow { overtime_type: string; name: string; calc_type: string; value: number; description: string; }
 
 interface Props {
   templateId: string | null;
@@ -87,18 +92,21 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
   const [allowanceEnabled, setAllowanceEnabled] = useState(false);
   const [holidayEnabled, setHolidayEnabled] = useState(false);
   const [penaltyEnabled, setPenaltyEnabled] = useState(false);
+  const [overtimeEnabled, setOvertimeEnabled] = useState(false);
 
   const [bonuses, setBonuses] = useState<BonusRow[]>([]);
   const [commissions, setCommissions] = useState<CommissionRow[]>([]);
   const [allowances, setAllowances] = useState<AllowanceRow[]>([]);
   const [holidays, setHolidays] = useState<HolidayRow[]>([]);
   const [penalties, setPenalties] = useState<PenaltyRow[]>([]);
+  const [overtimes, setOvertimes] = useState<OvertimeRow[]>([]);
 
   const { data: exBonuses } = useTemplateBonuses(templateId || undefined);
   const { data: exCommissions } = useTemplateCommissions(templateId || undefined);
   const { data: exAllowances } = useTemplateAllowances(templateId || undefined);
   const { data: exHolidays } = useTemplateHolidays(templateId || undefined);
   const { data: exPenalties } = useTemplatePenalties(templateId || undefined);
+  const { data: exOvertimes } = useTemplateOvertimes(templateId || undefined);
 
   useEffect(() => {
     if (existing) {
@@ -111,6 +119,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
       setAllowanceEnabled((existing as any).allowance_enabled || false);
       setHolidayEnabled((existing as any).holiday_enabled || false);
       setPenaltyEnabled((existing as any).penalty_enabled || false);
+      setOvertimeEnabled((existing as any).overtime_enabled || false);
     }
   }, [existing]);
 
@@ -119,6 +128,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
   useEffect(() => { if (exAllowances?.length) setAllowances(exAllowances.map(a => ({ allowance_type: a.allowance_type, name: a.name, amount: Number(a.amount), is_fixed: a.is_fixed }))); }, [exAllowances]);
   useEffect(() => { if (exHolidays?.length) setHolidays(exHolidays.map(h => ({ holiday_name: h.holiday_name, holiday_date: h.holiday_date, multiplier_percent: Number(h.multiplier_percent) }))); }, [exHolidays]);
   useEffect(() => { if (exPenalties?.length) setPenalties(exPenalties.map(p => ({ penalty_type: p.penalty_type, name: p.name, amount: Number(p.amount), description: p.description || '' }))); }, [exPenalties]);
+  useEffect(() => { if (exOvertimes?.length) setOvertimes(exOvertimes.map(o => ({ overtime_type: o.overtime_type, name: o.name, calc_type: o.calc_type, value: Number(o.value), description: o.description || '' }))); }, [exOvertimes]);
 
   const handleSave = async () => {
     if (!name || !tenantId) return;
@@ -132,6 +142,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
       allowance_enabled: allowanceEnabled,
       holiday_enabled: holidayEnabled,
       penalty_enabled: penaltyEnabled,
+      overtime_enabled: overtimeEnabled,
     };
 
     try {
@@ -153,6 +164,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
           allowances: allowanceEnabled ? allowances : [],
           holidays: holidayEnabled ? holidays : [],
           penalties: penaltyEnabled ? penalties : [],
+          overtimes: overtimeEnabled ? overtimes : [],
         });
 
         onSaved?.(id);
@@ -243,11 +255,6 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                       <Label className="text-xs">{b.calc_type === 'percentage' ? 'Tỷ lệ (%)' : 'Số tiền (VNĐ)'}</Label>
                       <Input type="number" className="h-8 text-xs" value={b.value} onChange={e => { const n = [...bonuses]; n[i].value = Number(e.target.value); setBonuses(n); }} />
                     </div>
-                    {b.bonus_type === 'overtime' && (
-                      <div className="col-span-2">
-                        <p className="text-xs text-muted-foreground">💡 Tăng ca tính theo giờ: mỗi giờ OT = {b.calc_type === 'percentage' ? `${b.value}% lương/giờ` : `${formatNumber(b.value)}đ`}</p>
-                      </div>
-                    )}
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive ml-1" onClick={() => setBonuses(bonuses.filter((_, j) => j !== i))}>
                     <Trash2 className="h-3.5 w-3.5" />
@@ -257,6 +264,75 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
             ))}
             <Button variant="outline" size="sm" onClick={() => setBonuses([...bonuses, { bonus_type: 'fixed', name: 'Thưởng cố định', calc_type: 'fixed_amount', value: 0, threshold: 0 }])}>
               <Plus className="h-3.5 w-3.5 mr-1" />Thêm mức thưởng
+            </Button>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* 2.5 TĂNG CA */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm">2.5. Tăng ca (Overtime)</CardTitle>
+            <Switch checked={overtimeEnabled} onCheckedChange={setOvertimeEnabled} />
+          </div>
+        </CardHeader>
+        {overtimeEnabled && (
+          <CardContent className="space-y-3">
+            {overtimes.map((o, i) => (
+              <div key={i} className="border rounded-lg p-3 space-y-2 bg-muted/30">
+                <div className="flex justify-between items-start">
+                  <div className="grid grid-cols-2 gap-2 flex-1">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Loại tăng ca</Label>
+                      <Select value={o.overtime_type} onValueChange={v => { const n = [...overtimes]; n[i].overtime_type = v; n[i].name = OVERTIME_TYPES.find(t => t.value === v)?.label || ''; n[i].calc_type = v === 'full_day' ? 'multiplier' : 'fixed_amount'; n[i].value = v === 'full_day' ? 150 : 0; setOvertimes(n); }}>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>{OVERTIME_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+
+                    {o.overtime_type === 'full_day' && (
+                      <>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Hệ số lương (%)</Label>
+                          <Input type="number" className="h-8 text-xs" value={o.value} onChange={e => { const n = [...overtimes]; n[i].value = Number(e.target.value); setOvertimes(n); }} />
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-xs text-muted-foreground">
+                            💡 Ngày nghỉ theo lịch nhưng nhân viên vẫn chấm công đi làm → lương ngày đó = <strong>{o.value}%</strong> mức lương chính.
+                            <br />Hệ thống tự xác định dựa vào lịch xếp ca (ngày vắng) + dữ liệu chấm công (vẫn đi làm).
+                          </p>
+                        </div>
+                      </>
+                    )}
+
+                    {o.overtime_type === 'hourly' && (
+                      <>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Số tiền mỗi giờ OT (VNĐ)</Label>
+                          <Input type="number" className="h-8 text-xs" value={o.value} onChange={e => { const n = [...overtimes]; n[i].value = Number(e.target.value); setOvertimes(n); }} />
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-xs text-muted-foreground">
+                            💡 Mỗi giờ tăng ca = <strong>{formatNumber(o.value)}đ</strong>. Số giờ OT được tính từ dữ liệu chấm công.
+                          </p>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="space-y-1 col-span-2">
+                      <Label className="text-xs">Ghi chú</Label>
+                      <Input className="h-8 text-xs" placeholder="VD: Áp dụng cho ngày CN" value={o.description} onChange={e => { const n = [...overtimes]; n[i].description = e.target.value; setOvertimes(n); }} />
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive ml-1" onClick={() => setOvertimes(overtimes.filter((_, j) => j !== i))}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={() => setOvertimes([...overtimes, { overtime_type: 'full_day', name: 'Tăng ca nguyên ngày', calc_type: 'multiplier', value: 150, description: '' }])}>
+              <Plus className="h-3.5 w-3.5 mr-1" />Thêm loại tăng ca
             </Button>
           </CardContent>
         )}

@@ -61,6 +61,7 @@ export function SalaryTemplatesTab() {
                       {(t as any).commission_enabled && <Badge variant="secondary" className="text-[10px] h-5">Hoa hồng</Badge>}
                       {(t as any).allowance_enabled && <Badge variant="secondary" className="text-[10px] h-5">Phụ cấp</Badge>}
                       {(t as any).holiday_enabled && <Badge variant="secondary" className="text-[10px] h-5">Ngày lễ</Badge>}
+                      {(t as any).overtime_enabled && <Badge variant="secondary" className="text-[10px] h-5">Tăng ca</Badge>}
                       {(t as any).penalty_enabled && <Badge variant="secondary" className="text-[10px] h-5">Phạt</Badge>}
                     </div>
                   </div>
