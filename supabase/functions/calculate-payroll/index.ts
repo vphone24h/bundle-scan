@@ -133,11 +133,10 @@ Deno.serve(async (req) => {
 
     for (const profile of profiles) {
       const template = empTemplateMap.get(profile.id);
-      if (!template) continue;
-
+      // If no salary template assigned, still include employee with zero base
       const empConfig = empConfigMap.get(profile.id);
-      const templateId = template.id;
-      const baseAmount = empConfig?.custom_base_amount || template.base_amount || 0;
+      const templateId = template?.id || null;
+      const baseAmount = empConfig?.custom_base_amount || template?.base_amount || 0;
 
       // ===== ATTENDANCE DATA =====
       const userAttendance = attendance.filter((a: any) => a.user_id === profile.id);
