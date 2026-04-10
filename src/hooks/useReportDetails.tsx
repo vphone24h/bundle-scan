@@ -86,9 +86,8 @@ export function useReportDetails(filters?: {
         return q;
       };
 
-      const [salesRaw, receiptsRaw, returnsRaw, cashRaw] = await Promise.all([
+      const [salesRaw, returnsRaw, cashRaw] = await Promise.all([
         fetchAllRows<any>(() => buildSalesDetailQuery()),
-        filters?.categoryId ? Promise.resolve([]) : fetchAllRows<any>(() => buildReceiptsQuery()),
         fetchAllRows<any>(() => buildReturnDetailQuery()),
         fetchAllRows<any>(() => buildCashDetailQuery()),
       ]);
