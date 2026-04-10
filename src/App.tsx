@@ -1,5 +1,6 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, type ReactNode } from "react";
 import { startGlobalInteractionWatcher } from "@/lib/dialogInteraction";
+import { useAttendanceEnabled } from "@/hooks/useAttendanceEnabled";
 
 // Start global watcher to auto-recover from stuck pointer-events
 startGlobalInteractionWatcher();
@@ -9,7 +10,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, keepPreviousData } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CompanyProvider } from "@/hooks/useCompanyResolver";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -61,8 +62,20 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const WarrantyCheckPage = lazy(() => import("./pages/WarrantyCheckPage"));
 const RepairNewPage = lazy(() => import("./pages/RepairNewPage"));
 const RepairListPage = lazy(() => import("./pages/RepairListPage"));
+const AttendancePage = lazy(() => import("./pages/AttendancePage"));
+const CheckInPage = lazy(() => import("./pages/CheckInPage"));
+const PayrollPage = lazy(() => import("./pages/PayrollPage"));
+const MyAttendancePage = lazy(() => import("./pages/MyAttendancePage"));
 
 const NotFound = lazy(() => import("./pages/NotFound"));
+
+function AttendanceEnabledRoute({ children }: { children: ReactNode }) {
+  const { enabled, isLoading } = useAttendanceEnabled();
+
+  if (isLoading) return null;
+
+  return enabled ? <>{children}</> : <Navigate to="/" replace />;
+}
 
 // Only preload admin pages when user is logged in (not on store landing / CTV pages)
 function preloadAdminPages() {
@@ -181,7 +194,7 @@ const SubscriptionRoute = ({ children }: { children: React.ReactNode }) => (
 );
 
 const App = () => (
-  <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24, buster: 'v2' }}>
+  <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24, buster: 'v5-attendance-domain-gate' }}>
     <CompanyProvider>
     <AuthProvider>
       <TooltipProvider>
@@ -242,6 +255,10 @@ const App = () => (
                 <Route path="/repair/new" element={<GuardedRoute><RepairNewPage /></GuardedRoute>} />
                 <Route path="/repair/list" element={<GuardedRoute><RepairListPage /></GuardedRoute>} />
                 <Route path="/social" element={<GuardedRoute><SocialPage /></GuardedRoute>} />
+                <Route path="/attendance" element={<Navigate to="/users" replace />} />
+                <Route path="/checkin" element={<ProtectedRoute><AttendanceEnabledRoute><CheckInPage /></AttendanceEnabledRoute></ProtectedRoute>} />
+                <Route path="/my-attendance" element={<ProtectedRoute><AttendanceEnabledRoute><MyAttendancePage /></AttendanceEnabledRoute></ProtectedRoute>} />
+                <Route path="/payroll" element={<Navigate to="/users" replace />} />
                 {/* Platform Admin route - also guarded */}
                 <Route path="/platform-admin" element={<GuardedRoute><PlatformAdminPage /></GuardedRoute>} />
                 

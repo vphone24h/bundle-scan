@@ -9,6 +9,7 @@ export interface Company {
   created_at: string;
   updated_at: string;
   tenant_count?: number;
+  attendance_enabled: boolean;
 }
 
 export function useCompanies() {
@@ -71,6 +72,23 @@ export function useUpdateCompany() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['companies'] }),
+  });
+}
+
+export function useToggleAttendance() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, enabled }: { id: string; enabled: boolean }) => {
+      const { error } = await supabase
+        .from('companies')
+        .update({ attendance_enabled: enabled })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['companies'] });
+      qc.invalidateQueries({ queryKey: ['attendance-enabled'] });
+    },
   });
 }
 

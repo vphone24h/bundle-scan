@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -15,17 +15,35 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Shield, Edit2, UserPlus, Info, ChevronDown, ChevronUp, Star, ExternalLink } from 'lucide-react';
+import { Shield, Edit2, UserPlus, Info, ChevronDown, ChevronUp, Star, ExternalLink, Settings2, Fingerprint, CreditCard } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions, UserRole } from '@/hooks/usePermissions';
 import { EditUserDialog } from '@/components/users/EditUserDialog';
-import { CreateUserDialog } from '@/components/users/CreateUserDialog';
+import { CreateEmployeeStepper } from '@/components/users/CreateEmployeeStepper';
 import { StaffReviewsTab } from '@/components/users/StaffReviewsTab';
+import { EmployeeSetupTab } from '@/components/users/EmployeeSetupTab';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useUsersGuideUrl } from '@/hooks/useAppConfig';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
+import { useAttendanceEnabled } from '@/hooks/useAttendanceEnabled';
+// Attendance tabs
+import { AttendanceDashboardTab } from '@/components/attendance/AttendanceDashboardTab';
+import { WorkShiftsTab } from '@/components/attendance/WorkShiftsTab';
+import { ShiftScheduleTab } from '@/components/attendance/ShiftScheduleTab';
+import { AttendanceHistoryTab } from '@/components/attendance/AttendanceHistoryTab';
+import { AttendanceLocationsTab } from '@/components/attendance/AttendanceLocationsTab';
+import { TrustedDevicesTab } from '@/components/attendance/TrustedDevicesTab';
+import { AttendanceLocksTab } from '@/components/attendance/AttendanceLocksTab';
+import { AttendanceReportTab } from '@/components/attendance/AttendanceReportTab';
+import { CorrectionRequestsTab } from '@/components/attendance/CorrectionRequestsTab';
+import { PosCheckInTab } from '@/components/attendance/PosCheckInTab';
+// Payroll tabs
+import { SalaryTemplatesTab } from '@/components/payroll/SalaryTemplatesTab';
+import { CommissionRulesTab } from '@/components/payroll/CommissionRulesTab';
+import { PayrollPeriodsTab } from '@/components/payroll/PayrollPeriodsTab';
+import { SalaryAdvancesTab } from '@/components/payroll/SalaryAdvancesTab';
 
 interface UserWithRole {
   id: string;
@@ -127,11 +145,14 @@ export default function UsersPage() {
   const { data: currentTenant } = useCurrentTenant();
   const usersGuideUrl = useUsersGuideUrl();
   const { user } = useAuth();
+  const { enabled: attendanceEnabled } = useAttendanceEnabled();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
   const [isRoleDescOpen, setIsRoleDescOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('users');
+  const [attendanceSubTab, setAttendanceSubTab] = useState('dashboard');
+  const [payrollSubTab, setPayrollSubTab] = useState('templates');
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['users-with-roles', currentTenant?.id, permissions?.role, permissions?.branchId],
@@ -210,6 +231,12 @@ export default function UsersPage() {
 
   const isSuperAdmin = permissions?.role === 'super_admin';
 
+  useEffect(() => {
+    if (!attendanceEnabled && ['attendance', 'payroll', 'setup'].includes(activeTab)) {
+      setActiveTab('users');
+    }
+  }, [activeTab, attendanceEnabled]);
+
   const canEditUser = (user: UserWithRole) => {
     if (user.user_role === 'super_admin') return false;
     if (isSuperAdmin) return true;
@@ -238,16 +265,30 @@ export default function UsersPage() {
 
       <Tabs value={effectiveTab} onValueChange={setActiveTab} className="space-y-4">
         {!isStaffOnly && (
-          <TabsList>
-            <TabsTrigger value="users" className="flex items-center gap-1.5">
-              <Shield className="h-4 w-4" />
-              <span className="hidden sm:inline">Danh sách</span>
-            </TabsTrigger>
-            <TabsTrigger value="reviews" className="flex items-center gap-1.5">
-              <Star className="h-4 w-4" />
-              <span className="hidden sm:inline">Đánh giá</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 h-auto p-1 gap-1">
+              <TabsTrigger value="users" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                <Shield className="h-3.5 w-3.5" />
+                <span>Danh sách</span>
+              </TabsTrigger>
+              {attendanceEnabled && (
+                <>
+                  <TabsTrigger value="attendance" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                    <Fingerprint className="h-3.5 w-3.5" />
+                    <span>Chấm công</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="payroll" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                    <CreditCard className="h-3.5 w-3.5" />
+                    <span>Bảng lương</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="setup" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                    <Settings2 className="h-3.5 w-3.5" />
+                    <span>Cài đặt</span>
+                  </TabsTrigger>
+                </>
+              )}
+            </TabsList>
+          </div>
         )}
 
         <TabsContent value="users" className="space-y-4">
@@ -422,8 +463,56 @@ export default function UsersPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="reviews">
-          <StaffReviewsTab />
+        {/* Attendance Tab */}
+        <TabsContent value="attendance" className="space-y-4">
+          <Tabs value={attendanceSubTab} onValueChange={setAttendanceSubTab} className="w-full">
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+              <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 h-auto p-1 gap-1">
+                <TabsTrigger value="dashboard" className="gap-1 text-xs px-2 py-1.5">Tổng quan</TabsTrigger>
+                <TabsTrigger value="shifts" className="gap-1 text-xs px-2 py-1.5">Ca làm</TabsTrigger>
+                <TabsTrigger value="schedule" className="gap-1 text-xs px-2 py-1.5">Xếp ca</TabsTrigger>
+                <TabsTrigger value="history" className="gap-1 text-xs px-2 py-1.5">Lịch sử</TabsTrigger>
+                <TabsTrigger value="corrections" className="gap-1 text-xs px-2 py-1.5">Sửa công</TabsTrigger>
+                <TabsTrigger value="report" className="gap-1 text-xs px-2 py-1.5">Báo cáo</TabsTrigger>
+                <TabsTrigger value="locations" className="gap-1 text-xs px-2 py-1.5">Điểm CC</TabsTrigger>
+                <TabsTrigger value="devices" className="gap-1 text-xs px-2 py-1.5">Thiết bị</TabsTrigger>
+                <TabsTrigger value="locks" className="gap-1 text-xs px-2 py-1.5">Chốt công</TabsTrigger>
+                <TabsTrigger value="pos" className="gap-1 text-xs px-2 py-1.5">POS</TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="dashboard"><AttendanceDashboardTab /></TabsContent>
+            <TabsContent value="shifts"><WorkShiftsTab /></TabsContent>
+            <TabsContent value="schedule"><ShiftScheduleTab /></TabsContent>
+            <TabsContent value="history"><AttendanceHistoryTab /></TabsContent>
+            <TabsContent value="corrections"><CorrectionRequestsTab /></TabsContent>
+            <TabsContent value="report"><AttendanceReportTab /></TabsContent>
+            <TabsContent value="locations"><AttendanceLocationsTab /></TabsContent>
+            <TabsContent value="devices"><TrustedDevicesTab /></TabsContent>
+            <TabsContent value="locks"><AttendanceLocksTab /></TabsContent>
+            <TabsContent value="pos"><PosCheckInTab /></TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        {/* Payroll Tab */}
+        <TabsContent value="payroll" className="space-y-4">
+          <Tabs value={payrollSubTab} onValueChange={setPayrollSubTab} className="w-full">
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+              <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 h-auto p-1 gap-1">
+                <TabsTrigger value="templates" className="gap-1 text-xs px-2 py-1.5">Mẫu lương</TabsTrigger>
+                <TabsTrigger value="commission" className="gap-1 text-xs px-2 py-1.5">Hoa hồng</TabsTrigger>
+                <TabsTrigger value="payroll-periods" className="gap-1 text-xs px-2 py-1.5">Kỳ lương</TabsTrigger>
+                <TabsTrigger value="advances" className="gap-1 text-xs px-2 py-1.5">Tạm ứng</TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="templates"><SalaryTemplatesTab /></TabsContent>
+            <TabsContent value="commission"><CommissionRulesTab /></TabsContent>
+            <TabsContent value="payroll-periods"><PayrollPeriodsTab /></TabsContent>
+            <TabsContent value="advances"><SalaryAdvancesTab mode="admin" /></TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        <TabsContent value="setup">
+          <EmployeeSetupTab />
         </TabsContent>
       </Tabs>
 
@@ -436,7 +525,7 @@ export default function UsersPage() {
         tenantId={currentTenant?.id || null}
       />
 
-      <CreateUserDialog
+      <CreateEmployeeStepper
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         branches={branches}

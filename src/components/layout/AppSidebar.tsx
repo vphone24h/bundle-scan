@@ -44,6 +44,8 @@ import {
   MessageCircleMore,
   Settings,
   Wrench,
+  Fingerprint,
+  CalendarDays,
 } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { cn } from '@/lib/utils';
@@ -53,6 +55,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { usePermissions, UserRole } from '@/hooks/usePermissions';
 import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
+import { useAttendanceEnabled } from '@/hooks/useAttendanceEnabled';
 import { Badge } from '@/components/ui/badge';
 import { NotificationBell } from '@/components/crm/NotificationBell';
 import { SystemNotificationBell } from '@/components/notifications/SystemNotificationBell';
@@ -71,6 +74,7 @@ interface NavItem {
   children?: { title: string; titleKey?: string; href: string; permission?: string; badgeKey?: string; hideInSecretMode?: boolean }[];
   permission?: string;
   badge?: string;
+  requireAttendance?: boolean;
 }
 
 const getRoleKey = (role: UserRole | undefined): string => {
@@ -87,6 +91,8 @@ const getRoleKey = (role: UserRole | undefined): string => {
 const platformAdminNavItems: NavItem[] = [
   { title: 'Quản trị nền tảng', titleKey: 'sidebar.platformAdmin', href: '/platform-admin', icon: Crown },
 ];
+
+const ATTENDANCE_HIDDEN_ROUTES = new Set(['/attendance', '/payroll', '/my-attendance', '/checkin']);
 
 // Menu cho Tenant users
 const allNavItems: NavItem[] = [
@@ -137,6 +143,8 @@ const allNavItems: NavItem[] = [
   { title: 'Sổ quỹ', titleKey: 'sidebar.cashBook', href: '/cash-book', icon: Wallet, permission: 'canViewCashBook' },
   { title: 'Quản lý chi nhánh', titleKey: 'sidebar.branches', href: '/branches', icon: Building2, permission: 'canManageBranches' },
   { title: 'Quản lý người dùng', titleKey: 'sidebar.users', href: '/users', icon: Shield, permission: 'canManageUsers' },
+  { title: 'Công của tôi', titleKey: 'sidebar.myAttendance', href: '/my-attendance', icon: CalendarDays, requireAttendance: true },
+
   { title: 'Đánh giá nhân viên', titleKey: 'sidebar.staffReviews', href: '/users', icon: Star, permission: 'canViewStaffReviews' },
   { title: 'Lịch sử thao tác', titleKey: 'sidebar.auditLogs', href: '/audit-logs', icon: History, permission: 'canViewAuditLogs' },
   { title: 'Website bán hàng', titleKey: 'sidebar.website', href: '/landing-settings', icon: Globe, permission: 'canViewWebsite', badge: 'HOT' },
@@ -169,6 +177,7 @@ export function AppSidebar() {
   const { data: unreadSocialCount } = useUnreadSocialNotifCount();
   const { data: unreadArticleCount } = useUnreadArticleCount();
   const completedRepairCount = useCompletedRepairCount();
+  const { enabled: attendanceEnabled } = useAttendanceEnabled();
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -183,16 +192,26 @@ export function AppSidebar() {
 
   // Lọc menu theo quyền và loại user
   const navItems = useMemo(() => {
+    const shouldHideAttendanceItem = (item: NavItem) =>
+      !attendanceEnabled && (item.requireAttendance || ATTENDANCE_HIDDEN_ROUTES.has(item.href));
+
     // Platform Admin hoặc Company Admin không có tenant -> chỉ hiện menu quản trị nền tảng
     if ((isPlatformAdmin || isCompanyAdmin) && !hasTenant) {
       return platformAdminNavItems;
     }
 
     // Tenant users -> hiện menu kho hàng
-    if (!permissions) return allNavItems.filter(item => !item.permission && !(isStandalone && item.href === '/install-app'));
+    if (!permissions) {
+      return allNavItems.filter(item => {
+        if (isStandalone && item.href === '/install-app') return false;
+        if (shouldHideAttendanceItem(item)) return false;
+        return !item.permission;
+      });
+    }
     
     return allNavItems.filter(item => {
       if (isStandalone && item.href === '/install-app') return false;
+      if (shouldHideAttendanceItem(item)) return false;
       if (!item.permission) return true;
       return permissions[item.permission as keyof typeof permissions] === true;
     }).map(item => {
@@ -208,7 +227,7 @@ export function AppSidebar() {
       }
       return item;
     });
-  }, [permissions, isPlatformAdmin, isCompanyAdmin, hasTenant, isStandalone, isSecretMode]);
+  }, [permissions, isPlatformAdmin, isCompanyAdmin, hasTenant, isStandalone, isSecretMode, attendanceEnabled]);
 
   const toggleExpand = useCallback((title: string) => {
     setExpandedItems((prev) =>
