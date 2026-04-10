@@ -9496,6 +9496,10 @@ export type Database = {
         Returns: Json
       }
       cleanup_rate_limits: { Args: never; Returns: undefined }
+      company_has_payment_config_key: {
+        Args: { _company_id: string; _config_key: string }
+        Returns: boolean
+      }
       create_care_reminder_notifications: { Args: never; Returns: undefined }
       decrypt_api_key: { Args: { _ciphertext: string }; Returns: string }
       delete_branch_safe: { Args: { _branch_id: string }; Returns: undefined }
