@@ -49,6 +49,7 @@ interface DetailedProfitTableProps {
     endDate?: string;
     branchId?: string;
     categoryId?: string;
+    repairFilter?: string;
   };
 }
 
@@ -80,6 +81,7 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
     endDate,
     branchId,
     categoryId,
+    repairFilter: useExternalFilters ? externalFilters.repairFilter : undefined,
     search: search || undefined,
   };
 
