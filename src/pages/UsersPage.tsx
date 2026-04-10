@@ -495,20 +495,7 @@ export default function UsersPage() {
 
         {/* Payroll Tab */}
         <TabsContent value="payroll" className="space-y-4">
-          <Tabs value={payrollSubTab} onValueChange={setPayrollSubTab} className="w-full">
-            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-              <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 h-auto p-1 gap-1">
-                <TabsTrigger value="templates" className="gap-1 text-xs px-2 py-1.5">Mẫu lương</TabsTrigger>
-                <TabsTrigger value="commission" className="gap-1 text-xs px-2 py-1.5">Hoa hồng</TabsTrigger>
-                <TabsTrigger value="payroll-periods" className="gap-1 text-xs px-2 py-1.5">Kỳ lương</TabsTrigger>
-                <TabsTrigger value="advances" className="gap-1 text-xs px-2 py-1.5">Tạm ứng</TabsTrigger>
-              </TabsList>
-            </div>
-            <TabsContent value="templates"><SalaryTemplatesTab /></TabsContent>
-            <TabsContent value="commission"><CommissionRulesTab /></TabsContent>
-            <TabsContent value="payroll-periods"><PayrollPeriodsTab /></TabsContent>
-            <TabsContent value="advances"><SalaryAdvancesTab mode="admin" /></TabsContent>
-          </Tabs>
+          <SalaryTemplatesTab />
         </TabsContent>
 
         <TabsContent value="setup">
