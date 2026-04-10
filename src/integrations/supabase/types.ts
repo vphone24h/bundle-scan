@@ -5122,21 +5122,30 @@ export type Database = {
       }
       payroll_records: {
         Row: {
+          advance_deduction: number
           allowance_details: Json | null
+          allowance_details_v2: Json | null
           base_salary: number
+          bonus_details: Json | null
           commission_details: Json | null
+          config_snapshot: Json | null
           created_at: string
           deduction_details: Json | null
+          holiday_bonus: number
+          holiday_details: Json | null
           id: string
           net_salary: number
           notes: string | null
+          overtime_pay: number
           payroll_period_id: string
+          penalty_details: Json | null
           status: string
           tenant_id: string
           total_allowance: number
           total_bonus: number
           total_commission: number
           total_deduction: number
+          total_penalty: number
           total_work_days: number
           total_work_hours: number
           updated_at: string
@@ -5144,21 +5153,30 @@ export type Database = {
           user_name: string | null
         }
         Insert: {
+          advance_deduction?: number
           allowance_details?: Json | null
+          allowance_details_v2?: Json | null
           base_salary?: number
+          bonus_details?: Json | null
           commission_details?: Json | null
+          config_snapshot?: Json | null
           created_at?: string
           deduction_details?: Json | null
+          holiday_bonus?: number
+          holiday_details?: Json | null
           id?: string
           net_salary?: number
           notes?: string | null
+          overtime_pay?: number
           payroll_period_id: string
+          penalty_details?: Json | null
           status?: string
           tenant_id: string
           total_allowance?: number
           total_bonus?: number
           total_commission?: number
           total_deduction?: number
+          total_penalty?: number
           total_work_days?: number
           total_work_hours?: number
           updated_at?: string
@@ -5166,21 +5184,30 @@ export type Database = {
           user_name?: string | null
         }
         Update: {
+          advance_deduction?: number
           allowance_details?: Json | null
+          allowance_details_v2?: Json | null
           base_salary?: number
+          bonus_details?: Json | null
           commission_details?: Json | null
+          config_snapshot?: Json | null
           created_at?: string
           deduction_details?: Json | null
+          holiday_bonus?: number
+          holiday_details?: Json | null
           id?: string
           net_salary?: number
           notes?: string | null
+          overtime_pay?: number
           payroll_period_id?: string
+          penalty_details?: Json | null
           status?: string
           tenant_id?: string
           total_allowance?: number
           total_bonus?: number
           total_commission?: number
           total_deduction?: number
+          total_penalty?: number
           total_work_days?: number
           total_work_hours?: number
           updated_at?: string
@@ -6448,48 +6475,321 @@ export type Database = {
           },
         ]
       }
+      salary_template_allowances: {
+        Row: {
+          allowance_type: string
+          amount: number
+          created_at: string
+          display_order: number
+          id: string
+          is_fixed: boolean
+          name: string
+          template_id: string
+          tenant_id: string
+        }
+        Insert: {
+          allowance_type?: string
+          amount?: number
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_fixed?: boolean
+          name?: string
+          template_id: string
+          tenant_id: string
+        }
+        Update: {
+          allowance_type?: string
+          amount?: number
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_fixed?: boolean
+          name?: string
+          template_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_template_allowances_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "salary_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_template_allowances_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salary_template_bonuses: {
+        Row: {
+          bonus_type: string
+          calc_type: string
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+          template_id: string
+          tenant_id: string
+          threshold: number | null
+          value: number
+        }
+        Insert: {
+          bonus_type?: string
+          calc_type?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+          template_id: string
+          tenant_id: string
+          threshold?: number | null
+          value?: number
+        }
+        Update: {
+          bonus_type?: string
+          calc_type?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+          template_id?: string
+          tenant_id?: string
+          threshold?: number | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_template_bonuses_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "salary_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_template_bonuses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salary_template_commissions: {
+        Row: {
+          calc_type: string
+          created_at: string
+          display_order: number
+          id: string
+          target_id: string | null
+          target_name: string
+          target_type: string
+          template_id: string
+          tenant_id: string
+          value: number
+        }
+        Insert: {
+          calc_type?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          target_id?: string | null
+          target_name?: string
+          target_type?: string
+          template_id: string
+          tenant_id: string
+          value?: number
+        }
+        Update: {
+          calc_type?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          target_id?: string | null
+          target_name?: string
+          target_type?: string
+          template_id?: string
+          tenant_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_template_commissions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "salary_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_template_commissions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salary_template_holidays: {
+        Row: {
+          created_at: string
+          display_order: number
+          holiday_date: string
+          holiday_name: string
+          id: string
+          multiplier_percent: number
+          template_id: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          holiday_date?: string
+          holiday_name?: string
+          id?: string
+          multiplier_percent?: number
+          template_id: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          holiday_date?: string
+          holiday_name?: string
+          id?: string
+          multiplier_percent?: number
+          template_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_template_holidays_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "salary_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_template_holidays_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salary_template_penalties: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          name: string
+          penalty_type: string
+          template_id: string
+          tenant_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+          penalty_type?: string
+          template_id: string
+          tenant_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+          penalty_type?: string
+          template_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_template_penalties_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "salary_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_template_penalties_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salary_templates: {
         Row: {
           allowance_amount: number
+          allowance_enabled: boolean
           base_amount: number
           bonus_amount: number
+          bonus_enabled: boolean
+          commission_enabled: boolean
           commission_percent: number
           created_at: string
           description: string | null
+          holiday_enabled: boolean
           id: string
           is_active: boolean
           kpi_bonus_amount: number
           name: string
+          penalty_enabled: boolean
           salary_type: string
           tenant_id: string
           updated_at: string
         }
         Insert: {
           allowance_amount?: number
+          allowance_enabled?: boolean
           base_amount?: number
           bonus_amount?: number
+          bonus_enabled?: boolean
+          commission_enabled?: boolean
           commission_percent?: number
           created_at?: string
           description?: string | null
+          holiday_enabled?: boolean
           id?: string
           is_active?: boolean
           kpi_bonus_amount?: number
           name: string
+          penalty_enabled?: boolean
           salary_type?: string
           tenant_id: string
           updated_at?: string
         }
         Update: {
           allowance_amount?: number
+          allowance_enabled?: boolean
           base_amount?: number
           bonus_amount?: number
+          bonus_enabled?: boolean
+          commission_enabled?: boolean
           commission_percent?: number
           created_at?: string
           description?: string | null
+          holiday_enabled?: boolean
           id?: string
           is_active?: boolean
           kpi_bonus_amount?: number
           name?: string
+          penalty_enabled?: boolean
           salary_type?: string
           tenant_id?: string
           updated_at?: string
