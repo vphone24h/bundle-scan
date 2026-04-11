@@ -6816,33 +6816,39 @@ export type Database = {
           created_at: string
           description: string | null
           display_order: number
+          full_day_absence_minutes: number
           id: string
           name: string
           penalty_type: string
           template_id: string
           tenant_id: string
+          threshold_minutes: number
         }
         Insert: {
           amount?: number
           created_at?: string
           description?: string | null
           display_order?: number
+          full_day_absence_minutes?: number
           id?: string
           name?: string
           penalty_type?: string
           template_id: string
           tenant_id: string
+          threshold_minutes?: number
         }
         Update: {
           amount?: number
           created_at?: string
           description?: string | null
           display_order?: number
+          full_day_absence_minutes?: number
           id?: string
           name?: string
           penalty_type?: string
           template_id?: string
           tenant_id?: string
+          threshold_minutes?: number
         }
         Relationships: [
           {
