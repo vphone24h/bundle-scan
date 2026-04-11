@@ -376,14 +376,14 @@ export default function SettingsPage() {
           <BusinessModeSection tenantId={tenant.id} currentMode={tenant.business_mode || 'public'} />
         )}
 
-        {/* Data Management (Backup, Test mode, etc.) - Super Admin only */}
-        {isSuperAdmin && (
-          <DataManagementSection />
-        )}
-
         {/* Daily Backup - Super Admin only */}
         {isSuperAdmin && (
           <DailyBackupSection />
+        )}
+
+        {/* Data Management (Backup, Test mode, etc.) - Super Admin only */}
+        {isSuperAdmin && (
+          <DataManagementSection />
         )}
 
         {/* Historical order import - Super Admin only */}
