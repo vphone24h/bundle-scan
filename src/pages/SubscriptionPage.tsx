@@ -101,16 +101,26 @@ export default function SubscriptionPage() {
   });
 
   const { data: bankAccounts } = useQuery({
-    queryKey: ['bank-accounts-active'],
+    queryKey: ['bank-accounts-active', tenant?.company_id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('bank_accounts')
         .select('*')
         .eq('is_active', true)
         .order('display_order');
+      
+      // Show company's bank accounts if tenant belongs to a company
+      if (tenant?.company_id) {
+        query = query.eq('company_id', tenant.company_id);
+      } else {
+        query = query.is('company_id', null);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return data as BankAccount[];
     },
+    enabled: !!tenant,
   });
 
   const hotline = configs?.find(c => c.config_key === 'hotline')?.config_value || '0909 123 456';
