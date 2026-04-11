@@ -221,24 +221,65 @@ async function sendDay0ActionEmail(toEmail: string, adminName: string, tenantId:
   }
 }
 
-async function sendWelcomeEmail(toEmail: string, adminName: string, subdomain: string, supabaseAdmin: any) {
+async function sendWelcomeEmail(toEmail: string, adminName: string, subdomain: string, supabaseAdmin: any, companyId: string | null) {
   try {
-    const smtpUser = Deno.env.get('SMTP_USER')
-    const smtpPassword = Deno.env.get('SMTP_PASSWORD')
+    let smtpUser = Deno.env.get('SMTP_USER')
+    let smtpPassword = Deno.env.get('SMTP_PASSWORD')
+    let fromName = 'VKHO'
+    let companyEmailConfig: any = null
+
+    // Try to use company's own SMTP config if available
+    if (companyId) {
+      const { data: emailCfg } = await supabaseAdmin
+        .from('company_email_config')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('is_enabled', true)
+        .maybeSingle()
+
+      if (emailCfg?.smtp_user && emailCfg?.smtp_pass) {
+        smtpUser = emailCfg.smtp_user
+        smtpPassword = emailCfg.smtp_pass
+        fromName = emailCfg.from_name || 'Admin'
+        companyEmailConfig = emailCfg
+        console.log('Using company SMTP config for welcome email')
+      }
+    }
 
     if (!smtpUser || !smtpPassword) {
       console.error('SMTP credentials not configured for welcome email')
       return
     }
 
-    const { data: configs } = await supabaseAdmin
-      .from('payment_config')
-      .select('config_key, config_value')
-      .in('config_key', ['welcome_email_enabled', 'welcome_email_subject', 'welcome_email_body'])
-
-    const configMap: Record<string, string> = {}
-    for (const c of (configs || [])) {
-      if (c.config_value) configMap[c.config_key] = c.config_value
+    // Fetch welcome email config - prioritize company-level, fallback to platform
+    let configMap: Record<string, string> = {}
+    
+    if (companyId) {
+      const { data: companyConfigs } = await supabaseAdmin
+        .from('payment_config')
+        .select('config_key, config_value')
+        .eq('company_id', companyId)
+        .in('config_key', ['welcome_email_enabled', 'welcome_email_subject', 'welcome_email_body'])
+      
+      for (const c of (companyConfigs || [])) {
+        if (c.config_value) configMap[c.config_key] = c.config_value
+      }
+    }
+    
+    // Fallback to platform config for any missing keys
+    const missingKeys = ['welcome_email_enabled', 'welcome_email_subject', 'welcome_email_body']
+      .filter(k => !configMap[k])
+    
+    if (missingKeys.length > 0) {
+      const { data: platformConfigs } = await supabaseAdmin
+        .from('payment_config')
+        .select('config_key, config_value')
+        .is('company_id', null)
+        .in('config_key', missingKeys)
+      
+      for (const c of (platformConfigs || [])) {
+        if (c.config_value && !configMap[c.config_key]) configMap[c.config_key] = c.config_value
+      }
     }
 
     if (configMap['welcome_email_enabled'] === 'false') {
@@ -247,8 +288,8 @@ async function sendWelcomeEmail(toEmail: string, adminName: string, subdomain: s
     }
 
     const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
+      host: companyEmailConfig?.smtp_host || 'smtp.gmail.com',
+      port: companyEmailConfig?.smtp_port || 465,
       secure: true,
       auth: { user: smtpUser, pass: smtpPassword },
     })
@@ -293,20 +334,20 @@ async function sendWelcomeEmail(toEmail: string, adminName: string, subdomain: s
     const htmlContent = [
       '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:0;background:#f9fafb;border-radius:12px;overflow:hidden">',
         '<div style="background:linear-gradient(135deg,#1a56db,#2563eb);color:#fff;padding:32px 24px;text-align:center">',
-          '<h1 style="margin:0 0 8px;font-size:24px;font-weight:bold">🎉 Chào mừng đến với VKHO!</h1>',
-          '<p style="margin:0;font-size:14px;opacity:0.9">Hệ thống quản lý kho thông minh</p>',
+          `<h1 style="margin:0 0 8px;font-size:24px;font-weight:bold">🎉 Chào mừng!</h1>`,
+          `<p style="margin:0;font-size:14px;opacity:0.9">Hệ thống quản lý kho thông minh</p>`,
         '</div>',
         '<div style="background:#fff;padding:32px 24px">',
           emailBody,
         '</div>',
         '<div style="background:#f3f4f6;padding:16px 24px;text-align:center">',
-          '<p style="margin:0;font-size:12px;color:#9ca3af">© 2026 VKHO – Hệ thống quản lý kho hàng thông minh</p>',
+          `<p style="margin:0;font-size:12px;color:#9ca3af">© 2026 ${fromName}</p>`,
         '</div>',
       '</div>',
     ].join('')
 
     await transporter.sendMail({
-      from: `"VKHO" <${smtpUser}>`,
+      from: `"${fromName}" <${smtpUser}>`,
       to: toEmail,
       subject: emailSubject,
       html: htmlContent,
@@ -635,7 +676,7 @@ Deno.serve(async (req) => {
       .catch(err => console.error('Email notification error:', err))
 
     // Send welcome email to new user (non-blocking)
-    sendWelcomeEmail(email, adminName, subdomain, supabaseAdmin)
+    sendWelcomeEmail(email, adminName, subdomain, supabaseAdmin, companyId)
       .catch(err => console.error('Welcome email error:', err))
 
     // Send Day 0 action email – hướng dẫn 3 bước bắt đầu (non-blocking)

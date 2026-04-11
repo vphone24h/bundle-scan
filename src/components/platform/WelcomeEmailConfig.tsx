@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { useAdminCompanyId } from '@/hooks/useAdminCompanyId';
 import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -54,6 +55,7 @@ interface PaymentConfig {
 
 export function WelcomeEmailConfig() {
   const queryClient = useQueryClient();
+  const { companyId } = useAdminCompanyId();
   const [enabled, setEnabled] = useState(true);
   const [subject, setSubject] = useState(DEFAULT_WELCOME_SUBJECT);
   const [body, setBody] = useState(DEFAULT_WELCOME_BODY);
@@ -67,9 +69,15 @@ export function WelcomeEmailConfig() {
   const { data: articles } = usePublishedPlatformArticles();
 
   const { data: configs, isLoading } = useQuery({
-    queryKey: ['payment-config'],
+    queryKey: ['payment-config-email', companyId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('payment_config').select('*');
+      let query = supabase.from('payment_config').select('*');
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      } else {
+        query = query.is('company_id', null);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data as PaymentConfig[];
     },
@@ -90,16 +98,18 @@ export function WelcomeEmailConfig() {
     setSaving(true);
     try {
       const updates = [
-        { config_key: 'welcome_email_enabled', config_value: String(enabled) },
-        { config_key: 'welcome_email_subject', config_value: subject },
-        { config_key: 'welcome_email_body', config_value: body },
+        { config_key: 'welcome_email_enabled', config_value: String(enabled), company_id: companyId },
+        { config_key: 'welcome_email_subject', config_value: subject, company_id: companyId },
+        { config_key: 'welcome_email_body', config_value: body, company_id: companyId },
       ];
       for (const u of updates) {
-        const { error } = await supabase.from('payment_config').upsert(u, { onConflict: 'config_key' });
+        const { error } = await supabase.from('payment_config').upsert(u, { 
+          onConflict: companyId ? 'config_key,company_id' : 'config_key',
+        });
         if (error) throw error;
       }
       toast({ title: 'Thành công', description: 'Đã lưu mẫu email chào mừng' });
-      queryClient.invalidateQueries({ queryKey: ['payment-config'] });
+      queryClient.invalidateQueries({ queryKey: ['payment-config-email', companyId] });
     } catch (err: any) {
       toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
     }
