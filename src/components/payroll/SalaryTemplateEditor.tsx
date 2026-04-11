@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,6 +80,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
   const updateTemplate = useUpdateSalaryTemplate();
   const saveConfigs = useSaveTemplateConfigs();
   const { data: categories } = useCategories();
+  const qc = useQueryClient();
 
   const existing = templates?.find(t => t.id === templateId);
 
@@ -169,6 +171,9 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
 
         onSaved?.(id);
       }
+
+      // Wait for cache to fully refresh before closing
+      await qc.refetchQueries({ queryKey: ['salary-templates'] });
 
       toast.success('Lưu mẫu lương thành công');
       onClose();
