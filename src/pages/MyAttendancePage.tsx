@@ -73,6 +73,29 @@ export default function MyAttendancePage() {
     enabled: !!user?.id && !!tenantId,
   });
 
+  // Sales data for the month
+  const { data: mySales } = useQuery({
+    queryKey: ['my-sales-month', user?.id, tenantId, startStr, endStr],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('export_receipts')
+        .select('id, code, total_amount, export_date, status, customers(name, phone), branches(name)')
+        .eq('tenant_id', tenantId!)
+        .eq('sales_staff_id', user!.id)
+        .gte('created_at', startStr)
+        .lte('created_at', endStr + 'T23:59:59')
+        .in('status', ['completed', 'paid'])
+        .order('export_date', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id && !!tenantId,
+  });
+
+  const totalSalesRevenue = useMemo(() => {
+    return (mySales || []).reduce((s, r) => s + (r.total_amount || 0), 0);
+  }, [mySales]);
+
   // Today's shift assignment
   const today = format(new Date(), 'yyyy-MM-dd');
   const dayOfWeek = new Date().getDay();
