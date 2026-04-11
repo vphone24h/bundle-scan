@@ -215,6 +215,14 @@ export function WelcomeEmailConfig() {
 
   return (
     <div className="space-y-6">
+      {/* SMTP Warning for Company Admins */}
+      {isCompanyAdmin && !hasSmtpConfigured && (
+        <div className="rounded-lg border border-orange-300 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-800 p-4 text-sm text-orange-800 dark:text-orange-300">
+          <p className="font-medium">⚠️ Chưa cấu hình Email gửi thông báo</p>
+          <p className="mt-1 text-xs">Bạn cần vào tab <strong>"Cấu hình"</strong> → <strong>"Cấu hình Email gửi thông báo"</strong> để nhập Email Gmail và App Password trước. Email gửi cho khách sẽ từ địa chỉ email của công ty bạn.</p>
+        </div>
+      )}
+
       {/* Welcome Email Template */}
       <Card>
         <CardHeader>
