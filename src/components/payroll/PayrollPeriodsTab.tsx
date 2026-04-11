@@ -6,13 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Loader2, Calculator, Lock, FileSpreadsheet, Eye, ChevronRight, Clock, UserX, Timer, Search, Users, DollarSign, Gift, AlertTriangle, Download, ArrowUpDown, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown } from 'lucide-react';
+import { Plus, Loader2, Calculator, Lock, FileSpreadsheet, ChevronRight, Search, Users, DollarSign, Gift, AlertTriangle, Download, ArrowUpDown, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import { usePayrollPeriods, useCreatePayrollPeriod, useCalculatePayroll, usePayrollRecords, useLockPayrollPeriod } from '@/hooks/usePayroll';
 import { usePlatformUser } from '@/hooks/useTenant';
-import { useBranches } from '@/hooks/useBranches';
 import { formatNumber } from '@/lib/formatNumber';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -32,7 +29,6 @@ export function PayrollPeriodsTab() {
   const calculatePayroll = useCalculatePayroll();
   const lockPeriod = useLockPayrollPeriod();
   const { data: pu } = usePlatformUser();
-  const { data: branches } = useBranches();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [periodName, setPeriodName] = useState('');
@@ -85,9 +81,7 @@ export function PayrollPeriodsTab() {
       const q = searchQuery.toLowerCase();
       result = result.filter(r => (r.user_name || '').toLowerCase().includes(q));
     }
-    // Sort
     result.sort((a, b) => {
-      const ra = a as any, rb = b as any;
       switch (sortBy) {
         case 'salary_desc': return (b.net_salary || 0) - (a.net_salary || 0);
         case 'salary_asc': return (a.net_salary || 0) - (b.net_salary || 0);
@@ -118,6 +112,8 @@ export function PayrollPeriodsTab() {
   const handleExportAll = () => {
     if (!records?.length) return;
     const period = periods?.find(p => p.id === selectedPeriodId);
+
+    // Sheet 1: Summary
     const ws1Data = records.map(r => {
       const rec = r as any;
       return {
@@ -142,6 +138,50 @@ export function PayrollPeriodsTab() {
     });
     const ws1 = XLSX.utils.json_to_sheet(ws1Data);
 
+    // Sheet 2: Breakdown detail for all employees
+    const breakdownRows: any[] = [];
+    for (const r of records) {
+      const rec = r as any;
+      const name = r.user_name || r.user_id;
+      const configSnapshot = rec.config_snapshot || {};
+
+      // Base salary
+      breakdownRows.push({ 'Nhân viên': name, 'Loại': 'Lương chính', 'Tên': configSnapshot.template_name || 'Lương cơ bản', 'Chi tiết': `${configSnapshot.salary_type === 'hourly' ? 'Theo giờ' : configSnapshot.salary_type === 'daily' ? 'Theo ngày' : configSnapshot.salary_type === 'shift' ? 'Theo ca' : 'Cố định'}`, 'Số tiền': r.base_salary });
+
+      // Bonuses
+      for (const b of (rec.bonus_details || [])) {
+        breakdownRows.push({ 'Nhân viên': name, 'Loại': 'Thưởng', 'Tên': b.name, 'Chi tiết': b.type || '', 'Số tiền': b.amount });
+      }
+      // Commissions
+      for (const c of (rec.commission_details || [])) {
+        breakdownRows.push({ 'Nhân viên': name, 'Loại': 'Hoa hồng', 'Tên': c.name || c.product_name || 'Hoa hồng', 'Chi tiết': c.type || '', 'Số tiền': c.amount });
+      }
+      // Allowances
+      for (const a of (rec.allowance_details_v2 || [])) {
+        breakdownRows.push({ 'Nhân viên': name, 'Loại': 'Phụ cấp', 'Tên': a.name, 'Chi tiết': '', 'Số tiền': a.amount });
+      }
+      // Holidays
+      for (const h of (rec.holiday_details || [])) {
+        breakdownRows.push({ 'Nhân viên': name, 'Loại': 'Ngày lễ', 'Tên': h.holiday, 'Chi tiết': `${h.multiplier}% x ${h.days} ngày`, 'Số tiền': h.extra });
+      }
+      // Overtime
+      for (const o of (configSnapshot.overtime_details || [])) {
+        breakdownRows.push({ 'Nhân viên': name, 'Loại': 'Tăng ca', 'Tên': o.name, 'Chi tiết': o.type === 'full_day' ? `${o.count} ngày` : `${o.hours}h`, 'Số tiền': o.amount });
+      }
+      // Penalties
+      for (const p of (rec.penalty_details || [])) {
+        breakdownRows.push({ 'Nhân viên': name, 'Loại': 'Phạt', 'Tên': `${p.name} (×${p.count})`, 'Chi tiết': '', 'Số tiền': -p.amount });
+      }
+      // Advance
+      if ((rec.advance_deduction || 0) > 0) {
+        breakdownRows.push({ 'Nhân viên': name, 'Loại': 'Tạm ứng', 'Tên': 'Khấu trừ tạm ứng', 'Chi tiết': '', 'Số tiền': -rec.advance_deduction });
+      }
+      // Net
+      breakdownRows.push({ 'Nhân viên': name, 'Loại': '=== THỰC NHẬN ===', 'Tên': '', 'Chi tiết': '', 'Số tiền': r.net_salary });
+    }
+    const ws2 = XLSX.utils.json_to_sheet(breakdownRows.length ? breakdownRows : [{ 'Ghi chú': 'Không có dữ liệu' }]);
+
+    // Sheet 3: Attendance
     const attendanceRows: any[] = [];
     for (const r of records) {
       const details = (r as any).attendance_details || [];
@@ -160,11 +200,12 @@ export function PayrollPeriodsTab() {
         });
       }
     }
-    const ws2 = XLSX.utils.json_to_sheet(attendanceRows.length ? attendanceRows : [{ 'Ghi chú': 'Không có dữ liệu' }]);
+    const ws3 = XLSX.utils.json_to_sheet(attendanceRows.length ? attendanceRows : [{ 'Ghi chú': 'Không có dữ liệu' }]);
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws1, 'Bảng lương');
-    XLSX.utils.book_append_sheet(wb, ws2, 'Chi tiết công');
+    XLSX.utils.book_append_sheet(wb, ws2, 'Chi tiết lương');
+    XLSX.utils.book_append_sheet(wb, ws3, 'Chi tiết công');
     XLSX.writeFile(wb, `bang_luong_${(period?.name || 'export').replace(/\s/g, '_')}.xlsx`);
     toast.success('Đã xuất Excel toàn bộ nhân viên');
   };
@@ -174,40 +215,52 @@ export function PayrollPeriodsTab() {
     const rec = record as any;
     const period = periods?.find(p => p.id === selectedPeriodId);
     const name = (record.user_name || 'nhan_vien').replace(/\s/g, '_');
+    const configSnapshot = rec.config_snapshot || {};
 
     // Sheet 1: Salary info
     const salarySheet = [
       ['BẢNG LƯƠNG CHI TIẾT'],
       ['Nhân viên', record.user_name],
       ['Kỳ lương', period?.name || ''],
+      ['Mẫu lương', configSnapshot.template_name || ''],
       [''],
-      ['Khoản mục', 'Giá trị'],
-      ['Lương chính', record.base_salary || 0],
-      ['Thưởng', record.total_bonus || 0],
-      ['Hoa hồng', record.total_commission || 0],
-      ['Phụ cấp', record.total_allowance || 0],
-      ['Ngày lễ', rec.holiday_bonus || 0],
-      ['Tăng ca', rec.overtime_pay || 0],
-      ['Phạt', -(rec.total_penalty || 0)],
-      ['Tạm ứng', -(rec.advance_deduction || 0)],
-      [''],
-      ['THỰC NHẬN', record.net_salary || 0],
+      ['Khoản mục', 'Chi tiết', 'Giá trị'],
+      ['Lương chính', `${configSnapshot.salary_type === 'hourly' ? 'Theo giờ' : configSnapshot.salary_type === 'daily' ? 'Theo ngày' : 'Cố định'}`, record.base_salary || 0],
     ];
+    // Bonuses detail
+    for (const b of (rec.bonus_details || [])) {
+      salarySheet.push(['Thưởng', `${b.name} (${b.type || ''})`, b.amount]);
+    }
+    // Commission detail
+    for (const c of (rec.commission_details || [])) {
+      salarySheet.push(['Hoa hồng', c.name || c.product_name || 'Hoa hồng', c.amount]);
+    }
+    // Allowance detail
+    for (const a of (rec.allowance_details_v2 || [])) {
+      salarySheet.push(['Phụ cấp', a.name, a.amount]);
+    }
+    // Holiday detail
+    for (const h of (rec.holiday_details || [])) {
+      salarySheet.push(['Ngày lễ', `${h.holiday} (${h.multiplier}%, ${h.days} ngày)`, h.extra]);
+    }
+    // Overtime
+    for (const o of (configSnapshot.overtime_details || [])) {
+      salarySheet.push(['Tăng ca', `${o.name} ${o.type === 'full_day' ? `(${o.count} ngày)` : `(${o.hours}h)`}`, o.amount]);
+    }
+    // Penalties detail
+    for (const p of (rec.penalty_details || [])) {
+      salarySheet.push(['Phạt', `${p.name} (×${p.count})`, -p.amount]);
+    }
+    if ((rec.advance_deduction || 0) > 0) {
+      salarySheet.push(['Tạm ứng', 'Khấu trừ tạm ứng', -rec.advance_deduction]);
+    }
+    salarySheet.push(['']);
+    salarySheet.push(['THỰC NHẬN', '', record.net_salary || 0]);
+
     const ws1 = XLSX.utils.aoa_to_sheet(salarySheet);
-    ws1['!cols'] = [{ wch: 20 }, { wch: 20 }];
+    ws1['!cols'] = [{ wch: 15 }, { wch: 30 }, { wch: 18 }];
 
-    // Sheet 2: Breakdown
-    const bonusDetails = rec.bonus_details || [];
-    const allowanceDetails = rec.allowance_details_v2 || [];
-    const penaltyDetails = rec.penalty_details || [];
-    const breakdownRows: any[][] = [['Loại', 'Tên', 'Số tiền']];
-    bonusDetails.forEach((b: any) => breakdownRows.push(['Thưởng', b.name, b.amount]));
-    allowanceDetails.forEach((a: any) => breakdownRows.push(['Phụ cấp', a.name, a.amount]));
-    penaltyDetails.forEach((p: any) => breakdownRows.push(['Phạt', `${p.name} (×${p.count})`, -p.amount]));
-    const ws2 = XLSX.utils.aoa_to_sheet(breakdownRows);
-    ws2['!cols'] = [{ wch: 12 }, { wch: 25 }, { wch: 15 }];
-
-    // Sheet 3: Attendance
+    // Sheet 2: Attendance
     const attendanceDetails = rec.attendance_details || [];
     const attRows: any[][] = [['Ngày', 'Ca', 'Giờ vào', 'Giờ ra', 'Trạng thái', 'Trễ (phút)', 'Tổng (phút)']];
     attendanceDetails.forEach((d: any) => {
@@ -218,20 +271,18 @@ export function PayrollPeriodsTab() {
         d.status, d.late_minutes || 0, d.total_work_minutes || 0,
       ]);
     });
-    const ws3 = XLSX.utils.aoa_to_sheet(attRows);
-    ws3['!cols'] = [{ wch: 12 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+    const ws2 = XLSX.utils.aoa_to_sheet(attRows);
+    ws2['!cols'] = [{ wch: 12 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws1, 'Lương');
-    XLSX.utils.book_append_sheet(wb, ws2, 'Chi tiết');
-    XLSX.utils.book_append_sheet(wb, ws3, 'Ngày công');
+    XLSX.utils.book_append_sheet(wb, ws1, 'Bảng lương chi tiết');
+    XLSX.utils.book_append_sheet(wb, ws2, 'Ngày công');
     XLSX.writeFile(wb, `luong_${name}.xlsx`);
     toast.success(`Đã xuất lương: ${record.user_name}`);
   };
 
   // ===== Period List =====
   if (!selectedPeriodId) {
-    // Filter periods by status
     const filteredPeriods = periods?.filter(p => filterStatus === 'all' || p.status === filterStatus) || [];
 
     return (
@@ -243,7 +294,6 @@ export function PayrollPeriodsTab() {
           </Button>
         </div>
 
-        {/* Filter by status */}
         <div className="flex gap-2">
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-[150px] h-8 text-xs">
@@ -265,7 +315,7 @@ export function PayrollPeriodsTab() {
         ) : (
           <div className="grid gap-3">
             {filteredPeriods.map(p => (
-              <Card key={p.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => { setSelectedPeriodId(p.id); setCurrentPage(1); setSearchQuery(''); }}>
+              <Card key={p.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => { setSelectedPeriodId(p.id); setCurrentPage(1); setSearchQuery(''); setExpandedRowId(null); }}>
                 <CardContent className="py-3">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -375,13 +425,13 @@ export function PayrollPeriodsTab() {
         <Card>
           <CardContent className="py-3 text-center">
             <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground"><Gift className="h-3 w-3" />Thưởng</div>
-            <p className="font-bold text-green-600 text-lg">{formatNumber(summary.totalBonus)}đ</p>
+            <p className="font-bold text-lg" style={{ color: 'hsl(var(--chart-2))' }}>{formatNumber(summary.totalBonus)}đ</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="py-3 text-center">
             <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">Hoa hồng</div>
-            <p className="font-bold text-blue-600 text-lg">{formatNumber(summary.totalCommission)}đ</p>
+            <p className="font-bold text-lg" style={{ color: 'hsl(var(--chart-1))' }}>{formatNumber(summary.totalCommission)}đ</p>
           </CardContent>
         </Card>
         <Card>
@@ -423,7 +473,7 @@ export function PayrollPeriodsTab() {
         </Select>
       </div>
 
-      {/* Records Table */}
+      {/* Records Table with Expandable Rows */}
       {!records?.length ? (
         <Card><CardContent className="py-8 text-center text-muted-foreground text-sm">
           {period?.status === 'draft' ? 'Nhấn "Tính lương" để hệ thống tự động lấy dữ liệu chấm công và tính lương.' : 'Không có dữ liệu.'}
@@ -432,10 +482,11 @@ export function PayrollPeriodsTab() {
         <Card><CardContent className="py-8 text-center text-muted-foreground text-sm">Không tìm thấy nhân viên.</CardContent></Card>
       ) : (
         <>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto border rounded-lg">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="text-xs w-8"></TableHead>
                   <TableHead className="text-xs">Nhân viên</TableHead>
                   <TableHead className="text-xs text-center">Ngày công</TableHead>
                   <TableHead className="text-xs text-center">Giờ công</TableHead>
@@ -445,37 +496,49 @@ export function PayrollPeriodsTab() {
                   <TableHead className="text-xs text-right">Phụ cấp</TableHead>
                   <TableHead className="text-xs text-right text-destructive">Phạt</TableHead>
                   <TableHead className="text-xs text-right font-bold">Thực nhận</TableHead>
-                  <TableHead className="w-16"></TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedRecords.map(r => {
                   const rec = r as any;
+                  const isExpanded = expandedRowId === r.id;
                   return (
-                    <TableRow key={r.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setDetailRecord(r)}>
-                      <TableCell className="text-xs font-medium max-w-[120px] truncate">{r.user_name || r.user_id?.slice(0, 8)}</TableCell>
-                      <TableCell className="text-xs text-center">
-                        <span className="font-medium">{r.total_work_days}</span>
-                        <span className="text-muted-foreground">/{rec.expected_work_days || '-'}</span>
-                      </TableCell>
-                      <TableCell className="text-xs text-center">{r.total_work_hours || 0}h</TableCell>
-                      <TableCell className="text-xs text-right">{formatNumber(r.base_salary)}</TableCell>
-                      <TableCell className="text-xs text-right">{formatNumber(r.total_bonus || 0)}</TableCell>
-                      <TableCell className="text-xs text-right">{formatNumber(r.total_commission || 0)}</TableCell>
-                      <TableCell className="text-xs text-right">{formatNumber(r.total_allowance || 0)}</TableCell>
-                      <TableCell className="text-xs text-right text-destructive">{formatNumber(rec.total_penalty || 0)}</TableCell>
-                      <TableCell className="text-xs text-right font-bold text-primary">{formatNumber(r.net_salary)}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); setDetailRecord(r); }}>
-                            <Eye className="h-3.5 w-3.5" />
-                          </Button>
+                    <>
+                      <TableRow
+                        key={r.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => setExpandedRowId(isExpanded ? null : r.id)}
+                      >
+                        <TableCell className="px-2">
+                          {isExpanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+                        </TableCell>
+                        <TableCell className="text-xs font-medium max-w-[120px] truncate">{r.user_name || r.user_id?.slice(0, 8)}</TableCell>
+                        <TableCell className="text-xs text-center">
+                          <span className="font-medium">{r.total_work_days}</span>
+                          <span className="text-muted-foreground">/{rec.expected_work_days || '-'}</span>
+                        </TableCell>
+                        <TableCell className="text-xs text-center">{r.total_work_hours || 0}h</TableCell>
+                        <TableCell className="text-xs text-right">{formatNumber(r.base_salary)}</TableCell>
+                        <TableCell className="text-xs text-right">{formatNumber(r.total_bonus || 0)}</TableCell>
+                        <TableCell className="text-xs text-right">{formatNumber(r.total_commission || 0)}</TableCell>
+                        <TableCell className="text-xs text-right">{formatNumber(r.total_allowance || 0)}</TableCell>
+                        <TableCell className="text-xs text-right text-destructive">{formatNumber(rec.total_penalty || 0)}</TableCell>
+                        <TableCell className="text-xs text-right font-bold text-primary">{formatNumber(r.net_salary)}</TableCell>
+                        <TableCell>
                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); handleExportSingle(r); }}>
                             <Download className="h-3.5 w-3.5" />
                           </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+                      </TableRow>
+                      {isExpanded && (
+                        <TableRow key={`${r.id}-detail`}>
+                          <TableCell colSpan={11} className="p-0 bg-muted/30">
+                            <InlinePayrollBreakdown record={r} periodName={period?.name} onExport={() => handleExportSingle(r)} />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
                   );
                 })}
               </TableBody>
@@ -499,215 +562,189 @@ export function PayrollPeriodsTab() {
           )}
         </>
       )}
-
-      {/* Detail Dialog */}
-      <Dialog open={!!detailRecord} onOpenChange={() => setDetailRecord(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-sm">Chi tiết lương - {detailRecord?.user_name}</DialogTitle>
-              {detailRecord && (
-                <Button size="sm" variant="outline" className="text-xs" onClick={() => handleExportSingle(detailRecord)}>
-                  <Download className="h-3 w-3 mr-1" />Excel
-                </Button>
-              )}
-            </div>
-          </DialogHeader>
-          {detailRecord && <PayrollDetailContent record={detailRecord} periodName={period?.name} />}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
 
-function PayrollDetailContent({ record, periodName }: { record: any; periodName?: string }) {
+// ===== Inline Breakdown Component =====
+function InlinePayrollBreakdown({ record, periodName, onExport }: { record: any; periodName?: string; onExport: () => void }) {
   const rec = record as any;
-  const attendanceDetails = rec.attendance_details || [];
+  const configSnapshot = rec.config_snapshot || {};
   const bonusDetails = rec.bonus_details || [];
+  const commissionDetails = rec.commission_details || [];
   const allowanceDetails = rec.allowance_details_v2 || [];
   const penaltyDetails = rec.penalty_details || [];
   const holidayDetails = rec.holiday_details || [];
-  const configSnapshot = rec.config_snapshot || {};
+  const overtimeDetails = configSnapshot.overtime_details || [];
 
   return (
-    <Tabs defaultValue="salary" className="flex-1 overflow-hidden flex flex-col">
-      <TabsList className="w-full grid grid-cols-3">
-        <TabsTrigger value="salary" className="text-xs">Bảng lương</TabsTrigger>
-        <TabsTrigger value="attendance" className="text-xs">Ngày công</TabsTrigger>
-        <TabsTrigger value="breakdown" className="text-xs">Chi tiết</TabsTrigger>
-      </TabsList>
-
-      <ScrollArea className="flex-1 mt-3">
-        <TabsContent value="salary" className="mt-0 space-y-3">
-          {/* Employee info */}
-          <div className="p-3 bg-muted/50 rounded-lg space-y-1">
-            <p className="text-xs"><span className="text-muted-foreground">Nhân viên:</span> <span className="font-medium">{record.user_name}</span></p>
-            {periodName && <p className="text-xs"><span className="text-muted-foreground">Kỳ lương:</span> <span className="font-medium">{periodName}</span></p>}
-            {configSnapshot.template_name && (
-              <p className="text-xs"><span className="text-muted-foreground">Mẫu lương:</span> <span className="font-medium">{configSnapshot.template_name}</span>
-                {configSnapshot.salary_type && ` (${configSnapshot.salary_type === 'fixed' ? 'Cố định' : configSnapshot.salary_type === 'hourly' ? 'Theo giờ' : configSnapshot.salary_type === 'daily' ? 'Theo ngày' : 'Theo ca'})`}
-              </p>
-            )}
-            {configSnapshot.user_revenue > 0 && (
-              <p className="text-xs"><span className="text-muted-foreground">Doanh thu cá nhân:</span> <span className="font-medium text-blue-600">{formatNumber(configSnapshot.user_revenue)}đ</span> ({configSnapshot.sale_count || 0} đơn)</p>
-            )}
-            {configSnapshot.branch_revenue > 0 && (
-              <p className="text-xs"><span className="text-muted-foreground">Doanh thu chi nhánh:</span> <span className="font-medium">{formatNumber(configSnapshot.branch_revenue)}đ</span></p>
-            )}
-          </div>
-
-          {/* Attendance summary */}
-          <div className="grid grid-cols-4 gap-2 p-3 bg-muted/50 rounded-lg">
-            <div className="text-center">
-              <p className="text-[10px] text-muted-foreground">Ngày công</p>
-              <p className="font-bold text-sm">{rec.total_work_days}<span className="text-muted-foreground font-normal">/{rec.expected_work_days || '-'}</span></p>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] text-muted-foreground">Đi trễ</p>
-              <p className="font-bold text-sm text-orange-600">{rec.late_count || 0}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] text-muted-foreground">Vắng</p>
-              <p className="font-bold text-sm text-destructive">{rec.absent_count || 0}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] text-muted-foreground">Tăng ca</p>
-              <p className="font-bold text-sm text-blue-600">{rec.overtime_hours || 0}h</p>
-            </div>
-          </div>
-
-          {/* Salary breakdown */}
-          <div className="space-y-1.5 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">+ Lương chính</span><span>{formatNumber(rec.base_salary)}đ</span></div>
-            {(rec.total_bonus || 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">+ Thưởng</span><span>{formatNumber(rec.total_bonus)}đ</span></div>}
-            {(rec.total_commission || 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">+ Hoa hồng</span><span>{formatNumber(rec.total_commission)}đ</span></div>}
-            {(rec.total_allowance || 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">+ Phụ cấp</span><span>{formatNumber(rec.total_allowance)}đ</span></div>}
-            {(rec.holiday_bonus || 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">+ Ngày lễ</span><span>{formatNumber(rec.holiday_bonus)}đ</span></div>}
-            {(rec.overtime_pay || 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">+ Tăng ca</span><span className="text-blue-600">{formatNumber(rec.overtime_pay)}đ</span></div>}
-            {(rec.total_penalty || 0) > 0 && <div className="flex justify-between text-destructive"><span>- Phạt</span><span>{formatNumber(rec.total_penalty)}đ</span></div>}
-            {(rec.advance_deduction || 0) > 0 && <div className="flex justify-between text-destructive"><span>- Tạm ứng</span><span>{formatNumber(rec.advance_deduction)}đ</span></div>}
-            {(rec.total_deduction || 0) > 0 && <div className="flex justify-between text-destructive"><span>- Khấu trừ</span><span>{formatNumber(rec.total_deduction)}đ</span></div>}
-            <div className="flex justify-between border-t pt-2 font-bold text-base">
-              <span>Thực nhận</span>
-              <span className="text-primary">{formatNumber(rec.net_salary)}đ</span>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="attendance" className="mt-0">
-          {attendanceDetails.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Không có dữ liệu chấm công.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-[10px]">Ngày</TableHead>
-                    <TableHead className="text-[10px]">Ca</TableHead>
-                    <TableHead className="text-[10px]">Check-in</TableHead>
-                    <TableHead className="text-[10px]">Check-out</TableHead>
-                    <TableHead className="text-[10px]">Giờ làm</TableHead>
-                    <TableHead className="text-[10px]">TT</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {attendanceDetails.map((d: any, i: number) => (
-                    <TableRow key={i}>
-                      <TableCell className="text-[10px]">{d.date ? format(new Date(d.date), 'dd/MM') : '-'}</TableCell>
-                      <TableCell className="text-[10px] max-w-[60px] truncate">{d.shift_name || '-'}</TableCell>
-                      <TableCell className="text-[10px]">{d.check_in ? format(new Date(d.check_in), 'HH:mm') : '-'}</TableCell>
-                      <TableCell className="text-[10px]">{d.check_out ? format(new Date(d.check_out), 'HH:mm') : '-'}</TableCell>
-                      <TableCell className="text-[10px]">{d.total_work_minutes ? `${Math.floor(d.total_work_minutes / 60)}h${d.total_work_minutes % 60}p` : '-'}</TableCell>
-                      <TableCell className="text-[10px]">
-                        <AttendanceStatusBadge status={d.status} lateMinutes={d.late_minutes} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+    <div className="p-4 space-y-4">
+      {/* Header info */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4 text-xs">
+          {configSnapshot.template_name && (
+            <span className="text-muted-foreground">Mẫu lương: <span className="font-medium text-foreground">{configSnapshot.template_name}</span></span>
           )}
-        </TabsContent>
+          {configSnapshot.user_revenue > 0 && (
+            <span className="text-muted-foreground">Doanh thu: <span className="font-medium text-primary">{formatNumber(configSnapshot.user_revenue)}đ</span> ({configSnapshot.sale_count || 0} đơn)</span>
+          )}
+        </div>
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={e => { e.stopPropagation(); onExport(); }}>
+          <Download className="h-3 w-3 mr-1" />Xuất phiếu lương
+        </Button>
+      </div>
 
-        <TabsContent value="breakdown" className="mt-0 space-y-3">
+      {/* Attendance summary */}
+      <div className="grid grid-cols-5 gap-3">
+        <div className="bg-background rounded-md p-2 text-center border">
+          <p className="text-[10px] text-muted-foreground">Ngày công</p>
+          <p className="font-bold text-sm">{rec.total_work_days}<span className="text-muted-foreground font-normal text-xs">/{rec.expected_work_days || '-'}</span></p>
+        </div>
+        <div className="bg-background rounded-md p-2 text-center border">
+          <p className="text-[10px] text-muted-foreground">Giờ công</p>
+          <p className="font-bold text-sm">{rec.total_work_hours || 0}h</p>
+        </div>
+        <div className="bg-background rounded-md p-2 text-center border">
+          <p className="text-[10px] text-muted-foreground">Đi trễ</p>
+          <p className="font-bold text-sm text-orange-600">{rec.late_count || 0}</p>
+        </div>
+        <div className="bg-background rounded-md p-2 text-center border">
+          <p className="text-[10px] text-muted-foreground">Vắng</p>
+          <p className="font-bold text-sm text-destructive">{rec.absent_count || 0}</p>
+        </div>
+        <div className="bg-background rounded-md p-2 text-center border">
+          <p className="text-[10px] text-muted-foreground">Tăng ca</p>
+          <p className="font-bold text-sm" style={{ color: 'hsl(var(--chart-1))' }}>{rec.overtime_hours || 0}h</p>
+        </div>
+      </div>
+
+      {/* Salary breakdown grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Left: Income items */}
+        <div className="space-y-3">
+          {/* Base salary */}
+          <BreakdownSection icon="💰" title="Lương chính" total={rec.base_salary}>
+            <BreakdownItem
+              label={configSnapshot.salary_type === 'hourly' ? 'Theo giờ' : configSnapshot.salary_type === 'daily' ? 'Theo ngày' : configSnapshot.salary_type === 'shift' ? 'Theo ca' : 'Cố định tháng'}
+              detail={configSnapshot.base_amount ? `Mức: ${formatNumber(configSnapshot.base_amount)}đ` : ''}
+              amount={rec.base_salary}
+            />
+          </BreakdownSection>
+
+          {/* Bonuses */}
           {bonusDetails.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold mb-1">🎁 Thưởng</p>
+            <BreakdownSection icon="🎁" title="Thưởng" total={rec.total_bonus}>
               {bonusDetails.map((b: any, i: number) => (
-                <div key={i} className="flex justify-between text-xs py-0.5">
-                  <span className="text-muted-foreground">{b.name} ({b.type})</span>
-                  <span className="text-green-600">+{formatNumber(b.amount)}đ</span>
-                </div>
+                <BreakdownItem key={i} label={b.name} detail={b.type || ''} amount={b.amount} positive />
               ))}
-            </div>
+            </BreakdownSection>
           )}
 
-          {(rec.commission_details || []).length > 0 && (
-            <div>
-              <p className="text-xs font-semibold mb-1">💰 Hoa hồng</p>
-              {(rec.commission_details || []).map((c: any, i: number) => (
-                <div key={i} className="flex justify-between text-xs py-0.5">
-                  <span className="text-muted-foreground">{c.name || c.product_name || 'Hoa hồng'}</span>
-                  <span className="text-blue-600">+{formatNumber(c.amount)}đ</span>
-                </div>
+          {/* Commissions */}
+          {commissionDetails.length > 0 && (
+            <BreakdownSection icon="📊" title="Hoa hồng" total={rec.total_commission}>
+              {commissionDetails.map((c: any, i: number) => (
+                <BreakdownItem key={i} label={c.name || c.product_name || 'Hoa hồng'} detail={c.type || ''} amount={c.amount} positive />
               ))}
-            </div>
+            </BreakdownSection>
           )}
 
+          {/* Allowances */}
           {allowanceDetails.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold mb-1">📋 Phụ cấp</p>
+            <BreakdownSection icon="📋" title="Phụ cấp" total={rec.total_allowance}>
               {allowanceDetails.map((a: any, i: number) => (
-                <div key={i} className="flex justify-between text-xs py-0.5">
-                  <span className="text-muted-foreground">{a.name}</span>
-                  <span>+{formatNumber(a.amount)}đ</span>
-                </div>
+                <BreakdownItem key={i} label={a.name} amount={a.amount} positive />
               ))}
-            </div>
+            </BreakdownSection>
           )}
+        </div>
 
+        {/* Right: More income + deductions */}
+        <div className="space-y-3">
+          {/* Holidays */}
           {holidayDetails.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold mb-1">🎌 Ngày lễ</p>
+            <BreakdownSection icon="🎌" title="Ngày lễ" total={rec.holiday_bonus}>
               {holidayDetails.map((h: any, i: number) => (
-                <div key={i} className="flex justify-between text-xs py-0.5">
-                  <span className="text-muted-foreground">{h.holiday} ({h.multiplier}%, {h.days} ngày)</span>
-                  <span>+{formatNumber(h.extra)}đ</span>
-                </div>
+                <BreakdownItem key={i} label={h.holiday} detail={`${h.multiplier}% × ${h.days} ngày`} amount={h.extra} positive />
               ))}
-            </div>
+            </BreakdownSection>
           )}
 
+          {/* Overtime */}
+          {overtimeDetails.length > 0 && (
+            <BreakdownSection icon="⏰" title="Tăng ca" total={rec.overtime_pay}>
+              {overtimeDetails.map((o: any, i: number) => (
+                <BreakdownItem key={i} label={o.name} detail={o.type === 'full_day' ? `${o.count} ngày` : `${o.hours}h`} amount={o.amount} positive />
+              ))}
+            </BreakdownSection>
+          )}
+
+          {/* Penalties */}
           {penaltyDetails.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold mb-1 text-destructive">⚠️ Phạt</p>
+            <BreakdownSection icon="⚠️" title="Phạt" total={rec.total_penalty} isDeduction>
               {penaltyDetails.map((p: any, i: number) => (
-                <div key={i} className="flex justify-between text-xs py-0.5">
-                  <span className="text-muted-foreground">{p.name} (×{p.count})</span>
-                  <span className="text-destructive">-{formatNumber(p.amount)}đ</span>
-                </div>
+                <BreakdownItem key={i} label={p.name} detail={`×${p.count} lần`} amount={p.amount} negative />
               ))}
-            </div>
+            </BreakdownSection>
           )}
 
-          {(configSnapshot.overtime_details || []).length > 0 && (
-            <div>
-              <p className="text-xs font-semibold mb-1">⏰ Tăng ca</p>
-              {(configSnapshot.overtime_details || []).map((o: any, i: number) => (
-                <div key={i} className="flex justify-between text-xs py-0.5">
-                  <span className="text-muted-foreground">{o.name} {o.type === 'full_day' ? `(${o.count} ngày)` : `(${o.hours}h)`}</span>
-                  <span>+{formatNumber(o.amount)}đ</span>
-                </div>
-              ))}
-            </div>
+          {/* Advance deduction */}
+          {(rec.advance_deduction || 0) > 0 && (
+            <BreakdownSection icon="💳" title="Tạm ứng" total={rec.advance_deduction} isDeduction>
+              <BreakdownItem label="Khấu trừ tạm ứng" amount={rec.advance_deduction} negative />
+            </BreakdownSection>
           )}
+        </div>
+      </div>
 
-          {bonusDetails.length === 0 && allowanceDetails.length === 0 && holidayDetails.length === 0 && penaltyDetails.length === 0 && (configSnapshot.overtime_details || []).length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">Không có chi tiết bổ sung.</p>
-          )}
-        </TabsContent>
-      </ScrollArea>
-    </Tabs>
+      {/* Net salary total */}
+      <div className="flex items-center justify-between bg-primary/5 rounded-lg p-3 border border-primary/20">
+        <span className="font-semibold text-sm">💵 THỰC NHẬN</span>
+        <span className="font-bold text-lg text-primary">{formatNumber(rec.net_salary)}đ</span>
+      </div>
+
+      {/* Missing setup warnings */}
+      {rec.missing_setup_reasons && rec.missing_setup_reasons.length > 0 && (
+        <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3">
+          <p className="text-xs font-medium text-destructive mb-1">⚠️ Thiếu cấu hình:</p>
+          {rec.missing_setup_reasons.map((reason: string, i: number) => (
+            <p key={i} className="text-xs text-muted-foreground">• {reason}</p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BreakdownSection({ icon, title, total, isDeduction, children }: {
+  icon: string; title: string; total: number; isDeduction?: boolean; children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-background rounded-lg border p-3 space-y-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold">{icon} {title}</span>
+        <span className={`text-xs font-bold ${isDeduction ? 'text-destructive' : 'text-primary'}`}>
+          {isDeduction ? '-' : '+'}{formatNumber(total || 0)}đ
+        </span>
+      </div>
+      <div className="space-y-1 pl-1">{children}</div>
+    </div>
+  );
+}
+
+function BreakdownItem({ label, detail, amount, positive, negative }: {
+  label: string; detail?: string; amount: number; positive?: boolean; negative?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between text-xs py-0.5">
+      <div className="flex-1 min-w-0">
+        <span className="text-foreground">{label}</span>
+        {detail && <span className="text-muted-foreground ml-1">({detail})</span>}
+      </div>
+      <span className={`font-medium ml-2 whitespace-nowrap ${negative ? 'text-destructive' : positive ? 'text-primary' : ''}`}>
+        {negative ? '-' : '+'}{formatNumber(amount || 0)}đ
+      </span>
+    </div>
   );
 }
 
@@ -718,7 +755,7 @@ function AttendanceStatusBadge({ status, lateMinutes }: { status: string; lateMi
       Trễ {lateMinutes > 0 ? `${lateMinutes}'` : ''}
     </Badge>
   );
-  if (status === 'on_time') return <Badge variant="outline" className="text-green-600 border-green-300 text-[9px] px-1 py-0">OK</Badge>;
+  if (status === 'on_time') return <Badge variant="outline" className="text-[9px] px-1 py-0" style={{ color: 'hsl(var(--chart-2))', borderColor: 'hsl(var(--chart-2) / 0.3)' }}>OK</Badge>;
   if (status === 'pending') return <Badge variant="outline" className="text-[9px] px-1 py-0">Pending</Badge>;
   return <Badge variant="outline" className="text-[9px] px-1 py-0">{status}</Badge>;
 }
