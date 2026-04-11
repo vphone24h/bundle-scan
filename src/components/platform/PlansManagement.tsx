@@ -20,16 +20,25 @@ export function PlansManagement() {
   const updatePlan = useUpdateSubscriptionPlan();
   const createPlan = useCreateSubscriptionPlan();
   const deletePlan = useDeleteSubscriptionPlan();
-  const { companyId, isPlatformAdmin } = useAdminCompanyId();
+   const { companyId, isPlatformAdmin, isCompanyAdmin } = useAdminCompanyId();
   
   const [formMode, setFormMode] = useState<FormMode>('idle');
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
   const [formData, setFormData] = useState<Partial<SubscriptionPlan>>({});
 
-  const canManagePlan = (plan: SubscriptionPlan) => {
+  const canManageOwnedPlan = (plan: SubscriptionPlan) => {
     if (isPlatformAdmin) return true;
-    // Company Admin can only manage plans belonging to their company
     return plan.company_id === companyId;
+  };
+
+  const canOpenPlanEditor = (plan: SubscriptionPlan) => {
+    if (canManageOwnedPlan(plan)) return true;
+    return isCompanyAdmin && !plan.company_id;
+  };
+
+  const isCustomizingSystemPlan = (plan: SubscriptionPlan | null) => {
+    if (!plan) return false;
+    return isCompanyAdmin && !plan.company_id;
   };
 
   const handleCreate = () => {
@@ -56,11 +65,14 @@ export function PlansManagement() {
       plan_type: plan.plan_type,
       price: plan.price,
       duration_days: plan.duration_days,
+      display_order: plan.display_order,
       max_branches: plan.max_branches,
       max_users: plan.max_users,
       max_purchases: plan.max_purchases,
       description: plan.description,
       is_active: plan.is_active,
+      discount_amount: plan.discount_amount,
+      discount_percentage: plan.discount_percentage,
     });
   };
 
@@ -93,15 +105,37 @@ export function PlansManagement() {
           description: 'Đã tạo gói dịch vụ mới',
         });
       } else if (formMode === 'edit' && editingPlan) {
-        await updatePlan.mutateAsync({
-          id: editingPlan.id,
-          ...formData,
-        });
+        if (isCustomizingSystemPlan(editingPlan)) {
+          await createPlan.mutateAsync({
+            name: formData.name,
+            plan_type: formData.plan_type as 'monthly' | 'yearly' | 'lifetime',
+            price: formData.price || 0,
+            duration_days: formData.duration_days || null,
+            display_order: formData.display_order ?? editingPlan.display_order ?? 0,
+            max_branches: formData.max_branches || 1,
+            max_users: formData.max_users || 5,
+            max_purchases: formData.max_purchases || null,
+            description: formData.description || null,
+            is_active: formData.is_active ?? true,
+            discount_amount: formData.discount_amount ?? editingPlan.discount_amount ?? 0,
+            discount_percentage: formData.discount_percentage ?? editingPlan.discount_percentage ?? 0,
+          });
 
-        toast({
-          title: 'Thành công',
-          description: 'Đã cập nhật gói dịch vụ',
-        });
+          toast({
+            title: 'Thành công',
+            description: 'Đã tạo gói riêng cho công ty từ gói hệ thống',
+          });
+        } else {
+          await updatePlan.mutateAsync({
+            id: editingPlan.id,
+            ...formData,
+          });
+
+          toast({
+            title: 'Thành công',
+            description: 'Đã cập nhật gói dịch vụ',
+          });
+        }
       }
 
       setFormMode('idle');
@@ -164,7 +198,7 @@ export function PlansManagement() {
                   {!plan.is_active && (
                     <span className="text-xs text-muted-foreground">Đã ẩn</span>
                   )}
-                  {canManagePlan(plan) && <AlertDialog>
+                  {canManageOwnedPlan(plan) && <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
                         <Trash2 className="h-4 w-4" />
@@ -224,9 +258,13 @@ export function PlansManagement() {
                 variant="outline" 
                 className="w-full"
                 onClick={() => handleEdit(plan)}
-                disabled={!canManagePlan(plan)}
+                  disabled={!canOpenPlanEditor(plan)}
               >
-                {canManagePlan(plan) ? 'Chỉnh sửa' : 'Gói hệ thống'}
+                  {canManageOwnedPlan(plan)
+                    ? 'Chỉnh sửa'
+                    : canOpenPlanEditor(plan)
+                      ? 'Tùy chỉnh theo công ty'
+                      : 'Gói hệ thống'}
               </Button>
             </CardContent>
           </Card>
@@ -238,7 +276,11 @@ export function PlansManagement() {
         <Card>
           <CardHeader>
             <CardTitle>
-              {formMode === 'create' ? 'Tạo gói dịch vụ mới' : `Chỉnh sửa gói: ${editingPlan?.name}`}
+                {formMode === 'create'
+                  ? 'Tạo gói dịch vụ mới'
+                  : isCustomizingSystemPlan(editingPlan)
+                    ? `Tùy chỉnh gói hệ thống cho công ty: ${editingPlan?.name}`
+                    : `Chỉnh sửa gói: ${editingPlan?.name}`}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
