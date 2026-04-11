@@ -676,7 +676,7 @@ Deno.serve(async (req) => {
       .catch(err => console.error('Email notification error:', err))
 
     // Send welcome email to new user (non-blocking)
-    sendWelcomeEmail(email, adminName, subdomain, supabaseAdmin)
+    sendWelcomeEmail(email, adminName, subdomain, supabaseAdmin, companyId)
       .catch(err => console.error('Welcome email error:', err))
 
     // Send Day 0 action email – hướng dẫn 3 bước bắt đầu (non-blocking)
