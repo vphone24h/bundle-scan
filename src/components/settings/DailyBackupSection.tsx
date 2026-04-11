@@ -94,25 +94,10 @@ export function DailyBackupSection() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Database className="h-5 w-5 text-primary" />
-            Backup tự động hàng ngày
-          </CardTitle>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleManualBackup}
-            disabled={generating}
-          >
-            {generating ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-1" />
-            )}
-            Tạo ngay
-          </Button>
-        </div>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Database className="h-5 w-5 text-primary" />
+          Backup tự động hàng ngày
+        </CardTitle>
         <p className="text-xs text-muted-foreground mt-1">
           Hệ thống tự động backup dữ liệu bán hàng, nhập hàng, tồn kho mỗi ngày sau 23h. File lưu trữ 60 ngày.
         </p>
