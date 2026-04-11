@@ -629,29 +629,12 @@ export default function ExportHistoryPage() {
         staff_name: (() => { const sid = r.sales_staff_id || r.created_by; return sid ? (allStaffNames[sid] || '') : ''; })(),
       });
 
-      if (allReceipts.length <= CHUNK_SIZE) {
-        setExportProgress('Đang tạo file Excel...');
-        exportToExcelMultiSheet({
-          filename: `Phieu_xuat_${dateStr}`,
-          sheets: [{ sheetName: 'Theo phiếu xuất', columns: receiptColumns, data: allReceipts.map(mapReceipt) }],
-        });
-        toast({ title: 'Xuất thành công', description: `${allReceipts.length} phiếu` });
-      } else {
-        const totalFiles = Math.ceil(allReceipts.length / CHUNK_SIZE);
-        for (let f = 0; f < totalFiles; f++) {
-          const start = f * CHUNK_SIZE;
-          const end = Math.min(start + CHUNK_SIZE, allReceipts.length);
-          const chunk = allReceipts.slice(start, end);
-          setExportProgress(`Đang xuất file ${f + 1}/${totalFiles}...`);
-          exportToExcelMultiSheet({
-            filename: `Phieu_xuat_${dateStr}_${f + 1}-${totalFiles}`,
-            sheets: [{ sheetName: 'Theo phiếu xuất', columns: receiptColumns, data: chunk.map((r, i) => mapReceipt(r, start + i)) }],
-          });
-          // Small delay between downloads so browser doesn't block
-          if (f < totalFiles - 1) await new Promise(r => setTimeout(r, 800));
-        }
-        toast({ title: 'Xuất thành công', description: `${allReceipts.length} phiếu / ${totalFiles} file` });
-      }
+      setExportProgress('Đang tạo file Excel...');
+      exportToExcelMultiSheet({
+        filename: `Phieu_xuat_${dateStr}`,
+        sheets: [{ sheetName: 'Theo phiếu xuất', columns: receiptColumns, data: allReceipts.map(mapReceipt) }],
+      });
+      toast({ title: 'Xuất thành công', description: `${allReceipts.length} phiếu` });
     } catch (error: any) {
       console.error('Export receipts error:', error);
       toast({ title: 'Lỗi xuất Excel', description: error?.message || 'Không thể tải dữ liệu.', variant: 'destructive' });
@@ -724,28 +707,12 @@ export default function ExportHistoryPage() {
         };
       };
 
-      if (allItemsRaw.length <= CHUNK_SIZE) {
-        setExportProgress('Đang tạo file Excel...');
-        exportToExcelMultiSheet({
-          filename: `Chi_tiet_SP_${dateStr}`,
-          sheets: [{ sheetName: 'Theo chi tiết SP', columns: itemColumns, data: allItemsRaw.map(mapItem) }],
-        });
-        toast({ title: 'Xuất thành công', description: `${allItemsRaw.length} sản phẩm` });
-      } else {
-        const totalFiles = Math.ceil(allItemsRaw.length / CHUNK_SIZE);
-        for (let f = 0; f < totalFiles; f++) {
-          const start = f * CHUNK_SIZE;
-          const end = Math.min(start + CHUNK_SIZE, allItemsRaw.length);
-          const chunk = allItemsRaw.slice(start, end);
-          setExportProgress(`Đang xuất file ${f + 1}/${totalFiles}...`);
-          exportToExcelMultiSheet({
-            filename: `Chi_tiet_SP_${dateStr}_${f + 1}-${totalFiles}`,
-            sheets: [{ sheetName: 'Theo chi tiết SP', columns: itemColumns, data: chunk.map((item, i) => mapItem(item, start + i)) }],
-          });
-          if (f < totalFiles - 1) await new Promise(r => setTimeout(r, 800));
-        }
-        toast({ title: 'Xuất thành công', description: `${allItemsRaw.length} SP / ${totalFiles} file` });
-      }
+      setExportProgress('Đang tạo file Excel...');
+      exportToExcelMultiSheet({
+        filename: `Chi_tiet_SP_${dateStr}`,
+        sheets: [{ sheetName: 'Theo chi tiết SP', columns: itemColumns, data: allItemsRaw.map(mapItem) }],
+      });
+      toast({ title: 'Xuất thành công', description: `${allItemsRaw.length} sản phẩm` });
     } catch (error: any) {
       console.error('Export items error:', error);
       toast({ title: 'Lỗi xuất Excel', description: error?.message || 'Không thể tải dữ liệu.', variant: 'destructive' });
