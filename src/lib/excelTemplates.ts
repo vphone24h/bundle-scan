@@ -10,6 +10,7 @@ export function downloadImportTemplate() {
     'Tên sản phẩm',
     'SKU',
     'Giá nhập',
+    'Giá bán',
     'Ngày nhập',
     'Nhà cung cấp',
     'Chi nhánh',
@@ -19,12 +20,12 @@ export function downloadImportTemplate() {
     'Trạng thái',
   ];
 
-  // Sample data to guide users - matching user's exact format
+  // Sample data to guide users - matching import parser column order
   const sampleData = [
-    ['354331121643275', 'iPhone16ProMax-256GB-Trắng', 'iPhone16ProMax-256GB-Trắng', 21700000, '28/1/2026', 'Thu Khách', 'Dĩ An', 'iPhone', 1, 'pin 96 sạc 251', 'Tồn kho'],
-    ['351572591443554', 'iPhone12ProMax-128GB-Trắng', 'iPhone12ProMax-128GB-Trắng', 7300000, '27/1/2026', 'Thu Khách', 'Dĩ An', 'iPhone', 1, 'PIN 100', 'Tồn kho'],
-    ['', 'Ốp lưng iPhone 15 Pro Max', 'OL15PM001', 150000, '', '', '', 'Phụ kiện', 10, 'Ốp silicon trong suốt', 'Tồn kho'],
-    ['', 'Sạc nhanh 65W USB-C', 'SC65W001', 350000, '', '', '', 'Phụ kiện', 5, '', 'Tồn kho'],
+    ['354331121643275', 'iPhone16ProMax-256GB-Trắng', 'iPhone16ProMax-256GB-Trắng', 21700000, 23700000, '28/1/2026', 'Thu Khách', 'Dĩ An', 'iPhone', 1, 'pin 96 sạc 251', 'Tồn kho'],
+    ['351572591443554', 'iPhone12ProMax-128GB-Trắng', 'iPhone12ProMax-128GB-Trắng', 7300000, 9300000, '27/1/2026', 'Thu Khách', 'Dĩ An', 'iPhone', 1, 'PIN 100', 'Tồn kho'],
+    ['', 'Ốp lưng iPhone 15 Pro Max', 'OL15PM001', 150000, 300000, '', '', '', 'Phụ kiện', 10, 'Ốp silicon trong suốt', 'Tồn kho'],
+    ['', 'Sạc nhanh 65W USB-C', 'SC65W001', 350000, 700000, '', '', '', 'Phụ kiện', 5, '', 'Tồn kho'],
   ];
 
   // Create worksheet with headers and sample data
@@ -37,6 +38,7 @@ export function downloadImportTemplate() {
     { wch: 35 }, // Tên sản phẩm
     { wch: 35 }, // SKU
     { wch: 15 }, // Giá nhập
+    { wch: 15 }, // Giá bán
     { wch: 12 }, // Ngày nhập
     { wch: 18 }, // Nhà cung cấp
     { wch: 15 }, // Chi nhánh
@@ -57,13 +59,14 @@ export function downloadImportTemplate() {
     ['2. Tên sản phẩm: Nhập tên đầy đủ của sản phẩm'],
     ['3. SKU: Mã sản phẩm duy nhất trong hệ thống'],
     ['4. Giá nhập: Giá nhập kho của sản phẩm (số nguyên, không có dấu phẩy)'],
-    ['5. Ngày nhập: Định dạng DD/MM/YYYY (VD: 28/1/2026). Để trống sẽ lấy ngày hiện tại'],
-    ['6. Nhà cung cấp: Tên nhà cung cấp (phải trùng với tên đã có trong hệ thống)'],
-    ['7. Chi nhánh: Tên chi nhánh nhập hàng (phải trùng với tên đã có trong hệ thống)'],
-    ['8. Thư mục: Phải trùng khớp với tên danh mục đã có trong hệ thống'],
-    ['9. Số lượng: Số lượng nhập kho (bỏ qua nếu có IMEI)'],
-    ['10. Ghi chú: Thông tin bổ sung về sản phẩm (tuỳ chọn)'],
-    ['11. Trạng thái: Mặc định là "Tồn kho" khi nhập hàng mới'],
+    ['5. Giá bán: Giá bán ra (để trống sẽ tự tính dựa trên giá nhập)'],
+    ['6. Ngày nhập: Định dạng DD/MM/YYYY (VD: 28/1/2026). Để trống sẽ lấy ngày hiện tại'],
+    ['7. Nhà cung cấp: Tên nhà cung cấp (phải trùng với tên đã có trong hệ thống)'],
+    ['8. Chi nhánh: Tên chi nhánh nhập hàng (phải trùng với tên đã có trong hệ thống)'],
+    ['9. Thư mục: Phải trùng khớp với tên danh mục đã có trong hệ thống'],
+    ['10. Số lượng: Số lượng nhập kho (bỏ qua nếu có IMEI)'],
+    ['11. Ghi chú: Thông tin bổ sung về sản phẩm (tuỳ chọn)'],
+    ['12. Trạng thái: Mặc định là "Tồn kho" khi nhập hàng mới'],
     [''],
     ['LƯU Ý:'],
     ['- Mỗi dòng IMEI là một sản phẩm riêng biệt'],
