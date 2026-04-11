@@ -55,7 +55,7 @@ interface PaymentConfig {
 
 export function WelcomeEmailConfig() {
   const queryClient = useQueryClient();
-  const { companyId } = useAdminCompanyId();
+  const { companyId, isCompanyAdmin } = useAdminCompanyId();
   const [enabled, setEnabled] = useState(true);
   const [subject, setSubject] = useState(DEFAULT_WELCOME_SUBJECT);
   const [body, setBody] = useState(DEFAULT_WELCOME_BODY);
@@ -67,6 +67,23 @@ export function WelcomeEmailConfig() {
   const [sendingGuide, setSendingGuide] = useState(false);
 
   const { data: articles } = usePublishedPlatformArticles();
+
+  // Check if company has SMTP configured (required for company admins)
+  const { data: emailConfig } = useQuery({
+    queryKey: ['company-email-config-check', companyId],
+    enabled: !!companyId && isCompanyAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('company_email_config')
+        .select('*')
+        .eq('company_id', companyId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const hasSmtpConfigured = !isCompanyAdmin || (emailConfig?.smtp_user && emailConfig?.smtp_pass && emailConfig?.is_enabled);
 
   const { data: configs, isLoading } = useQuery({
     queryKey: ['payment-config-email', companyId],
@@ -95,18 +112,43 @@ export function WelcomeEmailConfig() {
   }, [configs]);
 
   const handleSave = async () => {
+    // Company admin must configure SMTP first
+    if (isCompanyAdmin && !hasSmtpConfigured) {
+      toast({ 
+        title: 'Chưa cấu hình Email', 
+        description: 'Vui lòng cấu hình Email Gmail và App Password tại mục "Cấu hình Email gửi thông báo" trước khi lưu mẫu email.', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const updates = [
-        { config_key: 'welcome_email_enabled', config_value: String(enabled), company_id: companyId },
-        { config_key: 'welcome_email_subject', config_value: subject, company_id: companyId },
-        { config_key: 'welcome_email_body', config_value: body, company_id: companyId },
+        { config_key: 'welcome_email_enabled', config_value: String(enabled), company_id: companyId || null },
+        { config_key: 'welcome_email_subject', config_value: subject, company_id: companyId || null },
+        { config_key: 'welcome_email_body', config_value: body, company_id: companyId || null },
       ];
       for (const u of updates) {
-        const { error } = await supabase.from('payment_config').upsert(u, { 
-          onConflict: companyId ? 'config_key,company_id' : 'config_key',
-        });
-        if (error) throw error;
+        // Check if record exists first, then update or insert
+        let query = supabase.from('payment_config').select('id').eq('config_key', u.config_key);
+        if (u.company_id) {
+          query = query.eq('company_id', u.company_id);
+        } else {
+          query = query.is('company_id', null);
+        }
+        const { data: existing } = await query.maybeSingle();
+
+        if (existing?.id) {
+          const { error } = await supabase.from('payment_config')
+            .update({ config_value: u.config_value })
+            .eq('id', existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from('payment_config')
+            .insert(u);
+          if (error) throw error;
+        }
       }
       toast({ title: 'Thành công', description: 'Đã lưu mẫu email chào mừng' });
       queryClient.invalidateQueries({ queryKey: ['payment-config-email', companyId] });
@@ -173,6 +215,14 @@ export function WelcomeEmailConfig() {
 
   return (
     <div className="space-y-6">
+      {/* SMTP Warning for Company Admins */}
+      {isCompanyAdmin && !hasSmtpConfigured && (
+        <div className="rounded-lg border border-orange-300 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-800 p-4 text-sm text-orange-800 dark:text-orange-300">
+          <p className="font-medium">⚠️ Chưa cấu hình Email gửi thông báo</p>
+          <p className="mt-1 text-xs">Bạn cần vào tab <strong>"Cấu hình"</strong> → <strong>"Cấu hình Email gửi thông báo"</strong> để nhập Email Gmail và App Password trước. Email gửi cho khách sẽ từ địa chỉ email của công ty bạn.</p>
+        </div>
+      )}
+
       {/* Welcome Email Template */}
       <Card>
         <CardHeader>
