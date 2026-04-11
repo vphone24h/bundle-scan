@@ -39,11 +39,14 @@ export interface SubscriptionPlan {
   plan_type: 'monthly' | 'yearly' | 'lifetime';
   price: number;
   duration_days: number | null;
+  display_order?: number | null;
   max_branches: number;
   max_users: number;
   max_purchases: number | null;
   description: string | null;
   is_active: boolean;
+  discount_percentage?: number | null;
+  discount_amount?: number | null;
   company_id?: string | null;
 }
 
@@ -75,6 +78,34 @@ export interface PlatformUser {
   email: string | null;
   is_active: boolean;
   company_id?: string | null;
+}
+
+const getScopedPlanKey = (plan: SubscriptionPlan) =>
+  `${plan.plan_type}:${plan.duration_days ?? 'lifetime'}`;
+
+function mergeScopedSubscriptionPlans(plans: SubscriptionPlan[], companyId: string | null): SubscriptionPlan[] {
+  if (!companyId) return plans;
+
+  const prioritized = new Map<string, SubscriptionPlan>();
+
+  for (const plan of plans) {
+    const key = getScopedPlanKey(plan);
+    const existing = prioritized.get(key);
+
+    if (!existing) {
+      prioritized.set(key, plan);
+      continue;
+    }
+
+    const currentWins = existing.company_id === companyId;
+    const nextWins = plan.company_id === companyId;
+
+    if (!currentWins && nextWins) {
+      prioritized.set(key, plan);
+    }
+  }
+
+  return plans.filter((plan) => prioritized.get(getScopedPlanKey(plan))?.id === plan.id);
 }
 
 // Check if current user is platform admin
@@ -213,12 +244,17 @@ export function useTenantEnrichment() {
 
 // Get subscription plans (all for admin, active only for users)
 export function useSubscriptionPlans(includeInactive = false) {
+  const { companyId: adminCompanyId, isPlatformAdmin } = useAdminCompanyId();
+  const { data: currentTenant } = useCurrentTenant();
+  const scopedCompanyId = isPlatformAdmin ? null : adminCompanyId ?? currentTenant?.company_id ?? null;
+
   return useQuery({
-    queryKey: ['subscription-plans', includeInactive],
+    queryKey: ['subscription-plans', includeInactive, scopedCompanyId, isPlatformAdmin],
     queryFn: async () => {
       let query = supabase
         .from('subscription_plans')
         .select('*')
+        .order('display_order')
         .order('price');
 
       if (!includeInactive) {
@@ -227,7 +263,13 @@ export function useSubscriptionPlans(includeInactive = false) {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as SubscriptionPlan[];
+      const plans = (data || []) as SubscriptionPlan[];
+
+      if (isPlatformAdmin) {
+        return plans;
+      }
+
+      return mergeScopedSubscriptionPlans(plans, scopedCompanyId);
     },
   });
 }
