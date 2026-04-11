@@ -7,17 +7,37 @@ const APP_RUNTIME_VERSION = __APP_BUILD_ID__;
 const APP_RUNTIME_VERSION_KEY = 'vkho_app_runtime_version';
 const PERSISTED_QUERY_CACHE_KEY = 'vkho_query_cache_v1';
 const CACHE_PREFIXES_TO_CLEAR = ['tenant_resolver_cache_v1:', 'company_resolver_cache_v1:'];
+const APP_VERSION_ENDPOINT = '/version.json';
+const APP_UPDATE_SEARCH_PARAM = '__app_update';
 
-async function syncAppRuntimeVersion() {
-  if (typeof window === 'undefined') return;
+async function fetchRemoteBuildVersion() {
+  if (typeof window === 'undefined') return null;
 
-  const previousVersion = window.localStorage.getItem(APP_RUNTIME_VERSION_KEY);
-  if (previousVersion === APP_RUNTIME_VERSION) return;
+  try {
+    const versionUrl = new URL(APP_VERSION_ENDPOINT, window.location.origin);
+    versionUrl.searchParams.set('ts', `${Date.now()}`);
 
-  window.localStorage.setItem(APP_RUNTIME_VERSION_KEY, APP_RUNTIME_VERSION);
+    const response = await window.fetch(versionUrl.toString(), {
+      cache: 'no-store',
+      headers: {
+        'cache-control': 'no-cache',
+        pragma: 'no-cache',
+      },
+    });
+
+    if (!response.ok) return null;
+
+    const payload = await response.json();
+    return typeof payload?.buildId === 'string' ? payload.buildId : null;
+  } catch {
+    return null;
+  }
+}
+
+async function clearRuntimeCaches() {
   window.localStorage.removeItem(PERSISTED_QUERY_CACHE_KEY);
 
-   for (let i = window.localStorage.length - 1; i >= 0; i -= 1) {
+  for (let i = window.localStorage.length - 1; i >= 0; i -= 1) {
     const key = window.localStorage.key(i);
     if (key && CACHE_PREFIXES_TO_CLEAR.some((prefix) => key.startsWith(prefix))) {
       window.localStorage.removeItem(key);
@@ -26,17 +46,67 @@ async function syncAppRuntimeVersion() {
 
   if ('serviceWorker' in navigator) {
     const registrations = await navigator.serviceWorker.getRegistrations();
-    await Promise.all(registrations.map((registration) => registration.unregister()));
+    await Promise.all(
+      registrations.map(async (registration) => {
+        registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
+        await registration.unregister();
+      })
+    );
   }
 
   if ('caches' in window) {
     const cacheKeys = await window.caches.keys();
     await Promise.all(cacheKeys.map((key) => window.caches.delete(key)));
   }
+}
 
-  if (previousVersion) {
-    window.location.reload();
+function cleanupAppUpdateSearchParam() {
+  if (typeof window === 'undefined') return;
+
+  const url = new URL(window.location.href);
+  const appliedVersion = url.searchParams.get(APP_UPDATE_SEARCH_PARAM);
+
+  if (!appliedVersion || appliedVersion !== APP_RUNTIME_VERSION) return;
+
+  url.searchParams.delete(APP_UPDATE_SEARCH_PARAM);
+  window.history.replaceState({}, document.title, url.toString());
+}
+
+function buildRefreshUrl(version: string) {
+  const url = new URL(window.location.href);
+  url.searchParams.set(APP_UPDATE_SEARCH_PARAM, version);
+  return url.toString();
+}
+
+async function syncAppRuntimeVersion() {
+  if (typeof window === 'undefined') return;
+
+  const remoteVersion = await fetchRemoteBuildVersion();
+  const targetVersion = remoteVersion ?? APP_RUNTIME_VERSION;
+  const previousVersion = window.localStorage.getItem(APP_RUNTIME_VERSION_KEY);
+  const isRunningStaleBundle = !!remoteVersion && remoteVersion !== APP_RUNTIME_VERSION;
+  const shouldRefresh = isRunningStaleBundle || (previousVersion !== null && previousVersion !== targetVersion);
+
+  if (previousVersion === targetVersion && !isRunningStaleBundle) {
+    cleanupAppUpdateSearchParam();
+    return;
   }
+
+  window.localStorage.setItem(APP_RUNTIME_VERSION_KEY, targetVersion);
+
+  if (previousVersion === null && !isRunningStaleBundle) {
+    cleanupAppUpdateSearchParam();
+    return;
+  }
+
+  await clearRuntimeCaches();
+
+  if (shouldRefresh) {
+    window.location.replace(buildRefreshUrl(targetVersion));
+    return;
+  }
+
+  cleanupAppUpdateSearchParam();
 }
 
 // Hide the HTML preloader

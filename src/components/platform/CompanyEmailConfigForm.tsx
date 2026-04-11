@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ export function CompanyEmailConfigForm() {
   const [smtpPass, setSmtpPass] = useState('');
   const [isEnabled, setIsEnabled] = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const latestFormRef = useRef({ smtpUser: '', smtpPass: '', isEnabled: false });
 
   const { data: config, isLoading } = useQuery({
     queryKey: ['company-email-config', companyId],
@@ -35,9 +36,16 @@ export function CompanyEmailConfigForm() {
 
   useEffect(() => {
     if (config) {
-      setSmtpUser(config.smtp_user || '');
-      setSmtpPass(config.smtp_pass || '');
-      setIsEnabled(config.is_enabled || false);
+      const nextState = {
+        smtpUser: config.smtp_user || '',
+        smtpPass: config.smtp_pass || '',
+        isEnabled: config.is_enabled || false,
+      };
+
+      latestFormRef.current = nextState;
+      setSmtpUser(nextState.smtpUser);
+      setSmtpPass(nextState.smtpPass);
+      setIsEnabled(nextState.isEnabled);
     }
   }, [config]);
 
@@ -45,15 +53,23 @@ export function CompanyEmailConfigForm() {
     mutationFn: async () => {
       if (!companyId) throw new Error('Không tìm thấy công ty');
 
+      const latestForm = latestFormRef.current;
+      const normalizedSmtpUser = latestForm.smtpUser.trim();
+      const normalizedSmtpPass = latestForm.smtpPass.trim();
+
+      if (latestForm.isEnabled && (!normalizedSmtpUser || !normalizedSmtpPass)) {
+        throw new Error('Vui lòng nhập Gmail và App Password trước khi bật Email riêng');
+      }
+
       const payload = {
         company_id: companyId,
         smtp_host: 'smtp.gmail.com',
         smtp_port: 465,
-        smtp_user: smtpUser || null,
-        smtp_pass: smtpPass || null,
-        from_email: smtpUser || null,
+        smtp_user: normalizedSmtpUser || null,
+        smtp_pass: normalizedSmtpPass || null,
+        from_email: normalizedSmtpUser || null,
         from_name: null,
-        is_enabled: isEnabled,
+        is_enabled: latestForm.isEnabled,
         updated_at: new Date().toISOString(),
       };
 
@@ -114,12 +130,26 @@ export function CompanyEmailConfigForm() {
               </p>
             </div>
           </div>
-          <Switch checked={isEnabled} onCheckedChange={setIsEnabled} />
+          <Switch
+            checked={isEnabled}
+            onCheckedChange={(checked) => {
+              latestFormRef.current = { ...latestFormRef.current, isEnabled: checked };
+              setIsEnabled(checked);
+            }}
+          />
         </div>
 
         <div className="space-y-2">
           <Label>Email Gmail</Label>
-          <Input value={smtpUser} onChange={e => setSmtpUser(e.target.value)} placeholder="your-email@gmail.com" />
+          <Input
+            value={smtpUser}
+            onChange={e => {
+              const value = e.target.value;
+              latestFormRef.current = { ...latestFormRef.current, smtpUser: value };
+              setSmtpUser(value);
+            }}
+            placeholder="your-email@gmail.com"
+          />
         </div>
 
         <div className="space-y-2">
@@ -128,7 +158,11 @@ export function CompanyEmailConfigForm() {
             <Input
               type={showPass ? 'text' : 'password'}
               value={smtpPass}
-              onChange={e => setSmtpPass(e.target.value)}
+              onChange={e => {
+                const value = e.target.value;
+                latestFormRef.current = { ...latestFormRef.current, smtpPass: value };
+                setSmtpPass(value);
+              }}
               placeholder="xxxx xxxx xxxx xxxx"
               className="pr-10"
             />
