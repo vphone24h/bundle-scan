@@ -662,38 +662,40 @@ function InlinePayrollBreakdown({ record, periodName, onExport }: { record: any;
         {/* Right: More income + deductions */}
         <div className="space-y-3">
           {/* Holidays */}
-          {holidayDetails.length > 0 && (
-            <BreakdownSection icon="🎌" title="Ngày lễ" total={rec.holiday_bonus}>
-              {holidayDetails.map((h: any, i: number) => (
-                <BreakdownItem key={i} label={h.holiday} detail={`${h.multiplier}% × ${h.days} ngày`} amount={h.extra} positive />
-              ))}
-            </BreakdownSection>
-          )}
+          <BreakdownSection icon="🎌" title="Ngày lễ" total={rec.holiday_bonus || 0}>
+            {holidayDetails.length > 0 ? holidayDetails.map((h: any, i: number) => (
+              <BreakdownItem key={i} label={h.holiday} detail={`${h.multiplier}% × ${h.days} ngày`} amount={h.extra} positive />
+            )) : (
+              <p className="text-[11px] text-muted-foreground italic">Không có ngày lễ</p>
+            )}
+          </BreakdownSection>
 
           {/* Overtime */}
-          {overtimeDetails.length > 0 && (
-            <BreakdownSection icon="⏰" title="Tăng ca" total={rec.overtime_pay}>
-              {overtimeDetails.map((o: any, i: number) => (
-                <BreakdownItem key={i} label={o.name} detail={o.type === 'full_day' ? `${o.count} ngày` : `${o.hours}h`} amount={o.amount} positive />
-              ))}
-            </BreakdownSection>
-          )}
+          <BreakdownSection icon="⏰" title="Tăng ca" total={rec.overtime_pay || 0}>
+            {overtimeDetails.length > 0 ? overtimeDetails.map((o: any, i: number) => (
+              <BreakdownItem key={i} label={o.name} detail={o.type === 'full_day' ? `${o.count} ngày` : `${o.hours}h`} amount={o.amount} positive />
+            )) : (
+              <p className="text-[11px] text-muted-foreground italic">Không có tăng ca</p>
+            )}
+          </BreakdownSection>
 
           {/* Penalties */}
-          {penaltyDetails.length > 0 && (
-            <BreakdownSection icon="⚠️" title="Phạt" total={rec.total_penalty} isDeduction>
-              {penaltyDetails.map((p: any, i: number) => (
-                <BreakdownItem key={i} label={p.name} detail={`×${p.count} lần`} amount={p.amount} negative />
-              ))}
-            </BreakdownSection>
-          )}
+          <BreakdownSection icon="⚠️" title="Phạt" total={rec.total_penalty || 0} isDeduction>
+            {penaltyDetails.length > 0 ? penaltyDetails.map((p: any, i: number) => (
+              <BreakdownItem key={i} label={p.name} detail={`×${p.count} lần`} amount={p.amount} negative />
+            )) : (
+              <p className="text-[11px] text-muted-foreground italic">Không có khoản phạt</p>
+            )}
+          </BreakdownSection>
 
           {/* Advance deduction */}
-          {(rec.advance_deduction || 0) > 0 && (
-            <BreakdownSection icon="💳" title="Tạm ứng" total={rec.advance_deduction} isDeduction>
+          <BreakdownSection icon="💳" title="Tạm ứng" total={rec.advance_deduction || 0} isDeduction>
+            {(rec.advance_deduction || 0) > 0 ? (
               <BreakdownItem label="Khấu trừ tạm ứng" amount={rec.advance_deduction} negative />
-            </BreakdownSection>
-          )}
+            ) : (
+              <p className="text-[11px] text-muted-foreground italic">Không có tạm ứng</p>
+            )}
+          </BreakdownSection>
         </div>
       </div>
 
