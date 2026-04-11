@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
       supabase.from("salary_advances").select("*").eq("tenant_id", tenant_id).eq("payroll_period_id", period_id).in("status", ["approved", "paid"]),
       supabase.from("shift_assignments").select("*, work_shifts(name, start_time, end_time)").eq("tenant_id", tenant_id).eq("is_active", true),
       supabase.from("export_receipts")
-        .select("id, created_by, total_amount, branch_id, status")
+        .select("id, created_by, sales_staff_id, total_amount, branch_id, status")
         .eq("tenant_id", tenant_id)
         .gte("created_at", period.start_date)
         .lte("created_at", period.end_date + "T23:59:59")
@@ -296,7 +296,7 @@ Deno.serve(async (req) => {
       }).sort((a: any, b: any) => a.date.localeCompare(b.date));
 
       // ===== SALES DATA =====
-      const userSales = allSales.filter((s: any) => s.created_by === employee.user_id);
+      const userSales = allSales.filter((s: any) => (s.sales_staff_id || s.created_by) === employee.user_id);
       const userRevenue = userSales.reduce((s: number, r: any) => s + (r.total_amount || 0), 0);
       const userSaleIds = new Set(userSales.map((s: any) => s.id));
 
