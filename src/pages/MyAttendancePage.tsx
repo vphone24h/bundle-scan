@@ -301,6 +301,67 @@ export default function MyAttendancePage() {
           </Card>
         </div>
 
+        {/* Sales Revenue Card */}
+        <Card className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => setShowSalesDialog(true)}>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <ShoppingBag className="h-8 w-8 text-green-600 dark:text-green-400" />
+              <div>
+                <p className="text-xs text-muted-foreground">Doanh số tháng này</p>
+                <p className="text-xl font-bold text-green-700 dark:text-green-300">{formatMoney(totalSalesRevenue)}</p>
+              </div>
+            </div>
+            <div className="text-right text-xs text-muted-foreground">
+              <p>{mySales?.length || 0} đơn hàng</p>
+              <p className="text-green-600 underline">Xem chi tiết →</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Sales Detail Dialog */}
+        <Dialog open={showSalesDialog} onOpenChange={setShowSalesDialog}>
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ShoppingBag className="h-5 w-5" />
+                Doanh số {format(currentMonth, 'MM/yyyy')}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-1">
+              <div className="flex justify-between text-sm font-semibold p-2 bg-muted rounded">
+                <span>Tổng: {mySales?.length || 0} đơn</span>
+                <span className="text-green-700 dark:text-green-300">{formatMoney(totalSalesRevenue)}</span>
+              </div>
+              {mySales?.length === 0 ? (
+                <p className="text-center py-6 text-muted-foreground text-sm">Chưa có đơn hàng trong tháng này</p>
+              ) : (
+                mySales?.map(sale => (
+                  <Card key={sale.id} className="shadow-none">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium">{(sale as any).code || sale.id.slice(0, 8)}</span>
+                        <span className="text-sm font-bold text-green-700 dark:text-green-300">
+                          {formatMoney(sale.total_amount || 0)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span>{format(new Date(sale.export_date), 'dd/MM HH:mm')}</span>
+                        {(sale.customers as any)?.name && (
+                          <span>KH: {(sale.customers as any).name}</span>
+                        )}
+                        {(sale.branches as any)?.name && (
+                          <Badge variant="outline" className="text-[10px] h-4">{(sale.branches as any).name}</Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Estimated Salary Card */}
         {estimatedSalary !== null && (
           <Card className="border-primary/30 bg-primary/5">
