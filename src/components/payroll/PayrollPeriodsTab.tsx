@@ -632,31 +632,31 @@ function InlinePayrollBreakdown({ record, periodName, onExport }: { record: any;
           </BreakdownSection>
 
           {/* Bonuses */}
-          {bonusDetails.length > 0 && (
-            <BreakdownSection icon="🎁" title="Thưởng" total={rec.total_bonus}>
-              {bonusDetails.map((b: any, i: number) => (
-                <BreakdownItem key={i} label={b.name} detail={b.type || ''} amount={b.amount} positive />
-              ))}
-            </BreakdownSection>
-          )}
+          <BreakdownSection icon="🎁" title="Thưởng" total={rec.total_bonus || 0}>
+            {bonusDetails.length > 0 ? bonusDetails.map((b: any, i: number) => (
+              <BreakdownItem key={i} label={b.name} detail={b.type || ''} amount={b.amount} positive />
+            )) : (
+              <p className="text-[11px] text-muted-foreground italic">Không có khoản thưởng</p>
+            )}
+          </BreakdownSection>
 
           {/* Commissions */}
-          {commissionDetails.length > 0 && (
-            <BreakdownSection icon="📊" title="Hoa hồng" total={rec.total_commission}>
-              {commissionDetails.map((c: any, i: number) => (
-                <BreakdownItem key={i} label={c.name || c.product_name || 'Hoa hồng'} detail={c.type || ''} amount={c.amount} positive />
-              ))}
-            </BreakdownSection>
-          )}
+          <BreakdownSection icon="📊" title="Hoa hồng" total={rec.total_commission || 0}>
+            {commissionDetails.length > 0 ? commissionDetails.map((c: any, i: number) => (
+              <BreakdownItem key={i} label={c.name || c.product_name || 'Hoa hồng'} detail={c.type || ''} amount={c.amount} positive />
+            )) : (
+              <p className="text-[11px] text-muted-foreground italic">Không có hoa hồng</p>
+            )}
+          </BreakdownSection>
 
           {/* Allowances */}
-          {allowanceDetails.length > 0 && (
-            <BreakdownSection icon="📋" title="Phụ cấp" total={rec.total_allowance}>
-              {allowanceDetails.map((a: any, i: number) => (
-                <BreakdownItem key={i} label={a.name} amount={a.amount} positive />
-              ))}
-            </BreakdownSection>
-          )}
+          <BreakdownSection icon="📋" title="Phụ cấp" total={rec.total_allowance || 0}>
+            {allowanceDetails.length > 0 ? allowanceDetails.map((a: any, i: number) => (
+              <BreakdownItem key={i} label={a.name} amount={a.amount} positive />
+            )) : (
+              <p className="text-[11px] text-muted-foreground italic">Không có phụ cấp</p>
+            )}
+          </BreakdownSection>
         </div>
 
         {/* Right: More income + deductions */}
