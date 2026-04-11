@@ -92,7 +92,7 @@ export default function SubscriptionPage() {
   }, []);
 
   const { data: configs } = useQuery({
-    queryKey: ['payment-config'],
+    queryKey: ['payment-config', tenant?.company_id],
     queryFn: async () => {
       const { data, error } = await supabase.from('payment_config').select('*');
       if (error) throw error;
