@@ -19,6 +19,7 @@ import { Switch } from '@/components/ui/switch';
 import { ImportHistoricalOrdersSection } from '@/components/admin/ImportHistoricalOrdersSection';
 import { SecurityPasswordSettings } from '@/components/security/SecurityPasswordSettings';
 import { DataManagementSection } from '@/components/admin/DataManagementSection';
+import { DailyBackupSection } from '@/components/settings/DailyBackupSection';
 import { cn } from '@/lib/utils';
 
 function BusinessModeSection({ tenantId, currentMode }: { tenantId: string; currentMode: string }) {
@@ -378,6 +379,11 @@ export default function SettingsPage() {
         {/* Data Management (Backup, Test mode, etc.) - Super Admin only */}
         {isSuperAdmin && (
           <DataManagementSection />
+        )}
+
+        {/* Daily Backup - Super Admin only */}
+        {isSuperAdmin && (
+          <DailyBackupSection />
         )}
 
         {/* Historical order import - Super Admin only */}
