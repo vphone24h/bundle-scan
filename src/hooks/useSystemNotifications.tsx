@@ -65,7 +65,7 @@ export function useSystemNotifications() {
       }
 
       // Filter by company: show only notifications belonging to user's company or platform-wide (company_id IS NULL)
-      const companyFiltered = filtered.filter(n => {
+      const companyFiltered = (notifications || []).filter(n => {
         const nCompanyId = (n as any).company_id;
         // Platform-wide notifications (company_id is null) are visible to all
         if (!nCompanyId) return true;
@@ -89,7 +89,7 @@ export function useSystemNotifications() {
 
       const readIds = new Set((reads || []).map(r => r.notification_id));
 
-      return filtered.map(n => ({
+      return audienceFiltered.map(n => ({
         ...n,
         is_read: readIds.has(n.id),
       })) as SystemNotification[];
