@@ -511,8 +511,12 @@ export default function ExportHistoryPage() {
       setExportProgress(`Đã tải ${filled}/${totalCount} phiếu...`);
     }
 
-    // Trim any undefined slots
-    const trimmed = allData.filter(Boolean);
+    // Trim any undefined slots and sort newest first
+    const trimmed = allData.filter(Boolean).sort((a, b) => {
+      const dateA = a.export_date ? new Date(a.export_date).getTime() : 0;
+      const dateB = b.export_date ? new Date(b.export_date).getTime() : 0;
+      return dateB - dateA;
+    });
 
     // Step 3: Fetch customer + branch info in parallel
     setExportProgress('Đang tải thông tin khách hàng & chi nhánh...');
