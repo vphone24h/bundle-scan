@@ -32,6 +32,7 @@ export default function MyAttendancePage() {
   const { data: pu } = usePlatformUser();
   const tenantId = pu?.tenant_id;
   const navigate = useNavigate();
+  const [showSalesDialog, setShowSalesDialog] = useState(false);
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const monthStart = startOfMonth(currentMonth);
