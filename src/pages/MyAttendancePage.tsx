@@ -145,7 +145,7 @@ export default function MyAttendancePage() {
 
   // Stats
   const stats = useMemo(() => {
-    if (!records) return { total: 0, onTime: 0, late: 0, absent: 0, totalMinutes: 0, totalOT: 0, totalLate: 0 };
+    if (!records) return { total: 0, onTime: 0, late: 0, absent: 0, totalMinutes: 0, totalOT: 0, totalLate: 0, totalEarlyLeave: 0, earlyLeaveCount: 0 };
     const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd > new Date() ? new Date() : monthEnd });
     const workDays = daysInMonth.filter(d => !isWeekend(d));
     const workedDays = new Set(records.map(r => r.date));
@@ -159,6 +159,8 @@ export default function MyAttendancePage() {
       totalMinutes: records.reduce((s, r) => s + (r.total_work_minutes || 0), 0),
       totalOT: records.reduce((s, r) => s + (r.overtime_minutes || 0), 0),
       totalLate: records.reduce((s, r) => s + (r.late_minutes || 0), 0),
+      totalEarlyLeave: records.reduce((s, r) => s + (r.early_leave_minutes || 0), 0),
+      earlyLeaveCount: records.filter(r => (r.early_leave_minutes || 0) > 0).length,
     };
   }, [records, monthStart, monthEnd]);
 
@@ -237,7 +239,7 @@ export default function MyAttendancePage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
           <Card>
             <CardContent className="p-3 text-center">
               <CheckCircle2 className="h-5 w-5 text-green-600 mx-auto mb-1" />
@@ -257,6 +259,13 @@ export default function MyAttendancePage() {
               <AlertTriangle className="h-5 w-5 text-yellow-600 mx-auto mb-1" />
               <p className="text-lg font-bold">{stats.late}</p>
               <p className="text-[10px] text-muted-foreground">Đi trễ</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-3 text-center">
+              <Clock className="h-5 w-5 text-orange-500 mx-auto mb-1" />
+              <p className="text-lg font-bold">{stats.earlyLeaveCount}</p>
+              <p className="text-[10px] text-muted-foreground">Về sớm</p>
             </CardContent>
           </Card>
           <Card>
@@ -283,6 +292,7 @@ export default function MyAttendancePage() {
                 <p>{Math.floor(stats.totalMinutes / 60)}h{stats.totalMinutes % 60}p tổng giờ</p>
                 {stats.totalOT > 0 && <p className="text-green-600">+{Math.floor(stats.totalOT / 60)}h OT</p>}
                 {stats.totalLate > 0 && <p className="text-yellow-600">Trễ {stats.totalLate}p</p>}
+                {stats.totalEarlyLeave > 0 && <p className="text-orange-500">Sớm {stats.totalEarlyLeave}p</p>}
               </div>
             </CardContent>
           </Card>
@@ -398,6 +408,10 @@ export default function MyAttendancePage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Tổng trễ</span>
                   <span className="font-medium text-yellow-600">{stats.totalLate}p</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Tổng về sớm</span>
+                  <span className="font-medium text-orange-500">{stats.totalEarlyLeave}p</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Trung bình/ngày</span>
