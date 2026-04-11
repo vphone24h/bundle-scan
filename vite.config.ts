@@ -35,6 +35,7 @@ export default defineConfig(({ mode }) => {
     mode === "production" && VitePWA({
       registerType: "autoUpdate",
       injectRegister: 'auto',
+      selfDestroying: true,
       includeAssets: ["favicon.ico"],
       workbox: {
         skipWaiting: true,
