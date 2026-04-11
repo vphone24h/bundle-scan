@@ -64,8 +64,17 @@ export function useSystemNotifications() {
         throw error;
       }
 
+      // Filter by company: show only notifications belonging to user's company or platform-wide (company_id IS NULL)
+      const companyFiltered = filtered.filter(n => {
+        const nCompanyId = (n as any).company_id;
+        // Platform-wide notifications (company_id is null) are visible to all
+        if (!nCompanyId) return true;
+        // Company-specific notifications only visible to users of that company
+        return userCompanyId && nCompanyId === userCompanyId;
+      });
+
       // Filter: show only notifications targeting 'all' or user's tenant
-      const filtered = (notifications || []).filter(n => {
+      const audienceFiltered = companyFiltered.filter(n => {
         if (n.is_pinned) return true;
         if (n.target_audience === 'all') return true;
         if (!n.target_tenant_ids || n.target_tenant_ids.length === 0) return true;
