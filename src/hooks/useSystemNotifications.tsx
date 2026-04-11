@@ -32,13 +32,24 @@ export function useSystemNotifications() {
     queryFn: async () => {
       if (!user?.id) return [];
 
-      // Get user's tenant_id for filtering
+      // Get user's tenant_id and company_id for filtering
       const { data: pu } = await supabase
         .from('platform_users')
         .select('tenant_id')
         .eq('user_id', user.id)
         .maybeSingle();
       const tenantId = pu?.tenant_id;
+
+      // Get company_id from tenant for company-scoped filtering
+      let userCompanyId: string | null = null;
+      if (tenantId) {
+        const { data: tenantData } = await supabase
+          .from('tenants')
+          .select('company_id')
+          .eq('id', tenantId)
+          .maybeSingle();
+        userCompanyId = tenantData?.company_id ?? null;
+      }
       
       const { data: notifications, error } = await supabase
         .from('system_notifications')
@@ -53,8 +64,17 @@ export function useSystemNotifications() {
         throw error;
       }
 
+      // Filter by company: show only notifications belonging to user's company or platform-wide (company_id IS NULL)
+      const companyFiltered = (notifications || []).filter(n => {
+        const nCompanyId = (n as any).company_id;
+        // Platform-wide notifications (company_id is null) are visible to all
+        if (!nCompanyId) return true;
+        // Company-specific notifications only visible to users of that company
+        return userCompanyId && nCompanyId === userCompanyId;
+      });
+
       // Filter: show only notifications targeting 'all' or user's tenant
-      const filtered = (notifications || []).filter(n => {
+      const audienceFiltered = companyFiltered.filter(n => {
         if (n.is_pinned) return true;
         if (n.target_audience === 'all') return true;
         if (!n.target_tenant_ids || n.target_tenant_ids.length === 0) return true;
@@ -69,7 +89,7 @@ export function useSystemNotifications() {
 
       const readIds = new Set((reads || []).map(r => r.notification_id));
 
-      return filtered.map(n => ({
+      return audienceFiltered.map(n => ({
         ...n,
         is_read: readIds.has(n.id),
       })) as SystemNotification[];
@@ -133,6 +153,23 @@ export function useStartupNotification() {
     queryFn: async () => {
       if (!user?.id) return null;
 
+      // Get user's company_id via tenant
+      const { data: pu } = await supabase
+        .from('platform_users')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      let userCompanyId: string | null = null;
+      if (pu?.tenant_id) {
+        const { data: tenantData } = await supabase
+          .from('tenants')
+          .select('company_id')
+          .eq('id', pu.tenant_id)
+          .maybeSingle();
+        userCompanyId = tenantData?.company_id ?? null;
+      }
+
+      // Fetch startup popup notifications - get more to filter by company
       const { data: notifications, error } = await supabase
         .from('system_notifications')
         .select('*')
@@ -140,11 +177,19 @@ export function useStartupNotification() {
         .eq('show_as_startup_popup', true)
         .or('source.eq.manual,source.is.null')
         .order('created_at', { ascending: false })
-        .limit(1);
+        .limit(10);
       if (error) throw error;
       if (!notifications || notifications.length === 0) return null;
 
-      const notification = notifications[0];
+      // Filter by company_id: only show notifications from user's company or platform-wide
+      const companyFiltered = notifications.filter(n => {
+        const nCompanyId = (n as any).company_id;
+        if (!nCompanyId) return true; // Platform-wide
+        return userCompanyId && nCompanyId === userCompanyId;
+      });
+      if (companyFiltered.length === 0) return null;
+
+      const notification = companyFiltered[0];
 
       // Check if dismissed today
       const { data: dismissals } = await supabase
