@@ -41,7 +41,7 @@ export function PayrollPeriodsTab() {
 
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const { data: records } = usePayrollRecords(selectedPeriodId || undefined);
-  const [detailRecord, setDetailRecord] = useState<any>(null);
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
 
   // Filters & search
   const [searchQuery, setSearchQuery] = useState('');
