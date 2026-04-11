@@ -24,12 +24,12 @@ export default defineConfig(({ mode }) => {
     mode === "development" && componentTagger(),
     mode === "production" && {
       name: "emit-build-version",
-      generateBundle() {
-        this.emitFile({
-          type: 'asset',
+      generateBundle(_options: any, bundle: any) {
+        bundle['version.json'] = {
           fileName: 'version.json',
+          type: 'asset',
           source: JSON.stringify({ buildId }, null, 2),
-        });
+        };
       },
     },
     mode === "production" && VitePWA({
