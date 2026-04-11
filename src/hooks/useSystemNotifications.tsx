@@ -153,6 +153,23 @@ export function useStartupNotification() {
     queryFn: async () => {
       if (!user?.id) return null;
 
+      // Get user's company_id via tenant
+      const { data: pu } = await supabase
+        .from('platform_users')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      let userCompanyId: string | null = null;
+      if (pu?.tenant_id) {
+        const { data: tenantData } = await supabase
+          .from('tenants')
+          .select('company_id')
+          .eq('id', pu.tenant_id)
+          .maybeSingle();
+        userCompanyId = tenantData?.company_id ?? null;
+      }
+
+      // Fetch startup popup notifications - get more to filter by company
       const { data: notifications, error } = await supabase
         .from('system_notifications')
         .select('*')
@@ -160,11 +177,19 @@ export function useStartupNotification() {
         .eq('show_as_startup_popup', true)
         .or('source.eq.manual,source.is.null')
         .order('created_at', { ascending: false })
-        .limit(1);
+        .limit(10);
       if (error) throw error;
       if (!notifications || notifications.length === 0) return null;
 
-      const notification = notifications[0];
+      // Filter by company_id: only show notifications from user's company or platform-wide
+      const companyFiltered = notifications.filter(n => {
+        const nCompanyId = (n as any).company_id;
+        if (!nCompanyId) return true; // Platform-wide
+        return userCompanyId && nCompanyId === userCompanyId;
+      });
+      if (companyFiltered.length === 0) return null;
+
+      const notification = companyFiltered[0];
 
       // Check if dismissed today
       const { data: dismissals } = await supabase
