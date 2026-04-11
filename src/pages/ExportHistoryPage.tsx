@@ -711,6 +711,15 @@ export default function ExportHistoryPage() {
         };
       };
 
+      // Sort items by export_date descending (newest first)
+      allItemsRaw.sort((a: any, b: any) => {
+        const rA = receiptMap[a.receipt_id];
+        const rB = receiptMap[b.receipt_id];
+        const dateA = rA?.export_date ? new Date(rA.export_date).getTime() : 0;
+        const dateB = rB?.export_date ? new Date(rB.export_date).getTime() : 0;
+        return dateB - dateA;
+      });
+
       setExportProgress('Đang tạo file Excel...');
       exportToExcelMultiSheet({
         filename: `Chi_tiet_SP_${dateStr}`,
