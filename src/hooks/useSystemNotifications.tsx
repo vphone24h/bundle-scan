@@ -32,13 +32,24 @@ export function useSystemNotifications() {
     queryFn: async () => {
       if (!user?.id) return [];
 
-      // Get user's tenant_id for filtering
+      // Get user's tenant_id and company_id for filtering
       const { data: pu } = await supabase
         .from('platform_users')
         .select('tenant_id')
         .eq('user_id', user.id)
         .maybeSingle();
       const tenantId = pu?.tenant_id;
+
+      // Get company_id from tenant for company-scoped filtering
+      let userCompanyId: string | null = null;
+      if (tenantId) {
+        const { data: tenantData } = await supabase
+          .from('tenants')
+          .select('company_id')
+          .eq('id', tenantId)
+          .maybeSingle();
+        userCompanyId = tenantData?.company_id ?? null;
+      }
       
       const { data: notifications, error } = await supabase
         .from('system_notifications')
