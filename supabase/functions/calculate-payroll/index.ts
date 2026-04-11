@@ -296,7 +296,7 @@ Deno.serve(async (req) => {
       }).sort((a: any, b: any) => a.date.localeCompare(b.date));
 
       // ===== SALES DATA =====
-      const userSales = allSales.filter((s: any) => s.created_by === employee.user_id);
+      const userSales = allSales.filter((s: any) => (s.sales_staff_id || s.created_by) === employee.user_id);
       const userRevenue = userSales.reduce((s: number, r: any) => s + (r.total_amount || 0), 0);
       const userSaleIds = new Set(userSales.map((s: any) => s.id));
 
