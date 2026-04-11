@@ -112,18 +112,43 @@ export function WelcomeEmailConfig() {
   }, [configs]);
 
   const handleSave = async () => {
+    // Company admin must configure SMTP first
+    if (isCompanyAdmin && !hasSmtpConfigured) {
+      toast({ 
+        title: 'Chưa cấu hình Email', 
+        description: 'Vui lòng cấu hình Email Gmail và App Password tại mục "Cấu hình Email gửi thông báo" trước khi lưu mẫu email.', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const updates = [
-        { config_key: 'welcome_email_enabled', config_value: String(enabled), company_id: companyId },
-        { config_key: 'welcome_email_subject', config_value: subject, company_id: companyId },
-        { config_key: 'welcome_email_body', config_value: body, company_id: companyId },
+        { config_key: 'welcome_email_enabled', config_value: String(enabled), company_id: companyId || null },
+        { config_key: 'welcome_email_subject', config_value: subject, company_id: companyId || null },
+        { config_key: 'welcome_email_body', config_value: body, company_id: companyId || null },
       ];
       for (const u of updates) {
-        const { error } = await supabase.from('payment_config').upsert(u, { 
-          onConflict: companyId ? 'config_key,company_id' : 'config_key',
-        });
-        if (error) throw error;
+        // Check if record exists first, then update or insert
+        let query = supabase.from('payment_config').select('id').eq('config_key', u.config_key);
+        if (u.company_id) {
+          query = query.eq('company_id', u.company_id);
+        } else {
+          query = query.is('company_id', null);
+        }
+        const { data: existing } = await query.maybeSingle();
+
+        if (existing?.id) {
+          const { error } = await supabase.from('payment_config')
+            .update({ config_value: u.config_value })
+            .eq('id', existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from('payment_config')
+            .insert(u);
+          if (error) throw error;
+        }
       }
       toast({ title: 'Thành công', description: 'Đã lưu mẫu email chào mừng' });
       queryClient.invalidateQueries({ queryKey: ['payment-config-email', companyId] });
