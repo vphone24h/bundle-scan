@@ -55,7 +55,7 @@ interface PaymentConfig {
 
 export function WelcomeEmailConfig() {
   const queryClient = useQueryClient();
-  const { companyId } = useAdminCompanyId();
+  const { companyId, isCompanyAdmin } = useAdminCompanyId();
   const [enabled, setEnabled] = useState(true);
   const [subject, setSubject] = useState(DEFAULT_WELCOME_SUBJECT);
   const [body, setBody] = useState(DEFAULT_WELCOME_BODY);
@@ -67,6 +67,23 @@ export function WelcomeEmailConfig() {
   const [sendingGuide, setSendingGuide] = useState(false);
 
   const { data: articles } = usePublishedPlatformArticles();
+
+  // Check if company has SMTP configured (required for company admins)
+  const { data: emailConfig } = useQuery({
+    queryKey: ['company-email-config-check', companyId],
+    enabled: !!companyId && isCompanyAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('company_email_config')
+        .select('*')
+        .eq('company_id', companyId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const hasSmtpConfigured = !isCompanyAdmin || (emailConfig?.smtp_user && emailConfig?.smtp_pass && emailConfig?.is_enabled);
 
   const { data: configs, isLoading } = useQuery({
     queryKey: ['payment-config-email', companyId],
