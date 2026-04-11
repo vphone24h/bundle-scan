@@ -145,7 +145,7 @@ export default function MyAttendancePage() {
 
   // Stats
   const stats = useMemo(() => {
-    if (!records) return { total: 0, onTime: 0, late: 0, absent: 0, totalMinutes: 0, totalOT: 0, totalLate: 0 };
+    if (!records) return { total: 0, onTime: 0, late: 0, absent: 0, totalMinutes: 0, totalOT: 0, totalLate: 0, totalEarlyLeave: 0, earlyLeaveCount: 0 };
     const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd > new Date() ? new Date() : monthEnd });
     const workDays = daysInMonth.filter(d => !isWeekend(d));
     const workedDays = new Set(records.map(r => r.date));
@@ -159,6 +159,8 @@ export default function MyAttendancePage() {
       totalMinutes: records.reduce((s, r) => s + (r.total_work_minutes || 0), 0),
       totalOT: records.reduce((s, r) => s + (r.overtime_minutes || 0), 0),
       totalLate: records.reduce((s, r) => s + (r.late_minutes || 0), 0),
+      totalEarlyLeave: records.reduce((s, r) => s + (r.early_leave_minutes || 0), 0),
+      earlyLeaveCount: records.filter(r => (r.early_leave_minutes || 0) > 0).length,
     };
   }, [records, monthStart, monthEnd]);
 
