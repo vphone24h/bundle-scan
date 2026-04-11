@@ -64,7 +64,7 @@ interface BonusRow { bonus_type: string; name: string; calc_type: string; value:
 interface CommissionRow { target_type: string; target_id: string; target_name: string; calc_type: string; value: number; }
 interface AllowanceRow { allowance_type: string; name: string; amount: number; is_fixed: boolean; }
 interface HolidayRow { holiday_name: string; holiday_date: string; multiplier_percent: number; }
-interface PenaltyRow { penalty_type: string; name: string; amount: number; description: string; }
+interface PenaltyRow { penalty_type: string; name: string; amount: number; description: string; threshold_minutes: number; full_day_absence_minutes: number; }
 interface OvertimeRow { overtime_type: string; name: string; calc_type: string; value: number; description: string; }
 
 interface Props {
@@ -129,7 +129,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
   useEffect(() => { if (exCommissions?.length) setCommissions(exCommissions.map(c => ({ target_type: c.target_type, target_id: c.target_id || '', target_name: c.target_name, calc_type: c.calc_type, value: Number(c.value) }))); }, [exCommissions]);
   useEffect(() => { if (exAllowances?.length) setAllowances(exAllowances.map(a => ({ allowance_type: a.allowance_type, name: a.name, amount: Number(a.amount), is_fixed: a.is_fixed }))); }, [exAllowances]);
   useEffect(() => { if (exHolidays?.length) setHolidays(exHolidays.map(h => ({ holiday_name: h.holiday_name, holiday_date: h.holiday_date, multiplier_percent: Number(h.multiplier_percent) }))); }, [exHolidays]);
-  useEffect(() => { if (exPenalties?.length) setPenalties(exPenalties.map(p => ({ penalty_type: p.penalty_type, name: p.name, amount: Number(p.amount), description: p.description || '' }))); }, [exPenalties]);
+  useEffect(() => { if (exPenalties?.length) setPenalties(exPenalties.map(p => ({ penalty_type: p.penalty_type, name: p.name, amount: Number(p.amount), description: p.description || '', threshold_minutes: (p as any).threshold_minutes || 0, full_day_absence_minutes: (p as any).full_day_absence_minutes || 0 }))); }, [exPenalties]);
   useEffect(() => { if (exOvertimes?.length) setOvertimes(exOvertimes.map(o => ({ overtime_type: o.overtime_type, name: o.name, calc_type: o.calc_type, value: Number(o.value), description: o.description || '' }))); }, [exOvertimes]);
 
   const handleSave = async () => {
@@ -509,6 +509,26 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                       <Label className="text-xs">Số tiền phạt (VNĐ)</Label>
                       <Input type="number" className="h-8 text-xs" value={p.amount} onChange={e => { const n = [...penalties]; n[i].amount = Number(e.target.value); setPenalties(n); }} />
                     </div>
+                    {(p.penalty_type === 'late' || p.penalty_type === 'early_leave') && (
+                      <>
+                        <div className="space-y-1">
+                          <Label className="text-xs">{p.penalty_type === 'late' ? 'Trễ từ (phút)' : 'Về sớm từ (phút)'}</Label>
+                          <Input type="number" className="h-8 text-xs" placeholder="0 = phạt ngay" value={p.threshold_minutes || ''} onChange={e => { const n = [...penalties]; n[i].threshold_minutes = Number(e.target.value); setPenalties(n); }} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">{p.penalty_type === 'late' ? 'Trễ ≥ (phút) = nghỉ ngày' : 'Sớm ≥ (phút) = nghỉ ngày'}</Label>
+                          <Input type="number" className="h-8 text-xs" placeholder="0 = không áp dụng" value={p.full_day_absence_minutes || ''} onChange={e => { const n = [...penalties]; n[i].full_day_absence_minutes = Number(e.target.value); setPenalties(n); }} />
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-xs text-muted-foreground">
+                            💡 {p.penalty_type === 'late' ? 'Đi trễ' : 'Về sớm'} từ <strong>{p.threshold_minutes || 0} phút</strong> → phạt <strong>{formatNumber(p.amount)}đ</strong>/lần.
+                            {p.full_day_absence_minutes > 0 && (
+                              <> {p.penalty_type === 'late' ? ' Trễ' : ' Sớm'} ≥ <strong>{p.full_day_absence_minutes} phút</strong> → tính nghỉ nguyên ngày (không tính công).</>
+                            )}
+                          </p>
+                        </div>
+                      </>
+                    )}
                     {p.penalty_type === 'violation' && (
                       <div className="space-y-1 col-span-2">
                         <Label className="text-xs">Mô tả nội quy</Label>
@@ -522,7 +542,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                 </div>
               </div>
             ))}
-            <Button variant="outline" size="sm" onClick={() => setPenalties([...penalties, { penalty_type: 'late', name: 'Đi trễ', amount: 0, description: '' }])}>
+            <Button variant="outline" size="sm" onClick={() => setPenalties([...penalties, { penalty_type: 'late', name: 'Đi trễ', amount: 0, description: '', threshold_minutes: 0, full_day_absence_minutes: 0 }])}>
               <Plus className="h-3.5 w-3.5 mr-1" />Thêm phạt
             </Button>
           </CardContent>

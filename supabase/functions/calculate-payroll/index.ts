@@ -512,28 +512,53 @@ Deno.serve(async (req) => {
         }
       }
 
-      // ===== 6. PENALTY (synced with attendance) =====
+      // ===== 6. PENALTY (synced with attendance, threshold-based) =====
       let totalPenalty = 0;
       const penaltyDetails: any[] = [];
+      // Track full-day absence days from penalty thresholds (to deduct from work days)
+      let penaltyFullDayAbsenceDays = 0;
       if (isPayrollReady && template?.penalty_enabled) {
         const tPenalties = penaltiesByTemplate[templateId] || [];
         for (const p of tPenalties) {
           let count = 0;
+          let fullDayCount = 0;
           let detail = "";
+          const thresholdMin = p.threshold_minutes || 0;
+          const fullDayMin = p.full_day_absence_minutes || 0;
+
           if (p.penalty_type === "late") {
-            count = lateCount;
-            detail = `${lateMinutesTotal} phút trễ`;
+            // Count late records that exceed the threshold
+            for (const a of userAttendance) {
+              const mins = a.late_minutes || 0;
+              if (mins <= 0) continue;
+              if (fullDayMin > 0 && mins >= fullDayMin) {
+                fullDayCount++;
+              } else if (mins >= thresholdMin) {
+                count++;
+              }
+            }
+            detail = `${lateMinutesTotal} phút trễ (${count} lần phạt${fullDayCount > 0 ? `, ${fullDayCount} ngày tính nghỉ` : ''})`;
           } else if (p.penalty_type === "early_leave") {
-            count = earlyLeaveCount;
-            detail = `${earlyLeaveMinutesTotal} phút về sớm`;
+            for (const a of userAttendance) {
+              const mins = a.early_leave_minutes || 0;
+              if (mins <= 0) continue;
+              if (fullDayMin > 0 && mins >= fullDayMin) {
+                fullDayCount++;
+              } else if (mins >= thresholdMin) {
+                count++;
+              }
+            }
+            detail = `${earlyLeaveMinutesTotal} phút về sớm (${count} lần phạt${fullDayCount > 0 ? `, ${fullDayCount} ngày tính nghỉ` : ''})`;
           } else if (p.penalty_type === "absent_no_permission") {
             count = absentCount;
             detail = `${absentCount} ngày vắng`;
           } else if (p.penalty_type === "violation") {
             count = 0; // manual
           }
+
+          penaltyFullDayAbsenceDays += fullDayCount;
           const amount = p.amount * count;
-          if (amount > 0) {
+          if (amount > 0 || fullDayCount > 0) {
             totalPenalty += amount;
             penaltyDetails.push({
               name: p.name,
@@ -542,8 +567,28 @@ Deno.serve(async (req) => {
               per_amount: p.amount,
               amount: Math.round(amount),
               detail,
+              full_day_absence_count: fullDayCount,
+              threshold_minutes: thresholdMin,
+              full_day_absence_minutes: fullDayMin,
             });
           }
+        }
+
+        // Deduct full-day absences from base salary for daily/shift/fixed types
+        if (penaltyFullDayAbsenceDays > 0 && baseSalary > 0) {
+          const dailyRate = salaryType === "fixed"
+            ? (baseAmount / (expectedWorkDays || 22))
+            : baseAmount;
+          const deduction = Math.round(dailyRate * penaltyFullDayAbsenceDays);
+          totalPenalty += deduction;
+          penaltyDetails.push({
+            name: "Trừ công nghỉ (trễ/sớm quá giới hạn)",
+            type: "full_day_deduction",
+            count: penaltyFullDayAbsenceDays,
+            per_amount: Math.round(dailyRate),
+            amount: deduction,
+            detail: `${penaltyFullDayAbsenceDays} ngày x ${Math.round(dailyRate)}đ`,
+          });
         }
       }
 
