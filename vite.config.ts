@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }) => {
   const buildId = new Date().toISOString();
 
   return {
@@ -113,4 +113,4 @@ export default defineConfig(({ mode }) => ({
     },
   },
   };
-}));
+});
