@@ -460,54 +460,96 @@ export default function ExportHistoryPage() {
 
   // Helper: fetch receipts page by page (500 per page, NO joins) to avoid timeout
   const fetchReceiptsStreaming = async () => {
-    const allData: any[] = [];
-    let from = 0;
-    const pageSize = 500;
-    while (true) {
-      setExportProgress(`Đang tải phiếu ${from + 1}...`);
-      let q = supabase
-        .from('export_receipts')
-        .select('id, code, export_date, total_amount, paid_amount, debt_amount, vat_rate, vat_amount, status, branch_id, customer_id, sales_staff_id, created_by')
-        .order('export_date', { ascending: false });
-      if (statusFilter !== '_all_') q = q.eq('status', statusFilter);
-      if (dateFromFilter) q = q.gte('export_date', dateFromFilter);
-      if (dateToFilter) q = q.lte('export_date', dateToFilter + 'T23:59:59');
-      if (branchFilter !== '_all_') q = q.eq('branch_id', branchFilter);
-      q = q.range(from, from + pageSize - 1);
-      const { data, error } = await q;
-      if (error) throw error;
-      if (!data || data.length === 0) break;
-      allData.push(...data);
-      if (data.length < pageSize) break;
-      from += pageSize;
+    // Step 1: Get total count first
+    setExportProgress('Đang đếm dữ liệu...');
+    let countQ = supabase
+      .from('export_receipts')
+      .select('id', { count: 'exact', head: true });
+    if (statusFilter !== '_all_') countQ = countQ.eq('status', statusFilter);
+    if (dateFromFilter) countQ = countQ.gte('export_date', dateFromFilter);
+    if (dateToFilter) countQ = countQ.lte('export_date', dateToFilter + 'T23:59:59');
+    if (branchFilter !== '_all_') countQ = countQ.eq('branch_id', branchFilter);
+    const { count: totalCount, error: countError } = await countQ;
+    if (countError) throw countError;
+    if (!totalCount || totalCount === 0) return [];
+
+    // Step 2: Fetch all pages in parallel (1000 per page, up to 5 concurrent)
+    const pageSize = 1000;
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const CONCURRENCY = 5;
+    const allData: any[] = new Array(totalCount);
+    let filled = 0;
+
+    for (let batch = 0; batch < totalPages; batch += CONCURRENCY) {
+      const promises = [];
+      for (let p = batch; p < Math.min(batch + CONCURRENCY, totalPages); p++) {
+        const from = p * pageSize;
+        promises.push(
+          (async () => {
+            let q = supabase
+              .from('export_receipts')
+              .select('id, code, export_date, total_amount, paid_amount, debt_amount, vat_rate, vat_amount, status, branch_id, customer_id, sales_staff_id, created_by')
+              .order('export_date', { ascending: false })
+              .range(from, from + pageSize - 1);
+            if (statusFilter !== '_all_') q = q.eq('status', statusFilter);
+            if (dateFromFilter) q = q.gte('export_date', dateFromFilter);
+            if (dateToFilter) q = q.lte('export_date', dateToFilter + 'T23:59:59');
+            if (branchFilter !== '_all_') q = q.eq('branch_id', branchFilter);
+            const { data, error } = await q;
+            if (error) throw error;
+            return { from, data: data || [] };
+          })()
+        );
+      }
+      const results = await Promise.all(promises);
+      for (const { from, data } of results) {
+        for (let i = 0; i < data.length; i++) {
+          allData[from + i] = data[i];
+        }
+        filled += data.length;
+      }
+      setExportProgress(`Đã tải ${filled}/${totalCount} phiếu...`);
     }
 
-    // Fetch customer names separately (batch 500)
-    setExportProgress('Đang tải thông tin khách hàng...');
-    const customerIds = [...new Set(allData.map(r => r.customer_id).filter(Boolean))];
-    const customerMap: Record<string, { name: string; phone: string }> = {};
-    for (let i = 0; i < customerIds.length; i += 500) {
-      const chunk = customerIds.slice(i, i + 500);
-      const { data } = await supabase.from('customers').select('id, name, phone').in('id', chunk);
-      if (data) data.forEach(c => { customerMap[c.id] = { name: c.name, phone: c.phone || '' }; });
-    }
+    // Trim any undefined slots
+    const trimmed = allData.filter(Boolean);
 
-    // Fetch branch names separately
-    setExportProgress('Đang tải thông tin chi nhánh...');
-    const branchIds = [...new Set(allData.map(r => r.branch_id).filter(Boolean))];
-    const branchMap: Record<string, string> = {};
-    if (branchIds.length > 0) {
-      const { data } = await supabase.from('branches').select('id, name').in('id', branchIds);
-      if (data) data.forEach(b => { branchMap[b.id] = b.name; });
-    }
+    // Step 3: Fetch customer + branch info in parallel
+    setExportProgress('Đang tải thông tin khách hàng & chi nhánh...');
+    const customerIds = [...new Set(trimmed.map(r => r.customer_id).filter(Boolean))];
+    const branchIds = [...new Set(trimmed.map(r => r.branch_id).filter(Boolean))];
+
+    const [customerMap, branchMap] = await Promise.all([
+      (async () => {
+        const map: Record<string, { name: string; phone: string }> = {};
+        const batches = [];
+        for (let i = 0; i < customerIds.length; i += 500) {
+          batches.push(customerIds.slice(i, i + 500));
+        }
+        const results = await Promise.all(batches.map(chunk =>
+          supabase.from('customers').select('id, name, phone').in('id', chunk)
+        ));
+        for (const { data } of results) {
+          if (data) data.forEach(c => { map[c.id] = { name: c.name, phone: c.phone || '' }; });
+        }
+        return map;
+      })(),
+      (async () => {
+        const map: Record<string, string> = {};
+        if (branchIds.length === 0) return map;
+        const { data } = await supabase.from('branches').select('id, name').in('id', branchIds);
+        if (data) data.forEach(b => { map[b.id] = b.name; });
+        return map;
+      })(),
+    ]);
 
     // Attach customer/branch info
-    for (const r of allData) {
+    for (const r of trimmed) {
       r.customers = customerMap[r.customer_id] || { name: 'Khách lẻ', phone: '' };
       r.branches = { name: branchMap[r.branch_id] || '' };
     }
 
-    return allData;
+    return trimmed;
   };
 
   // Helper: fetch staff names
@@ -636,15 +678,26 @@ export default function ExportHistoryPage() {
 
       setExportProgress('Đang tải chi tiết sản phẩm...');
       let allItemsRaw: any[] = [];
+      const itemBatches: string[][] = [];
       for (let i = 0; i < receiptIds.length; i += 500) {
-        const chunk = receiptIds.slice(i, i + 500);
-        setExportProgress(`Đang tải SP (${Math.min(i + 500, receiptIds.length)}/${receiptIds.length} phiếu)...`);
-        const { data, error } = await supabase
-          .from('export_receipt_items')
-          .select('id, receipt_id, product_name, sku, imei, sale_price, status, warranty, category_id, categories(name)')
-          .in('receipt_id', chunk);
-        if (error) throw error;
-        if (data) allItemsRaw.push(...data);
+        itemBatches.push(receiptIds.slice(i, i + 500));
+      }
+      // Fetch item batches in parallel (up to 5 concurrent)
+      const ITEM_CONCURRENCY = 5;
+      for (let b = 0; b < itemBatches.length; b += ITEM_CONCURRENCY) {
+        const slice = itemBatches.slice(b, b + ITEM_CONCURRENCY);
+        const results = await Promise.all(slice.map(chunk =>
+          supabase
+            .from('export_receipt_items')
+            .select('id, receipt_id, product_name, sku, imei, sale_price, status, warranty, category_id, categories(name)')
+            .in('receipt_id', chunk)
+        ));
+        for (const { data, error } of results) {
+          if (error) throw error;
+          if (data) allItemsRaw.push(...data);
+        }
+        const loaded = Math.min((b + ITEM_CONCURRENCY) * 500, receiptIds.length);
+        setExportProgress(`Đã tải SP (${loaded}/${receiptIds.length} phiếu)...`);
       }
 
       setExportProgress('Đang lấy thông tin nhân viên...');
