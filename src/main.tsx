@@ -9,6 +9,22 @@ const PERSISTED_QUERY_CACHE_KEY = 'vkho_query_cache_v1';
 const CACHE_PREFIXES_TO_CLEAR = ['tenant_resolver_cache_v1:', 'company_resolver_cache_v1:'];
 const APP_VERSION_ENDPOINT = '/version.json';
 const APP_UPDATE_SEARCH_PARAM = '__app_update';
+const APP_VERSION_SYNC_INTERVAL_MS = 60000;
+const APP_VERSION_SYNC_THROTTLE_MS = 10000;
+
+let appVersionSyncInFlight: Promise<void> | null = null;
+let lastAppVersionSyncAt = 0;
+
+function getServiceWorkerScriptUrl(registration: ServiceWorkerRegistration) {
+  return registration.active?.scriptURL
+    ?? registration.waiting?.scriptURL
+    ?? registration.installing?.scriptURL
+    ?? '';
+}
+
+function isPushServiceWorker(registration: ServiceWorkerRegistration) {
+  return getServiceWorkerScriptUrl(registration).includes('/sw-push.js');
+}
 
 async function fetchRemoteBuildVersion() {
   if (typeof window === 'undefined') return null;
@@ -47,10 +63,12 @@ async function clearRuntimeCaches() {
   if ('serviceWorker' in navigator) {
     const registrations = await navigator.serviceWorker.getRegistrations();
     await Promise.all(
-      registrations.map(async (registration) => {
+      registrations
+        .filter((registration) => !isPushServiceWorker(registration))
+        .map(async (registration) => {
         registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
         await registration.unregister();
-      })
+        })
     );
   }
 
@@ -58,6 +76,19 @@ async function clearRuntimeCaches() {
     const cacheKeys = await window.caches.keys();
     await Promise.all(cacheKeys.map((key) => window.caches.delete(key)));
   }
+}
+
+async function requestServiceWorkerUpdateCheck() {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  const appRegistrations = registrations.filter((registration) => !isPushServiceWorker(registration));
+
+  await Promise.all(appRegistrations.map((registration) => registration.update().catch(() => undefined)));
+
+  appRegistrations.forEach((registration) => {
+    registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
+  });
 }
 
 function cleanupAppUpdateSearchParam() {
@@ -80,6 +111,8 @@ function buildRefreshUrl(version: string) {
 
 async function syncAppRuntimeVersion() {
   if (typeof window === 'undefined') return;
+
+  await requestServiceWorkerUpdateCheck();
 
   const remoteVersion = await fetchRemoteBuildVersion();
   const targetVersion = remoteVersion ?? APP_RUNTIME_VERSION;
@@ -109,6 +142,67 @@ async function syncAppRuntimeVersion() {
   cleanupAppUpdateSearchParam();
 }
 
+async function scheduleAppRuntimeVersionSync(force = false) {
+  if (typeof window === 'undefined') return;
+
+  const now = Date.now();
+  if (!force) {
+    if (appVersionSyncInFlight) return appVersionSyncInFlight;
+    if (now - lastAppVersionSyncAt < APP_VERSION_SYNC_THROTTLE_MS) return;
+  }
+
+  lastAppVersionSyncAt = now;
+  appVersionSyncInFlight = syncAppRuntimeVersion();
+
+  try {
+    await appVersionSyncInFlight;
+  } finally {
+    appVersionSyncInFlight = null;
+  }
+}
+
+function registerAppRuntimeSyncTriggers() {
+  if (typeof window === 'undefined') return;
+
+  const runtimeWindow = window as Window & typeof globalThis & {
+    __vkhoAppVersionSyncRegistered__?: boolean;
+    __vkhoAppVersionSyncIntervalId__?: number;
+    __vkhoAppControllerChangeHandled__?: boolean;
+  };
+
+  if (runtimeWindow.__vkhoAppVersionSyncRegistered__) return;
+  runtimeWindow.__vkhoAppVersionSyncRegistered__ = true;
+
+  const triggerSync = () => {
+    void scheduleAppRuntimeVersionSync();
+  };
+
+  const onVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      triggerSync();
+    }
+  };
+
+  window.addEventListener('focus', triggerSync);
+  window.addEventListener('online', triggerSync);
+  window.addEventListener('pageshow', triggerSync);
+  document.addEventListener('visibilitychange', onVisibilityChange);
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (runtimeWindow.__vkhoAppControllerChangeHandled__) return;
+      runtimeWindow.__vkhoAppControllerChangeHandled__ = true;
+      window.location.replace(buildRefreshUrl(window.localStorage.getItem(APP_RUNTIME_VERSION_KEY) ?? APP_RUNTIME_VERSION));
+    });
+  }
+
+  runtimeWindow.__vkhoAppVersionSyncIntervalId__ = window.setInterval(() => {
+    if (document.visibilityState === 'visible') {
+      void scheduleAppRuntimeVersionSync();
+    }
+  }, APP_VERSION_SYNC_INTERVAL_MS);
+}
+
 // Hide the HTML preloader
 // For store pages: StoreLandingPage will call hideAppPreloader() when content is ready
 // For admin pages: hide immediately after React paints
@@ -123,7 +217,8 @@ function hidePreloader() {
 // Expose globally so StoreLandingPage can call it
 (window as any).__hideAppPreloader = hidePreloader;
 
-void syncAppRuntimeVersion();
+registerAppRuntimeSyncTriggers();
+void scheduleAppRuntimeVersionSync(true);
 
 // PWA service worker registration is handled automatically by vite-plugin-pwa
 // with injectRegister: 'auto' in vite.config.ts (production builds only)
