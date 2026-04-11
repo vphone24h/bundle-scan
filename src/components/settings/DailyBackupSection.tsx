@@ -101,6 +101,20 @@ export function DailyBackupSection() {
         <p className="text-xs text-muted-foreground mt-1">
           Hệ thống tự động backup dữ liệu bán hàng, nhập hàng, tồn kho mỗi ngày sau 23h. File lưu trữ 60 ngày.
         </p>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleManualBackup}
+          disabled={generating}
+          className="mt-2 w-full sm:w-auto"
+        >
+          {generating ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <RefreshCw className="h-4 w-4 mr-2" />
+          )}
+          {generating ? 'Đang tạo...' : 'Tạo ngay'}
+        </Button>
       </CardHeader>
       <CardContent>
         {isLoading ? (
