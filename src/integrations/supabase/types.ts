@@ -2402,6 +2402,56 @@ export type Database = {
           },
         ]
       }
+      daily_backups: {
+        Row: {
+          backup_date: string
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          expires_at: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          stats: Json | null
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          backup_date: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          expires_at?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          stats?: Json | null
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          backup_date?: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          expires_at?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          stats?: Json | null
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_backups_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_stats: {
         Row: {
           branch_id: string | null
