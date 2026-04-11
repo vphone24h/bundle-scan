@@ -172,6 +172,9 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
         onSaved?.(id);
       }
 
+      // Wait for cache to fully refresh before closing
+      await qc.refetchQueries({ queryKey: ['salary-templates'] });
+
       toast.success('Lưu mẫu lương thành công');
       onClose();
     } catch (e: any) {
