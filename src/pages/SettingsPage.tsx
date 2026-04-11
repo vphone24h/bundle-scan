@@ -381,6 +381,11 @@ export default function SettingsPage() {
           <DataManagementSection />
         )}
 
+        {/* Daily Backup - Super Admin only */}
+        {isSuperAdmin && (
+          <DailyBackupSection />
+        )}
+
         {/* Historical order import - Super Admin only */}
         {isSuperAdmin && (
           <ImportHistoricalOrdersSection />
