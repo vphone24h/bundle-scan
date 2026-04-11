@@ -79,6 +79,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
   const updateTemplate = useUpdateSalaryTemplate();
   const saveConfigs = useSaveTemplateConfigs();
   const { data: categories } = useCategories();
+  const qc = useQueryClient();
 
   const existing = templates?.find(t => t.id === templateId);
 
