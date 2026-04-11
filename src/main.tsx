@@ -9,6 +9,7 @@ const PERSISTED_QUERY_CACHE_KEY = 'vkho_query_cache_v1';
 const CACHE_PREFIXES_TO_CLEAR = ['tenant_resolver_cache_v1:', 'company_resolver_cache_v1:'];
 const APP_VERSION_ENDPOINT = '/version.json';
 const APP_UPDATE_SEARCH_PARAM = '__app_update';
+const APP_SERVICE_WORKER_PURGE_KEY = 'vkho_app_service_worker_purge_v1';
 const APP_VERSION_SYNC_INTERVAL_MS = 60000;
 const APP_VERSION_SYNC_THROTTLE_MS = 10000;
 
@@ -66,8 +67,8 @@ async function clearRuntimeCaches() {
       registrations
         .filter((registration) => !isPushServiceWorker(registration))
         .map(async (registration) => {
-        registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
-        await registration.unregister();
+          registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
+          await registration.unregister();
         })
     );
   }
@@ -76,6 +77,19 @@ async function clearRuntimeCaches() {
     const cacheKeys = await window.caches.keys();
     await Promise.all(cacheKeys.map((key) => window.caches.delete(key)));
   }
+}
+
+async function purgeLegacyAppServiceWorkerOnBoot() {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  const hasAppServiceWorker = registrations.some((registration) => !isPushServiceWorker(registration));
+  const lastPurgedVersion = window.localStorage.getItem(APP_SERVICE_WORKER_PURGE_KEY);
+
+  if (!hasAppServiceWorker || lastPurgedVersion === APP_RUNTIME_VERSION) return;
+
+  await clearRuntimeCaches();
+  window.localStorage.setItem(APP_SERVICE_WORKER_PURGE_KEY, APP_RUNTIME_VERSION);
 }
 
 async function requestServiceWorkerUpdateCheck() {
@@ -203,9 +217,6 @@ function registerAppRuntimeSyncTriggers() {
   }, APP_VERSION_SYNC_INTERVAL_MS);
 }
 
-// Hide the HTML preloader
-// For store pages: StoreLandingPage will call hideAppPreloader() when content is ready
-// For admin pages: hide immediately after React paints
 function hidePreloader() {
   const el = document.getElementById('app-preloader');
   if (el) {
@@ -214,32 +225,29 @@ function hidePreloader() {
   }
 }
 
-// Expose globally so StoreLandingPage can call it
 (window as any).__hideAppPreloader = hidePreloader;
 
-registerAppRuntimeSyncTriggers();
-void scheduleAppRuntimeVersionSync(true);
+async function bootstrapApp() {
+  await purgeLegacyAppServiceWorkerOnBoot();
+  registerAppRuntimeSyncTriggers();
+  await scheduleAppRuntimeVersionSync(true);
 
-// PWA service worker registration is handled automatically by vite-plugin-pwa
-// with injectRegister: 'auto' in vite.config.ts (production builds only)
+  const root = createRoot(document.getElementById("root")!);
+  root.render(<App />);
 
-const root = createRoot(document.getElementById("root")!);
-root.render(<App />);
-
-// For non-store pages, hide preloader after first React paint
-// For store pages, delay — let StoreLandingPage control it
-const prefetch = (window as any).__STORE_PREFETCH__;
-if (!prefetch?.storeId) {
-  // If user has cached auth, hide preloader immediately — React will render real content
-  const hasAuth = !!localStorage.getItem('sb-rodpbhesrwykmpywiiyd-auth-token');
-  if (hasAuth) {
-    requestAnimationFrame(hidePreloader);
-  } else {
-    requestAnimationFrame(() => {
+  const prefetch = (window as any).__STORE_PREFETCH__;
+  if (!prefetch?.storeId) {
+    const hasAuth = !!localStorage.getItem('sb-rodpbhesrwykmpywiiyd-auth-token');
+    if (hasAuth) {
       requestAnimationFrame(hidePreloader);
-    });
+    } else {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(hidePreloader);
+      });
+    }
+  } else {
+    setTimeout(hidePreloader, 4000);
   }
-} else {
-  // Safety net: hide preloader after 4s max even if store page hasn't signaled
-  setTimeout(hidePreloader, 4000);
 }
+
+void bootstrapApp();
