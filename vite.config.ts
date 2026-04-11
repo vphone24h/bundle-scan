@@ -5,9 +5,12 @@ import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }) => {
+  const buildId = new Date().toISOString();
+
+  return {
   define: {
-    __APP_BUILD_ID__: JSON.stringify(new Date().toISOString()),
+    __APP_BUILD_ID__: JSON.stringify(buildId),
   },
   server: {
     host: "::",
@@ -19,6 +22,16 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
+    mode === "production" && {
+      name: "emit-build-version",
+      generateBundle() {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'version.json',
+          source: JSON.stringify({ buildId }, null, 2),
+        });
+      },
+    },
     mode === "production" && VitePWA({
       registerType: "autoUpdate",
       injectRegister: 'auto',
@@ -27,6 +40,7 @@ export default defineConfig(({ mode }) => ({
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
+        globIgnores: ['**/version.json'],
         navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
           {
@@ -98,4 +112,5 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-}));
+  };
+});
