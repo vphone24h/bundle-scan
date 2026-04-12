@@ -182,7 +182,7 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
       });
 
       if (scheduleAssignments.length) {
-        const { error } = await supabase.from('shift_assignments').insert(scheduleAssignments);
+        const { error } = await supabase.from('shift_assignments').insert(scheduleAssignments as any);
         if (error) throw error;
       }
 
