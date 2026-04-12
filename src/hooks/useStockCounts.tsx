@@ -495,9 +495,9 @@ export function useUpdateStockCountItem() {
         .select('system_quantity, actual_quantity, variance')
         .eq('stock_count_id', scId);
 
-      if (fetchError) {
-        console.error('Failed to fetch items for totals:', fetchError);
-        throw fetchError;
+      if (freshFetchError) {
+        console.error('Failed to fetch items for totals:', freshFetchError);
+        throw freshFetchError;
       }
 
       if (freshItems) {
