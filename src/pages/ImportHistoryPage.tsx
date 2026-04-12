@@ -493,7 +493,7 @@ export default function ImportHistoryPage() {
     return selectedProducts[0]?.branches?.name || '';
   }, [selectedProducts, selectedBranchId]);
 
-  const canTransferStock = permissions?.role === 'super_admin' || permissions?.role === 'branch_admin';
+  const canTransferStock = permissions?.canTransferStock ?? false;
   const canViewImportHistoryPrice = permissions?.canViewImportHistoryPrice ?? false;
 
   const handleOpenTransfer = () => {
