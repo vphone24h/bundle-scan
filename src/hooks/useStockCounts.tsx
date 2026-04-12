@@ -490,7 +490,7 @@ export function useUpdateStockCountItem() {
       if (updateResult.error) throw updateResult.error;
 
       // Step 2: Now fetch ALL items with fresh data (after update is committed)
-      const { data: freshItems, error: fetchError } = await supabase
+      const { data: freshItems, error: freshFetchError } = await supabase
         .from('stock_count_items')
         .select('system_quantity, actual_quantity, variance')
         .eq('stock_count_id', scId);
