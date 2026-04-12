@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      absence_reviews: {
+        Row: {
+          absence_date: string
+          created_at: string
+          id: string
+          is_excused: boolean
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          absence_date: string
+          created_at?: string
+          id?: string
+          is_excused?: boolean
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          absence_date?: string
+          created_at?: string
+          id?: string
+          is_excused?: boolean
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "absence_reviews_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ad_gate_settings: {
         Row: {
           clicks_per_ad: number
