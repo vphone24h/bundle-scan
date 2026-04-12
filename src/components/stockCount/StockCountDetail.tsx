@@ -82,6 +82,41 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
   const stockCount = data?.stockCount;
   const isAdmin = permissions?.canViewStockCheck ?? false;
   const items = data?.items || [];
+  const hasSynced = useRef(false);
+
+  // Auto-sync totals from items when detail view opens
+  useEffect(() => {
+    if (!stockCount || !items.length || hasSynced.current) return;
+    
+    const calcActual = items.reduce((s, i) => s + i.actualQuantity, 0);
+    const calcVariance = items.reduce((s, i) => s + i.variance, 0);
+    const calcSystem = items.reduce((s, i) => s + i.systemQuantity, 0);
+
+    const needsSync = 
+      stockCount.totalActualQuantity !== calcActual ||
+      stockCount.totalVariance !== calcVariance ||
+      stockCount.totalSystemQuantity !== calcSystem;
+
+    if (needsSync) {
+      hasSynced.current = true;
+      import('@/integrations/supabase/client').then(({ supabase }) => {
+        supabase
+          .from('stock_counts')
+          .update({
+            total_system_quantity: calcSystem,
+            total_actual_quantity: calcActual,
+            total_variance: calcVariance,
+          })
+          .eq('id', stockCount.id)
+          .then(({ error }) => {
+            if (error) console.error('Auto-sync totals failed:', error);
+            else console.log('Auto-synced stock count totals');
+          });
+      });
+    } else {
+      hasSynced.current = true;
+    }
+  }, [stockCount, items]);
 
   // Separate IMEI and non-IMEI items
   const { imeiItems, nonImeiItems, filteredImeiItems, filteredNonImeiItems } = useMemo(() => {
