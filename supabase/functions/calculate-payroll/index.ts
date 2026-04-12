@@ -159,6 +159,7 @@ Deno.serve(async (req) => {
     const attendance = attendanceRes.data || [];
     const advances = advancesRes.data || [];
     const shiftAssignments = shiftAssignmentsRes.data || [];
+    const absenceReviews = absenceReviewsRes.data || [];
     const allSales = salesRes.data || [];
     const allSaleItems = salesItemsRes.data || [];
 
