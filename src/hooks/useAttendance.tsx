@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import { usePlatformUser, useCurrentTenant } from './useTenant';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
+import { getLocalDateString } from '@/lib/vietnamTime';
 
 type WorkShiftInsert = Database['public']['Tables']['work_shifts']['Insert'];
 type AttendanceLocationInsert = Database['public']['Tables']['attendance_locations']['Insert'];
