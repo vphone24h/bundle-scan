@@ -183,7 +183,7 @@ export function usePermissions() {
 
       if (puError) {
         console.error('Error fetching platform user:', puError);
-        return DEFAULT_PERMISSIONS;
+        throw new Error('Failed to fetch platform user');
       }
 
       const tenantId = platformUser?.tenant_id;
