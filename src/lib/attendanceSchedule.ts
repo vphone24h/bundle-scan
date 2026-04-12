@@ -1,7 +1,8 @@
 interface ScheduleLike {
-  type: 'fixed' | 'custom';
+  type: 'fixed' | 'custom' | 'weekly';
   fixedShiftId?: string;
   customDays?: Record<string, string>;
+  weeklyDays?: Record<string, string>; // date (yyyy-MM-dd) -> shiftId
 }
 
 interface BuildRecurringShiftAssignmentsOptions {
