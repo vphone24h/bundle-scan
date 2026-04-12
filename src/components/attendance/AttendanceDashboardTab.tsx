@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Users, Clock, AlertTriangle, XCircle, Timer, TrendingUp, Filter, CalendarIcon } from 'lucide-react';
+import { Users, Clock, AlertTriangle, XCircle, Timer, TrendingUp, Filter, CalendarIcon, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
 import { useQuery } from '@tanstack/react-query';
@@ -159,6 +159,7 @@ export function AttendanceDashboardTab() {
       total: recs.length,
       onTime: recs.filter(r => r.status === 'on_time').length,
       late: recs.filter(r => r.status === 'late').length,
+      earlyLeave: recs.filter(r => r.status === 'early_leave' || (r.early_leave_minutes && r.early_leave_minutes > 0)).length,
       absent: recs.filter(r => r.status === 'absent').length,
       pending: recs.filter(r => r.status === 'pending').length,
     };
@@ -168,12 +169,14 @@ export function AttendanceDashboardTab() {
     { label: 'Đã chấm công', value: filteredStats.total, icon: Users, color: 'text-primary' },
     { label: 'Đúng giờ', value: filteredStats.onTime, icon: Clock, color: 'text-green-600 dark:text-green-400' },
     { label: 'Đi trễ', value: filteredStats.late, icon: AlertTriangle, color: 'text-yellow-600 dark:text-yellow-400' },
+    { label: 'Về sớm', value: filteredStats.earlyLeave, icon: LogOut, color: 'text-orange-600 dark:text-orange-400' },
     { label: 'Vắng', value: filteredStats.absent, icon: XCircle, color: 'text-destructive' },
     { label: 'Đang làm', value: filteredStats.pending, icon: Timer, color: 'text-blue-600 dark:text-blue-400' },
   ];
 
   const totalMinutes = filteredRecords?.reduce((sum, r) => sum + (r.total_work_minutes || 0), 0) || 0;
   const totalLateMinutes = filteredRecords?.reduce((sum, r) => sum + (r.late_minutes || 0), 0) || 0;
+  const totalEarlyLeaveMinutes = filteredRecords?.reduce((sum, r) => sum + (r.early_leave_minutes || 0), 0) || 0;
 
   // Pie chart data
   const pieData = [
