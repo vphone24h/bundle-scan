@@ -498,7 +498,7 @@ export default function ImportHistoryPage() {
 
   const handleOpenTransfer = () => {
     if (!canTransferStock) {
-      toast({ title: 'Không có quyền', description: 'Chỉ Admin Tổng và Admin Chi nhánh được chuyển hàng', variant: 'destructive' });
+      toast({ title: 'Không có quyền', description: 'Bạn chưa được cấp quyền "Chuyển hàng". Vui lòng liên hệ quản trị viên.', variant: 'destructive' });
       return;
     }
     if (selectedProducts.length === 0) {
