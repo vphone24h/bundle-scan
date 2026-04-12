@@ -198,8 +198,13 @@ export function usePermissions() {
 
       const { data, error } = await rolesQuery.maybeSingle();
 
-      if (error || !data) {
+      if (error) {
         console.error('Error fetching permissions:', error);
+        throw new Error('Failed to fetch user role');
+      }
+      
+      if (!data) {
+        console.warn('No role found for user, using default staff permissions');
         return DEFAULT_PERMISSIONS;
       }
 
