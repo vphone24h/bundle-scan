@@ -1,43 +1,41 @@
 
-## Module Sửa chữa (Repair Management System)
 
-### Giai đoạn 1: Database & Cấu trúc dữ liệu
-- Tạo bảng `repair_orders` (phiếu sửa chữa chính)
-- Tạo bảng `repair_order_items` (dịch vụ & linh kiện)
-- Tạo bảng `repair_request_types` (loại yêu cầu: sửa chữa, bảo hành...)
-- Tạo bảng `repair_status_history` (lịch sử trạng thái)
-- RLS policies theo tenant_id
-- Enum trạng thái: received, pending_check, repairing, waiting_parts, completed, returned
+## Phân tích vấn đề
 
-### Giai đoạn 2: Menu & Routing
-- Thêm menu "Sửa chữa" vào sidebar
-- Route `/repair/new` - Tạo phiếu sửa
-- Route `/repair/list` - Danh sách sửa chữa
-- Cập nhật appRoutes, phân quyền
+Khi bạn check (tick) tất cả 5 sản phẩm IMEI trong phiếu kiểm kho, bên trong chi tiết hiển thị đúng (actual=1, OK), nhưng **danh sách phiếu vẫn hiện Hệ thống=5, Thực tế=0, Lệch=-5**.
 
-### Giai đoạn 3: Tạo phiếu sửa (Check-in - B1)
-- Form tiếp nhận: search sản phẩm, IMEI, model, khách hàng
-- Loại yêu cầu (CRUD)
-- Trạng thái, giá dự kiến, ghi chú, upload hình
-- Thông tin khách hàng (tìm/thêm)
-- Nhân viên tiếp nhận, ngày hẹn trả
-- In phiếu + QR code
+### Nguyên nhân gốc (2 lỗi)
 
-### Giai đoạn 4: Xử lý sửa chữa (Processing - B2)
-- Danh sách phiếu theo trạng thái
-- Kỹ thuật viên cập nhật trạng thái realtime
-- Thêm dịch vụ/linh kiện (2 loại: thay linh kiện từ kho, chỉ sửa)
-- Popup nhập linh kiện mới → ghi sổ quỹ
-- Highlight khi hoàn thành
+1. **Cập nhật tổng bị silent fail**: Khi check từng item, hệ thống cập nhật tổng trên bảng `stock_counts` nhưng **không kiểm tra lỗi** (dòng 511-518 trong `useStockCounts.tsx`). Nếu RLS hoặc lỗi mạng xảy ra, tổng không được cập nhật mà không có thông báo nào.
 
-### Giai đoạn 5: Trả khách & Thanh toán (B3)
-- Chuyển phiếu sửa → đơn bán hàng
-- Thanh toán (tiền mặt, CK, combo)
-- Logic tài chính: lợi nhuận sửa vs thay linh kiện
-- Ghi sổ quỹ, doanh thu, lịch sử bán
-- Filter "Đơn sửa chữa" trong bán hàng & báo cáo
+2. **Race condition khi check nhanh**: Khi bạn check nhiều item liên tiếp, các mutation chạy song song. Mỗi mutation fetch toàn bộ items rồi tính tổng - nhưng fetch có thể trả về dữ liệu cũ của các item khác (chưa kịp cập nhật). Kết quả: mutation cuối cùng có thể ghi đè tổng bằng giá trị sai.
 
-### Giai đoạn 6: Tra cứu & Bảo hành
-- Tra cứu online: SĐT, mã phiếu (dùng chung hệ thống bảo hành)
-- Bảo hành sau sửa: chọn lại phiếu cũ, xem lịch sử
-- Bộ lọc "Sửa chữa" trong báo cáo doanh thu/lợi nhuận
+### Kế hoạch sửa
+
+**File: `src/hooks/useStockCounts.tsx`**
+
+1. **Thêm error handling** cho phần cập nhật tổng `stock_counts` - log lỗi và retry nếu cần.
+
+2. **Thay đổi cách tính tổng**: Thay vì fetch items song song với update (gây race condition), sẽ:
+   - Update item trước (await)
+   - Sau đó fetch lại tất cả items để tính tổng chính xác
+   - Cập nhật tổng stock_counts với error check
+
+3. **Thêm debounce/serial queue**: Đảm bảo các mutation cập nhật tổng chạy tuần tự, không ghi đè lẫn nhau.
+
+4. **Thêm nút "Tính lại tổng"**: Cho phép admin bấm để recalculate tổng từ items thực tế, phòng trường hợp lệch dữ liệu.
+
+### Chi tiết kỹ thuật
+
+```text
+Luồng hiện tại (lỗi):
+  Check item1 ──┬── Update item1 ──────────────────> Done
+                └── Fetch all items (stale!) ──> Calc totals ──> Update stock_counts (wrong!)
+
+Luồng mới (fix):
+  Check item1 ──> Update item1 ──> Fetch all items (fresh) ──> Update stock_counts ──> Done
+                                                                    ↑ error check + retry
+```
+
+Ngoài ra sẽ thêm logic: khi mở detail view, tự động recalculate tổng từ items thực tế và sync lại `stock_counts` nếu phát hiện lệch.
+
