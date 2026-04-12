@@ -270,7 +270,7 @@ export function AttendanceDashboardTab() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {cards.map(c => (
           <Card key={c.label}>
             <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
@@ -312,7 +312,7 @@ export function AttendanceDashboardTab() {
           </Card>
         )}
         <Card className={pieData.length > 0 ? 'sm:col-span-2' : 'sm:col-span-3'}>
-          <CardContent className="p-4 grid grid-cols-2 gap-3">
+          <CardContent className="p-4 grid grid-cols-3 gap-3">
             <div className="flex items-center gap-3">
               <TrendingUp className="h-5 w-5 text-muted-foreground" />
               <div>
@@ -325,6 +325,13 @@ export function AttendanceDashboardTab() {
               <div>
                 <p className="text-lg font-bold">{totalLateMinutes} phút</p>
                 <p className="text-xs text-muted-foreground">Tổng phút trễ</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <LogOut className="h-5 w-5 text-orange-500" />
+              <div>
+                <p className="text-lg font-bold">{totalEarlyLeaveMinutes} phút</p>
+                <p className="text-xs text-muted-foreground">Tổng về sớm</p>
               </div>
             </div>
           </CardContent>
