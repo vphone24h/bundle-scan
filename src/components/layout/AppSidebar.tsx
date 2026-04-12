@@ -237,7 +237,7 @@ export function AppSidebar() {
       }
       return item;
     });
-  }, [permissions, isPlatformAdmin, isCompanyAdmin, hasTenant, isStandalone, isSecretMode, attendanceEnabled]);
+  }, [permissions, permissionsLoading, isPlatformAdmin, isCompanyAdmin, hasTenant, isStandalone, isSecretMode, attendanceEnabled]);
 
   const toggleExpand = useCallback((title: string) => {
     setExpandedItems((prev) =>
