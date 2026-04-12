@@ -101,10 +101,14 @@ function MainLayoutInner({ children }: MainLayoutProps) {
         </PullToRefresh>
       </main>
 
-      {/* Popup priority: tour → notification → push → adgate */}
-      <StartupNotificationPopup />
-      <PushPermissionPopup />
-      <InstallAppPrompt />
+      {/* Popup priority: tour → notification → push → adgate - hide for company admin */}
+      {platformUser?.platform_role !== 'company_admin' && (
+        <>
+          <StartupNotificationPopup />
+          <PushPermissionPopup />
+          <InstallAppPrompt />
+        </>
+      )}
 
       {showAdGate && adGateSettings && !needsBusinessType && (
         <div data-ad-modal>
