@@ -485,30 +485,32 @@ export function useUpdateStockCountItem() {
         })
         .eq('id', itemId);
 
-      const fetchTotalsPromise = supabase
-        .from('stock_count_items')
-        .select('system_quantity, actual_quantity, variance, id')
-        .eq('stock_count_id', scId);
-
-      const [updateResult, totalsResult] = await Promise.all([updateItemPromise, fetchTotalsPromise]);
+      // Step 1: Update the item first and wait for it to complete
+      const updateResult = await updateItemPromise;
       if (updateResult.error) throw updateResult.error;
 
-      if (totalsResult.data) {
-        // Apply current change to the fetched data (it may not reflect our update yet)
-        const totals = totalsResult.data.reduce(
-          (acc, i) => {
-            const qty = i.id === itemId ? newActual : i.actual_quantity;
-            const v = i.id === itemId ? variance : i.variance;
-            return {
-              system: acc.system + i.system_quantity,
-              actual: acc.actual + qty,
-              variance: acc.variance + v,
-            };
-          },
+      // Step 2: Now fetch ALL items with fresh data (after update is committed)
+      const { data: freshItems, error: fetchError } = await supabase
+        .from('stock_count_items')
+        .select('system_quantity, actual_quantity, variance')
+        .eq('stock_count_id', scId);
+
+      if (fetchError) {
+        console.error('Failed to fetch items for totals:', fetchError);
+        throw fetchError;
+      }
+
+      if (freshItems) {
+        const totals = freshItems.reduce(
+          (acc, i) => ({
+            system: acc.system + i.system_quantity,
+            actual: acc.actual + i.actual_quantity,
+            variance: acc.variance + i.variance,
+          }),
           { system: 0, actual: 0, variance: 0 }
         );
 
-        await supabase
+        const { error: updateTotalsError } = await supabase
           .from('stock_counts')
           .update({
             total_system_quantity: totals.system,
@@ -516,6 +518,11 @@ export function useUpdateStockCountItem() {
             total_variance: totals.variance,
           })
           .eq('id', scId);
+
+        if (updateTotalsError) {
+          console.error('Failed to update stock_counts totals:', updateTotalsError);
+          throw updateTotalsError;
+        }
       }
 
       return scId;
