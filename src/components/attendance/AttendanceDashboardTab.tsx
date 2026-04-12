@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Users, Clock, AlertTriangle, XCircle, Timer, TrendingUp, Filter, CalendarIcon } from 'lucide-react';
+import { Users, Clock, AlertTriangle, XCircle, Timer, TrendingUp, Filter, CalendarIcon, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
 import { useQuery } from '@tanstack/react-query';
@@ -24,7 +24,7 @@ const statusConfig: Record<string, { label: string; class: string }> = {
   pending: { label: 'Đang làm', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' },
 };
 
-const PIE_COLORS = ['hsl(142, 71%, 45%)', 'hsl(45, 93%, 47%)', 'hsl(0, 84%, 60%)', 'hsl(217, 91%, 60%)'];
+const PIE_COLORS = ['hsl(142, 71%, 45%)', 'hsl(45, 93%, 47%)', 'hsl(24, 94%, 50%)', 'hsl(0, 84%, 60%)', 'hsl(217, 91%, 60%)'];
 
 type DatePreset = 'today' | 'yesterday' | 'this_week' | 'this_month' | 'last_month' | 'custom';
 
@@ -159,6 +159,7 @@ export function AttendanceDashboardTab() {
       total: recs.length,
       onTime: recs.filter(r => r.status === 'on_time').length,
       late: recs.filter(r => r.status === 'late').length,
+      earlyLeave: recs.filter(r => r.status === 'early_leave' || (r.early_leave_minutes && r.early_leave_minutes > 0)).length,
       absent: recs.filter(r => r.status === 'absent').length,
       pending: recs.filter(r => r.status === 'pending').length,
     };
@@ -168,17 +169,20 @@ export function AttendanceDashboardTab() {
     { label: 'Đã chấm công', value: filteredStats.total, icon: Users, color: 'text-primary' },
     { label: 'Đúng giờ', value: filteredStats.onTime, icon: Clock, color: 'text-green-600 dark:text-green-400' },
     { label: 'Đi trễ', value: filteredStats.late, icon: AlertTriangle, color: 'text-yellow-600 dark:text-yellow-400' },
+    { label: 'Về sớm', value: filteredStats.earlyLeave, icon: LogOut, color: 'text-orange-600 dark:text-orange-400' },
     { label: 'Vắng', value: filteredStats.absent, icon: XCircle, color: 'text-destructive' },
     { label: 'Đang làm', value: filteredStats.pending, icon: Timer, color: 'text-blue-600 dark:text-blue-400' },
   ];
 
   const totalMinutes = filteredRecords?.reduce((sum, r) => sum + (r.total_work_minutes || 0), 0) || 0;
   const totalLateMinutes = filteredRecords?.reduce((sum, r) => sum + (r.late_minutes || 0), 0) || 0;
+  const totalEarlyLeaveMinutes = filteredRecords?.reduce((sum, r) => sum + (r.early_leave_minutes || 0), 0) || 0;
 
   // Pie chart data
   const pieData = [
     { name: 'Đúng giờ', value: filteredStats.onTime },
     { name: 'Đi trễ', value: filteredStats.late },
+    { name: 'Về sớm', value: filteredStats.earlyLeave },
     { name: 'Vắng', value: filteredStats.absent },
     { name: 'Đang làm', value: filteredStats.pending },
   ].filter(d => d.value > 0);
@@ -266,7 +270,7 @@ export function AttendanceDashboardTab() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {cards.map(c => (
           <Card key={c.label}>
             <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
@@ -308,7 +312,7 @@ export function AttendanceDashboardTab() {
           </Card>
         )}
         <Card className={pieData.length > 0 ? 'sm:col-span-2' : 'sm:col-span-3'}>
-          <CardContent className="p-4 grid grid-cols-2 gap-3">
+          <CardContent className="p-4 grid grid-cols-3 gap-3">
             <div className="flex items-center gap-3">
               <TrendingUp className="h-5 w-5 text-muted-foreground" />
               <div>
@@ -321,6 +325,13 @@ export function AttendanceDashboardTab() {
               <div>
                 <p className="text-lg font-bold">{totalLateMinutes} phút</p>
                 <p className="text-xs text-muted-foreground">Tổng phút trễ</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <LogOut className="h-5 w-5 text-orange-500" />
+              <div>
+                <p className="text-lg font-bold">{totalEarlyLeaveMinutes} phút</p>
+                <p className="text-xs text-muted-foreground">Tổng về sớm</p>
               </div>
             </div>
           </CardContent>
@@ -349,6 +360,7 @@ export function AttendanceDashboardTab() {
                       <TableHead>Check-out</TableHead>
                       <TableHead>Giờ làm</TableHead>
                       <TableHead>Trễ</TableHead>
+                      <TableHead>Về sớm</TableHead>
                       <TableHead>Địa điểm</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -369,6 +381,9 @@ export function AttendanceDashboardTab() {
                           </TableCell>
                           <TableCell>
                             {r.late_minutes > 0 ? <span className="text-yellow-600">{r.late_minutes}p</span> : '-'}
+                          </TableCell>
+                          <TableCell>
+                            {r.early_leave_minutes > 0 ? <span className="text-orange-600">{r.early_leave_minutes}p</span> : '-'}
                           </TableCell>
                           <TableCell className="text-muted-foreground text-sm">{r.attendance_locations?.name || '-'}</TableCell>
                         </TableRow>
@@ -397,6 +412,7 @@ export function AttendanceDashboardTab() {
                       </div>
                       <div className="flex items-center gap-2 text-xs">
                         {r.late_minutes > 0 && <span className="text-yellow-600">Trễ {r.late_minutes}p</span>}
+                        {r.early_leave_minutes > 0 && <span className="text-orange-600">Về sớm {r.early_leave_minutes}p</span>}
                         {r.attendance_locations?.name && <span className="text-muted-foreground">{r.attendance_locations.name}</span>}
                       </div>
                     </div>
