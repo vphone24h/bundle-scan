@@ -561,8 +561,64 @@ Deno.serve(async (req) => {
             }
             detail = `${earlyLeaveMinutesTotal} phút về sớm (${count} lần phạt${fullDayCount > 0 ? `, ${fullDayCount} ngày tính nghỉ` : ''})`;
           } else if (p.penalty_type === "absent_no_permission") {
-            count = absentCount;
-            detail = `${absentCount} ngày vắng`;
+            // Count absent days: check absence_reviews
+            // - If reviewed as excused (is_excused=true) → no penalty
+            // - If reviewed as unexcused (is_excused=false) → penalty + deduct salary
+            // - If not reviewed → default to penalty (unexcused)
+            // Also consider paid leave days: scheduled off days don't count
+            const absentDays = userAttendance.filter((a: any) => a.status === "absent");
+            let unexcusedCount = 0;
+            let excusedCount = 0;
+            for (const a of absentDays) {
+              const review = absenceReviewMap.get(a.date);
+              if (review && review.is_excused) {
+                excusedCount++;
+              } else {
+                unexcusedCount++;
+              }
+            }
+
+            // Also find scheduled days with NO attendance record (no-show)
+            for (const dateStr of scheduledDates) {
+              const hasRecord = userAttendance.some((a: any) => a.date === dateStr);
+              if (hasRecord) continue;
+              // Check if this is a past date
+              const dateObj = new Date(dateStr);
+              const today = new Date();
+              today.setHours(23, 59, 59, 999);
+              if (dateObj > today) continue;
+              
+              const review = absenceReviewMap.get(dateStr);
+              if (review && review.is_excused) {
+                excusedCount++;
+              } else {
+                unexcusedCount++;
+              }
+            }
+
+            // Deduct paid leave days from unexcused (if they have paid leave quota)
+            const effectiveUnexcused = Math.max(0, unexcusedCount - Math.max(0, paidLeaveDaysPerMonth - excusedCount));
+            count = effectiveUnexcused;
+            
+            // For fixed salary: deduct 1 day salary per unexcused absence
+            if (count > 0 && salaryType === "fixed" && baseSalary > 0) {
+              const dailyRate = baseAmount / (expectedWorkDays || 22);
+              const absenceDeduction = Math.round(dailyRate * count);
+              penaltyFullDayAbsenceDays += count;
+              totalPenalty += absenceDeduction;
+              penaltyDetails.push({
+                name: "Trừ lương nghỉ không phép",
+                type: "absent_salary_deduction",
+                count,
+                per_amount: Math.round(dailyRate),
+                amount: absenceDeduction,
+                detail: `${count} ngày nghỉ không phép x ${Math.round(dailyRate)}đ/ngày`,
+              });
+            }
+            
+            detail = `${absentCount} ngày vắng (${excusedCount} có phép, ${unexcusedCount} không phép)`;
+            // For the penalty amount (p.amount per violation), only apply to unexcused
+            count = effectiveUnexcused;
           } else if (p.penalty_type === "violation") {
             count = 0; // manual
           }
