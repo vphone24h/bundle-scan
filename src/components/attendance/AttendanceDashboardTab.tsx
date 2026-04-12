@@ -285,7 +285,7 @@ export function AttendanceDashboardTab() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {cards.map(c => (
-          <Card key={c.label}>
+          <Card key={c.label} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailPopup(c.filterKey)}>
             <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
               <div className={`p-1.5 sm:p-2 rounded-lg bg-muted ${c.color}`}>
                 <c.icon className="h-4 w-4 sm:h-5 sm:w-5" />
