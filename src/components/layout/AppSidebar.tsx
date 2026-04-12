@@ -201,6 +201,16 @@ export function AppSidebar() {
     }
 
     // Tenant users -> hiện menu kho hàng
+    // Khi permissions đang loading, hiển thị menu cơ bản (không lọc theo quyền)
+    if (!permissions && permissionsLoading) {
+      // Đang tải quyền -> chỉ hiện các mục không cần quyền
+      return allNavItems.filter(item => {
+        if (isStandalone && item.href === '/install-app') return false;
+        if (shouldHideAttendanceItem(item)) return false;
+        return !item.permission;
+      });
+    }
+
     if (!permissions) {
       return allNavItems.filter(item => {
         if (isStandalone && item.href === '/install-app') return false;
