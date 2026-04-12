@@ -75,6 +75,7 @@ Deno.serve(async (req) => {
       advancesRes,
       shiftAssignmentsRes,
       absenceReviewsRes,
+      overtimeRequestsRes,
       salesRes,
       salesItemsRes,
     ] = await Promise.all([
@@ -90,6 +91,7 @@ Deno.serve(async (req) => {
       supabase.from("salary_advances").select("*").eq("tenant_id", tenant_id).eq("payroll_period_id", period_id).in("status", ["approved", "paid"]),
       supabase.from("shift_assignments").select("*, work_shifts(name, start_time, end_time)").eq("tenant_id", tenant_id).eq("is_active", true),
       supabase.from("absence_reviews").select("*").eq("tenant_id", tenant_id).gte("absence_date", period.start_date).lte("absence_date", period.end_date),
+      supabase.from("overtime_requests").select("*").eq("tenant_id", tenant_id).eq("status", "approved").gte("request_date", period.start_date).lte("request_date", period.end_date),
       supabase.from("export_receipts")
         .select("id, created_by, sales_staff_id, total_amount, branch_id, status")
         .eq("tenant_id", tenant_id)
