@@ -6884,6 +6884,7 @@ export type Database = {
           kpi_bonus_amount: number
           name: string
           overtime_enabled: boolean
+          paid_leave_days_per_month: number
           penalty_enabled: boolean
           salary_type: string
           tenant_id: string
@@ -6905,6 +6906,7 @@ export type Database = {
           kpi_bonus_amount?: number
           name: string
           overtime_enabled?: boolean
+          paid_leave_days_per_month?: number
           penalty_enabled?: boolean
           salary_type?: string
           tenant_id: string
@@ -6926,6 +6928,7 @@ export type Database = {
           kpi_bonus_amount?: number
           name?: string
           overtime_enabled?: boolean
+          paid_leave_days_per_month?: number
           penalty_enabled?: boolean
           salary_type?: string
           tenant_id?: string
