@@ -1,16 +1,20 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, Clock, AlertTriangle, XCircle, Timer, TrendingUp, Filter } from 'lucide-react';
-import { useAttendanceRecords, useTodayAttendanceSummary } from '@/hooks/useAttendance';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Users, Clock, AlertTriangle, XCircle, Timer, TrendingUp, Filter, CalendarIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
 import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, subMonths } from 'date-fns';
+import { vi } from 'date-fns/locale';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { getLocalDateString } from '@/lib/vietnamTime';
 
 const statusConfig: Record<string, { label: string; class: string }> = {
   on_time: { label: 'Đúng giờ', class: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
@@ -22,13 +26,83 @@ const statusConfig: Record<string, { label: string; class: string }> = {
 
 const PIE_COLORS = ['hsl(142, 71%, 45%)', 'hsl(45, 93%, 47%)', 'hsl(0, 84%, 60%)', 'hsl(217, 91%, 60%)'];
 
+type DatePreset = 'today' | 'yesterday' | 'this_week' | 'this_month' | 'last_month' | 'custom';
+
+function getDateRange(preset: DatePreset, customFrom?: Date, customTo?: Date): { from: string; to: string } {
+  const now = new Date();
+  switch (preset) {
+    case 'today':
+      return { from: getLocalDateString(now), to: getLocalDateString(now) };
+    case 'yesterday': {
+      const y = subDays(now, 1);
+      return { from: getLocalDateString(y), to: getLocalDateString(y) };
+    }
+    case 'this_week': {
+      const ws = startOfWeek(now, { weekStartsOn: 1 });
+      const we = endOfWeek(now, { weekStartsOn: 1 });
+      return { from: getLocalDateString(ws), to: getLocalDateString(we) };
+    }
+    case 'this_month': {
+      const ms = startOfMonth(now);
+      const me = endOfMonth(now);
+      return { from: getLocalDateString(ms), to: getLocalDateString(me) };
+    }
+    case 'last_month': {
+      const lm = subMonths(now, 1);
+      return { from: getLocalDateString(startOfMonth(lm)), to: getLocalDateString(endOfMonth(lm)) };
+    }
+    case 'custom':
+      return {
+        from: customFrom ? getLocalDateString(customFrom) : getLocalDateString(now),
+        to: customTo ? getLocalDateString(customTo) : getLocalDateString(now),
+      };
+  }
+}
+
+const PRESET_LABELS: Record<DatePreset, string> = {
+  today: 'Hôm nay',
+  yesterday: 'Hôm qua',
+  this_week: 'Tuần này',
+  this_month: 'Tháng này',
+  last_month: 'Tháng trước',
+  custom: 'Tùy chọn',
+};
+
 export function AttendanceDashboardTab() {
-  const { data: summary, isLoading } = useTodayAttendanceSummary();
   const { data: pu } = usePlatformUser();
   const { data: tenant } = useCurrentTenant();
-  const today = new Date().toISOString().split('T')[0];
+  const tenantId = tenant?.id || pu?.tenant_id;
+
+  const [preset, setPreset] = useState<DatePreset>('today');
+  const [customFrom, setCustomFrom] = useState<Date | undefined>();
+  const [customTo, setCustomTo] = useState<Date | undefined>();
   const [branchFilter, setBranchFilter] = useState<string>('all');
-  const { data: todayRecords, refetch } = useAttendanceRecords({ date: today });
+
+  const dateRange = useMemo(() => getDateRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
+
+  // Fetch attendance records for date range
+  const { data: records, isLoading, refetch } = useQuery({
+    queryKey: ['attendance-dashboard-records', tenantId, dateRange.from, dateRange.to],
+    queryFn: async () => {
+      let q = supabase
+        .from('attendance_records')
+        .select('*, work_shifts(name, start_time, end_time), attendance_locations(name)')
+        .eq('tenant_id', tenantId!)
+        .gte('date', dateRange.from)
+        .lte('date', dateRange.to)
+        .order('date', { ascending: false })
+        .order('check_in_time', { ascending: false })
+        .limit(500);
+
+      const { data, error } = await q;
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!tenantId,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
+  });
 
   // Branches for filter
   const { data: branches } = useQuery({
@@ -46,10 +120,10 @@ export function AttendanceDashboardTab() {
 
   // Filter records by branch
   const filteredRecords = useMemo(() => {
-    if (!todayRecords) return [];
-    if (branchFilter === 'all') return todayRecords;
-    return todayRecords.filter(r => r.branch_id === branchFilter);
-  }, [todayRecords, branchFilter]);
+    if (!records) return [];
+    if (branchFilter === 'all') return records;
+    return records.filter(r => r.branch_id === branchFilter);
+  }, [records, branchFilter]);
 
   // Fetch profiles for user names
   const userIds = [...new Set(filteredRecords?.map(r => r.user_id) || [])];
@@ -63,30 +137,30 @@ export function AttendanceDashboardTab() {
     enabled: userIds.length > 0,
   });
 
-  // Realtime subscription
+  // Realtime subscription - only for "today" preset
   useEffect(() => {
-    if (!pu?.tenant_id) return;
+    if (!tenantId || preset !== 'today') return;
     const channel = supabase
       .channel('attendance-dashboard')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'attendance_records',
-        filter: `tenant_id=eq.${pu.tenant_id}`,
+        filter: `tenant_id=eq.${tenantId}`,
       }, () => { refetch(); })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [pu?.tenant_id, refetch]);
+  }, [tenantId, preset, refetch]);
 
   // Stats from filtered records
   const filteredStats = useMemo(() => {
-    const records = filteredRecords || [];
+    const recs = filteredRecords || [];
     return {
-      total: records.length,
-      onTime: records.filter(r => r.status === 'on_time').length,
-      late: records.filter(r => r.status === 'late').length,
-      absent: records.filter(r => r.status === 'absent').length,
-      pending: records.filter(r => r.status === 'pending').length,
+      total: recs.length,
+      onTime: recs.filter(r => r.status === 'on_time').length,
+      late: recs.filter(r => r.status === 'late').length,
+      absent: recs.filter(r => r.status === 'absent').length,
+      pending: recs.filter(r => r.status === 'pending').length,
     };
   }, [filteredRecords]);
 
@@ -109,11 +183,68 @@ export function AttendanceDashboardTab() {
     { name: 'Đang làm', value: filteredStats.pending },
   ].filter(d => d.value > 0);
 
+  const handlePresetChange = useCallback((val: string) => {
+    setPreset(val as DatePreset);
+    if (val !== 'custom') {
+      setCustomFrom(undefined);
+      setCustomTo(undefined);
+    }
+  }, []);
+
+  const displayDateLabel = useMemo(() => {
+    if (preset === 'today') return `Hôm nay - ${format(new Date(), 'dd/MM/yyyy')}`;
+    if (preset === 'yesterday') return `Hôm qua - ${format(subDays(new Date(), 1), 'dd/MM/yyyy')}`;
+    if (dateRange.from === dateRange.to) return format(new Date(dateRange.from + 'T00:00:00'), 'dd/MM/yyyy');
+    return `${format(new Date(dateRange.from + 'T00:00:00'), 'dd/MM')} → ${format(new Date(dateRange.to + 'T00:00:00'), 'dd/MM/yyyy')}`;
+  }, [preset, dateRange]);
+
   return (
     <div className="space-y-4">
+      {/* Filters row */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="text-lg font-semibold">Hôm nay - {format(new Date(), 'dd/MM/yyyy')}</h2>
-        <div className="flex items-center gap-2">
+        <h2 className="text-lg font-semibold">{displayDateLabel}</h2>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Date preset filter */}
+          <Select value={preset} onValueChange={handlePresetChange}>
+            <SelectTrigger className="w-32 h-7 text-xs">
+              <CalendarIcon className="h-3 w-3 mr-1" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(PRESET_LABELS).map(([key, label]) => (
+                <SelectItem key={key} value={key}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Custom date range pickers */}
+          {preset === 'custom' && (
+            <div className="flex items-center gap-1">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 text-xs px-2">
+                    {customFrom ? format(customFrom, 'dd/MM/yy') : 'Từ'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={customFrom} onSelect={setCustomFrom} locale={vi} />
+                </PopoverContent>
+              </Popover>
+              <span className="text-xs text-muted-foreground">→</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 text-xs px-2">
+                    {customTo ? format(customTo, 'dd/MM/yy') : 'Đến'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={customTo} onSelect={setCustomTo} locale={vi} />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+
+          {/* Branch filter */}
           {branches && branches.length > 1 && (
             <Select value={branchFilter} onValueChange={setBranchFilter}>
               <SelectTrigger className="w-36 h-7 text-xs">
@@ -128,7 +259,9 @@ export function AttendanceDashboardTab() {
               </SelectContent>
             </Select>
           )}
-          <Badge variant="outline" className="text-xs animate-pulse">● Live</Badge>
+          {preset === 'today' && (
+            <Badge variant="outline" className="text-xs animate-pulse">● Live</Badge>
+          )}
         </div>
       </div>
 
@@ -194,14 +327,14 @@ export function AttendanceDashboardTab() {
         </Card>
       </div>
 
-      {/* Today's Records */}
+      {/* Records Table */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Chi tiết chấm công hôm nay</CardTitle>
+          <CardTitle className="text-base">Chi tiết chấm công</CardTitle>
         </CardHeader>
         <CardContent>
           {!filteredRecords?.length ? (
-            <p className="text-sm text-muted-foreground text-center py-6">Chưa có nhân viên chấm công hôm nay</p>
+            <p className="text-sm text-muted-foreground text-center py-6">Chưa có dữ liệu chấm công trong khoảng thời gian này</p>
           ) : (
             <>
               {/* Desktop Table */}
@@ -210,6 +343,7 @@ export function AttendanceDashboardTab() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nhân viên</TableHead>
+                      {dateRange.from !== dateRange.to && <TableHead>Ngày</TableHead>}
                       <TableHead>Trạng thái</TableHead>
                       <TableHead>Check-in</TableHead>
                       <TableHead>Check-out</TableHead>
@@ -224,6 +358,9 @@ export function AttendanceDashboardTab() {
                       return (
                         <TableRow key={r.id}>
                           <TableCell className="font-medium">{profiles?.[r.user_id] || r.user_id.slice(0, 8)}</TableCell>
+                          {dateRange.from !== dateRange.to && (
+                            <TableCell className="text-xs">{format(new Date(r.date + 'T00:00:00'), 'dd/MM')}</TableCell>
+                          )}
                           <TableCell><Badge className={`text-[10px] ${st.class}`}>{st.label}</Badge></TableCell>
                           <TableCell>{r.check_in_time ? format(new Date(r.check_in_time), 'HH:mm') : '--:--'}</TableCell>
                           <TableCell>{r.check_out_time ? format(new Date(r.check_out_time), 'HH:mm') : '--:--'}</TableCell>
@@ -251,6 +388,9 @@ export function AttendanceDashboardTab() {
                         <span className="font-medium text-sm">{profiles?.[r.user_id] || r.user_id.slice(0, 8)}</span>
                         <Badge className={`text-[10px] ${st.class}`}>{st.label}</Badge>
                       </div>
+                      {dateRange.from !== dateRange.to && (
+                        <p className="text-[10px] text-muted-foreground">{format(new Date(r.date + 'T00:00:00'), 'dd/MM/yyyy')}</p>
+                      )}
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <span><Clock className="h-3 w-3 inline mr-0.5" />{r.check_in_time ? format(new Date(r.check_in_time), 'HH:mm') : '--:--'} → {r.check_out_time ? format(new Date(r.check_out_time), 'HH:mm') : '--:--'}</span>
                         {r.total_work_minutes > 0 && <span className="font-medium text-foreground">{Math.floor(r.total_work_minutes / 60)}h{r.total_work_minutes % 60}p</span>}
