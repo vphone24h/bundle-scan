@@ -183,7 +183,7 @@ export function usePermissions() {
 
       if (puError) {
         console.error('Error fetching platform user:', puError);
-        return DEFAULT_PERMISSIONS;
+        throw new Error('Failed to fetch platform user');
       }
 
       const tenantId = platformUser?.tenant_id;
@@ -198,8 +198,13 @@ export function usePermissions() {
 
       const { data, error } = await rolesQuery.maybeSingle();
 
-      if (error || !data) {
+      if (error) {
         console.error('Error fetching permissions:', error);
+        throw new Error('Failed to fetch user role');
+      }
+      
+      if (!data) {
+        console.warn('No role found for user, using default staff permissions');
         return DEFAULT_PERMISSIONS;
       }
 
@@ -224,10 +229,12 @@ export function usePermissions() {
       return getPermissionsForRole(role, branchId);
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 }
 
