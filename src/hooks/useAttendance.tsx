@@ -219,7 +219,7 @@ export function useTodayAttendanceSummary() {
   const { data: pu } = usePlatformUser();
   const { data: ct } = useCurrentTenant();
   const tenantId = ct?.id || pu?.tenant_id;
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
 
   return useQuery({
     queryKey: ['attendance-summary-today', tenantId, today],
