@@ -117,6 +117,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
       setSalaryType(existing.salary_type);
       setBaseAmount(String(existing.base_amount));
       setDescription(existing.description || '');
+      setPaidLeaveDays(String((existing as any).paid_leave_days_per_month || 0));
       setBonusEnabled((existing as any).bonus_enabled || false);
       setCommissionEnabled((existing as any).commission_enabled || false);
       setAllowanceEnabled((existing as any).allowance_enabled || false);
@@ -139,6 +140,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
       name,
       salary_type: salaryType,
       base_amount: Number(baseAmount) || 0,
+      paid_leave_days_per_month: Number(paidLeaveDays) || 0,
       description: description || null,
       bonus_enabled: bonusEnabled,
       commission_enabled: commissionEnabled,
