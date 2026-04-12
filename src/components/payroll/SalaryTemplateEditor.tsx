@@ -87,6 +87,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
   const [name, setName] = useState('');
   const [salaryType, setSalaryType] = useState('fixed');
   const [baseAmount, setBaseAmount] = useState('');
+  const [paidLeaveDays, setPaidLeaveDays] = useState('0');
   const [description, setDescription] = useState('');
 
   const [bonusEnabled, setBonusEnabled] = useState(false);
