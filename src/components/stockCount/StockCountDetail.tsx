@@ -80,7 +80,7 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
   const PAGE_SIZE = 30;
 
   const stockCount = data?.stockCount;
-  const isAdmin = permissions?.role === 'super_admin' || permissions?.role === 'branch_admin';
+  const isAdmin = permissions?.canViewStockCheck ?? false;
   const items = data?.items || [];
 
   // Separate IMEI and non-IMEI items
