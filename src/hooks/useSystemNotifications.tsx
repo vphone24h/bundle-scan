@@ -64,13 +64,15 @@ export function useSystemNotifications() {
         throw error;
       }
 
-      // Filter by company: show only notifications belonging to user's company or platform-wide (company_id IS NULL)
+      // Filter by company: users with a company only see their company's notifications
       const companyFiltered = (notifications || []).filter(n => {
         const nCompanyId = (n as any).company_id;
-        // Platform-wide notifications (company_id is null) are visible to all
-        if (!nCompanyId) return true;
-        // Company-specific notifications only visible to users of that company
-        return userCompanyId && nCompanyId === userCompanyId;
+        if (userCompanyId) {
+          // User belongs to a company → only show that company's notifications
+          return nCompanyId === userCompanyId;
+        }
+        // User without company (platform user) → show platform-wide only
+        return !nCompanyId;
       });
 
       // Filter: show only notifications targeting 'all' or user's tenant
@@ -181,11 +183,13 @@ export function useStartupNotification() {
       if (error) throw error;
       if (!notifications || notifications.length === 0) return null;
 
-      // Filter by company_id: only show notifications from user's company or platform-wide
+      // Filter by company_id: users with a company only see their company's notifications
       const companyFiltered = notifications.filter(n => {
         const nCompanyId = (n as any).company_id;
-        if (!nCompanyId) return true; // Platform-wide
-        return userCompanyId && nCompanyId === userCompanyId;
+        if (userCompanyId) {
+          return nCompanyId === userCompanyId;
+        }
+        return !nCompanyId;
       });
       if (companyFiltered.length === 0) return null;
 
