@@ -224,10 +224,12 @@ export function usePermissions() {
       return getPermissionsForRole(role, branchId);
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 }
 
