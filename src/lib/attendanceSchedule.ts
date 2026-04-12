@@ -30,6 +30,19 @@ export function buildRecurringShiftAssignments({
 }: BuildRecurringShiftAssignmentsOptions) {
   const fixedShiftId = selectedShiftId || scheduleData.fixedShiftId;
 
+  if (scheduleData.type === 'weekly') {
+    return Object.entries(scheduleData.weeklyDays || {}).flatMap(([dateStr, shiftId]) => {
+      if (!shiftId) return [];
+      return [{
+        tenant_id: tenantId,
+        user_id: userId,
+        shift_id: shiftId,
+        assignment_type: 'daily' as const,
+        specific_date: dateStr,
+      }];
+    });
+  }
+
   if (scheduleData.type === 'custom') {
     return Object.entries(scheduleData.customDays || {}).flatMap(([dayKey, shiftId]) => {
       const dayOfWeek = DAY_OF_WEEK_MAP[dayKey];
