@@ -109,6 +109,7 @@ Deno.serve(async (req) => {
       ["attendance_records", attendanceRes],
       ["salary_advances", advancesRes],
       ["shift_assignments", shiftAssignmentsRes],
+      ["absence_reviews", absenceReviewsRes],
       ["export_receipts", salesRes],
       ["export_receipt_items", salesItemsRes],
     ].forEach(([label, result]) => throwIfQueryError(label as string, result as { error: any }));
