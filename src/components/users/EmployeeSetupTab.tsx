@@ -45,6 +45,8 @@ interface EmployeeSetup {
   salaryConfig?: any;
 }
 
+type EmployeeSetupOverride = Partial<Pick<EmployeeSetup, 'hasShift' | 'hasSchedule' | 'hasSalary' | 'hasAttendance' | 'shiftId' | 'salaryConfig'>>;
+
 function calcProgress(emp: EmployeeSetup): number {
   let done = 1; // step 1 (info) always done
   if (emp.hasShift) done++;
@@ -74,6 +76,7 @@ export function EmployeeSetupTab() {
   const [search, setSearch] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeSetup | null>(null);
   const [activeStep, setActiveStep] = useState(1);
+  const [setupOverrides, setSetupOverrides] = useState<Record<string, EmployeeSetupOverride>>({});
 
   // Step data
   const [selectedShiftId, setSelectedShiftId] = useState('');
@@ -123,8 +126,11 @@ export function EmployeeSetupTab() {
     const salaryMap = new Map((employeeSetupData?.salaryConfigs || []).map((item) => [item.user_id, item]));
 
     let result: EmployeeSetup[] = staffList.map((staff) => {
-      const hasShift = shiftMap.has(staff.user_id);
-      const hasSalary = salaryMap.has(staff.user_id);
+      const baseHasShift = shiftMap.has(staff.user_id);
+      const baseHasSalary = salaryMap.has(staff.user_id);
+      const override = setupOverrides[staff.user_id];
+      const shiftId = override?.shiftId ?? shiftMap.get(staff.user_id) ?? undefined;
+      const salaryConfig = override?.salaryConfig ?? salaryMap.get(staff.user_id) ?? undefined;
 
       return {
         userId: staff.user_id,
@@ -132,12 +138,12 @@ export function EmployeeSetupTab() {
         email: staff.email,
         phone: staff.phone,
         role: staff.user_role || 'staff',
-        hasShift,
-        hasSchedule: hasShift,
-        hasSalary,
-        hasAttendance: hasShift && hasSalary,
-        shiftId: shiftMap.get(staff.user_id) || undefined,
-        salaryConfig: salaryMap.get(staff.user_id) || undefined,
+        hasShift: override?.hasShift ?? baseHasShift,
+        hasSchedule: override?.hasSchedule ?? baseHasShift,
+        hasSalary: override?.hasSalary ?? baseHasSalary,
+        hasAttendance: override?.hasAttendance ?? (baseHasShift && baseHasSalary),
+        shiftId,
+        salaryConfig,
       };
     });
 
@@ -151,9 +157,20 @@ export function EmployeeSetupTab() {
     }
 
     return result;
-  }, [employeeSetupData, search, staffList]);
+  }, [employeeSetupData, search, setupOverrides, staffList]);
 
   const isLoading = staffLoading || setupLoading;
+
+  const updateEmployeeProgress = (userId: string, patch: EmployeeSetupOverride) => {
+    setSetupOverrides((prev) => ({
+      ...prev,
+      [userId]: {
+        ...prev[userId],
+        ...patch,
+      },
+    }));
+    setSelectedEmployee((prev) => prev && prev.userId === userId ? { ...prev, ...patch } : prev);
+  };
 
   const selectEmployee = (emp: EmployeeSetup) => {
     setSelectedEmployee(emp);
@@ -167,11 +184,24 @@ export function EmployeeSetupTab() {
 
   const handleSaveStep = async () => {
     if (!selectedEmployee || !tenantId) return;
+
     setSaving(true);
     try {
       if (activeStep === 1) {
-        toast.success(selectedShiftId ? 'Đã chọn ca làm!' : 'Đã lưu bước tạo ca!');
+        if (!selectedShiftId) {
+          throw new Error('Vui lòng chọn hoặc tạo ca làm');
+        }
+
+        updateEmployeeProgress(selectedEmployee.userId, {
+          hasShift: true,
+          shiftId: selectedShiftId,
+        });
+        toast.success('Đã lưu bước tạo ca!');
       } else if (activeStep === 2) {
+        if (!selectedShiftId) {
+          throw new Error('Vui lòng chọn ca trước khi xếp lịch');
+        }
+
         const inserts = buildRecurringShiftAssignments({
           tenantId,
           userId: selectedEmployee.userId,
@@ -193,25 +223,49 @@ export function EmployeeSetupTab() {
 
         const { error } = await supabase.from('shift_assignments').insert(inserts);
         if (error) throw error;
+
+        updateEmployeeProgress(selectedEmployee.userId, {
+          hasShift: true,
+          hasSchedule: true,
+          shiftId: selectedShiftId,
+        });
         toast.success('Đã lưu lịch trình!');
       } else if (activeStep === 3) {
-        if (salaryData.templateId || salaryData.customBaseAmount) {
-          const { error } = await supabase.from('employee_salary_configs').upsert({
-            tenant_id: tenantId,
-            user_id: selectedEmployee.userId,
-            salary_template_id: salaryData.templateId || null,
-            custom_base_amount: salaryData.customBaseAmount || null,
-            allowances: salaryData.allowances,
-            deductions: salaryData.deductions,
-          }, { onConflict: 'tenant_id,user_id' });
-          if (error) throw error;
-          toast.success('Đã lưu bảng lương!');
+        if (!(salaryData.templateId || salaryData.customBaseAmount || salaryData.allowances.length || salaryData.deductions.length)) {
+          throw new Error('Vui lòng chọn mẫu lương hoặc nhập dữ liệu lương');
         }
+
+        const salaryPayload = {
+          tenant_id: tenantId,
+          user_id: selectedEmployee.userId,
+          salary_template_id: salaryData.templateId || null,
+          custom_base_amount: salaryData.customBaseAmount || null,
+          allowances: salaryData.allowances,
+          deductions: salaryData.deductions,
+        };
+
+        const { error } = await supabase
+          .from('employee_salary_configs')
+          .upsert(salaryPayload, { onConflict: 'tenant_id,user_id' });
+        if (error) throw error;
+
+        updateEmployeeProgress(selectedEmployee.userId, {
+          hasSalary: true,
+          salaryConfig: salaryPayload,
+        });
+        toast.success('Đã lưu bảng lương!');
       } else if (activeStep === 4) {
+        updateEmployeeProgress(selectedEmployee.userId, {
+          hasAttendance: true,
+        });
         toast.success('Đã lưu thiết lập chấm công!');
       }
-      qc.invalidateQueries({ queryKey: ['employee-setup'] });
-      if (activeStep < 4) setActiveStep(activeStep + 1);
+
+      await qc.refetchQueries({ queryKey: ['employee-setup-configs', tenantId] });
+
+      if (activeStep < 4) {
+        setActiveStep((prev) => prev + 1);
+      }
     } catch (e: any) {
       toast.error(e.message);
     } finally {
