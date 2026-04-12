@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import { usePlatformUser, useCurrentTenant } from './useTenant';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
+import { getLocalDateString } from '@/lib/vietnamTime';
 
 type WorkShiftInsert = Database['public']['Tables']['work_shifts']['Insert'];
 type AttendanceLocationInsert = Database['public']['Tables']['attendance_locations']['Insert'];
@@ -219,7 +220,7 @@ export function useTodayAttendanceSummary() {
   const { data: pu } = usePlatformUser();
   const { data: ct } = useCurrentTenant();
   const tenantId = ct?.id || pu?.tenant_id;
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
 
   return useQuery({
     queryKey: ['attendance-summary-today', tenantId, today],
