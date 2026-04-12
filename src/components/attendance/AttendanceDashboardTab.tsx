@@ -360,6 +360,7 @@ export function AttendanceDashboardTab() {
                       <TableHead>Check-out</TableHead>
                       <TableHead>Giờ làm</TableHead>
                       <TableHead>Trễ</TableHead>
+                      <TableHead>Về sớm</TableHead>
                       <TableHead>Địa điểm</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -380,6 +381,9 @@ export function AttendanceDashboardTab() {
                           </TableCell>
                           <TableCell>
                             {r.late_minutes > 0 ? <span className="text-yellow-600">{r.late_minutes}p</span> : '-'}
+                          </TableCell>
+                          <TableCell>
+                            {r.early_leave_minutes > 0 ? <span className="text-orange-600">{r.early_leave_minutes}p</span> : '-'}
                           </TableCell>
                           <TableCell className="text-muted-foreground text-sm">{r.attendance_locations?.name || '-'}</TableCell>
                         </TableRow>
@@ -408,6 +412,7 @@ export function AttendanceDashboardTab() {
                       </div>
                       <div className="flex items-center gap-2 text-xs">
                         {r.late_minutes > 0 && <span className="text-yellow-600">Trễ {r.late_minutes}p</span>}
+                        {r.early_leave_minutes > 0 && <span className="text-orange-600">Về sớm {r.early_leave_minutes}p</span>}
                         {r.attendance_locations?.name && <span className="text-muted-foreground">{r.attendance_locations.name}</span>}
                       </div>
                     </div>
