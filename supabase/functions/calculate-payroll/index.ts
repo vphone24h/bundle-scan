@@ -253,6 +253,13 @@ Deno.serve(async (req) => {
       const overtimeHours = Math.round(overtimeMinutes / 60 * 10) / 10;
       const expectedWorkDays = getExpectedWorkDays(employee.user_id);
 
+      // Build absence review map for this user
+      const userAbsenceReviews = absenceReviews.filter((r: any) => r.user_id === employee.user_id);
+      const absenceReviewMap = new Map(userAbsenceReviews.map((r: any) => [r.absence_date, r]));
+      
+      // Paid leave days from template
+      const paidLeaveDaysPerMonth = template?.paid_leave_days_per_month || 0;
+
       // Days with overtime (full-day OT = worked on unscheduled day)
       const scheduledDates = new Set<string>();
       const userAssignments = shiftAssignments.filter((sa: any) => sa.user_id === employee.user_id);
