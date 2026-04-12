@@ -215,9 +215,16 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
               <Input type="number" placeholder="0" value={baseAmount} onChange={e => setBaseAmount(e.target.value)} />
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Mô tả</Label>
-            <Input placeholder="Ghi chú" value={description} onChange={e => setDescription(e.target.value)} />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Số ngày nghỉ có lương / tháng</Label>
+              <Input type="number" min="0" max="30" placeholder="0" value={paidLeaveDays} onChange={e => setPaidLeaveDays(e.target.value)} />
+              <p className="text-[10px] text-muted-foreground">Số ngày NV được nghỉ mà vẫn hưởng lương</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Mô tả</Label>
+              <Input placeholder="Ghi chú" value={description} onChange={e => setDescription(e.target.value)} />
+            </div>
           </div>
         </CardContent>
       </Card>
