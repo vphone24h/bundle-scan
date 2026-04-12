@@ -55,6 +55,7 @@ export default function StockTransferPage() {
 
   const userBranchId = permissions?.branchId;
   const isSuperAdmin = permissions?.role === 'super_admin';
+  const canTransfer = permissions?.canTransferStock ?? false;
 
   // Split into outgoing / incoming
   const outgoingRequests = useMemo(() => {
@@ -121,8 +122,8 @@ export default function StockTransferPage() {
   const canApprove = (request: StockTransferRequest) => {
     if (request.status !== 'pending') return false;
     if (isSuperAdmin) return true;
-    // Branch admin can approve incoming to their branch
-    return permissions?.role === 'branch_admin' && request.to_branch_id === userBranchId;
+    // Users with transfer permission can approve incoming to their branch
+    return canTransfer && request.to_branch_id === userBranchId;
   };
 
   const handleQuickPrint = useCallback(async (request: StockTransferRequest) => {

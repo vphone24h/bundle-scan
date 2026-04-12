@@ -266,7 +266,7 @@ export function CustomerListTab({
                     ))}
                   </SelectContent>
                 </Select>
-                {permissions?.role === 'super_admin' && (
+                {(permissions?.role === 'super_admin' || permissions?.role === 'branch_admin') && (
                   <>
                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setShowTagManagement(true)} title="Quản lý Tag">
                       <Tag className="h-4 w-4" />

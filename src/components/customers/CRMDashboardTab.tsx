@@ -136,7 +136,7 @@ export function CRMDashboardTab() {
      { name: 'Chưa có KPI', value: staffWithKPI.filter(s => !s.kpi_setting).length, color: '#94a3b8' },
    ].filter(d => d.value > 0);
  
-   const canManageKPI = permissions?.role === 'super_admin' || permissions?.role === 'branch_admin';
+   const canManageKPI = permissions?.canViewCRM ?? false;
  
    return (
     <div className="space-y-4 sm:space-y-6">

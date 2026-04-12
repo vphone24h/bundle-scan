@@ -134,8 +134,8 @@ export function AuditLogFiltersComponent({ filters, onFiltersChange }: AuditLogF
             </SelectContent>
           </Select>
 
-          {/* Branch filter - only for super_admin */}
-          {permissions?.role === 'super_admin' && (
+          {/* Branch filter - only for users with all-branch access */}
+          {permissions?.canViewAllBranches && (
             <Select value={filters.branchId} onValueChange={(v) => updateFilter('branchId', v)}>
               <SelectTrigger className="w-[160px]">
                 <Building2 className="h-4 w-4 mr-2" />
