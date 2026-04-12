@@ -436,6 +436,49 @@ export function AttendanceDashboardTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Detail Popup */}
+      <Dialog open={!!detailPopup} onOpenChange={(v) => { if (!v) setDetailPopup(null); }}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{popupTitle} — {popupRecords.length} bản ghi</DialogTitle>
+          </DialogHeader>
+          {popupRecords.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">Không có dữ liệu</p>
+          ) : (
+            <div className="space-y-2">
+              {popupRecords.map((r: any) => {
+                const st = statusConfig[r.status] || statusConfig.pending;
+                return (
+                  <div key={r.id} className="border rounded-lg p-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">{profiles?.[r.user_id] || r.user_id.slice(0, 8)}</span>
+                      <Badge className={`text-[10px] ${st.class}`}>{st.label}</Badge>
+                    </div>
+                    {dateRange.from !== dateRange.to && (
+                      <p className="text-[10px] text-muted-foreground">{format(new Date(r.date + 'T00:00:00'), 'dd/MM/yyyy')}</p>
+                    )}
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span>
+                        <Clock className="h-3 w-3 inline mr-0.5" />
+                        {r.check_in_time ? format(new Date(r.check_in_time), 'HH:mm') : '--:--'} → {r.check_out_time ? format(new Date(r.check_out_time), 'HH:mm') : '--:--'}
+                      </span>
+                      {r.total_work_minutes > 0 && (
+                        <span className="font-medium text-foreground">{Math.floor(r.total_work_minutes / 60)}h{r.total_work_minutes % 60}p</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      {r.late_minutes > 0 && <span className="text-yellow-600">Trễ {r.late_minutes}p</span>}
+                      {r.early_leave_minutes > 0 && <span className="text-orange-600">Về sớm {r.early_leave_minutes}p</span>}
+                      {r.attendance_locations?.name && <span className="text-muted-foreground">📍 {r.attendance_locations.name}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
