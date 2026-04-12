@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Printer, Loader2, FileDown, Smartphone, QrCode } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatNumberWithSpaces } from '@/lib/formatNumber';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import QRCode from 'qrcode';
+import { QRDoubleLabelTab } from './QRDoubleLabelTab';
 
 interface ProductPriceEntry {
   productId: string;
@@ -35,8 +37,6 @@ interface QRPhoneLabelTabProps {
 }
 
 // Encode QR data in format compatible with existing scanner
-// IMEI: IMEI|Name|Price (KiotViet format)
-// Non-IMEI: N:Name:Price
 function encodeQRData(entry: ProductPriceEntry): string {
   if (entry.imei) {
     return `${entry.imei}|${entry.name}|${entry.printPrice}`;
@@ -44,7 +44,6 @@ function encodeQRData(entry: ProductPriceEntry): string {
   return `N:${entry.name}:${entry.printPrice}`;
 }
 
-// Generate QR code as base64 data URL locally
 async function generateQRDataUrl(data: string): Promise<string> {
   return QRCode.toDataURL(data, {
     width: 300,
@@ -53,7 +52,7 @@ async function generateQRDataUrl(data: string): Promise<string> {
   });
 }
 
-export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, onPrinted }: QRPhoneLabelTabProps) {
+function QRSingleLabelContent({ productEntries, storeName: defaultStoreName, onPrinted }: QRPhoneLabelTabProps) {
   const [settings, setSettings] = useState<QRSettings>(() => {
     const saved = localStorage.getItem('qr_label_store_name');
     return {
@@ -72,14 +71,12 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
   const sampleEntry = productEntries[0];
   const totalLabels = productEntries.reduce((sum, e) => sum + e.quantity, 0);
 
-  // Generate preview QR
   useEffect(() => {
     if (sampleEntry) {
       generateQRDataUrl(encodeQRData(sampleEntry)).then(setPreviewQrUrl);
     }
   }, [sampleEntry]);
 
-  // Expand all labels by quantity
   const expandLabels = (): ProductPriceEntry[] => {
     const all: ProductPriceEntry[] = [];
     productEntries.forEach(entry => {
@@ -88,8 +85,6 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
     return all;
   };
 
-  // Generate single label HTML for 50x30mm with QR as embedded data URL
-  // Actual printable area ~46x28mm to avoid cutoff on 365B printer
   const generateSingleLabelHtml = (entry: ProductPriceEntry, qrDataUrl: string): string => {
     const pageWidth = 50;
     const pageHeight = 30;
@@ -216,7 +211,6 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
     `;
   };
 
-  // Print: 1 job = 1 label
   const handlePrint = useCallback(async () => {
     const allLabels = expandLabels();
     if (allLabels.length === 0) {
@@ -224,7 +218,6 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
       return;
     }
 
-    // Pre-generate all QR data URLs
     toast.info(`Đang tạo ${allLabels.length} mã QR...`);
     const qrDataUrls: string[] = [];
     for (const entry of allLabels) {
@@ -243,7 +236,6 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
       if (currentIndex >= allLabels.length) {
         printWindow.close();
         toast.success(`Đã gửi ${allLabels.length} lệnh in QR (1 tem/lệnh)`);
-        // Mark products as printed
         const productIds = [...new Set(allLabels.map(e => e.productId))];
         if (onPrinted) onPrinted(productIds);
         return;
@@ -262,7 +254,6 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
     printNextLabel();
   }, [productEntries, settings, onPrinted]);
 
-  // Export PDF
   const handleExportPDF = async () => {
     setIsExporting(true);
     toast.info('Đang tạo file PDF...');
@@ -277,7 +268,6 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
       const width = 50;
       const height = 30;
 
-      // Pre-generate all QR data URLs
       const qrDataUrls: string[] = [];
       for (const entry of allLabels) {
         qrDataUrls.push(await generateQRDataUrl(encodeQRData(entry)));
@@ -323,7 +313,6 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
 
       pdf.save(`QR_Label_${new Date().toISOString().slice(0, 10)}.pdf`);
       toast.success(`Đã xuất ${allLabels.length} nhãn QR ra PDF (50x30mm)`);
-      // Mark products as printed
       const productIds = [...new Set(allLabels.map(e => e.productId))];
       if (onPrinted) await onPrinted(productIds);
     } catch (error) {
@@ -339,11 +328,11 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
       <div className="rounded-lg border border-primary/20 p-3 bg-primary/5">
         <div className="flex items-center gap-2 mb-1">
           <Smartphone className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium text-primary">Tối ưu cho quét bằng điện thoại</span>
+          <span className="text-sm font-medium text-primary">Tem đơn 50×30mm</span>
         </div>
         <p className="text-xs text-muted-foreground">
           Mã QR lớn, dễ quét bằng camera. Dùng cho kiểm kho hoặc xuất hàng - quét phát ăn ngay!
-          Khổ giấy cố định: 50x30mm (máy in 365B).
+          Khổ giấy cố định: 50×30mm (máy in 365B).
         </p>
       </div>
 
@@ -353,38 +342,26 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
           <p className="text-sm font-medium text-muted-foreground">Tuỳ chọn hiển thị</p>
 
           <div className="flex items-center space-x-3">
-            <Checkbox
-              id="qr-showPrice"
-              checked={settings.showPrice}
-              onCheckedChange={(checked) => setSettings({ ...settings, showPrice: checked as boolean })}
-            />
+            <Checkbox id="qr-showPrice" checked={settings.showPrice}
+              onCheckedChange={(checked) => setSettings({ ...settings, showPrice: checked as boolean })} />
             <Label htmlFor="qr-showPrice" className="font-normal cursor-pointer">In giá</Label>
           </div>
 
           <div className="flex items-center space-x-3">
-            <Checkbox
-              id="qr-showProductName"
-              checked={settings.showProductName}
-              onCheckedChange={(checked) => setSettings({ ...settings, showProductName: checked as boolean })}
-            />
+            <Checkbox id="qr-showProductName" checked={settings.showProductName}
+              onCheckedChange={(checked) => setSettings({ ...settings, showProductName: checked as boolean })} />
             <Label htmlFor="qr-showProductName" className="font-normal cursor-pointer">In tên sản phẩm</Label>
           </div>
 
           <div className="flex items-center space-x-3">
-            <Checkbox
-              id="qr-showIMEI"
-              checked={settings.showIMEI}
-              onCheckedChange={(checked) => setSettings({ ...settings, showIMEI: checked as boolean })}
-            />
+            <Checkbox id="qr-showIMEI" checked={settings.showIMEI}
+              onCheckedChange={(checked) => setSettings({ ...settings, showIMEI: checked as boolean })} />
             <Label htmlFor="qr-showIMEI" className="font-normal cursor-pointer">In IMEI</Label>
           </div>
 
           <div className="flex items-center space-x-3">
-            <Checkbox
-              id="qr-showStoreName"
-              checked={settings.showStoreName}
-              onCheckedChange={(checked) => setSettings({ ...settings, showStoreName: checked as boolean })}
-            />
+            <Checkbox id="qr-showStoreName" checked={settings.showStoreName}
+              onCheckedChange={(checked) => setSettings({ ...settings, showStoreName: checked as boolean })} />
             <Label htmlFor="qr-showStoreName" className="font-normal cursor-pointer">In tên cửa hàng</Label>
           </div>
 
@@ -404,11 +381,8 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
           )}
 
           <div className="flex items-center space-x-3">
-            <Checkbox
-              id="qr-showNote"
-              checked={settings.showNote}
-              onCheckedChange={(checked) => setSettings({ ...settings, showNote: checked as boolean })}
-            />
+            <Checkbox id="qr-showNote" checked={settings.showNote}
+              onCheckedChange={(checked) => setSettings({ ...settings, showNote: checked as boolean })} />
             <Label htmlFor="qr-showNote" className="font-normal cursor-pointer">Ghi chú (tình trạng máy)</Label>
           </div>
 
@@ -427,12 +401,11 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
         {/* Preview */}
         {sampleEntry && (
           <div className="flex-1 flex flex-col items-center">
-            <p className="text-xs text-muted-foreground mb-2">Xem trước nhãn (50x30mm)</p>
+            <p className="text-xs text-muted-foreground mb-2">Xem trước nhãn (50×30mm)</p>
             <div className="border-2 border-dashed border-primary/30 rounded-lg bg-background"
               style={{ width: '220px', height: '120px', padding: '6px' }}
             >
               <div className="flex items-center h-full gap-2">
-                {/* QR preview - real QR */}
                 <div className="flex-shrink-0 w-[70px] h-[70px] flex items-center justify-center">
                   {previewQrUrl ? (
                     <img src={previewQrUrl} alt="QR Preview" className="w-full h-full" style={{ imageRendering: 'pixelated' }} />
@@ -440,7 +413,6 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
                     <QrCode className="h-12 w-12 text-foreground" />
                   )}
                 </div>
-                {/* Info */}
                 <div className="flex-1 flex flex-col justify-center gap-0.5 overflow-hidden min-w-0">
                   {settings.showStoreName && settings.storeName && (
                     <p className="text-[9px] font-bold text-primary truncate">{settings.storeName}</p>
@@ -481,5 +453,22 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
         </Button>
       </div>
     </div>
+  );
+}
+
+export function QRPhoneLabelTab({ productEntries, storeName, onPrinted }: QRPhoneLabelTabProps) {
+  return (
+    <Tabs defaultValue="single" className="w-full">
+      <TabsList className="grid w-full grid-cols-2 mb-4">
+        <TabsTrigger value="single">Tem đơn (50×30)</TabsTrigger>
+        <TabsTrigger value="double">Tem đôi (35×22)</TabsTrigger>
+      </TabsList>
+      <TabsContent value="single">
+        <QRSingleLabelContent productEntries={productEntries} storeName={storeName} onPrinted={onPrinted} />
+      </TabsContent>
+      <TabsContent value="double">
+        <QRDoubleLabelTab productEntries={productEntries} storeName={storeName} onPrinted={onPrinted} />
+      </TabsContent>
+    </Tabs>
   );
 }
