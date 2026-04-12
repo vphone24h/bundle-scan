@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -77,7 +78,7 @@ export function AttendanceDashboardTab() {
   const [customFrom, setCustomFrom] = useState<Date | undefined>();
   const [customTo, setCustomTo] = useState<Date | undefined>();
   const [branchFilter, setBranchFilter] = useState<string>('all');
-
+  const [detailPopup, setDetailPopup] = useState<string | null>(null);
   const dateRange = useMemo(() => getDateRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
 
   // Fetch attendance records for date range
@@ -166,12 +167,12 @@ export function AttendanceDashboardTab() {
   }, [filteredRecords]);
 
   const cards = [
-    { label: 'Đã chấm công', value: filteredStats.total, icon: Users, color: 'text-primary' },
-    { label: 'Đúng giờ', value: filteredStats.onTime, icon: Clock, color: 'text-green-600 dark:text-green-400' },
-    { label: 'Đi trễ', value: filteredStats.late, icon: AlertTriangle, color: 'text-yellow-600 dark:text-yellow-400' },
-    { label: 'Về sớm', value: filteredStats.earlyLeave, icon: LogOut, color: 'text-orange-600 dark:text-orange-400' },
-    { label: 'Vắng', value: filteredStats.absent, icon: XCircle, color: 'text-destructive' },
-    { label: 'Đang làm', value: filteredStats.pending, icon: Timer, color: 'text-blue-600 dark:text-blue-400' },
+    { label: 'Đã chấm công', value: filteredStats.total, icon: Users, color: 'text-primary', filterKey: 'total' },
+    { label: 'Đúng giờ', value: filteredStats.onTime, icon: Clock, color: 'text-green-600 dark:text-green-400', filterKey: 'on_time' },
+    { label: 'Đi trễ', value: filteredStats.late, icon: AlertTriangle, color: 'text-yellow-600 dark:text-yellow-400', filterKey: 'late' },
+    { label: 'Về sớm', value: filteredStats.earlyLeave, icon: LogOut, color: 'text-orange-600 dark:text-orange-400', filterKey: 'early_leave' },
+    { label: 'Vắng', value: filteredStats.absent, icon: XCircle, color: 'text-destructive', filterKey: 'absent' },
+    { label: 'Đang làm', value: filteredStats.pending, icon: Timer, color: 'text-blue-600 dark:text-blue-400', filterKey: 'pending' },
   ];
 
   const totalMinutes = filteredRecords?.reduce((sum, r) => sum + (r.total_work_minutes || 0), 0) || 0;
@@ -186,6 +187,18 @@ export function AttendanceDashboardTab() {
     { name: 'Vắng', value: filteredStats.absent },
     { name: 'Đang làm', value: filteredStats.pending },
   ].filter(d => d.value > 0);
+
+  // Records for the detail popup
+  const popupRecords = useMemo(() => {
+    if (!detailPopup || !filteredRecords) return [];
+    if (detailPopup === 'total') return filteredRecords;
+    if (detailPopup === 'early_leave') return filteredRecords.filter(r => r.status === 'early_leave' || (r.early_leave_minutes && r.early_leave_minutes > 0));
+    return filteredRecords.filter(r => r.status === detailPopup);
+  }, [detailPopup, filteredRecords]);
+
+  const popupTitle = useMemo(() => {
+    return cards.find(c => c.filterKey === detailPopup)?.label || '';
+  }, [detailPopup, cards]);
 
   const handlePresetChange = useCallback((val: string) => {
     setPreset(val as DatePreset);
@@ -272,7 +285,7 @@ export function AttendanceDashboardTab() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {cards.map(c => (
-          <Card key={c.label}>
+          <Card key={c.label} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDetailPopup(c.filterKey)}>
             <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
               <div className={`p-1.5 sm:p-2 rounded-lg bg-muted ${c.color}`}>
                 <c.icon className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -423,6 +436,49 @@ export function AttendanceDashboardTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Detail Popup */}
+      <Dialog open={!!detailPopup} onOpenChange={(v) => { if (!v) setDetailPopup(null); }}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{popupTitle} — {popupRecords.length} bản ghi</DialogTitle>
+          </DialogHeader>
+          {popupRecords.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">Không có dữ liệu</p>
+          ) : (
+            <div className="space-y-2">
+              {popupRecords.map((r: any) => {
+                const st = statusConfig[r.status] || statusConfig.pending;
+                return (
+                  <div key={r.id} className="border rounded-lg p-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">{profiles?.[r.user_id] || r.user_id.slice(0, 8)}</span>
+                      <Badge className={`text-[10px] ${st.class}`}>{st.label}</Badge>
+                    </div>
+                    {dateRange.from !== dateRange.to && (
+                      <p className="text-[10px] text-muted-foreground">{format(new Date(r.date + 'T00:00:00'), 'dd/MM/yyyy')}</p>
+                    )}
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span>
+                        <Clock className="h-3 w-3 inline mr-0.5" />
+                        {r.check_in_time ? format(new Date(r.check_in_time), 'HH:mm') : '--:--'} → {r.check_out_time ? format(new Date(r.check_out_time), 'HH:mm') : '--:--'}
+                      </span>
+                      {r.total_work_minutes > 0 && (
+                        <span className="font-medium text-foreground">{Math.floor(r.total_work_minutes / 60)}h{r.total_work_minutes % 60}p</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      {r.late_minutes > 0 && <span className="text-yellow-600">Trễ {r.late_minutes}p</span>}
+                      {r.early_leave_minutes > 0 && <span className="text-orange-600">Về sớm {r.early_leave_minutes}p</span>}
+                      {r.attendance_locations?.name && <span className="text-muted-foreground">📍 {r.attendance_locations.name}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
