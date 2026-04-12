@@ -188,6 +188,18 @@ export function AttendanceDashboardTab() {
     { name: 'Đang làm', value: filteredStats.pending },
   ].filter(d => d.value > 0);
 
+  // Records for the detail popup
+  const popupRecords = useMemo(() => {
+    if (!detailPopup || !filteredRecords) return [];
+    if (detailPopup === 'total') return filteredRecords;
+    if (detailPopup === 'early_leave') return filteredRecords.filter(r => r.status === 'early_leave' || (r.early_leave_minutes && r.early_leave_minutes > 0));
+    return filteredRecords.filter(r => r.status === detailPopup);
+  }, [detailPopup, filteredRecords]);
+
+  const popupTitle = useMemo(() => {
+    return cards.find(c => c.filterKey === detailPopup)?.label || '';
+  }, [detailPopup, cards]);
+
   const handlePresetChange = useCallback((val: string) => {
     setPreset(val as DatePreset);
     if (val !== 'custom') {
