@@ -78,7 +78,7 @@ export function AttendanceDashboardTab() {
   const [customFrom, setCustomFrom] = useState<Date | undefined>();
   const [customTo, setCustomTo] = useState<Date | undefined>();
   const [branchFilter, setBranchFilter] = useState<string>('all');
-
+  const [detailPopup, setDetailPopup] = useState<string | null>(null);
   const dateRange = useMemo(() => getDateRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
 
   // Fetch attendance records for date range
@@ -167,12 +167,12 @@ export function AttendanceDashboardTab() {
   }, [filteredRecords]);
 
   const cards = [
-    { label: 'Đã chấm công', value: filteredStats.total, icon: Users, color: 'text-primary' },
-    { label: 'Đúng giờ', value: filteredStats.onTime, icon: Clock, color: 'text-green-600 dark:text-green-400' },
-    { label: 'Đi trễ', value: filteredStats.late, icon: AlertTriangle, color: 'text-yellow-600 dark:text-yellow-400' },
-    { label: 'Về sớm', value: filteredStats.earlyLeave, icon: LogOut, color: 'text-orange-600 dark:text-orange-400' },
-    { label: 'Vắng', value: filteredStats.absent, icon: XCircle, color: 'text-destructive' },
-    { label: 'Đang làm', value: filteredStats.pending, icon: Timer, color: 'text-blue-600 dark:text-blue-400' },
+    { label: 'Đã chấm công', value: filteredStats.total, icon: Users, color: 'text-primary', filterKey: 'total' },
+    { label: 'Đúng giờ', value: filteredStats.onTime, icon: Clock, color: 'text-green-600 dark:text-green-400', filterKey: 'on_time' },
+    { label: 'Đi trễ', value: filteredStats.late, icon: AlertTriangle, color: 'text-yellow-600 dark:text-yellow-400', filterKey: 'late' },
+    { label: 'Về sớm', value: filteredStats.earlyLeave, icon: LogOut, color: 'text-orange-600 dark:text-orange-400', filterKey: 'early_leave' },
+    { label: 'Vắng', value: filteredStats.absent, icon: XCircle, color: 'text-destructive', filterKey: 'absent' },
+    { label: 'Đang làm', value: filteredStats.pending, icon: Timer, color: 'text-blue-600 dark:text-blue-400', filterKey: 'pending' },
   ];
 
   const totalMinutes = filteredRecords?.reduce((sum, r) => sum + (r.total_work_minutes || 0), 0) || 0;
