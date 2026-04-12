@@ -75,6 +75,7 @@ Deno.serve(async (req) => {
       advancesRes,
       shiftAssignmentsRes,
       absenceReviewsRes,
+      overtimeRequestsRes,
       salesRes,
       salesItemsRes,
     ] = await Promise.all([
@@ -90,6 +91,7 @@ Deno.serve(async (req) => {
       supabase.from("salary_advances").select("*").eq("tenant_id", tenant_id).eq("payroll_period_id", period_id).in("status", ["approved", "paid"]),
       supabase.from("shift_assignments").select("*, work_shifts(name, start_time, end_time)").eq("tenant_id", tenant_id).eq("is_active", true),
       supabase.from("absence_reviews").select("*").eq("tenant_id", tenant_id).gte("absence_date", period.start_date).lte("absence_date", period.end_date),
+      supabase.from("overtime_requests").select("*").eq("tenant_id", tenant_id).eq("status", "approved").gte("request_date", period.start_date).lte("request_date", period.end_date),
       supabase.from("export_receipts")
         .select("id, created_by, sales_staff_id, total_amount, branch_id, status")
         .eq("tenant_id", tenant_id)
@@ -110,6 +112,7 @@ Deno.serve(async (req) => {
       ["salary_advances", advancesRes],
       ["shift_assignments", shiftAssignmentsRes],
       ["absence_reviews", absenceReviewsRes],
+      ["overtime_requests", overtimeRequestsRes],
       ["export_receipts", salesRes],
       ["export_receipt_items", salesItemsRes],
     ].forEach(([label, result]) => throwIfQueryError(label as string, result as { error: any }));
@@ -160,6 +163,7 @@ Deno.serve(async (req) => {
     const advances = advancesRes.data || [];
     const shiftAssignments = shiftAssignmentsRes.data || [];
     const absenceReviews = absenceReviewsRes.data || [];
+    const approvedOvertimeRequests = overtimeRequestsRes.data || [];
     const allSales = salesRes.data || [];
     const allSaleItems = salesItemsRes.data || [];
 
@@ -249,7 +253,17 @@ Deno.serve(async (req) => {
       const earlyLeaveCount = earlyLeaveRecords.length;
       const earlyLeaveMinutesTotal = userAttendance.reduce((s: number, a: any) => s + (a.early_leave_minutes || 0), 0);
       const absentCount = userAttendance.filter((a: any) => a.status === "absent").length;
-      const overtimeMinutes = userAttendance.reduce((s: number, a: any) => s + (a.overtime_minutes || 0), 0);
+      // Approved overtime requests for this user
+      const userOTRequests = approvedOvertimeRequests.filter((r: any) => r.user_id === employee.user_id);
+      const approvedExtraHoursDates = new Set(userOTRequests.filter((r: any) => r.request_type === "extra_hours").map((r: any) => r.request_date));
+      const approvedDayOffDates = new Set(userOTRequests.filter((r: any) => r.request_type === "day_off").map((r: any) => r.request_date));
+
+      // Only count overtime minutes from approved extra_hours requests
+      const approvedOvertimeMinutes = userAttendance.reduce((s: number, a: any) => {
+        if (approvedExtraHoursDates.has(a.date)) return s + (a.overtime_minutes || 0);
+        return s;
+      }, 0);
+      const overtimeMinutes = approvedOvertimeMinutes;
       const overtimeHours = Math.round(overtimeMinutes / 60 * 10) / 10;
       const expectedWorkDays = getExpectedWorkDays(employee.user_id);
 
@@ -260,7 +274,7 @@ Deno.serve(async (req) => {
       // Paid leave days from template
       const paidLeaveDaysPerMonth = template?.paid_leave_days_per_month || 0;
 
-      // Days with overtime (full-day OT = worked on unscheduled day)
+      // Days with overtime (full-day OT = worked on unscheduled day, only if approved)
       const scheduledDates = new Set<string>();
       const userAssignments = shiftAssignments.filter((sa: any) => sa.user_id === employee.user_id);
       const hasSchedule = userAssignments.length > 0;
@@ -281,8 +295,9 @@ Deno.serve(async (req) => {
           }
         }
       }
+      // Only count full-day OT if the day-off work was approved
       const fullDayOTCount = userAttendance.filter((a: any) =>
-        a.check_in_time && a.status !== "absent" && !scheduledDates.has(a.date)
+        a.check_in_time && a.status !== "absent" && !scheduledDates.has(a.date) && approvedDayOffDates.has(a.date)
       ).length;
 
       // Build day-by-day attendance details

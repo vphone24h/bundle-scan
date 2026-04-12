@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SalaryTemplatesTab } from '@/components/payroll/SalaryTemplatesTab';
 import { PayrollPeriodsTab } from '@/components/payroll/PayrollPeriodsTab';
 import { AbsenceReviewsTab } from '@/components/payroll/AbsenceReviewsTab';
+import { OvertimeReviewsTab } from '@/components/payroll/OvertimeReviewsTab';
 
 export default function PayrollPage() {
   const [tab, setTab] = useState('templates');
@@ -21,6 +22,7 @@ export default function PayrollPage() {
             <TabsTrigger value="templates" className="text-xs px-3 py-1.5">Mẫu lương</TabsTrigger>
             <TabsTrigger value="periods" className="text-xs px-3 py-1.5">Bảng lương</TabsTrigger>
             <TabsTrigger value="absences" className="text-xs px-3 py-1.5">Duyệt nghỉ phép</TabsTrigger>
+            <TabsTrigger value="overtime" className="text-xs px-3 py-1.5">Duyệt tăng ca</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="templates" className="mt-4">
@@ -31,6 +33,9 @@ export default function PayrollPage() {
         </TabsContent>
         <TabsContent value="absences" className="mt-4">
           <AbsenceReviewsTab />
+        </TabsContent>
+        <TabsContent value="overtime" className="mt-4">
+          <OvertimeReviewsTab />
         </TabsContent>
       </Tabs>
     </MainLayout>

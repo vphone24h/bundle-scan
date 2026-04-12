@@ -5060,6 +5060,69 @@ export type Database = {
         }
         Relationships: []
       }
+      overtime_requests: {
+        Row: {
+          attendance_id: string | null
+          created_at: string
+          id: string
+          overtime_minutes: number
+          request_date: string
+          request_type: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attendance_id?: string | null
+          created_at?: string
+          id?: string
+          overtime_minutes?: number
+          request_date: string
+          request_type?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attendance_id?: string | null
+          created_at?: string
+          id?: string
+          overtime_minutes?: number
+          request_date?: string
+          request_type?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "overtime_requests_attendance_id_fkey"
+            columns: ["attendance_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "overtime_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_config: {
         Row: {
           company_id: string | null
