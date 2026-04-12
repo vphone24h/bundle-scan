@@ -198,7 +198,7 @@ export function EmployeeSetupTab() {
         });
         toast.success('Đã lưu bước tạo ca!');
       } else if (activeStep === 2) {
-        if (!selectedShiftId) {
+        if (scheduleData.type !== 'weekly' && !selectedShiftId) {
           throw new Error('Vui lòng chọn ca trước khi xếp lịch');
         }
 
@@ -213,15 +213,25 @@ export function EmployeeSetupTab() {
           throw new Error('Vui lòng chọn ít nhất một ca để xếp lịch');
         }
 
-        const { error: deleteError } = await supabase
-          .from('shift_assignments')
-          .delete()
-          .eq('tenant_id', tenantId)
-          .eq('user_id', selectedEmployee.userId);
+        // For weekly mode, only delete daily assignments (keep fixed ones intact)
+        if (scheduleData.type === 'weekly') {
+          const { error: deleteError } = await supabase
+            .from('shift_assignments')
+            .delete()
+            .eq('tenant_id', tenantId)
+            .eq('user_id', selectedEmployee.userId)
+            .eq('assignment_type', 'daily');
+          if (deleteError) throw deleteError;
+        } else {
+          const { error: deleteError } = await supabase
+            .from('shift_assignments')
+            .delete()
+            .eq('tenant_id', tenantId)
+            .eq('user_id', selectedEmployee.userId);
+          if (deleteError) throw deleteError;
+        }
 
-        if (deleteError) throw deleteError;
-
-        const { error } = await supabase.from('shift_assignments').insert(inserts);
+        const { error } = await supabase.from('shift_assignments').insert(inserts as any);
         if (error) throw error;
 
         updateEmployeeProgress(selectedEmployee.userId, {

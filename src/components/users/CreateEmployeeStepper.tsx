@@ -40,9 +40,10 @@ const STEPS = [
 ] as const;
 
 export interface ScheduleData {
-  type: 'fixed' | 'custom';
+  type: 'fixed' | 'custom' | 'weekly';
   fixedShiftId?: string;
   customDays?: Record<string, string>; // day -> shiftId
+  weeklyDays?: Record<string, string>; // date (yyyy-MM-dd) -> shiftId
 }
 
 export interface SalaryData {
@@ -181,7 +182,7 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
       });
 
       if (scheduleAssignments.length) {
-        const { error } = await supabase.from('shift_assignments').insert(scheduleAssignments);
+        const { error } = await supabase.from('shift_assignments').insert(scheduleAssignments as any);
         if (error) throw error;
       }
 

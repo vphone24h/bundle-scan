@@ -87,6 +87,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
   const [name, setName] = useState('');
   const [salaryType, setSalaryType] = useState('fixed');
   const [baseAmount, setBaseAmount] = useState('');
+  const [paidLeaveDays, setPaidLeaveDays] = useState('0');
   const [description, setDescription] = useState('');
 
   const [bonusEnabled, setBonusEnabled] = useState(false);
@@ -116,6 +117,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
       setSalaryType(existing.salary_type);
       setBaseAmount(String(existing.base_amount));
       setDescription(existing.description || '');
+      setPaidLeaveDays(String((existing as any).paid_leave_days_per_month || 0));
       setBonusEnabled((existing as any).bonus_enabled || false);
       setCommissionEnabled((existing as any).commission_enabled || false);
       setAllowanceEnabled((existing as any).allowance_enabled || false);
@@ -138,6 +140,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
       name,
       salary_type: salaryType,
       base_amount: Number(baseAmount) || 0,
+      paid_leave_days_per_month: Number(paidLeaveDays) || 0,
       description: description || null,
       bonus_enabled: bonusEnabled,
       commission_enabled: commissionEnabled,
@@ -212,9 +215,16 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
               <Input type="number" placeholder="0" value={baseAmount} onChange={e => setBaseAmount(e.target.value)} />
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Mô tả</Label>
-            <Input placeholder="Ghi chú" value={description} onChange={e => setDescription(e.target.value)} />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Số ngày nghỉ có lương / tháng</Label>
+              <Input type="number" min="0" max="30" placeholder="0" value={paidLeaveDays} onChange={e => setPaidLeaveDays(e.target.value)} />
+              <p className="text-[10px] text-muted-foreground">Số ngày NV được nghỉ mà vẫn hưởng lương</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Mô tả</Label>
+              <Input placeholder="Ghi chú" value={description} onChange={e => setDescription(e.target.value)} />
+            </div>
           </div>
         </CardContent>
       </Card>
