@@ -24,7 +24,7 @@ const statusConfig: Record<string, { label: string; class: string }> = {
   pending: { label: 'Đang làm', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' },
 };
 
-const PIE_COLORS = ['hsl(142, 71%, 45%)', 'hsl(45, 93%, 47%)', 'hsl(0, 84%, 60%)', 'hsl(217, 91%, 60%)'];
+const PIE_COLORS = ['hsl(142, 71%, 45%)', 'hsl(45, 93%, 47%)', 'hsl(24, 94%, 50%)', 'hsl(0, 84%, 60%)', 'hsl(217, 91%, 60%)'];
 
 type DatePreset = 'today' | 'yesterday' | 'this_week' | 'this_month' | 'last_month' | 'custom';
 
@@ -182,6 +182,7 @@ export function AttendanceDashboardTab() {
   const pieData = [
     { name: 'Đúng giờ', value: filteredStats.onTime },
     { name: 'Đi trễ', value: filteredStats.late },
+    { name: 'Về sớm', value: filteredStats.earlyLeave },
     { name: 'Vắng', value: filteredStats.absent },
     { name: 'Đang làm', value: filteredStats.pending },
   ].filter(d => d.value > 0);
