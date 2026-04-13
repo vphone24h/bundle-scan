@@ -420,6 +420,19 @@ export function useApproveTransfer() {
       const tenantId = await getCurrentTenantId();
       if (!tenantId) throw new Error('Không tìm thấy tenant');
 
+      // Check admin role - only admin can approve
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
+      
+      const role = roleData?.role;
+      if (role !== 'super_admin' && role !== 'branch_admin') {
+        throw new Error('Bạn không có quyền duyệt phiếu chuyển hàng. Chỉ quản lý mới được duyệt.');
+      }
+
       // Get request + items
       const { data: request, error: reqErr } = await supabase
         .from('stock_transfer_requests')
@@ -590,6 +603,19 @@ export function useRejectTransfer() {
 
       const tenantId = await getCurrentTenantId();
       if (!tenantId) throw new Error('Không tìm thấy tenant');
+
+      // Check admin role - only admin can reject
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
+      
+      const role = roleData?.role;
+      if (role !== 'super_admin' && role !== 'branch_admin') {
+        throw new Error('Bạn không có quyền từ chối phiếu chuyển hàng. Chỉ quản lý mới được từ chối.');
+      }
 
       const { data: request } = await supabase
         .from('stock_transfer_requests')
