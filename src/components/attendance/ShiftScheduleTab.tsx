@@ -7,12 +7,12 @@ import { ChevronLeft, ChevronRight, Plus, Copy, Users, X } from 'lucide-react';
 import { useShiftAssignments, useWorkShifts, useCreateShiftAssignment, useDeleteShiftAssignment } from '@/hooks/useAttendance';
 import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
 import { useTenantStaffList } from '@/hooks/useTenantStaffList';
-import { format, addDays, startOfWeek, eachDayOfInterval } from 'date-fns';
+import { format, addDays, startOfWeek, eachDayOfInterval, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
