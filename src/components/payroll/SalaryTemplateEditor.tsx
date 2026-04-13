@@ -231,10 +231,16 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
               <Input placeholder="Ghi chú" value={description} onChange={e => setDescription(e.target.value)} />
             </div>
           </div>
-          <div className="flex items-center gap-2 pt-1">
-            <Switch checked={enableOvertime} onCheckedChange={setEnableOvertime} />
-            <Label className="text-xs">Tính tăng ca cho mẫu lương này</Label>
-            <p className="text-[10px] text-muted-foreground ml-1">(Bật nếu NV được tính lương tăng ca)</p>
+          <div className="border rounded-lg p-3 bg-muted/30 space-y-1">
+            <div className="flex items-center gap-2">
+              <Switch checked={enableOvertime} onCheckedChange={setEnableOvertime} />
+              <Label className="text-xs font-medium">Cho phép tính tăng ca</Label>
+            </div>
+            <p className="text-[10px] text-muted-foreground pl-9">
+              {enableOvertime
+                ? '✅ NV phải được xếp lịch làm việc. Ngoài giờ quy định sẽ được tính tăng ca (cần admin phê duyệt).'
+                : '⏸️ Tắt: NV chỉ cần check-in/out, hệ thống ghi nhận giờ làm và trả lương theo thực tế. Không cần xếp lịch, không tính tăng ca.'}
+            </p>
           </div>
         </CardContent>
       </Card>
