@@ -245,6 +245,14 @@ export function EmployeeSetupTab() {
           throw new Error('Vui lòng chọn mẫu lương hoặc nhập dữ liệu lương');
         }
 
+        // Check if selected template has enable_overtime — require schedule
+        if (salaryData.templateId) {
+          const selectedTemplate = salaryTemplates?.find((t: any) => t.id === salaryData.templateId);
+          if (selectedTemplate?.enable_overtime && !selectedEmployee.hasSchedule) {
+            throw new Error('Mẫu lương này có bật tăng ca — vui lòng xếp lịch làm việc trước (bước 2, 3) để hệ thống xác định giờ tăng ca.');
+          }
+        }
+
         const salaryPayload = {
           tenant_id: tenantId,
           user_id: selectedEmployee.userId,
