@@ -28,6 +28,8 @@ import { useUsersGuideUrl } from '@/hooks/useAppConfig';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { useAttendanceEnabled } from '@/hooks/useAttendanceEnabled';
+import { usePendingApprovals } from '@/hooks/usePendingApprovals';
+import { PendingBadge } from '@/components/ui/pending-badge';
 // Attendance tabs
 import { AttendanceDashboardTab } from '@/components/attendance/AttendanceDashboardTab';
 import { WorkShiftsTab } from '@/components/attendance/WorkShiftsTab';

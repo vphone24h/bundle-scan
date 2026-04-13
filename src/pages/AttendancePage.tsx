@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Clock, Calendar, MapPin, Smartphone, BarChart3, Lock, FileText, FileEdit, Monitor } from 'lucide-react';
+import { usePendingApprovals } from '@/hooks/usePendingApprovals';
+import { PendingBadge } from '@/components/ui/pending-badge';
 import { WorkShiftsTab } from '@/components/attendance/WorkShiftsTab';
 import { ShiftScheduleTab } from '@/components/attendance/ShiftScheduleTab';
 import { AttendanceHistoryTab } from '@/components/attendance/AttendanceHistoryTab';

@@ -6,6 +6,8 @@ import { SalaryTemplatesTab } from '@/components/payroll/SalaryTemplatesTab';
 import { PayrollPeriodsTab } from '@/components/payroll/PayrollPeriodsTab';
 import { AbsenceReviewsTab } from '@/components/payroll/AbsenceReviewsTab';
 import { OvertimeReviewsTab } from '@/components/payroll/OvertimeReviewsTab';
+import { usePendingApprovals } from '@/hooks/usePendingApprovals';
+import { PendingBadge } from '@/components/ui/pending-badge';
 
 export default function PayrollPage() {
   const [tab, setTab] = useState('templates');
