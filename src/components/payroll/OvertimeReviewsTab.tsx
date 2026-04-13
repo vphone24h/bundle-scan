@@ -248,7 +248,8 @@ export function OvertimeReviewsTab() {
           <SelectContent>
             <SelectItem value="all">Tất cả loại</SelectItem>
             <SelectItem value="day_off">Ngày nghỉ</SelectItem>
-            <SelectItem value="extra_hours">Ngoài giờ</SelectItem>
+            <SelectItem value="extra_hours">Ngoài giờ (sau ca)</SelectItem>
+            <SelectItem value="early_checkin">Sớm ca</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
