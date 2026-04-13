@@ -58,6 +58,7 @@ export function TransferStockDialog({
   const [printData, setPrintData] = useState<TransferPrintData | null>(null);
 
   const isSuperAdmin = permissions?.role === 'super_admin';
+  const canViewPrice = permissions?.canViewInventoryImportPrice ?? false;
 
   // Initialize quantities when products change
   const getTransferQty = (product: Product) => {
