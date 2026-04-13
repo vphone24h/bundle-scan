@@ -434,6 +434,7 @@ export default function StockTransferPage() {
           {detailRequest && detailItems && detailItems.length > 0 && (
             <div className="flex justify-center">
               <StockTransferPrintReceipt
+                canViewPrice={canViewPrice}
                 data={{
                   id: detailRequest.id,
                   fromBranchName: (detailRequest.from_branch as any)?.name || '?',
@@ -523,7 +524,7 @@ export default function StockTransferPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-2 pt-2">
-              <StockTransferPrintReceipt data={printTransferData} />
+              <StockTransferPrintReceipt data={printTransferData} canViewPrice={canViewPrice} />
               <Button variant="ghost" onClick={() => setPrintTransferData(null)}>
                 Đóng
               </Button>

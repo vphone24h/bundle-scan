@@ -19,9 +19,10 @@ export interface TransferPrintData {
 interface StockTransferPrintReceiptProps {
   data: TransferPrintData;
   variant?: 'button' | 'icon';
+  canViewPrice?: boolean;
 }
 
-export function StockTransferPrintReceipt({ data, variant = 'button' }: StockTransferPrintReceiptProps) {
+export function StockTransferPrintReceipt({ data, variant = 'button', canViewPrice = true }: StockTransferPrintReceiptProps) {
   const handlePrint = () => {
     const dateStr = format(new Date(data.createdAt), 'dd/MM/yyyy HH:mm', { locale: vi });
     const receiptCode = data.id.slice(0, 8).toUpperCase();
@@ -41,8 +42,8 @@ export function StockTransferPrintReceipt({ data, variant = 'button' }: StockTra
             ${item.imei ? `<div>IMEI: ${item.imei}</div>` : ''}
             <div>SKU: ${item.sku}</div>
             ${item.supplier_name ? `<div>NCC: ${item.supplier_name}</div>` : ''}
-            <div class="item-qty">SL: ${item.quantity}${item.imei ? '' : ''} x ${formatCurrency(item.import_price)}</div>
-            <div class="item-total">= ${formatCurrency(lineTotal)}</div>
+            <div class="item-qty">SL: ${item.quantity}${canViewPrice ? ` x ${formatCurrency(item.import_price)}` : ''}</div>
+            ${canViewPrice ? `<div class="item-total">= ${formatCurrency(lineTotal)}</div>` : ''}
           </div>
         </div>
       `;
@@ -64,11 +65,13 @@ export function StockTransferPrintReceipt({ data, variant = 'button' }: StockTra
       ${itemRows}
       <div class="sep"></div>
 
+      ${canViewPrice ? `
       <div class="total-row">
         <span>Tổng giá trị (${data.items.length} SP)</span>
         <span class="total-value">${formatCurrency(totalValue)}</span>
       </div>
       <div class="sep"></div>
+      ` : ''}
 
       <div class="sig-area">
         <div class="sig-box"><div class="sig-title">Người chuyển</div><div class="sig-line">(Ký, ghi rõ họ tên)</div></div>
