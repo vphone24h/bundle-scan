@@ -319,6 +319,20 @@ export default function CheckInPage() {
       const checkInTime = new Date(todayRecord.check_in_time);
       const totalMinutes = Math.round((now.getTime() - checkInTime.getTime()) / 60000);
 
+      // Calculate overtime & early leave based on shift times
+      let overtimeMinutes = 0;
+      let earlyLeaveMinutes = 0;
+      if (shiftInfo) {
+        const [eh, em] = shiftInfo.end_time.split(':').map(Number);
+        const shiftEnd = new Date(); shiftEnd.setHours(eh, em, 0, 0);
+        const diffFromEnd = Math.round((now.getTime() - shiftEnd.getTime()) / 60000);
+        if (diffFromEnd > 0) {
+          overtimeMinutes = diffFromEnd; // checked out after shift end
+        } else if (diffFromEnd < 0) {
+          earlyLeaveMinutes = Math.abs(diffFromEnd); // checked out before shift end
+        }
+      }
+
       const { error } = await supabase.from('attendance_records').update({
         check_out_time: now.toISOString(),
         check_out_lat: gpsPos.lat,
@@ -327,6 +341,8 @@ export default function CheckInPage() {
         check_out_device_id: myDevice?.id || null,
         check_out_method: 'gps',
         total_work_minutes: totalMinutes,
+        overtime_minutes: overtimeMinutes,
+        early_leave_minutes: earlyLeaveMinutes,
       }).eq('id', todayRecord.id);
       if (error) throw error;
       toast.success(`Check-out thành công! Tổng: ${Math.floor(totalMinutes/60)}h${totalMinutes%60}p`);
@@ -337,7 +353,7 @@ export default function CheckInPage() {
     } finally {
       setChecking(false);
     }
-  }, [todayRecord, gpsPos, myDevice, qc, deviceOk]);
+  }, [todayRecord, gpsPos, myDevice, qc, deviceOk, shiftInfo]);
 
   // Send remote check-in/out request to admin
   const handleSendRemoteRequest = useCallback(async (type: 'remote_checkin' | 'remote_checkout') => {
