@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CustomPrintTemplateList } from '@/components/print-templates/CustomPrintTemplateList';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -433,6 +435,17 @@ export default function InvoiceTemplatePage() {
         helpText={t('pages.invoiceTemplate.helpText')}
       />
 
+      <Tabs defaultValue="thermal" className="mt-2">
+        <TabsList className="mb-4">
+          <TabsTrigger value="thermal">Mẫu in nhiệt</TabsTrigger>
+          <TabsTrigger value="custom">Mẫu in tuỳ chỉnh</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="custom">
+          <CustomPrintTemplateList />
+        </TabsContent>
+
+        <TabsContent value="thermal">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Settings */}
         <div className="space-y-4">
@@ -1115,6 +1128,8 @@ export default function InvoiceTemplatePage() {
           </Card>
         </div>
       </div>
+        </TabsContent>
+      </Tabs>
     </MainLayout>
   );
 }
