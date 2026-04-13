@@ -124,13 +124,7 @@ export function PropertyPanel({ element, onUpdate, onDelete, onDuplicate, onMove
 
         {/* Image */}
         {element.type === 'image' && (
-          <>
-            <Separator />
-            <div>
-              <Label className="text-[10px]">URL ảnh</Label>
-              <Input className="h-7 text-xs" value={element.imageUrl || ''} onChange={(e) => onUpdate(element.id, { imageUrl: e.target.value })} placeholder="https://..." />
-            </div>
-          </>
+          <ImageUploadSection element={element} onUpdate={onUpdate} />
         )}
 
         {/* Table config */}
