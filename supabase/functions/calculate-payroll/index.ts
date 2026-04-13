@@ -787,6 +787,9 @@ Deno.serve(async (req) => {
           salary_type: salaryType,
           base_amount: baseAmount,
           expected_work_days: expectedWorkDays,
+          completed_shifts: salaryType === "shift"
+            ? userAttendance.filter((a: any) => a.check_in_time && a.check_out_time && a.shift_id && a.status !== "absent").length
+            : undefined,
           user_revenue: userRevenue,
           branch_revenue: branchRevenue,
           overtime_details: overtimeDetails,
