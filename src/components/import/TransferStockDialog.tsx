@@ -266,9 +266,11 @@ export function TransferStockDialog({
                           )}
                         </div>
                       </div>
-                      <Badge variant="outline" className="text-xs flex-shrink-0">
-                        {formatCurrency(Number(product.import_price) * transferQty)}
-                      </Badge>
+                      {canViewPrice && (
+                        <Badge variant="outline" className="text-xs flex-shrink-0">
+                          {formatCurrency(Number(product.import_price) * transferQty)}
+                        </Badge>
+                      )}
                     </div>
 
                     {/* Quantity input for non-IMEI products */}
