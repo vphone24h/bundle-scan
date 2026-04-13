@@ -257,11 +257,14 @@ Deno.serve(async (req) => {
       const userOTRequests = approvedOvertimeRequests.filter((r: any) => r.user_id === employee.user_id);
       const approvedExtraHoursDates = new Set(userOTRequests.filter((r: any) => r.request_type === "extra_hours").map((r: any) => r.request_date));
       const approvedDayOffDates = new Set(userOTRequests.filter((r: any) => r.request_type === "day_off").map((r: any) => r.request_date));
+      const approvedEarlyCheckinMap = new Map(userOTRequests.filter((r: any) => r.request_type === "early_checkin").map((r: any) => [r.request_date, r.overtime_minutes || 0]));
 
-      // Only count overtime minutes from approved extra_hours requests
+      // Only count overtime minutes from approved extra_hours + early_checkin requests
       const approvedOvertimeMinutes = userAttendance.reduce((s: number, a: any) => {
-        if (approvedExtraHoursDates.has(a.date)) return s + (a.overtime_minutes || 0);
-        return s;
+        let mins = 0;
+        if (approvedExtraHoursDates.has(a.date)) mins += (a.overtime_minutes || 0);
+        if (approvedEarlyCheckinMap.has(a.date)) mins += (approvedEarlyCheckinMap.get(a.date) || 0);
+        return s + mins;
       }, 0);
       const overtimeMinutes = approvedOvertimeMinutes;
       const overtimeHours = Math.round(overtimeMinutes / 60 * 10) / 10;

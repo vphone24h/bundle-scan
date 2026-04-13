@@ -137,7 +137,7 @@ export function OvertimeReviewsTab() {
         });
       }
 
-      // Check extra hours (overtime_minutes > 0)
+      // Check extra hours after shift end (overtime_minutes > 0)
       if (isScheduled && (att.overtime_minutes || 0) > 0 && !existingKeys.has(`${att.user_id}_${dateStr}_extra_hours`)) {
         items.push({
           user_id: att.user_id,
@@ -147,6 +147,26 @@ export function OvertimeReviewsTab() {
           attendance_id: att.id,
           auto_detected: true,
         });
+      }
+
+      // Check early check-in before shift start
+      if (isScheduled && att.check_in_time && (att as any).work_shifts?.start_time) {
+        const shift = (att as any).work_shifts;
+        const [sh, sm] = shift.start_time.split(':').map(Number);
+        const checkInDate = new Date(att.check_in_time);
+        const shiftStartDate = new Date(checkInDate);
+        shiftStartDate.setHours(sh, sm, 0, 0);
+        const earlyMinutes = Math.round((shiftStartDate.getTime() - checkInDate.getTime()) / 60000);
+        if (earlyMinutes > 5 && !existingKeys.has(`${att.user_id}_${dateStr}_early_checkin`)) {
+          items.push({
+            user_id: att.user_id,
+            request_date: dateStr,
+            request_type: 'early_checkin',
+            overtime_minutes: earlyMinutes,
+            attendance_id: att.id,
+            auto_detected: true,
+          });
+        }
       }
     }
     return items;
@@ -228,7 +248,8 @@ export function OvertimeReviewsTab() {
           <SelectContent>
             <SelectItem value="all">Tất cả loại</SelectItem>
             <SelectItem value="day_off">Ngày nghỉ</SelectItem>
-            <SelectItem value="extra_hours">Ngoài giờ</SelectItem>
+            <SelectItem value="extra_hours">Ngoài giờ (sau ca)</SelectItem>
+            <SelectItem value="early_checkin">Sớm ca</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -280,7 +301,7 @@ export function OvertimeReviewsTab() {
                       <TableCell className="text-xs">{item.request_date}</TableCell>
                       <TableCell className="text-xs">
                         <Badge variant={item.request_type === 'day_off' ? 'default' : 'secondary'} className="text-[10px]">
-                          {item.request_type === 'day_off' ? 'Ngày nghỉ' : 'Ngoài giờ'}
+                          {item.request_type === 'day_off' ? 'Ngày nghỉ' : item.request_type === 'early_checkin' ? 'Sớm ca' : 'Ngoài giờ'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs">
@@ -335,7 +356,7 @@ export function OvertimeReviewsTab() {
           <div className="space-y-3 text-sm">
             <p><strong>NV:</strong> {profileMap.get(reviewDialog?.user_id) || ''}</p>
             <p><strong>Ngày:</strong> {reviewDialog?.request_date}</p>
-            <p><strong>Loại:</strong> {reviewDialog?.request_type === 'day_off' ? 'Làm ngày nghỉ' : 'Làm thêm ngoài giờ'}</p>
+            <p><strong>Loại:</strong> {reviewDialog?.request_type === 'day_off' ? 'Làm ngày nghỉ' : reviewDialog?.request_type === 'early_checkin' ? 'Check-in sớm trước ca' : 'Làm thêm ngoài giờ'}</p>
             <p><strong>Thời gian:</strong> {Math.floor((reviewDialog?.overtime_minutes || 0) / 60)}h{(reviewDialog?.overtime_minutes || 0) % 60}p</p>
             <div className="space-y-1.5">
               <Label className="text-xs">Ghi chú</Label>
