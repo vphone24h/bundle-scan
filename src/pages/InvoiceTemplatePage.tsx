@@ -1,4 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CustomPrintTemplateList } from '@/components/print-templates/CustomPrintTemplateList';
+import { Printer, FileEdit } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
