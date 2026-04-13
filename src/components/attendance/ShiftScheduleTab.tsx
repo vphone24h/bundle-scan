@@ -45,6 +45,39 @@ export function ShiftScheduleTab() {
 
   const { data: staffList } = useTenantStaffList();
 
+  // Fetch approved/unexcused leave requests for visible week
+  const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+  const weekEndStr = format(addDays(weekStart, 6), 'yyyy-MM-dd');
+  const { data: leaveRequests } = useQuery({
+    queryKey: ['leave-requests-schedule', tenantId, weekStartStr],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('leave_requests')
+        .select('user_id, leave_date_from, leave_date_to, status, reason')
+        .eq('tenant_id', tenantId!)
+        .in('status', ['approved', 'unexcused'])
+        .lte('leave_date_from', weekEndStr)
+        .gte('leave_date_to', weekStartStr);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!tenantId,
+  });
+
+  // Build a map: dateStr -> [{ user_id, status }]
+  const leaveMap = useMemo(() => {
+    const map = new Map<string, { user_id: string; status: string; reason: string }[]>();
+    (leaveRequests || []).forEach(lr => {
+      const days = eachDayOfInterval({ start: parseISO(lr.leave_date_from), end: parseISO(lr.leave_date_to) });
+      days.forEach(d => {
+        const ds = format(d, 'yyyy-MM-dd');
+        if (!map.has(ds)) map.set(ds, []);
+        map.get(ds)!.push({ user_id: lr.user_id, status: lr.status, reason: lr.reason || '' });
+      });
+    });
+    return map;
+  }, [leaveRequests]);
+
   const getAssignmentsForDay = (date: string) => {
     return assignments?.filter((a: any) => {
       if (a.assignment_type === 'daily' && a.specific_date === date) return true;
