@@ -70,19 +70,25 @@ export function InvoicePrintDialog({
   };
 
   const handlePrint = () => {
-    // Custom template print
+    // Custom template print via iframe (stable on mobile)
     if (selectedCustomTemplate) {
       const html = renderCustomPrintHTML(selectedCustomTemplate, receipt, branchInfo);
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) return;
-      printWindow.document.write(html);
-      printWindow.document.close();
-      const cleanup = () => { try { printWindow.close(); } catch { /* noop */ } };
-      printWindow.onafterprint = cleanup;
-      printWindow.focus();
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '-9999px';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      document.body.appendChild(iframe);
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!doc) return;
+      doc.open();
+      doc.write(html);
+      doc.close();
       setTimeout(() => {
-        try { printWindow.print(); } finally { setTimeout(cleanup, 1000); }
-      }, 50);
+        try { iframe.contentWindow?.print(); } catch { /* noop */ }
+        setTimeout(() => { try { document.body.removeChild(iframe); } catch { /* noop */ } }, 2000);
+      }, 100);
       return;
     }
 
