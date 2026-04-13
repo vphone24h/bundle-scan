@@ -24,7 +24,7 @@ import { PlatformAISettings } from '@/components/platform/PlatformAISettings';
 import { CompanyEmailConfigForm } from '@/components/platform/CompanyEmailConfigForm';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Navigate } from 'react-router-dom';
-import { Loader2, Users, Megaphone, FileText, Mail, Globe, MailPlus, Bell, Zap, Database, RefreshCw, ArrowDownToLine, Building2 } from 'lucide-react';
+import { Loader2, Users, Megaphone, FileText, Mail, Globe, MailPlus, Bell, Zap, Database, RefreshCw, ArrowDownToLine, Building2, FileCode, HardDrive } from 'lucide-react';
 import { SystemNotificationsManagement } from '@/components/platform/SystemNotificationsManagement';
 import { AutomationNotificationsManagement } from '@/components/platform/AutomationNotificationsManagement';
 import { ManualNotificationHistoryTable, AutomationHistoryTable } from '@/components/platform/NotificationSendHistory';
@@ -41,6 +41,8 @@ export default function PlatformAdminPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isExportingAll, setIsExportingAll] = useState(false);
   const [isExportingCross, setIsExportingCross] = useState(false);
+  const [isExportingSchema, setIsExportingSchema] = useState(false);
+  const [isExportingStorage, setIsExportingStorage] = useState(false);
 
   const handleExportAllData = async () => {
     setIsExportingAll(true);
@@ -97,6 +99,78 @@ export default function PlatformAdminPage() {
       toast.error('Lỗi xuất dữ liệu: ' + (error as Error).message);
     } finally {
       setIsExportingCross(false);
+    }
+  };
+
+  const handleExportSchema = async () => {
+    setIsExportingSchema(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('export-schema');
+      if (error) throw error;
+      if (!data) throw new Error('Không có dữ liệu trả về');
+
+      // Download SQL migration file
+      const sqlContent = data.migration_sql || '';
+      const sqlBlob = new Blob([sqlContent], { type: 'text/sql' });
+      const sqlUrl = URL.createObjectURL(sqlBlob);
+      const a1 = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      a1.href = sqlUrl;
+      a1.download = `schema_migration_${dateStr}.sql`;
+      document.body.appendChild(a1);
+      a1.click();
+      document.body.removeChild(a1);
+      URL.revokeObjectURL(sqlUrl);
+
+      // Also download raw schema JSON
+      const jsonStr = JSON.stringify(data.raw_schema, null, 2);
+      const jsonBlob = new Blob([jsonStr], { type: 'application/json' });
+      const jsonUrl = URL.createObjectURL(jsonBlob);
+      const a2 = document.createElement('a');
+      a2.href = jsonUrl;
+      a2.download = `schema_raw_${dateStr}.json`;
+      document.body.appendChild(a2);
+      a2.click();
+      document.body.removeChild(a2);
+      URL.revokeObjectURL(jsonUrl);
+
+      toast.success('Đã xuất schema thành công (2 files: .sql + .json)');
+    } catch (error) {
+      console.error('Schema export error:', error);
+      toast.error('Lỗi xuất schema: ' + (error as Error).message);
+    } finally {
+      setIsExportingSchema(false);
+    }
+  };
+
+  const handleExportStorage = async () => {
+    setIsExportingStorage(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('export-storage', {
+        body: {},
+      });
+      if (error) throw error;
+      if (!data) throw new Error('Không có dữ liệu trả về');
+
+      const jsonStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      a.href = url;
+      a.download = `storage_export_${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      const totalFiles = data._metadata?.total_files || 0;
+      toast.success(`Đã xuất ${totalFiles} files từ storage`);
+    } catch (error) {
+      console.error('Storage export error:', error);
+      toast.error('Lỗi xuất storage: ' + (error as Error).message);
+    } finally {
+      setIsExportingStorage(false);
     }
   };
 
