@@ -356,7 +356,7 @@ export function OvertimeReviewsTab() {
           <div className="space-y-3 text-sm">
             <p><strong>NV:</strong> {profileMap.get(reviewDialog?.user_id) || ''}</p>
             <p><strong>Ngày:</strong> {reviewDialog?.request_date}</p>
-            <p><strong>Loại:</strong> {reviewDialog?.request_type === 'day_off' ? 'Làm ngày nghỉ' : 'Làm thêm ngoài giờ'}</p>
+            <p><strong>Loại:</strong> {reviewDialog?.request_type === 'day_off' ? 'Làm ngày nghỉ' : reviewDialog?.request_type === 'early_checkin' ? 'Check-in sớm trước ca' : 'Làm thêm ngoài giờ'}</p>
             <p><strong>Thời gian:</strong> {Math.floor((reviewDialog?.overtime_minutes || 0) / 60)}h{(reviewDialog?.overtime_minutes || 0) % 60}p</p>
             <div className="space-y-1.5">
               <Label className="text-xs">Ghi chú</Label>
