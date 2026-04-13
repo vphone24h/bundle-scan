@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Image as ImageIcon } from 'lucide-react';
 import { GRID_COLS, GRID_ROWS, getFieldLabel, type TemplateElement } from './types';
 
@@ -10,33 +10,47 @@ interface Props {
   onUpdate: (id: string, updates: Partial<TemplateElement>) => void;
 }
 
+function getClientPos(e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) {
+  if ('touches' in e) {
+    const t = e.touches[0] || (e as TouchEvent).changedTouches[0];
+    return { x: t.clientX, y: t.clientY };
+  }
+  return { x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY };
+}
+
 export function DesignerCanvas({ elements, selectedId, paperSize, onSelect, onUpdate }: Props) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<{ id: string; startX: number; startY: number; elX: number; elY: number } | null>(null);
   const [resizing, setResizing] = useState<{ id: string; startX: number; startY: number; elW: number; elH: number } | null>(null);
 
-  const handleCanvasMouseDown = (e: React.MouseEvent) => {
+  const handleCanvasPointerDown = (e: React.MouseEvent | React.TouchEvent) => {
     if (e.target === canvasRef.current) onSelect(null);
   };
 
-  const handleElementMouseDown = (e: React.MouseEvent, el: TemplateElement) => {
+  const handleElementPointerDown = (e: React.MouseEvent | React.TouchEvent, el: TemplateElement) => {
     e.stopPropagation();
+    if ('preventDefault' in e && 'touches' in e) e.preventDefault();
     onSelect(el.id);
-    setDragging({ id: el.id, startX: e.clientX, startY: e.clientY, elX: el.x, elY: el.y });
+    const pos = getClientPos(e);
+    setDragging({ id: el.id, startX: pos.x, startY: pos.y, elX: el.x, elY: el.y });
   };
 
-  const handleResizeMouseDown = (e: React.MouseEvent, el: TemplateElement) => {
+  const handleResizePointerDown = (e: React.MouseEvent | React.TouchEvent, el: TemplateElement) => {
     e.stopPropagation();
-    setResizing({ id: el.id, startX: e.clientX, startY: e.clientY, elW: el.w, elH: el.h });
+    if ('preventDefault' in e && 'touches' in e) e.preventDefault();
+    const pos = getClientPos(e);
+    setResizing({ id: el.id, startX: pos.x, startY: pos.y, elW: el.w, elH: el.h });
   };
 
   useEffect(() => {
     if (!dragging && !resizing) return;
-    const handleMouseMove = (e: MouseEvent) => {
+
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      const pos = getClientPos(e);
       if (dragging && canvasRef.current) {
         const rect = canvasRef.current.getBoundingClientRect();
-        const dx = ((e.clientX - dragging.startX) / rect.width) * GRID_COLS;
-        const dy = ((e.clientY - dragging.startY) / rect.height) * GRID_ROWS;
+        const dx = ((pos.x - dragging.startX) / rect.width) * GRID_COLS;
+        const dy = ((pos.y - dragging.startY) / rect.height) * GRID_ROWS;
         onUpdate(dragging.id, {
           x: Math.max(0, Math.min(GRID_COLS - 10, Math.round(dragging.elX + dx))),
           y: Math.max(0, Math.min(GRID_ROWS - 3, Math.round(dragging.elY + dy))),
@@ -44,27 +58,40 @@ export function DesignerCanvas({ elements, selectedId, paperSize, onSelect, onUp
       }
       if (resizing && canvasRef.current) {
         const rect = canvasRef.current.getBoundingClientRect();
-        const dw = ((e.clientX - resizing.startX) / rect.width) * GRID_COLS;
-        const dh = ((e.clientY - resizing.startY) / rect.height) * GRID_ROWS;
+        const dw = ((pos.x - resizing.startX) / rect.width) * GRID_COLS;
+        const dh = ((pos.y - resizing.startY) / rect.height) * GRID_ROWS;
         onUpdate(resizing.id, {
           w: Math.max(5, Math.round(resizing.elW + dw)),
           h: Math.max(3, Math.round(resizing.elH + dh)),
         });
       }
+      if ('touches' in e) e.preventDefault();
     };
-    const handleMouseUp = () => { setDragging(null); setResizing(null); };
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-    return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
+
+    const handleEnd = () => { setDragging(null); setResizing(null); };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('touchend', handleEnd);
+    window.addEventListener('touchcancel', handleEnd);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleEnd);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleEnd);
+      window.removeEventListener('touchcancel', handleEnd);
+    };
   }, [dragging, resizing, onUpdate]);
 
   return (
     <div className="flex-1 min-w-0">
       <div
-        className="bg-white border shadow-sm mx-auto relative overflow-hidden"
+        className="bg-white border shadow-sm mx-auto relative overflow-hidden touch-none"
         style={{ aspectRatio: `${paperSize.width} / ${paperSize.height}`, maxWidth: '600px' }}
         ref={canvasRef}
-        onMouseDown={handleCanvasMouseDown}
+        onMouseDown={handleCanvasPointerDown}
+        onTouchStart={handleCanvasPointerDown}
       >
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: `linear-gradient(to right, hsl(var(--border) / 0.15) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border) / 0.15) 1px, transparent 1px)`,
@@ -83,7 +110,8 @@ export function DesignerCanvas({ elements, selectedId, paperSize, onSelect, onUp
                 width: `${(el.w / GRID_COLS) * 100}%`,
                 height: `${(el.h / GRID_ROWS) * 100}%`,
               }}
-              onMouseDown={(e) => handleElementMouseDown(e, el)}
+              onMouseDown={(e) => handleElementPointerDown(e, el)}
+              onTouchStart={(e) => handleElementPointerDown(e, el)}
             >
               <div className="w-full h-full overflow-hidden flex items-start" style={{
                 fontSize: `${(el.fontSize || 12) * 0.6}px`,
@@ -125,7 +153,11 @@ export function DesignerCanvas({ elements, selectedId, paperSize, onSelect, onUp
                 )}
               </div>
               {isSelected && (
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-primary cursor-se-resize rounded-tl-sm" onMouseDown={(e) => handleResizeMouseDown(e, el)} />
+                <div
+                  className="absolute bottom-0 right-0 w-5 h-5 sm:w-3 sm:h-3 bg-primary cursor-se-resize rounded-tl-sm"
+                  onMouseDown={(e) => handleResizePointerDown(e, el)}
+                  onTouchStart={(e) => handleResizePointerDown(e, el)}
+                />
               )}
             </div>
           );
