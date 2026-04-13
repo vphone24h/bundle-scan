@@ -435,6 +435,17 @@ export default function InvoiceTemplatePage() {
         helpText={t('pages.invoiceTemplate.helpText')}
       />
 
+      <Tabs defaultValue="thermal" className="mt-2">
+        <TabsList className="mb-4">
+          <TabsTrigger value="thermal">Mẫu in nhiệt</TabsTrigger>
+          <TabsTrigger value="custom">Mẫu in tuỳ chỉnh</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="custom">
+          <CustomPrintTemplateList />
+        </TabsContent>
+
+        <TabsContent value="thermal">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Settings */}
         <div className="space-y-4">
