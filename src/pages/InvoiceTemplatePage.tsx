@@ -1128,6 +1128,8 @@ export default function InvoiceTemplatePage() {
           </Card>
         </div>
       </div>
+        </TabsContent>
+      </Tabs>
     </MainLayout>
   );
 }
