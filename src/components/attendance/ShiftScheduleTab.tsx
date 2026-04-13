@@ -7,12 +7,12 @@ import { ChevronLeft, ChevronRight, Plus, Copy, Users, X } from 'lucide-react';
 import { useShiftAssignments, useWorkShifts, useCreateShiftAssignment, useDeleteShiftAssignment } from '@/hooks/useAttendance';
 import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
 import { useTenantStaffList } from '@/hooks/useTenantStaffList';
-import { format, addDays, startOfWeek, eachDayOfInterval } from 'date-fns';
+import { format, addDays, startOfWeek, eachDayOfInterval, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
@@ -44,6 +44,39 @@ export function ShiftScheduleTab() {
   const [copyLoading, setCopyLoading] = useState(false);
 
   const { data: staffList } = useTenantStaffList();
+
+  // Fetch approved/unexcused leave requests for visible week
+  const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+  const weekEndStr = format(addDays(weekStart, 6), 'yyyy-MM-dd');
+  const { data: leaveRequests } = useQuery({
+    queryKey: ['leave-requests-schedule', tenantId, weekStartStr],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('leave_requests')
+        .select('user_id, leave_date_from, leave_date_to, status, reason')
+        .eq('tenant_id', tenantId!)
+        .in('status', ['approved', 'unexcused'])
+        .lte('leave_date_from', weekEndStr)
+        .gte('leave_date_to', weekStartStr);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!tenantId,
+  });
+
+  // Build a map: dateStr -> [{ user_id, status }]
+  const leaveMap = useMemo(() => {
+    const map = new Map<string, { user_id: string; status: string; reason: string }[]>();
+    (leaveRequests || []).forEach(lr => {
+      const days = eachDayOfInterval({ start: parseISO(lr.leave_date_from), end: parseISO(lr.leave_date_to) });
+      days.forEach(d => {
+        const ds = format(d, 'yyyy-MM-dd');
+        if (!map.has(ds)) map.set(ds, []);
+        map.get(ds)!.push({ user_id: lr.user_id, status: lr.status, reason: lr.reason || '' });
+      });
+    });
+    return map;
+  }, [leaveRequests]);
 
   const getAssignmentsForDay = (date: string) => {
     return assignments?.filter((a: any) => {
@@ -191,6 +224,7 @@ export function ShiftScheduleTab() {
               {weekDays.map((day) => {
                 const dateStr = format(day, 'yyyy-MM-dd');
                 const dayAssignments = getAssignmentsForDay(dateStr);
+                const dayLeaves = leaveMap.get(dateStr) || [];
                 const isToday = dateStr === format(new Date(), 'yyyy-MM-dd');
 
                 return (
@@ -221,6 +255,23 @@ export function ShiftScheduleTab() {
                             </button>
                             <div className="font-medium truncate">{staffName?.display_name || a.user_id.slice(0, 6)}</div>
                             <div className="text-muted-foreground">{a.work_shifts?.name} {a.work_shifts?.start_time?.slice(0,5)}-{a.work_shifts?.end_time?.slice(0,5)}</div>
+                          </div>
+                        );
+                      })}
+                      {dayLeaves.map((leave, idx) => {
+                        const staffName = staffList?.find((s: any) => s.user_id === leave.user_id);
+                        const isExcused = leave.status === 'approved';
+                        return (
+                          <div
+                            key={`leave-${idx}`}
+                            className={`text-[10px] p-1 rounded ${isExcused ? 'bg-green-100 dark:bg-green-900/30 border-l-2 border-green-500' : 'bg-red-100 dark:bg-red-900/30 border-l-2 border-red-500'}`}
+                          >
+                            <div className={`font-medium truncate ${isExcused ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+                              {staffName?.display_name || leave.user_id.slice(0, 6)}
+                            </div>
+                            <div className={`${isExcused ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                              {isExcused ? '✅ Nghỉ có phép' : '❌ Nghỉ không phép'}
+                            </div>
                           </div>
                         );
                       })}
