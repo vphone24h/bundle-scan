@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Download, Users, Clock, AlertTriangle, TrendingUp } from 'lucide-react';
+import { Download, Users, Clock, AlertTriangle, TrendingUp, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { useQuery } from '@tanstack/react-query';
@@ -58,19 +58,21 @@ export function AttendanceReportTab() {
   // Aggregate by user
   const userSummary = useMemo(() => {
     if (!records) return [];
-    const map = new Map<string, { userId: string; name: string; total: number; onTime: number; late: number; absent: number; totalMinutes: number; lateMinutes: number; otMinutes: number }>();
+    const map = new Map<string, { userId: string; name: string; total: number; onTime: number; late: number; earlyLeave: number; absent: number; totalMinutes: number; lateMinutes: number; earlyLeaveMinutes: number; otMinutes: number }>();
     
     records.forEach(r => {
       if (!map.has(r.user_id)) {
-        map.set(r.user_id, { userId: r.user_id, name: profiles?.[r.user_id] || r.user_id.slice(0, 8), total: 0, onTime: 0, late: 0, absent: 0, totalMinutes: 0, lateMinutes: 0, otMinutes: 0 });
+        map.set(r.user_id, { userId: r.user_id, name: profiles?.[r.user_id] || r.user_id.slice(0, 8), total: 0, onTime: 0, late: 0, earlyLeave: 0, absent: 0, totalMinutes: 0, lateMinutes: 0, earlyLeaveMinutes: 0, otMinutes: 0 });
       }
       const u = map.get(r.user_id)!;
       u.total++;
       if (r.status === 'on_time') u.onTime++;
       if (r.status === 'late') u.late++;
       if (r.status === 'absent') u.absent++;
+      if ((r.early_leave_minutes || 0) > 0) u.earlyLeave++;
       u.totalMinutes += r.total_work_minutes || 0;
       u.lateMinutes += r.late_minutes || 0;
+      u.earlyLeaveMinutes += r.early_leave_minutes || 0;
       u.otMinutes += r.overtime_minutes || 0;
     });
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
@@ -79,13 +81,14 @@ export function AttendanceReportTab() {
   // Chart data: by day
   const chartData = useMemo(() => {
     if (!records) return [];
-    const map = new Map<string, { date: string; onTime: number; late: number; absent: number }>();
+    const map = new Map<string, { date: string; onTime: number; late: number; earlyLeave: number; absent: number }>();
     records.forEach(r => {
-      if (!map.has(r.date)) map.set(r.date, { date: r.date, onTime: 0, late: 0, absent: 0 });
+      if (!map.has(r.date)) map.set(r.date, { date: r.date, onTime: 0, late: 0, earlyLeave: 0, absent: 0 });
       const d = map.get(r.date)!;
       if (r.status === 'on_time') d.onTime++;
       else if (r.status === 'late') d.late++;
       else if (r.status === 'absent') d.absent++;
+      if ((r.early_leave_minutes || 0) > 0) d.earlyLeave++;
     });
     return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
   }, [records]);
@@ -96,10 +99,12 @@ export function AttendanceReportTab() {
       total: acc.total + u.total,
       onTime: acc.onTime + u.onTime,
       late: acc.late + u.late,
+      earlyLeave: acc.earlyLeave + u.earlyLeave,
       absent: acc.absent + u.absent,
       totalMinutes: acc.totalMinutes + u.totalMinutes,
       lateMinutes: acc.lateMinutes + u.lateMinutes,
-    }), { total: 0, onTime: 0, late: 0, absent: 0, totalMinutes: 0, lateMinutes: 0 });
+      earlyLeaveMinutes: acc.earlyLeaveMinutes + u.earlyLeaveMinutes,
+    }), { total: 0, onTime: 0, late: 0, earlyLeave: 0, absent: 0, totalMinutes: 0, lateMinutes: 0, earlyLeaveMinutes: 0 });
   }, [userSummary]);
 
   const exportExcel = () => {
@@ -109,9 +114,11 @@ export function AttendanceReportTab() {
       'Ngày công': u.total,
       'Đúng giờ': u.onTime,
       'Đi trễ': u.late,
+      'Về sớm': u.earlyLeave,
       'Vắng': u.absent,
       'Tổng giờ': `${Math.floor(u.totalMinutes / 60)}h${u.totalMinutes % 60}p`,
       'Phút trễ': u.lateMinutes,
+      'Phút về sớm': u.earlyLeaveMinutes,
       'OT (phút)': u.otMinutes,
     })));
     const wb = XLSX.utils.book_new();
@@ -168,7 +175,7 @@ export function AttendanceReportTab() {
       </div>
 
       {/* Overview cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
         <Card><CardContent className="p-3 flex items-center gap-2">
           <Users className="h-4 w-4 text-primary" />
           <div><p className="text-lg font-bold">{totals.total}</p><p className="text-[10px] text-muted-foreground">Lượt chấm công</p></div>
@@ -180,6 +187,10 @@ export function AttendanceReportTab() {
         <Card><CardContent className="p-3 flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 text-yellow-600" />
           <div><p className="text-lg font-bold">{totals.late}</p><p className="text-[10px] text-muted-foreground">Đi trễ</p></div>
+        </CardContent></Card>
+        <Card><CardContent className="p-3 flex items-center gap-2">
+          <LogOut className="h-4 w-4 text-orange-500" />
+          <div><p className="text-lg font-bold">{totals.earlyLeave}</p><p className="text-[10px] text-muted-foreground">Về sớm</p></div>
         </CardContent></Card>
         <Card><CardContent className="p-3 flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -201,6 +212,7 @@ export function AttendanceReportTab() {
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Bar dataKey="onTime" name="Đúng giờ" fill="hsl(142, 71%, 45%)" stackId="a" />
                 <Bar dataKey="late" name="Đi trễ" fill="hsl(45, 93%, 47%)" stackId="a" />
+                <Bar dataKey="earlyLeave" name="Về sớm" fill="hsl(25, 95%, 53%)" stackId="a" />
                 <Bar dataKey="absent" name="Vắng" fill="hsl(0, 84%, 60%)" stackId="a" />
               </BarChart>
             </ResponsiveContainer>
@@ -224,6 +236,7 @@ export function AttendanceReportTab() {
                       <TableHead className="text-center">Ngày công</TableHead>
                       <TableHead className="text-center">Đúng giờ</TableHead>
                       <TableHead className="text-center">Đi trễ</TableHead>
+                      <TableHead className="text-center">Về sớm</TableHead>
                       <TableHead className="text-center">Vắng</TableHead>
                       <TableHead className="text-center">Tổng giờ</TableHead>
                       <TableHead className="text-center">Trễ</TableHead>
@@ -236,6 +249,7 @@ export function AttendanceReportTab() {
                         <TableCell className="text-center">{u.total}</TableCell>
                         <TableCell className="text-center text-green-600">{u.onTime}</TableCell>
                         <TableCell className="text-center text-yellow-600">{u.late}</TableCell>
+                        <TableCell className="text-center text-orange-500">{u.earlyLeave}</TableCell>
                         <TableCell className="text-center text-destructive">{u.absent}</TableCell>
                         <TableCell className="text-center">{Math.floor(u.totalMinutes / 60)}h{u.totalMinutes % 60}p</TableCell>
                         <TableCell className="text-center">{u.lateMinutes > 0 ? <span className="text-yellow-600">{u.lateMinutes}p</span> : '-'}</TableCell>
@@ -252,6 +266,7 @@ export function AttendanceReportTab() {
                       <span>{u.total} công</span>
                       <span className="text-green-600">{u.onTime} ĐG</span>
                       <span className="text-yellow-600">{u.late} trễ</span>
+                      <span className="text-orange-500">{u.earlyLeave} về sớm</span>
                       <span className="text-destructive">{u.absent} vắng</span>
                       <span>{Math.floor(u.totalMinutes / 60)}h{u.totalMinutes % 60}p</span>
                     </div>
