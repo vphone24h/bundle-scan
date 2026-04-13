@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -64,6 +65,7 @@ export function CustomPrintTemplateList() {
   const deleteMutation = useDeleteCustomPrintTemplate();
   const duplicateMutation = useDuplicateCustomPrintTemplate();
   const setDefaultMutation = useSetDefaultCustomPrintTemplate();
+  const navigate = useNavigate();
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<CustomPrintTemplate | null>(null);
@@ -285,6 +287,9 @@ export function CustomPrintTemplateList() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => navigate(`/export/template/designer/${t.id}`)}>
+                          <FileText className="h-4 w-4 mr-2" /> Thiết kế
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openEdit(t)}>
                           <Pencil className="h-4 w-4 mr-2" /> Sửa
                         </DropdownMenuItem>

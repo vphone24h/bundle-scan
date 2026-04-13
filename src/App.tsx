@@ -34,6 +34,7 @@ const ImportHistoryPage = lazy(() => import("./pages/ImportHistoryPage"));
 const ExportNewPage = lazy(() => import("./pages/ExportNewPage"));
 const ExportHistoryPage = lazy(() => import("./pages/ExportHistoryPage"));
 const InvoiceTemplatePage = lazy(() => import("./pages/InvoiceTemplatePage"));
+const CustomPrintDesignerPage = lazy(() => import("./pages/CustomPrintDesignerPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const CashBookPage = lazy(() => import("./pages/CashBookPage"));
 const BranchesPage = lazy(() => import("./pages/BranchesPage"));
@@ -232,6 +233,7 @@ const App = () => (
                 <Route path="/export/new" element={<GuardedRoute><ExportNewPage /></GuardedRoute>} />
                 <Route path="/export/history" element={<GuardedRoute><ExportHistoryPage /></GuardedRoute>} />
                 <Route path="/export/template" element={<GuardedRoute><InvoiceTemplatePage /></GuardedRoute>} />
+                <Route path="/export/template/designer/:id" element={<GuardedRoute><CustomPrintDesignerPage /></GuardedRoute>} />
                 <Route path="/reports" element={<GuardedRoute><ReportsPage /></GuardedRoute>} />
                 <Route path="/cash-book" element={<GuardedRoute><CashBookPage /></GuardedRoute>} />
                 <Route path="/branches" element={<GuardedRoute><BranchesPage /></GuardedRoute>} />
