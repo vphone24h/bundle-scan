@@ -98,9 +98,9 @@ Deno.serve(async (req) => {
       return allRows
     }
 
-    // All tables to export (no tenant filter - export everything)
+    // ===== COMPLETE LIST OF ALL PUBLIC TABLES =====
     const allTables = [
-      // Core
+      // Core / Tenant
       'tenants',
       'companies',
       'company_settings',
@@ -114,7 +114,9 @@ Deno.serve(async (req) => {
       'platform_users',
       'user_roles',
       'user_branch_access',
+      'user_custom_permissions',
       'security_passwords',
+      'platform_settings',
 
       // Products & Inventory
       'products',
@@ -133,11 +135,17 @@ Deno.serve(async (req) => {
       'stock_transfer_requests',
       'imei_histories',
 
+      // Backup tables
+      'products_backup',
+      'import_receipts_backup',
+      'export_receipts_backup',
+      'cash_book_backup',
+      'daily_backups',
+
       // Finance
       'cash_book',
       'cash_book_categories',
       'cash_book_opening_balances',
-      'cash_book_backup',
       'debt_payments',
       'debt_settings',
       'debt_tags',
@@ -177,6 +185,8 @@ Deno.serve(async (req) => {
       'employee_salary_configs',
       'payroll_periods',
       'payroll_records',
+      'absence_reviews',
+      'overtime_requests',
 
       // Attendance
       'attendance_locations',
@@ -252,6 +262,12 @@ Deno.serve(async (req) => {
       'push_subscriptions',
       'push_vapid_keys',
 
+      // Platform-level email automations
+      'platform_email_automations',
+      'platform_email_automation_logs',
+      'platform_articles',
+      'platform_article_categories',
+
       // Affiliate
       'affiliates',
       'affiliate_referrals',
@@ -269,18 +285,66 @@ Deno.serve(async (req) => {
       'ad_gate_settings',
       'bank_accounts',
 
-      // Misc
+      // Misc / System
       'audit_logs',
       'onboarding_tours',
+      'daily_stats',
+      'data_management_jobs',
+      'edge_function_rate_limits',
     ]
 
-    for (const table of allTables) {
-      try {
-        exportData[table] = await fetchAll(table)
-      } catch (e) {
-        console.error(`Skipping ${table}:`, e)
-        exportData[table] = []
+    // Fetch all public tables in parallel batches of 10
+    const batchSize = 10
+    for (let i = 0; i < allTables.length; i += batchSize) {
+      const batch = allTables.slice(i, i + batchSize)
+      const results = await Promise.allSettled(
+        batch.map(async (table) => {
+          try {
+            return { table, rows: await fetchAll(table) }
+          } catch (e) {
+            console.error(`Skipping ${table}:`, e)
+            return { table, rows: [] }
+          }
+        })
+      )
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          exportData[result.value.table] = result.value.rows
+        }
       }
+    }
+
+    // ===== EXPORT auth.users (critical for self-hosting migration) =====
+    // Uses service role to query auth.users via admin API
+    let authUsers: any[] = []
+    try {
+      let page = 1
+      const perPage = 1000
+      while (true) {
+        const { data: { users }, error } = await adminClient.auth.admin.listUsers({
+          page,
+          perPage,
+        })
+        if (error) {
+          console.error('Error fetching auth users:', error.message)
+          break
+        }
+        if (!users || users.length === 0) break
+        authUsers.push(...users)
+        if (users.length < perPage) break
+        page++
+      }
+      // For company admin, filter users by their tenant user IDs
+      if (companyTenantIds) {
+        const tenantUserIds = new Set<string>()
+        for (const table of ['platform_users', 'user_roles']) {
+          const rows = exportData[table] || []
+          rows.forEach((r: any) => tenantUserIds.add(r.user_id))
+        }
+        authUsers = authUsers.filter(u => tenantUserIds.has(u.id))
+      }
+    } catch (e) {
+      console.error('Failed to export auth.users:', e)
     }
 
     // Summary
@@ -290,16 +354,20 @@ Deno.serve(async (req) => {
       summary[table] = rows.length
       totalRows += rows.length
     }
+    summary['auth.users'] = authUsers.length
+    totalRows += authUsers.length
 
     const result = {
       _metadata: {
-        export_type: 'full_project',
+        export_type: 'full_project_selfhost',
         exported_at: new Date().toISOString(),
         exported_by: user.email,
-        total_tables: Object.keys(exportData).length,
+        total_tables: Object.keys(exportData).length + 1, // +1 for auth.users
         total_rows: totalRows,
         summary,
+        notes: 'Includes auth.users for self-hosting migration. Import auth.users first, then public tables in order.',
       },
+      auth_users: authUsers,
       data: exportData,
     }
 
@@ -307,7 +375,7 @@ Deno.serve(async (req) => {
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/json',
-        'Content-Disposition': `attachment; filename="full_project_export_${new Date().toISOString().slice(0, 10)}.json"`,
+        'Content-Disposition': `attachment; filename="full_selfhost_export_${new Date().toISOString().slice(0, 10)}.json"`,
       },
     })
   } catch (error) {
