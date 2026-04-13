@@ -355,7 +355,7 @@ export function TransferStockDialog({
         </DialogHeader>
         <div className="flex flex-col gap-2 pt-2">
           {printData && (
-            <StockTransferPrintReceipt data={printData} />
+            <StockTransferPrintReceipt data={printData} canViewPrice={canViewPrice} />
           )}
           <Button variant="ghost" onClick={() => { setPrintData(null); onOpenChange(false); }}>
             Bỏ qua
