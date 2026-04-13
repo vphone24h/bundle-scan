@@ -3,12 +3,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Clock, MapPin, Smartphone, Download, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Clock, MapPin, Smartphone, Download, Loader2, Pencil } from 'lucide-react';
 import { useAttendanceRecords, useAttendanceLocations } from '@/hooks/useAttendance';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -24,11 +27,24 @@ const statusConfig: Record<string, { label: string; class: string }> = {
   day_off: { label: 'Nghỉ', class: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400' },
 };
 
+interface EditForm {
+  check_in_time: string;
+  check_out_time: string;
+  status: string;
+  note: string;
+  securityPin: string;
+  reason: string;
+}
+
 export function AttendanceHistoryTab() {
   const [dateFilter, setDateFilter] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [userFilter, setUserFilter] = useState('_all');
   const [locationFilter, setLocationFilter] = useState('_all');
   const [exporting, setExporting] = useState(false);
+  const [editRecord, setEditRecord] = useState<any>(null);
+  const [editForm, setEditForm] = useState<EditForm>({ check_in_time: '', check_out_time: '', status: '', note: '', securityPin: '', reason: '' });
+  const [saving, setSaving] = useState(false);
+  const qc = useQueryClient();
 
   const { data: records, isLoading } = useAttendanceRecords({
     date: dateFilter || undefined,
@@ -37,7 +53,6 @@ export function AttendanceHistoryTab() {
   });
   const { data: locations } = useAttendanceLocations();
 
-  // Fetch profiles for user names
   const userIds = [...new Set(records?.map(r => r.user_id) || [])];
   const { data: profiles } = useQuery({
     queryKey: ['profiles-batch', userIds],
@@ -49,7 +64,6 @@ export function AttendanceHistoryTab() {
     enabled: userIds.length > 0,
   });
 
-  // Get unique users for filter
   const { data: allProfiles } = useQuery({
     queryKey: ['all-tenant-profiles'],
     queryFn: async () => {
@@ -77,15 +91,11 @@ export function AttendanceHistoryTab() {
         'Ca': (r.work_shifts as any)?.name || '',
         'Ghi chú': r.note || '',
       }));
-
       const ws = XLSX.utils.json_to_sheet(rows);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Chấm công');
-
-      // Auto column width
       const maxWidths = Object.keys(rows[0]).map(key => Math.max(key.length, ...rows.map(r => String((r as any)[key]).length)));
       ws['!cols'] = maxWidths.map(w => ({ wch: Math.min(w + 2, 30) }));
-
       XLSX.writeFile(wb, `cham-cong-${dateFilter || 'all'}.xlsx`);
       toast.success('Xuất Excel thành công');
     } catch (err: any) {
@@ -94,6 +104,96 @@ export function AttendanceHistoryTab() {
       setExporting(false);
     }
   }, [records, profiles, dateFilter]);
+
+  const openEdit = (r: any) => {
+    setEditRecord(r);
+    setEditForm({
+      check_in_time: r.check_in_time ? format(new Date(r.check_in_time), "yyyy-MM-dd'T'HH:mm") : '',
+      check_out_time: r.check_out_time ? format(new Date(r.check_out_time), "yyyy-MM-dd'T'HH:mm") : '',
+      status: r.status,
+      note: r.note || '',
+      securityPin: '',
+      reason: '',
+    });
+  };
+
+  const handleEditSave = async () => {
+    if (!editRecord) return;
+    if (!editForm.securityPin.trim()) { toast.error('Vui lòng nhập mật khẩu bảo mật'); return; }
+    if (!editForm.reason.trim()) { toast.error('Vui lòng nhập lý do sửa'); return; }
+
+    setSaving(true);
+    try {
+      // Verify security password
+      const pinHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(editForm.securityPin + 'vkho_security_salt_2024'));
+      const hashHex = Array.from(new Uint8Array(pinHash)).map(b => b.toString(16).padStart(2, '0')).join('');
+      const { data: valid } = await supabase.rpc('verify_security_password_hash', { p_hash: hashHex });
+      if (!valid) { toast.error('Mật khẩu bảo mật không đúng'); setSaving(false); return; }
+
+      // Save old data for audit
+      const oldData = {
+        check_in_time: editRecord.check_in_time,
+        check_out_time: editRecord.check_out_time,
+        status: editRecord.status,
+        note: editRecord.note,
+      };
+
+      // Calculate work minutes
+      let totalMinutes = editRecord.total_work_minutes;
+      if (editForm.check_in_time && editForm.check_out_time) {
+        const diff = new Date(editForm.check_out_time).getTime() - new Date(editForm.check_in_time).getTime();
+        totalMinutes = Math.max(0, Math.round(diff / 60000));
+      }
+
+      const updates: any = {
+        check_in_time: editForm.check_in_time ? new Date(editForm.check_in_time).toISOString() : null,
+        check_out_time: editForm.check_out_time ? new Date(editForm.check_out_time).toISOString() : null,
+        status: editForm.status,
+        note: editForm.note || null,
+        total_work_minutes: totalMinutes,
+      };
+
+      const { error } = await supabase.from('attendance_records').update(updates).eq('id', editRecord.id);
+      if (error) throw error;
+
+      // Log audit
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from('attendance_corrections').insert({
+        attendance_id: editRecord.id,
+        corrected_by: user!.id,
+        reason: editForm.reason,
+        old_data: oldData,
+        new_data: updates,
+        tenant_id: editRecord.tenant_id,
+      });
+
+      // Also log to audit_logs
+      await supabase.from('audit_logs').insert({
+        action_type: 'attendance_manual_edit',
+        table_name: 'attendance_records',
+        record_id: editRecord.id,
+        user_id: user!.id,
+        tenant_id: editRecord.tenant_id,
+        old_data: oldData,
+        new_data: updates,
+        description: `Sửa công: ${editForm.reason}`,
+      });
+
+      qc.invalidateQueries({ queryKey: ['attendance-records'] });
+      toast.success('Đã sửa bản ghi chấm công');
+      setEditRecord(null);
+    } catch (err: any) {
+      toast.error('Lỗi: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const renderEditBtn = (r: any) => (
+    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(r)} title="Sửa công">
+      <Pencil className="h-3.5 w-3.5" />
+    </Button>
+  );
 
   return (
     <div className="space-y-4">
@@ -105,7 +205,6 @@ export function AttendanceHistoryTab() {
         </Button>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <Input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} className="w-auto" />
         <Select value={userFilter} onValueChange={setUserFilter}>
@@ -151,6 +250,7 @@ export function AttendanceHistoryTab() {
                     <TableHead>Trễ</TableHead>
                     <TableHead>Địa điểm</TableHead>
                     <TableHead>PP</TableHead>
+                    <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -168,6 +268,7 @@ export function AttendanceHistoryTab() {
                         <TableCell>{r.late_minutes > 0 ? <span className="text-yellow-600 text-sm">{r.late_minutes}p</span> : '-'}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">{r.attendance_locations?.name || '-'}</TableCell>
                         <TableCell className="uppercase text-xs text-muted-foreground">{r.check_in_method || '-'}</TableCell>
+                        <TableCell>{renderEditBtn(r)}</TableCell>
                       </TableRow>
                     );
                   })}
@@ -185,7 +286,10 @@ export function AttendanceHistoryTab() {
                   <CardContent className="p-3 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-sm">{profiles?.[r.user_id]?.name || r.user_id.slice(0, 8)}</span>
-                      <Badge className={`text-[10px] ${st.class}`}>{st.label}</Badge>
+                      <div className="flex items-center gap-1">
+                        <Badge className={`text-[10px] ${st.class}`}>{st.label}</Badge>
+                        {renderEditBtn(r)}
+                      </div>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
@@ -206,6 +310,63 @@ export function AttendanceHistoryTab() {
           </div>
         </>
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editRecord} onOpenChange={v => !v && setEditRecord(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sửa bản ghi chấm công</DialogTitle>
+          </DialogHeader>
+          {editRecord && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Nhân viên: <strong>{profiles?.[editRecord.user_id]?.name || editRecord.user_id.slice(0, 8)}</strong> · Ngày: <strong>{editRecord.date}</strong>
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Check-in</Label>
+                  <Input type="datetime-local" value={editForm.check_in_time} onChange={e => setEditForm(p => ({ ...p, check_in_time: e.target.value }))} />
+                </div>
+                <div>
+                  <Label>Check-out</Label>
+                  <Input type="datetime-local" value={editForm.check_out_time} onChange={e => setEditForm(p => ({ ...p, check_out_time: e.target.value }))} />
+                </div>
+              </div>
+              <div>
+                <Label>Trạng thái</Label>
+                <Select value={editForm.status} onValueChange={v => setEditForm(p => ({ ...p, status: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(statusConfig).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Ghi chú</Label>
+                <Input value={editForm.note} onChange={e => setEditForm(p => ({ ...p, note: e.target.value }))} placeholder="Ghi chú..." />
+              </div>
+              <hr />
+              <div>
+                <Label className="text-destructive">Lý do sửa công *</Label>
+                <Textarea value={editForm.reason} onChange={e => setEditForm(p => ({ ...p, reason: e.target.value }))} placeholder="VD: Nhân viên quên checkout, đã xác nhận với quản lý..." rows={2} />
+              </div>
+              <div>
+                <Label className="text-destructive">Mật khẩu bảo mật *</Label>
+                <Input type="password" value={editForm.securityPin} onChange={e => setEditForm(p => ({ ...p, securityPin: e.target.value }))} placeholder="Nhập mật khẩu bảo mật" />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditRecord(null)}>Hủy</Button>
+            <Button onClick={handleEditSave} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+              Xác nhận sửa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
