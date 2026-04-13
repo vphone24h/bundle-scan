@@ -284,11 +284,14 @@ Deno.serve(async (req) => {
       const userAssignments = shiftAssignments.filter((sa: any) => sa.user_id === employee.user_id);
       const hasSchedule = userAssignments.length > 0;
       const hasSalaryTemplate = !!templateId;
-      // When enable_overtime is OFF: no schedule required, payroll works with just a template
-      // When enable_overtime is ON: schedule is required for overtime calculation
-      const isPayrollReady = hasSalaryTemplate && (enableOvertime ? hasSchedule : true);
+      // Schedule requirements per salary type:
+      // - shift: ALWAYS requires schedule (to match completed shifts)
+      // - fixed/daily/hourly with overtime ON: requires schedule
+      // - fixed/daily/hourly with overtime OFF: no schedule needed
+      const needsSchedule = salaryType === "shift" || enableOvertime;
+      const isPayrollReady = hasSalaryTemplate && (needsSchedule ? hasSchedule : true);
       const missingSetupReasons = [
-        ...(enableOvertime && !hasSchedule ? ["missing_schedule"] : []),
+        ...(needsSchedule && !hasSchedule ? ["missing_schedule"] : []),
         ...(!hasSalaryTemplate ? ["missing_salary_template"] : []),
       ];
 
