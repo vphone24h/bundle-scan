@@ -42,6 +42,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 
 export default function StockTransferPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { data: permissions } = usePermissions();
   const { data: branches } = useAccessibleBranches();
   const { data: requests, isLoading } = useStockTransferRequests();
