@@ -301,7 +301,7 @@ export function OvertimeReviewsTab() {
                       <TableCell className="text-xs">{item.request_date}</TableCell>
                       <TableCell className="text-xs">
                         <Badge variant={item.request_type === 'day_off' ? 'default' : 'secondary'} className="text-[10px]">
-                          {item.request_type === 'day_off' ? 'Ngày nghỉ' : 'Ngoài giờ'}
+                          {item.request_type === 'day_off' ? 'Ngày nghỉ' : item.request_type === 'early_checkin' ? 'Sớm ca' : 'Ngoài giờ'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs">
