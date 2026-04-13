@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
@@ -41,6 +42,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 
 export default function StockTransferPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { data: permissions } = usePermissions();
   const { data: branches } = useAccessibleBranches();
   const { data: requests, isLoading } = useStockTransferRequests();
@@ -62,7 +64,8 @@ export default function StockTransferPage() {
     if (!requests) return [];
     return requests.filter(r => {
       if (isSuperAdmin) return true;
-      return r.from_branch_id === userBranchId;
+      // Show transfers from user's branch OR created by the current user
+      return r.from_branch_id === userBranchId || r.created_by === user?.id;
     }).filter(r => {
       if (!searchTerm) return true;
       const s = searchTerm.toLowerCase();
@@ -72,7 +75,7 @@ export default function StockTransferPage() {
         r.note?.toLowerCase().includes(s)
       );
     });
-  }, [requests, isSuperAdmin, userBranchId, searchTerm]);
+  }, [requests, isSuperAdmin, userBranchId, searchTerm, user?.id]);
 
   const incomingRequests = useMemo(() => {
     if (!requests) return [];
