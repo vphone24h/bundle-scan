@@ -25,6 +25,7 @@ import { useBranches, Branch } from '@/hooks/useBranches';
 import { useCreateStockTransfer } from '@/hooks/useStockTransfers';
 import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { formatCurrency } from '@/lib/mockData';
 import { StockTransferPrintReceipt, type TransferPrintData } from '@/components/import/StockTransferPrintReceipt';
 import type { Product } from '@/hooks/useProducts';
@@ -57,6 +58,7 @@ export function TransferStockDialog({
   const [printData, setPrintData] = useState<TransferPrintData | null>(null);
 
   const isSuperAdmin = permissions?.role === 'super_admin';
+  const canViewPrice = permissions?.canViewInventoryImportPrice ?? false;
 
   // Initialize quantities when products change
   const getTransferQty = (product: Product) => {
@@ -264,9 +266,11 @@ export function TransferStockDialog({
                           )}
                         </div>
                       </div>
-                      <Badge variant="outline" className="text-xs flex-shrink-0">
-                        {formatCurrency(Number(product.import_price) * transferQty)}
-                      </Badge>
+                      {canViewPrice && (
+                        <Badge variant="outline" className="text-xs flex-shrink-0">
+                          {formatCurrency(Number(product.import_price) * transferQty)}
+                        </Badge>
+                      )}
                     </div>
 
                     {/* Quantity input for non-IMEI products */}
@@ -308,10 +312,12 @@ export function TransferStockDialog({
           </div>
 
           {/* Total value */}
-          <div className="flex justify-between items-center p-3 bg-primary/5 rounded-lg border border-primary/20">
-            <span className="text-sm font-medium">Tổng giá trị</span>
-            <span className="font-bold text-primary">{formatCurrency(totalValue)}</span>
-          </div>
+          {canViewPrice && (
+            <div className="flex justify-between items-center p-3 bg-primary/5 rounded-lg border border-primary/20">
+              <span className="text-sm font-medium">Tổng giá trị</span>
+              <span className="font-bold text-primary">{formatCurrency(totalValue)}</span>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
