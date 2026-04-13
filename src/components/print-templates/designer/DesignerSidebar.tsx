@@ -4,13 +4,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import {
   Type, Image as ImageIcon, GripVertical, Table,
   Store, User, FileText, DollarSign, LayoutTemplate,
+  Smartphone, ShoppingBag,
 } from 'lucide-react';
 import { DYNAMIC_FIELDS, genId, type TemplateElement } from './types';
-import { PRESET_BLOCKS } from './presets';
+import { PRESET_BLOCKS, FULL_PAGE_PRESETS } from './presets';
 
 const ICON_MAP: Record<string, any> = {
   Store, User, FileText, DollarSign, LayoutTemplate, Table,
 };
+
+const FULL_PRESET_ICONS = [Smartphone, ShoppingBag];
 
 interface Props {
   onAddElement: (el: Omit<TemplateElement, 'id'>) => void;
@@ -20,6 +23,34 @@ interface Props {
 export function DesignerSidebar({ onAddElement, onAddPreset }: Props) {
   return (
     <div className="w-full lg:w-56 shrink-0 space-y-3">
+      {/* Full page presets */}
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="p-3 space-y-2">
+          <p className="text-xs font-semibold text-primary uppercase">⚡ Mẫu hoàn chỉnh</p>
+          <p className="text-[10px] text-muted-foreground">Nhấn để tải toàn bộ mẫu lên canvas</p>
+          <div className="space-y-1.5">
+            {FULL_PAGE_PRESETS.map((preset, i) => {
+              const Icon = FULL_PRESET_ICONS[i] || FileText;
+              return (
+                <Button
+                  key={preset.name}
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs justify-start h-auto py-2 border-primary/20"
+                  onClick={() => onAddPreset(preset.elements)}
+                >
+                  <Icon className="h-3.5 w-3.5 mr-1.5 text-primary shrink-0" />
+                  <div className="text-left">
+                    <div className="font-medium">{preset.name}</div>
+                    <div className="text-[10px] text-muted-foreground font-normal">{preset.description}</div>
+                  </div>
+                </Button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardContent className="p-3 space-y-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase">Thêm thành phần</p>
@@ -79,7 +110,7 @@ export function DesignerSidebar({ onAddElement, onAddPreset }: Props) {
 
       <Card>
         <CardContent className="p-3 space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase">Mẫu dựng sẵn</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase">Khối dựng sẵn</p>
           <div className="space-y-1">
             {PRESET_BLOCKS.map((preset) => {
               const Icon = ICON_MAP[preset.icon] || FileText;
