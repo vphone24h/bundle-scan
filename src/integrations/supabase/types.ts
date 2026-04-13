@@ -6988,6 +6988,7 @@ export type Database = {
           commission_percent: number
           created_at: string
           description: string | null
+          enable_overtime: boolean
           holiday_enabled: boolean
           id: string
           is_active: boolean
@@ -7010,6 +7011,7 @@ export type Database = {
           commission_percent?: number
           created_at?: string
           description?: string | null
+          enable_overtime?: boolean
           holiday_enabled?: boolean
           id?: string
           is_active?: boolean
@@ -7032,6 +7034,7 @@ export type Database = {
           commission_percent?: number
           created_at?: string
           description?: string | null
+          enable_overtime?: boolean
           holiday_enabled?: boolean
           id?: string
           is_active?: boolean

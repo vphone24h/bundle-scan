@@ -96,6 +96,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
   const [holidayEnabled, setHolidayEnabled] = useState(false);
   const [penaltyEnabled, setPenaltyEnabled] = useState(false);
   const [overtimeEnabled, setOvertimeEnabled] = useState(false);
+  const [enableOvertime, setEnableOvertime] = useState(false);
 
   const [bonuses, setBonuses] = useState<BonusRow[]>([]);
   const [commissions, setCommissions] = useState<CommissionRow[]>([]);
@@ -124,6 +125,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
       setHolidayEnabled((existing as any).holiday_enabled || false);
       setPenaltyEnabled((existing as any).penalty_enabled || false);
       setOvertimeEnabled((existing as any).overtime_enabled || false);
+      setEnableOvertime((existing as any).enable_overtime || false);
     }
   }, [existing]);
 
@@ -148,6 +150,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
       holiday_enabled: holidayEnabled,
       penalty_enabled: penaltyEnabled,
       overtime_enabled: overtimeEnabled,
+      enable_overtime: enableOvertime,
     };
 
     try {
@@ -227,6 +230,11 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
               <Label className="text-xs">Mô tả</Label>
               <Input placeholder="Ghi chú" value={description} onChange={e => setDescription(e.target.value)} />
             </div>
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            <Switch checked={enableOvertime} onCheckedChange={setEnableOvertime} />
+            <Label className="text-xs">Tính tăng ca cho mẫu lương này</Label>
+            <p className="text-[10px] text-muted-foreground ml-1">(Bật nếu NV được tính lương tăng ca)</p>
           </div>
         </CardContent>
       </Card>
