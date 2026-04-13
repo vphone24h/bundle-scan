@@ -284,11 +284,14 @@ Deno.serve(async (req) => {
       const userAssignments = shiftAssignments.filter((sa: any) => sa.user_id === employee.user_id);
       const hasSchedule = userAssignments.length > 0;
       const hasSalaryTemplate = !!templateId;
-      // When enable_overtime is OFF: no schedule required, payroll works with just a template
-      // When enable_overtime is ON: schedule is required for overtime calculation
-      const isPayrollReady = hasSalaryTemplate && (enableOvertime ? hasSchedule : true);
+      // Schedule requirements per salary type:
+      // - shift: ALWAYS requires schedule (to match completed shifts)
+      // - fixed/daily/hourly with overtime ON: requires schedule
+      // - fixed/daily/hourly with overtime OFF: no schedule needed
+      const needsSchedule = salaryType === "shift" || enableOvertime;
+      const isPayrollReady = hasSalaryTemplate && (needsSchedule ? hasSchedule : true);
       const missingSetupReasons = [
-        ...(enableOvertime && !hasSchedule ? ["missing_schedule"] : []),
+        ...(needsSchedule && !hasSchedule ? ["missing_schedule"] : []),
         ...(!hasSalaryTemplate ? ["missing_salary_template"] : []),
       ];
 
@@ -371,12 +374,16 @@ Deno.serve(async (req) => {
       } else if (salaryType === "fixed") {
         baseSalary = baseAmount;
       } else if (salaryType === "daily") {
+        // Lương theo ngày: base_amount = lương/ngày × số ngày có mặt
         baseSalary = baseAmount * workDays;
       } else if (salaryType === "hourly") {
         baseSalary = baseAmount * (totalMinutes / 60);
       } else if (salaryType === "shift") {
-        const shiftDays = userAttendance.filter((a: any) => a.check_in_time && a.shift_id && a.status !== "absent").length;
-        baseSalary = baseAmount * shiftDays;
+        // Lương theo ca: chỉ tính ca hoàn thành (có check-in + check-out + shift_id)
+        const completedShifts = userAttendance.filter((a: any) =>
+          a.check_in_time && a.check_out_time && a.shift_id && a.status !== "absent"
+        ).length;
+        baseSalary = baseAmount * completedShifts;
       }
 
       // ===== 2. BONUS (with real sales data) =====
@@ -623,7 +630,8 @@ Deno.serve(async (req) => {
             count = effectiveUnexcused;
             
             // For fixed salary: deduct 1 day salary per unexcused absence
-            if (count > 0 && salaryType === "fixed" && baseSalary > 0) {
+            // For daily/shift: already not counted in base, but apply penalty amount
+            if (count > 0 && (salaryType === "fixed") && baseSalary > 0) {
               const dailyRate = baseAmount / (expectedWorkDays || 22);
               const absenceDeduction = Math.round(dailyRate * count);
               penaltyFullDayAbsenceDays += count;
@@ -637,6 +645,8 @@ Deno.serve(async (req) => {
                 detail: `${count} ngày nghỉ không phép x ${Math.round(dailyRate)}đ/ngày`,
               });
             }
+            // For daily/shift: absence is already "not paid" (no work = no pay)
+            // But still record info for transparency
             
             detail = `${absentCount} ngày vắng (${excusedCount} có phép, ${unexcusedCount} không phép)`;
             // For the penalty amount (p.amount per violation), only apply to unexcused
@@ -663,11 +673,13 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Deduct full-day absences from base salary for daily/shift/fixed types
+        // Deduct full-day absences from base salary
+        // For daily/shift: baseAmount IS the daily/shift rate
+        // For fixed: derive from monthly salary
         if (penaltyFullDayAbsenceDays > 0 && baseSalary > 0) {
-          const dailyRate = salaryType === "fixed"
+          const dailyRate = (salaryType === "fixed")
             ? (baseAmount / (expectedWorkDays || 22))
-            : baseAmount;
+            : baseAmount; // daily/shift/hourly: baseAmount is already the unit rate
           const deduction = Math.round(dailyRate * penaltyFullDayAbsenceDays);
           totalPenalty += deduction;
           penaltyDetails.push({
@@ -775,6 +787,9 @@ Deno.serve(async (req) => {
           salary_type: salaryType,
           base_amount: baseAmount,
           expected_work_days: expectedWorkDays,
+          completed_shifts: salaryType === "shift"
+            ? userAttendance.filter((a: any) => a.check_in_time && a.check_out_time && a.shift_id && a.status !== "absent").length
+            : undefined,
           user_revenue: userRevenue,
           branch_revenue: branchRevenue,
           overtime_details: overtimeDetails,
