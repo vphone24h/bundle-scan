@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, MapPin, QrCode, Pencil, Copy } from 'lucide-react';
-import { useAttendanceLocations, useCreateAttendanceLocation, useUpdateAttendanceLocation } from '@/hooks/useAttendance';
+import { Plus, MapPin, QrCode, Pencil, Trash2, Search, Loader2 } from 'lucide-react';
+import { useAttendanceLocations, useCreateAttendanceLocation, useUpdateAttendanceLocation, useDeleteAttendanceLocation } from '@/hooks/useAttendance';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { useAccessibleBranches } from '@/hooks/usePermissions';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,9 +31,12 @@ export function AttendanceLocationsTab() {
   const { data: pu } = usePlatformUser();
   const createLoc = useCreateAttendanceLocation();
   const updateLoc = useUpdateAttendanceLocation();
+  const deleteLoc = useDeleteAttendanceLocation();
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<LocForm>(defaultForm);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [geocoding, setGeocoding] = useState(false);
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) { toast.error('Trình duyệt không hỗ trợ GPS'); return; }
@@ -44,6 +48,30 @@ export function AttendanceLocationsTab() {
       () => toast.error('Không thể lấy vị trí'),
       { enableHighAccuracy: true }
     );
+  };
+
+  const handleGeocodeAddress = async () => {
+    if (!form.address.trim()) { toast.error('Vui lòng nhập địa chỉ trước'); return; }
+    setGeocoding(true);
+    try {
+      const query = encodeURIComponent(form.address.trim());
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1&countrycodes=vn`);
+      const data = await res.json();
+      if (data?.length > 0) {
+        setForm(p => ({
+          ...p,
+          latitude: parseFloat(data[0].lat).toFixed(6),
+          longitude: parseFloat(data[0].lon).toFixed(6),
+        }));
+        toast.success(`Đã tìm thấy tọa độ: ${data[0].display_name?.slice(0, 60)}`);
+      } else {
+        toast.error('Không tìm thấy địa chỉ. Thử nhập chi tiết hơn.');
+      }
+    } catch {
+      toast.error('Lỗi kết nối dịch vụ bản đồ');
+    } finally {
+      setGeocoding(false);
+    }
   };
 
   const handleOpen = (loc?: any) => {
@@ -75,6 +103,12 @@ export function AttendanceLocationsTab() {
       await createLoc.mutateAsync(payload);
     }
     setOpen(false);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    await deleteLoc.mutateAsync(deleteId);
+    setDeleteId(null);
   };
 
   if (isLoading) return <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-20 w-full" />)}</div>;
@@ -121,6 +155,9 @@ export function AttendanceLocationsTab() {
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpen(loc)}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(loc.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -129,6 +166,7 @@ export function AttendanceLocationsTab() {
         </div>
       )}
 
+      {/* Create/Edit Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -141,7 +179,13 @@ export function AttendanceLocationsTab() {
             </div>
             <div>
               <Label>Địa chỉ</Label>
-              <Input value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} placeholder="VD: 123 Nguyễn Văn A" />
+              <div className="flex gap-2">
+                <Input value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} placeholder="VD: 54 Ngõ 668 Triều Khúc, Hà Nội" className="flex-1" />
+                <Button variant="outline" size="icon" onClick={handleGeocodeAddress} disabled={geocoding} title="Tìm tọa độ từ địa chỉ">
+                  {geocoding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1">Nhập địa chỉ rồi bấm 🔍 để tự lấy tọa độ</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -154,7 +198,7 @@ export function AttendanceLocationsTab() {
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={handleGetCurrentLocation} className="gap-1.5 w-full">
-              <MapPin className="h-3.5 w-3.5" /> Lấy vị trí hiện tại
+              <MapPin className="h-3.5 w-3.5" /> Lấy vị trí hiện tại (GPS)
             </Button>
             <div>
               <Label>Bán kính cho phép (50-500m)</Label>
@@ -181,6 +225,20 @@ export function AttendanceLocationsTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirm */}
+      <AlertDialog open={!!deleteId} onOpenChange={v => !v && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xóa điểm chấm công?</AlertDialogTitle>
+            <AlertDialogDescription>Điểm này sẽ bị vô hiệu hóa. Các bản ghi chấm công cũ vẫn được giữ nguyên.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

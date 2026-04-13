@@ -131,6 +131,21 @@ export function useUpdateAttendanceLocation() {
   });
 }
 
+export function useDeleteAttendanceLocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('attendance_locations').update({ is_active: false }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['attendance-locations'] });
+      toast.success('Đã xóa điểm chấm công');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 // ============ Trusted Devices ============
 export function useTrustedDevices() {
   const { data: pu } = usePlatformUser();
