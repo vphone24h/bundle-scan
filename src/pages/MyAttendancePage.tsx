@@ -465,6 +465,11 @@ export default function MyAttendancePage() {
             </Card>
           </TabsContent>
 
+          {/* Leave Requests Tab */}
+          <TabsContent value="leave">
+            <EmployeeLeaveRequests userId={user?.id} tenantId={tenantId} />
+          </TabsContent>
+
           {/* Correction Requests Tab */}
           <TabsContent value="corrections">
             <EmployeeCorrectionRequests userId={user?.id} tenantId={tenantId} />
