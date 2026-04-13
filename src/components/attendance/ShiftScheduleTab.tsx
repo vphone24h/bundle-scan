@@ -224,6 +224,7 @@ export function ShiftScheduleTab() {
               {weekDays.map((day) => {
                 const dateStr = format(day, 'yyyy-MM-dd');
                 const dayAssignments = getAssignmentsForDay(dateStr);
+                const dayLeaves = leaveMap.get(dateStr) || [];
                 const isToday = dateStr === format(new Date(), 'yyyy-MM-dd');
 
                 return (
