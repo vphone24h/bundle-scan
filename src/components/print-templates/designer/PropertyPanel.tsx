@@ -113,9 +113,22 @@ export function PropertyPanel({ element, onUpdate, onDelete, onDuplicate, onMove
           <>
             <Separator />
             {element.type === 'text' && (
-              <div>
+              <div className="space-y-1">
                 <Label className="text-[10px]">Nội dung</Label>
-                <Input className="h-7 text-xs" value={element.content || ''} onChange={(e) => onUpdate(element.id, { content: e.target.value })} />
+                <textarea
+                  className="w-full min-h-[60px] rounded-md border border-input bg-background px-2 py-1 text-xs resize-y focus:outline-none focus:ring-1 focus:ring-ring"
+                  value={element.content || ''}
+                  onChange={(e) => onUpdate(element.id, { content: e.target.value })}
+                  rows={3}
+                />
+                <div className="flex gap-1 flex-wrap">
+                  {['•', '–', '✓', '★', '▸', '■'].map((ch) => (
+                    <Button key={ch} type="button" size="sm" variant="outline" className="h-6 w-6 p-0 text-xs"
+                      onClick={() => onUpdate(element.id, { content: (element.content || '') + ch + ' ' })}>
+                      {ch}
+                    </Button>
+                  ))}
+                </div>
               </div>
             )}
             {element.type === 'dynamic' && (
