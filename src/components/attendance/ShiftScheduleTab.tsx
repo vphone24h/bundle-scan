@@ -258,6 +258,23 @@ export function ShiftScheduleTab() {
                           </div>
                         );
                       })}
+                      {dayLeaves.map((leave, idx) => {
+                        const staffName = staffList?.find((s: any) => s.user_id === leave.user_id);
+                        const isExcused = leave.status === 'approved';
+                        return (
+                          <div
+                            key={`leave-${idx}`}
+                            className={`text-[10px] p-1 rounded ${isExcused ? 'bg-green-100 dark:bg-green-900/30 border-l-2 border-green-500' : 'bg-red-100 dark:bg-red-900/30 border-l-2 border-red-500'}`}
+                          >
+                            <div className={`font-medium truncate ${isExcused ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+                              {staffName?.display_name || leave.user_id.slice(0, 6)}
+                            </div>
+                            <div className={`${isExcused ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                              {isExcused ? '✅ Nghỉ có phép' : '❌ Nghỉ không phép'}
+                            </div>
+                          </div>
+                        );
+                      })}
                       <button
                         className="w-full text-[10px] text-muted-foreground hover:text-primary py-0.5 flex items-center justify-center gap-0.5"
                         onClick={() => { setSelectedDate(dateStr); setAddOpen(true); }}
