@@ -673,11 +673,13 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Deduct full-day absences from base salary for daily/shift/fixed types
+        // Deduct full-day absences from base salary
+        // For daily/shift: baseAmount IS the daily/shift rate
+        // For fixed: derive from monthly salary
         if (penaltyFullDayAbsenceDays > 0 && baseSalary > 0) {
-          const dailyRate = salaryType === "fixed"
+          const dailyRate = (salaryType === "fixed")
             ? (baseAmount / (expectedWorkDays || 22))
-            : baseAmount;
+            : baseAmount; // daily/shift/hourly: baseAmount is already the unit rate
           const deduction = Math.round(dailyRate * penaltyFullDayAbsenceDays);
           totalPenalty += deduction;
           penaltyDetails.push({
