@@ -1,4 +1,4 @@
-import type { TemplateElement } from '@/pages/CustomPrintDesignerPage';
+import type { TemplateElement } from '@/components/print-templates/designer/types';
 import type { CustomPrintTemplate } from '@/hooks/useCustomPrintTemplates';
 
 /**
