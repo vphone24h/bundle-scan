@@ -28,6 +28,8 @@ import { useUsersGuideUrl } from '@/hooks/useAppConfig';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { useAttendanceEnabled } from '@/hooks/useAttendanceEnabled';
+import { usePendingApprovals } from '@/hooks/usePendingApprovals';
+import { PendingBadge } from '@/components/ui/pending-badge';
 // Attendance tabs
 import { AttendanceDashboardTab } from '@/components/attendance/AttendanceDashboardTab';
 import { WorkShiftsTab } from '@/components/attendance/WorkShiftsTab';
@@ -146,6 +148,7 @@ export default function UsersPage() {
   const usersGuideUrl = useUsersGuideUrl();
   const { user } = useAuth();
   const { enabled: attendanceEnabled } = useAttendanceEnabled();
+  const pending = usePendingApprovals();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
@@ -273,10 +276,11 @@ export default function UsersPage() {
               </TabsTrigger>
               {attendanceEnabled && (
                 <>
-                  <TabsTrigger value="attendance" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-                    <Fingerprint className="h-3.5 w-3.5" />
-                    <span>Chấm công</span>
-                  </TabsTrigger>
+                   <TabsTrigger value="attendance" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                     <Fingerprint className="h-3.5 w-3.5" />
+                     <span>Chấm công</span>
+                     <PendingBadge count={pending.attendanceTotal} />
+                   </TabsTrigger>
                   <TabsTrigger value="setup" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
                     <Settings2 className="h-3.5 w-3.5" />
                     <span>Cài đặt</span>
@@ -286,6 +290,7 @@ export default function UsersPage() {
               <TabsTrigger value="payroll" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
                 <CreditCard className="h-3.5 w-3.5" />
                 <span>Bảng lương</span>
+                <PendingBadge count={pending.payrollTotal} />
               </TabsTrigger>
             </TabsList>
           </div>
@@ -472,7 +477,7 @@ export default function UsersPage() {
                 <TabsTrigger value="shifts" className="gap-1 text-xs px-2 py-1.5">Ca làm</TabsTrigger>
                 <TabsTrigger value="schedule" className="gap-1 text-xs px-2 py-1.5">Xếp ca</TabsTrigger>
                 <TabsTrigger value="history" className="gap-1 text-xs px-2 py-1.5">Lịch sử</TabsTrigger>
-                <TabsTrigger value="corrections" className="gap-1 text-xs px-2 py-1.5">Sửa công</TabsTrigger>
+                <TabsTrigger value="corrections" className="gap-1 text-xs px-2 py-1.5">Sửa công <PendingBadge count={pending.corrections} /></TabsTrigger>
                 <TabsTrigger value="report" className="gap-1 text-xs px-2 py-1.5">Báo cáo</TabsTrigger>
                 <TabsTrigger value="locations" className="gap-1 text-xs px-2 py-1.5">Điểm CC</TabsTrigger>
                 <TabsTrigger value="devices" className="gap-1 text-xs px-2 py-1.5">Thiết bị</TabsTrigger>
@@ -500,8 +505,8 @@ export default function UsersPage() {
               <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 h-auto p-1 gap-1">
                 <TabsTrigger value="payroll-periods" className="text-xs px-3 py-1.5">Bảng lương</TabsTrigger>
                 <TabsTrigger value="payroll-templates" className="text-xs px-3 py-1.5">Mẫu lương</TabsTrigger>
-                <TabsTrigger value="payroll-absences" className="text-xs px-3 py-1.5">Duyệt nghỉ phép</TabsTrigger>
-                <TabsTrigger value="payroll-overtime" className="text-xs px-3 py-1.5">Duyệt tăng ca</TabsTrigger>
+                <TabsTrigger value="payroll-absences" className="text-xs px-3 py-1.5">Duyệt nghỉ phép <PendingBadge count={pending.absences} /></TabsTrigger>
+                <TabsTrigger value="payroll-overtime" className="text-xs px-3 py-1.5">Duyệt tăng ca <PendingBadge count={pending.overtime} /></TabsTrigger>
               </TabsList>
             </div>
             <TabsContent value="payroll-periods" className="mt-4">
