@@ -122,11 +122,14 @@ export default function StockTransferPage() {
     });
   };
 
+  const isAdmin = isSuperAdmin || permissions?.role === 'branch_admin';
+  const canViewPrice = permissions?.canViewInventoryImportPrice ?? false;
+
   const canApprove = (request: StockTransferRequest) => {
     if (request.status !== 'pending') return false;
     if (isSuperAdmin) return true;
-    // Users with transfer permission can approve incoming to their branch
-    return canTransfer && request.to_branch_id === userBranchId;
+    // Only branch_admin can approve incoming transfers to their branch
+    return permissions?.role === 'branch_admin' && request.to_branch_id === userBranchId;
   };
 
   const handleQuickPrint = useCallback(async (request: StockTransferRequest) => {
@@ -399,10 +402,14 @@ export default function StockTransferPage() {
                           )}
                           <div className="flex gap-4 flex-wrap">
                             <span>SL: {item.quantity}</span>
-                            <span>Giá nhập: {formatCurrency(item.import_price)}</span>
-                            <span className="font-medium text-foreground">
-                              Thành tiền: {formatCurrency(item.import_price * item.quantity)}
-                            </span>
+                            {canViewPrice && (
+                              <>
+                                <span>Giá nhập: {formatCurrency(item.import_price)}</span>
+                                <span className="font-medium text-foreground">
+                                  Thành tiền: {formatCurrency(item.import_price * item.quantity)}
+                                </span>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -412,7 +419,7 @@ export default function StockTransferPage() {
               </div>
 
               {/* Total */}
-              {detailItems && detailItems.length > 0 && (
+              {canViewPrice && detailItems && detailItems.length > 0 && (
                 <div className="flex justify-between items-center p-3 bg-primary/5 rounded-lg border border-primary/20">
                   <span className="text-sm font-medium">Tổng giá trị ({detailItems.length} SP)</span>
                   <span className="font-bold text-primary">
