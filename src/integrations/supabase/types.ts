@@ -4899,7 +4899,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          leave_date: string
+          leave_date_from: string
+          leave_date_to: string
           reason: string
           review_note: string | null
           reviewed_at: string | null
@@ -4912,7 +4913,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          leave_date: string
+          leave_date_from: string
+          leave_date_to: string
           reason: string
           review_note?: string | null
           reviewed_at?: string | null
@@ -4925,7 +4927,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          leave_date?: string
+          leave_date_from?: string
+          leave_date_to?: string
           reason?: string
           review_note?: string | null
           reviewed_at?: string | null
