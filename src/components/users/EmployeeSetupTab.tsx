@@ -251,6 +251,10 @@ export function EmployeeSetupTab() {
           if (selectedTemplate?.enable_overtime && !selectedEmployee.hasSchedule) {
             throw new Error('Mẫu lương này có bật tăng ca — vui lòng xếp lịch làm việc trước (bước 2, 3) để hệ thống xác định giờ tăng ca.');
           }
+          // Warning: schedule exists but overtime is OFF — schedule will be ignored for payroll
+          if (!selectedTemplate?.enable_overtime && selectedEmployee.hasSchedule) {
+            toast.warning('Tăng ca đang tắt — lịch làm việc đã xếp sẽ không được dùng để tính lương. Hệ thống chỉ tính theo giờ check-in/check-out thực tế.');
+          }
         }
 
         const salaryPayload = {
