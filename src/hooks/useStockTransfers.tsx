@@ -423,13 +423,13 @@ export function useApproveTransfer() {
       // Check admin role - only admin can approve
       const { data: roleData } = await supabase
         .from('user_roles')
-        .select('role')
+        .select('user_role')
         .eq('user_id', user.id)
         .eq('tenant_id', tenantId)
         .maybeSingle();
       
-      const role = roleData?.role;
-      if (role !== 'super_admin' && role !== 'branch_admin') {
+      const userRole = roleData?.user_role as string;
+      if (userRole !== 'super_admin' && userRole !== 'branch_admin') {
         throw new Error('Bạn không có quyền duyệt phiếu chuyển hàng. Chỉ quản lý mới được duyệt.');
       }
 
@@ -607,13 +607,13 @@ export function useRejectTransfer() {
       // Check admin role - only admin can reject
       const { data: roleData } = await supabase
         .from('user_roles')
-        .select('role')
+        .select('user_role')
         .eq('user_id', user.id)
         .eq('tenant_id', tenantId)
         .maybeSingle();
       
-      const role = roleData?.role;
-      if (role !== 'super_admin' && role !== 'branch_admin') {
+      const userRole = roleData?.user_role as string;
+      if (userRole !== 'super_admin' && userRole !== 'branch_admin') {
         throw new Error('Bạn không có quyền từ chối phiếu chuyển hàng. Chỉ quản lý mới được từ chối.');
       }
 
