@@ -454,6 +454,96 @@ export default function PlatformAdminPage() {
                     </p>
                   </CardContent>
                 </Card>
+
+                {/* Schema Export */}
+                <Card className="border-blue-200 bg-blue-50/50">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-blue-700">
+                      <FileCode className="h-5 w-5" />
+                      Xuất cấu trúc Database (Schema)
+                    </CardTitle>
+                    <CardDescription>
+                      Xuất toàn bộ cấu trúc bảng, functions, triggers, RLS policies, enums, extensions thành file SQL. Chạy file này trên VPS mới trước khi import dữ liệu.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-3 rounded-lg bg-blue-100/50 border border-blue-200 text-sm space-y-1">
+                      <ul className="list-disc list-inside text-blue-700 space-y-0.5 ml-1 text-xs">
+                        <li>Extensions (pg_trgm, pg_net, ...)</li>
+                        <li>Enums (app_role, cash_book_type, ...)</li>
+                        <li>Tất cả bảng + cột + constraints + indexes</li>
+                        <li>Functions & Triggers</li>
+                        <li>RLS Policies (bảo mật)</li>
+                        <li>Views, Sequences, Storage buckets config</li>
+                        <li>Realtime publications</li>
+                      </ul>
+                    </div>
+                    <Button
+                      onClick={handleExportSchema}
+                      disabled={isExportingSchema}
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                    >
+                      {isExportingSchema ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Đang xuất schema...
+                        </>
+                      ) : (
+                        <>
+                          <FileCode className="h-4 w-4 mr-2" />
+                          Tải Schema (.sql + .json)
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      📋 Xuất 2 file: schema.sql (chạy trên VPS) + raw_schema.json (tham khảo)
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Storage Export */}
+                <Card className="border-orange-200 bg-orange-50/50">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-orange-700">
+                      <HardDrive className="h-5 w-5" />
+                      Xuất Storage Files (Ảnh, Tệp tin)
+                    </CardTitle>
+                    <CardDescription>
+                      Xuất danh sách tất cả files trong storage buckets kèm URL tải về. Files nhỏ dưới 1MB sẽ được nhúng base64 trực tiếp.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-3 rounded-lg bg-orange-100/50 border border-orange-200 text-sm space-y-1">
+                      <ul className="list-disc list-inside text-orange-700 space-y-0.5 ml-1 text-xs">
+                        <li>company-assets, tenant-assets, landing-assets</li>
+                        <li>invoice-assets, minigame-assets</li>
+                        <li>daily-backups, temp-imports</li>
+                        <li>Files nhỏ: nhúng base64 trong JSON</li>
+                        <li>Files lớn: kèm download URL (24h)</li>
+                      </ul>
+                    </div>
+                    <Button
+                      onClick={handleExportStorage}
+                      disabled={isExportingStorage}
+                      className="w-full bg-orange-600 hover:bg-orange-700"
+                    >
+                      {isExportingStorage ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Đang xuất storage...
+                        </>
+                      ) : (
+                        <>
+                          <HardDrive className="h-4 w-4 mr-2" />
+                          Tải Storage Files
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      🖼️ Bao gồm ảnh sản phẩm, avatar, logo, tệp đính kèm... Download URL có hiệu lực 24h
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
         </Tabs>
