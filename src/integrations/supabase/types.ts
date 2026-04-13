@@ -9684,6 +9684,7 @@ export type Database = {
         Returns: boolean
       }
       can_become_affiliate: { Args: { _tenant_id: string }; Returns: boolean }
+      can_transfer_stock: { Args: { _user_id: string }; Returns: boolean }
       check_getting_started_status: { Args: never; Returns: Json }
       check_rate_limit: {
         Args: {
