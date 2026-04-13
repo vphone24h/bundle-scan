@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,9 +9,10 @@ import {
 } from '@/components/ui/select';
 import {
   Trash2, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
-  Plus, Copy, ArrowUp, ArrowDown,
+  Plus, Copy, ArrowUp, ArrowDown, Upload, Loader2,
 } from 'lucide-react';
 import { DYNAMIC_FIELDS, TABLE_FIELD_OPTIONS, type TemplateElement } from './types';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   element: TemplateElement | undefined;
