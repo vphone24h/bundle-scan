@@ -137,7 +137,7 @@ export function OvertimeReviewsTab() {
         });
       }
 
-      // Check extra hours (overtime_minutes > 0)
+      // Check extra hours after shift end (overtime_minutes > 0)
       if (isScheduled && (att.overtime_minutes || 0) > 0 && !existingKeys.has(`${att.user_id}_${dateStr}_extra_hours`)) {
         items.push({
           user_id: att.user_id,
@@ -147,6 +147,26 @@ export function OvertimeReviewsTab() {
           attendance_id: att.id,
           auto_detected: true,
         });
+      }
+
+      // Check early check-in before shift start
+      if (isScheduled && att.check_in_time && (att as any).work_shifts?.start_time) {
+        const shift = (att as any).work_shifts;
+        const [sh, sm] = shift.start_time.split(':').map(Number);
+        const checkInDate = new Date(att.check_in_time);
+        const shiftStartDate = new Date(checkInDate);
+        shiftStartDate.setHours(sh, sm, 0, 0);
+        const earlyMinutes = Math.round((shiftStartDate.getTime() - checkInDate.getTime()) / 60000);
+        if (earlyMinutes > 5 && !existingKeys.has(`${att.user_id}_${dateStr}_early_checkin`)) {
+          items.push({
+            user_id: att.user_id,
+            request_date: dateStr,
+            request_type: 'early_checkin',
+            overtime_minutes: earlyMinutes,
+            attendance_id: att.id,
+            auto_detected: true,
+          });
+        }
       }
     }
     return items;
