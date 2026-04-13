@@ -312,10 +312,12 @@ export function TransferStockDialog({
           </div>
 
           {/* Total value */}
-          <div className="flex justify-between items-center p-3 bg-primary/5 rounded-lg border border-primary/20">
-            <span className="text-sm font-medium">Tổng giá trị</span>
-            <span className="font-bold text-primary">{formatCurrency(totalValue)}</span>
-          </div>
+          {canViewPrice && (
+            <div className="flex justify-between items-center p-3 bg-primary/5 rounded-lg border border-primary/20">
+              <span className="text-sm font-medium">Tổng giá trị</span>
+              <span className="font-bold text-primary">{formatCurrency(totalValue)}</span>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
