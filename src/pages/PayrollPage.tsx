@@ -11,6 +11,7 @@ import { PendingBadge } from '@/components/ui/pending-badge';
 
 export default function PayrollPage() {
   const [tab, setTab] = useState('templates');
+  const pending = usePendingApprovals();
 
   return (
     <MainLayout>
@@ -23,8 +24,8 @@ export default function PayrollPage() {
           <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 h-auto p-1 gap-1">
             <TabsTrigger value="templates" className="text-xs px-3 py-1.5">Mẫu lương</TabsTrigger>
             <TabsTrigger value="periods" className="text-xs px-3 py-1.5">Bảng lương</TabsTrigger>
-            <TabsTrigger value="absences" className="text-xs px-3 py-1.5">Duyệt nghỉ phép</TabsTrigger>
-            <TabsTrigger value="overtime" className="text-xs px-3 py-1.5">Duyệt tăng ca</TabsTrigger>
+            <TabsTrigger value="absences" className="text-xs px-3 py-1.5">Duyệt nghỉ phép <PendingBadge count={pending.absences} /></TabsTrigger>
+            <TabsTrigger value="overtime" className="text-xs px-3 py-1.5">Duyệt tăng ca <PendingBadge count={pending.overtime} /></TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="templates" className="mt-4">

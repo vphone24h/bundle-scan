@@ -477,7 +477,7 @@ export default function UsersPage() {
                 <TabsTrigger value="shifts" className="gap-1 text-xs px-2 py-1.5">Ca làm</TabsTrigger>
                 <TabsTrigger value="schedule" className="gap-1 text-xs px-2 py-1.5">Xếp ca</TabsTrigger>
                 <TabsTrigger value="history" className="gap-1 text-xs px-2 py-1.5">Lịch sử</TabsTrigger>
-                <TabsTrigger value="corrections" className="gap-1 text-xs px-2 py-1.5">Sửa công</TabsTrigger>
+                <TabsTrigger value="corrections" className="gap-1 text-xs px-2 py-1.5">Sửa công <PendingBadge count={pending.corrections} /></TabsTrigger>
                 <TabsTrigger value="report" className="gap-1 text-xs px-2 py-1.5">Báo cáo</TabsTrigger>
                 <TabsTrigger value="locations" className="gap-1 text-xs px-2 py-1.5">Điểm CC</TabsTrigger>
                 <TabsTrigger value="devices" className="gap-1 text-xs px-2 py-1.5">Thiết bị</TabsTrigger>
@@ -505,8 +505,8 @@ export default function UsersPage() {
               <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 h-auto p-1 gap-1">
                 <TabsTrigger value="payroll-periods" className="text-xs px-3 py-1.5">Bảng lương</TabsTrigger>
                 <TabsTrigger value="payroll-templates" className="text-xs px-3 py-1.5">Mẫu lương</TabsTrigger>
-                <TabsTrigger value="payroll-absences" className="text-xs px-3 py-1.5">Duyệt nghỉ phép</TabsTrigger>
-                <TabsTrigger value="payroll-overtime" className="text-xs px-3 py-1.5">Duyệt tăng ca</TabsTrigger>
+                <TabsTrigger value="payroll-absences" className="text-xs px-3 py-1.5">Duyệt nghỉ phép <PendingBadge count={pending.absences} /></TabsTrigger>
+                <TabsTrigger value="payroll-overtime" className="text-xs px-3 py-1.5">Duyệt tăng ca <PendingBadge count={pending.overtime} /></TabsTrigger>
               </TabsList>
             </div>
             <TabsContent value="payroll-periods" className="mt-4">

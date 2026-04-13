@@ -18,6 +18,7 @@ import { PosCheckInTab } from '@/components/attendance/PosCheckInTab';
 export default function AttendancePage() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const pending = usePendingApprovals();
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -53,6 +54,7 @@ export default function AttendancePage() {
               <FileEdit className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Sửa công</span>
               <span className="sm:hidden">SC</span>
+              <PendingBadge count={pending.corrections} />
             </TabsTrigger>
             <TabsTrigger value="report" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
               <FileText className="h-3.5 w-3.5" />
