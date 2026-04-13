@@ -281,7 +281,6 @@ export default function UsersPage() {
                      <span>Chấm công</span>
                      <PendingBadge count={pending.attendanceTotal} />
                    </TabsTrigger>
-                  </TabsTrigger>
                   <TabsTrigger value="setup" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
                     <Settings2 className="h-3.5 w-3.5" />
                     <span>Cài đặt</span>
