@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Printer } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import {
   useCustomPrintTemplates,
@@ -13,6 +13,7 @@ import { DesignerSidebar } from '@/components/print-templates/designer/DesignerS
 import { DesignerCanvas } from '@/components/print-templates/designer/DesignerCanvas';
 import { PropertyPanel } from '@/components/print-templates/designer/PropertyPanel';
 import { PAPER_SIZES, genId, type TemplateElement } from '@/components/print-templates/designer/types';
+import { renderCustomPrintHTML } from '@/components/print-templates/customPrintRenderer';
 
 export type { TemplateElement } from '@/components/print-templates/designer/types';
 
@@ -116,6 +117,57 @@ export default function CustomPrintDesignerPage() {
     updateMutation.mutate({ id: template.id, template_data: { elements } as any });
   };
 
+  const handleTestPrint = () => {
+    if (!template) return;
+    const sampleReceipt = {
+      invoice_code: 'HD-TEST-001',
+      date: new Date().toLocaleDateString('vi-VN'),
+      customer_name: 'Nguyễn Văn A',
+      customer_phone: '0901234567',
+      customer_address: '123 Đường ABC, Quận 1, TP.HCM',
+      items: [
+        { name: 'iPhone 15 Pro Max 256GB', sku: 'IP15PM-256', imei: '123456789012345', quantity: 1, price: 32990000, warranty: '12 tháng' },
+        { name: 'Ốp lưng iPhone 15 Pro Max', sku: 'OL-IP15PM', imei: '', quantity: 2, price: 250000, warranty: '' },
+      ],
+      subtotal: 33490000,
+      discount: 500000,
+      total: 32990000,
+      amount_paid: 32990000,
+      amount_due: 0,
+      payment_method: 'Tiền mặt',
+      note: 'Ghi chú test mẫu in',
+      seller_name: 'Nhân viên Test',
+    };
+
+    const currentTemplate = {
+      ...template,
+      template_data: { elements } as any,
+    };
+
+    const html = renderCustomPrintHTML(currentTemplate as any, sampleReceipt, {
+      name: 'Cửa hàng VKHO Demo',
+      phone: '0909999888',
+      address: '456 Đường XYZ, Quận 3, TP.HCM',
+    });
+
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.left = '-9999px';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(html);
+      doc.close();
+      setTimeout(() => {
+        iframe.contentWindow?.print();
+        setTimeout(() => document.body.removeChild(iframe), 3000);
+      }, 300);
+    }
+  };
+
   if (!template) {
     return (
       <MainLayout>
@@ -137,6 +189,9 @@ export default function CustomPrintDesignerPage() {
             <span className="font-semibold truncate">{template.name}</span>
             <Badge variant="outline" className="ml-2 text-xs">{template.paper_size}</Badge>
           </div>
+          <Button size="sm" variant="outline" onClick={handleTestPrint}>
+            <Printer className="h-4 w-4 mr-1" /> In thử
+          </Button>
           <Button size="sm" onClick={handleSave} disabled={updateMutation.isPending}>
             <Save className="h-4 w-4 mr-1" /> {updateMutation.isPending ? 'Đang lưu...' : 'Lưu'}
           </Button>
