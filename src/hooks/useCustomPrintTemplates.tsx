@@ -38,6 +38,36 @@ export function useCustomPrintTemplates() {
   });
 }
 
+// Get active custom templates, optionally filtered by branch
+export function useActiveCustomPrintTemplates(branchId?: string | null) {
+  return useQuery({
+    queryKey: [QUERY_KEY, 'active', branchId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('custom_print_templates')
+        .select('*')
+        .eq('is_active', true)
+        .order('is_default', { ascending: false });
+      if (error) throw error;
+      const all = (data || []) as CustomPrintTemplate[];
+      // Filter: matching branch or global (null branch)
+      return all.filter(t => !t.branch_id || t.branch_id === branchId);
+    },
+  });
+}
+
+// Get the default active custom template for a branch
+export function useDefaultCustomPrintTemplate(branchId?: string | null) {
+  const { data: templates } = useActiveCustomPrintTemplates(branchId);
+  // Priority: branch-specific default > global default > first active
+  if (!templates?.length) return null;
+  const branchDefault = templates.find(t => t.branch_id === branchId && t.is_default);
+  if (branchDefault) return branchDefault;
+  const globalDefault = templates.find(t => !t.branch_id && t.is_default);
+  if (globalDefault) return globalDefault;
+  return templates[0];
+}
+
 export function useCreateCustomPrintTemplate() {
   const queryClient = useQueryClient();
   const { user } = useAuth();

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -7,8 +7,17 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Printer, X } from 'lucide-react';
 import type { InvoiceTemplate, TextAlign } from '@/hooks/useInvoiceTemplates';
+import { useActiveCustomPrintTemplates, type CustomPrintTemplate } from '@/hooks/useCustomPrintTemplates';
+import { renderCustomPrintHTML } from '@/components/print-templates/customPrintRenderer';
 
 interface InvoicePrintDialogProps {
   open: boolean;
@@ -38,6 +47,18 @@ export function InvoicePrintDialog({
   branchInfo,
 }: InvoicePrintDialogProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  const { data: customTemplates = [] } = useActiveCustomPrintTemplates(receipt?.branch_id);
+
+  // 'thermal' = old template, or custom template ID
+  const [printMode, setPrintMode] = useState<string>('thermal');
+
+  // Find the selected custom template
+  const selectedCustomTemplate = printMode !== 'thermal'
+    ? customTemplates.find(t => t.id === printMode)
+    : null;
+
+  // Auto-select default custom template if one exists and is_default
+  const defaultCustom = customTemplates.find(t => t.is_default);
 
   if (!receipt) return null;
 
@@ -49,16 +70,28 @@ export function InvoicePrintDialog({
   };
 
   const handlePrint = () => {
+    // Custom template print
+    if (selectedCustomTemplate) {
+      const html = renderCustomPrintHTML(selectedCustomTemplate, receipt, branchInfo);
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) return;
+      printWindow.document.write(html);
+      printWindow.document.close();
+      const cleanup = () => { try { printWindow.close(); } catch { /* noop */ } };
+      printWindow.onafterprint = cleanup;
+      printWindow.focus();
+      setTimeout(() => {
+        try { printWindow.print(); } finally { setTimeout(cleanup, 1000); }
+      }, 50);
+      return;
+    }
+
+    // Thermal template print (existing logic)
     const printContent = printRef.current;
     if (!printContent) return;
 
-    // Chrome often paginates receipts as A4 height when @page height is `auto`,
-    // causing a large blank gap on thermal printers. For K80, compute an explicit
-    // page height that matches the content.
     const isK80 = template?.paper_size === 'K80';
-    // Use px-based height to avoid DPI/zoom conversion issues that can cause
-    // Chrome to fall back to A4 and add a large blank area on thermal prints.
-    const contentHeightPx = Math.ceil(printContent.scrollHeight + 24); // +24px safety
+    const contentHeightPx = Math.ceil(printContent.scrollHeight + 24);
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -67,8 +100,6 @@ export function InvoicePrintDialog({
     const width = isK80 ? '80mm' : '210mm';
     const marginLeft = template?.margin_left ?? 0;
     const marginRight = template?.margin_right ?? 0;
-    // For K80 we set explicit page height in px (allowed by CSS @page).
-    // This reduces the chance Chrome prints as A4 height.
     const pageSize = isK80 ? `${width} ${contentHeightPx}px` : 'A4';
 
     printWindow.document.write(`
@@ -90,9 +121,7 @@ export function InvoicePrintDialog({
               padding: 2mm ${marginRight}mm 2mm ${marginLeft}mm;
               box-sizing: border-box;
             }
-            /* Ensure K80 content doesn't create extra blank page area */
             ${isK80 ? `html, body { height: ${contentHeightPx}px !important; overflow: hidden; }` : ''}
-            /* Section alignment classes */
             .section { margin-bottom: 8px; }
             .text-center { text-align: center !important; }
             .text-left { text-align: left !important; }
@@ -121,7 +150,7 @@ export function InvoicePrintDialog({
             th, td { padding: 4px 2px; border-bottom: 1px dashed #999; }
             th { font-weight: bold; }
             tr { page-break-inside: avoid; page-break-after: auto; }
-            thead { display: table-row-group; } /* Prevent header repeat on page break */
+            thead { display: table-row-group; }
             .separator { border-top: 1px dashed #333; margin: 8px 0; }
             @media print {
               body { width: ${width}; }
@@ -137,8 +166,6 @@ export function InvoicePrintDialog({
     `);
     printWindow.document.close();
 
-    // Wait a tick so styles/layout apply before printing. Also close after print
-    // to avoid Chrome cutting content or re-paginating.
     const cleanup = () => {
       try { printWindow.close(); } catch { /* noop */ }
     };
@@ -149,7 +176,6 @@ export function InvoicePrintDialog({
       try {
         printWindow.print();
       } finally {
-        // Some browsers don't fire onafterprint reliably
         setTimeout(cleanup, 1000);
       }
     }, 50);
@@ -204,202 +230,273 @@ export function InvoicePrintDialog({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Preview */}
-        <div 
-          ref={printRef} 
-          className="p-4 border rounded-lg bg-white text-black text-sm"
-          style={{ fontFamily: 'Arial, sans-serif' }}
-        >
-          {/* Section 1: Store info - use storeInfo which merges template + branch */}
-          <div className={`section ${s1Align}`}>
-            {settings.show_store_name && (
-              <div className="text-xl font-bold">{storeInfo.name}</div>
-            )}
-            {settings.show_store_address && storeInfo.address && (
-              <div className="text-sm">{storeInfo.address}</div>
-            )}
-            {settings.show_store_phone && storeInfo.phone && (
-              <div className="text-sm">ĐT: {storeInfo.phone}</div>
-            )}
+        {/* Template selector */}
+        {customTemplates.length > 0 && (
+          <div className="flex items-center gap-2 pb-2">
+            <span className="text-sm text-muted-foreground whitespace-nowrap">Mẫu in:</span>
+            <Select value={printMode} onValueChange={setPrintMode}>
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="thermal">🧾 Mẫu in nhiệt (mặc định)</SelectItem>
+                {customTemplates.map(ct => (
+                  <SelectItem key={ct.id} value={ct.id}>
+                    📄 {ct.name} ({ct.paper_size})
+                    {ct.is_default ? ' ⭐' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+        )}
 
-          {/* Separator */}
-          <div className="separator"></div>
-
-          {/* Section 2: Invoice title */}
-          {settings.show_receipt_code && (
-            <div className={`section ${s2Align}`}>
-              <div className="text-lg font-bold">HÓA ĐƠN BÁN HÀNG</div>
-            </div>
-          )}
-
-          {/* Section 3: Code, date, customer */}
-          <div className={`section ${s3Align}`}>
-            {settings.show_receipt_code && (
-              <div className="text-sm mb-1">Mã: {receipt.code}</div>
-            )}
-            {settings.show_sale_date && (
-              <div className="text-sm mb-1">
-                Ngày: {new Date(receipt.export_date || receipt.created_at || new Date()).toLocaleString('vi-VN')}
-              </div>
-            )}
-            {settings.show_customer_info && receipt.customer && (
-              <>
-                <div className="text-sm">KH: {receipt.customer.name}</div>
-                <div className="text-sm">SĐT: {receipt.customer.phone}</div>
-                {receipt.customer.address && <div className="text-sm">ĐC: {receipt.customer.address}</div>}
-              </>
-            )}
-          </div>
-
-          {/* Separator */}
-          <div className="separator"></div>
-
-          {/* Section 4: Items */}
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b">
-                {settings.show_product_name && <th className="py-1 text-left">Sản phẩm</th>}
-                {settings.show_sale_price && <th className="py-1 text-right">Giá</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {receipt.items?.map((item: any, index: number) => {
-                const qty = Number(item.quantity) || 1;
-                const unitPrice = Number(item.sale_price) || 0;
-                const lineTotal = Math.round(qty * unitPrice * 1000) / 1000;
-                const unit = item.unit || '';
-                const isDecimalUnit = ['kg', 'lít', 'mét'].includes(unit.toLowerCase());
-                const displayQty = isDecimalUnit
-                  ? parseFloat(qty.toFixed(3))
-                  : Math.round(qty);
-                const showQty = !item.imei && qty !== 1;
-
-                return (
-                <tr key={index} className="border-b border-dashed">
-                  <td className="py-1">
-                    {settings.show_product_name && <div>{item.product_name}</div>}
-                    {settings.show_sku && <div className="text-xs text-gray">SKU: {item.sku}</div>}
-                    {settings.show_imei && item.imei && (
-                      <div className="text-xs text-gray">IMEI: {item.imei}</div>
-                    )}
-                    {showQty && (
-                      <div className="text-xs text-gray">
-                        SL: {displayQty}{unit ? ` ${unit}` : ''} x {unitPrice.toLocaleString('vi-VN')}đ
-                      </div>
-                    )}
-                    {settings.show_warranty && item.warranty && (
-                      <div className="text-xs" style={{ color: '#0066cc' }}>BH: {item.warranty}</div>
-                    )}
-                  </td>
-                  {settings.show_sale_price && (
-                    <td className="py-1 text-right">{lineTotal.toLocaleString('vi-VN')}đ</td>
-                  )}
-                </tr>
-                );
-              })}
-
-            </tbody>
-          </table>
-
-          {/* Separator */}
-          <div className="separator"></div>
-
-          {/* Section 5: Totals */}
-          <div className={`section ${s5Align}`}>
-            {/* Show subtotal when there's tax */}
-            {settings.show_tax && receipt.tax_amount > 0 && settings.show_total && (
-              <div className="flex justify-between text-sm">
-                <span>Tiền hàng:</span>
-                <span>
-                  {receipt.subtotal_amount?.toLocaleString('vi-VN') || 
-                    receipt.items?.reduce((s: number, i: any) => s + i.sale_price, 0).toLocaleString('vi-VN')}đ
-                </span>
-              </div>
-            )}
-            {/* Tax line */}
-            {settings.show_tax && receipt.tax_amount > 0 && (
-              <div className="flex justify-between text-sm" style={{ color: '#666' }}>
-                <span>Thuế VAT ({receipt.tax_rate}%):</span>
-                <span>{receipt.tax_amount?.toLocaleString('vi-VN')}đ</span>
-              </div>
-            )}
-            {settings.show_total && (
-              <div className="flex justify-between font-bold">
-                <span>Tổng tiền:</span>
-                <span>{receipt.total_amount?.toLocaleString('vi-VN') || 
-                  receipt.items?.reduce((s: number, i: any) => s + i.sale_price, 0).toLocaleString('vi-VN')}đ</span>
-              </div>
-            )}
-            {(receipt.points_discount > 0) && (
-              <div className="flex justify-between text-sm" style={{ color: '#16a34a' }}>
-                <span>Giảm điểm ({receipt.points_redeemed} điểm):</span>
-                <span>-{receipt.points_discount?.toLocaleString('vi-VN')}đ</span>
-              </div>
-            )}
-            {(receipt.voucher_discount > 0) && (
-              <div className="flex justify-between text-sm" style={{ color: '#16a34a' }}>
-                <span>Giảm voucher:</span>
-                <span>-{receipt.voucher_discount?.toLocaleString('vi-VN')}đ</span>
-              </div>
-            )}
-            {(receipt.points_discount > 0 || receipt.voucher_discount > 0) && (
-              <div className="flex justify-between font-bold">
-                <span>Còn lại:</span>
-                <span>{((receipt.total_amount || 0) - (receipt.points_discount || 0) - (receipt.voucher_discount || 0)).toLocaleString('vi-VN')}đ</span>
-              </div>
-            )}
-            {settings.show_paid_amount && (
-              <div className="flex justify-between">
-                <span>Đã thanh toán:</span>
-                <span>{receipt.paid_amount?.toLocaleString('vi-VN') ||
-                  receipt.payments?.filter((p: any) => p.payment_type !== 'debt')
-                    .reduce((s: number, p: any) => s + p.amount, 0).toLocaleString('vi-VN')}đ</span>
-              </div>
-            )}
-            {settings.show_debt && (receipt.debt_amount > 0 || receipt.payments?.some((p: any) => p.payment_type === 'debt')) && (
-              <div className="flex justify-between text-red">
-                <span>Công nợ:</span>
-                <span>{receipt.debt_amount?.toLocaleString('vi-VN') ||
-                  receipt.payments?.filter((p: any) => p.payment_type === 'debt')
-                    .reduce((s: number, p: any) => s + p.amount, 0).toLocaleString('vi-VN')}đ</span>
-              </div>
-            )}
-            {settings.show_points_earned && receipt.points_earned > 0 && (
-              <div className="flex justify-between" style={{ color: '#16a34a' }}>
-                <span>Điểm tích lũy:</span>
-                <span>+{receipt.points_earned} điểm</span>
-              </div>
-            )}
-          </div>
-
-          {/* Custom description - NOW BEFORE Thank you */}
-          {settings.show_custom_description && (settings.custom_description_text || settings.custom_description_image_url) && (
-            <div 
-              className={`mt-2 text-sm ${getAlignClass(settings.custom_description_align)}`}
-              style={{ 
-                whiteSpace: 'pre-wrap',
-                fontWeight: settings.custom_description_bold ? 'bold' : 'normal'
+        {/* Custom template preview */}
+        {selectedCustomTemplate ? (
+          <div className="border rounded-lg bg-white p-2 overflow-auto max-h-[60vh]">
+            <div
+              className="mx-auto bg-white text-black"
+              style={{
+                width: selectedCustomTemplate.paper_size === 'A5' ? '370px' : '520px',
+                aspectRatio: selectedCustomTemplate.paper_size === 'A5' ? '148 / 210' : '210 / 297',
+                position: 'relative',
+                fontSize: '10px',
               }}
-            >
-              {settings.custom_description_image_url && (
-                <img 
-                  src={settings.custom_description_image_url} 
-                  alt="Custom" 
-                  style={{ maxWidth: '100%', maxHeight: '60px', marginBottom: '4px' }}
-                />
-              )}
-              {settings.custom_description_text}
-            </div>
-          )}
+              dangerouslySetInnerHTML={{
+                __html: (() => {
+                  const elements = (selectedCustomTemplate.template_data as any)?.elements || [];
+                  return elements.map((el: any) => {
+                    // Inline mini-render for preview
+                    const style = [
+                      `position: absolute`,
+                      `left: ${(el.x / 200) * 100}%`,
+                      `top: ${(el.y / 100) * 100}%`,
+                      `width: ${(el.w / 200) * 100}%`,
+                      `height: ${(el.h / 100) * 100}%`,
+                      `overflow: hidden`,
+                      el.fontSize ? `font-size: ${el.fontSize * 0.55}px` : '',
+                      el.fontWeight === 'bold' ? 'font-weight: bold' : '',
+                      el.fontStyle === 'italic' ? 'font-style: italic' : '',
+                      el.textDecoration === 'underline' ? 'text-decoration: underline' : '',
+                      el.textAlign ? `text-align: ${el.textAlign}` : '',
+                      el.textTransform === 'uppercase' ? 'text-transform: uppercase' : '',
+                    ].filter(Boolean).join('; ');
 
-          {/* Thank you - NOW AFTER Custom description */}
-          {settings.show_thank_you && (
-            <div className="mt-4 text-center italic">
-              {settings.thank_you_text || 'Cảm ơn quý khách!'}
+                    if (el.type === 'text') return `<div style="${style}">${el.content || ''}</div>`;
+                    if (el.type === 'dynamic') {
+                      const val = resolveFieldPreview(el.field, receipt, branchInfo);
+                      return `<div style="${style}">${val}</div>`;
+                    }
+                    if (el.type === 'line') return `<div style="${style}; display:flex; align-items:center;"><div style="width:100%; border-top:1px solid #333;"></div></div>`;
+                    if (el.type === 'image' && el.imageUrl) return `<div style="${style}"><img src="${el.imageUrl}" style="max-width:100%;max-height:100%;object-fit:contain;" /></div>`;
+                    if (el.type === 'table') {
+                      const cols = el.tableColumns || [];
+                      const items = receipt.items || [];
+                      const headerCells = cols.map((c: any) =>
+                        `<th style="width:${c.width}%; padding:2px 1px; border:1px solid #999; font-weight:bold; text-align:left; font-size:${(el.fontSize || 10) * 0.5}px;">${c.label}</th>`
+                      ).join('');
+                      const bodyRows = items.slice(0, 5).map((item: any, idx: number) => {
+                        const cells = cols.map((c: any) => {
+                          const val = resolveTableFieldPreview(c.field, item, idx);
+                          return `<td style="width:${c.width}%; padding:2px 1px; border:1px solid #ddd; font-size:${(el.fontSize || 10) * 0.5}px;">${val}</td>`;
+                        }).join('');
+                        return `<tr>${cells}</tr>`;
+                      }).join('');
+                      const moreRow = items.length > 5 ? `<tr><td colspan="${cols.length}" style="text-align:center; font-size:8px; color:#999;">... +${items.length - 5} SP</td></tr>` : '';
+                      return `<div style="${style}"><table style="width:100%; border-collapse:collapse;"><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}${moreRow}</tbody></table></div>`;
+                    }
+                    return '';
+                  }).join('');
+                })(),
+              }}
+            />
+          </div>
+        ) : (
+          /* Thermal template preview (existing) */
+          <div 
+            ref={printRef} 
+            className="p-4 border rounded-lg bg-white text-black text-sm"
+            style={{ fontFamily: 'Arial, sans-serif' }}
+          >
+            {/* Section 1: Store info */}
+            <div className={`section ${s1Align}`}>
+              {settings.show_store_name && (
+                <div className="text-xl font-bold">{storeInfo.name}</div>
+              )}
+              {settings.show_store_address && storeInfo.address && (
+                <div className="text-sm">{storeInfo.address}</div>
+              )}
+              {settings.show_store_phone && storeInfo.phone && (
+                <div className="text-sm">ĐT: {storeInfo.phone}</div>
+              )}
             </div>
-          )}
-        </div>
+
+            <div className="separator"></div>
+
+            {settings.show_receipt_code && (
+              <div className={`section ${s2Align}`}>
+                <div className="text-lg font-bold">HÓA ĐƠN BÁN HÀNG</div>
+              </div>
+            )}
+
+            <div className={`section ${s3Align}`}>
+              {settings.show_receipt_code && (
+                <div className="text-sm mb-1">Mã: {receipt.code}</div>
+              )}
+              {settings.show_sale_date && (
+                <div className="text-sm mb-1">
+                  Ngày: {new Date(receipt.export_date || receipt.created_at || new Date()).toLocaleString('vi-VN')}
+                </div>
+              )}
+              {settings.show_customer_info && receipt.customer && (
+                <>
+                  <div className="text-sm">KH: {receipt.customer.name}</div>
+                  <div className="text-sm">SĐT: {receipt.customer.phone}</div>
+                  {receipt.customer.address && <div className="text-sm">ĐC: {receipt.customer.address}</div>}
+                </>
+              )}
+            </div>
+
+            <div className="separator"></div>
+
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  {settings.show_product_name && <th className="py-1 text-left">Sản phẩm</th>}
+                  {settings.show_sale_price && <th className="py-1 text-right">Giá</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {receipt.items?.map((item: any, index: number) => {
+                  const qty = Number(item.quantity) || 1;
+                  const unitPrice = Number(item.sale_price) || 0;
+                  const lineTotal = Math.round(qty * unitPrice * 1000) / 1000;
+                  const unit = item.unit || '';
+                  const isDecimalUnit = ['kg', 'lít', 'mét'].includes(unit.toLowerCase());
+                  const displayQty = isDecimalUnit
+                    ? parseFloat(qty.toFixed(3))
+                    : Math.round(qty);
+                  const showQty = !item.imei && qty !== 1;
+
+                  return (
+                  <tr key={index} className="border-b border-dashed">
+                    <td className="py-1">
+                      {settings.show_product_name && <div>{item.product_name}</div>}
+                      {settings.show_sku && <div className="text-xs text-gray">SKU: {item.sku}</div>}
+                      {settings.show_imei && item.imei && (
+                        <div className="text-xs text-gray">IMEI: {item.imei}</div>
+                      )}
+                      {showQty && (
+                        <div className="text-xs text-gray">
+                          SL: {displayQty}{unit ? ` ${unit}` : ''} x {unitPrice.toLocaleString('vi-VN')}đ
+                        </div>
+                      )}
+                      {settings.show_warranty && item.warranty && (
+                        <div className="text-xs" style={{ color: '#0066cc' }}>BH: {item.warranty}</div>
+                      )}
+                    </td>
+                    {settings.show_sale_price && (
+                      <td className="py-1 text-right">{lineTotal.toLocaleString('vi-VN')}đ</td>
+                    )}
+                  </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            <div className="separator"></div>
+
+            <div className={`section ${s5Align}`}>
+              {settings.show_tax && receipt.tax_amount > 0 && settings.show_total && (
+                <div className="flex justify-between text-sm">
+                  <span>Tiền hàng:</span>
+                  <span>
+                    {receipt.subtotal_amount?.toLocaleString('vi-VN') || 
+                      receipt.items?.reduce((s: number, i: any) => s + i.sale_price, 0).toLocaleString('vi-VN')}đ
+                  </span>
+                </div>
+              )}
+              {settings.show_tax && receipt.tax_amount > 0 && (
+                <div className="flex justify-between text-sm" style={{ color: '#666' }}>
+                  <span>Thuế VAT ({receipt.tax_rate}%):</span>
+                  <span>{receipt.tax_amount?.toLocaleString('vi-VN')}đ</span>
+                </div>
+              )}
+              {settings.show_total && (
+                <div className="flex justify-between font-bold">
+                  <span>Tổng tiền:</span>
+                  <span>{receipt.total_amount?.toLocaleString('vi-VN') || 
+                    receipt.items?.reduce((s: number, i: any) => s + i.sale_price, 0).toLocaleString('vi-VN')}đ</span>
+                </div>
+              )}
+              {(receipt.points_discount > 0) && (
+                <div className="flex justify-between text-sm" style={{ color: '#16a34a' }}>
+                  <span>Giảm điểm ({receipt.points_redeemed} điểm):</span>
+                  <span>-{receipt.points_discount?.toLocaleString('vi-VN')}đ</span>
+                </div>
+              )}
+              {(receipt.voucher_discount > 0) && (
+                <div className="flex justify-between text-sm" style={{ color: '#16a34a' }}>
+                  <span>Giảm voucher:</span>
+                  <span>-{receipt.voucher_discount?.toLocaleString('vi-VN')}đ</span>
+                </div>
+              )}
+              {(receipt.points_discount > 0 || receipt.voucher_discount > 0) && (
+                <div className="flex justify-between font-bold">
+                  <span>Còn lại:</span>
+                  <span>{((receipt.total_amount || 0) - (receipt.points_discount || 0) - (receipt.voucher_discount || 0)).toLocaleString('vi-VN')}đ</span>
+                </div>
+              )}
+              {settings.show_paid_amount && (
+                <div className="flex justify-between">
+                  <span>Đã thanh toán:</span>
+                  <span>{receipt.paid_amount?.toLocaleString('vi-VN') ||
+                    receipt.payments?.filter((p: any) => p.payment_type !== 'debt')
+                      .reduce((s: number, p: any) => s + p.amount, 0).toLocaleString('vi-VN')}đ</span>
+                </div>
+              )}
+              {settings.show_debt && (receipt.debt_amount > 0 || receipt.payments?.some((p: any) => p.payment_type === 'debt')) && (
+                <div className="flex justify-between text-red">
+                  <span>Công nợ:</span>
+                  <span>{receipt.debt_amount?.toLocaleString('vi-VN') ||
+                    receipt.payments?.filter((p: any) => p.payment_type === 'debt')
+                      .reduce((s: number, p: any) => s + p.amount, 0).toLocaleString('vi-VN')}đ</span>
+                </div>
+              )}
+              {settings.show_points_earned && receipt.points_earned > 0 && (
+                <div className="flex justify-between" style={{ color: '#16a34a' }}>
+                  <span>Điểm tích lũy:</span>
+                  <span>+{receipt.points_earned} điểm</span>
+                </div>
+              )}
+            </div>
+
+            {settings.show_custom_description && (settings.custom_description_text || settings.custom_description_image_url) && (
+              <div 
+                className={`mt-2 text-sm ${getAlignClass(settings.custom_description_align)}`}
+                style={{ 
+                  whiteSpace: 'pre-wrap',
+                  fontWeight: settings.custom_description_bold ? 'bold' : 'normal'
+                }}
+              >
+                {settings.custom_description_image_url && (
+                  <img 
+                    src={settings.custom_description_image_url} 
+                    alt="Custom" 
+                    style={{ maxWidth: '100%', maxHeight: '60px', marginBottom: '4px' }}
+                  />
+                )}
+                {settings.custom_description_text}
+              </div>
+            )}
+
+            {settings.show_thank_you && (
+              <div className="mt-4 text-center italic">
+                {settings.thank_you_text || 'Cảm ơn quý khách!'}
+              </div>
+            )}
+          </div>
+        )}
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -414,4 +511,48 @@ export function InvoicePrintDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+// Helper functions for preview (simplified versions)
+function resolveFieldPreview(key: string, receipt: any, branchInfo?: any): string {
+  const customer = receipt?.customer || {};
+  const fmt = (n: number | undefined | null) =>
+    n != null ? n.toLocaleString('vi-VN') + 'đ' : '';
+
+  switch (key) {
+    case 'store_name': return branchInfo?.name || 'Cửa hàng';
+    case 'store_phone': return branchInfo?.phone ? `SĐT: ${branchInfo.phone}` : '';
+    case 'store_address': return branchInfo?.address || '';
+    case 'created_on': return `Ngày: ${new Date(receipt?.sale_date || receipt?.export_date || receipt?.created_at || new Date()).toLocaleString('vi-VN')}`;
+    case 'invoice_code': return `Mã: ${receipt?.code || ''}`;
+    case 'staff_name': return receipt?.staff_name ? `NV: ${receipt.staff_name}` : '';
+    case 'location_name': return branchInfo?.name || '';
+    case 'customer_name': return customer.name ? `KH: ${customer.name}` : '';
+    case 'customer_phone': return customer.phone ? `SĐT: ${customer.phone}` : '';
+    case 'billing_address': return customer.address ? `ĐC: ${customer.address}` : '';
+    case 'total': return `Tổng: ${fmt(receipt?.total_amount)}`;
+    case 'paid_amount': return `Đã TT: ${fmt(receipt?.paid_amount)}`;
+    case 'debt': return receipt?.debt_amount > 0 ? `Nợ: ${fmt(receipt.debt_amount)}` : '';
+    case 'discount': {
+      const d = (receipt?.points_discount || 0) + (receipt?.voucher_discount || 0);
+      return d > 0 ? `Giảm: -${fmt(d)}` : '';
+    }
+    default: return `{${key}}`;
+  }
+}
+
+function resolveTableFieldPreview(field: string, item: any, index: number): string {
+  const qty = Number(item.quantity) || 1;
+  const price = Number(item.sale_price) || 0;
+  const amount = Math.round(qty * price * 1000) / 1000;
+  switch (field) {
+    case 'line_stt': return String(index + 1);
+    case 'line_variant': return item.product_name || '';
+    case 'serials': return item.imei || '';
+    case 'line_qty': return String(qty);
+    case 'line_price': return price.toLocaleString('vi-VN');
+    case 'line_amount': return amount.toLocaleString('vi-VN');
+    case 'line_warranty': return item.warranty || '';
+    default: return '';
+  }
 }
