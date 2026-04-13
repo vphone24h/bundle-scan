@@ -148,6 +148,7 @@ export default function UsersPage() {
   const usersGuideUrl = useUsersGuideUrl();
   const { user } = useAuth();
   const { enabled: attendanceEnabled } = useAttendanceEnabled();
+  const pending = usePendingApprovals();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
@@ -275,9 +276,11 @@ export default function UsersPage() {
               </TabsTrigger>
               {attendanceEnabled && (
                 <>
-                  <TabsTrigger value="attendance" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
-                    <Fingerprint className="h-3.5 w-3.5" />
-                    <span>Chấm công</span>
+                   <TabsTrigger value="attendance" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
+                     <Fingerprint className="h-3.5 w-3.5" />
+                     <span>Chấm công</span>
+                     <PendingBadge count={pending.attendanceTotal} />
+                   </TabsTrigger>
                   </TabsTrigger>
                   <TabsTrigger value="setup" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
                     <Settings2 className="h-3.5 w-3.5" />
@@ -288,6 +291,7 @@ export default function UsersPage() {
               <TabsTrigger value="payroll" className="gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5">
                 <CreditCard className="h-3.5 w-3.5" />
                 <span>Bảng lương</span>
+                <PendingBadge count={pending.payrollTotal} />
               </TabsTrigger>
             </TabsList>
           </div>
