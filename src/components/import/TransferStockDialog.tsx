@@ -25,6 +25,7 @@ import { useBranches, Branch } from '@/hooks/useBranches';
 import { useCreateStockTransfer } from '@/hooks/useStockTransfers';
 import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { formatCurrency } from '@/lib/mockData';
 import { StockTransferPrintReceipt, type TransferPrintData } from '@/components/import/StockTransferPrintReceipt';
 import type { Product } from '@/hooks/useProducts';
