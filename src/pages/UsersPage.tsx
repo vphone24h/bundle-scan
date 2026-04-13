@@ -46,6 +46,7 @@ import { SalaryTemplatesTab } from '@/components/payroll/SalaryTemplatesTab';
 import { PayrollPeriodsTab } from '@/components/payroll/PayrollPeriodsTab';
 import { AbsenceReviewsTab } from '@/components/payroll/AbsenceReviewsTab';
 import { OvertimeReviewsTab } from '@/components/payroll/OvertimeReviewsTab';
+import { LeaveApprovalsTab } from '@/components/payroll/LeaveApprovalsTab';
 
 interface UserWithRole {
   id: string;
@@ -505,6 +506,7 @@ export default function UsersPage() {
               <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 h-auto p-1 gap-1">
                 <TabsTrigger value="payroll-periods" className="text-xs px-3 py-1.5">Bảng lương</TabsTrigger>
                 <TabsTrigger value="payroll-templates" className="text-xs px-3 py-1.5">Mẫu lương</TabsTrigger>
+                <TabsTrigger value="payroll-leave" className="text-xs px-3 py-1.5">Duyệt xin nghỉ <PendingBadge count={pending.leaveRequests} /></TabsTrigger>
                 <TabsTrigger value="payroll-absences" className="text-xs px-3 py-1.5">Duyệt nghỉ phép <PendingBadge count={pending.absences} /></TabsTrigger>
                 <TabsTrigger value="payroll-overtime" className="text-xs px-3 py-1.5">Duyệt tăng ca <PendingBadge count={pending.overtime} /></TabsTrigger>
               </TabsList>
@@ -514,6 +516,9 @@ export default function UsersPage() {
             </TabsContent>
             <TabsContent value="payroll-templates" className="mt-4">
               <SalaryTemplatesTab />
+            </TabsContent>
+            <TabsContent value="payroll-leave" className="mt-4">
+              <LeaveApprovalsTab />
             </TabsContent>
             <TabsContent value="payroll-absences" className="mt-4">
               <AbsenceReviewsTab />

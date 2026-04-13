@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, TrendingUp, ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertTriangle, DollarSign, Bell, FileText, Briefcase, Banknote, FileEdit, CalendarDays, ShoppingBag } from 'lucide-react';
+import { Calendar, Clock, TrendingUp, ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertTriangle, DollarSign, Bell, FileText, Briefcase, Banknote, FileEdit, CalendarDays, ShoppingBag, CalendarOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { SalaryAdvancesTab } from '@/components/payroll/SalaryAdvancesTab';
+import { EmployeeLeaveRequests } from '@/components/attendance/EmployeeLeaveRequests';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 function formatMoney(n: number) {
@@ -385,7 +386,7 @@ export default function MyAttendancePage() {
 
         {/* Tabs */}
         <Tabs defaultValue="history" className="space-y-3">
-          <TabsList className="w-full grid grid-cols-7">
+          <TabsList className="w-full grid grid-cols-8">
             <TabsTrigger value="history" className="text-xs px-1">
               <Calendar className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Công</span>
             </TabsTrigger>
@@ -394,6 +395,9 @@ export default function MyAttendancePage() {
             </TabsTrigger>
             <TabsTrigger value="schedule" className="text-xs px-1">
               <CalendarDays className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Lịch</span>
+            </TabsTrigger>
+            <TabsTrigger value="leave" className="text-xs px-1">
+              <CalendarOff className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Nghỉ</span>
             </TabsTrigger>
             <TabsTrigger value="corrections" className="text-xs px-1">
               <FileEdit className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">SC</span>
@@ -459,6 +463,11 @@ export default function MyAttendancePage() {
                 <EmployeeShiftCalendar month={currentMonth} assignments={allShiftAssignments || []} />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Leave Requests Tab */}
+          <TabsContent value="leave">
+            <EmployeeLeaveRequests userId={user?.id} tenantId={tenantId} />
           </TabsContent>
 
           {/* Correction Requests Tab */}
