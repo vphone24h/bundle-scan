@@ -145,9 +145,9 @@ export default function CustomPrintDesignerPage() {
     };
 
     const html = renderCustomPrintHTML(currentTemplate as any, sampleReceipt, {
-      store_name: 'Cửa hàng VKHO Demo',
-      store_phone: '0909999888',
-      store_address: '456 Đường XYZ, Quận 3, TP.HCM',
+      name: 'Cửa hàng VKHO Demo',
+      phone: '0909999888',
+      address: '456 Đường XYZ, Quận 3, TP.HCM',
     });
 
     const iframe = document.createElement('iframe');
