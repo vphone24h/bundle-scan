@@ -374,12 +374,16 @@ Deno.serve(async (req) => {
       } else if (salaryType === "fixed") {
         baseSalary = baseAmount;
       } else if (salaryType === "daily") {
+        // Lương theo ngày: base_amount = lương/ngày × số ngày có mặt
         baseSalary = baseAmount * workDays;
       } else if (salaryType === "hourly") {
         baseSalary = baseAmount * (totalMinutes / 60);
       } else if (salaryType === "shift") {
-        const shiftDays = userAttendance.filter((a: any) => a.check_in_time && a.shift_id && a.status !== "absent").length;
-        baseSalary = baseAmount * shiftDays;
+        // Lương theo ca: chỉ tính ca hoàn thành (có check-in + check-out + shift_id)
+        const completedShifts = userAttendance.filter((a: any) =>
+          a.check_in_time && a.check_out_time && a.shift_id && a.status !== "absent"
+        ).length;
+        baseSalary = baseAmount * completedShifts;
       }
 
       // ===== 2. BONUS (with real sales data) =====
