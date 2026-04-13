@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,9 +9,10 @@ import {
 } from '@/components/ui/select';
 import {
   Trash2, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
-  Plus, Copy, ArrowUp, ArrowDown,
+  Plus, Copy, ArrowUp, ArrowDown, Upload, Loader2,
 } from 'lucide-react';
 import { DYNAMIC_FIELDS, TABLE_FIELD_OPTIONS, type TemplateElement } from './types';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   element: TemplateElement | undefined;
@@ -19,6 +21,47 @@ interface Props {
   onDuplicate: (id: string) => void;
   onMoveUp: (id: string) => void;
   onMoveDown: (id: string) => void;
+}
+
+function ImageUploadSection({ element, onUpdate }: { element: TemplateElement; onUpdate: (id: string, u: Partial<TemplateElement>) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (file: File) => {
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `print-templates/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from('tenant-assets').upload(path, file);
+      if (error) throw error;
+      const { data } = supabase.storage.from('tenant-assets').getPublicUrl(path);
+      onUpdate(element.id, { imageUrl: data.publicUrl });
+    } catch (err: any) {
+      console.error('Upload failed:', err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <>
+      <Separator />
+      <div className="space-y-2">
+        <Label className="text-[10px]">Ảnh</Label>
+        {element.imageUrl && (
+          <img src={element.imageUrl} alt="" className="w-full max-h-20 object-contain rounded border" />
+        )}
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+        <div className="flex gap-1">
+          <Button size="sm" variant="outline" className="h-7 text-xs flex-1" disabled={uploading} onClick={() => fileRef.current?.click()}>
+            {uploading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Upload className="h-3 w-3 mr-1" />}
+            {uploading ? 'Đang tải...' : 'Tải ảnh lên'}
+          </Button>
+        </div>
+        <Input className="h-7 text-xs" value={element.imageUrl || ''} onChange={(e) => onUpdate(element.id, { imageUrl: e.target.value })} placeholder="Hoặc dán URL..." />
+      </div>
+    </>
+  );
 }
 
 export function PropertyPanel({ element, onUpdate, onDelete, onDuplicate, onMoveUp, onMoveDown }: Props) {
@@ -122,13 +165,7 @@ export function PropertyPanel({ element, onUpdate, onDelete, onDuplicate, onMove
 
         {/* Image */}
         {element.type === 'image' && (
-          <>
-            <Separator />
-            <div>
-              <Label className="text-[10px]">URL ảnh</Label>
-              <Input className="h-7 text-xs" value={element.imageUrl || ''} onChange={(e) => onUpdate(element.id, { imageUrl: e.target.value })} placeholder="https://..." />
-            </div>
-          </>
+          <ImageUploadSection element={element} onUpdate={onUpdate} />
         )}
 
         {/* Table config */}
