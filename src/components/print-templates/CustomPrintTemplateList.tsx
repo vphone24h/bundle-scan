@@ -287,6 +287,9 @@ export function CustomPrintTemplateList() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => navigate(`/export/template/designer/${t.id}`)}>
+                          <FileText className="h-4 w-4 mr-2" /> Thiết kế
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openEdit(t)}>
                           <Pencil className="h-4 w-4 mr-2" /> Sửa
                         </DropdownMenuItem>
