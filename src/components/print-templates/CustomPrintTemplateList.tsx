@@ -65,6 +65,7 @@ export function CustomPrintTemplateList() {
   const deleteMutation = useDeleteCustomPrintTemplate();
   const duplicateMutation = useDuplicateCustomPrintTemplate();
   const setDefaultMutation = useSetDefaultCustomPrintTemplate();
+  const navigate = useNavigate();
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<CustomPrintTemplate | null>(null);
