@@ -27,27 +27,55 @@ export const PAPER_SIZES = {
 };
 
 export const DYNAMIC_FIELDS = [
-  { group: 'Shop', icon: 'Store', fields: [
+  { group: 'Cửa hàng', icon: 'Store', fields: [
     { key: 'store_name', label: 'Tên cửa hàng' },
     { key: 'store_phone', label: 'SĐT cửa hàng' },
     { key: 'store_address', label: 'Địa chỉ cửa hàng' },
+    { key: 'store_email', label: 'Email cửa hàng' },
+    { key: 'store_province', label: 'Tỉnh thành (cửa hàng)' },
+    { key: 'store_logo', label: 'Logo cửa hàng' },
+  ]},
+  { group: 'Chi nhánh', icon: 'Building', fields: [
+    { key: 'location_name', label: 'Tên chi nhánh' },
+    { key: 'location_address', label: 'Địa chỉ chi nhánh' },
+    { key: 'location_phone', label: 'SĐT chi nhánh' },
+    { key: 'location_province', label: 'Tỉnh thành (chi nhánh)' },
   ]},
   { group: 'Đơn hàng', icon: 'FileText', fields: [
+    { key: 'invoice_code', label: 'Mã đơn hàng' },
     { key: 'created_on', label: 'Ngày tạo' },
-    { key: 'invoice_code', label: 'Mã hoá đơn' },
-    { key: 'staff_name', label: 'Nhân viên' },
-    { key: 'location_name', label: 'Chi nhánh' },
+    { key: 'created_on_time', label: 'Thời gian tạo' },
+    { key: 'modified_on', label: 'Ngày cập nhật' },
+    { key: 'staff_name', label: 'Nhân viên bán hàng' },
+    { key: 'assignee_name', label: 'Người phụ trách' },
+    { key: 'source', label: 'Nguồn đơn' },
+    { key: 'order_note', label: 'Ghi chú đơn hàng' },
+    { key: 'warranty_number', label: 'Số bảo hành' },
   ]},
   { group: 'Khách hàng', icon: 'User', fields: [
-    { key: 'customer_name', label: 'Tên khách' },
-    { key: 'customer_phone', label: 'SĐT khách' },
+    { key: 'customer_name', label: 'Tên khách hàng' },
+    { key: 'customer_phone', label: 'SĐT khách hàng' },
     { key: 'billing_address', label: 'Địa chỉ khách' },
+    { key: 'customer_code', label: 'Mã khách hàng' },
+    { key: 'customer_group', label: 'Nhóm khách hàng' },
+    { key: 'customer_debt', label: 'Nợ hiện tại' },
+    { key: 'debt_before', label: 'Nợ trước khi mua' },
+    { key: 'customer_email', label: 'Email khách hàng' },
+  ]},
+  { group: 'Giao hàng', icon: 'Truck', fields: [
+    { key: 'shipping_name', label: 'Người nhận' },
+    { key: 'shipping_phone', label: 'SĐT người nhận' },
+    { key: 'shipping_address', label: 'Địa chỉ giao hàng' },
+    { key: 'ship_date', label: 'Ngày hẹn giao hàng' },
   ]},
   { group: 'Tổng tiền', icon: 'DollarSign', fields: [
     { key: 'total', label: 'Tổng tiền' },
+    { key: 'subtotal', label: 'Tổng trước giảm giá' },
     { key: 'paid_amount', label: 'Đã thanh toán' },
     { key: 'debt', label: 'Còn nợ' },
     { key: 'discount', label: 'Giảm giá' },
+    { key: 'total_quantity', label: 'Tổng số lượng' },
+    { key: 'payment_method', label: 'Phương thức thanh toán' },
   ]},
 ];
 
