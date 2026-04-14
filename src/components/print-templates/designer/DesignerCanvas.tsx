@@ -126,6 +126,7 @@ export function DesignerCanvas({ elements, selectedId, paperSize, onSelect, onUp
                 {el.type === 'text' && <span className="w-full whitespace-pre-wrap">{el.content || 'Text'}</span>}
                 {el.type === 'dynamic' && (
                   <span className="w-full text-blue-600 border border-dashed border-blue-300 bg-blue-50/50 px-0.5 rounded-sm">
+                    {el.fieldLabel && <span className="text-blue-800 font-medium">{el.fieldLabel}</span>}
                     {`{${el.field}}`} <span className="text-blue-400 text-[8px]">{getFieldLabel(el.field || '')}</span>
                   </span>
                 )}
