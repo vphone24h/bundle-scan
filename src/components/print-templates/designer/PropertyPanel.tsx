@@ -13,6 +13,7 @@ import {
   Plus, Copy, ArrowUp, ArrowDown, Upload, Loader2,
 } from 'lucide-react';
 import { DYNAMIC_FIELDS, TABLE_FIELD_OPTIONS, type TemplateElement } from './types';
+import { getDefaultFieldLabel } from './fieldLabels';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
