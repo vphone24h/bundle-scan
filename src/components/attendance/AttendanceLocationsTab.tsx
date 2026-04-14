@@ -40,7 +40,60 @@ export function AttendanceLocationsTab() {
   const [geocoding, setGeocoding] = useState(false);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  
+
+  const isGoogleMapsLink = (val: string) =>
+    val.includes('google.com/maps') || val.includes('goo.gl/maps') || val.includes('maps.app.goo.gl') || val.includes('share.google');
+
+  const tryExtractCoordsFromUrl = (url: string): { lat: number; lng: number } | null => {
+    const patterns = [
+      /@(-?\d+\.\d+),(-?\d+\.\d+)/,
+      /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
+      /q=(-?\d+\.\d+),(-?\d+\.\d+)/,
+      /ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
+      /(-?\d+\.\d{4,}),\s*(-?\d+\.\d{4,})/,
+    ];
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) {
+        const lat = parseFloat(match[1]);
+        const lng = parseFloat(match[2]);
+        if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) return { lat, lng };
+      }
+    }
+    return null;
+  };
+
+  const handlePastedLink = useCallback(async (val: string) => {
+    if (!isGoogleMapsLink(val)) return;
+
+    // Try extracting directly from the URL first
+    const direct = tryExtractCoordsFromUrl(val);
+    if (direct) {
+      setForm(p => ({ ...p, latitude: direct.lat.toFixed(6), longitude: direct.lng.toFixed(6) }));
+      toast.success(`Đã lấy tọa độ: ${direct.lat.toFixed(6)}, ${direct.lng.toFixed(6)}`);
+      return;
+    }
+
+    // Short link (share.google, goo.gl, maps.app.goo.gl) - resolve via edge function
+    setGeocoding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('resolve-maps-link', {
+        body: { url: val.trim() },
+      });
+      if (error) throw error;
+      if (data?.lat && data?.lng) {
+        setForm(p => ({ ...p, latitude: data.lat.toFixed(6), longitude: data.lng.toFixed(6) }));
+        toast.success(`Đã lấy tọa độ: ${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}`);
+      } else {
+        toast.error('Không trích xuất được tọa độ từ link. Thử dùng link dạng dài từ Google Maps.');
+      }
+    } catch {
+      toast.error('Lỗi xử lý link. Thử copy link dạng dài từ Google Maps.');
+    } finally {
+      setGeocoding(false);
+    }
+  }, []);
+
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) { toast.error('Trình duyệt không hỗ trợ GPS'); return; }
