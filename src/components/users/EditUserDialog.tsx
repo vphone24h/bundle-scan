@@ -234,6 +234,11 @@ export function EditUserDialog({
   const handleSaveInfo = () => {
     if (!user) return;
 
+    if (editEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editEmail.trim())) {
+      toast.error('Email không đúng định dạng');
+      return;
+    }
+
     if (editPassword && editPassword.length < 6) {
       toast.error('Mật khẩu phải có ít nhất 6 ký tự');
       return;
