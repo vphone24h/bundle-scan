@@ -650,7 +650,7 @@ export function DebtDetailDialog({
 
                           <div className="text-right shrink-0 flex flex-col items-end gap-1">
                             <div className="flex items-center gap-1.5">
-                              <p className={`font-semibold ${isAddition ? 'text-orange-600' : 'text-green-600'}`}>
+                              <p className={`font-semibold ${isAddition ? 'text-orange-600' : isReturnDebt ? 'text-purple-600' : 'text-green-600'}`}>
                                 {isAddition ? '+' : '-'}{formatNumber(payment.amount)}
                               </p>
                               <button
