@@ -8,49 +8,78 @@ function resolveField(key: string, receipt: any, branchInfo?: any): string {
   const customer = receipt.customer || {};
   const fmt = (n: number | undefined | null) =>
     n != null ? n.toLocaleString('vi-VN') + 'đ' : '';
+  const dateStr = (d: any) => d ? new Date(d).toLocaleDateString('vi-VN') : '';
+  const timeStr = (d: any) => d ? new Date(d).toLocaleString('vi-VN') : '';
 
   switch (key) {
-    // Shop
-    case 'store_name':
-      return branchInfo?.name || receipt.branch_name || 'Cửa hàng';
-    case 'store_phone':
-      return branchInfo?.phone ? `SĐT: ${branchInfo.phone}` : '';
-    case 'store_address':
-      return branchInfo?.address || '';
+    // Store
+    case 'store_name': return branchInfo?.name || receipt.branch_name || 'Cửa hàng';
+    case 'store_phone': return branchInfo?.phone || '';
+    case 'store_address': return branchInfo?.address || '';
+    case 'store_email': return branchInfo?.email || receipt.store_email || '';
+    case 'store_province': return branchInfo?.province || receipt.store_province || '';
+    case 'store_logo': return ''; // handled as image element
+    // Branch
+    case 'location_name': return branchInfo?.name || '';
+    case 'location_address': return branchInfo?.address || '';
+    case 'location_phone': return branchInfo?.phone || '';
+    case 'location_province': return branchInfo?.province || '';
     // Order
-    case 'created_on':
-      return `Ngày: ${new Date(receipt.sale_date || receipt.export_date || receipt.created_at || new Date()).toLocaleString('vi-VN')}`;
-    case 'invoice_code':
-      return `Mã: ${receipt.code || ''}`;
-    case 'staff_name':
-      return receipt.staff_name ? `NV: ${receipt.staff_name}` : '';
-    case 'location_name':
-      return branchInfo?.name || '';
+    case 'created_on': return dateStr(receipt.sale_date || receipt.export_date || receipt.created_at);
+    case 'created_on_time': return timeStr(receipt.sale_date || receipt.export_date || receipt.created_at);
+    case 'modified_on': return dateStr(receipt.updated_at);
+    case 'invoice_code': return receipt.code || '';
+    case 'staff_name': return receipt.staff_name || '';
+    case 'assignee_name': return receipt.assignee_name || receipt.staff_name || '';
+    case 'source': return receipt.source || '';
+    case 'order_note': return receipt.note || receipt.notes || '';
+    case 'warranty_number': return receipt.warranty_number || receipt.warranty_term || '';
     // Customer
-    case 'customer_name':
-      return customer.name ? `KH: ${customer.name}` : '';
-    case 'customer_phone':
-      return customer.phone ? `SĐT: ${customer.phone}` : '';
-    case 'billing_address':
-      return customer.address ? `ĐC: ${customer.address}` : '';
+    case 'customer_name': return customer.name || '';
+    case 'customer_phone': return customer.phone || '';
+    case 'billing_address': return customer.address || '';
+    case 'customer_code': return customer.code || '';
+    case 'customer_group': return customer.group_name || '';
+    case 'customer_debt': return customer.debt != null ? fmt(customer.debt) : '';
+    case 'debt_before': return receipt.debt_before != null ? fmt(receipt.debt_before) : '';
+    case 'customer_email': return customer.email || '';
+    // Shipping
+    case 'shipping_name': return receipt.shipping_name || '';
+    case 'shipping_phone': return receipt.shipping_phone || '';
+    case 'shipping_address': return receipt.shipping_address || '';
+    case 'ship_date': return dateStr(receipt.ship_date);
     // Totals
-    case 'total':
-      return `Tổng tiền: ${fmt(receipt.total_amount)}`;
+    case 'total': return fmt(receipt.total_amount);
+    case 'subtotal': return fmt(receipt.subtotal || receipt.total_amount);
     case 'paid_amount': {
       const paid = receipt.paid_amount ?? receipt.payments
         ?.filter((p: any) => p.payment_type !== 'debt')
         .reduce((s: number, p: any) => s + (p.amount || 0), 0);
-      return `Đã TT: ${fmt(paid)}`;
+      return fmt(paid);
     }
     case 'debt': {
       const debt = receipt.debt_amount ?? receipt.payments
         ?.filter((p: any) => p.payment_type === 'debt')
         .reduce((s: number, p: any) => s + (p.amount || 0), 0);
-      return debt > 0 ? `Công nợ: ${fmt(debt)}` : '';
+      return debt > 0 ? fmt(debt) : '0đ';
     }
     case 'discount': {
       const d = (receipt.points_discount || 0) + (receipt.voucher_discount || 0);
-      return d > 0 ? `Giảm giá: -${fmt(d)}` : '';
+      return d > 0 ? fmt(d) : '0đ';
+    }
+    case 'total_quantity': {
+      const qty = (receipt.items || []).reduce((s: number, i: any) => s + (Number(i.quantity) || 0), 0);
+      return String(qty);
+    }
+    case 'payment_method': {
+      const methods = (receipt.payments || []).map((p: any) => {
+        if (p.payment_type === 'cash') return 'Tiền mặt';
+        if (p.payment_type === 'transfer') return 'Chuyển khoản';
+        if (p.payment_type === 'card') return 'Thẻ';
+        if (p.payment_type === 'debt') return 'Công nợ';
+        return p.payment_type || '';
+      });
+      return [...new Set(methods)].join(', ');
     }
     default:
       return `{${key}}`;
