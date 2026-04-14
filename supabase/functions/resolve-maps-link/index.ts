@@ -12,17 +12,36 @@ function extractCoords(text: string): { lat: number; lng: number } | null {
     /q=(-?\d+\.\d+),(-?\d+\.\d+)/,
     /ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
     /center=(-?\d+\.\d+),(-?\d+\.\d+)/,
-    /\[(-?\d{1,3}\.\d{5,}),\s*(-?\d{1,3}\.\d{5,})\]/,
   ];
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (match) {
-      const lat = parseFloat(match[1]);
-      const lng = parseFloat(match[2]);
+  for (const p of patterns) {
+    const m = text.match(p);
+    if (m) {
+      const lat = parseFloat(m[1]);
+      const lng = parseFloat(m[2]);
       if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) return { lat, lng };
     }
   }
   return null;
+}
+
+async function geocodeNominatim(query: string): Promise<{ lat: number; lng: number; address: string } | null> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=vn`,
+      { headers: { "User-Agent": "VKHO-App/1.0" } }
+    );
+    const data = await res.json();
+    if (data?.length > 0) {
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), address: data[0].display_name };
+    }
+  } catch (_) {}
+  return null;
+}
+
+function ok(data: Record<string, unknown>) {
+  return new Response(JSON.stringify(data), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 }
 
 serve(async (req) => {
@@ -33,94 +52,71 @@ serve(async (req) => {
     if (!url) return new Response(JSON.stringify({ error: "Missing url" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     // Step 1: Follow redirects
-    const res = await fetch(url, { redirect: "follow", headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" } });
+    const res = await fetch(url, { redirect: "follow", headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" } });
     const finalUrl = res.url;
-    const body = await res.text();
 
-    // Step 2: Try extracting coords from the final URL
+    // Step 2: Try extracting coords from URL
     const fromUrl = extractCoords(finalUrl);
-    if (fromUrl) {
-      return ok(fromUrl);
-    }
+    if (fromUrl) return ok(fromUrl);
 
-    // Step 3: Try extracting coords from HTML body  
-    const fromBody = extractCoords(body);
-    if (fromBody) {
-      return ok(fromBody);
-    }
-
-    // Step 4: Extract place name from URL "q=" param
+    // Step 3: Extract place name and kgmid from URL
     let placeName = "";
     const qMatch = finalUrl.match(/[?&]q=([^&]+)/);
     if (qMatch) placeName = decodeURIComponent(qMatch[1]).replace(/\+/g, " ");
 
-    if (!placeName) {
-      const titleMatch = body.match(/<title[^>]*>([^<]+)<\/title>/i);
-      if (titleMatch) {
-        placeName = titleMatch[1].replace(/ - Google.*/i, "").trim();
-      }
-    }
+    const kgmidMatch = finalUrl.match(/kgmid=([^&]+)/);
+    const kgmid = kgmidMatch ? decodeURIComponent(kgmidMatch[1]) : null;
 
-    if (placeName) {
-      // Step 5: Try Google Maps search page to find coordinates
-      const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(placeName)}`;
+    // Step 4: Try Google Maps with kgmid or place name to get coordinates
+    if (kgmid || placeName) {
+      const searchQuery = placeName || kgmid;
+      const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(searchQuery!)}`;
       try {
         const mapsRes = await fetch(mapsUrl, {
           redirect: "follow",
-          headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" },
+          headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
         });
+        const mapsUrl2 = mapsRes.url;
+        const fromMaps = extractCoords(mapsUrl2);
+        if (fromMaps) return ok({ ...fromMaps, placeName });
+
         const mapsBody = await mapsRes.text();
-        const mapsUrlFinal = mapsRes.url;
-
-        // Check final URL for coords
-        const fromMapsUrl = extractCoords(mapsUrlFinal);
-        if (fromMapsUrl) return ok({ ...fromMapsUrl, placeName });
-
-        // Search body for coordinate patterns like [null,null,LAT,LNG] or APP_INITIALIZATION_STATE with coords
-        const coordPatterns = [
-          /\[null,null,(-?\d{1,3}\.\d{5,}),(-?\d{1,3}\.\d{5,})\]/,
-          /center[^\[]*\[(-?\d{1,3}\.\d{5,}),\s*(-?\d{1,3}\.\d{5,})\]/,
-          /latlng[^\{]*\{[^\}]*lat[^\d]*(-?\d{1,3}\.\d{5,})[^\d]*lng[^\d]*(-?\d{1,3}\.\d{5,})/i,
-          /\\"(-?\d{1,2}\.\d{5,})\\",\s*\\"(-?\d{2,3}\.\d{5,})\\"/,
-        ];
-        for (const p of coordPatterns) {
-          const m = mapsBody.match(p);
-          if (m) {
-            const lat = parseFloat(m[1]);
-            const lng = parseFloat(m[2]);
-            if (lat >= 5 && lat <= 25 && lng >= 100 && lng <= 115) {
-              return ok({ lat, lng, placeName });
-            }
-          }
-        }
-
-        // Try to find any coordinate pair in Vietnam range
-        const allCoords = [...mapsBody.matchAll(/(-?\d{1,2}\.\d{6,})\D{1,5}(\d{2,3}\.\d{6,})/g)];
-        for (const m of allCoords) {
+        // Search for coord patterns in Maps page JS data
+        // Pattern: ,[LAT],[LNG], where lat is ~8-24 (Vietnam) and lng is ~100-115
+        const coordRegex = /,(-?\d{1,2}\.\d{6,}),(\d{2,3}\.\d{6,})[,\]]/g;
+        let bestMatch = null;
+        for (const m of mapsBody.matchAll(coordRegex)) {
           const lat = parseFloat(m[1]);
           const lng = parseFloat(m[2]);
-          if (lat >= 8 && lat <= 24 && lng >= 102 && lng <= 110) {
-            return ok({ lat, lng, placeName });
+          if (lat >= 8 && lat <= 24 && lng >= 100 && lng <= 115) {
+            bestMatch = { lat, lng };
+            break;
           }
         }
-      } catch (_) {
-        // Google Maps search failed, fall through to Nominatim
+        if (bestMatch) return ok({ ...bestMatch, placeName });
+      } catch (_) {}
+    }
+
+    // Step 5: Smart Nominatim geocoding with multiple strategies
+    if (placeName) {
+      // Strategy 1: Full name
+      let result = await geocodeNominatim(placeName);
+      if (result) return ok({ ...result, placeName, approximate: true });
+
+      // Strategy 2: Remove brand prefix, keep location part
+      // "Hệ Thống Cửa Hàng Di Động VPhone24h Quận 9 - TP Thủ Đức" -> "Quận 9 TP Thủ Đức"
+      const afterDash = placeName.split(/[-–]/).pop()?.trim();
+      const locationParts = placeName.match(/(?:Quận|Huyện|Phường|Xã|TP|Thành phố|Thủ Đức|Bình Thạnh|Gò Vấp|Tân Bình|Tân Phú|Phú Nhuận|Bình Tân|Quận \d+)[^,]*/gi);
+      
+      if (locationParts && locationParts.length > 0) {
+        const locationQuery = locationParts.join(", ") + ", Hồ Chí Minh";
+        result = await geocodeNominatim(locationQuery);
+        if (result) return ok({ ...result, placeName, approximate: true });
       }
 
-      // Step 6: Fallback to Nominatim geocoding
-      const geoRes = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(placeName)}&limit=1&countrycodes=vn`,
-        { headers: { "User-Agent": "VKHO-App/1.0" } }
-      );
-      const geoData = await geoRes.json();
-      if (geoData?.length > 0) {
-        return ok({
-          lat: parseFloat(geoData[0].lat),
-          lng: parseFloat(geoData[0].lon),
-          placeName,
-          address: geoData[0].display_name,
-          approximate: true,
-        });
+      if (afterDash && afterDash !== placeName) {
+        result = await geocodeNominatim(afterDash + ", Hồ Chí Minh");
+        if (result) return ok({ ...result, placeName, approximate: true });
       }
     }
 
@@ -134,9 +130,3 @@ serve(async (req) => {
     });
   }
 });
-
-function ok(data: Record<string, unknown>) {
-  return new Response(JSON.stringify(data), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
