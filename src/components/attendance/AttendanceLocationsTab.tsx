@@ -7,8 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, MapPin, QrCode, Pencil, Trash2, Search, Loader2, Map } from 'lucide-react';
-import { LocationMapPicker } from './LocationMapPicker';
+import { Plus, MapPin, QrCode, Pencil, Trash2, Search, Loader2 } from 'lucide-react';
 import { useAttendanceLocations, useCreateAttendanceLocation, useUpdateAttendanceLocation, useDeleteAttendanceLocation } from '@/hooks/useAttendance';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { useAccessibleBranches } from '@/hooks/usePermissions';
