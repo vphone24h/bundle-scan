@@ -221,16 +221,42 @@ export function AttendanceLocationsTab() {
               <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="VD: Kho chính" />
             </div>
             <div>
-              <Label>Địa chỉ</Label>
+              <Label>Địa chỉ hoặc link Google Maps</Label>
               <div className="flex gap-2">
-                <Input value={form.address} onChange={e => { setForm(p => ({ ...p, address: e.target.value })); setShowSuggestions(false); }} placeholder="VD: Quận 9, TP Hồ Chí Minh" className="flex-1"
+                <Input value={form.address} onChange={e => {
+                  const val = e.target.value;
+                  setForm(p => ({ ...p, address: val }));
+                  setShowSuggestions(false);
+                  // Auto-detect Google Maps link on paste
+                  if (val.includes('google.com/maps') || val.includes('goo.gl/maps') || val.includes('maps.app.goo.gl')) {
+                    const patterns = [
+                      /@(-?\d+\.\d+),(-?\d+\.\d+)/,
+                      /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
+                      /q=(-?\d+\.\d+),(-?\d+\.\d+)/,
+                      /ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
+                      /(-?\d+\.\d{4,}),\s*(-?\d+\.\d{4,})/,
+                    ];
+                    for (const pattern of patterns) {
+                      const match = val.match(pattern);
+                      if (match) {
+                        const lat = parseFloat(match[1]);
+                        const lng = parseFloat(match[2]);
+                        if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                          setForm(p => ({ ...p, latitude: lat.toFixed(6), longitude: lng.toFixed(6), address: val }));
+                          toast.success(`Đã lấy tọa độ: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+                          break;
+                        }
+                      }
+                    }
+                  }
+                }} placeholder="Địa chỉ hoặc dán link Google Maps" className="flex-1"
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleGeocodeAddress(); } }}
                 />
                 <Button variant="outline" size="icon" onClick={handleGeocodeAddress} disabled={geocoding} title="Tìm tọa độ từ địa chỉ">
                   {geocoding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                 </Button>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1">Nhập địa chỉ rồi bấm 🔍 hoặc Enter để tìm</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Dán link Google Maps để lấy tọa độ chính xác, hoặc nhập địa chỉ rồi bấm 🔍</p>
               {showSuggestions && suggestions.length > 0 && (
                 <div className="border rounded-lg max-h-48 overflow-y-auto divide-y bg-background shadow-md mt-1">
                   {suggestions.map((item, idx) => (
