@@ -449,14 +449,15 @@ export function DebtDetailDialog({
                         );
                       } else if (item.type === 'payment') {
                         const p = item as typeof paymentEntries[0];
+                        const isReturnDebt = p.description?.includes('Trả hàng') || p.paymentSource === 'debt';
                         return (
                           <div
                             key={p.id}
-                            className="border border-green-200 rounded-lg p-3 bg-green-50/50 dark:border-green-900 dark:bg-green-950/30"
+                            className={`border rounded-lg p-3 ${isReturnDebt ? 'border-purple-200 bg-purple-50/50 dark:border-purple-900 dark:bg-purple-950/30' : 'border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/30'}`}
                           >
                             <div className="flex items-center gap-2 mb-1">
-                              <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-300 dark:bg-green-900/50 dark:text-green-300">
-                                Trả nợ
+                              <Badge variant="outline" className={`text-xs ${isReturnDebt ? 'bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/50 dark:text-green-300'}`}>
+                                {isReturnDebt ? 'Trả hàng giảm nợ' : 'Trả nợ'}
                               </Badge>
                               <span className="text-xs text-muted-foreground">
                                 {format(new Date(p.date), 'dd/MM/yyyy HH:mm', { locale: vi })}
