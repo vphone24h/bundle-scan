@@ -305,6 +305,18 @@ export function AttendanceLocationsTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Map Picker */}
+      <LocationMapPicker
+        open={showMap}
+        onOpenChange={setShowMap}
+        initialLat={form.latitude ? parseFloat(form.latitude) : undefined}
+        initialLng={form.longitude ? parseFloat(form.longitude) : undefined}
+        onConfirm={(lat, lng) => {
+          setForm(p => ({ ...p, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }));
+          toast.success('Đã chọn vị trí từ bản đồ');
+        }}
+      />
     </div>
   );
 }
