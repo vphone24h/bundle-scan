@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, MapPin, QrCode, Pencil, Trash2, Search, Loader2 } from 'lucide-react';
+import { Plus, MapPin, QrCode, Pencil, Trash2, Search, Loader2, Map } from 'lucide-react';
+import { LocationMapPicker } from './LocationMapPicker';
 import { useAttendanceLocations, useCreateAttendanceLocation, useUpdateAttendanceLocation, useDeleteAttendanceLocation } from '@/hooks/useAttendance';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { useAccessibleBranches } from '@/hooks/usePermissions';
@@ -39,6 +40,7 @@ export function AttendanceLocationsTab() {
   const [geocoding, setGeocoding] = useState(false);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) { toast.error('Trình duyệt không hỗ trợ GPS'); return; }
@@ -256,9 +258,14 @@ export function AttendanceLocationsTab() {
                 <Input value={form.longitude} onChange={e => setForm(p => ({ ...p, longitude: e.target.value }))} placeholder="106.660172" />
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={handleGetCurrentLocation} className="gap-1.5 w-full">
-              <MapPin className="h-3.5 w-3.5" /> Lấy vị trí hiện tại (GPS)
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" size="sm" onClick={handleGetCurrentLocation} className="gap-1.5">
+                <MapPin className="h-3.5 w-3.5" /> GPS hiện tại
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowMap(true)} className="gap-1.5">
+                <Map className="h-3.5 w-3.5" /> Chọn trên bản đồ
+              </Button>
+            </div>
             <div>
               <Label>Bán kính cho phép (50-500m)</Label>
               <Input type="number" min={50} max={500} value={form.radius_meters}
@@ -298,6 +305,18 @@ export function AttendanceLocationsTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Map Picker */}
+      <LocationMapPicker
+        open={showMap}
+        onOpenChange={setShowMap}
+        initialLat={form.latitude ? parseFloat(form.latitude) : undefined}
+        initialLng={form.longitude ? parseFloat(form.longitude) : undefined}
+        onConfirm={(lat, lng) => {
+          setForm(p => ({ ...p, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }));
+          toast.success('Đã chọn vị trí từ bản đồ');
+        }}
+      />
     </div>
   );
 }
