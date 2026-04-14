@@ -364,6 +364,7 @@ export function DebtDetailDialog({
                     description: p.description,
                     createdBy: p.profiles?.display_name || null,
                     storedBalance: (p as any).balance_after != null ? Number((p as any).balance_after) : null,
+                    paymentSource: p.payment_source || null,
                   }));
 
                 // Merge and sort by date ascending for running balance
@@ -449,14 +450,15 @@ export function DebtDetailDialog({
                         );
                       } else if (item.type === 'payment') {
                         const p = item as typeof paymentEntries[0];
+                        const isReturnDebt = p.description?.includes('Trả hàng') || p.paymentSource === 'debt';
                         return (
                           <div
                             key={p.id}
-                            className="border border-green-200 rounded-lg p-3 bg-green-50/50 dark:border-green-900 dark:bg-green-950/30"
+                            className={`border rounded-lg p-3 ${isReturnDebt ? 'border-purple-200 bg-purple-50/50 dark:border-purple-900 dark:bg-purple-950/30' : 'border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/30'}`}
                           >
                             <div className="flex items-center gap-2 mb-1">
-                              <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-300 dark:bg-green-900/50 dark:text-green-300">
-                                Trả nợ
+                              <Badge variant="outline" className={`text-xs ${isReturnDebt ? 'bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/50 dark:text-purple-300' : 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/50 dark:text-green-300'}`}>
+                                {isReturnDebt ? 'Trả hàng giảm nợ' : 'Trả nợ'}
                               </Badge>
                               <span className="text-xs text-muted-foreground">
                                 {format(new Date(p.date), 'dd/MM/yyyy HH:mm', { locale: vi })}
@@ -606,27 +608,31 @@ export function DebtDetailDialog({
                 <div className="space-y-3">
                   {enrichedHistory.map((payment) => {
                     const isAddition = payment.payment_type === 'addition';
+                    const isReturnDebt = !isAddition && (payment.description?.includes('Trả hàng') || payment.payment_source === 'debt');
+                    const borderClass = isAddition
+                      ? 'border-orange-200 bg-orange-50/50 dark:border-orange-900 dark:bg-orange-950/30'
+                      : isReturnDebt
+                      ? 'border-purple-200 bg-purple-50/50 dark:border-purple-900 dark:bg-purple-950/30'
+                      : 'border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/30';
+                    const badgeClass = isAddition
+                      ? 'bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/50 dark:text-orange-300'
+                      : isReturnDebt
+                      ? 'bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/50 dark:text-purple-300'
+                      : 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/50 dark:text-green-300';
+                    const badgeLabel = isAddition ? 'Cộng nợ' : isReturnDebt ? 'Trả hàng giảm nợ' : 'Trả nợ';
                     return (
                       <div
                         key={payment.id}
-                        className={`rounded-lg border p-3 ${
-                          isAddition
-                            ? 'border-orange-200 bg-orange-50/50 dark:border-orange-900 dark:bg-orange-950/30'
-                            : 'border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/30'
-                        }`}
+                        className={`rounded-lg border p-3 ${borderClass}`}
                       >
                          <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-1.5 mb-1">
                               <Badge
                                 variant="outline"
-                                className={`text-xs shrink-0 ${
-                                  isAddition
-                                    ? 'bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/50 dark:text-orange-300'
-                                    : 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/50 dark:text-green-300'
-                                }`}
+                                className={`text-xs shrink-0 ${badgeClass}`}
                               >
-                                {isAddition ? 'Cộng nợ' : 'Trả nợ'}
+                                {badgeLabel}
                               </Badge>
                               <span className="text-xs text-muted-foreground">
                                 {format(new Date(payment.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
@@ -644,7 +650,7 @@ export function DebtDetailDialog({
 
                           <div className="text-right shrink-0 flex flex-col items-end gap-1">
                             <div className="flex items-center gap-1.5">
-                              <p className={`font-semibold ${isAddition ? 'text-orange-600' : 'text-green-600'}`}>
+                              <p className={`font-semibold ${isAddition ? 'text-orange-600' : isReturnDebt ? 'text-purple-600' : 'text-green-600'}`}>
                                 {isAddition ? '+' : '-'}{formatNumber(payment.amount)}
                               </p>
                               <button
