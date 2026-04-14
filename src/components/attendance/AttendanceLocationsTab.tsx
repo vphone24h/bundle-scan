@@ -81,9 +81,11 @@ export function AttendanceLocationsTab() {
         body: { url: val.trim() },
       });
       if (error) throw error;
-      if (data?.lat && data?.lng) {
-        setForm(p => ({ ...p, latitude: data.lat.toFixed(6), longitude: data.lng.toFixed(6) }));
-        toast.success(`Đã lấy tọa độ: ${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}`);
+      if (data?.lat != null && data?.lng != null) {
+        const updates: Record<string, string | number> = { latitude: Number(data.lat).toFixed(6), longitude: Number(data.lng).toFixed(6) };
+        if (data.address) updates.address = data.address;
+        setForm(p => ({ ...p, ...updates } as LocForm));
+        toast.success(`Đã lấy tọa độ: ${Number(data.lat).toFixed(6)}, ${Number(data.lng).toFixed(6)}`);
       } else {
         toast.error('Không trích xuất được tọa độ từ link. Thử dùng link dạng dài từ Google Maps.');
       }
