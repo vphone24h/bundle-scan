@@ -23,34 +23,29 @@ function extractCoords(text: string): { lat: number; lng: number } | null {
   return null;
 }
 
-function safeDecode(s: string): string {
-  try {
-    let result = decodeURIComponent(s);
-    // Double-decode if still has encoded chars
-    if (result.includes('%')) result = decodeURIComponent(result);
-    return result.replace(/\+/g, " ");
-  } catch {
-    return s.replace(/\+/g, " ");
+function extractPlaceNameFromUrl(url: string): string {
+  // Find all q= values in the URL (including inside continue= params)
+  // Decode the entire URL multiple times to handle double/triple encoding
+  let decoded = url;
+  for (let i = 0; i < 3; i++) {
+    try {
+      const next = decodeURIComponent(decoded);
+      if (next === decoded) break;
+      decoded = next;
+    } catch { break; }
   }
-}
+  decoded = decoded.replace(/\+/g, " ");
 
-function extractPlaceName(url: string): string {
-  // Try direct q= param first
-  let qMatch = url.match(/[?&]q=([^&]+)/);
-  if (qMatch) {
-    const val = safeDecode(qMatch[1]);
-    if (val.length < 200 && !val.startsWith("Eh") && !/^[A-Za-z0-9_-]{40,}$/.test(val)) return val;
-  }
-  
-  // Try q= inside continue= param (Google sorry/captcha page)
-  const continueMatch = url.match(/continue=([^&]+)/);
-  if (continueMatch) {
-    const continueUrl = safeDecode(continueMatch[1]);
-    qMatch = continueUrl.match(/[?&]q=([^&]+)/);
-    if (qMatch) {
-      const val = safeDecode(qMatch[1]);
-      if (val.length < 200 && !val.startsWith("Eh") && !/^[A-Za-z0-9_-]{40,}$/.test(val)) return val;
-    }
+  // Now find all q= values
+  const qMatches = [...decoded.matchAll(/[?&]q=([^&]+)/g)];
+  for (const m of qMatches) {
+    const val = m[1].trim();
+    // Skip captcha tokens (long alphanumeric strings starting with Eh)
+    if (val.startsWith("Eh") && val.length > 50) continue;
+    if (/^[A-Za-z0-9_-]{40,}$/.test(val)) continue;
+    // Skip pure numbers
+    if (/^\d+$/.test(val)) continue;
+    if (val.length > 3 && val.length < 300) return val;
   }
   return "";
 }
@@ -90,33 +85,34 @@ serve(async (req) => {
     const fromUrl = extractCoords(finalUrl);
     if (fromUrl) return ok(fromUrl);
 
-    // Step 3: Extract place name (handles captcha/sorry pages too)
-    const placeName = extractPlaceName(finalUrl);
+    // Step 3: Extract place name from URL (handles captcha/sorry pages with double-encoding)
+    const placeName = extractPlaceNameFromUrl(finalUrl);
 
     if (placeName) {
-      // Strategy 1: Extract location keywords (Quận X, district names)
-      const locationParts = placeName.match(/(?:Quận\s*\d+|Huyện\s+\S+|TP\s+\S+[\s\S]*?(?=\s*$|\s*[-,]))/gi);
+      // Strategy 1: Extract "Quận X" and location from the name
+      const quanMatch = placeName.match(/Quận\s*\d+/i);
+      const locationAfterDash = placeName.split(/\s*[-–]\s*/).pop()?.trim();
       
-      if (locationParts) {
-        // Try "Quận 9, Thủ Đức, Hồ Chí Minh" style
-        const locationQuery = locationParts.join(", ").replace(/TP\s+/gi, "") + ", Hồ Chí Minh";
-        const result = await geocodeNominatim(locationQuery);
+      if (quanMatch && locationAfterDash) {
+        const query = `${quanMatch[0]}, ${locationAfterDash.replace(/^TP\s+/i, "")}, Hồ Chí Minh`;
+        const result = await geocodeNominatim(query);
         if (result) return ok({ ...result, placeName, approximate: true });
       }
 
-      // Strategy 2: Take part after dash (e.g. "TP Thủ Đức")
-      const afterDash = placeName.split(/\s*[-–]\s*/).pop()?.trim();
-      if (afterDash && afterDash !== placeName) {
-        // Add "Quận" context if present in full name
-        const quanMatch = placeName.match(/Quận\s*\d+/i);
-        const searchQuery = quanMatch ? `${quanMatch[0]}, ${afterDash}, Hồ Chí Minh` : `${afterDash}, Hồ Chí Minh`;
-        const result = await geocodeNominatim(searchQuery);
+      if (quanMatch) {
+        const result = await geocodeNominatim(`${quanMatch[0]}, Hồ Chí Minh`);
         if (result) return ok({ ...result, placeName, approximate: true });
       }
 
-      // Strategy 3: Full name
+      // Strategy 2: Full name
       const result = await geocodeNominatim(placeName);
       if (result) return ok({ ...result, placeName, approximate: true });
+
+      // Strategy 3: After dash only
+      if (locationAfterDash && locationAfterDash !== placeName) {
+        const result2 = await geocodeNominatim(locationAfterDash + ", Hồ Chí Minh");
+        if (result2) return ok({ ...result2, placeName, approximate: true });
+      }
     }
 
     return new Response(JSON.stringify({ error: "no_coords", resolvedUrl: finalUrl, placeName: placeName || null }), {
