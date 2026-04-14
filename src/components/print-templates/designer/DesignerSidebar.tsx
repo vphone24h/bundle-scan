@@ -1,16 +1,18 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Type, Image as ImageIcon, GripVertical, Table,
   Store, User, FileText, DollarSign, LayoutTemplate,
-  Smartphone, ShoppingBag,
+  Smartphone, ShoppingBag, Building, Truck, BookOpen,
 } from 'lucide-react';
 import { DYNAMIC_FIELDS, genId, type TemplateElement } from './types';
 import { PRESET_BLOCKS, FULL_PAGE_PRESETS } from './presets';
+import { KeywordPickerDialog } from './KeywordPickerDialog';
 
 const ICON_MAP: Record<string, any> = {
-  Store, User, FileText, DollarSign, LayoutTemplate, Table,
+  Store, User, FileText, DollarSign, LayoutTemplate, Table, Building, Truck,
 };
 
 const FULL_PRESET_ICONS = [Smartphone, ShoppingBag];
@@ -21,6 +23,12 @@ interface Props {
 }
 
 export function DesignerSidebar({ onAddElement, onAddPreset }: Props) {
+  const [keywordOpen, setKeywordOpen] = useState(false);
+
+  const handleKeywordSelect = (key: string, label: string) => {
+    onAddElement({ type: 'dynamic', x: 10, y: 10, w: 40, h: 4, field: key, fontSize: 11, textAlign: 'left' });
+  };
+
   return (
     <div className="w-full lg:w-56 shrink-0 space-y-3">
       {/* Full page presets */}
@@ -77,6 +85,14 @@ export function DesignerSidebar({ onAddElement, onAddPreset }: Props) {
               <Table className="h-3 w-3 mr-1" /> Bảng SP
             </Button>
           </div>
+          <Button
+            variant="default"
+            size="sm"
+            className="w-full text-xs mt-1"
+            onClick={() => setKeywordOpen(true)}
+          >
+            <BookOpen className="h-3 w-3 mr-1" /> Thêm từ khóa
+          </Button>
         </CardContent>
       </Card>
 
@@ -123,6 +139,12 @@ export function DesignerSidebar({ onAddElement, onAddPreset }: Props) {
           </div>
         </CardContent>
       </Card>
+
+      <KeywordPickerDialog
+        open={keywordOpen}
+        onClose={() => setKeywordOpen(false)}
+        onSelect={handleKeywordSelect}
+      />
     </div>
   );
 }
