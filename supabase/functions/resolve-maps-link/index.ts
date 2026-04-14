@@ -23,23 +23,33 @@ function extractCoords(text: string): { lat: number; lng: number } | null {
   return null;
 }
 
+function safeDecode(s: string): string {
+  try {
+    let result = decodeURIComponent(s);
+    // Double-decode if still has encoded chars
+    if (result.includes('%')) result = decodeURIComponent(result);
+    return result.replace(/\+/g, " ");
+  } catch {
+    return s.replace(/\+/g, " ");
+  }
+}
+
 function extractPlaceName(url: string): string {
-  // Try direct q= param
+  // Try direct q= param first
   let qMatch = url.match(/[?&]q=([^&]+)/);
   if (qMatch) {
-    const val = decodeURIComponent(qMatch[1]).replace(/\+/g, " ");
-    // Skip if it looks like a captcha token
-    if (val.length < 200 && !val.startsWith("Eh")) return val;
+    const val = safeDecode(qMatch[1]);
+    if (val.length < 200 && !val.startsWith("Eh") && !/^[A-Za-z0-9_-]{40,}$/.test(val)) return val;
   }
   
-  // Try q= inside a continue= param (Google sorry/captcha page)
+  // Try q= inside continue= param (Google sorry/captcha page)
   const continueMatch = url.match(/continue=([^&]+)/);
   if (continueMatch) {
-    const continueUrl = decodeURIComponent(continueMatch[1]);
+    const continueUrl = safeDecode(continueMatch[1]);
     qMatch = continueUrl.match(/[?&]q=([^&]+)/);
     if (qMatch) {
-      const val = decodeURIComponent(qMatch[1]).replace(/\+/g, " ").replace(/%([0-9A-F]{2})/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
-      if (val.length < 200 && !val.startsWith("Eh")) return val;
+      const val = safeDecode(qMatch[1]);
+      if (val.length < 200 && !val.startsWith("Eh") && !/^[A-Za-z0-9_-]{40,}$/.test(val)) return val;
     }
   }
   return "";
