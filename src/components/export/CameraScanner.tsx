@@ -162,21 +162,30 @@ export function CameraScanner({ onScan, onClose, isOpen, continuous = false, sho
 
       scannerRef.current = html5QrCode;
 
-      // iOS Safari is more strict with media constraints; overly specific width/height ideals
-      // can fail to start even though camera permission is granted.
+      // Detect platform for constraint tuning
       const isIOS =
         typeof navigator !== 'undefined' &&
         /iPad|iPhone|iPod/.test(navigator.userAgent) &&
         !(window as any).MSStream;
 
+      const isAndroid =
+        typeof navigator !== 'undefined' &&
+        /Android/i.test(navigator.userAgent);
+
+      // Android WebView / some browsers need { exact: ... } for facingMode
+      const facingModeConstraint = isAndroid
+        ? { exact: currentFacingMode as 'environment' | 'user' }
+        : currentFacingMode;
+
       const preferredConstraints: MediaTrackConstraints = isIOS
         ? { facingMode: currentFacingMode }
         : {
-            facingMode: currentFacingMode,
+            facingMode: facingModeConstraint,
             width: { ideal: 1280 },
             height: { ideal: 720 },
           };
 
+      // Fallback uses simple string (most permissive)
       const fallbackConstraints: MediaTrackConstraints = { facingMode: currentFacingMode };
 
       const fps = isIOS ? 15 : 20;
@@ -232,12 +241,12 @@ export function CameraScanner({ onScan, onClose, isOpen, continuous = false, sho
       try {
         await startWithConstraints(preferredConstraints);
       } catch (startErr: any) {
-        // Retry once with minimal constraints (helps Safari / iOS)
-        const name = startErr?.name || '';
-        if (name === 'OverconstrainedError' || name === 'NotSupportedError' || isIOS) {
+        // Retry with minimal constraints on ANY failure (helps Android + Safari / iOS)
+        console.warn('Camera start failed with preferred constraints, retrying with fallback:', startErr?.name, startErr?.message);
+        try {
           await startWithConstraints(fallbackConstraints);
-        } else {
-          throw startErr;
+        } catch (fallbackErr) {
+          throw fallbackErr;
         }
       }
       
