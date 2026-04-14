@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Type, Image as ImageIcon, GripVertical, Table,
@@ -8,6 +9,7 @@ import {
   Smartphone, ShoppingBag, Building, Truck, BookOpen,
 } from 'lucide-react';
 import { DYNAMIC_FIELDS, genId, type TemplateElement } from './types';
+import { getDefaultFieldLabel } from './fieldLabels';
 import { PRESET_BLOCKS, FULL_PAGE_PRESETS } from './presets';
 import { KeywordPickerDialog } from './KeywordPickerDialog';
 
@@ -26,7 +28,7 @@ export function DesignerSidebar({ onAddElement, onAddPreset }: Props) {
   const [keywordOpen, setKeywordOpen] = useState(false);
 
   const handleKeywordSelect = (key: string, label: string) => {
-    onAddElement({ type: 'dynamic', x: 10, y: 10, w: 40, h: 4, field: key, fontSize: 11, textAlign: 'left' });
+    onAddElement({ type: 'dynamic', x: 10, y: 10, w: 50, h: 4, field: key, fieldLabel: getDefaultFieldLabel(key), fontSize: 11, textAlign: 'left' });
   };
 
   return (
@@ -112,7 +114,7 @@ export function DesignerSidebar({ onAddElement, onAddPreset }: Props) {
                       key={f.key}
                       variant="secondary"
                       className="text-xs cursor-pointer hover:bg-primary/10 transition-colors"
-                      onClick={() => onAddElement({ type: 'dynamic', x: 10, y: 10, w: 40, h: 4, field: f.key, fontSize: 11, textAlign: 'left' })}
+                      onClick={() => onAddElement({ type: 'dynamic', x: 10, y: 10, w: 50, h: 4, field: f.key, fieldLabel: getDefaultFieldLabel(f.key), fontSize: 11, textAlign: 'left' })}
                     >
                       {f.label}
                     </Badge>
