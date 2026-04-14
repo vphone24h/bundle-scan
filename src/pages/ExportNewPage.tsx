@@ -927,12 +927,16 @@ export default function ExportNewPage() {
     setIsSubmitting(true);
 
     // Prepare optimistic receipt data for invoice display immediately
+    const staffMember = staffList?.find(s => s.id === (isSuperAdmin ? salesStaffId : user?.id));
     const optimisticCustomer = {
       id: selectedCustomer?.id || '',
       name: customerName,
       phone: customerPhone,
       address: customerAddress || null,
       email: customerEmail || null,
+      code: (selectedCustomer as any)?.entity_code || '',
+      group_name: (selectedCustomer as any)?.group_name || '',
+      membership_tier: selectedCustomer?.membership_tier || '',
     };
 
     const optimisticReceipt = {
@@ -948,6 +952,9 @@ export default function ExportNewPage() {
       points_discount: pointsDiscount,
       voucher_discount: voucherDiscount || 0,
       sale_date: new Date().toISOString(),
+      staff_name: staffMember?.full_name || staffMember?.email || '',
+      note: receiptNote || '',
+      branch_id: cart[0]?.branch_id || null,
     };
 
     // Show invoice dialog IMMEDIATELY
