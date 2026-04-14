@@ -134,16 +134,31 @@ export function PropertyPanel({ element, onUpdate, onDelete, onDuplicate, onMove
               </div>
             )}
             {element.type === 'dynamic' && (
-              <div>
-                <Label className="text-[10px]">Biến</Label>
-                <Select value={element.field || ''} onValueChange={(v) => onUpdate(element.id, { field: v })}>
-                  <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {DYNAMIC_FIELDS.flatMap((g) => g.fields).map((f) => (
-                      <SelectItem key={f.key} value={f.key}>{f.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-[10px]">Biến</Label>
+                  <Select value={element.field || ''} onValueChange={(v) => {
+                    const fieldDef = DYNAMIC_FIELDS.flatMap(g => g.fields).find(f => f.key === v);
+                    const updates: Partial<TemplateElement> = { field: v };
+                    // Auto-fill label if empty
+                    if (!element.fieldLabel && fieldDef) {
+                      updates.fieldLabel = fieldDef.label + ': ';
+                    }
+                    onUpdate(element.id, updates);
+                  }}>
+                    <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {DYNAMIC_FIELDS.flatMap((g) => g.fields).map((f) => (
+                        <SelectItem key={f.key} value={f.key}>{f.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-[10px]">Nhãn hiển thị (trước giá trị)</Label>
+                  <Input className="h-7 text-xs" value={element.fieldLabel || ''} onChange={(e) => onUpdate(element.id, { fieldLabel: e.target.value })} placeholder="VD: Tên Khách hàng: " />
+                  <p className="text-[9px] text-muted-foreground mt-0.5">Để trống nếu không muốn hiện nhãn</p>
+                </div>
               </div>
             )}
             <div>
