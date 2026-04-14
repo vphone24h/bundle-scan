@@ -58,14 +58,44 @@ export function AttendanceLocationsTab() {
     setSuggestions([]);
     setShowSuggestions(false);
     try {
-      const query = encodeURIComponent(form.address.trim());
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=8&countrycodes=vn&addressdetails=1`);
-      const data = await res.json();
-      if (data?.length > 0) {
-        setSuggestions(data);
+      const raw = form.address.trim();
+      // Try full query first, then progressively simpler versions
+      const queries = [raw];
+      // Remove "số", "đường số" prefixes and simplify
+      const simplified = raw
+        .replace(/số\s*/gi, '')
+        .replace(/đường\s*/gi, '')
+        .replace(/khu phố\s*/gi, 'KP ')
+        .replace(/phường\s*/gi, 'P.')
+        .replace(/quận\s*/gi, 'Q.')
+        .trim();
+      if (simplified !== raw) queries.push(simplified);
+      // Try just district/ward parts
+      const parts = raw.split(',').map(p => p.trim());
+      if (parts.length > 2) {
+        queries.push(parts.slice(-3).join(', '));
+        queries.push(parts.slice(-2).join(', '));
+      }
+
+      let allResults: any[] = [];
+      for (const q of queries) {
+        if (allResults.length >= 8) break;
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&countrycodes=vn&addressdetails=1`);
+        const data = await res.json();
+        if (data?.length) {
+          // Deduplicate by lat/lon
+          for (const item of data) {
+            const exists = allResults.some(r => r.lat === item.lat && r.lon === item.lon);
+            if (!exists && allResults.length < 10) allResults.push(item);
+          }
+        }
+      }
+
+      if (allResults.length > 0) {
+        setSuggestions(allResults);
         setShowSuggestions(true);
       } else {
-        toast.error('Không tìm thấy. Thử: "Quận 9, TP HCM" hoặc "số nhà, đường, phường, quận"');
+        toast.error('Không tìm thấy. Thử rút gọn: "phường X, quận Y, TP HCM"');
       }
     } catch {
       toast.error('Lỗi kết nối dịch vụ bản đồ');
