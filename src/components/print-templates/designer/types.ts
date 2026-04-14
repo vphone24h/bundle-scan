@@ -8,6 +8,7 @@ export interface TemplateElement {
   content?: string;
   field?: string;
   fontSize?: number;
+  fontFamily?: string;
   fontWeight?: 'normal' | 'bold';
   fontStyle?: 'normal' | 'italic';
   textDecoration?: 'none' | 'underline';

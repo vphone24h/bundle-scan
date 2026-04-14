@@ -96,6 +96,7 @@ function elementStyle(el: TemplateElement): string {
     `word-wrap: break-word`,
     `overflow-wrap: break-word`,
   ];
+  if (el.fontFamily) parts.push(`font-family: '${el.fontFamily}', sans-serif`);
   if (el.fontSize) parts.push(`font-size: ${el.fontSize}px`);
   if (el.fontWeight === 'bold') parts.push(`font-weight: bold`);
   if (el.fontStyle === 'italic') parts.push(`font-style: italic`);
@@ -179,6 +180,7 @@ export function renderCustomPrintHTML(
   return `
     <html>
     <head>
+      <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,400&family=Open+Sans:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;700&family=Lato:ital,wght@0,400;0,700;1,400&family=Nunito:wght@400;700&family=Be+Vietnam+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
       <title>Hoá đơn ${receipt.code || ''}</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }

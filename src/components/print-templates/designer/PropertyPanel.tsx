@@ -147,6 +147,26 @@ export function PropertyPanel({ element, onUpdate, onDelete, onDuplicate, onMove
               </div>
             )}
             <div>
+              <Label className="text-[10px]">Font chữ</Label>
+              <Select value={element.fontFamily || ''} onValueChange={(v) => onUpdate(element.id, { fontFamily: v || undefined })}>
+                <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Mặc định (Arial)" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Arial">Arial</SelectItem>
+                  <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                  <SelectItem value="Roboto">Roboto</SelectItem>
+                  <SelectItem value="Open Sans">Open Sans</SelectItem>
+                  <SelectItem value="Montserrat">Montserrat</SelectItem>
+                  <SelectItem value="Lato">Lato</SelectItem>
+                  <SelectItem value="Nunito">Nunito</SelectItem>
+                  <SelectItem value="Be Vietnam Pro">Be Vietnam Pro</SelectItem>
+                  <SelectItem value="Courier New">Courier New</SelectItem>
+                  <SelectItem value="Georgia">Georgia</SelectItem>
+                  <SelectItem value="Verdana">Verdana</SelectItem>
+                  <SelectItem value="Tahoma">Tahoma</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label className="text-[10px]">Cỡ chữ</Label>
               <Input type="number" className="h-7 text-xs" value={element.fontSize || 12} onChange={(e) => onUpdate(element.id, { fontSize: +e.target.value })} />
             </div>
