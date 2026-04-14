@@ -92,6 +92,9 @@ function elementStyle(el: TemplateElement): string {
     `height: ${(el.h / 100) * 100}%`,
     `overflow: hidden`,
     `box-sizing: border-box`,
+    `white-space: pre-wrap`,
+    `word-wrap: break-word`,
+    `overflow-wrap: break-word`,
   ];
   if (el.fontSize) parts.push(`font-size: ${el.fontSize}px`);
   if (el.fontWeight === 'bold') parts.push(`font-weight: bold`);
