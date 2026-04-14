@@ -232,12 +232,12 @@ export function CameraScanner({ onScan, onClose, isOpen, continuous = false, sho
       try {
         await startWithConstraints(preferredConstraints);
       } catch (startErr: any) {
-        // Retry once with minimal constraints (helps Safari / iOS)
-        const name = startErr?.name || '';
-        if (name === 'OverconstrainedError' || name === 'NotSupportedError' || isIOS) {
+        // Retry with minimal constraints on ANY failure (helps Android + Safari / iOS)
+        console.warn('Camera start failed with preferred constraints, retrying with fallback:', startErr?.name, startErr?.message);
+        try {
           await startWithConstraints(fallbackConstraints);
-        } else {
-          throw startErr;
+        } catch (fallbackErr) {
+          throw fallbackErr;
         }
       }
       
