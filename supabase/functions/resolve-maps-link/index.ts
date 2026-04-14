@@ -93,7 +93,15 @@ serve(async (req) => {
 
     const placeName = extractPlaceNameFromUrl(finalUrl);
 
-    if (placeName) {
+    // Debug: if no placeName found, try to show what we see
+    if (!placeName) {
+      const hasQ3D = finalUrl.includes("q%3D");
+      const encodedQMatch2 = finalUrl.match(/q%3D([^%]{0,10})/);
+      return new Response(JSON.stringify({ 
+        error: "no_coords", resolvedUrl: finalUrl, placeName: null,
+        debug: { hasQ3D, firstCharsAfterQ3D: encodedQMatch2?.[1] || null, urlLength: finalUrl.length }
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
       // Strategy 1: Extract "Quận X" and use with city
       const quanMatch = placeName.match(/Quận\s*\d+/i);
 
