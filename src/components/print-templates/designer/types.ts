@@ -7,6 +7,8 @@ export interface TemplateElement {
   h: number;
   content?: string;
   field?: string;
+  /** Label prefix for dynamic fields, e.g. "Tên Khách hàng: " */
+  fieldLabel?: string;
   fontSize?: number;
   fontFamily?: string;
   fontWeight?: 'normal' | 'bold';
