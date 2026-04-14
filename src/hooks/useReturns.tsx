@@ -1164,7 +1164,7 @@ export function useDeleteImportReturn() {
         .eq('reference_id', returnItem.id)
         .eq('reference_type', 'import_return');
 
-      // 3. Restore product: IMEI → back to in_stock; non-IMEI → add quantity back
+      // 3. Restore product: IMEI → back to in_stock; non-IMEI → add quantity back + restore status
       if (returnItem.product_id) {
         const { data: prod } = await supabase
           .from('products')
@@ -1186,12 +1186,74 @@ export function useDeleteImportReturn() {
             .update({ status: 'in_stock' })
             .eq('id', returnItem.product_id);
         } else {
-          // Non-IMEI: add the returned quantity back (undo the return)
+          // Non-IMEI: add the returned quantity back AND restore status to in_stock
           await supabase
             .from('products')
-            .update({ quantity: (prod?.quantity || 0) + returnQty })
+            .update({
+              status: 'in_stock',
+              quantity: (prod?.quantity || 0) + returnQty,
+            })
             .eq('id', returnItem.product_id);
         }
+      }
+
+      // 3b. Reverse debt payments if return was deducted from debt
+      const { data: debtPayments } = await supabase
+        .from('debt_payments')
+        .select('id, amount, payment_source, entity_id, entity_type')
+        .eq('payment_source', 'debt')
+        .eq('description', `Giảm công nợ - Trả hàng nhập: ${returnItem.product_name} (${returnItem.code})`);
+
+      for (const dp of (debtPayments || [])) {
+        // Reverse FIFO: add debt back to import receipts
+        let remainingToReverse = Number(dp.amount);
+
+        const { data: receipts } = await supabase
+          .from('import_receipts')
+          .select('id, import_date, debt_amount, paid_amount')
+          .eq('supplier_id', dp.entity_id)
+          .eq('status', 'completed')
+          .gt('paid_amount', 0)
+          .order('import_date', { ascending: false }); // Reverse FIFO
+
+        for (const r of (receipts || [])) {
+          if (remainingToReverse <= 0) break;
+          const canReverse = Math.min(remainingToReverse, Number(r.paid_amount));
+          if (canReverse > 0) {
+            await supabase.from('import_receipts').update({
+              paid_amount: Number(r.paid_amount) - canReverse,
+              debt_amount: Number(r.debt_amount) + canReverse,
+            }).eq('id', r.id);
+            remainingToReverse -= canReverse;
+          }
+        }
+
+        // If still remaining, reverse allocated_amount on addition notes
+        if (remainingToReverse > 0) {
+          const { data: additions } = await supabase
+            .from('debt_payments')
+            .select('id, amount, allocated_amount, created_at')
+            .eq('entity_type', 'supplier')
+            .eq('entity_id', dp.entity_id)
+            .eq('payment_type', 'addition')
+            .gt('allocated_amount', 0)
+            .order('created_at', { ascending: false });
+
+          for (const a of (additions || [])) {
+            if (remainingToReverse <= 0) break;
+            const allocated = Number(a.allocated_amount) || 0;
+            const canReverse = Math.min(remainingToReverse, allocated);
+            if (canReverse > 0) {
+              await supabase.from('debt_payments').update({
+                allocated_amount: allocated - canReverse,
+              }).eq('id', a.id);
+              remainingToReverse -= canReverse;
+            }
+          }
+        }
+
+        // Delete the debt payment record
+        await supabase.from('debt_payments').delete().eq('id', dp.id);
       }
 
       // 4. Delete the import return record
