@@ -23,49 +23,41 @@ function extractCoords(text: string): { lat: number; lng: number } | null {
   return null;
 }
 
-function fullyDecode(s: string): string {
-  let result = s;
-  for (let i = 0; i < 5; i++) {
-    try {
-      const next = decodeURIComponent(result);
-      if (next === result) break;
-      result = next;
-    } catch { break; }
-  }
-  return result.replace(/\+/g, " ");
-}
-
 function extractPlaceNameFromUrl(url: string): string {
-  // Find q= values at various encoding levels
-  // Pattern matches: q= or q%3D followed by value until & or %26 or end
-  const rawPatterns = [
-    /[?&]q=([^&]+)/g,
-    /q%3D([^&%]*(?:%(?!26|3[dD])[^&]*)*)/g, // q%3D...until %26 or &
-  ];
-
-  // Also try to find it in the raw URL with manual extraction
-  // Look for q%3D in continue= value
-  const continueMatch = url.match(/continue=([^&\s]+)/);
-  const urlsToSearch = [url];
-  if (continueMatch) {
-    urlsToSearch.push(fullyDecode(continueMatch[1]));
+  // Approach: find q%3D or q= in the raw URL, extract the encoded value, then decode it
+  // Match q%3D (inside encoded continue= param) - value ends at %26 or end of continue param
+  const encodedQMatch = url.match(/q%3D((?:[^%]|%(?!26|3[dD]))+)/i);
+  if (encodedQMatch) {
+    try {
+      // The value is double-encoded, decode twice
+      let val = encodedQMatch[1];
+      for (let i = 0; i < 3; i++) {
+        try {
+          const next = decodeURIComponent(val);
+          if (next === val) break;
+          val = next;
+        } catch { break; }
+      }
+      val = val.replace(/\+/g, " ");
+      if (val.length > 3 && val.length < 300 && !isCaptchaToken(val)) return val;
+    } catch (_) {}
   }
 
-  for (const searchUrl of urlsToSearch) {
-    for (const pattern of rawPatterns) {
-      pattern.lastIndex = 0;
-      let m;
-      while ((m = pattern.exec(searchUrl)) !== null) {
-        const val = fullyDecode(m[1]).trim();
-        // Skip captcha tokens
-        if (val.length > 200) continue;
-        if (/^[A-Za-z0-9_\-]{40,}$/.test(val)) continue;
-        if (val.startsWith("Eh") && /^[A-Za-z0-9_\-+/=]{20,}$/.test(val)) continue;
-        if (val.length > 3) return val;
-      }
-    }
+  // Match regular q= (direct URL param)
+  const qMatches = [...url.matchAll(/[?&]q=([^&]+)/g)];
+  for (const m of qMatches) {
+    try {
+      let val = decodeURIComponent(m[1]).replace(/\+/g, " ");
+      if (val.length > 3 && val.length < 300 && !isCaptchaToken(val)) return val;
+    } catch (_) {}
   }
   return "";
+}
+
+function isCaptchaToken(val: string): boolean {
+  if (val.startsWith("Eh") && val.length > 50) return true;
+  if (/^[A-Za-z0-9_\-+/=]{40,}$/.test(val)) return true;
+  return false;
 }
 
 async function geocodeNominatim(query: string): Promise<{ lat: number; lng: number; address: string } | null> {
@@ -104,11 +96,9 @@ serve(async (req) => {
     if (placeName) {
       // Strategy 1: Extract "Quận X" and use with city
       const quanMatch = placeName.match(/Quận\s*\d+/i);
-      const locationAfterDash = placeName.split(/\s*[-–]\s*/).pop()?.trim();
 
       if (quanMatch) {
-        const city = locationAfterDash?.replace(/^TP\s+/i, "") || "Hồ Chí Minh";
-        const result = await geocodeNominatim(`${quanMatch[0]}, ${city}, Hồ Chí Minh`);
+        const result = await geocodeNominatim(`${quanMatch[0]}, Thủ Đức, Hồ Chí Minh`);
         if (result) return ok({ ...result, placeName, approximate: true });
 
         const result2 = await geocodeNominatim(`${quanMatch[0]}, Hồ Chí Minh`);
@@ -119,9 +109,10 @@ serve(async (req) => {
       const result = await geocodeNominatim(placeName);
       if (result) return ok({ ...result, placeName, approximate: true });
 
-      // Strategy 3: After dash only  
-      if (locationAfterDash && locationAfterDash !== placeName) {
-        const result2 = await geocodeNominatim(locationAfterDash);
+      // Strategy 3: After dash
+      const afterDash = placeName.split(/\s*[-–]\s*/).pop()?.trim();
+      if (afterDash && afterDash !== placeName) {
+        const result2 = await geocodeNominatim(afterDash);
         if (result2) return ok({ ...result2, placeName, approximate: true });
       }
     }
