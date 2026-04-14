@@ -113,7 +113,7 @@ export function DesignerCanvas({ elements, selectedId, paperSize, onSelect, onUp
               onMouseDown={(e) => handleElementPointerDown(e, el)}
               onTouchStart={(e) => handleElementPointerDown(e, el)}
             >
-              <div className="w-full h-full overflow-hidden flex items-start" style={{
+              <div className={`w-full ${el.type === 'text' || el.type === 'dynamic' ? 'min-h-full' : 'h-full overflow-hidden'} flex items-start`} style={{
                 fontFamily: el.fontFamily ? `'${el.fontFamily}', sans-serif` : undefined,
                 fontSize: `${(el.fontSize || 12) * 0.6}px`,
                 fontWeight: el.fontWeight || 'normal',

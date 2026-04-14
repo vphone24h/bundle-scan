@@ -113,13 +113,15 @@ function resolveTableField(field: string, item: any, index: number): string {
  * Build inline CSS string from element properties.
  */
 function elementStyle(el: TemplateElement): string {
+  // Text & dynamic elements should NOT clip; table & image keep overflow hidden
+  const autoHeight = el.type === 'text' || el.type === 'dynamic' || el.type === 'table';
   const parts: string[] = [
     `position: absolute`,
     `left: ${(el.x / 200) * 100}%`,
     `top: ${(el.y / 100) * 100}%`,
     `width: ${(el.w / 200) * 100}%`,
-    `height: ${(el.h / 100) * 100}%`,
-    `overflow: hidden`,
+    autoHeight ? `min-height: ${(el.h / 100) * 100}%` : `height: ${(el.h / 100) * 100}%`,
+    autoHeight ? `overflow: visible` : `overflow: hidden`,
     `box-sizing: border-box`,
     `white-space: pre-wrap`,
     `word-wrap: break-word`,
@@ -234,7 +236,7 @@ export function renderCustomPrintHTML(
         .canvas {
           position: relative;
           width: 100%;
-          height: 100%;
+          min-height: 100%;
         }
         table { page-break-inside: auto; }
         tr { page-break-inside: avoid; page-break-after: auto; }
