@@ -145,8 +145,11 @@ function renderElement(el: TemplateElement, receipt: any, branchInfo?: any): str
     case 'text':
       return `<div style="${style}">${el.content || ''}</div>`;
 
-    case 'dynamic':
-      return `<div style="${style}">${resolveField(el.field || '', receipt, branchInfo)}</div>`;
+    case 'dynamic': {
+      const value = resolveField(el.field || '', receipt, branchInfo);
+      const prefix = el.fieldLabel || '';
+      return `<div style="${style}">${prefix}${value}</div>`;
+    }
 
     case 'image':
       if (el.imageUrl) {
