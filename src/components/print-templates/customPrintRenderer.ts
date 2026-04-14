@@ -96,6 +96,7 @@ function elementStyle(el: TemplateElement): string {
     `word-wrap: break-word`,
     `overflow-wrap: break-word`,
   ];
+  if (el.fontFamily) parts.push(`font-family: '${el.fontFamily}', sans-serif`);
   if (el.fontSize) parts.push(`font-size: ${el.fontSize}px`);
   if (el.fontWeight === 'bold') parts.push(`font-weight: bold`);
   if (el.fontStyle === 'italic') parts.push(`font-style: italic`);
