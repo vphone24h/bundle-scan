@@ -9,9 +9,8 @@ function extractCoords(text: string): { lat: number; lng: number } | null {
   const patterns = [
     /@(-?\d+\.\d+),(-?\d+\.\d+)/,
     /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
-    /q=(-?\d+\.\d+),(-?\d+\.\d+)/,
-    /ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
-    /center=(-?\d+\.\d+),(-?\d+\.\d+)/,
+    /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
+    /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
   ];
   for (const p of patterns) {
     const m = text.match(p);
@@ -22,6 +21,28 @@ function extractCoords(text: string): { lat: number; lng: number } | null {
     }
   }
   return null;
+}
+
+function extractPlaceName(url: string): string {
+  // Try direct q= param
+  let qMatch = url.match(/[?&]q=([^&]+)/);
+  if (qMatch) {
+    const val = decodeURIComponent(qMatch[1]).replace(/\+/g, " ");
+    // Skip if it looks like a captcha token
+    if (val.length < 200 && !val.startsWith("Eh")) return val;
+  }
+  
+  // Try q= inside a continue= param (Google sorry/captcha page)
+  const continueMatch = url.match(/continue=([^&]+)/);
+  if (continueMatch) {
+    const continueUrl = decodeURIComponent(continueMatch[1]);
+    qMatch = continueUrl.match(/[?&]q=([^&]+)/);
+    if (qMatch) {
+      const val = decodeURIComponent(qMatch[1]).replace(/\+/g, " ").replace(/%([0-9A-F]{2})/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+      if (val.length < 200 && !val.startsWith("Eh")) return val;
+    }
+  }
+  return "";
 }
 
 async function geocodeNominatim(query: string): Promise<{ lat: number; lng: number; address: string } | null> {
@@ -52,75 +73,43 @@ serve(async (req) => {
     if (!url) return new Response(JSON.stringify({ error: "Missing url" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     // Step 1: Follow redirects
-    const res = await fetch(url, { redirect: "follow", headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" } });
+    const res = await fetch(url, { redirect: "follow", headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)" } });
     const finalUrl = res.url;
 
     // Step 2: Try extracting coords from URL
     const fromUrl = extractCoords(finalUrl);
     if (fromUrl) return ok(fromUrl);
 
-    // Step 3: Extract place name and kgmid from URL
-    let placeName = "";
-    const qMatch = finalUrl.match(/[?&]q=([^&]+)/);
-    if (qMatch) placeName = decodeURIComponent(qMatch[1]).replace(/\+/g, " ");
+    // Step 3: Extract place name (handles captcha/sorry pages too)
+    const placeName = extractPlaceName(finalUrl);
 
-    const kgmidMatch = finalUrl.match(/kgmid=([^&]+)/);
-    const kgmid = kgmidMatch ? decodeURIComponent(kgmidMatch[1]) : null;
-
-    // Step 4: Try Google Maps with kgmid or place name to get coordinates
-    if (kgmid || placeName) {
-      const searchQuery = placeName || kgmid;
-      const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(searchQuery!)}`;
-      try {
-        const mapsRes = await fetch(mapsUrl, {
-          redirect: "follow",
-          headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
-        });
-        const mapsUrl2 = mapsRes.url;
-        const fromMaps = extractCoords(mapsUrl2);
-        if (fromMaps) return ok({ ...fromMaps, placeName });
-
-        const mapsBody = await mapsRes.text();
-        // Search for coord patterns in Maps page JS data
-        // Pattern: ,[LAT],[LNG], where lat is ~8-24 (Vietnam) and lng is ~100-115
-        const coordRegex = /,(-?\d{1,2}\.\d{6,}),(\d{2,3}\.\d{6,})[,\]]/g;
-        let bestMatch = null;
-        for (const m of mapsBody.matchAll(coordRegex)) {
-          const lat = parseFloat(m[1]);
-          const lng = parseFloat(m[2]);
-          if (lat >= 8 && lat <= 24 && lng >= 100 && lng <= 115) {
-            bestMatch = { lat, lng };
-            break;
-          }
-        }
-        if (bestMatch) return ok({ ...bestMatch, placeName });
-      } catch (_) {}
-    }
-
-    // Step 5: Smart Nominatim geocoding with multiple strategies
     if (placeName) {
-      // Strategy 1: Full name
-      let result = await geocodeNominatim(placeName);
-      if (result) return ok({ ...result, placeName, approximate: true });
-
-      // Strategy 2: Remove brand prefix, keep location part
-      // "Hệ Thống Cửa Hàng Di Động VPhone24h Quận 9 - TP Thủ Đức" -> "Quận 9 TP Thủ Đức"
-      const afterDash = placeName.split(/[-–]/).pop()?.trim();
-      const locationParts = placeName.match(/(?:Quận|Huyện|Phường|Xã|TP|Thành phố|Thủ Đức|Bình Thạnh|Gò Vấp|Tân Bình|Tân Phú|Phú Nhuận|Bình Tân|Quận \d+)[^,]*/gi);
+      // Strategy 1: Extract location keywords (Quận X, district names)
+      const locationParts = placeName.match(/(?:Quận\s*\d+|Huyện\s+\S+|TP\s+\S+[\s\S]*?(?=\s*$|\s*[-,]))/gi);
       
-      if (locationParts && locationParts.length > 0) {
-        const locationQuery = locationParts.join(", ") + ", Hồ Chí Minh";
-        result = await geocodeNominatim(locationQuery);
+      if (locationParts) {
+        // Try "Quận 9, Thủ Đức, Hồ Chí Minh" style
+        const locationQuery = locationParts.join(", ").replace(/TP\s+/gi, "") + ", Hồ Chí Minh";
+        const result = await geocodeNominatim(locationQuery);
         if (result) return ok({ ...result, placeName, approximate: true });
       }
 
+      // Strategy 2: Take part after dash (e.g. "TP Thủ Đức")
+      const afterDash = placeName.split(/\s*[-–]\s*/).pop()?.trim();
       if (afterDash && afterDash !== placeName) {
-        result = await geocodeNominatim(afterDash + ", Hồ Chí Minh");
+        // Add "Quận" context if present in full name
+        const quanMatch = placeName.match(/Quận\s*\d+/i);
+        const searchQuery = quanMatch ? `${quanMatch[0]}, ${afterDash}, Hồ Chí Minh` : `${afterDash}, Hồ Chí Minh`;
+        const result = await geocodeNominatim(searchQuery);
         if (result) return ok({ ...result, placeName, approximate: true });
       }
+
+      // Strategy 3: Full name
+      const result = await geocodeNominatim(placeName);
+      if (result) return ok({ ...result, placeName, approximate: true });
     }
 
-    return new Response(JSON.stringify({ error: "no_coords", resolvedUrl: finalUrl, placeName }), {
+    return new Response(JSON.stringify({ error: "no_coords", resolvedUrl: finalUrl, placeName: placeName || null }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
