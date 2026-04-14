@@ -192,12 +192,29 @@ export function AttendanceLocationsTab() {
             <div>
               <Label>Địa chỉ</Label>
               <div className="flex gap-2">
-                <Input value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} placeholder="VD: 54 Ngõ 668 Triều Khúc, Hà Nội" className="flex-1" />
+                <Input value={form.address} onChange={e => { setForm(p => ({ ...p, address: e.target.value })); setShowSuggestions(false); }} placeholder="VD: Quận 9, TP Hồ Chí Minh" className="flex-1"
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleGeocodeAddress(); } }}
+                />
                 <Button variant="outline" size="icon" onClick={handleGeocodeAddress} disabled={geocoding} title="Tìm tọa độ từ địa chỉ">
                   {geocoding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                 </Button>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1">Nhập địa chỉ rồi bấm 🔍 để tự lấy tọa độ</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Nhập địa chỉ rồi bấm 🔍 hoặc Enter để tìm</p>
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="border rounded-lg max-h-48 overflow-y-auto divide-y bg-background shadow-md mt-1">
+                  {suggestions.map((item, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className="w-full px-3 py-2.5 text-left hover:bg-muted/50 flex items-start gap-2"
+                      onClick={() => handleSelectSuggestion(item)}
+                    >
+                      <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <span className="text-xs leading-relaxed">{item.display_name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
