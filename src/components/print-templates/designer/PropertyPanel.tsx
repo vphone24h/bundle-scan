@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,6 +39,7 @@ function ImageUploadSection({ element, onUpdate }: { element: TemplateElement; o
       onUpdate(element.id, { imageUrl: data.publicUrl });
     } catch (err: any) {
       console.error('Upload failed:', err);
+      toast({ title: 'Tải ảnh thất bại', description: err?.message || 'Vui lòng thử lại', variant: 'destructive' });
     } finally {
       setUploading(false);
     }
