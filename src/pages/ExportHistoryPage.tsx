@@ -402,6 +402,9 @@ export default function ExportHistoryPage() {
       tax_amount: (receipt as any).tax_amount || 0,
       tax_rate: (receipt as any).tax_rate || 0,
       subtotal_amount: (receipt as any).subtotal_amount || 0,
+      note: receipt.note || '',
+      sales_staff_id: (receipt as any).sales_staff_id || null,
+      staff_name: (receipt as any).staff_name || '',
     });
     setShowPrintDialog(true);
   };
