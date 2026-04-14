@@ -45,7 +45,7 @@ function extractPlaceNameFromUrl(url: string): string {
 
   // Also try to find it in the raw URL with manual extraction
   // Look for q%3D in continue= value
-  const continueMatch = url.match(/continue=([^\s]+)/);
+  const continueMatch = url.match(/continue=([^&\s]+)/);
   const urlsToSearch = [url];
   if (continueMatch) {
     urlsToSearch.push(fullyDecode(continueMatch[1]));
