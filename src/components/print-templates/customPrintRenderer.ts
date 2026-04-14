@@ -33,7 +33,14 @@ function resolveField(key: string, receipt: any, branchInfo?: any): string {
     case 'assignee_name': return receipt.assignee_name || receipt.staff_name || '';
     case 'source': return receipt.source || '';
     case 'order_note': return receipt.note || receipt.notes || '';
-    case 'warranty_number': return receipt.warranty_number || receipt.warranty_term || '';
+    case 'warranty_number': {
+      if (receipt.warranty_number) return receipt.warranty_number;
+      if (receipt.warranty_term) return receipt.warranty_term;
+      // Aggregate from items if not set at receipt level
+      const items = receipt.items || [];
+      const warranties = [...new Set(items.map((i: any) => i.warranty).filter(Boolean))];
+      return warranties.join(', ');
+    }
     // Customer
     case 'customer_name': return customer.name || '';
     case 'customer_phone': return customer.phone || '';
