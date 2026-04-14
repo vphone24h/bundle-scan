@@ -295,7 +295,7 @@ export function AttendanceLocationsTab() {
                   {geocoding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                 </Button>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1">Dán link Google Maps để lấy tọa độ chính xác, hoặc nhập địa chỉ rồi bấm 🔍</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Dán link Google Maps (mở Maps → nhấn Chia sẻ → Sao chép) hoặc nhập địa chỉ rồi bấm 🔍</p>
               {showSuggestions && suggestions.length > 0 && (
                 <div className="border rounded-lg max-h-48 overflow-y-auto divide-y bg-background shadow-md mt-1">
                   {suggestions.map((item, idx) => (
