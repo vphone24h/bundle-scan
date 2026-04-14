@@ -927,7 +927,7 @@ export default function ExportNewPage() {
     setIsSubmitting(true);
 
     // Prepare optimistic receipt data for invoice display immediately
-    const staffMember = staffList?.find(s => s.id === (isSuperAdmin ? salesStaffId : user?.id));
+    const staffMember = staffList?.find(s => s.user_id === (isSuperAdmin ? salesStaffId : user?.id));
     const optimisticCustomer = {
       id: selectedCustomer?.id || '',
       name: customerName,
@@ -952,7 +952,7 @@ export default function ExportNewPage() {
       points_discount: pointsDiscount,
       voucher_discount: voucherDiscount || 0,
       sale_date: new Date().toISOString(),
-      staff_name: staffMember?.full_name || staffMember?.email || '',
+      staff_name: staffMember?.display_name || '',
       note: receiptNote || '',
       branch_id: cart[0]?.branch_id || null,
     };
