@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -227,28 +228,7 @@ export function AttendanceLocationsTab() {
                   const val = e.target.value;
                   setForm(p => ({ ...p, address: val }));
                   setShowSuggestions(false);
-                  // Auto-detect Google Maps link on paste
-                  if (val.includes('google.com/maps') || val.includes('goo.gl/maps') || val.includes('maps.app.goo.gl')) {
-                    const patterns = [
-                      /@(-?\d+\.\d+),(-?\d+\.\d+)/,
-                      /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
-                      /q=(-?\d+\.\d+),(-?\d+\.\d+)/,
-                      /ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
-                      /(-?\d+\.\d{4,}),\s*(-?\d+\.\d{4,})/,
-                    ];
-                    for (const pattern of patterns) {
-                      const match = val.match(pattern);
-                      if (match) {
-                        const lat = parseFloat(match[1]);
-                        const lng = parseFloat(match[2]);
-                        if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-                          setForm(p => ({ ...p, latitude: lat.toFixed(6), longitude: lng.toFixed(6), address: val }));
-                          toast.success(`Đã lấy tọa độ: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-                          break;
-                        }
-                      }
-                    }
-                  }
+                  handlePastedLink(val);
                 }} placeholder="Địa chỉ hoặc dán link Google Maps" className="flex-1"
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleGeocodeAddress(); } }}
                 />
