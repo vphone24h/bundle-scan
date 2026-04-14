@@ -83,11 +83,15 @@ export function AttendanceLocationsTab() {
       if (error) throw error;
       if (data?.lat != null && data?.lng != null) {
         const updates: Record<string, string | number> = { latitude: Number(data.lat).toFixed(6), longitude: Number(data.lng).toFixed(6) };
-        if (data.address) updates.address = data.address;
+        if (data.address) updates.address = String(data.address);
         setForm(p => ({ ...p, ...updates } as LocForm));
-        toast.success(`Đã lấy tọa độ: ${Number(data.lat).toFixed(6)}, ${Number(data.lng).toFixed(6)}`);
+        if (data.approximate) {
+          toast.warning(`Tọa độ gần đúng cho "${data.placeName}". Nên kiểm tra lại trên Google Maps.`);
+        } else {
+          toast.success(`Đã lấy tọa độ: ${Number(data.lat).toFixed(6)}, ${Number(data.lng).toFixed(6)}`);
+        }
       } else {
-        toast.error('Không trích xuất được tọa độ từ link. Thử dùng link dạng dài từ Google Maps.');
+        toast.error('Không lấy được tọa độ. Mở Google Maps → nhấn "Chia sẻ" → chọn "Sao chép liên kết" (link dạng dài có @lat,lng).');
       }
     } catch {
       toast.error('Lỗi xử lý link. Thử copy link dạng dài từ Google Maps.');
