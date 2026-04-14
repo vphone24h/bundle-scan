@@ -1,4 +1,5 @@
 import type { TemplateElement } from './types';
+import { getDefaultFieldLabel as lbl } from './fieldLabels';
 
 export const PRESET_BLOCKS: { name: string; icon: string; elements: Omit<TemplateElement, 'id'>[] }[] = [
   {
@@ -6,8 +7,8 @@ export const PRESET_BLOCKS: { name: string; icon: string; elements: Omit<Templat
     icon: 'LayoutTemplate',
     elements: [
       { type: 'dynamic', x: 5, y: 2, w: 90, h: 6, field: 'store_name', fontSize: 20, fontWeight: 'bold', textAlign: 'center' },
-      { type: 'dynamic', x: 5, y: 8, w: 90, h: 4, field: 'store_address', fontSize: 11, textAlign: 'center' },
-      { type: 'dynamic', x: 5, y: 12, w: 90, h: 4, field: 'store_phone', fontSize: 11, textAlign: 'center' },
+      { type: 'dynamic', x: 5, y: 8, w: 90, h: 4, field: 'store_address', fieldLabel: lbl('store_address'), fontSize: 11, textAlign: 'center' },
+      { type: 'dynamic', x: 5, y: 12, w: 90, h: 4, field: 'store_phone', fieldLabel: lbl('store_phone'), fontSize: 11, textAlign: 'center' },
     ],
   },
   {
@@ -15,18 +16,18 @@ export const PRESET_BLOCKS: { name: string; icon: string; elements: Omit<Templat
     icon: 'FileText',
     elements: [
       { type: 'text', x: 5, y: 20, w: 90, h: 5, content: 'HOÁ ĐƠN BÁN HÀNG', fontSize: 18, fontWeight: 'bold', textAlign: 'center', textTransform: 'uppercase' },
-      { type: 'dynamic', x: 5, y: 26, w: 45, h: 4, field: 'invoice_code', fontSize: 11 },
-      { type: 'dynamic', x: 50, y: 26, w: 45, h: 4, field: 'created_on', fontSize: 11, textAlign: 'right' },
-      { type: 'dynamic', x: 5, y: 30, w: 45, h: 4, field: 'staff_name', fontSize: 11 },
+      { type: 'dynamic', x: 5, y: 26, w: 45, h: 4, field: 'invoice_code', fieldLabel: lbl('invoice_code'), fontSize: 11 },
+      { type: 'dynamic', x: 50, y: 26, w: 45, h: 4, field: 'created_on', fieldLabel: lbl('created_on'), fontSize: 11, textAlign: 'right' },
+      { type: 'dynamic', x: 5, y: 30, w: 45, h: 4, field: 'staff_name', fieldLabel: lbl('staff_name'), fontSize: 11 },
     ],
   },
   {
     name: 'Thông tin khách hàng',
     icon: 'User',
     elements: [
-      { type: 'dynamic', x: 5, y: 36, w: 60, h: 4, field: 'customer_name', fontSize: 12, fontWeight: 'bold' },
-      { type: 'dynamic', x: 5, y: 40, w: 45, h: 4, field: 'customer_phone', fontSize: 11 },
-      { type: 'dynamic', x: 5, y: 44, w: 90, h: 4, field: 'billing_address', fontSize: 11 },
+      { type: 'dynamic', x: 5, y: 36, w: 60, h: 4, field: 'customer_name', fieldLabel: lbl('customer_name'), fontSize: 12, fontWeight: 'bold' },
+      { type: 'dynamic', x: 5, y: 40, w: 45, h: 4, field: 'customer_phone', fieldLabel: lbl('customer_phone'), fontSize: 11 },
+      { type: 'dynamic', x: 5, y: 44, w: 90, h: 4, field: 'billing_address', fieldLabel: lbl('billing_address'), fontSize: 11 },
     ],
   },
   {
@@ -49,7 +50,7 @@ export const PRESET_BLOCKS: { name: string; icon: string; elements: Omit<Templat
     name: 'Tổng tiền',
     icon: 'DollarSign',
     elements: [
-      { type: 'dynamic', x: 100, y: 78, w: 90, h: 5, field: 'total', fontSize: 16, fontWeight: 'bold', textAlign: 'right' },
+      { type: 'dynamic', x: 100, y: 78, w: 90, h: 5, field: 'total', fieldLabel: lbl('total'), fontSize: 16, fontWeight: 'bold', textAlign: 'right' },
     ],
   },
   {
@@ -73,11 +74,11 @@ export const FULL_PAGE_PRESETS: { name: string; description: string; elements: O
     description: 'Mẫu cửa hàng điện thoại có chính sách bảo hành',
     elements: [
       // ─── HEADER ───
-      { type: 'image', x: 3, y: 1, w: 18, h: 9, imageUrl: '' }, // Logo placeholder
+      { type: 'image', x: 3, y: 1, w: 18, h: 9, imageUrl: '' },
       { type: 'dynamic', x: 22, y: 1, w: 60, h: 5, field: 'store_name', fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
       { type: 'dynamic', x: 22, y: 5, w: 60, h: 3, field: 'store_address', fontSize: 9, textAlign: 'center' },
       { type: 'dynamic', x: 22, y: 8, w: 60, h: 3, field: 'store_phone', fontSize: 9, textAlign: 'center' },
-      { type: 'dynamic', x: 130, y: 1, w: 65, h: 4, field: 'staff_name', fontSize: 10, textAlign: 'right' },
+      { type: 'dynamic', x: 130, y: 1, w: 65, h: 4, field: 'staff_name', fieldLabel: lbl('staff_name'), fontSize: 10, textAlign: 'right' },
       { type: 'dynamic', x: 130, y: 5, w: 65, h: 4, field: 'location_name', fontSize: 10, textAlign: 'right' },
 
       // ─── TITLE ───
@@ -86,10 +87,11 @@ export const FULL_PAGE_PRESETS: { name: string; description: string; elements: O
       { type: 'line', x: 3, y: 18, w: 194, h: 1 },
 
       // ─── CUSTOMER INFO ───
-      { type: 'dynamic', x: 5, y: 20, w: 95, h: 4, field: 'customer_name', fontSize: 11, fontWeight: 'bold' },
-      { type: 'dynamic', x: 100, y: 20, w: 95, h: 4, field: 'customer_phone', fontSize: 11 },
-      { type: 'dynamic', x: 5, y: 24, w: 95, h: 4, field: 'billing_address', fontSize: 11 },
-      { type: 'dynamic', x: 100, y: 24, w: 95, h: 4, field: 'created_on', fontSize: 11, textAlign: 'right' },
+      { type: 'dynamic', x: 5, y: 20, w: 95, h: 4, field: 'customer_name', fieldLabel: lbl('customer_name'), fontSize: 11, fontWeight: 'bold' },
+      { type: 'dynamic', x: 100, y: 20, w: 95, h: 4, field: 'customer_phone', fieldLabel: lbl('customer_phone'), fontSize: 11 },
+      { type: 'dynamic', x: 5, y: 24, w: 95, h: 4, field: 'billing_address', fieldLabel: lbl('billing_address'), fontSize: 11 },
+      { type: 'dynamic', x: 100, y: 24, w: 95, h: 4, field: 'warranty_number', fieldLabel: lbl('warranty_number'), fontSize: 11 },
+      { type: 'dynamic', x: 150, y: 24, w: 45, h: 4, field: 'created_on', fieldLabel: '', fontSize: 11, textAlign: 'right' },
 
       // ─── PRODUCT TABLE ───
       {
@@ -104,7 +106,7 @@ export const FULL_PAGE_PRESETS: { name: string; description: string; elements: O
       },
 
       // ─── TOTAL ───
-      { type: 'dynamic', x: 100, y: 45, w: 95, h: 5, field: 'total', fontSize: 14, fontWeight: 'bold', textAlign: 'right' },
+      { type: 'dynamic', x: 100, y: 45, w: 95, h: 5, field: 'total', fieldLabel: lbl('total'), fontSize: 14, fontWeight: 'bold', textAlign: 'right' },
 
       // ─── WARRANTY POLICY LEFT ───
       { type: 'text', x: 3, y: 51, w: 95, h: 4, content: 'CHÍNH SÁCH BẢO HÀNH MÁY CŨ TẠI VKHO', fontSize: 10, fontWeight: 'bold' },
@@ -144,12 +146,12 @@ export const FULL_PAGE_PRESETS: { name: string; description: string; elements: O
       { type: 'text', x: 5, y: 15, w: 190, h: 5, content: 'HOÁ ĐƠN BÁN HÀNG', fontSize: 18, fontWeight: 'bold', textAlign: 'center', textTransform: 'uppercase' },
 
       // ─── ORDER + CUSTOMER ───
-      { type: 'dynamic', x: 5, y: 22, w: 90, h: 4, field: 'invoice_code', fontSize: 11 },
-      { type: 'dynamic', x: 100, y: 22, w: 95, h: 4, field: 'created_on', fontSize: 11, textAlign: 'right' },
-      { type: 'dynamic', x: 5, y: 26, w: 90, h: 4, field: 'customer_name', fontSize: 11, fontWeight: 'bold' },
-      { type: 'dynamic', x: 100, y: 26, w: 95, h: 4, field: 'customer_phone', fontSize: 11, textAlign: 'right' },
-      { type: 'dynamic', x: 5, y: 30, w: 120, h: 4, field: 'billing_address', fontSize: 11 },
-      { type: 'dynamic', x: 140, y: 30, w: 55, h: 4, field: 'staff_name', fontSize: 11, textAlign: 'right' },
+      { type: 'dynamic', x: 5, y: 22, w: 90, h: 4, field: 'invoice_code', fieldLabel: lbl('invoice_code'), fontSize: 11 },
+      { type: 'dynamic', x: 100, y: 22, w: 95, h: 4, field: 'created_on', fieldLabel: lbl('created_on'), fontSize: 11, textAlign: 'right' },
+      { type: 'dynamic', x: 5, y: 26, w: 90, h: 4, field: 'customer_name', fieldLabel: lbl('customer_name'), fontSize: 11, fontWeight: 'bold' },
+      { type: 'dynamic', x: 100, y: 26, w: 95, h: 4, field: 'customer_phone', fieldLabel: lbl('customer_phone'), fontSize: 11, textAlign: 'right' },
+      { type: 'dynamic', x: 5, y: 30, w: 120, h: 4, field: 'billing_address', fieldLabel: lbl('billing_address'), fontSize: 11 },
+      { type: 'dynamic', x: 140, y: 30, w: 55, h: 4, field: 'staff_name', fieldLabel: lbl('staff_name'), fontSize: 11, textAlign: 'right' },
 
       // ─── TABLE ───
       {
@@ -164,10 +166,10 @@ export const FULL_PAGE_PRESETS: { name: string; description: string; elements: O
       },
 
       // ─── TOTALS ───
-      { type: 'dynamic', x: 100, y: 62, w: 95, h: 4, field: 'discount', fontSize: 11, textAlign: 'right' },
-      { type: 'dynamic', x: 100, y: 66, w: 95, h: 5, field: 'total', fontSize: 14, fontWeight: 'bold', textAlign: 'right' },
-      { type: 'dynamic', x: 100, y: 71, w: 95, h: 4, field: 'paid_amount', fontSize: 11, textAlign: 'right' },
-      { type: 'dynamic', x: 100, y: 75, w: 95, h: 4, field: 'debt', fontSize: 11, textAlign: 'right' },
+      { type: 'dynamic', x: 100, y: 62, w: 95, h: 4, field: 'discount', fieldLabel: lbl('discount'), fontSize: 11, textAlign: 'right' },
+      { type: 'dynamic', x: 100, y: 66, w: 95, h: 5, field: 'total', fieldLabel: lbl('total'), fontSize: 14, fontWeight: 'bold', textAlign: 'right' },
+      { type: 'dynamic', x: 100, y: 71, w: 95, h: 4, field: 'paid_amount', fieldLabel: lbl('paid_amount'), fontSize: 11, textAlign: 'right' },
+      { type: 'dynamic', x: 100, y: 75, w: 95, h: 4, field: 'debt', fieldLabel: lbl('debt'), fontSize: 11, textAlign: 'right' },
 
       // ─── NOTE ───
       { type: 'text', x: 5, y: 80, w: 190, h: 4, content: 'Cảm ơn quý khách đã mua hàng!', fontSize: 12, fontStyle: 'italic', textAlign: 'center' },

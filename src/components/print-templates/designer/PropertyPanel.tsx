@@ -13,6 +13,7 @@ import {
   Plus, Copy, ArrowUp, ArrowDown, Upload, Loader2,
 } from 'lucide-react';
 import { DYNAMIC_FIELDS, TABLE_FIELD_OPTIONS, type TemplateElement } from './types';
+import { getDefaultFieldLabel } from './fieldLabels';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
@@ -138,11 +139,9 @@ export function PropertyPanel({ element, onUpdate, onDelete, onDuplicate, onMove
                 <div>
                   <Label className="text-[10px]">Biến</Label>
                   <Select value={element.field || ''} onValueChange={(v) => {
-                    const fieldDef = DYNAMIC_FIELDS.flatMap(g => g.fields).find(f => f.key === v);
                     const updates: Partial<TemplateElement> = { field: v };
-                    // Auto-fill label if empty
-                    if (!element.fieldLabel && fieldDef) {
-                      updates.fieldLabel = fieldDef.label + ': ';
+                    if (!element.fieldLabel) {
+                      updates.fieldLabel = getDefaultFieldLabel(v);
                     }
                     onUpdate(element.id, updates);
                   }}>
