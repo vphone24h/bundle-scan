@@ -23,29 +23,47 @@ function extractCoords(text: string): { lat: number; lng: number } | null {
   return null;
 }
 
-function extractPlaceNameFromUrl(url: string): string {
-  // Find all q= values in the URL (including inside continue= params)
-  // Decode the entire URL multiple times to handle double/triple encoding
-  let decoded = url;
-  for (let i = 0; i < 3; i++) {
+function fullyDecode(s: string): string {
+  let result = s;
+  for (let i = 0; i < 5; i++) {
     try {
-      const next = decodeURIComponent(decoded);
-      if (next === decoded) break;
-      decoded = next;
+      const next = decodeURIComponent(result);
+      if (next === result) break;
+      result = next;
     } catch { break; }
   }
-  decoded = decoded.replace(/\+/g, " ");
+  return result.replace(/\+/g, " ");
+}
 
-  // Now find all q= values
-  const qMatches = [...decoded.matchAll(/[?&]q=([^&]+)/g)];
-  for (const m of qMatches) {
-    const val = m[1].trim();
-    // Skip captcha tokens (long alphanumeric strings starting with Eh)
-    if (val.startsWith("Eh") && val.length > 50) continue;
-    if (/^[A-Za-z0-9_-]{40,}$/.test(val)) continue;
-    // Skip pure numbers
-    if (/^\d+$/.test(val)) continue;
-    if (val.length > 3 && val.length < 300) return val;
+function extractPlaceNameFromUrl(url: string): string {
+  // Find q= values at various encoding levels
+  // Pattern matches: q= or q%3D followed by value until & or %26 or end
+  const rawPatterns = [
+    /[?&]q=([^&]+)/g,
+    /q%3D([^&%]*(?:%(?!26|3[dD])[^&]*)*)/g, // q%3D...until %26 or &
+  ];
+
+  // Also try to find it in the raw URL with manual extraction
+  // Look for q%3D in continue= value
+  const continueMatch = url.match(/continue=([^\s]+)/);
+  const urlsToSearch = [url];
+  if (continueMatch) {
+    urlsToSearch.push(fullyDecode(continueMatch[1]));
+  }
+
+  for (const searchUrl of urlsToSearch) {
+    for (const pattern of rawPatterns) {
+      pattern.lastIndex = 0;
+      let m;
+      while ((m = pattern.exec(searchUrl)) !== null) {
+        const val = fullyDecode(m[1]).trim();
+        // Skip captcha tokens
+        if (val.length > 200) continue;
+        if (/^[A-Za-z0-9_\-]{40,}$/.test(val)) continue;
+        if (val.startsWith("Eh") && /^[A-Za-z0-9_\-+/=]{20,}$/.test(val)) continue;
+        if (val.length > 3) return val;
+      }
+    }
   }
   return "";
 }
@@ -65,9 +83,7 @@ async function geocodeNominatim(query: string): Promise<{ lat: number; lng: numb
 }
 
 function ok(data: Record<string, unknown>) {
-  return new Response(JSON.stringify(data), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  return new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
 
 serve(async (req) => {
@@ -77,40 +93,35 @@ serve(async (req) => {
     const { url } = await req.json();
     if (!url) return new Response(JSON.stringify({ error: "Missing url" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    // Step 1: Follow redirects
     const res = await fetch(url, { redirect: "follow", headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)" } });
     const finalUrl = res.url;
 
-    // Step 2: Try extracting coords from URL
     const fromUrl = extractCoords(finalUrl);
     if (fromUrl) return ok(fromUrl);
 
-    // Step 3: Extract place name from URL (handles captcha/sorry pages with double-encoding)
     const placeName = extractPlaceNameFromUrl(finalUrl);
 
     if (placeName) {
-      // Strategy 1: Extract "Quận X" and location from the name
+      // Strategy 1: Extract "Quận X" and use with city
       const quanMatch = placeName.match(/Quận\s*\d+/i);
       const locationAfterDash = placeName.split(/\s*[-–]\s*/).pop()?.trim();
-      
-      if (quanMatch && locationAfterDash) {
-        const query = `${quanMatch[0]}, ${locationAfterDash.replace(/^TP\s+/i, "")}, Hồ Chí Minh`;
-        const result = await geocodeNominatim(query);
-        if (result) return ok({ ...result, placeName, approximate: true });
-      }
 
       if (quanMatch) {
-        const result = await geocodeNominatim(`${quanMatch[0]}, Hồ Chí Minh`);
+        const city = locationAfterDash?.replace(/^TP\s+/i, "") || "Hồ Chí Minh";
+        const result = await geocodeNominatim(`${quanMatch[0]}, ${city}, Hồ Chí Minh`);
         if (result) return ok({ ...result, placeName, approximate: true });
+
+        const result2 = await geocodeNominatim(`${quanMatch[0]}, Hồ Chí Minh`);
+        if (result2) return ok({ ...result2, placeName, approximate: true });
       }
 
       // Strategy 2: Full name
       const result = await geocodeNominatim(placeName);
       if (result) return ok({ ...result, placeName, approximate: true });
 
-      // Strategy 3: After dash only
+      // Strategy 3: After dash only  
       if (locationAfterDash && locationAfterDash !== placeName) {
-        const result2 = await geocodeNominatim(locationAfterDash + ", Hồ Chí Minh");
+        const result2 = await geocodeNominatim(locationAfterDash);
         if (result2) return ok({ ...result2, placeName, approximate: true });
       }
     }
@@ -119,9 +130,6 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
