@@ -37,6 +37,8 @@ export function AttendanceLocationsTab() {
   const [form, setForm] = useState<LocForm>(defaultForm);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [geocoding, setGeocoding] = useState(false);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) { toast.error('Trình duyệt không hỗ trợ GPS'); return; }
@@ -53,25 +55,35 @@ export function AttendanceLocationsTab() {
   const handleGeocodeAddress = async () => {
     if (!form.address.trim()) { toast.error('Vui lòng nhập địa chỉ trước'); return; }
     setGeocoding(true);
+    setSuggestions([]);
+    setShowSuggestions(false);
     try {
       const query = encodeURIComponent(form.address.trim());
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1&countrycodes=vn`);
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=8&countrycodes=vn&addressdetails=1`);
       const data = await res.json();
       if (data?.length > 0) {
-        setForm(p => ({
-          ...p,
-          latitude: parseFloat(data[0].lat).toFixed(6),
-          longitude: parseFloat(data[0].lon).toFixed(6),
-        }));
-        toast.success(`Đã tìm thấy tọa độ: ${data[0].display_name?.slice(0, 60)}`);
+        setSuggestions(data);
+        setShowSuggestions(true);
       } else {
-        toast.error('Không tìm thấy địa chỉ. Thử nhập chi tiết hơn.');
+        toast.error('Không tìm thấy. Thử: "Quận 9, TP HCM" hoặc "số nhà, đường, phường, quận"');
       }
     } catch {
       toast.error('Lỗi kết nối dịch vụ bản đồ');
     } finally {
       setGeocoding(false);
     }
+  };
+
+  const handleSelectSuggestion = (item: any) => {
+    setForm(p => ({
+      ...p,
+      latitude: parseFloat(item.lat).toFixed(6),
+      longitude: parseFloat(item.lon).toFixed(6),
+      address: item.display_name,
+    }));
+    setShowSuggestions(false);
+    setSuggestions([]);
+    toast.success('Đã chọn vị trí');
   };
 
   const handleOpen = (loc?: any) => {
