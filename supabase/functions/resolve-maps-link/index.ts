@@ -6,129 +6,63 @@ const corsHeaders = {
 };
 
 function extractCoords(text: string): { lat: number; lng: number } | null {
-  const patterns = [
-    /@(-?\d+\.\d+),(-?\d+\.\d+)/,
-    /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
-    /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
-    /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
-  ];
-  for (const p of patterns) {
+  for (const p of [/@(-?\d+\.\d+),(-?\d+\.\d+)/, /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/, /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/, /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/]) {
     const m = text.match(p);
-    if (m) {
-      const lat = parseFloat(m[1]);
-      const lng = parseFloat(m[2]);
-      if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) return { lat, lng };
-    }
+    if (m) { const lat = parseFloat(m[1]), lng = parseFloat(m[2]); if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) return { lat, lng }; }
   }
   return null;
 }
 
-function extractPlaceNameFromUrl(url: string): string {
-  // Approach: find q%3D or q= in the raw URL, extract the encoded value, then decode it
-  // Match q%3D (inside encoded continue= param) - value ends at %26 or end of continue param
-  const encodedQMatch = url.match(/q%3D((?:[^%]|%(?!26|3[dD]))+)/i);
-  if (encodedQMatch) {
-    try {
-      // The value is double-encoded, decode twice
-      let val = encodedQMatch[1];
-      for (let i = 0; i < 3; i++) {
-        try {
-          const next = decodeURIComponent(val);
-          if (next === val) break;
-          val = next;
-        } catch { break; }
-      }
-      val = val.replace(/\+/g, " ");
-      if (val.length > 3 && val.length < 300 && !isCaptchaToken(val)) return val;
-    } catch (_) {}
-  }
-
-  // Match regular q= (direct URL param)
-  const qMatches = [...url.matchAll(/[?&]q=([^&]+)/g)];
-  for (const m of qMatches) {
-    try {
-      let val = decodeURIComponent(m[1]).replace(/\+/g, " ");
-      if (val.length > 3 && val.length < 300 && !isCaptchaToken(val)) return val;
-    } catch (_) {}
-  }
-  return "";
-}
-
-function isCaptchaToken(val: string): boolean {
-  if (val.startsWith("Eh") && val.length > 50) return true;
-  if (/^[A-Za-z0-9_\-+/=]{40,}$/.test(val)) return true;
-  return false;
-}
-
-async function geocodeNominatim(query: string): Promise<{ lat: number; lng: number; address: string } | null> {
+async function geocode(query: string): Promise<{ lat: number; lng: number; address: string } | null> {
   try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=vn`,
-      { headers: { "User-Agent": "VKHO-App/1.0" } }
-    );
-    const data = await res.json();
-    if (data?.length > 0) {
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), address: data[0].display_name };
-    }
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=vn`, { headers: { "User-Agent": "VKHO/1.0" } });
+    const d = await r.json();
+    if (d?.length) return { lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon), address: d[0].display_name };
   } catch (_) {}
   return null;
 }
 
-function ok(data: Record<string, unknown>) {
-  return new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-}
+function ok(d: Record<string, unknown>) { return new Response(JSON.stringify(d), { headers: { ...corsHeaders, "Content-Type": "application/json" } }); }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-
   try {
     const { url } = await req.json();
     if (!url) return new Response(JSON.stringify({ error: "Missing url" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     const res = await fetch(url, { redirect: "follow", headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)" } });
     const finalUrl = res.url;
+    const c = extractCoords(finalUrl);
+    if (c) return ok(c);
 
-    const fromUrl = extractCoords(finalUrl);
-    if (fromUrl) return ok(fromUrl);
+    // Fully decode the URL to extract place name
+    let decoded = finalUrl;
+    for (let i = 0; i < 5; i++) { try { const n = decodeURIComponent(decoded); if (n === decoded) break; decoded = n; } catch { break; } }
+    decoded = decoded.replace(/\+/g, " ");
 
-    const placeName = extractPlaceNameFromUrl(finalUrl);
-
-    // Debug: if no placeName found, try to show what we see
-    if (!placeName) {
-      const hasQ3D = finalUrl.includes("q%3D");
-      const encodedQMatch2 = finalUrl.match(/q%3D([^%]{0,10})/);
-      return new Response(JSON.stringify({ 
-        error: "no_coords", resolvedUrl: finalUrl, placeName: null,
-        debug: { hasQ3D, firstCharsAfterQ3D: encodedQMatch2?.[1] || null, urlLength: finalUrl.length }
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // Find all q= params in decoded URL, skip captcha tokens
+    let placeName = "";
+    for (const m of decoded.matchAll(/[?&]q=([^&]{4,200})/g)) {
+      const v = m[1].trim();
+      if (/^[A-Za-z0-9_\-]{30,}$/.test(v)) continue; // captcha token
+      if (/^Eh[A-Za-z0-9]/.test(v) && v.length > 40) continue;
+      placeName = v; break;
     }
-      // Strategy 1: Extract "Quận X" and use with city
+
+    if (placeName) {
       const quanMatch = placeName.match(/Quận\s*\d+/i);
-
       if (quanMatch) {
-        const result = await geocodeNominatim(`${quanMatch[0]}, Thủ Đức, Hồ Chí Minh`);
-        if (result) return ok({ ...result, placeName, approximate: true });
-
-        const result2 = await geocodeNominatim(`${quanMatch[0]}, Hồ Chí Minh`);
-        if (result2) return ok({ ...result2, placeName, approximate: true });
+        const r = await geocode(`${quanMatch[0]}, Thủ Đức, Hồ Chí Minh`);
+        if (r) return ok({ ...r, placeName, approximate: true });
+        const r2 = await geocode(`${quanMatch[0]}, Hồ Chí Minh`);
+        if (r2) return ok({ ...r2, placeName, approximate: true });
       }
-
-      // Strategy 2: Full name
-      const result = await geocodeNominatim(placeName);
-      if (result) return ok({ ...result, placeName, approximate: true });
-
-      // Strategy 3: After dash
-      const afterDash = placeName.split(/\s*[-–]\s*/).pop()?.trim();
-      if (afterDash && afterDash !== placeName) {
-        const result2 = await geocodeNominatim(afterDash);
-        if (result2) return ok({ ...result2, placeName, approximate: true });
-      }
+      const r = await geocode(placeName);
+      if (r) return ok({ ...r, placeName, approximate: true });
     }
 
-    return new Response(JSON.stringify({ error: "no_coords", resolvedUrl: finalUrl, placeName: placeName || null }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: "no_coords", resolvedUrl: finalUrl, placeName, decoded: decoded.substring(0, 500) }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
