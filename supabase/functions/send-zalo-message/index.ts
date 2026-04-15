@@ -450,6 +450,7 @@ Deno.serve(async (req) => {
 
     // Strategy: Try CS message first if follower found, otherwise try ZNS
     if (recipientUserId) {
+      console.log("Sending CS to user_id:", recipientUserId, "type:", typeof recipientUserId, "length:", recipientUserId.length);
       // Send CS message
       const zaloResponse = await fetch(
         "https://openapi.zalo.me/v3.0/oa/message/cs",
