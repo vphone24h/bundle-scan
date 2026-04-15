@@ -10460,6 +10460,7 @@ export type Database = {
           latest_sale_price: number
           product_name: string
           product_sku: string
+          unit: string
         }[]
       }
       search_products_for_sale: {

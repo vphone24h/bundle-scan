@@ -420,7 +420,7 @@ export default function ImportNewPage() {
           sale_price: r.group_id ? null : (r.latest_sale_price ?? null),
           totalQty: Number(r.in_stock_qty || 0),
           group_id: r.group_id || null,
-          unit: 'cái',
+          unit: r.unit || 'cái',
           variantLevels: r.group_id ? buildVariantLevelsFromProducts([], productGroupById.get(r.group_id) || null) : [],
         }));
 
