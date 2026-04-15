@@ -234,12 +234,15 @@ Deno.serve(async (req) => {
         console.log("OA info fetch error, continuing:", oaErr);
       }
 
+      // Use a fallback OA ID - even if getoa fails, we have a valid token
+      const effectiveOaId = oaId || `connected_${Date.now()}`;
+
       const { error: updateError } = await supabaseAdmin
         .from("tenant_landing_settings")
         .update({
           zalo_access_token: accessToken,
           zalo_refresh_token: refreshToken,
-          zalo_oa_id: oaId ? String(oaId) : null,
+          zalo_oa_id: String(effectiveOaId),
           zalo_oa_name: oaName || null,
           zalo_oa_avatar: oaAvatar || null,
           zalo_enabled: true,
