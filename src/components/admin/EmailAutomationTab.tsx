@@ -1067,7 +1067,7 @@ export function EmailAutomationTab() {
 
           <TabsContent value="scenarios" className="mt-4 space-y-6">
             {/* === Email đơn hàng mặc định === */}
-            <OrderEmailSection automations={automations || []} tenantId={tenant.id} onEdit={handleEdit} onToggle={handleToggle} onSendTest={handleSendTest} onDelete={handleDelete} onCreateFromPreset={(preset) => { setEditItem(null); setPrefilledTemplate(preset); setFormOpen(true); }} />
+            <OrderEmailSection automations={automations || []} tenantId={tenant.id} onEdit={handleEdit} onToggle={handleToggle} onZaloToggle={handleZaloToggle} onSendTest={handleSendTest} onDelete={handleDelete} onCreateFromPreset={(preset) => { setEditItem(null); setPrefilledTemplate(preset); setFormOpen(true); }} />
 
             {/* === Kịch bản tự động === */}
             <div>
