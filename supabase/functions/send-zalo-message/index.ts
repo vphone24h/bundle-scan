@@ -101,10 +101,10 @@ function getEventType(message_type: string): string {
 // Get the first follower from OA's follower list (for test mode)
 async function getFirstFollower(accessToken: string): Promise<string | null> {
   try {
-    // Try v3.0 API first (Authorization header)
+    // Try v3.0 API first
     let res = await fetch("https://openapi.zalo.me/v3.0/oa/user/getlist?offset=0&count=1", {
       method: "GET",
-      headers: { "Authorization": `Bearer ${accessToken}` },
+      headers: { access_token: accessToken },
     });
     let data = await res.json();
     console.log("Follower list v3.0:", JSON.stringify(data));
