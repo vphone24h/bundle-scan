@@ -31,6 +31,7 @@ import {
   EmailAutomationBlock,
 } from '@/hooks/useEmailAutomations';
 import { EmailTemplatePickerDialog, EmailTemplatePreset, ORDER_EMAIL_PRESETS, TRIGGER_TYPE_PRESETS } from './EmailTemplatePickerDialog';
+import { ZaloLogSection } from './ZaloLogSection';
 
 const TRIGGER_TYPES = [
   // Nhóm mua hàng
