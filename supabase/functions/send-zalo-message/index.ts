@@ -310,6 +310,19 @@ Deno.serve(async (req) => {
     let recipientUserId = zalo_user_id || null;
 
     if (message_type === "test") {
+      // For test: try to find follower by phone first, then get any follower
+      if (!recipientUserId && customer_phone) {
+        const normalizedPhone = normalizePhoneTo0(customer_phone);
+        const { data: follower } = await supabaseAdmin
+          .from("zalo_oa_followers")
+          .select("zalo_user_id")
+          .eq("tenant_id", tenant_id)
+          .eq("phone", normalizedPhone)
+          .maybeSingle();
+        if (follower?.zalo_user_id) {
+          recipientUserId = follower.zalo_user_id;
+        }
+      }
       if (!recipientUserId) {
         recipientUserId = await getFirstFollower(settings.zalo_access_token);
       }
