@@ -1,9 +1,5 @@
 import { Suspense, lazy, useEffect, type ReactNode } from "react";
-import { startGlobalInteractionWatcher } from "@/lib/dialogInteraction";
 import { useAttendanceEnabled } from "@/hooks/useAttendanceEnabled";
-
-// Start global watcher to auto-recover from stuck pointer-events
-startGlobalInteractionWatcher();
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -114,15 +110,6 @@ function preloadAdminPages() {
   loadNext();
 }
 
-// Start preloading only after app is fully interactive
-if (typeof window !== 'undefined') {
-  if ('requestIdleCallback' in window) {
-    (window as any).requestIdleCallback(() => preloadAdminPages());
-  } else {
-    setTimeout(preloadAdminPages, 2000);
-  }
-}
-
 const NON_PERSISTED_QUERY_ROOTS = new Set(['report-stats', 'dashboard-stats']);
 
 const queryClient = new QueryClient({
@@ -199,6 +186,9 @@ const SubscriptionRoute = ({ children }: { children: React.ReactNode }) => (
 
 function AppBootSignal() {
   useEffect(() => {
+    // Start global watcher lazily after first paint
+    import("@/lib/dialogInteraction").then(m => m.startGlobalInteractionWatcher());
+
     const prefetch = (window as any).__STORE_PREFETCH__;
     if (prefetch?.storeId) return;
 
@@ -211,9 +201,13 @@ function AppBootSignal() {
       });
     });
 
+    // Preload admin pages well after first paint
+    const preloadTimer = window.setTimeout(preloadAdminPages, 3000);
+
     return () => {
       window.cancelAnimationFrame(frame1);
       window.cancelAnimationFrame(frame2);
+      window.clearTimeout(preloadTimer);
     };
   }, []);
 
