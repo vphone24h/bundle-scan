@@ -101,17 +101,31 @@ function getEventType(message_type: string): string {
 // Get the first follower from OA's follower list (for test mode)
 async function getFirstFollower(accessToken: string): Promise<string | null> {
   try {
-    const res = await fetch("https://openapi.zalo.me/v3.0/oa/user/getlist?offset=0&count=1", {
+    // Try v3.0 API first (Authorization header)
+    let res = await fetch("https://openapi.zalo.me/v3.0/oa/user/getlist?offset=0&count=1", {
       method: "GET",
-      headers: { access_token: accessToken },
+      headers: { "Authorization": `Bearer ${accessToken}` },
     });
-    const data = await res.json();
+    let data = await res.json();
+    console.log("Follower list v3.0:", JSON.stringify(data));
     if (data.error === 0 && data.data?.users?.length > 0) {
       return data.data.users[0].user_id;
     }
     if (data.data?.total > 0 && data.data?.followers?.length > 0) {
       return data.data.followers[0].user_id;
     }
+
+    // Fallback v2.0 API
+    res = await fetch("https://openapi.zalo.me/v2.0/oa/getfollowers?offset=0&count=1", {
+      method: "GET",
+      headers: { access_token: accessToken },
+    });
+    data = await res.json();
+    console.log("Follower list v2.0:", JSON.stringify(data));
+    if (data.error === 0 && data.data?.followers?.length > 0) {
+      return data.data.followers[0].user_id;
+    }
+
     return null;
   } catch (e) {
     console.error("Error getting followers:", e);
