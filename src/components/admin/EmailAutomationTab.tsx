@@ -1066,7 +1066,8 @@ export function EmailAutomationTab() {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="w-full sm:w-auto">
             <TabsTrigger value="scenarios" className="flex-1 sm:flex-none">Kịch bản ({automations?.length || 0})</TabsTrigger>
-            <TabsTrigger value="logs" className="flex-1 sm:flex-none">Lịch sử gửi ({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</TabsTrigger>
+            <TabsTrigger value="logs" className="flex-1 sm:flex-none">Lịch sử Mail ({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</TabsTrigger>
+            <TabsTrigger value="zalo-logs" className="flex-1 sm:flex-none">Lịch sử Zalo ({zaloLogs?.length || 0})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="scenarios" className="mt-4 space-y-6">
@@ -1214,6 +1215,10 @@ export function EmailAutomationTab() {
                 onPageChange={setLogPage}
               />
             )}
+          </TabsContent>
+
+          <TabsContent value="zalo-logs" className="mt-4">
+            <ZaloLogSection zaloLogs={zaloLogs || []} isLoading={isZaloLogsLoading} onRefetch={refetchZaloLogs} />
           </TabsContent>
         </Tabs>
 
