@@ -303,12 +303,12 @@ Deno.serve(async (req) => {
       })
     }
 
-    // === AUTO MODE - Process all active automations ===
+    // === AUTO MODE - Process all active automations (email OR zalo) ===
 
     const { data: automations } = await supabase
       .from('email_automations')
       .select('*')
-      .eq('is_active', true)
+      .or('is_active.eq.true,zalo_enabled.eq.true')
 
     if (!automations?.length) {
       return new Response(JSON.stringify({ success: true, sent: 0 }), {
@@ -599,7 +599,7 @@ Deno.serve(async (req) => {
 
         for (const receipt of eligibleReceipts) {
           const customer = Array.isArray(receipt.customers) ? receipt.customers[0] : receipt.customers
-          if (!customer?.email) continue
+          if (!customer?.email && !customer?.phone) continue
 
           // Triggers that send ONCE per customer (regardless of how many records match)
           const oncePerCustomerTriggers = [
