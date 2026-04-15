@@ -68,6 +68,7 @@ const CheckInPage = lazy(() => import("./pages/CheckInPage"));
 const PayrollPage = lazy(() => import("./pages/PayrollPage"));
 const MyAttendancePage = lazy(() => import("./pages/MyAttendancePage"));
 
+const ZaloCallbackPage = lazy(() => import("./pages/ZaloCallbackPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function AttendanceEnabledRoute({ children }: { children: ReactNode }) {
@@ -218,6 +219,7 @@ const App = () => (
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/forgot-store-id" element={<ForgotStoreIdPage />} />
                 <Route path="/warranty-check" element={<WarrantyCheckPage />} />
+                <Route path="/zalo-callback" element={<ZaloCallbackPage />} />
                 
                 {/* Subscription page - accessible even when expired */}
                 <Route path="/subscription" element={<SubscriptionRoute><SubscriptionPage /></SubscriptionRoute>} />

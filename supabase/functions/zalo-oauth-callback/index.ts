@@ -142,8 +142,8 @@ Deno.serve(async (req) => {
         );
       }
 
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const redirectUri = `${supabaseUrl}/functions/v1/zalo-oauth-callback`;
+      // Use custom domain for redirect URI (must match Zalo App's verified domain)
+      const redirectUri = "https://vkho.vn/zalo-callback";
 
       const oauthUrl =
         `https://oauth.zaloapp.com/v4/oa/permission` +
@@ -174,8 +174,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const redirectUri = `${supabaseUrl}/functions/v1/zalo-oauth-callback`;
+      const redirectUri = "https://vkho.vn/zalo-callback";
 
       const tokenRes = await fetch("https://oauth.zaloapp.com/v4/oa/access_token", {
         method: "POST",
