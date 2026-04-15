@@ -181,11 +181,11 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
           message_type: 'test',
         },
       });
-      if (error) throw new Error(data?.details || error.message);
-      if (data?.error) throw new Error(data.details || data.error);
+      if (error) throw new Error(data?.details || data?.error || error.message);
+      if (data?.error) throw new Error(data.details || data.error || 'Lỗi không xác định');
       toast.success('✅ Đã gửi tin nhắn test thành công!');
     } catch (err: any) {
-      toast.error('Lỗi: ' + err.message);
+      toast.error('Gửi test thất bại: ' + (err.message || 'Lỗi không xác định'), { duration: 8000 });
     } finally {
       setTesting(false);
     }
