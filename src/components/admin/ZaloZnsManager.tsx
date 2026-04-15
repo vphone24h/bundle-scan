@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   MessageCircle, Plus, Trash2, RefreshCw, Loader2, Send, CheckCircle2,
-  Eye, EyeOff, ExternalLink, Unplug, Zap, Settings, FileText, History, Pencil, Check, X
+  Eye, EyeOff, ExternalLink, Unplug, Zap, Settings, FileText, History, Pencil, Check, X, Copy, Link
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
