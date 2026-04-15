@@ -78,12 +78,29 @@ function useAdGate() {
   return { showAdGate, closeAdGate, adGateSettings, adGateActive };
 }
 
+function DeferredLayoutEnhancements() {
+  useDynamicPWABranding();
+
+  return (
+    <>
+      <StartupNotificationPopup />
+      <PushPermissionPopup />
+      <InstallAppPrompt />
+    </>
+  );
+}
+
 function MainLayoutInner({ children }: MainLayoutProps) {
   const { showAdGate, closeAdGate, adGateSettings } = useAdGate();
   const { data: tenant } = useCurrentTenant();
   const { data: platformUser } = usePlatformUser();
   const needsBusinessType = !!tenant && !tenant.business_type && (platformUser?.platform_role as string) !== 'platform_admin';
-  useDynamicPWABranding();
+  const [enhancementsReady, setEnhancementsReady] = useState(false);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setEnhancementsReady(true), 1200);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background safe-x">
@@ -101,13 +118,9 @@ function MainLayoutInner({ children }: MainLayoutProps) {
         </PullToRefresh>
       </main>
 
-      {/* Popup priority: tour → notification → push → adgate - hide for company admin */}
-      {platformUser?.platform_role !== 'company_admin' && (
-        <>
-          <StartupNotificationPopup />
-          <PushPermissionPopup />
-          <InstallAppPrompt />
-        </>
+      {/* Popup priority: tour → notification → push → adgate - defer until after first paint */}
+      {enhancementsReady && platformUser?.platform_role !== 'company_admin' && (
+        <DeferredLayoutEnhancements />
       )}
 
       {showAdGate && adGateSettings && !needsBusinessType && (

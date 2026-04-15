@@ -23,7 +23,7 @@ export interface BankAccount {
   account_holder: string;
 }
 
-export function useCompanySettings(companyId?: string | null) {
+export function useCompanySettings(companyId?: string | null, enabled = true) {
   const company = useCompany();
   const effectiveId = companyId ?? company.companyId;
 
@@ -44,7 +44,7 @@ export function useCompanySettings(companyId?: string | null) {
         subscription_plans: (data.subscription_plans as unknown as any[]) || [],
       } as CompanySettings;
     },
-    enabled: !!effectiveId,
+    enabled: enabled && !!effectiveId,
   });
 }
 

@@ -354,7 +354,7 @@ export function useLandingOrderStatusCounts(branchId?: string | null) {
 }
 
 // Admin: count pending orders
-export function usePendingOrderCount() {
+export function usePendingOrderCount(enabled = true) {
   return useQuery({
     queryKey: ['landing-orders-pending-count'],
     queryFn: async () => {
@@ -365,7 +365,8 @@ export function usePendingOrderCount() {
       if (error) throw error;
       return count || 0;
     },
-    refetchInterval: 30000, // poll every 30s
+    enabled,
+    refetchInterval: enabled ? 30000 : false, // poll every 30s
   });
 }
 

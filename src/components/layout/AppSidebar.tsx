@@ -167,22 +167,29 @@ export function AppSidebar() {
   const { data: platformUser } = usePlatformUser();
   const { data: currentTenant } = useCurrentTenant();
   const company = useCompany();
-  const { data: companySettings } = useCompanySettings();
   const [expandedItems, setExpandedItems] = useState<string[]>(['Nhập hàng', 'Xuất hàng / Bán hàng']);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
-  const { data: pendingTransferCount } = usePendingTransferCount();
-  const { data: pendingOrderCount } = usePendingOrderCount();
-  const { data: unreadReviewCount } = useUnreadReviewCount();
-  const { data: unreadSocialCount } = useUnreadSocialNotifCount();
-  const { data: unreadArticleCount } = useUnreadArticleCount();
-  const completedRepairCount = useCompletedRepairCount();
+  const [deferredSidebarReady, setDeferredSidebarReady] = useState(false);
+  const shouldLoadSidebarExtras = deferredSidebarReady || isMobileOpen;
+  const { data: companySettings } = useCompanySettings(undefined, shouldLoadSidebarExtras);
+  const { data: pendingTransferCount } = usePendingTransferCount(shouldLoadSidebarExtras);
+  const { data: pendingOrderCount } = usePendingOrderCount(shouldLoadSidebarExtras);
+  const { data: unreadReviewCount } = useUnreadReviewCount(shouldLoadSidebarExtras);
+  const { data: unreadSocialCount } = useUnreadSocialNotifCount(shouldLoadSidebarExtras);
+  const { data: unreadArticleCount } = useUnreadArticleCount(shouldLoadSidebarExtras);
+  const completedRepairCount = useCompletedRepairCount(shouldLoadSidebarExtras);
   const { enabled: attendanceEnabled } = useAttendanceEnabled();
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsStandalone(true);
     }
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setDeferredSidebarReady(true), 1200);
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   const isPlatformAdmin = platformUser?.platform_role === 'platform_admin';
@@ -266,7 +273,7 @@ export function AppSidebar() {
         </div>
         {!isCompanyAdmin && (
           <div className="ml-auto hidden lg:flex items-center gap-0 shrink-0 [&_button]:text-sidebar-foreground [&_button]:hover:bg-sidebar-accent [&_button]:opacity-100 [&_button]:h-8 [&_button]:w-8 [&_.h-5]:h-4 [&_.w-5]:w-4">
-            <SystemNotificationBell />
+            {shouldLoadSidebarExtras ? <SystemNotificationBell /> : null}
           </div>
         )}
       </div>
@@ -435,7 +442,7 @@ export function AppSidebar() {
         </Button>
         {!isMobileOpen && !isCompanyAdmin && (
           <div className="bg-card shadow-lg border-2 rounded-md flex items-center">
-            <SystemNotificationBell />
+            {shouldLoadSidebarExtras ? <SystemNotificationBell /> : null}
           </div>
         )}
       </div>
@@ -451,7 +458,7 @@ export function AppSidebar() {
         >
           {!isCompanyAdmin && (
             <div className="bg-card shadow-lg border-2 rounded-md flex items-center">
-              <SystemNotificationBell />
+              {shouldLoadSidebarExtras ? <SystemNotificationBell /> : null}
             </div>
           )}
         </div>
