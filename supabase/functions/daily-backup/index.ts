@@ -132,27 +132,27 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
     let exportItems: any[] = [], importItems: any[] = [];
 
     if (isFullBackup) {
-      // FULL mode: fetch ALL historical data
-      const [expRes, impRes, prodRes] = await Promise.all([
-        admin.from("export_receipts")
+      // FULL mode: fetch ALL historical data with pagination
+      const [expAll, impAll, prodAll] = await Promise.all([
+        fetchAllRows(admin, () => admin.from("export_receipts")
           .select("id, code, export_date, total_amount, paid_amount, debt_amount, status, note, customer_id")
           .eq("tenant_id", tenantId)
           .eq("status", "completed")
-          .order("export_date", { ascending: true }),
-        admin.from("import_receipts")
+          .order("export_date", { ascending: true })),
+        fetchAllRows(admin, () => admin.from("import_receipts")
           .select("id, code, import_date, total_amount, paid_amount, debt_amount, status, note, supplier_id")
           .eq("tenant_id", tenantId)
           .eq("status", "completed")
-          .order("import_date", { ascending: true }),
-        admin.from("products")
+          .order("import_date", { ascending: true })),
+        fetchAllRows(admin, () => admin.from("products")
           .select("id, name, sku, import_price, sale_price, status, category_id")
           .eq("tenant_id", tenantId)
           .eq("status", "in_stock")
-          .order("name"),
+          .order("name")),
       ]);
-      exports = expRes.data || [];
-      imports = impRes.data || [];
-      products = prodRes.data || [];
+      exports = expAll;
+      imports = impAll;
+      products = prodAll;
     } else {
       // DAILY mode: only today's data
       const dayStart = `${dateStr}T00:00:00+07:00`;
