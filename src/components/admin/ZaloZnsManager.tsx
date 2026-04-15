@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   MessageCircle, Plus, Trash2, RefreshCw, Loader2, Send, CheckCircle2,
-  Eye, EyeOff, ExternalLink, Unplug, Zap, Settings, FileText, History, Pencil, Check, X
+  Eye, EyeOff, ExternalLink, Unplug, Zap, Settings, FileText, History, Pencil, Check, X, Copy, Link
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -366,6 +366,32 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
             <Button variant="ghost" size="sm" onClick={handleDisconnect} className="gap-1.5 text-destructive hover:text-destructive">
               <Unplug className="h-3.5 w-3.5" /> Ngắt
             </Button>
+          </div>
+
+          {/* Webhook URL */}
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5 space-y-1.5">
+            <p className="text-[11px] font-semibold flex items-center gap-1.5">
+              <Link className="h-3 w-3 text-primary" /> Webhook URL (dán vào Zalo Developers)
+            </p>
+            <div className="flex items-center gap-1.5">
+              <code className="text-[10px] bg-background border rounded px-2 py-1 flex-1 truncate select-all">
+                {`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/zalo-webhook`}
+              </code>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 shrink-0"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/zalo-webhook`);
+                  toast.success('Đã copy Webhook URL');
+                }}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Khi khách follow OA, hệ thống tự động lưu thông tin để gửi tin CS miễn phí.
+            </p>
           </div>
 
           {/* Info box */}
