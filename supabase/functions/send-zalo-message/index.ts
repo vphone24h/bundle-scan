@@ -101,17 +101,31 @@ function getEventType(message_type: string): string {
 // Get the first follower from OA's follower list (for test mode)
 async function getFirstFollower(accessToken: string): Promise<string | null> {
   try {
-    const res = await fetch("https://openapi.zalo.me/v3.0/oa/user/getlist?offset=0&count=1", {
+    // Try v3.0 API first
+    let res = await fetch("https://openapi.zalo.me/v3.0/oa/user/getlist?offset=0&count=1", {
       method: "GET",
       headers: { access_token: accessToken },
     });
-    const data = await res.json();
+    let data = await res.json();
+    console.log("Follower list v3.0:", JSON.stringify(data));
     if (data.error === 0 && data.data?.users?.length > 0) {
       return data.data.users[0].user_id;
     }
     if (data.data?.total > 0 && data.data?.followers?.length > 0) {
       return data.data.followers[0].user_id;
     }
+
+    // Fallback v2.0 API
+    res = await fetch("https://openapi.zalo.me/v2.0/oa/getfollowers?offset=0&count=1", {
+      method: "GET",
+      headers: { access_token: accessToken },
+    });
+    data = await res.json();
+    console.log("Follower list v2.0:", JSON.stringify(data));
+    if (data.error === 0 && data.data?.followers?.length > 0) {
+      return data.data.followers[0].user_id;
+    }
+
     return null;
   } catch (e) {
     console.error("Error getting followers:", e);
@@ -296,17 +310,36 @@ Deno.serve(async (req) => {
     let recipientUserId = zalo_user_id || null;
 
     if (message_type === "test") {
+      // For test: try to find follower by phone first, then get any follower
+      if (!recipientUserId && customer_phone) {
+        const normalizedPhone = normalizePhoneTo0(customer_phone);
+        const { data: follower } = await supabaseAdmin
+          .from("zalo_oa_followers")
+          .select("zalo_user_id")
+          .eq("tenant_id", tenant_id)
+          .eq("phone", normalizedPhone)
+          .maybeSingle();
+        if (follower?.zalo_user_id) {
+          recipientUserId = follower.zalo_user_id;
+        }
+      }
       if (!recipientUserId) {
         recipientUserId = await getFirstFollower(settings.zalo_access_token);
       }
       if (!recipientUserId) {
-        return new Response(
-          JSON.stringify({
-            error: "Không tìm thấy người theo dõi OA",
-            details: "Để test, bạn cần quan tâm (follow) OA trên Zalo trước.",
-          }),
-          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        // No follower found — for test, try ZNS if available, otherwise explain
+        if (znsTemplateId && customer_phone) {
+          console.log("Test: no follower found, will try ZNS with phone:", customer_phone);
+          // Fall through to ZNS flow below (recipientUserId stays null)
+        } else {
+          return new Response(
+            JSON.stringify({
+              error: "Không tìm thấy người theo dõi OA",
+              details: "Số điện thoại này chưa follow OA. Hãy dùng Zalo quét QR hoặc tìm OA và nhấn 'Quan tâm', hoặc cấu hình ZNS Template để gửi qua ZNS.",
+            }),
+            { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
     } else {
       // Find user by phone in zalo_followers table
