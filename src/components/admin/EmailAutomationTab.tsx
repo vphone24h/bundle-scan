@@ -890,6 +890,20 @@ export function EmailAutomationTab() {
     },
     enabled: !!tenant?.id,
   });
+  const { data: zaloLogs, isLoading: isZaloLogsLoading, refetch: refetchZaloLogs } = useQuery({
+    queryKey: ['zalo-message-logs-tab', tenant?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('zalo_message_logs' as any)
+        .select('*')
+        .eq('tenant_id', tenant!.id)
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+    enabled: !!tenant?.id,
+  });
   const updateMut = useUpdateAutomation();
   const deleteMut = useDeleteAutomation();
 
