@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   MessageCircle, Plus, Trash2, RefreshCw, Loader2, Send, CheckCircle2,
-  Eye, EyeOff, ExternalLink, Unplug, Zap, Settings, FileText, History
+  Eye, EyeOff, ExternalLink, Unplug, Zap, Settings, FileText, History, Pencil, Check, X
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -48,6 +48,8 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
   const [testing, setTesting] = useState(false);
   const [testPhone, setTestPhone] = useState('');
   const [showTestInput, setShowTestInput] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [oaNameInput, setOaNameInput] = useState('');
   const queryClient = useQueryClient();
 
   const { data: settings, isLoading } = useQuery({
@@ -272,15 +274,50 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
                   <MessageCircle className="h-6 w-6 text-primary" />
                 </div>
               )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold truncate">
-                    {settings?.zalo_oa_name || 'Zalo OA'}
-                  </p>
-                  <Badge className="bg-green-500/10 text-green-700 border-green-500/20 text-[10px] shrink-0">
-                    <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" /> Đã kết nối
-                  </Badge>
-                </div>
+                <div className="flex-1 min-w-0">
+                {editingName ? (
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      value={oaNameInput}
+                      onChange={e => setOaNameInput(e.target.value)}
+                      className="h-7 text-sm"
+                      placeholder="Nhập tên OA..."
+                      autoFocus
+                    />
+                    <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={async () => {
+                      if (!oaNameInput.trim()) return;
+                      try {
+                        await supabase.from('tenant_landing_settings' as any)
+                          .update({ zalo_oa_name: oaNameInput.trim() } as any)
+                          .eq('tenant_id', tenantId);
+                        queryClient.invalidateQueries({ queryKey: ['zalo-zns-config', tenantId] });
+                        setEditingName(false);
+                        toast.success('Đã cập nhật tên OA');
+                      } catch { toast.error('Lỗi cập nhật'); }
+                    }}>
+                      <Check className="h-3.5 w-3.5 text-green-600" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => setEditingName(false)}>
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold truncate">
+                      {settings?.zalo_oa_name || 'Zalo OA'}
+                    </p>
+                    <button
+                      onClick={() => { setOaNameInput(settings?.zalo_oa_name || ''); setEditingName(true); }}
+                      className="text-muted-foreground hover:text-foreground shrink-0"
+                      title="Sửa tên OA"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                    <Badge className="bg-green-500/10 text-green-700 border-green-500/20 text-[10px] shrink-0">
+                      <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" /> Đã kết nối
+                    </Badge>
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground">
                   OA ID: <span className="font-mono">{settings?.zalo_oa_id}</span>
                 </p>
