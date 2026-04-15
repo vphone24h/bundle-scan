@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   MessageCircle, Plus, Trash2, RefreshCw, Loader2, Send, CheckCircle2,
-  AlertTriangle, Eye, EyeOff, ExternalLink, Unplug, Zap, Shield, Key, Settings, FileText, History
+  Eye, EyeOff, ExternalLink, Unplug, Zap, Settings, FileText, History
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -43,11 +43,10 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
 
 // ─── Connection Tab ───
 function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
-  const [showSecret, setShowSecret] = useState(false);
-  const [showToken, setShowToken] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [showToken, setShowToken] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: settings, isLoading } = useQuery({
@@ -55,7 +54,7 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('tenant_landing_settings' as any)
-        .select('zalo_app_id, zalo_app_secret, zalo_oa_id, zalo_access_token, zalo_refresh_token, zalo_enabled, zalo_on_export, zalo_zns_template_id, store_name, store_phone')
+        .select('zalo_oa_id, zalo_access_token, zalo_enabled, zalo_on_export, store_name, store_phone')
         .eq('tenant_id', tenantId)
         .maybeSingle();
       if (error) throw error;
@@ -64,65 +63,27 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
     enabled: !!tenantId,
   });
 
-  const [formData, setFormData] = useState<any>({});
-
-  // Sync form when settings load
-  const isInitialized = useState(false);
-  if (settings && !isInitialized[0]) {
-    setFormData({
-      zalo_app_id: settings?.zalo_app_id || '',
-      zalo_app_secret: settings?.zalo_app_secret || '',
-      zalo_oa_id: settings?.zalo_oa_id || '',
-      zalo_on_export: settings?.zalo_on_export ?? false,
-    });
-    isInitialized[1](true);
-  }
-
   const isConnected = !!settings?.zalo_oa_id && !!settings?.zalo_access_token;
 
+  // 1-click connect: edge function resolves app_id automatically
   const handleConnect = async () => {
-    if (!formData.zalo_app_id?.trim()) {
-      toast.error('Vui lòng nhập App ID');
-      return;
-    }
     setConnecting(true);
     try {
-      // Get OAuth URL
       const { data, error } = await supabase.functions.invoke('zalo-oauth-callback', {
-        body: {
-          action: 'get_oauth_url',
-          app_id: formData.zalo_app_id,
-          tenant_id: tenantId,
-        },
+        body: { action: 'get_oauth_url', tenant_id: tenantId },
       });
       if (error || data?.error) throw new Error(data?.error || error?.message);
-
-      // Save app_id and secret first
-      await supabase
-        .from('tenant_landing_settings' as any)
-        .update({
-          zalo_app_id: formData.zalo_app_id,
-          zalo_app_secret: formData.zalo_app_secret,
-        })
-        .eq('tenant_id', tenantId);
 
       // Open OAuth popup
       const popup = window.open(data.oauth_url, 'zalo-oauth', 'width=600,height=700');
 
-      // Listen for callback
       const handler = async (event: MessageEvent) => {
         if (event.data?.type === 'zalo-oauth-callback') {
           window.removeEventListener('message', handler);
           const { code } = event.data;
           if (code) {
             const { data: exchangeData, error: exchangeErr } = await supabase.functions.invoke('zalo-oauth-callback', {
-              body: {
-                action: 'exchange_code',
-                code,
-                tenant_id: tenantId,
-                app_id: formData.zalo_app_id,
-                app_secret: formData.zalo_app_secret,
-              },
+              body: { action: 'exchange_code', code, tenant_id: tenantId },
             });
             if (exchangeErr || exchangeData?.error) {
               toast.error(exchangeData?.error || exchangeErr?.message || 'Lỗi kết nối');
@@ -135,12 +96,7 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
         }
       };
       window.addEventListener('message', handler);
-
-      // Timeout
-      setTimeout(() => {
-        window.removeEventListener('message', handler);
-        setConnecting(false);
-      }, 120000);
+      setTimeout(() => { window.removeEventListener('message', handler); setConnecting(false); }, 120000);
     } catch (err: any) {
       toast.error(err.message || 'Lỗi kết nối');
       setConnecting(false);
@@ -166,13 +122,11 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
   const handleDisconnect = async () => {
     if (!confirm('Bạn có chắc muốn ngắt kết nối Zalo OA?')) return;
     try {
-      const { error } = await supabase.functions.invoke('zalo-oauth-callback', {
+      await supabase.functions.invoke('zalo-oauth-callback', {
         body: { action: 'disconnect', tenant_id: tenantId },
       });
-      if (error) throw error;
       toast.success('Đã ngắt kết nối Zalo OA');
       queryClient.invalidateQueries({ queryKey: ['zalo-zns-config'] });
-      isInitialized[1](false);
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -200,25 +154,25 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
   };
 
   const handleToggleExport = async (checked: boolean) => {
-    setFormData((p: any) => ({ ...p, zalo_on_export: checked }));
     await supabase
       .from('tenant_landing_settings' as any)
       .update({ zalo_on_export: checked })
       .eq('tenant_id', tenantId);
+    queryClient.invalidateQueries({ queryKey: ['zalo-zns-config'] });
   };
 
   if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
 
   return (
     <div className="space-y-4">
-      {/* Status */}
+      {/* Status header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-lg bg-blue-500/10 flex items-center justify-center">
-            <MessageCircle className="h-4.5 w-4.5 text-blue-500" />
+        <div className="flex items-center gap-2.5">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <MessageCircle className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <p className="text-sm font-semibold">Kết nối Zalo OA</p>
+            <p className="text-sm font-semibold">Zalo Official Account</p>
             <p className="text-[11px] text-muted-foreground">Gửi ZNS tự động cho khách hàng</p>
           </div>
         </div>
@@ -233,73 +187,81 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
         )}
       </div>
 
-      {/* Instructions */}
-      <div className="rounded-lg bg-muted/50 p-3 space-y-2 text-xs">
-        <p className="font-medium">📋 Hướng dẫn kết nối:</p>
-        <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground">
-          <li>Truy cập{' '}
-            <a href="https://developers.zalo.me" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2 inline-flex items-center gap-0.5">
-              developers.zalo.me <ExternalLink className="h-3 w-3" />
-            </a> → Tạo ứng dụng → Copy <strong>App ID</strong> và <strong>Secret Key</strong>
-          </li>
-          <li>Nhập thông tin bên dưới → Nhấn <strong>"Kết nối OAuth"</strong></li>
-          <li>Cấp quyền cho ứng dụng trên Zalo</li>
-        </ol>
-      </div>
-
-      {/* Form */}
-      <div className="space-y-3">
-        <div className="space-y-1.5">
-          <Label className="text-xs font-medium">App ID <span className="text-destructive">*</span></Label>
-          <Input
-            value={formData.zalo_app_id || ''}
-            onChange={e => setFormData((p: any) => ({ ...p, zalo_app_id: e.target.value }))}
-            placeholder="App ID từ developers.zalo.me"
-            className="text-sm font-mono"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs font-medium">Secret Key</Label>
-          <div className="relative">
-            <Input
-              value={formData.zalo_app_secret || ''}
-              onChange={e => setFormData((p: any) => ({ ...p, zalo_app_secret: e.target.value }))}
-              placeholder="Secret Key từ developers.zalo.me"
-              type={showSecret ? 'text' : 'password'}
-              className="text-sm font-mono pr-10"
-            />
-            <button type="button" onClick={() => setShowSecret(!showSecret)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-              {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+      {!isConnected ? (
+        /* ── Not connected: simple 1-click ── */
+        <div className="space-y-4">
+          <div className="rounded-lg bg-muted/50 p-4 text-center space-y-3">
+            <div className="mx-auto h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <MessageCircle className="h-8 w-8 text-primary" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Kết nối Zalo OA để gửi tin nhắn tự động</p>
+              <p className="text-xs text-muted-foreground">
+                Nhấn nút bên dưới → Đăng nhập Zalo → Chọn OA → Xác nhận quyền. Chỉ mất 30 giây!
+              </p>
+            </div>
+            <Button onClick={handleConnect} disabled={connecting} size="lg" className="gap-2 w-full">
+              {connecting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <MessageCircle className="h-4 w-4" />
+              )}
+              {connecting ? 'Đang kết nối...' : 'Kết nối Zalo OA'}
+            </Button>
           </div>
-        </div>
 
-        {isConnected && settings?.zalo_oa_id && (
-          <div className="rounded-lg border p-2.5 space-y-1">
-            <p className="text-xs"><span className="text-muted-foreground">OA ID:</span> <span className="font-mono">{settings.zalo_oa_id}</span></p>
-            <p className="text-xs"><span className="text-muted-foreground">Token:</span>
-              <span className="font-mono ml-1">{showToken ? settings.zalo_access_token?.slice(0, 30) + '...' : '••••••••'}</span>
-              <button type="button" onClick={() => setShowToken(!showToken)} className="ml-1 text-muted-foreground hover:text-foreground">
-                {showToken ? <EyeOff className="h-3 w-3 inline" /> : <Eye className="h-3 w-3 inline" />}
-              </button>
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+            <p className="text-[11px] text-muted-foreground">
+              <strong>Lưu ý:</strong> Bạn cần có Zalo Official Account. Nếu chưa có, tạo miễn phí tại{' '}
+              <a href="https://oa.zalo.me" target="_blank" rel="noopener noreferrer" className="text-primary underline inline-flex items-center gap-0.5">
+                oa.zalo.me <ExternalLink className="h-3 w-3" />
+              </a>
             </p>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        /* ── Connected: show info & actions ── */
+        <div className="space-y-4">
+          {/* OA Info */}
+          <div className="rounded-lg border p-3 space-y-1.5">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <p className="text-sm font-medium">Zalo OA đã kết nối</p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              OA ID: <span className="font-mono">{settings?.zalo_oa_id}</span>
+            </p>
+            {settings?.zalo_access_token && (
+              <p className="text-xs text-muted-foreground">
+                Token: <span className="font-mono">{showToken ? settings.zalo_access_token?.slice(0, 20) + '...' : '••••••••'}</span>
+                <button type="button" onClick={() => setShowToken(!showToken)} className="ml-1 text-muted-foreground hover:text-foreground">
+                  {showToken ? <EyeOff className="h-3 w-3 inline" /> : <Eye className="h-3 w-3 inline" />}
+                </button>
+              </p>
+            )}
+          </div>
 
-      <Separator />
+          {/* Auto-send settings */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold flex items-center gap-1.5">
+              <Zap className="h-3.5 w-3.5 text-primary" /> Tự động gửi tin nhắn khi:
+            </p>
+            <div className="flex items-center justify-between py-1">
+              <Label className="text-xs">Khách đặt hàng trên website</Label>
+              <Badge variant="secondary" className="text-[10px]">Luôn bật</Badge>
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between py-1">
+              <Label className="text-xs">Xuất hàng (bán hàng)</Label>
+              <Switch checked={settings?.zalo_on_export ?? false} onCheckedChange={handleToggleExport} />
+            </div>
+          </div>
 
-      {/* Actions */}
-      <div className="flex flex-wrap gap-2">
-        {!isConnected ? (
-          <Button onClick={handleConnect} disabled={connecting} className="gap-1.5">
-            {connecting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Key className="h-3.5 w-3.5" />}
-            Kết nối OAuth
-          </Button>
-        ) : (
-          <>
-            <Button variant="outline" size="sm" onClick={handleTest} disabled={testing} className="gap-1.5">
+          <Separator />
+
+          {/* Actions */}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={handleTest} disabled={testing} className="gap-1.5 flex-1">
               {testing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
               Test gửi
             </Button>
@@ -310,34 +272,15 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
             <Button variant="ghost" size="sm" onClick={handleDisconnect} className="gap-1.5 text-destructive hover:text-destructive">
               <Unplug className="h-3.5 w-3.5" /> Ngắt
             </Button>
-          </>
-        )}
-      </div>
-
-      {/* Auto-send settings */}
-      {isConnected && (
-        <>
-          <Separator />
-          <div className="space-y-2">
-            <p className="text-xs font-semibold flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5 text-primary" /> Tự động gửi ZNS khi:
-            </p>
-            <div className="flex items-center justify-between py-1">
-              <Label className="text-xs">Khách đặt hàng trên website</Label>
-              <Badge variant="secondary" className="text-[10px]">Luôn bật</Badge>
-            </div>
-            <div className="flex items-center justify-between py-1">
-              <Label className="text-xs">Xuất hàng (bán hàng)</Label>
-              <Switch checked={formData.zalo_on_export ?? false} onCheckedChange={handleToggleExport} />
-            </div>
           </div>
 
-          <div className="rounded-lg border border-blue-500/20 bg-blue-50/50 dark:bg-blue-900/10 p-2.5">
-            <p className="text-[11px] text-blue-700 dark:text-blue-400">
-              <strong>Cách gửi:</strong> Ưu tiên CS (miễn phí, cần follow) → Fallback ZNS (tính phí, không cần follow). Template ZNS cần được Zalo duyệt trước.
+          {/* Info box */}
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5">
+            <p className="text-[11px] text-muted-foreground">
+              <strong>Cách gửi:</strong> Ưu tiên CS (miễn phí, cần follow) → Fallback ZNS (tính phí, không cần follow). Template ZNS quản lý ở tab "Templates".
             </p>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
