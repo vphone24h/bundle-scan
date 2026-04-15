@@ -133,6 +133,36 @@ async function getFirstFollower(accessToken: string): Promise<string | null> {
   }
 }
 
+async function getLatestStoredFollower(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  tenantId: string,
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("zalo_oa_followers")
+      .select("zalo_user_id, phone, updated_at")
+      .eq("tenant_id", tenantId)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error getting stored follower:", error);
+      return null;
+    }
+
+    if (data?.zalo_user_id) {
+      console.log("Using stored follower for test:", JSON.stringify(data));
+      return data.zalo_user_id;
+    }
+
+    return null;
+  } catch (e) {
+    console.error("Error reading stored follower:", e);
+    return null;
+  }
+}
+
 // Send ZNS message with retry
 async function sendZNSWithRetry(
   accessToken: string,
@@ -322,6 +352,9 @@ Deno.serve(async (req) => {
         if (follower?.zalo_user_id) {
           recipientUserId = follower.zalo_user_id;
         }
+      }
+      if (!recipientUserId) {
+        recipientUserId = await getLatestStoredFollower(supabaseAdmin, tenant_id);
       }
       if (!recipientUserId) {
         recipientUserId = await getFirstFollower(settings.zalo_access_token);
