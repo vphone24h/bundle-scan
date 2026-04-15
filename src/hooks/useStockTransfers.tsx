@@ -117,7 +117,7 @@ export function useStockTransferItems(requestId: string | null) {
 }
 
 // Count pending incoming transfers for current user's branch
-export function usePendingTransferCount() {
+export function usePendingTransferCount(enabled = true) {
   const { user } = useAuth();
 
   return useQuery({
@@ -159,7 +159,7 @@ export function usePendingTransferCount() {
 
       return 0;
     },
-    enabled: !!user?.id,
+    enabled: enabled && !!user?.id,
     refetchInterval: 30000, // Refresh every 30s
   });
 }

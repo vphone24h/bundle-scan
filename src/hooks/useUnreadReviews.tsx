@@ -4,7 +4,7 @@ import { useAuth } from './useAuth';
 import { useCurrentTenant } from './useTenant';
 import { usePermissions } from './usePermissions';
 
-export function useUnreadReviewCount() {
+export function useUnreadReviewCount(enabled = true) {
   const { user } = useAuth();
   const { data: tenant } = useCurrentTenant();
   const { data: permissions } = usePermissions();
@@ -35,7 +35,7 @@ export function useUnreadReviewCount() {
       const { count } = await query;
       return count || 0;
     },
-    enabled: !!user?.id && !!tenant?.id && !!permissions,
-    refetchInterval: 60000, // Check every minute
+    enabled: enabled && !!user?.id && !!tenant?.id && !!permissions,
+    refetchInterval: enabled ? 60000 : false, // Check every minute
   });
 }

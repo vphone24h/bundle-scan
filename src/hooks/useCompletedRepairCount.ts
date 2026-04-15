@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
-export function useCompletedRepairCount() {
+export function useCompletedRepairCount(enabled = true) {
   const { user } = useAuth();
 
   const { data: count = 0 } = useQuery({
@@ -15,9 +15,9 @@ export function useCompletedRepairCount() {
       if (error) throw error;
       return count || 0;
     },
-    enabled: !!user,
+    enabled: enabled && !!user,
     staleTime: 30_000,
-    refetchInterval: 60_000,
+    refetchInterval: enabled ? 60_000 : false,
   });
 
   return count;

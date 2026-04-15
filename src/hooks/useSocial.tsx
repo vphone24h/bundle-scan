@@ -526,7 +526,7 @@ export function useSocialNotifications() {
   });
 }
 
-export function useUnreadSocialNotifCount() {
+export function useUnreadSocialNotifCount(enabled = true) {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['social-notif-count', user?.id],
@@ -539,8 +539,8 @@ export function useUnreadSocialNotifCount() {
         .eq('is_read', false);
       return count || 0;
     },
-    enabled: !!user?.id,
-    refetchInterval: 30000,
+    enabled: enabled && !!user?.id,
+    refetchInterval: enabled ? 30000 : false,
   });
 }
 

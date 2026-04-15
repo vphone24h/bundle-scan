@@ -18,7 +18,7 @@ function saveReadArticleIds(ids: Set<string>) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]));
 }
 
-export function useUnreadArticleCount() {
+export function useUnreadArticleCount(enabled = true) {
   return useQuery({
     queryKey: ['unread-article-count'],
     queryFn: async () => {
@@ -31,6 +31,7 @@ export function useUnreadArticleCount() {
       const readIds = getReadArticleIds();
       return allIds.filter((id: string) => !readIds.has(id)).length;
     },
+    enabled,
     staleTime: 60_000,
   });
 }
