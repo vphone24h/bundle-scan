@@ -1,4 +1,4 @@
-import { Suspense, lazy, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, type ReactNode } from "react";
 import { startGlobalInteractionWatcher } from "@/lib/dialogInteraction";
 import { useAttendanceEnabled } from "@/hooks/useAttendanceEnabled";
 
@@ -197,6 +197,29 @@ const SubscriptionRoute = ({ children }: { children: React.ReactNode }) => (
   </ProtectedRoute>
 );
 
+function AppBootSignal() {
+  useEffect(() => {
+    const prefetch = (window as any).__STORE_PREFETCH__;
+    if (prefetch?.storeId) return;
+
+    let frame1 = 0;
+    let frame2 = 0;
+
+    frame1 = window.requestAnimationFrame(() => {
+      frame2 = window.requestAnimationFrame(() => {
+        (window as any).__hideAppPreloader?.();
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame1);
+      window.cancelAnimationFrame(frame2);
+    };
+  }, []);
+
+  return null;
+}
+
 const App = () => (
   <PersistQueryClientProvider
     client={queryClient}
@@ -217,6 +240,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <AppBootSignal />
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
             <SubdomainRouter landingPage={<StoreLandingPage />} publicLandingPage={<PublicLandingPage />}>
