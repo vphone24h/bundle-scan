@@ -1,9 +1,5 @@
 import { Suspense, lazy, useEffect, type ReactNode } from "react";
-import { startGlobalInteractionWatcher } from "@/lib/dialogInteraction";
 import { useAttendanceEnabled } from "@/hooks/useAttendanceEnabled";
-
-// Start global watcher to auto-recover from stuck pointer-events
-startGlobalInteractionWatcher();
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -199,6 +195,9 @@ const SubscriptionRoute = ({ children }: { children: React.ReactNode }) => (
 
 function AppBootSignal() {
   useEffect(() => {
+    // Start global watcher lazily after first paint
+    import("@/lib/dialogInteraction").then(m => m.startGlobalInteractionWatcher());
+
     const prefetch = (window as any).__STORE_PREFETCH__;
     if (prefetch?.storeId) return;
 
