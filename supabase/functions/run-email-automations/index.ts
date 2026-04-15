@@ -680,41 +680,96 @@ Deno.serve(async (req) => {
           const html = buildEmailHtml(processedBlocks, storeName)
           const subject = replaceVariables(automation.subject, vars)
 
-          try {
-            await transporter.sendMail({
-              from: `"${storeName}" <${smtp.user}>`,
-              to: customer.email,
-              subject,
-              html,
-            })
+          // --- Send Email ---
+          if (automation.is_active && customer.email && smtp) {
+            try {
+              await transporter.sendMail({
+                from: `"${storeName}" <${smtp.user}>`,
+                to: customer.email,
+                subject,
+                html,
+              })
 
-            await supabase.from('email_automation_logs').insert({
-              tenant_id: automation.tenant_id,
-              automation_id: automation.id,
-              customer_id: customer.id,
-              customer_email: customer.email,
-              customer_name: customer.name,
-              export_receipt_id: receipt.id || null,
-              subject,
-              body_html: html,
-              status: 'sent',
-              sent_at: new Date().toISOString(),
-            })
+              await supabase.from('email_automation_logs').insert({
+                tenant_id: automation.tenant_id,
+                automation_id: automation.id,
+                customer_id: customer.id,
+                customer_email: customer.email,
+                customer_name: customer.name,
+                export_receipt_id: receipt.id || null,
+                subject,
+                body_html: html,
+                status: 'sent',
+                sent_at: new Date().toISOString(),
+              })
 
-            totalSent++
-          } catch (emailErr: any) {
-            console.error('Email send error:', emailErr)
-            await supabase.from('email_automation_logs').insert({
-              tenant_id: automation.tenant_id,
-              automation_id: automation.id,
-              customer_id: customer.id,
-              customer_email: customer.email,
-              customer_name: customer.name,
-              export_receipt_id: receipt.id || null,
-              subject,
-              status: 'failed',
-              error_message: emailErr.message,
-            })
+              totalSent++
+            } catch (emailErr: any) {
+              console.error('Email send error:', emailErr)
+              await supabase.from('email_automation_logs').insert({
+                tenant_id: automation.tenant_id,
+                automation_id: automation.id,
+                customer_id: customer.id,
+                customer_email: customer.email,
+                customer_name: customer.name,
+                export_receipt_id: receipt.id || null,
+                subject,
+                status: 'failed',
+                error_message: emailErr.message,
+              })
+            }
+          }
+
+          // --- Send Zalo OA ---
+          if (automation.zalo_enabled && customer.phone) {
+            try {
+              // Get Zalo OA settings for this tenant
+              const { data: zaloSettings } = await supabase
+                .from('tenant_landing_settings')
+                .select('zalo_access_token, zalo_oa_id, zalo_enabled, store_name, store_phone')
+                .eq('tenant_id', automation.tenant_id)
+                .maybeSingle()
+
+              if (zaloSettings?.zalo_enabled && zaloSettings?.zalo_access_token) {
+                // Build a plain text message from blocks
+                const textMessage = processedBlocks
+                  .filter((b: any) => ['heading', 'text'].includes(b.block_type))
+                  .map((b: any) => b.content?.text || '')
+                  .filter(Boolean)
+                  .join('\n\n')
+
+                const zaloMessage = textMessage || `${subject}\n\nXin chào ${customer.name || 'bạn'}, ${storeName} gửi bạn thông báo mới.`
+
+                // Send via Zalo OA API
+                const zaloRes = await fetch('https://openapi.zalo.me/v3.0/oa/message/cs', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'access_token': zaloSettings.zalo_access_token,
+                  },
+                  body: JSON.stringify({
+                    recipient: { user_id: customer.phone },
+                    message: { text: zaloMessage },
+                  }),
+                })
+                const zaloResult = await zaloRes.json()
+                console.log(`Zalo send to ${customer.phone}:`, JSON.stringify(zaloResult))
+
+                // Log to zalo_message_logs if table exists
+                await supabase.from('zalo_message_logs').insert({
+                  tenant_id: automation.tenant_id,
+                  customer_phone: customer.phone,
+                  customer_name: customer.name || '',
+                  message_type: 'automation',
+                  message_content: zaloMessage,
+                  status: zaloResult?.error === 0 ? 'sent' : 'failed',
+                  error_message: zaloResult?.error !== 0 ? JSON.stringify(zaloResult) : null,
+                  sent_at: new Date().toISOString(),
+                }).catch(() => {}) // silently ignore if table doesn't exist
+              }
+            } catch (zaloErr: any) {
+              console.error('Zalo send error:', zaloErr.message)
+            }
           }
         }
       } catch (autoErr) {
