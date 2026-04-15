@@ -98,38 +98,52 @@ function getEventType(message_type: string): string {
   return map[message_type] || "ORDER_CREATED";
 }
 
+// Safe extraction of user_id from raw JSON text to avoid JS number precision loss
+function extractUserIdFromRaw(rawText: string): string | null {
+  // Match "user_id":"1234567890123456789" or "user_id":1234567890123456789
+  const match = rawText.match(/"user_id"\s*:\s*(?:"(\d+)"|(\d+))/);
+  return match?.[1] ?? match?.[2] ?? null;
+}
+
 // Get the first follower from OA's follower list (for test mode)
-async function getFirstFollower(accessToken: string): Promise<string | null> {
+async function getFirstFollower(accessToken: string): Promise<{ userId: string | null; error?: string }> {
   try {
     // Try v3.0 API first
-    let res = await fetch("https://openapi.zalo.me/v3.0/oa/user/getlist?offset=0&count=1", {
+    const res = await fetch("https://openapi.zalo.me/v3.0/oa/user/getlist?offset=0&count=1", {
       method: "GET",
       headers: { access_token: accessToken },
     });
-    let data = await res.json();
-    console.log("Follower list v3.0:", JSON.stringify(data));
-    if (data.error === 0 && data.data?.users?.length > 0) {
-      return data.data.users[0].user_id;
-    }
-    if (data.data?.total > 0 && data.data?.followers?.length > 0) {
-      return data.data.followers[0].user_id;
+    const rawText = await res.text();
+    console.log("Follower list v3.0 raw:", rawText);
+
+    let data: any;
+    try { data = JSON.parse(rawText); } catch { data = {}; }
+
+    if (data.error === -124 || data.error === -216) {
+      return { userId: null, error: "Access Token hết hạn. Vui lòng nhấn 'Gia hạn token'." };
     }
 
-    // Fallback v2.0 API
-    res = await fetch("https://openapi.zalo.me/v2.0/oa/getfollowers?offset=0&count=1", {
-      method: "GET",
-      headers: { access_token: accessToken },
-    });
-    data = await res.json();
-    console.log("Follower list v2.0:", JSON.stringify(data));
-    if (data.error === 0 && data.data?.followers?.length > 0) {
-      return data.data.followers[0].user_id;
+    if (data.error && data.error !== 0) {
+      return { userId: null, error: `Zalo API lỗi: ${data.message || data.error}` };
     }
 
-    return null;
+    // Extract user_id safely from raw text
+    const userId = extractUserIdFromRaw(rawText);
+    if (userId) {
+      console.log("Found follower (safe extraction):", userId);
+      return { userId };
+    }
+
+    // No followers
+    const total = data.data?.total ?? 0;
+    if (total === 0) {
+      return { userId: null, error: "OA chưa có ai theo dõi. Hãy dùng Zalo quét QR hoặc tìm OA và nhấn 'Quan tâm'." };
+    }
+
+    return { userId: null, error: "Không thể đọc user_id từ danh sách follower." };
   } catch (e) {
     console.error("Error getting followers:", e);
-    return null;
+    return { userId: null, error: `Lỗi kết nối Zalo API: ${(e as Error).message}` };
   }
 }
 
