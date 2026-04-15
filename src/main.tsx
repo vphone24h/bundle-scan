@@ -261,11 +261,7 @@ function bootstrapApp() {
   root.render(<App />);
 
   const prefetch = (window as any).__STORE_PREFETCH__;
-  if (!prefetch?.storeId) {
-    hidePreloaderAfterPaint();
-  } else {
-    setTimeout(hidePreloader, 4000);
-  }
+  setTimeout(hidePreloader, prefetch?.storeId ? 4000 : 8000);
 
   void startAppRuntimeMaintenance();
 }
