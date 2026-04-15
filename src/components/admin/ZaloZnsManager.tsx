@@ -368,6 +368,32 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
             </Button>
           </div>
 
+          {/* Webhook URL */}
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5 space-y-1.5">
+            <p className="text-[11px] font-semibold flex items-center gap-1.5">
+              <Link className="h-3 w-3 text-primary" /> Webhook URL (dán vào Zalo Developers)
+            </p>
+            <div className="flex items-center gap-1.5">
+              <code className="text-[10px] bg-background border rounded px-2 py-1 flex-1 truncate select-all">
+                {`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/zalo-webhook`}
+              </code>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 shrink-0"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/zalo-webhook`);
+                  toast.success('Đã copy Webhook URL');
+                }}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Khi khách follow OA, hệ thống tự động lưu thông tin để gửi tin CS miễn phí.
+            </p>
+          </div>
+
           {/* Info box */}
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5">
             <p className="text-[11px] text-muted-foreground">
