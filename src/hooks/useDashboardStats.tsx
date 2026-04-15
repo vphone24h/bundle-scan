@@ -86,7 +86,7 @@ export function useDashboardStats() {
       } as DashboardStats;
     },
     enabled: !isTenantLoading && !branchLoading,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000,
     gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: true,
     refetchOnReconnect: false,
