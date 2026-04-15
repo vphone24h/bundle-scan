@@ -123,6 +123,8 @@ if (typeof window !== 'undefined') {
   }
 }
 
+const NON_PERSISTED_QUERY_ROOTS = new Set(['report-stats', 'dashboard-stats']);
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -196,7 +198,20 @@ const SubscriptionRoute = ({ children }: { children: React.ReactNode }) => (
 );
 
 const App = () => (
-  <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24, buster: 'v7-payroll-template-rollout' }}>
+  <PersistQueryClientProvider
+    client={queryClient}
+    persistOptions={{
+      persister,
+      maxAge: 1000 * 60 * 60 * 24,
+      buster: 'v8-report-cache-fix',
+      dehydrateOptions: {
+        shouldDehydrateQuery: (query) => {
+          const rootKey = Array.isArray(query.queryKey) ? query.queryKey[0] : query.queryKey;
+          return !NON_PERSISTED_QUERY_ROOTS.has(String(rootKey));
+        },
+      },
+    }}
+  >
     <CompanyProvider>
     <AuthProvider>
       <TooltipProvider>
