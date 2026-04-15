@@ -188,7 +188,7 @@ function OrderEmailConfigSection({ formData, handleChange, tenantId, onSave, onD
           <Separator />
           <div className="rounded-lg border bg-muted/30 p-3">
             <p className="text-xs text-muted-foreground mb-1">📧 Loại email gửi:</p>
-            <p className="text-xs text-muted-foreground">Chỉnh sửa nội dung 4 mẫu email đơn hàng (xác nhận, đã xác nhận, giao hàng, bảo hành) tại tab <strong>Email Automation</strong>.</p>
+            <p className="text-xs text-muted-foreground">Chỉnh sửa nội dung 4 mẫu email đơn hàng (xác nhận, đã xác nhận, giao hàng, bảo hành) tại tab <strong>Nhắn tin tự động</strong>.</p>
           </div>
           <div className="flex gap-2">
             <Button
