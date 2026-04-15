@@ -213,22 +213,36 @@ Deno.serve(async (req) => {
         );
       }
 
-      const oaInfoRes = await fetch("https://openapi.zalo.me/v2.0/oa/getoa", {
-        headers: { access_token: accessToken },
-      });
-      const oaInfo = await oaInfoRes.json();
-      console.log("OA info:", JSON.stringify(oaInfo));
+      // Try to get OA info - may fail if app hasn't registered this API
+      let oaId = "";
+      let oaName = "";
+      let oaAvatar = "";
+      try {
+        const oaInfoRes = await fetch("https://openapi.zalo.me/v2.0/oa/getoa", {
+          headers: { access_token: accessToken },
+        });
+        const oaInfo = await oaInfoRes.json();
+        console.log("OA info:", JSON.stringify(oaInfo));
+        if (oaInfo.data) {
+          oaId = oaInfo.data.oa_id || "";
+          oaName = oaInfo.data.name || "";
+          oaAvatar = oaInfo.data.avatar || oaInfo.data.cover || "";
+        } else {
+          console.log("OA info API failed (may not be registered), continuing with token only");
+        }
+      } catch (oaErr) {
+        console.log("OA info fetch error, continuing:", oaErr);
+      }
 
-      const oaId = oaInfo.data?.oa_id || "";
-      const oaName = oaInfo.data?.name || "";
-      const oaAvatar = oaInfo.data?.avatar || oaInfo.data?.cover || "";
+      // Use a fallback OA ID - even if getoa fails, we have a valid token
+      const effectiveOaId = oaId || `connected_${Date.now()}`;
 
       const { error: updateError } = await supabaseAdmin
         .from("tenant_landing_settings")
         .update({
           zalo_access_token: accessToken,
           zalo_refresh_token: refreshToken,
-          zalo_oa_id: oaId ? String(oaId) : null,
+          zalo_oa_id: String(effectiveOaId),
           zalo_oa_name: oaName || null,
           zalo_oa_avatar: oaAvatar || null,
           zalo_enabled: true,

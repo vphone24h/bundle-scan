@@ -46,6 +46,8 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
   const [connecting, setConnecting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [testPhone, setTestPhone] = useState('');
+  const [showTestInput, setShowTestInput] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: settings, isLoading } = useQuery({
@@ -162,13 +164,18 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
   };
 
   const handleTest = async () => {
+    const phone = testPhone.trim() || settings?.store_phone || '0123456789';
+    if (!phone || phone.length < 9) {
+      toast.error('Vui lòng nhập số điện thoại hợp lệ');
+      return;
+    }
     setTesting(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-zalo-message', {
         body: {
           tenant_id: tenantId,
           customer_name: 'Test',
-          customer_phone: settings?.store_phone || '0123456789',
+          customer_phone: phone,
           message_type: 'test',
         },
       });
@@ -301,10 +308,20 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
 
           {/* Actions */}
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={handleTest} disabled={testing} className="gap-1.5 flex-1">
-              {testing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-              Test gửi
-            </Button>
+            <div className="flex-1 space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  value={testPhone}
+                  onChange={e => setTestPhone(e.target.value)}
+                  placeholder="Nhập SĐT test..."
+                  className="text-sm flex-1"
+                />
+                <Button variant="outline" size="sm" onClick={handleTest} disabled={testing} className="gap-1.5 shrink-0">
+                  {testing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                  Test gửi
+                </Button>
+              </div>
+            </div>
             <Button variant="outline" size="sm" onClick={handleRefreshToken} disabled={refreshing} className="gap-1.5">
               {refreshing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
               Gia hạn token
