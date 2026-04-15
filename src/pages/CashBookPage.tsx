@@ -1480,6 +1480,11 @@ export default function CashBookPage() {
                               </Badge>
                             ) : null;
                           })()}
+                          {entry.is_business_accounting && (
+                            <Badge variant="outline" className="text-[9px] px-1 py-0 font-medium bg-violet-50 text-violet-700 border-violet-200">
+                              📊 Hạch toán
+                            </Badge>
+                          )}
                           <span className="text-xs text-muted-foreground">
                             {entry.category} • {paymentSourceLabels[normalizePaymentSource(entry.payment_source)] || entry.payment_source}
                             {entry.branches?.name && ` • ${entry.branches.name}`}
