@@ -70,12 +70,12 @@ async function cleanupExpired(admin: any) {
   }
 }
 
-async function fetchAllPaginated(admin: any, table: string, query: any) {
+async function fetchAllRows(admin: any, baseQuery: () => any) {
   const PAGE = 1000;
   let all: any[] = [];
   let from = 0;
   while (true) {
-    const { data, error } = await query.range(from, from + PAGE - 1);
+    const { data, error } = await baseQuery().range(from, from + PAGE - 1);
     if (error) throw error;
     if (!data || data.length === 0) break;
     all.push(...data);
