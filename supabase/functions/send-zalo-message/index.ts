@@ -391,7 +391,7 @@ Deno.serve(async (req) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${settings.zalo_access_token}`,
+            access_token: settings.zalo_access_token,
           },
           body: JSON.stringify({
             recipient: { user_id: recipientUserId },
