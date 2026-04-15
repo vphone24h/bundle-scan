@@ -48,6 +48,8 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
   const [testing, setTesting] = useState(false);
   const [testPhone, setTestPhone] = useState('');
   const [showTestInput, setShowTestInput] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [oaNameInput, setOaNameInput] = useState('');
   const queryClient = useQueryClient();
 
   const { data: settings, isLoading } = useQuery({
