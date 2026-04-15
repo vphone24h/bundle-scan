@@ -69,6 +69,14 @@ async function resolveZaloAppCredentials(
   }
 
   if (appId && appSecret) return { app_id: appId, app_secret: appSecret };
+
+  // 5. Fallback: environment variables (secrets)
+  const envAppId = Deno.env.get("ZALO_APP_ID");
+  const envAppSecret = Deno.env.get("ZALO_APP_SECRET");
+  if (envAppId && envAppSecret) {
+    return { app_id: appId || envAppId, app_secret: appSecret || envAppSecret };
+  }
+
   return null;
 }
 
