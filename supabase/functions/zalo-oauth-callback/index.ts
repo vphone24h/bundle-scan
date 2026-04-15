@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { action, tenant_id, code, app_id, app_secret } = await req.json();
+    const { action, tenant_id, code, app_id, app_secret, oa_id: requestOaId } = await req.json();
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -213,28 +213,52 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Try to get OA info - may fail if app hasn't registered this API
+      // Try to get OA info using v3.0 API first, then v2.0 fallback
       let oaId = "";
       let oaName = "";
       let oaAvatar = "";
+      
+      // Try v3.0 API (uses Authorization header)
       try {
-        const oaInfoRes = await fetch("https://openapi.zalo.me/v2.0/oa/getoa", {
-          headers: { access_token: accessToken },
+        const oaInfoRes = await fetch("https://openapi.zalo.me/v3.0/oa/getoa", {
+          headers: { "Authorization": `Bearer ${accessToken}` },
         });
         const oaInfo = await oaInfoRes.json();
-        console.log("OA info:", JSON.stringify(oaInfo));
+        console.log("OA info v3.0:", JSON.stringify(oaInfo));
         if (oaInfo.data) {
-          oaId = oaInfo.data.oa_id || "";
+          oaId = String(oaInfo.data.oa_id || "");
           oaName = oaInfo.data.name || "";
           oaAvatar = oaInfo.data.avatar || oaInfo.data.cover || "";
-        } else {
-          console.log("OA info API failed (may not be registered), continuing with token only");
         }
       } catch (oaErr) {
-        console.log("OA info fetch error, continuing:", oaErr);
+        console.log("OA info v3.0 fetch error:", oaErr);
       }
 
-      // Use a fallback OA ID - even if getoa fails, we have a valid token
+      // Fallback: try v2.0 API
+      if (!oaName) {
+        try {
+          const oaInfoRes = await fetch("https://openapi.zalo.me/v2.0/oa/getoa", {
+            headers: { access_token: accessToken },
+          });
+          const oaInfo = await oaInfoRes.json();
+          console.log("OA info v2.0:", JSON.stringify(oaInfo));
+          if (oaInfo.data) {
+            oaId = oaId || String(oaInfo.data.oa_id || "");
+            oaName = oaInfo.data.name || "";
+            oaAvatar = oaAvatar || oaInfo.data.avatar || oaInfo.data.cover || "";
+          }
+        } catch (oaErr) {
+          console.log("OA info v2.0 fetch error:", oaErr);
+        }
+      }
+
+      // Use oa_id from callback URL params if API didn't return one
+      if (!oaId && requestOaId) {
+        oaId = String(requestOaId);
+        console.log("Using oa_id from callback params:", oaId);
+      }
+
+      // Use a fallback OA ID - even if all methods fail, we have a valid token
       const effectiveOaId = oaId || `connected_${Date.now()}`;
 
       const { error: updateError } = await supabaseAdmin

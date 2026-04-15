@@ -100,11 +100,11 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
         if (event.data?.type === 'zalo-oauth-callback') {
           window.removeEventListener('message', handler);
           clearInterval(popupChecker);
-          const { code } = event.data;
+          const { code, oa_id } = event.data;
           if (code) {
             try {
               const { data: exchangeData, error: exchangeErr } = await supabase.functions.invoke('zalo-oauth-callback', {
-                body: { action: 'exchange_code', code, tenant_id: tenantId },
+                body: { action: 'exchange_code', code, tenant_id: tenantId, oa_id: oa_id || undefined },
               });
               if (exchangeErr || exchangeData?.error) {
                 toast.error(exchangeData?.error || exchangeErr?.message || 'Lỗi kết nối');
