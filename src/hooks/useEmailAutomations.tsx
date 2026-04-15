@@ -10,6 +10,7 @@ export interface EmailAutomation {
   trigger_days: number;
   subject: string;
   is_active: boolean;
+  zalo_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
