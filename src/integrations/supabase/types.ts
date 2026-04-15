@@ -8801,7 +8801,9 @@ export type Database = {
           zalo_app_id: string | null
           zalo_app_secret: string | null
           zalo_enabled: boolean | null
+          zalo_oa_avatar: string | null
           zalo_oa_id: string | null
+          zalo_oa_name: string | null
           zalo_on_export: boolean | null
           zalo_refresh_token: string | null
           zalo_url: string | null
@@ -8890,7 +8892,9 @@ export type Database = {
           zalo_app_id?: string | null
           zalo_app_secret?: string | null
           zalo_enabled?: boolean | null
+          zalo_oa_avatar?: string | null
           zalo_oa_id?: string | null
+          zalo_oa_name?: string | null
           zalo_on_export?: boolean | null
           zalo_refresh_token?: string | null
           zalo_url?: string | null
@@ -8979,7 +8983,9 @@ export type Database = {
           zalo_app_id?: string | null
           zalo_app_secret?: string | null
           zalo_enabled?: boolean | null
+          zalo_oa_avatar?: string | null
           zalo_oa_id?: string | null
+          zalo_oa_name?: string | null
           zalo_on_export?: boolean | null
           zalo_refresh_token?: string | null
           zalo_url?: string | null

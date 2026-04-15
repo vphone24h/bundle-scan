@@ -214,6 +214,7 @@ Deno.serve(async (req) => {
 
       const oaId = oaInfo.data?.oa_id || "";
       const oaName = oaInfo.data?.name || "";
+      const oaAvatar = oaInfo.data?.avatar || oaInfo.data?.cover || "";
 
       const { error: updateError } = await supabaseAdmin
         .from("tenant_landing_settings")
@@ -221,6 +222,8 @@ Deno.serve(async (req) => {
           zalo_access_token: accessToken,
           zalo_refresh_token: refreshToken,
           zalo_oa_id: oaId ? String(oaId) : null,
+          zalo_oa_name: oaName || null,
+          zalo_oa_avatar: oaAvatar || null,
           zalo_enabled: true,
           zalo_app_id: creds.app_id,
           zalo_app_secret: creds.app_secret,
@@ -240,6 +243,7 @@ Deno.serve(async (req) => {
           success: true,
           oa_id: oaId,
           oa_name: oaName,
+          oa_avatar: oaAvatar,
           message: `Kết nối Zalo OA "${oaName || oaId}" thành công!`,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -317,6 +321,8 @@ Deno.serve(async (req) => {
           zalo_access_token: null,
           zalo_refresh_token: null,
           zalo_oa_id: null,
+          zalo_oa_name: null,
+          zalo_oa_avatar: null,
           zalo_enabled: false,
         })
         .eq("tenant_id", tenant_id);
