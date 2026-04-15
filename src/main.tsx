@@ -12,6 +12,7 @@ const APP_UPDATE_SEARCH_PARAM = '__app_update';
 const APP_SERVICE_WORKER_PURGE_KEY = 'vkho_app_service_worker_purge_v1';
 const APP_VERSION_SYNC_INTERVAL_MS = 60000;
 const APP_VERSION_SYNC_THROTTLE_MS = 10000;
+const APP_VERSION_FETCH_TIMEOUT_MS = 4000;
 
 let appVersionSyncInFlight: Promise<void> | null = null;
 let lastAppVersionSyncAt = 0;
@@ -30,12 +31,16 @@ function isPushServiceWorker(registration: ServiceWorkerRegistration) {
 async function fetchRemoteBuildVersion() {
   if (typeof window === 'undefined') return null;
 
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), APP_VERSION_FETCH_TIMEOUT_MS);
+
   try {
     const versionUrl = new URL(APP_VERSION_ENDPOINT, window.location.origin);
     versionUrl.searchParams.set('ts', `${Date.now()}`);
 
     const response = await window.fetch(versionUrl.toString(), {
       cache: 'no-store',
+      signal: controller.signal,
       headers: {
         'cache-control': 'no-cache',
         pragma: 'no-cache',
@@ -48,6 +53,8 @@ async function fetchRemoteBuildVersion() {
     return typeof payload?.buildId === 'string' ? payload.buildId : null;
   } catch {
     return null;
+  } finally {
+    window.clearTimeout(timeoutId);
   }
 }
 
@@ -225,29 +232,42 @@ function hidePreloader() {
   }
 }
 
+function hidePreloaderAfterPaint() {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(hidePreloader);
+  });
+}
+
+async function startAppRuntimeMaintenance() {
+  registerAppRuntimeSyncTriggers();
+
+  try {
+    await purgeLegacyAppServiceWorkerOnBoot();
+  } catch {
+    // Ignore runtime maintenance failures during boot so UI can stay responsive.
+  }
+
+  try {
+    await scheduleAppRuntimeVersionSync(true);
+  } catch {
+    // Ignore version sync failures during boot; next focus/online event will retry.
+  }
+}
+
 (window as any).__hideAppPreloader = hidePreloader;
 
-async function bootstrapApp() {
-  await purgeLegacyAppServiceWorkerOnBoot();
-  registerAppRuntimeSyncTriggers();
-  await scheduleAppRuntimeVersionSync(true);
-
+function bootstrapApp() {
   const root = createRoot(document.getElementById("root")!);
   root.render(<App />);
 
   const prefetch = (window as any).__STORE_PREFETCH__;
   if (!prefetch?.storeId) {
-    const hasAuth = !!localStorage.getItem('sb-rodpbhesrwykmpywiiyd-auth-token');
-    if (hasAuth) {
-      requestAnimationFrame(hidePreloader);
-    } else {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(hidePreloader);
-      });
-    }
+    hidePreloaderAfterPaint();
   } else {
     setTimeout(hidePreloader, 4000);
   }
+
+  void startAppRuntimeMaintenance();
 }
 
 void bootstrapApp();
