@@ -2052,8 +2052,6 @@ export function LandingPageSettings() {
         </CardContent>
       </Card>
 
-      {/* Zalo ZNS Manager */}
-      <ZaloZnsManager />
 
       {/* Payment Config */}
       <PaymentConfigSection
