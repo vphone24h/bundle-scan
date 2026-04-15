@@ -371,18 +371,31 @@ Deno.serve(async (req) => {
         recipientUserId = await getLatestStoredFollower(supabaseAdmin, tenant_id);
       }
       if (!recipientUserId) {
-        recipientUserId = await getFirstFollower(settings.zalo_access_token);
+        const followerResult = await getFirstFollower(settings.zalo_access_token);
+        if (followerResult.userId) {
+          recipientUserId = followerResult.userId;
+        } else if (followerResult.error) {
+          // If there's a specific error (token expired, no followers, etc.), return it
+          if (!(znsTemplateId && customer_phone)) {
+            return new Response(
+              JSON.stringify({
+                error: "Không tìm thấy người theo dõi OA",
+                details: followerResult.error,
+              }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          console.log("Test: follower lookup failed, will try ZNS:", followerResult.error);
+        }
       }
       if (!recipientUserId) {
-        // No follower found — for test, try ZNS if available, otherwise explain
         if (znsTemplateId && customer_phone) {
           console.log("Test: no follower found, will try ZNS with phone:", customer_phone);
-          // Fall through to ZNS flow below (recipientUserId stays null)
         } else {
           return new Response(
             JSON.stringify({
               error: "Không tìm thấy người theo dõi OA",
-              details: "Số điện thoại này chưa follow OA. Hãy dùng Zalo quét QR hoặc tìm OA và nhấn 'Quan tâm', hoặc cấu hình ZNS Template để gửi qua ZNS.",
+              details: "OA chưa có ai theo dõi hoặc không thể lấy danh sách follower. Hãy dùng Zalo quét QR hoặc tìm OA và nhấn 'Quan tâm'.",
             }),
             { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
