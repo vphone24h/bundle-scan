@@ -327,13 +327,19 @@ Deno.serve(async (req) => {
         recipientUserId = await getFirstFollower(settings.zalo_access_token);
       }
       if (!recipientUserId) {
-        return new Response(
-          JSON.stringify({
-            error: "Không tìm thấy người theo dõi OA",
-            details: "Để test, bạn cần quan tâm (follow) OA trên Zalo trước.",
-          }),
-          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        // No follower found — for test, try ZNS if available, otherwise explain
+        if (znsTemplateId && customer_phone) {
+          console.log("Test: no follower found, will try ZNS with phone:", customer_phone);
+          // Fall through to ZNS flow below (recipientUserId stays null)
+        } else {
+          return new Response(
+            JSON.stringify({
+              error: "Không tìm thấy người theo dõi OA",
+              details: "Số điện thoại này chưa follow OA. Hãy dùng Zalo quét QR hoặc tìm OA và nhấn 'Quan tâm', hoặc cấu hình ZNS Template để gửi qua ZNS.",
+            }),
+            { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
     } else {
       // Find user by phone in zalo_followers table
