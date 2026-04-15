@@ -11,6 +11,7 @@ import { LandingCartProvider } from '@/hooks/useLandingCart';
 import { readPwaLastRoute, readPwaStoreIdentity, writePwaLastRoute, writePwaStoreIdentity } from '@/lib/pwaStoreSession';
 import { Store } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { InstantWarrantyApp } from '@/components/landing/InstantWarrantyApp';
 
 // Lazy load heavy templates - they import DOMPurify and many components
 const universalImport = () => import('@/components/website-templates/UniversalStoreTemplate');
@@ -20,7 +21,13 @@ const AppleStyleLandingTemplate = lazy(appleImport);
 
 // Eagerly preload the most common template immediately for store pages
 const prefetch = typeof window !== 'undefined' ? (window as any).__STORE_PREFETCH__ : null;
-if (prefetch?.storeId) {
+const shouldSkipInitialTemplatePreload = typeof window !== 'undefined' && (
+  window.matchMedia('(display-mode: standalone)').matches ||
+  (window.navigator as any).standalone === true ||
+  /^\/bao-hanh(?:\/|$)/.test(window.location.pathname)
+);
+
+if (prefetch?.storeId && !shouldSkipInitialTemplatePreload) {
   // Store page detected — preload template immediately, don't wait for idle
   universalImport();
 } else if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
@@ -484,9 +491,12 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     pathInfo?.contentId
   );
 
-  const shouldDeferCatalogLoading = isStandalone &&
-    (!pathInfo || pathInfo.pageView === 'warranty') &&
-    !hasDeepLinkContent;
+  const isWarrantyEntry = !hasDeepLinkContent && (
+    pathInfo?.pageView === 'warranty' ||
+    (isStandalone && !pathInfo)
+  );
+
+  const shouldDeferCatalogLoading = isWarrantyEntry;
 
   const [catalogEnabled, setCatalogEnabled] = useState(() => !shouldDeferCatalogLoading);
 
@@ -700,6 +710,20 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   }
 
   const branches: BranchInfo[] = landingData?.branches || [];
+
+  if (isWarrantyEntry) {
+    return (
+      <InstantWarrantyApp
+        accentColor={settings?.primary_color || '#1e3a5f'}
+        settings={settings}
+        showBackButton={!isStandalone && pathInfo?.pageView === 'warranty'}
+        storeId={storeId}
+        storeName={storeName}
+        tenantId={tenantId}
+        onBack={() => navigate('/')}
+      />
+    );
+  }
 
   // Skeleton for lazy template loading
   const templateFallback = (
