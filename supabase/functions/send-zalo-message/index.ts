@@ -370,7 +370,7 @@ Deno.serve(async (req) => {
               error: "Không tìm thấy người theo dõi OA",
               details: "Số điện thoại này chưa follow OA. Hãy dùng Zalo quét QR hoặc tìm OA và nhấn 'Quan tâm', hoặc cấu hình ZNS Template để gửi qua ZNS.",
             }),
-            { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
       }
@@ -464,8 +464,8 @@ Deno.serve(async (req) => {
               }).eq("id", logId);
             }
             return new Response(
-              JSON.stringify({ error: "Gửi thất bại", details: znsResult.message || zaloResult.message }),
-              { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              JSON.stringify({ error: "Gửi thất bại", details: `CS: ${zaloResult.message || 'N/A'}; ZNS: ${znsResult.message || 'N/A'}` }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
           }
 
@@ -502,8 +502,8 @@ Deno.serve(async (req) => {
         }
 
         return new Response(
-          JSON.stringify({ error: "Zalo send failed", details: friendlyError, zalo_error_code: zaloResult.error }),
-          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Zalo gửi thất bại", details: friendlyError, zalo_error_code: zaloResult.error }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
@@ -548,8 +548,8 @@ Deno.serve(async (req) => {
         }
 
         return new Response(
-          JSON.stringify({ error: "ZNS send failed", details: friendlyError }),
-          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "ZNS gửi thất bại", details: friendlyError }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
