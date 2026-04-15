@@ -6,6 +6,37 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function extractRootValue(raw: string, key: string): string | null {
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = raw.match(new RegExp(`"${escapedKey}"\\s*:\\s*(?:"([^"]+)"|(\d+))`, "s"));
+  return match?.[1] ?? match?.[2] ?? null;
+}
+
+function extractNestedValue(raw: string, objectKey: string, nestedKey: string): string | null {
+  const escapedObjectKey = objectKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escapedNestedKey = nestedKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = raw.match(
+    new RegExp(
+      `"${escapedObjectKey}"\\s*:\\s*\\{[^{}]*?"${escapedNestedKey}"\\s*:\\s*(?:"([^"]+)"|(\d+))`,
+      "s",
+    ),
+  );
+  return match?.[1] ?? match?.[2] ?? null;
+}
+
+function asString(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  return String(value);
+}
+
+function normalizePhone(phone: string): string {
+  let value = phone.replace(/\D/g, "");
+  if (value.startsWith("84")) {
+    value = `0${value.slice(2)}`;
+  }
+  return value;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -26,7 +57,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
+    const rawBody = await req.text();
+    const body = rawBody ? JSON.parse(rawBody) : {};
     console.log("Zalo webhook event:", JSON.stringify(body));
 
     const { event_name, app_id, sender, recipient, message, timestamp, follower, oa_id } = body;
@@ -37,7 +69,12 @@ Deno.serve(async (req) => {
     );
 
     // Find tenant by oa_id
-    const oaId = oa_id || recipient?.id;
+    const oaId =
+      extractRootValue(rawBody, "oa_id") ||
+      extractNestedValue(rawBody, "recipient", "id") ||
+      asString(oa_id) ||
+      asString(recipient?.id);
+
     if (!oaId) {
       console.log("No oa_id in webhook event, skipping");
       return new Response(JSON.stringify({ success: true }), {
@@ -65,7 +102,12 @@ Deno.serve(async (req) => {
 
     // Handle follow event
     if (event_name === "follow" || event_name === "oa.follow") {
-      const userId = follower?.id || sender?.id;
+      const userId =
+        extractNestedValue(rawBody, "follower", "id") ||
+        extractNestedValue(rawBody, "sender", "id") ||
+        asString(follower?.id) ||
+        asString(sender?.id);
+
       if (!userId) {
         console.log("No user_id in follow event");
         return new Response(JSON.stringify({ success: true }), {
@@ -99,8 +141,8 @@ Deno.serve(async (req) => {
       }
 
       // Normalize phone
-      if (phone && phone.startsWith("84")) {
-        phone = "0" + phone.substring(2);
+      if (phone) {
+        phone = normalizePhone(phone);
       }
 
       // Upsert follower
@@ -127,7 +169,12 @@ Deno.serve(async (req) => {
 
     // Handle unfollow event
     if (event_name === "unfollow" || event_name === "oa.unfollow") {
-      const userId = follower?.id || sender?.id;
+      const userId =
+        extractNestedValue(rawBody, "follower", "id") ||
+        extractNestedValue(rawBody, "sender", "id") ||
+        asString(follower?.id) ||
+        asString(sender?.id);
+
       if (userId) {
         const { error: deleteError } = await supabaseAdmin
           .from("zalo_oa_followers")
@@ -145,7 +192,9 @@ Deno.serve(async (req) => {
 
     // Handle user_send_text — could be used for auto-reply or logging
     if (event_name === "user_send_text" || event_name === "oa.message.receive") {
-      const userId = sender?.id;
+      const userId =
+        extractNestedValue(rawBody, "sender", "id") ||
+        asString(sender?.id);
       const text = message?.text;
       console.log(`Message from ${userId}: ${text}`);
 
