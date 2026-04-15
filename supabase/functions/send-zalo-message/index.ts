@@ -251,6 +251,7 @@ Deno.serve(async (req) => {
       receipt_code,
       branch_id,
       zalo_user_id,
+      custom_message,
     } = await req.json();
 
     if (!tenant_id) {
@@ -330,7 +331,7 @@ Deno.serve(async (req) => {
     const znsTemplateId = znsTemplate?.template_id || settings.zalo_zns_template_id;
 
     // Build message content (for CS messages)
-    const messageText = buildMessageText({
+    const messageText = custom_message || buildMessageText({
       message_type,
       customer_name,
       product_name,

@@ -162,8 +162,7 @@ export default function ExportNewPage() {
 
   // Auto email toggle
   const [autoEmailEnabled, setAutoEmailEnabled] = useState(true);
-  // Auto Zalo toggle (tạm ẩn - đang nghiên cứu)
-  const [autoZaloEnabled] = useState(false);
+  const [autoZaloEnabled, setAutoZaloEnabled] = useState(false);
 
   // Hooks
   const { user } = useAuth();
@@ -1741,28 +1740,16 @@ export default function ExportNewPage() {
                 </div>
                </div>
 
-              {/* Auto email toggle */}
+              {/* Auto email + zalo toggle */}
               <AutoEmailToggle
                 id="auto-email-export"
                 checked={autoEmailEnabled}
                 onCheckedChange={setAutoEmailEnabled}
                 hasCustomerEmail={!!customerEmail}
+                zaloChecked={autoZaloEnabled}
+                onZaloCheckedChange={setAutoZaloEnabled}
+                hasCustomerPhone={!!customerPhone}
               />
-
-              {/* Auto Zalo toggle - tạm ẩn đang nghiên cứu */}
-              {/* {(landingSettings as any)?.zalo_enabled && (landingSettings as any)?.zalo_on_export && (
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <Label htmlFor="auto-zalo-export" className="flex items-center gap-2 cursor-pointer text-sm">
-                    <MessageCircle className="h-4 w-4 text-primary" />
-                    Tự động gửi Zalo cho khách
-                  </Label>
-                  <Switch
-                    id="auto-zalo-export"
-                    checked={autoZaloEnabled}
-                    onCheckedChange={setAutoZaloEnabled}
-                  />
-                </div>
-              )} */}
 
               <Button 
                 className="w-full" 

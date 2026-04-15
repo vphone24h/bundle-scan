@@ -31,6 +31,7 @@ import {
   EmailAutomationBlock,
 } from '@/hooks/useEmailAutomations';
 import { EmailTemplatePickerDialog, EmailTemplatePreset, ORDER_EMAIL_PRESETS, TRIGGER_TYPE_PRESETS } from './EmailTemplatePickerDialog';
+import { ZaloLogSection } from './ZaloLogSection';
 
 const TRIGGER_TYPES = [
   // Nhóm mua hàng
@@ -890,6 +891,20 @@ export function EmailAutomationTab() {
     },
     enabled: !!tenant?.id,
   });
+  const { data: zaloLogs, isLoading: isZaloLogsLoading, refetch: refetchZaloLogs } = useQuery({
+    queryKey: ['zalo-message-logs-tab', tenant?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('zalo_message_logs' as any)
+        .select('*')
+        .eq('tenant_id', tenant!.id)
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+    enabled: !!tenant?.id,
+  });
   const updateMut = useUpdateAutomation();
   const deleteMut = useDeleteAutomation();
 
@@ -1066,7 +1081,8 @@ export function EmailAutomationTab() {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="w-full sm:w-auto">
             <TabsTrigger value="scenarios" className="flex-1 sm:flex-none">Kịch bản ({automations?.length || 0})</TabsTrigger>
-            <TabsTrigger value="logs" className="flex-1 sm:flex-none">Lịch sử gửi ({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</TabsTrigger>
+            <TabsTrigger value="logs" className="flex-1 sm:flex-none">Lịch sử Mail ({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</TabsTrigger>
+            <TabsTrigger value="zalo-logs" className="flex-1 sm:flex-none">Lịch sử Zalo ({zaloLogs?.length || 0})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="scenarios" className="mt-4 space-y-6">
@@ -1214,6 +1230,10 @@ export function EmailAutomationTab() {
                 onPageChange={setLogPage}
               />
             )}
+          </TabsContent>
+
+          <TabsContent value="zalo-logs" className="mt-4">
+            <ZaloLogSection zaloLogs={zaloLogs || []} isLoading={isZaloLogsLoading} onRefetch={refetchZaloLogs} />
           </TabsContent>
         </Tabs>
 

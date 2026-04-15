@@ -1,0 +1,1 @@
+ALTER TABLE public.zalo_message_logs ADD COLUMN IF NOT EXISTS message_content text;
