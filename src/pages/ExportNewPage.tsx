@@ -1748,7 +1748,7 @@ export default function ExportNewPage() {
                 hasCustomerEmail={!!customerEmail}
                 zaloChecked={autoZaloEnabled}
                 onZaloCheckedChange={setAutoZaloEnabled}
-                hasCustomerPhone={!!savedCustomerPhone}
+                hasCustomerPhone={!!customerPhone}
               />
 
               <Button 
