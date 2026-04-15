@@ -122,6 +122,9 @@ export function useReportStats(filters?: {
       } as ReportStats;
     },
     enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    placeholderData: undefined,
     refetchOnWindowFocus: false,
   });
 }
