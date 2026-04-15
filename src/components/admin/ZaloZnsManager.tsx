@@ -679,7 +679,7 @@ function ZaloLogsTab({ tenantId }: { tenantId: string }) {
 
 // ─── Main ZNS Manager ───
 export function ZaloZnsManager() {
-  const { tenant } = useCurrentTenant();
+  const { data: tenant } = useCurrentTenant();
   const tenantId = tenant?.id;
 
   if (!tenantId) return null;
