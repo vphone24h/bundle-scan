@@ -2524,6 +2524,7 @@ export type Database = {
       daily_backups: {
         Row: {
           backup_date: string
+          backup_type: string
           completed_at: string | null
           created_at: string
           error_message: string | null
@@ -2537,6 +2538,7 @@ export type Database = {
         }
         Insert: {
           backup_date: string
+          backup_type?: string
           completed_at?: string | null
           created_at?: string
           error_message?: string | null
@@ -2550,6 +2552,7 @@ export type Database = {
         }
         Update: {
           backup_date?: string
+          backup_type?: string
           completed_at?: string | null
           created_at?: string
           error_message?: string | null

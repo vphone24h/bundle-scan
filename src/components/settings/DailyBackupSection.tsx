@@ -2,12 +2,11 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { toast } from 'sonner';
-import { Database, Download, Loader2, CheckCircle2, XCircle, Clock, RefreshCw } from 'lucide-react';
+import { Database, Download, Loader2, CheckCircle2, XCircle, Clock, RefreshCw, Archive } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
@@ -44,7 +43,8 @@ export function DailyBackupSection() {
       const url = URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Backup_${backup.backup_date}.xlsx`;
+      const label = backup.backup_type === 'full' ? 'FullBackup' : 'Backup';
+      a.download = `${label}_${backup.backup_date}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success('Đã tải file backup');
@@ -64,10 +64,10 @@ export function DailyBackupSection() {
       const dateStr = today.toISOString().split('T')[0];
 
       const { data, error } = await supabase.functions.invoke('daily-backup', {
-        body: { tenantId: tenant.id, date: dateStr },
+        body: { tenantId: tenant.id, date: dateStr, mode: 'full' },
       });
       if (error) throw error;
-      toast.success('Đã tạo backup thành công!');
+      toast.success('Đã tạo backup toàn bộ dữ liệu thành công!');
       refetch();
     } catch (err: any) {
       toast.error('Lỗi tạo backup: ' + err.message);
@@ -96,10 +96,10 @@ export function DailyBackupSection() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Database className="h-5 w-5 text-primary" />
-          Backup tự động hàng ngày
+          Backup dữ liệu
         </CardTitle>
         <p className="text-xs text-muted-foreground mt-1">
-          Hệ thống tự động backup dữ liệu bán hàng, nhập hàng, tồn kho mỗi ngày sau 23h. File lưu trữ 60 ngày.
+          Hệ thống tự động backup dữ liệu trong ngày lúc 23:59 mỗi ngày. Nhấn "Tạo ngay" để backup toàn bộ lịch sử bán/nhập hàng. File lưu trữ 60 ngày.
         </p>
         <Button
           size="sm"
@@ -111,9 +111,9 @@ export function DailyBackupSection() {
           {generating ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
           ) : (
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <Archive className="h-4 w-4 mr-2" />
           )}
-          {generating ? 'Đang tạo...' : 'Tạo ngay'}
+          {generating ? 'Đang tạo...' : 'Tạo ngay (toàn bộ dữ liệu)'}
         </Button>
       </CardHeader>
       <CardContent>
@@ -130,11 +130,13 @@ export function DailyBackupSection() {
             <div className="space-y-1">
               {backups.map((b: any) => {
                 const stats = b.stats || {};
+                const isFullBackup = b.backup_type === 'full';
+                const rawDate = b.backup_date?.replace('_full', '') || b.backup_date;
                 const dateFormatted = (() => {
                   try {
-                    return format(parseISO(b.backup_date), 'EEEE, dd/MM/yyyy', { locale: vi });
+                    return format(parseISO(rawDate), 'dd/MM/yyyy', { locale: vi });
                   } catch {
-                    return b.backup_date;
+                    return rawDate;
                   }
                 })();
 
@@ -146,7 +148,18 @@ export function DailyBackupSection() {
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       {statusIcon(b.status)}
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate capitalize">{dateFormatted}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">{dateFormatted}</p>
+                          {isFullBackup ? (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
+                              Toàn bộ
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
+                              Trong ngày
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                           {b.status === 'completed' && (
                             <>
