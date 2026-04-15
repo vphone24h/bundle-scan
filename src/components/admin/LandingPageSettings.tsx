@@ -1322,6 +1322,11 @@ export function LandingPageSettings() {
               toast({ title: 'Lỗi', description: 'Không thể xóa email. Vui lòng thử lại.', variant: 'destructive' });
             });
           }} />
+
+          {/* Zalo ZNS Manager - ngay dưới Email */}
+          <div className="pt-2">
+            <ZaloZnsManager />
+          </div>
           </>)}
         </CardContent>
       </Card>

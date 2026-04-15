@@ -76,26 +76,56 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
       // Open OAuth popup
       const popup = window.open(data.oauth_url, 'zalo-oauth', 'width=600,height=700');
 
+      // Check if popup was blocked
+      if (!popup || popup.closed) {
+        toast.error('Trình duyệt đã chặn popup. Vui lòng cho phép popup và thử lại.');
+        setConnecting(false);
+        return;
+      }
+
+      // Poll to detect if popup is closed without completing OAuth
+      const popupChecker = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(popupChecker);
+          // Give a small delay for postMessage to fire before popup closes
+          setTimeout(() => {
+            setConnecting(false);
+          }, 2000);
+        }
+      }, 500);
+
       const handler = async (event: MessageEvent) => {
         if (event.data?.type === 'zalo-oauth-callback') {
           window.removeEventListener('message', handler);
+          clearInterval(popupChecker);
           const { code } = event.data;
           if (code) {
-            const { data: exchangeData, error: exchangeErr } = await supabase.functions.invoke('zalo-oauth-callback', {
-              body: { action: 'exchange_code', code, tenant_id: tenantId },
-            });
-            if (exchangeErr || exchangeData?.error) {
-              toast.error(exchangeData?.error || exchangeErr?.message || 'Lỗi kết nối');
-            } else {
-              toast.success(`✅ ${exchangeData.message || 'Kết nối thành công!'}`);
-              queryClient.invalidateQueries({ queryKey: ['zalo-zns-config'] });
+            try {
+              const { data: exchangeData, error: exchangeErr } = await supabase.functions.invoke('zalo-oauth-callback', {
+                body: { action: 'exchange_code', code, tenant_id: tenantId },
+              });
+              if (exchangeErr || exchangeData?.error) {
+                toast.error(exchangeData?.error || exchangeErr?.message || 'Lỗi kết nối');
+              } else {
+                toast.success(`✅ ${exchangeData.message || 'Kết nối thành công!'}`);
+                queryClient.invalidateQueries({ queryKey: ['zalo-zns-config'] });
+              }
+            } catch (exErr: any) {
+              toast.error('Lỗi trao đổi token: ' + (exErr.message || 'Không xác định'));
             }
+          } else {
+            toast.error('Không nhận được mã xác thực từ Zalo. Vui lòng thử lại.');
           }
           setConnecting(false);
         }
       };
       window.addEventListener('message', handler);
-      setTimeout(() => { window.removeEventListener('message', handler); setConnecting(false); }, 120000);
+      // Timeout after 2 minutes
+      setTimeout(() => {
+        window.removeEventListener('message', handler);
+        clearInterval(popupChecker);
+        setConnecting(false);
+      }, 120000);
     } catch (err: any) {
       toast.error(err.message || 'Lỗi kết nối');
       setConnecting(false);
