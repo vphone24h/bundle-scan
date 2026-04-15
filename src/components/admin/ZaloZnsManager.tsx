@@ -54,7 +54,7 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('tenant_landing_settings' as any)
-        .select('zalo_oa_id, zalo_access_token, zalo_enabled, zalo_on_export, store_name, store_phone')
+        .select('zalo_oa_id, zalo_oa_name, zalo_oa_avatar, zalo_access_token, zalo_enabled, zalo_on_export, store_name, store_phone')
         .eq('tenant_id', tenantId)
         .maybeSingle();
       if (error) throw error;
@@ -220,25 +220,36 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
           </div>
         </div>
       ) : (
-        /* ── Connected: show info & actions ── */
+        /* ── Connected: show OA info & actions ── */
         <div className="space-y-4">
-          {/* OA Info */}
-          <div className="rounded-lg border p-3 space-y-1.5">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <p className="text-sm font-medium">Zalo OA đã kết nối</p>
+          {/* OA Info Card */}
+          <div className="rounded-lg border p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              {settings?.zalo_oa_avatar ? (
+                <img 
+                  src={settings.zalo_oa_avatar} 
+                  alt={settings?.zalo_oa_name || 'Zalo OA'} 
+                  className="h-12 w-12 rounded-full object-cover border-2 border-green-500/30"
+                />
+              ) : (
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center border-2 border-green-500/30">
+                  <MessageCircle className="h-6 w-6 text-primary" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold truncate">
+                    {settings?.zalo_oa_name || 'Zalo OA'}
+                  </p>
+                  <Badge className="bg-green-500/10 text-green-700 border-green-500/20 text-[10px] shrink-0">
+                    <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" /> Đã kết nối
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  OA ID: <span className="font-mono">{settings?.zalo_oa_id}</span>
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              OA ID: <span className="font-mono">{settings?.zalo_oa_id}</span>
-            </p>
-            {settings?.zalo_access_token && (
-              <p className="text-xs text-muted-foreground">
-                Token: <span className="font-mono">{showToken ? settings.zalo_access_token?.slice(0, 20) + '...' : '••••••••'}</span>
-                <button type="button" onClick={() => setShowToken(!showToken)} className="ml-1 text-muted-foreground hover:text-foreground">
-                  {showToken ? <EyeOff className="h-3 w-3 inline" /> : <Eye className="h-3 w-3 inline" />}
-                </button>
-              </p>
-            )}
           </div>
 
           {/* Auto-send settings */}
