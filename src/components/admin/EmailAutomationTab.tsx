@@ -937,6 +937,7 @@ export function EmailAutomationTab() {
     updateMut.mutate({ id: item.id, zalo_enabled: !item.zalo_enabled } as any);
   };
 
+  const handleDelete = (item: EmailAutomation) => {
     if (confirm(`Xóa kịch bản "${item.name}"?`)) {
       deleteMut.mutate(item.id);
     }
