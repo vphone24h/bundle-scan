@@ -88,16 +88,23 @@
         inset: 0;
         z-index: 9999;
         background: #f8fafc;
-        transition: opacity 0.1s ease-out;
+        transition: opacity 0.15s ease-out;
       }
       @media (prefers-color-scheme: dark) {
         #app-preloader { background: #0a0a0a; }
         #app-preloader div { border-color: #27272a !important; }
         #app-preloader div > div, #app-preloader .sk-block { background: #27272a !important; }
+        #app-preloader .sk-spinner { border-color: #333 !important; border-top-color: #888 !important; }
       }
       #app-preloader.hide { opacity: 0; pointer-events: none; }
-      #app-preloader .sk-block { animation: skpulse 1.5s ease-in-out infinite; }
-      @keyframes skpulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+      #app-preloader .sk-block { animation: skpulse 1.2s ease-in-out infinite; }
+      @keyframes skpulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+      #app-preloader .sk-spinner {
+        width: 28px; height: 28px; border: 3px solid #cbd5e1;
+        border-top-color: #1e3a5f; border-radius: 50%;
+        animation: skspin 0.7s linear infinite; margin: 0 auto;
+      }
+      @keyframes skspin { to { transform: rotate(360deg); } }
     </style>
   </head>
 
