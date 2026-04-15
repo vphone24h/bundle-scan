@@ -192,21 +192,13 @@ function AppBootSignal() {
     const prefetch = (window as any).__STORE_PREFETCH__;
     if (prefetch?.storeId) return;
 
-    let frame1 = 0;
-    let frame2 = 0;
-
-    frame1 = window.requestAnimationFrame(() => {
-      frame2 = window.requestAnimationFrame(() => {
-        (window as any).__hideAppPreloader?.();
-      });
-    });
+    // Hide preloader immediately when React mounts - content is ready
+    (window as any).__hideAppPreloader?.();
 
     // Preload admin pages well after first paint
     const preloadTimer = window.setTimeout(preloadAdminPages, 3000);
 
     return () => {
-      window.cancelAnimationFrame(frame1);
-      window.cancelAnimationFrame(frame2);
       window.clearTimeout(preloadTimer);
     };
   }, []);

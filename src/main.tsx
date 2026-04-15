@@ -261,7 +261,7 @@ function bootstrapApp() {
   root.render(<App />);
 
   const prefetch = (window as any).__STORE_PREFETCH__;
-  setTimeout(hidePreloader, prefetch?.storeId ? 3000 : 5000);
+  setTimeout(hidePreloader, prefetch?.storeId ? 2000 : 1500);
 
   // Defer runtime maintenance to not compete with first paint
   setTimeout(() => void startAppRuntimeMaintenance(), 3000);
