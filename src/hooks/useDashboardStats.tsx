@@ -61,6 +61,7 @@ export function useDashboardStats() {
           p_end_iso: todayEndUTC,
           p_branch_id: effectiveBranchId,
           p_category_id: null,
+          p_is_repair: null,
         }),
         todayImportsQuery,
       ]);
