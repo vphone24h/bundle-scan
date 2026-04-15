@@ -3384,6 +3384,7 @@ export type Database = {
           trigger_days: number
           trigger_type: string
           updated_at: string
+          zalo_enabled: boolean | null
         }
         Insert: {
           created_at?: string
@@ -3396,6 +3397,7 @@ export type Database = {
           trigger_days?: number
           trigger_type?: string
           updated_at?: string
+          zalo_enabled?: boolean | null
         }
         Update: {
           created_at?: string
@@ -3408,6 +3410,7 @@ export type Database = {
           trigger_days?: number
           trigger_type?: string
           updated_at?: string
+          zalo_enabled?: boolean | null
         }
         Relationships: [
           {

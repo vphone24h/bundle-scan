@@ -1,0 +1,1 @@
+ALTER TABLE public.email_automations ADD COLUMN IF NOT EXISTS zalo_enabled boolean DEFAULT false;
