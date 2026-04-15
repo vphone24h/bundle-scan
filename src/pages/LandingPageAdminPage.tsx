@@ -193,7 +193,7 @@ export default function LandingPageAdminPage() {
                 )}
                 {showSettings && (
                   <TabsTrigger value="email-automation" className="shrink-0 py-2.5 px-4 text-sm touch-manipulation">
-                    <span className="flex items-center gap-1">Email Automation</span>
+                    <span className="flex items-center gap-1">Nhắn tin tự động</span>
                   </TabsTrigger>
                 )}
                 {showSettings && (

@@ -1033,7 +1033,7 @@ export function EmailAutomationTab() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Mail className="h-5 w-5" />
-            Email Automation
+            Nhắn tin tự động
           </CardTitle>
           <div className="flex items-center gap-2 overflow-x-auto">
             <Button size="sm" variant="outline" onClick={handleRunNow} disabled={runningNow} className="shrink-0">
