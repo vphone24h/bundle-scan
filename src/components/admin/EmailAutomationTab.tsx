@@ -561,13 +561,14 @@ const ORDER_TRIGGER_TYPES = [
   { value: 'on_order_warranty', label: 'Email bảo hành', presetId: 'order_warranty', condition: 'Tự động gửi khi tạo phiếu bảo hành cho khách' },
 ];
 
-function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest, onDelete, onCreateFromPreset }: {
+function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest, onDelete, onCreateFromPreset, onZaloToggle }: {
   automations: EmailAutomation[];
   tenantId: string;
   onEdit: (a: EmailAutomation) => void;
   onToggle: (a: EmailAutomation) => void;
   onSendTest: (a: EmailAutomation) => void;
   onDelete: (a: EmailAutomation) => void;
+  onZaloToggle: (a: EmailAutomation) => void;
   onCreateFromPreset: (preset: EmailTemplatePreset) => void;
 }) {
   return (
@@ -592,7 +593,14 @@ function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest
                   <p className="text-xs text-muted-foreground mt-0.5 break-all">Subject: {existing.subject}</p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <Switch checked={existing.is_active} onCheckedChange={() => onToggle(existing)} />
+                  <div className="flex flex-col items-center gap-0.5 mr-1">
+                    <span className="text-[9px] text-muted-foreground">Email</span>
+                    <Switch checked={existing.is_active} onCheckedChange={() => onToggle(existing)} />
+                  </div>
+                  <div className="flex flex-col items-center gap-0.5 mr-1">
+                    <span className="text-[9px] text-blue-600 font-medium">Zalo</span>
+                    <Switch checked={existing.zalo_enabled} onCheckedChange={() => onZaloToggle(existing)} className="data-[state=checked]:bg-blue-500" />
+                  </div>
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onSendTest(existing)} title="Gửi thử">
                     <Send className="h-4 w-4" />
                   </Button>
@@ -1094,7 +1102,14 @@ export function EmailAutomationTab() {
                           <p className="text-xs text-muted-foreground mt-0.5">Subject: {a.subject}</p>
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <Switch checked={a.is_active} onCheckedChange={() => handleToggle(a)} />
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className="text-[9px] text-muted-foreground">Email</span>
+                            <Switch checked={a.is_active} onCheckedChange={() => handleToggle(a)} />
+                          </div>
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className="text-[9px] text-blue-600 font-medium">Zalo</span>
+                            <Switch checked={a.zalo_enabled} onCheckedChange={() => handleZaloToggle(a)} className="data-[state=checked]:bg-blue-500" />
+                          </div>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRunSingle(a.id)} disabled={runningItemId === a.id} title="Chạy ngay">
                             <Play className={`h-4 w-4 ${runningItemId === a.id ? 'animate-spin' : ''}`} />
                           </Button>
