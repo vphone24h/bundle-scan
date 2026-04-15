@@ -6,6 +6,72 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Resolve Zalo App credentials: tenant_landing_settings → payment_config (company) → payment_config (platform)
+async function resolveZaloAppCredentials(
+  supabaseAdmin: any,
+  tenantId: string,
+  providedAppId?: string,
+  providedAppSecret?: string
+): Promise<{ app_id: string; app_secret: string } | null> {
+  if (providedAppId && providedAppSecret) {
+    return { app_id: providedAppId, app_secret: providedAppSecret };
+  }
+
+  // 1. Check tenant_landing_settings
+  const { data: tenantSettings } = await supabaseAdmin
+    .from("tenant_landing_settings")
+    .select("zalo_app_id, zalo_app_secret")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
+  let appId = providedAppId || tenantSettings?.zalo_app_id;
+  let appSecret = providedAppSecret || tenantSettings?.zalo_app_secret;
+
+  if (appId && appSecret) return { app_id: appId, app_secret: appSecret };
+
+  // 2. Get tenant's company_id
+  const { data: tenant } = await supabaseAdmin
+    .from("tenants")
+    .select("company_id")
+    .eq("id", tenantId)
+    .maybeSingle();
+
+  // 3. Check payment_config for company
+  if (tenant?.company_id) {
+    const { data: companyConfig } = await supabaseAdmin
+      .from("payment_config")
+      .select("config_key, config_value")
+      .eq("company_id", tenant.company_id)
+      .in("config_key", ["zalo_app_id", "zalo_app_secret"]);
+
+    if (companyConfig?.length) {
+      for (const c of companyConfig) {
+        if (c.config_key === "zalo_app_id" && !appId) appId = c.config_value;
+        if (c.config_key === "zalo_app_secret" && !appSecret) appSecret = c.config_value;
+      }
+    }
+  }
+
+  if (appId && appSecret) return { app_id: appId, app_secret: appSecret };
+
+  // 4. Fallback: platform-level (company_id IS NULL)
+  const { data: platformConfig } = await supabaseAdmin
+    .from("payment_config")
+    .select("config_key, config_value")
+    .is("company_id", null)
+    .in("config_key", ["zalo_app_id", "zalo_app_secret"]);
+
+  if (platformConfig?.length) {
+    for (const c of platformConfig) {
+      if (c.config_key === "zalo_app_id" && !appId) appId = c.config_value;
+      if (c.config_key === "zalo_app_secret" && !appSecret) appSecret = c.config_value;
+    }
+  }
+
+  if (appId && appSecret) return { app_id: appId, app_secret: appSecret };
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -19,7 +85,6 @@ Deno.serve(async (req) => {
     const oaId = url.searchParams.get("oa_id");
     const state = url.searchParams.get("state"); // tenant_id
 
-    // Return HTML that sends message to opener and closes
     const html = `<!DOCTYPE html>
 <html><head><title>Zalo OAuth</title></head>
 <body>
@@ -52,11 +117,19 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Action: get_oauth_url
+    // Action: get_oauth_url — auto-resolve app_id if not provided
     if (action === "get_oauth_url") {
-      if (!app_id || !tenant_id) {
+      if (!tenant_id) {
         return new Response(
-          JSON.stringify({ error: "Missing app_id or tenant_id" }),
+          JSON.stringify({ error: "Missing tenant_id" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const creds = await resolveZaloAppCredentials(supabaseAdmin, tenant_id, app_id, app_secret);
+      if (!creds) {
+        return new Response(
+          JSON.stringify({ error: "Chưa cấu hình Zalo App ID. Vui lòng liên hệ quản trị viên." }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -66,7 +139,7 @@ Deno.serve(async (req) => {
 
       const oauthUrl =
         `https://oauth.zaloapp.com/v4/oa/permission` +
-        `?app_id=${encodeURIComponent(app_id)}` +
+        `?app_id=${encodeURIComponent(creds.app_id)}` +
         `&redirect_uri=${encodeURIComponent(redirectUri)}` +
         `&state=${encodeURIComponent(tenant_id)}`;
 
@@ -85,21 +158,8 @@ Deno.serve(async (req) => {
         );
       }
 
-      let finalAppId = app_id;
-      let finalAppSecret = app_secret;
-
-      if (!finalAppId || !finalAppSecret) {
-        const { data: settings } = await supabaseAdmin
-          .from("tenant_landing_settings")
-          .select("zalo_app_id, zalo_app_secret")
-          .eq("tenant_id", tenant_id)
-          .maybeSingle();
-
-        finalAppId = finalAppId || settings?.zalo_app_id;
-        finalAppSecret = finalAppSecret || settings?.zalo_app_secret;
-      }
-
-      if (!finalAppId || !finalAppSecret) {
+      const creds = await resolveZaloAppCredentials(supabaseAdmin, tenant_id, app_id, app_secret);
+      if (!creds) {
         return new Response(
           JSON.stringify({ error: "Chưa cấu hình App ID hoặc Secret Key" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -113,11 +173,11 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          secret_key: finalAppSecret,
+          secret_key: creds.app_secret,
         },
         body: new URLSearchParams({
           code,
-          app_id: finalAppId,
+          app_id: creds.app_id,
           grant_type: "authorization_code",
           redirect_uri: redirectUri,
         }),
@@ -162,8 +222,8 @@ Deno.serve(async (req) => {
           zalo_refresh_token: refreshToken,
           zalo_oa_id: oaId ? String(oaId) : null,
           zalo_enabled: true,
-          zalo_app_id: finalAppId,
-          zalo_app_secret: finalAppSecret,
+          zalo_app_id: creds.app_id,
+          zalo_app_secret: creds.app_secret,
         })
         .eq("tenant_id", tenant_id);
 
@@ -180,7 +240,7 @@ Deno.serve(async (req) => {
           success: true,
           oa_id: oaId,
           oa_name: oaName,
-          message: "Kết nối Zalo OA thành công!",
+          message: `Kết nối Zalo OA "${oaName || oaId}" thành công!`,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -195,13 +255,14 @@ Deno.serve(async (req) => {
         );
       }
 
+      const creds = await resolveZaloAppCredentials(supabaseAdmin, tenant_id);
       const { data: settings } = await supabaseAdmin
         .from("tenant_landing_settings")
-        .select("zalo_app_id, zalo_app_secret, zalo_refresh_token")
+        .select("zalo_refresh_token")
         .eq("tenant_id", tenant_id)
         .maybeSingle();
 
-      if (!settings?.zalo_refresh_token || !settings?.zalo_app_id || !settings?.zalo_app_secret) {
+      if (!settings?.zalo_refresh_token || !creds) {
         return new Response(
           JSON.stringify({ error: "Thiếu thông tin để gia hạn token. Vui lòng kết nối lại." }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -212,11 +273,11 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          secret_key: settings.zalo_app_secret,
+          secret_key: creds.app_secret,
         },
         body: new URLSearchParams({
           refresh_token: settings.zalo_refresh_token,
-          app_id: settings.zalo_app_id,
+          app_id: creds.app_id,
           grant_type: "refresh_token",
         }),
       });
@@ -257,8 +318,6 @@ Deno.serve(async (req) => {
           zalo_refresh_token: null,
           zalo_oa_id: null,
           zalo_enabled: false,
-          zalo_app_id: null,
-          zalo_app_secret: null,
         })
         .eq("tenant_id", tenant_id);
 
