@@ -164,13 +164,18 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
   };
 
   const handleTest = async () => {
+    const phone = testPhone.trim() || settings?.store_phone || '0123456789';
+    if (!phone || phone.length < 9) {
+      toast.error('Vui lòng nhập số điện thoại hợp lệ');
+      return;
+    }
     setTesting(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-zalo-message', {
         body: {
           tenant_id: tenantId,
           customer_name: 'Test',
-          customer_phone: settings?.store_phone || '0123456789',
+          customer_phone: phone,
           message_type: 'test',
         },
       });
