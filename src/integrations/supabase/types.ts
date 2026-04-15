@@ -9522,9 +9522,12 @@ export type Database = {
           message_type: string
           reference_id: string | null
           reference_type: string | null
+          retry_count: number | null
           sent_at: string | null
           status: string
           tenant_id: string
+          zalo_response: Json | null
+          zns_template_id: string | null
         }
         Insert: {
           created_at?: string
@@ -9537,9 +9540,12 @@ export type Database = {
           message_type?: string
           reference_id?: string | null
           reference_type?: string | null
+          retry_count?: number | null
           sent_at?: string | null
           status?: string
           tenant_id: string
+          zalo_response?: Json | null
+          zns_template_id?: string | null
         }
         Update: {
           created_at?: string
@@ -9552,9 +9558,12 @@ export type Database = {
           message_type?: string
           reference_id?: string | null
           reference_type?: string | null
+          retry_count?: number | null
           sent_at?: string | null
           status?: string
           tenant_id?: string
+          zalo_response?: Json | null
+          zns_template_id?: string | null
         }
         Relationships: [
           {
@@ -9600,6 +9609,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "zalo_oa_followers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zalo_zns_templates: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          is_active: boolean
+          template_data_mapping: Json | null
+          template_id: string
+          template_name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          is_active?: boolean
+          template_data_mapping?: Json | null
+          template_id: string
+          template_name?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          is_active?: boolean
+          template_data_mapping?: Json | null
+          template_id?: string
+          template_name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zalo_zns_templates_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

@@ -80,6 +80,24 @@ function normalizePhoneTo0(phone: string): string {
   return p;
 }
 
+// Validate phone format
+function isValidPhone(phone: string): boolean {
+  const p = normalizePhoneTo84(phone);
+  return /^84\d{9}$/.test(p);
+}
+
+// Map message_type to event_type for template lookup
+function getEventType(message_type: string): string {
+  const map: Record<string, string> = {
+    order_confirmation: "ORDER_CREATED",
+    export_confirmation: "EXPORT_CREATED",
+    order_shipped: "ORDER_SHIPPED",
+    order_completed: "ORDER_COMPLETED",
+    warranty_reminder: "WARRANTY_REMINDER",
+  };
+  return map[message_type] || "ORDER_CREATED";
+}
+
 // Get the first follower from OA's follower list (for test mode)
 async function getFirstFollower(accessToken: string): Promise<string | null> {
   try {
@@ -88,7 +106,6 @@ async function getFirstFollower(accessToken: string): Promise<string | null> {
       headers: { access_token: accessToken },
     });
     const data = await res.json();
-    console.log("Zalo getlist result:", JSON.stringify(data));
     if (data.error === 0 && data.data?.users?.length > 0) {
       return data.data.users[0].user_id;
     }
@@ -102,27 +119,59 @@ async function getFirstFollower(accessToken: string): Promise<string | null> {
   }
 }
 
-// Send ZNS message to phone number (for non-followers)
-async function sendZNS(accessToken: string, phone: string, templateId: string, templateData: Record<string, string>): Promise<any> {
+// Send ZNS message with retry
+async function sendZNSWithRetry(
+  accessToken: string,
+  phone: string,
+  templateId: string,
+  templateData: Record<string, string>,
+  maxRetries = 3
+): Promise<{ result: any; attempts: number }> {
   const phone84 = normalizePhoneTo84(phone);
-  console.log("Sending ZNS to:", phone84, "template:", templateId);
-  
-  const res = await fetch("https://business.openapi.zalo.me/message/template", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      access_token: accessToken,
-    },
-    body: JSON.stringify({
-      phone: phone84,
-      template_id: templateId,
-      template_data: templateData,
-    }),
-  });
-  
-  const data = await res.json();
-  console.log("ZNS response:", JSON.stringify(data));
-  return data;
+  let lastError: any = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`ZNS attempt ${attempt}/${maxRetries} to ${phone84}, template: ${templateId}`);
+      const res = await fetch("https://business.openapi.zalo.me/message/template", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          access_token: accessToken,
+        },
+        body: JSON.stringify({
+          phone: phone84,
+          template_id: templateId,
+          template_data: templateData,
+        }),
+      });
+
+      const data = await res.json();
+      console.log(`ZNS attempt ${attempt} response:`, JSON.stringify(data));
+
+      // Success or non-retryable error
+      if (!data.error || data.error === 0) {
+        return { result: data, attempts: attempt };
+      }
+
+      // Token expired — not retryable
+      if (data.error === -124 || data.error === -216) {
+        return { result: data, attempts: attempt };
+      }
+
+      lastError = data;
+    } catch (err) {
+      console.error(`ZNS attempt ${attempt} error:`, err);
+      lastError = { error: -1, message: (err as Error).message };
+    }
+
+    // Delay before retry (exponential backoff)
+    if (attempt < maxRetries) {
+      await new Promise(r => setTimeout(r, 1000 * attempt));
+    }
+  }
+
+  return { result: lastError, attempts: maxRetries };
 }
 
 Deno.serve(async (req) => {
@@ -186,6 +235,15 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Validate phone number
+    if (customer_phone && !isValidPhone(customer_phone) && message_type !== "test") {
+      console.log("Invalid phone format:", customer_phone);
+      return new Response(
+        JSON.stringify({ success: true, message: "Invalid phone format, skipped" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Get branch hotline
     let hotline = settings.store_phone || "";
     if (branch_id) {
@@ -198,6 +256,20 @@ Deno.serve(async (req) => {
     }
 
     const storeName = settings.store_name || "Cửa hàng";
+
+    // Look up ZNS template from zalo_zns_templates table
+    const eventType = getEventType(message_type);
+    const { data: znsTemplate } = await supabaseAdmin
+      .from("zalo_zns_templates")
+      .select("template_id, template_name")
+      .eq("tenant_id", tenant_id)
+      .eq("event_type", eventType)
+      .eq("is_active", true)
+      .limit(1)
+      .maybeSingle();
+
+    // Fallback to legacy single template_id
+    const znsTemplateId = znsTemplate?.template_id || settings.zalo_zns_template_id;
 
     // Build message content (for CS messages)
     const messageText = buildMessageText({
@@ -231,31 +303,38 @@ Deno.serve(async (req) => {
         return new Response(
           JSON.stringify({
             error: "Không tìm thấy người theo dõi OA",
-            details: "Để test, bạn cần quan tâm (follow) OA trên Zalo trước, sau đó nhắn 1 tin nhắn cho OA.",
+            details: "Để test, bạn cần quan tâm (follow) OA trên Zalo trước.",
           }),
           { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
     } else {
-      // For production messages: try to find user by phone in zalo_followers table
+      // Find user by phone in zalo_followers table
       if (!recipientUserId && customer_phone) {
         const normalizedPhone = normalizePhoneTo0(customer_phone);
-        
         const { data: follower } = await supabaseAdmin
           .from("zalo_oa_followers")
           .select("zalo_user_id")
           .eq("tenant_id", tenant_id)
           .eq("phone", normalizedPhone)
           .maybeSingle();
-        
         if (follower?.zalo_user_id) {
           recipientUserId = follower.zalo_user_id;
         }
       }
     }
 
+    // Build ZNS template data
+    const znsTemplateData = {
+      customer_name: customer_name || "Quý khách",
+      order_code: order_code || receipt_code || "",
+      store_name: storeName,
+      hotline: hotline,
+      amount: total_amount ? new Intl.NumberFormat("vi-VN").format(total_amount) + "đ" : "",
+    };
+
     // Log entry
-    const logData = {
+    const logData: Record<string, any> = {
       tenant_id,
       customer_name: customer_name || null,
       customer_phone: customer_phone || "",
@@ -264,6 +343,8 @@ Deno.serve(async (req) => {
       status: "pending",
       reference_id: order_code || receipt_code || null,
       reference_type: message_type === "export_confirmation" ? "export" : "order",
+      zns_template_id: znsTemplateId || null,
+      retry_count: 0,
     };
 
     const { data: logEntry } = await supabaseAdmin
@@ -297,19 +378,13 @@ Deno.serve(async (req) => {
 
       if (zaloResult.error && zaloResult.error !== 0) {
         // CS failed, try ZNS if available
-        if (settings.zalo_zns_template_id && customer_phone && message_type !== "test") {
+        if (znsTemplateId && customer_phone && message_type !== "test") {
           console.log("CS failed, trying ZNS fallback...");
-          const znsResult = await sendZNS(
+          const { result: znsResult, attempts } = await sendZNSWithRetry(
             settings.zalo_access_token,
             customer_phone,
-            settings.zalo_zns_template_id,
-            {
-              customer_name: customer_name || "Quý khách",
-              order_code: order_code || receipt_code || "",
-              store_name: storeName,
-              hotline: hotline,
-              amount: total_amount ? new Intl.NumberFormat("vi-VN").format(total_amount) + "đ" : "",
-            }
+            znsTemplateId,
+            znsTemplateData
           );
 
           if (znsResult.error && znsResult.error !== 0) {
@@ -318,6 +393,8 @@ Deno.serve(async (req) => {
                 status: "failed",
                 error_message: `CS: ${zaloResult.message}; ZNS: ${znsResult.message}`,
                 error_code: String(znsResult.error),
+                retry_count: attempts,
+                zalo_response: znsResult,
               }).eq("id", logId);
             }
             return new Response(
@@ -326,12 +403,13 @@ Deno.serve(async (req) => {
             );
           }
 
-          // ZNS success
           if (logId) {
             await supabaseAdmin.from("zalo_message_logs").update({
               status: "sent",
               sent_at: new Date().toISOString(),
               message_content: messageText + " [via ZNS]",
+              retry_count: attempts,
+              zalo_response: znsResult,
             }).eq("id", logId);
           }
           return new Response(
@@ -346,6 +424,7 @@ Deno.serve(async (req) => {
             status: "failed",
             error_message: zaloResult.message || "Unknown error",
             error_code: String(zaloResult.error),
+            zalo_response: zaloResult,
           }).eq("id", logId);
         }
 
@@ -367,6 +446,7 @@ Deno.serve(async (req) => {
         await supabaseAdmin.from("zalo_message_logs").update({
           status: "sent",
           sent_at: new Date().toISOString(),
+          zalo_response: zaloResult,
         }).eq("id", logId);
       }
 
@@ -377,18 +457,12 @@ Deno.serve(async (req) => {
     }
 
     // No follower found — try ZNS directly
-    if (settings.zalo_zns_template_id && customer_phone && message_type !== "test") {
-      const znsResult = await sendZNS(
+    if (znsTemplateId && customer_phone && message_type !== "test") {
+      const { result: znsResult, attempts } = await sendZNSWithRetry(
         settings.zalo_access_token,
         customer_phone,
-        settings.zalo_zns_template_id,
-        {
-          customer_name: customer_name || "Quý khách",
-          order_code: order_code || receipt_code || "",
-          store_name: storeName,
-          hotline: hotline,
-          amount: total_amount ? new Intl.NumberFormat("vi-VN").format(total_amount) + "đ" : "",
-        }
+        znsTemplateId,
+        znsTemplateData
       );
 
       if (znsResult.error && znsResult.error !== 0) {
@@ -397,6 +471,8 @@ Deno.serve(async (req) => {
             status: "failed",
             error_message: znsResult.message || "ZNS error",
             error_code: String(znsResult.error),
+            retry_count: attempts,
+            zalo_response: znsResult,
           }).eq("id", logId);
         }
 
@@ -416,6 +492,8 @@ Deno.serve(async (req) => {
           status: "sent",
           sent_at: new Date().toISOString(),
           message_content: messageText + " [via ZNS]",
+          retry_count: attempts,
+          zalo_response: znsResult,
         }).eq("id", logId);
       }
 

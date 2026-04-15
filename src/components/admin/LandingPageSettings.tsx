@@ -22,6 +22,7 @@ import { TemplateSelector } from '@/components/website-templates/TemplateSelecto
 import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, PageItemConfig, InstallmentRateConfig, DEFAULT_INSTALLMENT_RATES, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, getFullNavItems, SYSTEM_PAGES, SYSTEM_PAGE_IDS, getSystemPageById, DEFAULT_PAGE_ITEMS, LayoutStyle, GOOGLE_FONTS } from '@/lib/industryConfig';
 import { HomeSectionManager, HomeSectionItem } from './HomeSectionManager';
 import { ZaloOASetupWizard } from './ZaloOASetupWizard';
+import { ZaloZnsManager } from './ZaloZnsManager';
 import { PaymentConfigSection } from './PaymentConfigSection';
 import { buildMetaShareUrl } from '@/lib/shareMetaUrl';
 import { sanitizeCustomDomainArticle } from '@/lib/customDomainArticle';
@@ -2045,6 +2046,9 @@ export function LandingPageSettings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Zalo ZNS Manager */}
+      <ZaloZnsManager />
 
       {/* Payment Config */}
       <PaymentConfigSection
