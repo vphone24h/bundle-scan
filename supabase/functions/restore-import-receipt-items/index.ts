@@ -5,6 +5,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Fetch all rows with pagination to bypass 1000-row limit
+async function fetchAll<T>(queryFn: () => any, pageSize = 1000): Promise<T[]> {
+  const all: T[] = []
+  let from = 0
+  while (true) {
+    const { data, error } = await queryFn().range(from, from + pageSize - 1)
+    if (error) throw error
+    if (!data || data.length === 0) break
+    all.push(...(data as T[]))
+    if (data.length < pageSize) break
+    from += pageSize
+  }
+  return all
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
 
