@@ -157,7 +157,24 @@ export function useImportReceiptDetails(receiptId: string | null) {
         }
       });
 
-      const productItems = (products || []).map(p => {
+      // Products directly linked via products.import_receipt_id
+      const directProductIds = new Set((products || []).map(p => p.id));
+
+      // Find non-IMEI products referenced in product_imports but NOT in direct products list
+      const missingProductIds = [...piMap.keys()].filter(pid => !directProductIds.has(pid));
+
+      let extraProducts: typeof products = [];
+      if (missingProductIds.length > 0) {
+        const { data: extra } = await supabase
+          .from('products')
+          .select('id, name, sku, imei, import_price, quantity, unit, status, category_id, categories(name)')
+          .in('id', missingProductIds);
+        extraProducts = extra || [];
+      }
+
+      const allProducts = [...(products || []), ...extraProducts];
+
+      const productItems = allProducts.map(p => {
         const piInfo = piMap.get(p.id);
         const originalQty = p.imei ? p.quantity : (piInfo?.quantity ?? p.quantity);
         return {
