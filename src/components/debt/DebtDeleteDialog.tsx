@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel,
@@ -37,6 +37,7 @@ export function DebtDeleteDialog({
   const [syncCashBook, setSyncCashBook] = useState(false);
   const [paymentSource, setPaymentSource] = useState('cash');
   const [deleting, setDeleting] = useState(false);
+  const ignoreParentCloseRef = useRef(false);
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
   const { data: tenant } = useCurrentTenant();
 
@@ -58,9 +59,34 @@ export function DebtDeleteDialog({
     }
   }, [open]);
 
+  useEffect(() => {
+    if (!open) {
+      ignoreParentCloseRef.current = false;
+      setShowPasswordDialog(false);
+    }
+  }, [open]);
+
+  const handleAlertDialogOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && (showPasswordDialog || ignoreParentCloseRef.current)) {
+      return;
+    }
+
+    onOpenChange(nextOpen);
+  };
+
+  const requestSecurityPassword = () => {
+    ignoreParentCloseRef.current = true;
+    setShowPasswordDialog(true);
+  };
+
+  const handlePasswordDialogOpenChange = (nextOpen: boolean) => {
+    setShowPasswordDialog(nextOpen);
+    if (!nextOpen) ignoreParentCloseRef.current = false;
+  };
+
   const handleDelete = async () => {
     if (hasSecurityPassword && !unlocked) {
-      setShowPasswordDialog(true);
+      requestSecurityPassword();
       return;
     }
 
@@ -152,7 +178,7 @@ export function DebtDeleteDialog({
 
   return (
     <>
-      <AlertDialog open={open && !showPasswordDialog} onOpenChange={onOpenChange}>
+      <AlertDialog open={open} onOpenChange={handleAlertDialogOpenChange}>
         <AlertDialogContent className="max-w-sm z-[60]">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
@@ -240,8 +266,9 @@ export function DebtDeleteDialog({
 
       <SecurityPasswordDialog
         open={showPasswordDialog}
-        onOpenChange={setShowPasswordDialog}
+        onOpenChange={handlePasswordDialogOpenChange}
         onSuccess={() => {
+          ignoreParentCloseRef.current = false;
           unlock();
           setShowPasswordDialog(false);
           handleDelete();
