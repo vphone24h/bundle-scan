@@ -302,6 +302,9 @@ export default function ImportHistoryPage() {
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
   const [showTransferDialog, setShowTransferDialog] = useState(false);
 
+  // Add products to receipt
+  const [addProductsReceipt, setAddProductsReceipt] = useState<ImportReceipt | null>(null);
+
   // Calculate receipt return status
   const getReceiptReturnStatus = (receipt: ImportReceipt): 'completed' | 'cancelled' | 'full_return' => {
     if (receipt.status === 'cancelled') return 'cancelled';
