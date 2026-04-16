@@ -67,6 +67,7 @@ import { DeleteProductDialog } from '@/components/products/DeleteProductDialog';
 import { AdjustQuantityDialog } from '@/components/products/AdjustQuantityDialog';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useMarkProductWarranty } from '@/hooks/useWarrantyInventory';
+import { RestoreImportReceiptItemsButton } from '@/components/import/RestoreImportReceiptItemsButton';
 import { WarrantyNoteDialog } from '@/components/import/WarrantyNoteDialog';
 import { ImportInventorySummary } from '@/components/import/ImportInventorySummary';
 import { TransferStockDialog } from '@/components/import/TransferStockDialog';
