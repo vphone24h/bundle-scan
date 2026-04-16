@@ -51,7 +51,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote, Trash2, Settings2, AlertTriangle, Wrench, ArrowRightLeft, CheckSquare, Square, PlayCircle } from 'lucide-react';
+import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote, Trash2, Settings2, AlertTriangle, Wrench, ArrowRightLeft, CheckSquare, Square, PlayCircle, Plus } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { ScrollableTableWrapper } from '@/components/ui/scrollable-table-wrapper';
@@ -68,6 +68,7 @@ import { AdjustQuantityDialog } from '@/components/products/AdjustQuantityDialog
 import { usePermissions } from '@/hooks/usePermissions';
 import { useMarkProductWarranty } from '@/hooks/useWarrantyInventory';
 import { RestoreImportReceiptItemsButton } from '@/components/import/RestoreImportReceiptItemsButton';
+import { AddProductsToReceiptDialog } from '@/components/import/AddProductsToReceiptDialog';
 import { WarrantyNoteDialog } from '@/components/import/WarrantyNoteDialog';
 import { ImportInventorySummary } from '@/components/import/ImportInventorySummary';
 import { TransferStockDialog } from '@/components/import/TransferStockDialog';
@@ -300,6 +301,9 @@ export default function ImportHistoryPage() {
   // Multi-select for stock transfer
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
   const [showTransferDialog, setShowTransferDialog] = useState(false);
+
+  // Add products to receipt
+  const [addProductsReceipt, setAddProductsReceipt] = useState<ImportReceipt | null>(null);
 
   // Calculate receipt return status
   const getReceiptReturnStatus = (receipt: ImportReceipt): 'completed' | 'cancelled' | 'full_return' => {
@@ -970,6 +974,11 @@ export default function ImportHistoryPage() {
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(receipt)} title="Sửa">
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
+                      {receipt.status === 'completed' && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setAddProductsReceipt(receipt)} title="Thêm SP">
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleReturn(receipt)} title="Trả hàng">
                         <RotateCcw className="h-3.5 w-3.5" />
                       </Button>
@@ -1083,6 +1092,12 @@ export default function ImportHistoryPage() {
                               <Pencil className="mr-2 h-4 w-4" />
                               Chỉnh sửa
                             </DropdownMenuItem>
+                            {receipt.status === 'completed' && (
+                              <DropdownMenuItem onClick={() => setAddProductsReceipt(receipt)}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Thêm sản phẩm
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem onClick={() => handleReturn(receipt)}>
                               <RotateCcw className="mr-2 h-4 w-4" />
                               Trả hàng
@@ -1727,6 +1742,16 @@ export default function ImportHistoryPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Add Products to Receipt Dialog */}
+      {addProductsReceipt && (
+        <AddProductsToReceiptDialog
+          receiptId={addProductsReceipt.id}
+          receiptCode={addProductsReceipt.code}
+          open={!!addProductsReceipt}
+          onOpenChange={(open) => !open && setAddProductsReceipt(null)}
+        />
+      )}
 
       {/* Edit Receipt Dialog */}
       <EditImportReceiptDialog
