@@ -67,6 +67,7 @@ export function DailyBackupSection() {
         body: { tenantId: tenant.id, date: dateStr, mode: 'full' },
       });
       if (error) throw error;
+      if (data && !data.ok) throw new Error(data.error || 'Backup thất bại');
       toast.success('Đã tạo backup toàn bộ dữ liệu thành công!');
       refetch();
     } catch (err: any) {

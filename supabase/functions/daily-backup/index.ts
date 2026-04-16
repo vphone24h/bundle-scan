@@ -19,6 +19,7 @@ Deno.serve(async (req) => {
     const { tenantId, date, mode } = await req.json();
 
     if (!tenantId) {
+      // Cron mode: backup all tenants
       const { data: tenants } = await admin.from("tenants").select("id");
       const results = [];
       for (const t of tenants || []) {
@@ -30,20 +31,21 @@ Deno.serve(async (req) => {
         }
       }
       await cleanupExpired(admin);
-      return new Response(JSON.stringify({ results }), {
+      await cleanupStuck(admin);
+      return new Response(JSON.stringify({ ok: true, results }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const backupMode = mode || "daily";
     const result = await runBackup(admin, tenantId, date || todayStr(), backupMode);
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify({ ok: true, ...result }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("Backup error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
+    return new Response(JSON.stringify({ ok: false, error: err.message }), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
@@ -68,26 +70,40 @@ async function cleanupExpired(admin: any) {
   }
 }
 
-async function fetchAllRows(admin: any, baseQuery: () => any) {
-  const PAGE = 1000;
+// Clean up stuck "processing" records older than 10 minutes
+async function cleanupStuck(admin: any) {
+  const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  await admin
+    .from("daily_backups")
+    .update({ status: "failed", error_message: "Timeout - tự động đánh dấu lỗi" })
+    .eq("status", "processing")
+    .lt("created_at", tenMinAgo);
+}
+
+// Fetch rows with a hard limit to prevent memory overflow
+async function fetchRows(admin: any, baseQuery: () => any, maxRows = 1500): Promise<any[]> {
+  const PAGE = 500;
   const all: any[] = [];
   let from = 0;
-  while (true) {
-    const { data, error } = await baseQuery().range(from, from + PAGE - 1);
+  while (all.length < maxRows) {
+    const remaining = maxRows - all.length;
+    const limit = Math.min(PAGE, remaining);
+    const { data, error } = await baseQuery().range(from, from + limit - 1);
     if (error) throw error;
     if (!data || data.length === 0) break;
     all.push(...data);
-    if (data.length < PAGE) break;
-    from += PAGE;
+    if (data.length < limit) break;
+    from += limit;
   }
   return all;
 }
 
-// Fetch items in batches and return grouped Map
+// Fetch items in batches
 async function fetchItemsBatched(admin: any, table: string, ids: string[], selectCols: string): Promise<Map<string, any[]>> {
   const map = new Map<string, any[]>();
-  for (let i = 0; i < ids.length; i += 300) {
-    const chunk = ids.slice(i, i + 300);
+  if (ids.length === 0) return map;
+  for (let i = 0; i < ids.length; i += 200) {
+    const chunk = ids.slice(i, i + 200);
     const { data } = await admin.from(table).select(selectCols).in("receipt_id", chunk);
     if (data) {
       for (const item of data) {
@@ -104,8 +120,9 @@ async function fetchItemsBatched(admin: any, table: string, ids: string[], selec
 async function fetchNameMap(admin: any, table: string, ids: string[]): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   const unique = [...new Set(ids.filter(Boolean))];
-  for (let i = 0; i < unique.length; i += 300) {
-    const chunk = unique.slice(i, i + 300);
+  if (unique.length === 0) return map;
+  for (let i = 0; i < unique.length; i += 200) {
+    const chunk = unique.slice(i, i + 200);
     const { data } = await admin.from(table).select("id, name, phone").in("id", chunk);
     data?.forEach((c: any) => map.set(c.id, `${c.name || ""} - ${c.phone || ""}`));
   }
@@ -128,7 +145,8 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
     return { status: "already_completed", id: existing.id };
   }
 
-  if (existing && isFullBackup) {
+  // Clean up previous attempt
+  if (existing) {
     if (existing.file_path) {
       await admin.storage.from("daily-backups").remove([existing.file_path]);
     }
@@ -156,28 +174,24 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
     let exports: any[], imports: any[], products: any[];
 
     if (isFullBackup) {
-      // Full: fetch only counts-limited data to avoid memory issues
-      // Limit to last 2000 receipts each to stay within edge function limits
-      const [expAll, impAll, prodAll] = await Promise.all([
-        fetchAllRows(admin, () => admin.from("export_receipts")
+      // Full backup: limit to 1500 receipts each + 3000 products to avoid memory overflow
+      [exports, imports, products] = await Promise.all([
+        fetchRows(admin, () => admin.from("export_receipts")
           .select("id, code, export_date, total_amount, customer_id, note")
           .eq("tenant_id", tenantId)
           .eq("status", "completed")
-          .order("export_date", { ascending: false })),
-        fetchAllRows(admin, () => admin.from("import_receipts")
+          .order("export_date", { ascending: false }), 1500),
+        fetchRows(admin, () => admin.from("import_receipts")
           .select("id, code, import_date, total_amount, supplier_id, note")
           .eq("tenant_id", tenantId)
           .eq("status", "completed")
-          .order("import_date", { ascending: false })),
-        fetchAllRows(admin, () => admin.from("products")
+          .order("import_date", { ascending: false }), 1500),
+        fetchRows(admin, () => admin.from("products")
           .select("id, name, sku, import_price, sale_price")
           .eq("tenant_id", tenantId)
           .eq("status", "in_stock")
-          .order("name")),
+          .order("name"), 3000),
       ]);
-      exports = expAll;
-      imports = impAll;
-      products = prodAll;
     } else {
       const dayStart = `${dateStr}T00:00:00+07:00`;
       const dayEnd = `${dateStr}T23:59:59+07:00`;
@@ -196,27 +210,25 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
           .select("id, name, sku, import_price, sale_price")
           .eq("tenant_id", tenantId)
           .eq("status", "in_stock")
-          .order("name").limit(5000),
+          .order("name").limit(3000),
       ]);
       exports = expRes.data || [];
       imports = impRes.data || [];
       products = prodRes.data || [];
     }
 
-    // Fetch items using Maps (O(1) lookup instead of O(n) filter)
+    // Fetch items and names
     const exportIds = exports.map((e: any) => e.id);
     const importIds = imports.map((e: any) => e.id);
 
     const [exportItemsMap, importItemsMap, customerMap, supplierMap] = await Promise.all([
-      fetchItemsBatched(admin, "export_receipt_items", exportIds,
-        "receipt_id, product_name, sku, imei, sale_price"),
-      fetchItemsBatched(admin, "import_receipt_items", importIds,
-        "receipt_id, product_name, sku, imei, import_price, quantity"),
+      fetchItemsBatched(admin, "export_receipt_items", exportIds, "receipt_id, product_name, sku, imei, sale_price"),
+      fetchItemsBatched(admin, "import_receipt_items", importIds, "receipt_id, product_name, sku, imei, import_price, quantity"),
       fetchNameMap(admin, "customers", exports.map((e: any) => e.customer_id)),
       fetchNameMap(admin, "suppliers", imports.map((e: any) => e.supplier_id)),
     ]);
 
-    // Build workbook with minimal memory
+    // Build workbook
     const wb = XLSX.utils.book_new();
 
     const totalSales = exports.reduce((s: number, e: any) => s + (e.total_amount || 0), 0);
@@ -242,7 +254,7 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
     wsSummary["!cols"] = [{ wch: 25 }, { wch: 20 }];
     XLSX.utils.book_append_sheet(wb, wsSummary, "Tổng quan");
 
-    // Sheet 2: Sales - build rows directly
+    // Sheet 2: Sales
     const salesRows: any[][] = [["STT", "Mã phiếu", "Ngày", "Khách hàng", "Sản phẩm", "SKU", "IMEI", "Giá bán", "Tổng phiếu"]];
     let stt = 1;
     for (const ex of exports) {
@@ -288,7 +300,7 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
     XLSX.utils.book_append_sheet(wb, wsInv, "Tồn kho");
 
     const xlsxBuffer = XLSX.write(wb, { type: "array", bookType: "xlsx" });
-    const filePath = `${tenantId}/${backupDate}.xlsx`;
+    const filePath = `${tenantId}/${backupDate}${isFullBackup ? '_full' : ''}.xlsx`;
 
     const { error: uploadErr } = await admin.storage
       .from("daily-backups")

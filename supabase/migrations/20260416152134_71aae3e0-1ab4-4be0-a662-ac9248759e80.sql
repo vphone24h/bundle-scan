@@ -1,0 +1,1 @@
+UPDATE daily_backups SET status = 'failed', error_message = 'Timeout - đã tự động đánh dấu lỗi' WHERE status = 'processing' AND created_at < NOW() - INTERVAL '10 minutes';
