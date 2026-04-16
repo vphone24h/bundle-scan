@@ -757,6 +757,20 @@ export function useUpdateImportReceipt() {
           .update({ import_date: importDate, import_date_modified: true })
           .eq('import_receipt_id', receiptId);
         if (productsDateError) throw productsDateError;
+
+        // ★ Đồng bộ ngày vào sổ quỹ (cash_book)
+        await supabase
+          .from('cash_book')
+          .update({ transaction_date: importDate })
+          .eq('reference_id', receiptId)
+          .eq('reference_type', 'import_receipt');
+
+        // ★ Đồng bộ ngày vào công nợ NCC (supplier_debts)
+        await supabase
+          .from('supplier_debts')
+          .update({ debt_date: importDate })
+          .eq('reference_id', receiptId)
+          .eq('reference_type', 'import');
       }
 
       // Cập nhật từng sản phẩm

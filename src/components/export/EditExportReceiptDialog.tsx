@@ -223,6 +223,20 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
         oldData.export_date = receipt.export_date;
         newData.export_date = isoDate;
         changes.push(`Ngày bán: ${receipt.export_date?.substring(0, 16).replace('T', ' ')} → ${isoDate.substring(0, 16).replace('T', ' ')}`);
+
+        // ★ Đồng bộ ngày vào sổ quỹ (cash_book)
+        await supabase
+          .from('cash_book')
+          .update({ transaction_date: isoDate })
+          .eq('reference_id', receipt.id)
+          .eq('reference_type', 'export_receipt');
+
+        // ★ Đồng bộ ngày vào công nợ khách hàng (customer_debts)
+        await supabase
+          .from('customer_debts')
+          .update({ debt_date: isoDate })
+          .eq('reference_id', receipt.id)
+          .eq('reference_type', 'export');
       }
 
       // 2. Update customer
@@ -283,6 +297,40 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
         if (totalError) throw totalError;
         oldData.total_amount = receipt.total_amount;
         newData.total_amount = newTotal;
+
+        // ★ Đồng bộ số tiền vào sổ quỹ (cash_book)
+        const { data: cashEntries } = await supabase
+          .from('cash_book')
+          .select('id, amount')
+          .eq('reference_id', receipt.id)
+          .eq('reference_type', 'export_receipt');
+
+        if (cashEntries && cashEntries.length > 0) {
+          const oldTotal = Number(receipt.total_amount);
+          const ratio = oldTotal > 0 ? newTotal / oldTotal : 1;
+          for (const c of cashEntries) {
+            const newAmount = Math.round(Number(c.amount) * ratio);
+            await supabase.from('cash_book').update({ amount: newAmount }).eq('id', c.id);
+          }
+        }
+
+        // ★ Đồng bộ công nợ khách hàng nếu có
+        const { data: debtEntries } = await supabase
+          .from('customer_debts')
+          .select('id, amount')
+          .eq('reference_id', receipt.id)
+          .eq('reference_type', 'export');
+
+        if (debtEntries && debtEntries.length > 0) {
+          const oldTotal = Number(receipt.total_amount);
+          const diff = newTotal - oldTotal;
+          if (diff !== 0) {
+            for (const d of debtEntries) {
+              const newAmount = Number(d.amount) + diff;
+              await supabase.from('customer_debts').update({ amount: newAmount }).eq('id', d.id);
+            }
+          }
+        }
       }
 
       // Audit log
