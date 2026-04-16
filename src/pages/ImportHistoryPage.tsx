@@ -974,11 +974,9 @@ export default function ImportHistoryPage() {
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(receipt)} title="Sửa">
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      {receipt.status === 'completed' && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:text-primary" onClick={() => setAddProductsReceipt(receipt)} title="Thêm SP">
-                          <Plus className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:text-primary" onClick={() => setAddProductsReceipt(receipt)} title="Thêm SP" disabled={receipt.status !== 'completed'}>
+                        <Plus className="h-3.5 w-3.5" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleReturn(receipt)} title="Trả hàng">
                         <RotateCcw className="h-3.5 w-3.5" />
                       </Button>
