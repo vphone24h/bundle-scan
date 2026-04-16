@@ -190,11 +190,17 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
                 type="datetime-local"
                 value={importDate}
                 onChange={(e) => handleImportDateChange(e.target.value)}
+                disabled={!canEditDate}
                 className={cn(
                   dateChanged && 'border-green-500 ring-1 ring-green-500/30'
                 )}
               />
-              {dateChanged && (
+              {!canEditDate && (
+                <p className="text-xs text-destructive">
+                  Phiếu nhập quá 1 tháng, không cho phép sửa ngày
+                </p>
+              )}
+              {dateChanged && canEditDate && (
                 <p className="text-xs text-green-600 font-medium">
                   ⚠ Ngày nhập đã thay đổi — tất cả sản phẩm trong phiếu sẽ đồng bộ ngày mới
                 </p>

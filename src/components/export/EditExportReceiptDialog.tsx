@@ -190,6 +190,11 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
     setShowSecurityDialog(false);
   };
 
+  // Check if receipt is older than 1 month
+  const canEditDate = receipt?.export_date
+    ? differenceInDays(new Date(), new Date(receipt.export_date)) <= 30
+    : true;
+
   // Computed
   const dateChanged = exportDate && exportDate !== originalExportDate;
   const customerChanged = selectedCustomerId !== originalCustomerId;
