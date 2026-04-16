@@ -56,17 +56,13 @@ Deno.serve(async (req) => {
     }
 
     // 1. Get all completed import receipts + counts in BATCH (no N+1 queries)
-    const [receiptsRes, productsCountRes, piCountRes, orphansRes, suppliersRes] = await Promise.all([
+    const [receiptsRes, _unused, _unused2, orphansRes, suppliersRes] = await Promise.all([
       admin.from('import_receipts')
         .select('id, code, import_date, total_amount, supplier_id, branch_id')
         .eq('tenant_id', tenantId)
         .eq('status', 'completed'),
-      // Get product counts grouped by import_receipt_id
-      admin.rpc('get_import_receipt_product_counts', { p_tenant_id: tenantId }).catch(() => ({ data: null, error: null })),
-      // Fallback: we'll compute counts differently
-      admin.from('product_imports')
-        .select('import_receipt_id')
-        .eq('tenant_id' as any, tenantId), // product_imports may not have tenant_id, handle below
+      Promise.resolve({ data: null, error: null }),
+      Promise.resolve({ data: null, error: null }),
       // Get orphan products
       admin.from('products')
         .select('id, imei, name, sku, import_price, supplier_id, import_date, branch_id, status')
