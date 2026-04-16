@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel,
@@ -36,6 +36,37 @@ export function DebtPaymentDeleteDialog({
   const { unlocked, unlock } = useSecurityUnlock('debt-payment-delete');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const reopeningAfterPasswordRef = useRef(false);
+
+  useEffect(() => {
+    if (!open) {
+      reopeningAfterPasswordRef.current = false;
+      setShowPasswordDialog(false);
+    }
+  }, [open]);
+
+  const handleAlertDialogOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && showPasswordDialog) {
+      return;
+    }
+
+    onOpenChange(nextOpen);
+  };
+
+  const requestSecurityPassword = () => {
+    reopeningAfterPasswordRef.current = open;
+    onOpenChange(false);
+    setShowPasswordDialog(true);
+  };
+
+  const handlePasswordDialogOpenChange = (nextOpen: boolean) => {
+    setShowPasswordDialog(nextOpen);
+
+    if (!nextOpen && reopeningAfterPasswordRef.current) {
+      reopeningAfterPasswordRef.current = false;
+      onOpenChange(true);
+    }
+  };
 
   const doDelete = async () => {
     if (!payment) return;
@@ -203,6 +234,7 @@ export function DebtPaymentDeleteDialog({
   return (
     <>
       <AlertDialog open={open && !showPasswordDialog} onOpenChange={onOpenChange}>
+      <AlertDialog open={open} onOpenChange={handleAlertDialogOpenChange}>
         <AlertDialogContent className="max-w-sm z-[70]">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
@@ -235,7 +267,7 @@ export function DebtPaymentDeleteDialog({
             <AlertDialogCancel>Hủy</AlertDialogCancel>
             <Button variant="destructive" onClick={() => {
               if (hasSecurityPassword && !unlocked) {
-                setShowPasswordDialog(true);
+                 requestSecurityPassword();
                 return;
               }
               doDelete();
@@ -249,8 +281,9 @@ export function DebtPaymentDeleteDialog({
 
       <SecurityPasswordDialog
         open={showPasswordDialog}
-        onOpenChange={setShowPasswordDialog}
+        onOpenChange={handlePasswordDialogOpenChange}
         onSuccess={() => {
+          reopeningAfterPasswordRef.current = false;
           unlock();
           setShowPasswordDialog(false);
           doDelete();
