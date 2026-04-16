@@ -975,7 +975,7 @@ export default function ImportHistoryPage() {
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       {receipt.status === 'completed' && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setAddProductsReceipt(receipt)} title="Thêm SP">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:text-primary" onClick={() => setAddProductsReceipt(receipt)} title="Thêm SP">
                           <Plus className="h-3.5 w-3.5" />
                         </Button>
                       )}
