@@ -152,7 +152,7 @@ export function DebtDeleteDialog({
 
   return (
     <>
-      <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialog open={open && !showPasswordDialog} onOpenChange={onOpenChange}>
         <AlertDialogContent className="max-w-sm z-[60]">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
