@@ -13,7 +13,7 @@ import { formatNumberWithSpaces, parseFormattedNumber, formatCurrencyWithSpaces 
 import { PRODUCT_UNITS, DECIMAL_UNITS } from '@/types/warehouse';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface EditImportReceiptDialogProps {
