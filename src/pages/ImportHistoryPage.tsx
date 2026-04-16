@@ -685,6 +685,7 @@ export default function ImportHistoryPage() {
               <span className="hidden sm:inline">Xem hướng dẫn</span>
               <span className="sm:hidden">Xem HD</span>
             </Button>
+            <RestoreImportReceiptItemsButton />
             <Button asChild>
               <Link to="/import/new">
                 <FileText className="mr-2 h-4 w-4" />
