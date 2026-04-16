@@ -565,6 +565,7 @@ async function prepareRows(tableName: string, rows: any[], context: RestoreConte
         await remapIdField(next, 'category_id', 'categories', context)
         await remapIdField(next, 'branch_id', 'branches', context)
         await remapIdField(next, 'group_id', 'product_groups', context)
+        await remapIdField(next, 'import_receipt_id', 'import_receipts', context)
         break
       case 'import_receipts':
         await remapIdField(next, 'supplier_id', 'suppliers', context)
