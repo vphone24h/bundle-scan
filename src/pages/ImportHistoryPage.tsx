@@ -1743,6 +1743,16 @@ export default function ImportHistoryPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Add Products to Receipt Dialog */}
+      {addProductsReceipt && (
+        <AddProductsToReceiptDialog
+          receiptId={addProductsReceipt.id}
+          receiptCode={addProductsReceipt.code}
+          open={!!addProductsReceipt}
+          onOpenChange={(open) => !open && setAddProductsReceipt(null)}
+        />
+      )}
+
       {/* Edit Receipt Dialog */}
       <EditImportReceiptDialog
         receipt={editReceipt}
