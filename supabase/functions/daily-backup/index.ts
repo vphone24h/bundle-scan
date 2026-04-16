@@ -114,13 +114,14 @@ async function fetchNameMap(admin: any, table: string, ids: string[]): Promise<M
 
 async function runBackup(admin: any, tenantId: string, dateStr: string, mode: string) {
   const isFullBackup = mode === "full";
-  const backupDate = isFullBackup ? `${dateStr}_full` : dateStr;
+  const backupDate = dateStr;
 
   const { data: existing } = await admin
     .from("daily_backups")
     .select("id, status, file_path")
     .eq("tenant_id", tenantId)
     .eq("backup_date", backupDate)
+    .eq("backup_type", isFullBackup ? "full" : "daily")
     .maybeSingle();
 
   if (existing?.status === "completed" && !isFullBackup) {
@@ -137,13 +138,16 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 60);
 
-  const { data: insertedRow } = await admin.from("daily_backups").insert({
+  const { data: insertedRow, error: insertErr } = await admin.from("daily_backups").insert({
     tenant_id: tenantId,
     backup_date: backupDate,
     status: "processing",
     expires_at: expiresAt.toISOString(),
     backup_type: isFullBackup ? "full" : "daily",
   }).select("id").single();
+
+  if (insertErr) throw new Error(`Insert backup record failed: ${insertErr.message}`);
+  if (!insertedRow) throw new Error("Insert backup record returned null");
 
   try {
     const tenantRes = await admin.from("tenants").select("name, subdomain").eq("id", tenantId).single();
