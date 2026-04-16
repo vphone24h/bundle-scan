@@ -87,8 +87,8 @@ export function AddProductsToReceiptDialog({ receiptId, receiptCode, open, onOpe
     setSearchingIdx(index);
     try {
       const { data } = await supabase.rpc('search_product_suggestions', {
-        _search: query,
-        _limit: 8,
+        p_search: query,
+        p_limit: 8,
       });
       setSuggestions(data || []);
       setShowSuggestions(true);
