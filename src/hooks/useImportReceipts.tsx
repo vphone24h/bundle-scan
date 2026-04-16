@@ -534,7 +534,8 @@ export function useCreateImportReceipt() {
               quantity: accumulated.quantity,
               total_import_cost: accumulated.totalCost,
               import_price: newAvgPrice,
-              import_receipt_id: receipt.id,
+              // NOT overwriting import_receipt_id - it stays linked to the original receipt.
+              // All import history is tracked via product_imports table.
             })
             .eq('id', existing.id);
         }
