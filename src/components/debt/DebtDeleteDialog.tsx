@@ -37,7 +37,7 @@ export function DebtDeleteDialog({
   const [syncCashBook, setSyncCashBook] = useState(false);
   const [paymentSource, setPaymentSource] = useState('cash');
   const [deleting, setDeleting] = useState(false);
-  const reopeningAfterPasswordRef = useRef(false);
+  const ignoreParentCloseRef = useRef(false);
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
   const { data: tenant } = useCurrentTenant();
 
@@ -61,13 +61,13 @@ export function DebtDeleteDialog({
 
   useEffect(() => {
     if (!open) {
-      reopeningAfterPasswordRef.current = false;
+      ignoreParentCloseRef.current = false;
       setShowPasswordDialog(false);
     }
   }, [open]);
 
   const handleAlertDialogOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen && showPasswordDialog) {
+    if (!nextOpen && (showPasswordDialog || ignoreParentCloseRef.current)) {
       return;
     }
 
@@ -75,18 +75,13 @@ export function DebtDeleteDialog({
   };
 
   const requestSecurityPassword = () => {
-    reopeningAfterPasswordRef.current = open;
-    onOpenChange(false);
+    ignoreParentCloseRef.current = true;
     setShowPasswordDialog(true);
   };
 
   const handlePasswordDialogOpenChange = (nextOpen: boolean) => {
     setShowPasswordDialog(nextOpen);
-
-    if (!nextOpen && reopeningAfterPasswordRef.current) {
-      reopeningAfterPasswordRef.current = false;
-      onOpenChange(true);
-    }
+    if (!nextOpen) ignoreParentCloseRef.current = false;
   };
 
   const handleDelete = async () => {
@@ -273,7 +268,7 @@ export function DebtDeleteDialog({
         open={showPasswordDialog}
         onOpenChange={handlePasswordDialogOpenChange}
         onSuccess={() => {
-          reopeningAfterPasswordRef.current = false;
+          ignoreParentCloseRef.current = false;
           unlock();
           setShowPasswordDialog(false);
           handleDelete();

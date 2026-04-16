@@ -36,17 +36,17 @@ export function DebtPaymentDeleteDialog({
   const { unlocked, unlock } = useSecurityUnlock('debt-payment-delete');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const reopeningAfterPasswordRef = useRef(false);
+  const ignoreParentCloseRef = useRef(false);
 
   useEffect(() => {
     if (!open) {
-      reopeningAfterPasswordRef.current = false;
+      ignoreParentCloseRef.current = false;
       setShowPasswordDialog(false);
     }
   }, [open]);
 
   const handleAlertDialogOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen && showPasswordDialog) {
+    if (!nextOpen && (showPasswordDialog || ignoreParentCloseRef.current)) {
       return;
     }
 
@@ -54,18 +54,13 @@ export function DebtPaymentDeleteDialog({
   };
 
   const requestSecurityPassword = () => {
-    reopeningAfterPasswordRef.current = open;
-    onOpenChange(false);
+    ignoreParentCloseRef.current = true;
     setShowPasswordDialog(true);
   };
 
   const handlePasswordDialogOpenChange = (nextOpen: boolean) => {
     setShowPasswordDialog(nextOpen);
-
-    if (!nextOpen && reopeningAfterPasswordRef.current) {
-      reopeningAfterPasswordRef.current = false;
-      onOpenChange(true);
-    }
+    if (!nextOpen) ignoreParentCloseRef.current = false;
   };
 
   const doDelete = async () => {
@@ -233,7 +228,6 @@ export function DebtPaymentDeleteDialog({
 
   return (
     <>
-      <AlertDialog open={open && !showPasswordDialog} onOpenChange={onOpenChange}>
       <AlertDialog open={open} onOpenChange={handleAlertDialogOpenChange}>
         <AlertDialogContent className="max-w-sm z-[70]">
           <AlertDialogHeader>
@@ -283,7 +277,7 @@ export function DebtPaymentDeleteDialog({
         open={showPasswordDialog}
         onOpenChange={handlePasswordDialogOpenChange}
         onSuccess={() => {
-          reopeningAfterPasswordRef.current = false;
+          ignoreParentCloseRef.current = false;
           unlock();
           setShowPasswordDialog(false);
           doDelete();
