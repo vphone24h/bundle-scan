@@ -5,6 +5,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Fetch all rows with pagination to bypass 1000-row limit
+async function fetchAll<T>(queryFn: () => any, pageSize = 1000): Promise<T[]> {
+  const all: T[] = []
+  let from = 0
+  while (true) {
+    const { data, error } = await queryFn().range(from, from + pageSize - 1)
+    if (error) throw error
+    if (!data || data.length === 0) break
+    all.push(...(data as T[]))
+    if (data.length < pageSize) break
+    from += pageSize
+  }
+  return all
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
 
@@ -55,56 +70,46 @@ Deno.serve(async (req) => {
       })
     }
 
-    // 1. Get all completed import receipts + counts in BATCH (no N+1 queries)
-    const [receiptsRes, productsCountRes, piCountRes, orphansRes, suppliersRes] = await Promise.all([
-      admin.from('import_receipts')
+    // 1. Fetch all data with pagination (bypasses 1000-row limit)
+    const [allReceipts, orphans, suppliers] = await Promise.all([
+      fetchAll<any>(() => admin.from('import_receipts')
         .select('id, code, import_date, total_amount, supplier_id, branch_id')
         .eq('tenant_id', tenantId)
-        .eq('status', 'completed'),
-      // Get product counts grouped by import_receipt_id
-      admin.rpc('get_import_receipt_product_counts', { p_tenant_id: tenantId }).catch(() => ({ data: null, error: null })),
-      // Fallback: we'll compute counts differently
-      admin.from('product_imports')
-        .select('import_receipt_id')
-        .eq('tenant_id' as any, tenantId), // product_imports may not have tenant_id, handle below
-      // Get orphan products
-      admin.from('products')
+        .eq('status', 'completed')),
+      fetchAll<any>(() => admin.from('products')
         .select('id, imei, name, sku, import_price, supplier_id, import_date, branch_id, status')
         .eq('tenant_id', tenantId)
         .is('import_receipt_id', null)
-        .neq('status', 'template'),
-      admin.from('suppliers').select('id, name').eq('tenant_id', tenantId),
+        .neq('status', 'template')),
+      fetchAll<any>(() => admin.from('suppliers').select('id, name').eq('tenant_id', tenantId)),
     ])
 
-    if (receiptsRes.error) throw receiptsRes.error
+    const supplierNameMap = new Map(suppliers.map(s => [s.id, s.name]))
 
-    const allReceipts = receiptsRes.data || []
-    const orphans = orphansRes.data || []
-    const supplierNameMap = new Map((suppliersRes.data ?? []).map(s => [s.id, s.name]))
-
-    // Build sets of receipt IDs that have products
+    // Build sets of receipt IDs that have products (paginated)
     const receiptIdsWithProducts = new Set<string>()
 
-    // Check products table
-    const { data: linkedProducts } = await admin
-      .from('products')
+    const linkedProducts = await fetchAll<any>(() => admin.from('products')
       .select('import_receipt_id')
       .eq('tenant_id', tenantId)
       .not('import_receipt_id', 'is', null)
-      .neq('status', 'template')
+      .neq('status', 'template'))
 
-    for (const p of linkedProducts || []) {
+    for (const p of linkedProducts) {
       if (p.import_receipt_id) receiptIdsWithProducts.add(p.import_receipt_id)
     }
 
-    // Check product_imports table
-    const { data: linkedPI } = await admin
-      .from('product_imports')
-      .select('import_receipt_id')
-      .in('import_receipt_id', allReceipts.map(r => r.id))
-
-    for (const pi of linkedPI || []) {
-      if (pi.import_receipt_id) receiptIdsWithProducts.add(pi.import_receipt_id)
+    // Check product_imports in batches (receipt IDs)
+    const receiptIds = allReceipts.map(r => r.id)
+    for (let i = 0; i < receiptIds.length; i += 500) {
+      const batch = receiptIds.slice(i, i + 500)
+      const { data: linkedPI } = await admin
+        .from('product_imports')
+        .select('import_receipt_id')
+        .in('import_receipt_id', batch)
+      for (const pi of linkedPI || []) {
+        if (pi.import_receipt_id) receiptIdsWithProducts.add(pi.import_receipt_id)
+      }
     }
 
     // Empty receipts = those not in either set
