@@ -339,6 +339,8 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['staff-detail'] });
       queryClient.invalidateQueries({ queryKey: ['staff-revenue'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['debt'] });
     },
   });
 
