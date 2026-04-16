@@ -1058,11 +1058,13 @@ export function useEditExportReturn() {
       newRefundAmount,
       newStoreKeepAmount,
       note,
+      newReturnDate,
     }: {
       returnItem: ExportReturn;
       newRefundAmount: number;
       newStoreKeepAmount: number;
       note: string;
+      newReturnDate?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -1078,17 +1080,21 @@ export function useEditExportReturn() {
       const newFeeType = newStoreKeepAmount > 0 ? 'fixed_amount' : 'none';
 
       // 1. Update the export return record
+      const updateData: Record<string, any> = {
+        refund_amount: newRefundAmount,
+        store_keep_amount: newStoreKeepAmount,
+        fee_type: newFeeType,
+        fee_amount: newFeeAmount,
+        fee_percentage: 0,
+        note,
+        updated_at: new Date().toISOString(),
+      };
+      if (newReturnDate) {
+        updateData.return_date = newReturnDate;
+      }
       const { error: updateError } = await supabase
         .from('export_returns')
-        .update({
-          refund_amount: newRefundAmount,
-          store_keep_amount: newStoreKeepAmount,
-          fee_type: newFeeType as any,
-          fee_amount: newFeeAmount,
-          fee_percentage: 0,
-          note,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', returnItem.id);
       if (updateError) throw updateError;
 
