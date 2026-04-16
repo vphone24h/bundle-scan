@@ -950,10 +950,12 @@ export function useEditImportReturn() {
       returnItem,
       newRefundAmount,
       note,
+      newReturnDate,
     }: {
       returnItem: ImportReturn;
       newRefundAmount: number;
       note: string;
+      newReturnDate?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -963,13 +965,17 @@ export function useEditImportReturn() {
       const oldRefund = returnItem.total_refund_amount;
 
       // 1. Update the import return record
+      const updateData: Record<string, any> = {
+        total_refund_amount: newRefundAmount,
+        note,
+        updated_at: new Date().toISOString(),
+      };
+      if (newReturnDate) {
+        updateData.return_date = newReturnDate;
+      }
       const { error: updateError } = await supabase
         .from('import_returns')
-        .update({
-          total_refund_amount: newRefundAmount,
-          note,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', returnItem.id);
       if (updateError) throw updateError;
 
