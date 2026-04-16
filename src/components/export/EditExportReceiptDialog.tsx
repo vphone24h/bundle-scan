@@ -444,9 +444,15 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
                   type="datetime-local"
                   value={exportDate}
                   onChange={(e) => setExportDate(e.target.value)}
+                  disabled={!canEditDate}
                   className={cn(dateChanged && 'border-green-500 ring-1 ring-green-500/30')}
                 />
-                {dateChanged && (
+                {!canEditDate && (
+                  <p className="text-xs text-destructive">
+                    Phiếu xuất quá 1 tháng, không cho phép sửa ngày
+                  </p>
+                )}
+                {dateChanged && canEditDate && (
                   <p className="text-xs text-green-600 font-medium">
                     ⚠ Ngày bán đã thay đổi
                   </p>
