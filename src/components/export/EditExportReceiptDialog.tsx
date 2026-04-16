@@ -231,12 +231,6 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
           .eq('reference_id', receipt.id)
           .eq('reference_type', 'export_receipt');
 
-        // ★ Đồng bộ ngày vào công nợ khách hàng (customer_debts)
-        await supabase
-          .from('customer_debts')
-          .update({ debt_date: isoDate })
-          .eq('reference_id', receipt.id)
-          .eq('reference_type', 'export');
       }
 
       // 2. Update customer
@@ -314,23 +308,6 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
           }
         }
 
-        // ★ Đồng bộ công nợ khách hàng nếu có
-        const { data: debtEntries } = await supabase
-          .from('customer_debts')
-          .select('id, amount')
-          .eq('reference_id', receipt.id)
-          .eq('reference_type', 'export');
-
-        if (debtEntries && debtEntries.length > 0) {
-          const oldTotal = Number(receipt.total_amount);
-          const diff = newTotal - oldTotal;
-          if (diff !== 0) {
-            for (const d of debtEntries) {
-              const newAmount = Number(d.amount) + diff;
-              await supabase.from('customer_debts').update({ amount: newAmount }).eq('id', d.id);
-            }
-          }
-        }
       }
 
       // Audit log

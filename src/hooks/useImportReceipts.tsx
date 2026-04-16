@@ -765,12 +765,6 @@ export function useUpdateImportReceipt() {
           .eq('reference_id', receiptId)
           .eq('reference_type', 'import_receipt');
 
-        // ★ Đồng bộ ngày vào công nợ NCC (supplier_debts)
-        await supabase
-          .from('supplier_debts')
-          .update({ debt_date: importDate })
-          .eq('reference_id', receiptId)
-          .eq('reference_type', 'import');
       }
 
       // Cập nhật từng sản phẩm
