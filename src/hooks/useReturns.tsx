@@ -1134,17 +1134,35 @@ export function useEditExportReturn() {
         }
       }
 
-      // 4. Audit log
+      // 4. Sync date to cash_book if changed
+      if (newReturnDate) {
+        await supabase
+          .from('cash_book')
+          .update({ transaction_date: newReturnDate })
+          .eq('reference_id', returnItem.id)
+          .eq('reference_type', 'export_return');
+
+        // Also sync cash_book entries linked via export_receipt_id (export_return_receipt type)
+        if (returnItem.export_receipt_id) {
+          await supabase
+            .from('cash_book')
+            .update({ transaction_date: newReturnDate })
+            .eq('reference_id', returnItem.export_receipt_id)
+            .eq('reference_type', 'export_return_receipt');
+        }
+      }
+
+      // 5. Audit log
       await supabase.from('audit_logs').insert([{
         user_id: user.id,
-        action_type: 'EDIT_EXPORT_RETURN',
+        action_type: newReturnDate ? 'EDIT_EXPORT_RETURN_DATE' : 'EDIT_EXPORT_RETURN',
         table_name: 'export_returns',
         record_id: returnItem.id,
         branch_id: returnItem.branch_id || null,
         tenant_id: tenantId,
-        old_data: { refund_amount: oldRefund, store_keep_amount: oldKeep, note: returnItem.note },
-        new_data: { refund_amount: newRefundAmount, store_keep_amount: newStoreKeepAmount, note },
-        description: `Sửa phiếu trả hàng bán: ${returnItem.product_name} (${returnItem.code}) - Hoàn: ${oldRefund.toLocaleString('vi-VN')}đ → ${newRefundAmount.toLocaleString('vi-VN')}đ`,
+        old_data: { refund_amount: oldRefund, store_keep_amount: oldKeep, note: returnItem.note, return_date: returnItem.return_date },
+        new_data: { refund_amount: newRefundAmount, store_keep_amount: newStoreKeepAmount, note, return_date: newReturnDate || returnItem.return_date },
+        description: `Sửa phiếu trả hàng bán: ${returnItem.product_name} (${returnItem.code})${newReturnDate ? ' - Đổi ngày trả' : ''} - Hoàn: ${oldRefund.toLocaleString('vi-VN')}đ → ${newRefundAmount.toLocaleString('vi-VN')}đ`,
       }]);
     },
     onSuccess: () => {
