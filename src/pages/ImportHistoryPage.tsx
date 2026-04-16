@@ -1093,6 +1093,7 @@ export default function ImportHistoryPage() {
                                 Thêm sản phẩm
                               </DropdownMenuItem>
                             )}
+                            <DropdownMenuItem onClick={() => handleReturn(receipt)}>
                               <RotateCcw className="mr-2 h-4 w-4" />
                               Trả hàng
                             </DropdownMenuItem>
