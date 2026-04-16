@@ -950,10 +950,12 @@ export function useEditImportReturn() {
       returnItem,
       newRefundAmount,
       note,
+      newReturnDate,
     }: {
       returnItem: ImportReturn;
       newRefundAmount: number;
       note: string;
+      newReturnDate?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -963,13 +965,17 @@ export function useEditImportReturn() {
       const oldRefund = returnItem.total_refund_amount;
 
       // 1. Update the import return record
+      const updateData: Record<string, any> = {
+        total_refund_amount: newRefundAmount,
+        note,
+        updated_at: new Date().toISOString(),
+      };
+      if (newReturnDate) {
+        updateData.return_date = newReturnDate;
+      }
       const { error: updateError } = await supabase
         .from('import_returns')
-        .update({
-          total_refund_amount: newRefundAmount,
-          note,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', returnItem.id);
       if (updateError) throw updateError;
 
@@ -1010,17 +1016,26 @@ export function useEditImportReturn() {
         }
       }
 
-      // 4. Audit log
+      // 4. Sync date to cash_book if changed
+      if (newReturnDate) {
+        await supabase
+          .from('cash_book')
+          .update({ transaction_date: newReturnDate })
+          .eq('reference_id', returnItem.id)
+          .eq('reference_type', 'import_return');
+      }
+
+      // 5. Audit log
       await supabase.from('audit_logs').insert([{
         user_id: user.id,
-        action_type: 'EDIT_IMPORT_RETURN',
+        action_type: newReturnDate ? 'EDIT_IMPORT_RETURN_DATE' : 'EDIT_IMPORT_RETURN',
         table_name: 'import_returns',
         record_id: returnItem.id,
         branch_id: returnItem.branch_id || null,
         tenant_id: tenantId,
-        old_data: { total_refund_amount: oldRefund, note: returnItem.note },
-        new_data: { total_refund_amount: newRefundAmount, note },
-        description: `Sửa phiếu trả hàng nhập: ${returnItem.product_name} (${returnItem.code}) - ${oldRefund.toLocaleString('vi-VN')}đ → ${newRefundAmount.toLocaleString('vi-VN')}đ`,
+        old_data: { total_refund_amount: oldRefund, note: returnItem.note, return_date: returnItem.return_date },
+        new_data: { total_refund_amount: newRefundAmount, note, return_date: newReturnDate || returnItem.return_date },
+        description: `Sửa phiếu trả hàng nhập: ${returnItem.product_name} (${returnItem.code})${newReturnDate ? ' - Đổi ngày trả' : ''} - ${oldRefund.toLocaleString('vi-VN')}đ → ${newRefundAmount.toLocaleString('vi-VN')}đ`,
       }]);
     },
     onSuccess: () => {
@@ -1043,11 +1058,13 @@ export function useEditExportReturn() {
       newRefundAmount,
       newStoreKeepAmount,
       note,
+      newReturnDate,
     }: {
       returnItem: ExportReturn;
       newRefundAmount: number;
       newStoreKeepAmount: number;
       note: string;
+      newReturnDate?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -1063,17 +1080,21 @@ export function useEditExportReturn() {
       const newFeeType = newStoreKeepAmount > 0 ? 'fixed_amount' : 'none';
 
       // 1. Update the export return record
+      const updateData: Record<string, any> = {
+        refund_amount: newRefundAmount,
+        store_keep_amount: newStoreKeepAmount,
+        fee_type: newFeeType,
+        fee_amount: newFeeAmount,
+        fee_percentage: 0,
+        note,
+        updated_at: new Date().toISOString(),
+      };
+      if (newReturnDate) {
+        updateData.return_date = newReturnDate;
+      }
       const { error: updateError } = await supabase
         .from('export_returns')
-        .update({
-          refund_amount: newRefundAmount,
-          store_keep_amount: newStoreKeepAmount,
-          fee_type: newFeeType as any,
-          fee_amount: newFeeAmount,
-          fee_percentage: 0,
-          note,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', returnItem.id);
       if (updateError) throw updateError;
 
@@ -1113,17 +1134,35 @@ export function useEditExportReturn() {
         }
       }
 
-      // 4. Audit log
+      // 4. Sync date to cash_book if changed
+      if (newReturnDate) {
+        await supabase
+          .from('cash_book')
+          .update({ transaction_date: newReturnDate })
+          .eq('reference_id', returnItem.id)
+          .eq('reference_type', 'export_return');
+
+        // Also sync cash_book entries linked via export_receipt_id (export_return_receipt type)
+        if (returnItem.export_receipt_id) {
+          await supabase
+            .from('cash_book')
+            .update({ transaction_date: newReturnDate })
+            .eq('reference_id', returnItem.export_receipt_id)
+            .eq('reference_type', 'export_return_receipt');
+        }
+      }
+
+      // 5. Audit log
       await supabase.from('audit_logs').insert([{
         user_id: user.id,
-        action_type: 'EDIT_EXPORT_RETURN',
+        action_type: newReturnDate ? 'EDIT_EXPORT_RETURN_DATE' : 'EDIT_EXPORT_RETURN',
         table_name: 'export_returns',
         record_id: returnItem.id,
         branch_id: returnItem.branch_id || null,
         tenant_id: tenantId,
-        old_data: { refund_amount: oldRefund, store_keep_amount: oldKeep, note: returnItem.note },
-        new_data: { refund_amount: newRefundAmount, store_keep_amount: newStoreKeepAmount, note },
-        description: `Sửa phiếu trả hàng bán: ${returnItem.product_name} (${returnItem.code}) - Hoàn: ${oldRefund.toLocaleString('vi-VN')}đ → ${newRefundAmount.toLocaleString('vi-VN')}đ`,
+        old_data: { refund_amount: oldRefund, store_keep_amount: oldKeep, note: returnItem.note, return_date: returnItem.return_date },
+        new_data: { refund_amount: newRefundAmount, store_keep_amount: newStoreKeepAmount, note, return_date: newReturnDate || returnItem.return_date },
+        description: `Sửa phiếu trả hàng bán: ${returnItem.product_name} (${returnItem.code})${newReturnDate ? ' - Đổi ngày trả' : ''} - Hoàn: ${oldRefund.toLocaleString('vi-VN')}đ → ${newRefundAmount.toLocaleString('vi-VN')}đ`,
       }]);
     },
     onSuccess: () => {
