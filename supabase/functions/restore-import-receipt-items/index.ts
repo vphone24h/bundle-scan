@@ -70,52 +70,46 @@ Deno.serve(async (req) => {
       })
     }
 
-    // 1. Get all completed import receipts + counts in BATCH (no N+1 queries)
-    const [receiptsRes, _unused, _unused2, orphansRes, suppliersRes] = await Promise.all([
-      admin.from('import_receipts')
+    // 1. Fetch all data with pagination (bypasses 1000-row limit)
+    const [allReceipts, orphans, suppliers] = await Promise.all([
+      fetchAll<any>(() => admin.from('import_receipts')
         .select('id, code, import_date, total_amount, supplier_id, branch_id')
         .eq('tenant_id', tenantId)
-        .eq('status', 'completed'),
-      Promise.resolve({ data: null, error: null }),
-      Promise.resolve({ data: null, error: null }),
-      // Get orphan products
-      admin.from('products')
+        .eq('status', 'completed')),
+      fetchAll<any>(() => admin.from('products')
         .select('id, imei, name, sku, import_price, supplier_id, import_date, branch_id, status')
         .eq('tenant_id', tenantId)
         .is('import_receipt_id', null)
-        .neq('status', 'template'),
-      admin.from('suppliers').select('id, name').eq('tenant_id', tenantId),
+        .neq('status', 'template')),
+      fetchAll<any>(() => admin.from('suppliers').select('id, name').eq('tenant_id', tenantId)),
     ])
 
-    if (receiptsRes.error) throw receiptsRes.error
+    const supplierNameMap = new Map(suppliers.map(s => [s.id, s.name]))
 
-    const allReceipts = receiptsRes.data || []
-    const orphans = orphansRes.data || []
-    const supplierNameMap = new Map((suppliersRes.data ?? []).map(s => [s.id, s.name]))
-
-    // Build sets of receipt IDs that have products
+    // Build sets of receipt IDs that have products (paginated)
     const receiptIdsWithProducts = new Set<string>()
 
-    // Check products table
-    const { data: linkedProducts } = await admin
-      .from('products')
+    const linkedProducts = await fetchAll<any>(() => admin.from('products')
       .select('import_receipt_id')
       .eq('tenant_id', tenantId)
       .not('import_receipt_id', 'is', null)
-      .neq('status', 'template')
+      .neq('status', 'template'))
 
-    for (const p of linkedProducts || []) {
+    for (const p of linkedProducts) {
       if (p.import_receipt_id) receiptIdsWithProducts.add(p.import_receipt_id)
     }
 
-    // Check product_imports table
-    const { data: linkedPI } = await admin
-      .from('product_imports')
-      .select('import_receipt_id')
-      .in('import_receipt_id', allReceipts.map(r => r.id))
-
-    for (const pi of linkedPI || []) {
-      if (pi.import_receipt_id) receiptIdsWithProducts.add(pi.import_receipt_id)
+    // Check product_imports in batches (receipt IDs)
+    const receiptIds = allReceipts.map(r => r.id)
+    for (let i = 0; i < receiptIds.length; i += 500) {
+      const batch = receiptIds.slice(i, i + 500)
+      const { data: linkedPI } = await admin
+        .from('product_imports')
+        .select('import_receipt_id')
+        .in('import_receipt_id', batch)
+      for (const pi of linkedPI || []) {
+        if (pi.import_receipt_id) receiptIdsWithProducts.add(pi.import_receipt_id)
+      }
     }
 
     // Empty receipts = those not in either set
