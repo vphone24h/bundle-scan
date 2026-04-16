@@ -76,7 +76,13 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
     }
   }, [receipt, details]);
 
+  // Check if receipt is older than 1 month
+  const canEditDate = receipt?.import_date
+    ? differenceInDays(new Date(), new Date(receipt.import_date)) <= 30
+    : true;
+
   const handleImportDateChange = (newDate: string) => {
+    if (!canEditDate) return;
     if (newDate !== originalImportDate && hasSecurityPassword && !securityUnlocked) {
       setShowSecurityDialog(true);
       return;
