@@ -1016,17 +1016,26 @@ export function useEditImportReturn() {
         }
       }
 
-      // 4. Audit log
+      // 4. Sync date to cash_book if changed
+      if (newReturnDate) {
+        await supabase
+          .from('cash_book')
+          .update({ transaction_date: newReturnDate })
+          .eq('reference_id', returnItem.id)
+          .eq('reference_type', 'import_return');
+      }
+
+      // 5. Audit log
       await supabase.from('audit_logs').insert([{
         user_id: user.id,
-        action_type: 'EDIT_IMPORT_RETURN',
+        action_type: newReturnDate ? 'EDIT_IMPORT_RETURN_DATE' : 'EDIT_IMPORT_RETURN',
         table_name: 'import_returns',
         record_id: returnItem.id,
         branch_id: returnItem.branch_id || null,
         tenant_id: tenantId,
-        old_data: { total_refund_amount: oldRefund, note: returnItem.note },
-        new_data: { total_refund_amount: newRefundAmount, note },
-        description: `Sửa phiếu trả hàng nhập: ${returnItem.product_name} (${returnItem.code}) - ${oldRefund.toLocaleString('vi-VN')}đ → ${newRefundAmount.toLocaleString('vi-VN')}đ`,
+        old_data: { total_refund_amount: oldRefund, note: returnItem.note, return_date: returnItem.return_date },
+        new_data: { total_refund_amount: newRefundAmount, note, return_date: newReturnDate || returnItem.return_date },
+        description: `Sửa phiếu trả hàng nhập: ${returnItem.product_name} (${returnItem.code})${newReturnDate ? ' - Đổi ngày trả' : ''} - ${oldRefund.toLocaleString('vi-VN')}đ → ${newRefundAmount.toLocaleString('vi-VN')}đ`,
       }]);
     },
     onSuccess: () => {
