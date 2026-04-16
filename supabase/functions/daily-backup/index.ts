@@ -17,10 +17,8 @@ Deno.serve(async (req) => {
     const admin = createClient(supabaseUrl, serviceKey);
 
     const { tenantId, date, mode } = await req.json();
-    // mode: "daily" (default, auto cron) or "full" (manual, all history)
 
     if (!tenantId) {
-      // Cron mode: run daily for all tenants
       const { data: tenants } = await admin.from("tenants").select("id");
       const results = [];
       for (const t of tenants || []) {
@@ -72,7 +70,7 @@ async function cleanupExpired(admin: any) {
 
 async function fetchAllRows(admin: any, baseQuery: () => any) {
   const PAGE = 1000;
-  let all: any[] = [];
+  const all: any[] = [];
   let from = 0;
   while (true) {
     const { data, error } = await baseQuery().range(from, from + PAGE - 1);
@@ -85,14 +83,42 @@ async function fetchAllRows(admin: any, baseQuery: () => any) {
   return all;
 }
 
+// Fetch items in batches and return grouped Map
+async function fetchItemsBatched(admin: any, table: string, ids: string[], selectCols: string): Promise<Map<string, any[]>> {
+  const map = new Map<string, any[]>();
+  for (let i = 0; i < ids.length; i += 300) {
+    const chunk = ids.slice(i, i + 300);
+    const { data } = await admin.from(table).select(selectCols).in("receipt_id", chunk);
+    if (data) {
+      for (const item of data) {
+        const arr = map.get(item.receipt_id);
+        if (arr) arr.push(item);
+        else map.set(item.receipt_id, [item]);
+      }
+    }
+  }
+  return map;
+}
+
+// Fetch name maps in batches
+async function fetchNameMap(admin: any, table: string, ids: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  const unique = [...new Set(ids.filter(Boolean))];
+  for (let i = 0; i < unique.length; i += 300) {
+    const chunk = unique.slice(i, i + 300);
+    const { data } = await admin.from(table).select("id, name, phone").in("id", chunk);
+    data?.forEach((c: any) => map.set(c.id, `${c.name || ""} - ${c.phone || ""}`));
+  }
+  return map;
+}
+
 async function runBackup(admin: any, tenantId: string, dateStr: string, mode: string) {
   const isFullBackup = mode === "full";
   const backupDate = isFullBackup ? `${dateStr}_full` : dateStr;
 
-  // Check if already done
   const { data: existing } = await admin
     .from("daily_backups")
-    .select("id, status")
+    .select("id, status, file_path")
     .eq("tenant_id", tenantId)
     .eq("backup_date", backupDate)
     .maybeSingle();
@@ -101,14 +127,9 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
     return { status: "already_completed", id: existing.id };
   }
 
-  // For full backup, delete old record if exists to allow re-run
   if (existing && isFullBackup) {
-    if (existing.status === "completed") {
-      // Remove old file
-      const { data: oldRecord } = await admin.from("daily_backups").select("file_path").eq("id", existing.id).single();
-      if (oldRecord?.file_path) {
-        await admin.storage.from("daily-backups").remove([oldRecord.file_path]);
-      }
+    if (existing.file_path) {
+      await admin.storage.from("daily-backups").remove([existing.file_path]);
     }
     await admin.from("daily_backups").delete().eq("id", existing.id);
   }
@@ -129,23 +150,23 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
     const tenantName = tenantRes.data?.name || tenantRes.data?.subdomain || "shop";
 
     let exports: any[], imports: any[], products: any[];
-    let exportItems: any[] = [], importItems: any[] = [];
 
     if (isFullBackup) {
-      // FULL mode: fetch ALL historical data with pagination
+      // Full: fetch only counts-limited data to avoid memory issues
+      // Limit to last 2000 receipts each to stay within edge function limits
       const [expAll, impAll, prodAll] = await Promise.all([
         fetchAllRows(admin, () => admin.from("export_receipts")
-          .select("id, code, export_date, total_amount, paid_amount, debt_amount, status, note, customer_id")
+          .select("id, code, export_date, total_amount, customer_id, note")
           .eq("tenant_id", tenantId)
           .eq("status", "completed")
-          .order("export_date", { ascending: true })),
+          .order("export_date", { ascending: false })),
         fetchAllRows(admin, () => admin.from("import_receipts")
-          .select("id, code, import_date, total_amount, paid_amount, debt_amount, status, note, supplier_id")
+          .select("id, code, import_date, total_amount, supplier_id, note")
           .eq("tenant_id", tenantId)
           .eq("status", "completed")
-          .order("import_date", { ascending: true })),
+          .order("import_date", { ascending: false })),
         fetchAllRows(admin, () => admin.from("products")
-          .select("id, name, sku, import_price, sale_price, status, category_id")
+          .select("id, name, sku, import_price, sale_price")
           .eq("tenant_id", tenantId)
           .eq("status", "in_stock")
           .order("name")),
@@ -154,25 +175,21 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
       imports = impAll;
       products = prodAll;
     } else {
-      // DAILY mode: only today's data
       const dayStart = `${dateStr}T00:00:00+07:00`;
       const dayEnd = `${dateStr}T23:59:59+07:00`;
-
       const [expRes, impRes, prodRes] = await Promise.all([
         admin.from("export_receipts")
-          .select("id, code, export_date, total_amount, paid_amount, debt_amount, status, note, customer_id")
+          .select("id, code, export_date, total_amount, customer_id, note")
           .eq("tenant_id", tenantId)
           .gte("export_date", dayStart).lte("export_date", dayEnd)
-          .eq("status", "completed")
-          .order("export_date", { ascending: true }).limit(1000),
+          .eq("status", "completed").order("export_date").limit(1000),
         admin.from("import_receipts")
-          .select("id, code, import_date, total_amount, paid_amount, debt_amount, status, note, supplier_id")
+          .select("id, code, import_date, total_amount, supplier_id, note")
           .eq("tenant_id", tenantId)
           .gte("import_date", dayStart).lte("import_date", dayEnd)
-          .eq("status", "completed")
-          .order("import_date", { ascending: true }).limit(1000),
+          .eq("status", "completed").order("import_date").limit(1000),
         admin.from("products")
-          .select("id, name, sku, import_price, sale_price, status, category_id")
+          .select("id, name, sku, import_price, sale_price")
           .eq("tenant_id", tenantId)
           .eq("status", "in_stock")
           .order("name").limit(5000),
@@ -182,123 +199,90 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
       products = prodRes.data || [];
     }
 
-    // Fetch export items
+    // Fetch items using Maps (O(1) lookup instead of O(n) filter)
     const exportIds = exports.map((e: any) => e.id);
-    for (let i = 0; i < exportIds.length; i += 200) {
-      const chunk = exportIds.slice(i, i + 200);
-      const { data } = await admin
-        .from("export_receipt_items")
-        .select("receipt_id, product_name, sku, imei, sale_price, warranty, note")
-        .in("receipt_id", chunk);
-      if (data) exportItems.push(...data);
-    }
-
-    // Fetch import items
     const importIds = imports.map((e: any) => e.id);
-    for (let i = 0; i < importIds.length; i += 200) {
-      const chunk = importIds.slice(i, i + 200);
-      const { data } = await admin
-        .from("import_receipt_items")
-        .select("receipt_id, product_name, sku, imei, import_price, quantity")
-        .in("receipt_id", chunk);
-      if (data) importItems.push(...data);
-    }
 
-    // Fetch customer names
-    const customerIds = [...new Set(exports.map((e: any) => e.customer_id).filter(Boolean))];
-    const customerMap = new Map<string, string>();
-    for (let i = 0; i < customerIds.length; i += 200) {
-      const chunk = customerIds.slice(i, i + 200);
-      const { data } = await admin.from("customers").select("id, name, phone").in("id", chunk);
-      data?.forEach((c: any) => customerMap.set(c.id, `${c.name || ""} - ${c.phone || ""}`));
-    }
+    const [exportItemsMap, importItemsMap, customerMap, supplierMap] = await Promise.all([
+      fetchItemsBatched(admin, "export_receipt_items", exportIds,
+        "receipt_id, product_name, sku, imei, sale_price"),
+      fetchItemsBatched(admin, "import_receipt_items", importIds,
+        "receipt_id, product_name, sku, imei, import_price, quantity"),
+      fetchNameMap(admin, "customers", exports.map((e: any) => e.customer_id)),
+      fetchNameMap(admin, "suppliers", imports.map((e: any) => e.supplier_id)),
+    ]);
 
-    // Fetch supplier names (for full backup)
-    const supplierIds = [...new Set(imports.map((e: any) => e.supplier_id).filter(Boolean))];
-    const supplierMap = new Map<string, string>();
-    for (let i = 0; i < supplierIds.length; i += 200) {
-      const chunk = supplierIds.slice(i, i + 200);
-      const { data } = await admin.from("suppliers").select("id, name, phone").in("id", chunk);
-      data?.forEach((s: any) => supplierMap.set(s.id, `${s.name || ""} - ${s.phone || ""}`));
-    }
-
-    // Build Excel workbook
+    // Build workbook with minimal memory
     const wb = XLSX.utils.book_new();
 
     const totalSales = exports.reduce((s: number, e: any) => s + (e.total_amount || 0), 0);
     const totalImports = imports.reduce((s: number, e: any) => s + (e.total_amount || 0), 0);
-    const totalInventoryValue = products.reduce((s: number, p: any) => s + (p.import_price || 0), 0);
-    const totalInventorySaleValue = products.reduce((s: number, p: any) => s + (p.sale_price || 0), 0);
+    const totalInvValue = products.reduce((s: number, p: any) => s + (p.import_price || 0), 0);
+    const totalInvSale = products.reduce((s: number, p: any) => s + (p.sale_price || 0), 0);
 
-    // Sheet 1: Tổng quan
-    const summaryData = [
-      [isFullBackup ? "BACKUP TOÀN BỘ DỮ LIỆU" : "BÁO CÁO BACKUP HÀNG NGÀY", "", "", ""],
-      ["Cửa hàng:", tenantName, "", ""],
-      ["Ngày tạo:", dateStr, "", ""],
-      [isFullBackup ? "Loại: Toàn bộ lịch sử" : "Loại: Trong ngày", "", "", ""],
-      ["", "", "", ""],
-      ["CHỈ SỐ", "GIÁ TRỊ", "", ""],
-      ["Số phiếu bán", exports.length, "", ""],
-      ["Tổng doanh thu", totalSales, "", ""],
-      ["Số phiếu nhập", imports.length, "", ""],
-      ["Tổng giá trị nhập", totalImports, "", ""],
-      ["Tồn kho (số SP)", products.length, "", ""],
-      ["Tổng giá vốn tồn kho", totalInventoryValue, "", ""],
-      ["Tổng giá bán tồn kho", totalInventorySaleValue, "", ""],
-    ];
-    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
-    wsSummary["!cols"] = [{ wch: 25 }, { wch: 20 }, { wch: 15 }, { wch: 15 }];
+    // Sheet 1: Summary
+    const wsSummary = XLSX.utils.aoa_to_sheet([
+      [isFullBackup ? "BACKUP TOÀN BỘ DỮ LIỆU" : "BÁO CÁO BACKUP HÀNG NGÀY"],
+      ["Cửa hàng:", tenantName],
+      ["Ngày tạo:", dateStr],
+      [""],
+      ["CHỈ SỐ", "GIÁ TRỊ"],
+      ["Số phiếu bán", exports.length],
+      ["Tổng doanh thu", totalSales],
+      ["Số phiếu nhập", imports.length],
+      ["Tổng giá trị nhập", totalImports],
+      ["Tồn kho (số SP)", products.length],
+      ["Tổng giá vốn tồn kho", totalInvValue],
+      ["Tổng giá bán tồn kho", totalInvSale],
+    ]);
+    wsSummary["!cols"] = [{ wch: 25 }, { wch: 20 }];
     XLSX.utils.book_append_sheet(wb, wsSummary, "Tổng quan");
 
-    // Sheet 2: Bán hàng
-    const salesHeader = ["STT", "Mã phiếu", "Ngày", "Khách hàng", "Sản phẩm", "SKU", "IMEI", "Giá bán", "Tổng phiếu", "Ghi chú"];
-    const salesRows: any[][] = [salesHeader];
+    // Sheet 2: Sales - build rows directly
+    const salesRows: any[][] = [["STT", "Mã phiếu", "Ngày", "Khách hàng", "Sản phẩm", "SKU", "IMEI", "Giá bán", "Tổng phiếu"]];
     let stt = 1;
     for (const ex of exports) {
-      const items = exportItems.filter((i: any) => i.receipt_id === ex.id);
-      const custName = ex.customer_id ? customerMap.get(ex.customer_id) || "" : "";
-      if (items.length === 0) {
-        salesRows.push([stt++, ex.code, ex.export_date, custName, "", "", "", "", ex.total_amount, ex.note || ""]);
+      const items = exportItemsMap.get(ex.id);
+      const cust = ex.customer_id ? customerMap.get(ex.customer_id) || "" : "";
+      if (!items || items.length === 0) {
+        salesRows.push([stt++, ex.code, ex.export_date, cust, "", "", "", "", ex.total_amount]);
       } else {
-        for (const item of items) {
-          salesRows.push([stt++, ex.code, ex.export_date, custName, item.product_name || "", item.sku || "", item.imei || "", item.sale_price || 0, ex.total_amount, ex.note || ""]);
+        for (const it of items) {
+          salesRows.push([stt++, ex.code, ex.export_date, cust, it.product_name || "", it.sku || "", it.imei || "", it.sale_price || 0, ex.total_amount]);
         }
       }
     }
     const wsSales = XLSX.utils.aoa_to_sheet(salesRows);
-    wsSales["!cols"] = [{ wch: 5 }, { wch: 20 }, { wch: 18 }, { wch: 25 }, { wch: 35 }, { wch: 12 }, { wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 20 }];
+    wsSales["!cols"] = [{ wch: 5 }, { wch: 18 }, { wch: 16 }, { wch: 22 }, { wch: 30 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 12 }];
     XLSX.utils.book_append_sheet(wb, wsSales, "Bán hàng");
 
-    // Sheet 3: Nhập hàng
-    const importHeader = ["STT", "Mã phiếu", "Ngày", "NCC", "Sản phẩm", "SKU", "IMEI", "Giá nhập", "SL", "Tổng phiếu", "Ghi chú"];
-    const importRows: any[][] = [importHeader];
+    // Sheet 3: Imports
+    const impRows: any[][] = [["STT", "Mã phiếu", "Ngày", "NCC", "Sản phẩm", "SKU", "IMEI", "Giá nhập", "SL", "Tổng phiếu"]];
     let stt2 = 1;
     for (const im of imports) {
-      const items = importItems.filter((i: any) => i.receipt_id === im.id);
-      const suppName = im.supplier_id ? supplierMap.get(im.supplier_id) || "" : "";
-      if (items.length === 0) {
-        importRows.push([stt2++, im.code, im.import_date, suppName, "", "", "", "", "", im.total_amount, im.note || ""]);
+      const items = importItemsMap.get(im.id);
+      const supp = im.supplier_id ? supplierMap.get(im.supplier_id) || "" : "";
+      if (!items || items.length === 0) {
+        impRows.push([stt2++, im.code, im.import_date, supp, "", "", "", "", "", im.total_amount]);
       } else {
-        for (const item of items) {
-          importRows.push([stt2++, im.code, im.import_date, suppName, item.product_name || "", item.sku || "", item.imei || "", item.import_price || 0, item.quantity || 1, im.total_amount, im.note || ""]);
+        for (const it of items) {
+          impRows.push([stt2++, im.code, im.import_date, supp, it.product_name || "", it.sku || "", it.imei || "", it.import_price || 0, it.quantity || 1, im.total_amount]);
         }
       }
     }
-    const wsImport = XLSX.utils.aoa_to_sheet(importRows);
-    wsImport["!cols"] = [{ wch: 5 }, { wch: 20 }, { wch: 18 }, { wch: 20 }, { wch: 35 }, { wch: 12 }, { wch: 18 }, { wch: 14 }, { wch: 5 }, { wch: 14 }, { wch: 20 }];
-    XLSX.utils.book_append_sheet(wb, wsImport, "Nhập hàng");
+    const wsImp = XLSX.utils.aoa_to_sheet(impRows);
+    wsImp["!cols"] = [{ wch: 5 }, { wch: 18 }, { wch: 16 }, { wch: 20 }, { wch: 30 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 5 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, wsImp, "Nhập hàng");
 
-    // Sheet 4: Tồn kho
-    const invHeader = ["STT", "Tên sản phẩm", "SKU", "Giá nhập", "Giá bán"];
-    const invRows: any[][] = [invHeader];
+    // Sheet 4: Inventory
+    const invRows: any[][] = [["STT", "Tên sản phẩm", "SKU", "Giá nhập", "Giá bán"]];
     products.forEach((p: any, idx: number) => {
       invRows.push([idx + 1, p.name || "", p.sku || "", p.import_price || 0, p.sale_price || 0]);
     });
     const wsInv = XLSX.utils.aoa_to_sheet(invRows);
-    wsInv["!cols"] = [{ wch: 5 }, { wch: 40 }, { wch: 15 }, { wch: 14 }, { wch: 14 }];
+    wsInv["!cols"] = [{ wch: 5 }, { wch: 35 }, { wch: 15 }, { wch: 12 }, { wch: 12 }];
     XLSX.utils.book_append_sheet(wb, wsInv, "Tồn kho");
 
-    // Generate Excel buffer
     const xlsxBuffer = XLSX.write(wb, { type: "array", bookType: "xlsx" });
     const filePath = `${tenantId}/${backupDate}.xlsx`;
 
@@ -308,7 +292,6 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
         contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         upsert: true,
       });
-
     if (uploadErr) throw uploadErr;
 
     const stats = {
@@ -317,7 +300,7 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
       inventory: products.length,
       totalSales,
       totalImports,
-      inventoryValue: totalInventoryValue,
+      inventoryValue: totalInvValue,
     };
 
     await admin
@@ -336,8 +319,7 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
     await admin
       .from("daily_backups")
       .update({ status: "failed", error_message: err.message })
-      .eq("tenant_id", tenantId)
-      .eq("backup_date", backupDate);
+      .eq("id", insertedRow.id);
     throw err;
   }
 }
