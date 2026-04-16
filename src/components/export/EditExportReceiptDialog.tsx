@@ -7,7 +7,7 @@ import { Loader2, Save, CalendarIcon, Search, User, Package, Pencil, UserCircle,
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
@@ -189,6 +189,11 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
     securityUnlock();
     setShowSecurityDialog(false);
   };
+
+  // Check if receipt is older than 1 month
+  const canEditDate = receipt?.export_date
+    ? differenceInDays(new Date(), new Date(receipt.export_date)) <= 30
+    : true;
 
   // Computed
   const dateChanged = exportDate && exportDate !== originalExportDate;
@@ -439,9 +444,15 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
                   type="datetime-local"
                   value={exportDate}
                   onChange={(e) => setExportDate(e.target.value)}
+                  disabled={!canEditDate}
                   className={cn(dateChanged && 'border-green-500 ring-1 ring-green-500/30')}
                 />
-                {dateChanged && (
+                {!canEditDate && (
+                  <p className="text-xs text-destructive">
+                    Phiếu xuất quá 1 tháng, không cho phép sửa ngày
+                  </p>
+                )}
+                {dateChanged && canEditDate && (
                   <p className="text-xs text-green-600 font-medium">
                     ⚠ Ngày bán đã thay đổi
                   </p>

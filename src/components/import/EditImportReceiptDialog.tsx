@@ -13,7 +13,7 @@ import { formatNumberWithSpaces, parseFormattedNumber, formatCurrencyWithSpaces 
 import { PRODUCT_UNITS, DECIMAL_UNITS } from '@/types/warehouse';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface EditImportReceiptDialogProps {
@@ -76,7 +76,13 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
     }
   }, [receipt, details]);
 
+  // Check if receipt is older than 1 month
+  const canEditDate = receipt?.import_date
+    ? differenceInDays(new Date(), new Date(receipt.import_date)) <= 30
+    : true;
+
   const handleImportDateChange = (newDate: string) => {
+    if (!canEditDate) return;
     if (newDate !== originalImportDate && hasSecurityPassword && !securityUnlocked) {
       setShowSecurityDialog(true);
       return;
@@ -184,11 +190,17 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
                 type="datetime-local"
                 value={importDate}
                 onChange={(e) => handleImportDateChange(e.target.value)}
+                disabled={!canEditDate}
                 className={cn(
                   dateChanged && 'border-green-500 ring-1 ring-green-500/30'
                 )}
               />
-              {dateChanged && (
+              {!canEditDate && (
+                <p className="text-xs text-destructive">
+                  Phiếu nhập quá 1 tháng, không cho phép sửa ngày
+                </p>
+              )}
+              {dateChanged && canEditDate && (
                 <p className="text-xs text-green-600 font-medium">
                   ⚠ Ngày nhập đã thay đổi — tất cả sản phẩm trong phiếu sẽ đồng bộ ngày mới
                 </p>
