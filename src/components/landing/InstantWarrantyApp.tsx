@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { clearWarrantySession, readWarrantySession, writeWarrantySession } from '@/lib/warrantySession';
+import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 import { TenantLandingSettings, WarrantyResult, useCustomerPointsPublic, useWarrantyLookup } from '@/hooks/useTenantLanding';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import { formatNumber } from '@/lib/formatNumber';
@@ -307,6 +308,18 @@ export function InstantWarrantyApp({
                         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
                           {item.note}
                         </div>
+                      ) : null}
+
+                      {item.staff_user_id && tenantId ? (
+                        <StaffRatingForm
+                          staffName={item.staff_name || 'Nhân viên'}
+                          staffUserId={item.staff_user_id}
+                          tenantId={tenantId}
+                          branchId={item.branch_id}
+                          exportReceiptItemId={item.id}
+                          primaryColor={accentColor}
+                          defaultCustomerPhone={item.customer_phone || phoneForBenefits || ''}
+                        />
                       ) : null}
                     </CardContent>
                   </Card>
