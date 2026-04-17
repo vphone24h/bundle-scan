@@ -148,7 +148,8 @@
       </div>
     </div>
     <script>
-      // Standalone mode → show warranty skeleton instead of product grid
+      // Inline + sync: must run before browser paints to swap skeleton in PWA mode
+      // (very small, ~10 lines, doesn't block meaningfully)
       (function(){
         var sa = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
         if (sa) {
@@ -162,8 +163,8 @@
 
     <div id="root"></div>
     
-    <!-- PWA store init - runs async, doesn't block render -->
-    <script>
+    <!-- PWA store init - deferred so preloader paints first -->
+    <script defer>
       // Pre-fetch store data so React hooks can use it immediately (no re-fetch)
       (function(){
         window.__STORE_PREFETCH__ = {};
