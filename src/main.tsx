@@ -136,10 +136,11 @@ async function syncAppRuntimeVersion() {
   await requestServiceWorkerUpdateCheck();
 
   const remoteVersion = await fetchRemoteBuildVersion();
-  const targetVersion = remoteVersion ?? APP_RUNTIME_VERSION;
   const previousVersion = window.localStorage.getItem(APP_RUNTIME_VERSION_KEY);
-  const isRunningStaleBundle = !!remoteVersion && remoteVersion !== APP_RUNTIME_VERSION;
-  const shouldRefresh = isRunningStaleBundle || (previousVersion !== null && previousVersion !== targetVersion);
+  const hasVerifiedRemoteVersion = typeof remoteVersion === 'string' && remoteVersion.length > 0;
+  const targetVersion = hasVerifiedRemoteVersion ? remoteVersion : APP_RUNTIME_VERSION;
+  const isRunningStaleBundle = hasVerifiedRemoteVersion && remoteVersion !== APP_RUNTIME_VERSION;
+  const shouldRefresh = hasVerifiedRemoteVersion && isRunningStaleBundle;
 
   if (previousVersion === targetVersion && !isRunningStaleBundle) {
     cleanupAppUpdateSearchParam();
@@ -147,6 +148,11 @@ async function syncAppRuntimeVersion() {
   }
 
   window.localStorage.setItem(APP_RUNTIME_VERSION_KEY, targetVersion);
+
+  if (!hasVerifiedRemoteVersion) {
+    cleanupAppUpdateSearchParam();
+    return;
+  }
 
   if (previousVersion === null && !isRunningStaleBundle) {
     cleanupAppUpdateSearchParam();
