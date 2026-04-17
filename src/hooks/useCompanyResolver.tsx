@@ -175,6 +175,31 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
   const [company, setCompany] = useState<CompanyInfo>(() => {
     const cached = getCachedCompanyForHostname(hostname);
     if (cached) return cached;
+
+    // FAST PATH: read inline-script prefetch result so we can skip the loading state.
+    if (typeof window !== 'undefined') {
+      const prefetch = (window as any).__STORE_PREFETCH__;
+      if (prefetch) {
+        if (prefetch.isCompanyDomain && prefetch.companyId) {
+          const normalizedHost = normalizeHostname(hostname);
+          const info: CompanyInfo = {
+            companyId: prefetch.companyId,
+            domain: normalizedHost,
+            name: prefetch.companyName || null,
+            status: 'resolved',
+          };
+          cachedCompany = info;
+          cachedForHostname = hostname;
+          registerCompanyDomain(normalizedHost);
+          return info;
+        }
+        // If inline script already resolved a tenant for this host, it's NOT a company domain.
+        if (prefetch.tenantId || prefetch.tenant) {
+          return { companyId: null, domain: null, name: null, status: 'not_found' };
+        }
+      }
+    }
+
     return { companyId: null, domain: null, name: null, status: 'loading' };
   });
 
@@ -186,6 +211,39 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     ) return;
 
     let cancelled = false;
+
+    // Prefer prefetch promise from inline script when available — avoids a duplicate RPC.
+    const prefetch = typeof window !== 'undefined' ? (window as any).__STORE_PREFETCH__ : null;
+    if (prefetch?.companyCheckPromise && company.status === 'loading') {
+      prefetch.companyCheckPromise.then((isCompany: boolean) => {
+        if (cancelled) return;
+        if (isCompany && prefetch.companyId) {
+          const normalizedHost = normalizeHostname(hostname);
+          const info: CompanyInfo = {
+            companyId: prefetch.companyId,
+            domain: normalizedHost,
+            name: prefetch.companyName || null,
+            status: 'resolved',
+          };
+          cachedCompany = info;
+          cachedForHostname = hostname;
+          persistCompany(normalizedHost, info);
+          registerCompanyDomain(normalizedHost);
+          setCompany(info);
+        } else {
+          setCompany({ companyId: null, domain: null, name: null, status: 'not_found' });
+        }
+      }).catch(() => {
+        if (cancelled) return;
+        // Fallback to standard async resolution on prefetch failure
+        resolveCompanyFromHostname(hostname).then(result => {
+          if (cancelled) return;
+          setCompany(result);
+        });
+      });
+      return () => { cancelled = true; };
+    }
+
     resolveCompanyFromHostname(hostname).then(result => {
       if (cancelled) return;
       cachedCompany = result;
