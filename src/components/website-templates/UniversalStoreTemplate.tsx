@@ -124,12 +124,18 @@ export default function UniversalStoreTemplate({
 
   const accentColor = settings?.primary_color || config.accentColor;
 
-  // PWA standalone mode (bookmark/home screen) → default to warranty page
+  // PWA standalone mode (bookmark/home screen) → default to warranty tab,
+  // but still keep the full website template and navigation tabs.
   const isStandalone = typeof window !== 'undefined' && (
     window.matchMedia('(display-mode: standalone)').matches ||
     (window.navigator as any).standalone === true
   );
-  const [pageView, setPageView] = useState<PageView>(isStandalone ? 'warranty' : 'home');
+  const isRootLikePath = typeof window !== 'undefined' && (
+    window.location.pathname === '/' || window.location.pathname === '/index'
+  );
+  const [pageView, setPageView] = useState<PageView>(
+    isStandalone && isRootLikePath ? 'warranty' : 'home'
+  );
   const [selectedArticle, setSelectedArticle] = useState<LandingArticle | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedArticleCategoryId, setSelectedArticleCategoryId] = useState<string | null>(null);
