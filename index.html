@@ -183,6 +183,55 @@
         var hdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey, 'Content-Type': 'application/json' };
         var getHdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey };
 
+        // ===== INSTANT PATH: serve cached prefetch from sessionStorage (5 min TTL) =====
+        // 2nd+ visits within 5 min restore branding + data instantly. Background revalidate below.
+        var CACHE_KEY = '__store_prefetch_v1__:' + h;
+        var CACHE_TTL = 5 * 60 * 1000;
+        var hadFreshCache = false;
+        try {
+          var cachedRaw = sessionStorage.getItem(CACHE_KEY);
+          if (cachedRaw) {
+            var cached = JSON.parse(cachedRaw);
+            if (cached && (Date.now() - cached.savedAt) < CACHE_TTL && cached.payload) {
+              hadFreshCache = true;
+              window.__STORE_PREFETCH__ = Object.assign({}, cached.payload, { fromCache: true });
+              window.__STORE_PREFETCH__.dataPromise = Promise.resolve(cached.payload.data);
+              if (cached.payload.companyCheckResolved !== undefined) {
+                window.__STORE_PREFETCH__.companyCheckPromise = Promise.resolve(!!cached.payload.isCompanyDomain);
+              }
+              if (cached.payload.data && cached.payload.data.settings) {
+                var s = cached.payload.data.settings;
+                if (s.store_logo_url) {
+                  var ai = document.getElementById('static-apple-icon'); if (ai) ai.href = s.store_logo_url;
+                  var fi = document.getElementById('static-favicon'); if (fi) fi.href = s.store_logo_url;
+                }
+                if (s.store_name) document.title = s.store_name;
+              }
+            }
+          }
+        } catch(e) {}
+        function persistCache() {
+          try {
+            var pf = window.__STORE_PREFETCH__;
+            if (!pf || !pf.data) return;
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+              savedAt: Date.now(),
+              payload: {
+                tenantId: pf.tenantId || null,
+                tenant: pf.tenant || null,
+                storeId: pf.storeId || null,
+                isSubdomain: pf.isSubdomain || false,
+                isCompanyDomain: pf.isCompanyDomain || false,
+                companyId: pf.companyId || null,
+                companyName: pf.companyName || null,
+                companyCheckResolved: true,
+                data: pf.data,
+              }
+            }));
+          } catch(e) {}
+        }
+        window.__STORE_PREFETCH_PERSIST__ = persistCache;
+
         // OPTIMIZATION: For non-vkho custom domains, run company lookup AND store resolution
         // in PARALLEL instead of sequentially. This eliminates one full round-trip on first paint.
         if (isSubdomain && !h.endsWith('.vkho.vn')) {
