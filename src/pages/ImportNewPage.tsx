@@ -193,13 +193,22 @@ export default function ImportNewPage() {
 
   // Set default branch - non-Super Admin: lock to their branch
   useEffect(() => {
-    if (!isSuperAdmin && permissions?.branchId) {
+    if (addToReceipt?.branchId) {
+      setSelectedBranchId(addToReceipt.branchId);
+    } else if (!isSuperAdmin && permissions?.branchId) {
       setSelectedBranchId(permissions.branchId);
     } else if (isSuperAdmin && branches && branches.length > 0 && !selectedBranchId) {
       const defaultBranch = branches.find(b => b.is_default) || branches[0];
       setSelectedBranchId(defaultBranch.id);
     }
-  }, [branches, selectedBranchId, isSuperAdmin, permissions?.branchId]);
+  }, [branches, selectedBranchId, isSuperAdmin, permissions?.branchId, addToReceipt?.branchId]);
+
+  // Lock supplier when adding to existing receipt
+  useEffect(() => {
+    if (addToReceipt?.supplierId) {
+      setSelectedSupplierId(addToReceipt.supplierId);
+    }
+  }, [addToReceipt?.supplierId]);
 
   const draft = useDraftCart<ImportReceiptItem>('import_draft_cart');
 
