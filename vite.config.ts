@@ -86,41 +86,21 @@ export default defineConfig(({ mode }) => {
     cssMinify: 'esbuild',
     minify: 'esbuild',
     sourcemap: false,
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
-        // Function-based manualChunks: more aggressive vendor splitting
-        // so heavy libs only load when their consumer pages mount.
-        manualChunks(id: string) {
-          if (!id.includes('node_modules')) return undefined;
-
-          // React core - must load first, cache long-term
-          if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/scheduler/')) {
-            return 'vendor-react';
-          }
-          if (id.includes('react-router')) return 'vendor-router';
-          if (id.includes('@tanstack/react-query') || id.includes('@tanstack/query-')) {
-            return 'vendor-query';
-          }
-          if (id.includes('@supabase')) return 'vendor-supabase';
-
-          // Heavy libs — isolate so they only load when needed
-          if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
-          if (id.includes('/xlsx/')) return 'vendor-xlsx';
-          if (id.includes('exceljs')) return 'vendor-exceljs';
-          if (id.includes('html2canvas')) return 'vendor-html2canvas';
-          if (id.includes('jspdf')) return 'vendor-jspdf';
-          if (id.includes('qrcode') || id.includes('jsbarcode')) return 'vendor-qr';
-          if (id.includes('framer-motion')) return 'vendor-motion';
-          if (id.includes('dompurify')) return 'vendor-sanitize';
-          if (id.includes('date-fns')) return 'vendor-date';
-          if (id.includes('i18next')) return 'vendor-i18n';
-
-          // Radix - many small packages, group together (shared across UI)
-          if (id.includes('@radix-ui')) return 'vendor-radix';
-          if (id.includes('lucide-react')) return 'vendor-icons';
-
-          return 'vendor-misc';
+        // Conservative chunking: only split a few stable, shared vendors.
+        // Heavy libs (xlsx/jspdf/html2canvas/recharts/qrcode) are left to
+        // Rollup so they stay co-located with the lazy page that imports them
+        // and don't end up preloaded on initial app boot.
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom', 'scheduler'],
+          'vendor-query': [
+            '@tanstack/react-query',
+            '@tanstack/react-query-persist-client',
+            '@tanstack/query-sync-storage-persister',
+          ],
+          'vendor-supabase': ['@supabase/supabase-js'],
         },
       },
     },
