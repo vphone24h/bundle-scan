@@ -312,6 +312,8 @@ export function useAddProductsToReceipt() {
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
       queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
       queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book-summary'] });
     },
   });
 }
