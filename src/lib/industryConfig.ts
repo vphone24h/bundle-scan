@@ -295,6 +295,7 @@ const INDUSTRY_HOME_SECTIONS: Record<string, HomeSection[]> = {
   shoes_store: ['hero', 'trustBadges', 'categories', 'featuredProducts', 'flashSale', 'articles', 'reviews', 'storeInfo'],
   electronics_store: ['hero', 'trustBadges', 'flashSale', 'categories', 'featuredProducts', 'articles', 'warranty', 'voucher', 'reviews', 'storeInfo'],
   restaurant_store: ['hero', 'trustBadges', 'categories', 'featuredProducts', 'combo', 'articles', 'reviews', 'branches', 'storeInfo'],
+  bar_store: ['hero', 'categories', 'featuredProducts', 'combo', 'trustBadges', 'reviews', 'branches', 'storeInfo'],
   hotel_store: ['hero', 'trustBadges', 'featuredProducts', 'articles', 'reviews', 'branches', 'storeInfo'],
 };
 
@@ -336,6 +337,7 @@ export const INDUSTRY_FOOTER_VERB: Record<string, string> = {
   cafe_store: 'đến',
   boba_store: 'đến',
   bakery_store: 'đặt bánh tại',
+  bar_store: 'lai rai tại',
   // Real estate
   realestate_store: 'chọn',
   car_showroom: 'mua xe tại',
@@ -371,6 +373,7 @@ export const INDUSTRY_WHY_CHOOSE_CONTENT: Record<string, string> = {
   cafe_store: '✅ Cà phê rang xay nguyên chất\n✅ Không gian đẹp, wifi mạnh\n✅ Menu đa dạng, cập nhật theo mùa\n✅ Phục vụ nhanh, thân thiện',
   hotel_store: '✅ Vị trí đắc địa, view đẹp\n✅ Phòng sạch sẽ, tiện nghi hiện đại\n✅ Dịch vụ 5 sao, nhân viên chuyên nghiệp\n✅ Đặt phòng online, xác nhận ngay',
   bakery_store: '✅ Nguyên liệu nhập khẩu cao cấp\n✅ Bánh làm fresh mỗi ngày\n✅ Giao hàng đúng giờ, đúng cam kết\n✅ Nhận đặt bánh theo yêu cầu',
+  bar_store: '✅ Mồi nhậu tươi mỗi ngày, đặc sản Tây Nguyên\n✅ Bia tháp lạnh, bom bia siêu chill\n✅ Không gian ấm cúng, nhạc sống cuối tuần\n✅ Combo nhóm bạn cực hời, tặng kèm bia\n✅ Đặt bàn online, không phải chờ',
   karaoke_store: '✅ Âm thanh đỉnh cao, phòng rộng rãi\n✅ Nhân viên tươi xinh nhiệt tình\n✅ Menu đa dạng, giá hợp lý\n✅ Đặt phòng online nhanh chóng',
   massage_store: '✅ Kỹ thuật viên chuyên nghiệp, tay nghề cao\n✅ Nhân viên tươi xinh nhiệt tình\n✅ Không gian thư giãn, riêng tư\n✅ Sản phẩm chăm sóc cao cấp',
   vehicle_repair: '✅ Thợ giỏi, kinh nghiệm lâu năm\n✅ Phụ tùng chính hãng, bảo hành rõ ràng\n✅ Báo giá trước khi sửa, không phát sinh\n✅ Hỗ trợ cứu hộ 24/7',
@@ -392,6 +395,7 @@ const INDUSTRY_BRAND_INSPIRATION: Record<string, string> = {
   restaurant_store: 'Premium Restaurant',
   hotel_store: 'Luxury Hotel & Resort',
   bakery_store: 'Tiệm bánh nghệ thuật',
+  bar_store: 'Quán nhậu chill – vintage gỗ tối',
   vehicle_repair: 'Garage chuyên nghiệp',
   hvac_repair: 'Điện lạnh uy tín',
   audio_store: 'Audio Pro Shop',
