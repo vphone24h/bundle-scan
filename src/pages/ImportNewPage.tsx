@@ -15,6 +15,7 @@ import { useSuppliersByBranch, useCreateSupplier } from '@/hooks/useSuppliers';
 import { useProducts, useCheckIMEI, useBatchCheckIMEI, Product } from '@/hooks/useProducts';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCreateImportReceipt } from '@/hooks/useImportReceipts';
+import { useAddProductsToReceipt } from '@/hooks/useAddProductsToReceipt';
 import { useBranches } from '@/hooks/useBranches';
 import { useImportGuideUrl } from '@/hooks/useAppConfig';
 import { supabase } from '@/integrations/supabase/client';
@@ -162,6 +163,13 @@ export default function ImportNewPage() {
     const params = new URLSearchParams(location.search);
     return params.get('repairOrderId');
   }, [location.search]);
+
+  // Detect "add to existing receipt" context from navigation state
+  const addToReceipt = useMemo(() => {
+    const state = location.state as { addToReceipt?: { id: string; code: string; supplierId: string | null; branchId: string | null } } | null;
+    return state?.addToReceipt || null;
+  }, [location.state]);
+
   const { data: categories } = useCategories();
   const { data: products } = useProducts();
   const { data: productGroups } = useProductGroups();
@@ -172,6 +180,7 @@ export default function ImportNewPage() {
   const createCategory = useCreateCategory();
   const createSupplier = useCreateSupplier();
   const createImportReceipt = useCreateImportReceipt();
+  const addProductsToReceipt = useAddProductsToReceipt();
   const createProductGroup = useCreateProductGroup();
   const checkIMEI = useCheckIMEI();
   const batchCheckIMEI = useBatchCheckIMEI();
