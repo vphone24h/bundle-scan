@@ -148,7 +148,8 @@
       </div>
     </div>
     <script>
-      // Standalone mode → show warranty skeleton instead of product grid
+      // Inline + sync: must run before browser paints to swap skeleton in PWA mode
+      // (very small, ~10 lines, doesn't block meaningfully)
       (function(){
         var sa = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
         if (sa) {
