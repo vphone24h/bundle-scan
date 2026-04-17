@@ -83,32 +83,44 @@ export default defineConfig(({ mode }) => {
   build: {
     target: 'es2020',
     cssCodeSplit: true,
+    cssMinify: 'esbuild',
+    minify: 'esbuild',
+    sourcemap: false,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Core framework - loaded first, cached long-term
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-query': ['@tanstack/react-query'],
-          // Supabase client - needed early for auth/data
-          'vendor-supabase': ['@supabase/supabase-js'],
-          // UI primitives - shared across pages
-          'vendor-ui': [
-            '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-popover', '@radix-ui/react-select',
-            '@radix-ui/react-tabs', '@radix-ui/react-tooltip',
-            '@radix-ui/react-accordion', '@radix-ui/react-checkbox',
-            '@radix-ui/react-switch', '@radix-ui/react-label',
-          ],
-          // i18n - only needed for admin pages, separate chunk
-          'vendor-i18n': ['i18next', 'react-i18next'],
-          // Charts - only loaded on reports page
-          'vendor-charts': ['recharts'],
-          // Heavy export libs - only loaded when exporting
-          'vendor-export': ['xlsx', 'jspdf', 'file-saver', 'html2canvas'],
-          // Sanitizer - used by store templates and editor
-          'vendor-sanitize': ['dompurify'],
-          // Date utils
-          'vendor-date': ['date-fns'],
+        // Function-based manualChunks: more aggressive vendor splitting
+        // so heavy libs only load when their consumer pages mount.
+        manualChunks(id: string) {
+          if (!id.includes('node_modules')) return undefined;
+
+          // React core - must load first, cache long-term
+          if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/scheduler/')) {
+            return 'vendor-react';
+          }
+          if (id.includes('react-router')) return 'vendor-router';
+          if (id.includes('@tanstack/react-query') || id.includes('@tanstack/query-')) {
+            return 'vendor-query';
+          }
+          if (id.includes('@supabase')) return 'vendor-supabase';
+
+          // Heavy libs — isolate so they only load when needed
+          if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
+          if (id.includes('/xlsx/')) return 'vendor-xlsx';
+          if (id.includes('exceljs')) return 'vendor-exceljs';
+          if (id.includes('html2canvas')) return 'vendor-html2canvas';
+          if (id.includes('jspdf')) return 'vendor-jspdf';
+          if (id.includes('qrcode') || id.includes('jsbarcode')) return 'vendor-qr';
+          if (id.includes('framer-motion')) return 'vendor-motion';
+          if (id.includes('dompurify')) return 'vendor-sanitize';
+          if (id.includes('date-fns')) return 'vendor-date';
+          if (id.includes('i18next')) return 'vendor-i18n';
+
+          // Radix - many small packages, group together (shared across UI)
+          if (id.includes('@radix-ui')) return 'vendor-radix';
+          if (id.includes('lucide-react')) return 'vendor-icons';
+
+          return 'vendor-misc';
         },
       },
     },
