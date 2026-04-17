@@ -19,21 +19,12 @@ const appleImport = () => import('@/components/website-templates/AppleStyleLandi
 const UniversalStoreTemplate = lazy(universalImport);
 const AppleStyleLandingTemplate = lazy(appleImport);
 
-// Eagerly preload the most common template immediately for store pages.
-// PWA standalone still opens the full template, just defaulting to the warranty tab.
-const prefetch = typeof window !== 'undefined' ? (window as any).__STORE_PREFETCH__ : null;
+// Eagerly preload the most common template IMMEDIATELY for all store pages.
+// This avoids a second skeleton flash from <Suspense> after data resolves.
 const isWarrantyOnlyEntry = typeof window !== 'undefined' &&
   /^\/bao-hanh(?:\/|$)/.test(window.location.pathname);
-
-if (!isWarrantyOnlyEntry && (prefetch?.storeId || (typeof window !== 'undefined' && (
-  window.matchMedia('(display-mode: standalone)').matches ||
-  (window.navigator as any).standalone === true
-)))) {
+if (typeof window !== 'undefined' && !isWarrantyOnlyEntry) {
   universalImport();
-} else if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-  (window as any).requestIdleCallback(() => universalImport(), { timeout: 2000 });
-} else if (typeof window !== 'undefined') {
-  setTimeout(() => universalImport(), 100);
 }
 // === PWA Manifest Hook ===
 function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?: string | null) {
@@ -625,7 +616,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
       return;
     }
 
-    const timer = setTimeout(() => setLoadingTimedOut(true), 1800);
+    const timer = setTimeout(() => setLoadingTimedOut(true), 600);
     return () => clearTimeout(timer);
   }, [isLoading, isError, hasIdentifier, tenant, resolvedTenant.status, shouldKeepRecovering]);
 
