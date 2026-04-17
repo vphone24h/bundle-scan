@@ -190,6 +190,7 @@ export default function UniversalStoreTemplate({
 
   // Parallax for hero
   const { ref: heroRef, offset: heroOffset } = useParallax(0.3);
+  const location = useLocation();
 
   // Warranty
   const warrantySessionId = storeId || tenantId || null;
