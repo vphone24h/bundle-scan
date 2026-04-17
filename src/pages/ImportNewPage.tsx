@@ -15,6 +15,7 @@ import { useSuppliersByBranch, useCreateSupplier } from '@/hooks/useSuppliers';
 import { useProducts, useCheckIMEI, useBatchCheckIMEI, Product } from '@/hooks/useProducts';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCreateImportReceipt } from '@/hooks/useImportReceipts';
+import { useAddProductsToReceipt } from '@/hooks/useAddProductsToReceipt';
 import { useBranches } from '@/hooks/useBranches';
 import { useImportGuideUrl } from '@/hooks/useAppConfig';
 import { supabase } from '@/integrations/supabase/client';
@@ -162,6 +163,13 @@ export default function ImportNewPage() {
     const params = new URLSearchParams(location.search);
     return params.get('repairOrderId');
   }, [location.search]);
+
+  // Detect "add to existing receipt" context from navigation state
+  const addToReceipt = useMemo(() => {
+    const state = location.state as { addToReceipt?: { id: string; code: string; supplierId: string | null; branchId: string | null } } | null;
+    return state?.addToReceipt || null;
+  }, [location.state]);
+
   const { data: categories } = useCategories();
   const { data: products } = useProducts();
   const { data: productGroups } = useProductGroups();
@@ -172,6 +180,7 @@ export default function ImportNewPage() {
   const createCategory = useCreateCategory();
   const createSupplier = useCreateSupplier();
   const createImportReceipt = useCreateImportReceipt();
+  const addProductsToReceipt = useAddProductsToReceipt();
   const createProductGroup = useCreateProductGroup();
   const checkIMEI = useCheckIMEI();
   const batchCheckIMEI = useBatchCheckIMEI();
@@ -184,13 +193,22 @@ export default function ImportNewPage() {
 
   // Set default branch - non-Super Admin: lock to their branch
   useEffect(() => {
-    if (!isSuperAdmin && permissions?.branchId) {
+    if (addToReceipt?.branchId) {
+      setSelectedBranchId(addToReceipt.branchId);
+    } else if (!isSuperAdmin && permissions?.branchId) {
       setSelectedBranchId(permissions.branchId);
     } else if (isSuperAdmin && branches && branches.length > 0 && !selectedBranchId) {
       const defaultBranch = branches.find(b => b.is_default) || branches[0];
       setSelectedBranchId(defaultBranch.id);
     }
-  }, [branches, selectedBranchId, isSuperAdmin, permissions?.branchId]);
+  }, [branches, selectedBranchId, isSuperAdmin, permissions?.branchId, addToReceipt?.branchId]);
+
+  // Lock supplier when adding to existing receipt
+  useEffect(() => {
+    if (addToReceipt?.supplierId) {
+      setSelectedSupplierId(addToReceipt.supplierId);
+    }
+  }, [addToReceipt?.supplierId]);
 
   const draft = useDraftCart<ImportReceiptItem>('import_draft_cart');
 
@@ -240,10 +258,11 @@ export default function ImportNewPage() {
   const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Auto-save cart to localStorage for draft persistence
+  // Auto-save cart to localStorage for draft persistence (skip in add-to-receipt mode)
   useEffect(() => {
+    if (addToReceipt) return;
     draft.saveDraft(cart, { supplierId: selectedSupplierId, branchId: selectedBranchId });
-  }, [cart, selectedSupplierId, selectedBranchId]);
+  }, [cart, selectedSupplierId, selectedBranchId, addToReceipt]);
 
   // Handle resume draft
   const handleResumeDraft = useCallback(() => {
@@ -845,6 +864,45 @@ export default function ImportNewPage() {
     setCart(cart.filter((item) => item.id !== id));
   };
 
+  const handleAddToExistingReceipt = async () => {
+    if (!addToReceipt) return;
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    const cartSnapshot = [...cart];
+    try {
+      const result = await addProductsToReceipt.mutateAsync({
+        receiptId: addToReceipt.id,
+        products: cartSnapshot.map(item => ({
+          name: item.productName,
+          sku: item.sku,
+          imei: item.imei || null,
+          category_id: item.categoryId || null,
+          import_price: item.importPrice,
+          sale_price: item.salePrice || null,
+          quantity: item.quantity,
+          unit: item.unit || 'cái',
+          variant_1: item.variant1 || null,
+          variant_2: item.variant2 || null,
+          variant_3: item.variant3 || null,
+          note: item.note || null,
+        })),
+      });
+      toast({
+        title: 'Đã thêm sản phẩm',
+        description: `Thêm ${result.addedCount} SP vào phiếu ${result.code} - ${result.addedAmount.toLocaleString('vi-VN')}đ`,
+      });
+      setCart([]);
+      draft.clearDraft();
+      setVariantConfig({ enabled: false, levels: [] });
+      setSelectedVariants({});
+      navigate('/import/history');
+    } catch (error: any) {
+      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleCheckout = () => {
     if (cart.length === 0) {
       toast({
@@ -860,6 +918,11 @@ export default function ImportNewPage() {
       return;
     }
     setFieldErrors(prev => { const { supplier, ...rest } = prev; return rest; });
+    // Add-to-existing-receipt mode: skip payment dialog (payment already handled in original receipt)
+    if (addToReceipt) {
+      handleAddToExistingReceipt();
+      return;
+    }
     setPaymentOpen(true);
   };
 
@@ -1369,6 +1432,18 @@ export default function ImportNewPage() {
         </div>
       )}
 
+      {addToReceipt && (
+        <div className="mx-3 sm:mx-6 lg:mx-8 mt-3 bg-primary/10 border border-primary/30 rounded-lg px-4 py-3 text-sm text-primary flex items-center gap-2">
+          <Package className="h-4 w-4 shrink-0" />
+          <span className="flex-1">
+            Đang thêm sản phẩm vào phiếu nhập <strong>{addToReceipt.code}</strong>. Nhà cung cấp & chi nhánh đã khóa theo phiếu gốc — phần thanh toán sẽ giữ nguyên.
+          </span>
+          <Button variant="ghost" size="sm" className="ml-auto h-6 text-xs" onClick={() => navigate('/import/history')}>
+            Hủy
+          </Button>
+        </div>
+      )}
+
       <div className="p-3 sm:p-6 lg:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* Form */}
@@ -1382,7 +1457,7 @@ export default function ImportNewPage() {
                 {/* Branch Selection */}
                 <div className="form-field">
                   <Label>{t('tours.importNew.importBranch')}</Label>
-                  {isSuperAdmin ? (
+                  {isSuperAdmin && !addToReceipt ? (
                     <Select
                       value={selectedBranchId}
                       onValueChange={(val) => {
@@ -1414,25 +1489,33 @@ export default function ImportNewPage() {
                 {/* Supplier Selection */}
                 <div className="form-field" data-error={!!fieldErrors.supplier || undefined}>
                   <Label>{t('tours.importNew.supplierLabel')}</Label>
-                  <div className="flex gap-2">
-                    <SupplierSearchCombobox
-                      suppliers={suppliers || []}
-                      value={selectedSupplierId}
-                      onChange={(val) => {
-                        setSelectedSupplierId(val);
-                        setFieldErrors(prev => { const { supplier, ...rest } = prev; return rest; });
-                      }}
-                      hasError={!!fieldErrors.supplier}
+                  {addToReceipt ? (
+                    <Input
+                      value={suppliers?.find(s => s.id === selectedSupplierId)?.name || 'Đang tải...'}
+                      disabled
+                      className="bg-muted"
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setSupplierDialogOpen(true)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <SupplierSearchCombobox
+                        suppliers={suppliers || []}
+                        value={selectedSupplierId}
+                        onChange={(val) => {
+                          setSelectedSupplierId(val);
+                          setFieldErrors(prev => { const { supplier, ...rest } = prev; return rest; });
+                        }}
+                        hasError={!!fieldErrors.supplier}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setSupplierDialogOpen(true)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                   {fieldErrors.supplier && <p className="text-xs text-destructive mt-1">{fieldErrors.supplier}</p>}
                 </div>
               </div>

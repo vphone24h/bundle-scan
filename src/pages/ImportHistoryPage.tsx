@@ -68,7 +68,7 @@ import { AdjustQuantityDialog } from '@/components/products/AdjustQuantityDialog
 import { usePermissions } from '@/hooks/usePermissions';
 import { useMarkProductWarranty } from '@/hooks/useWarrantyInventory';
 import { RestoreImportReceiptItemsButton } from '@/components/import/RestoreImportReceiptItemsButton';
-import { AddProductsToReceiptDialog } from '@/components/import/AddProductsToReceiptDialog';
+
 import { WarrantyNoteDialog } from '@/components/import/WarrantyNoteDialog';
 import { ImportInventorySummary } from '@/components/import/ImportInventorySummary';
 import { TransferStockDialog } from '@/components/import/TransferStockDialog';
@@ -302,8 +302,23 @@ export default function ImportHistoryPage() {
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
   const [showTransferDialog, setShowTransferDialog] = useState(false);
 
-  // Add products to receipt
-  const [addProductsReceipt, setAddProductsReceipt] = useState<ImportReceipt | null>(null);
+  // Add products to receipt -> navigate to full ImportNewPage in "add" mode
+  const handleAddProducts = useCallback((receipt: ImportReceipt) => {
+    if (receipt.status !== 'completed') {
+      toast({ title: 'Không thể thêm', description: 'Phiếu đã hủy không thể thêm sản phẩm', variant: 'destructive' });
+      return;
+    }
+    navigate('/import/new', {
+      state: {
+        addToReceipt: {
+          id: receipt.id,
+          code: receipt.code,
+          supplierId: receipt.supplier_id || null,
+          branchId: receipt.branch_id || null,
+        },
+      },
+    });
+  }, [navigate]);
 
   // Calculate receipt return status
   const getReceiptReturnStatus = (receipt: ImportReceipt): 'completed' | 'cancelled' | 'full_return' => {
@@ -974,7 +989,7 @@ export default function ImportHistoryPage() {
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(receipt)} title="Sửa">
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:text-primary" onClick={() => setAddProductsReceipt(receipt)} title="Thêm SP">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-primary hover:text-primary" onClick={() => handleAddProducts(receipt)} title="Thêm SP">
                         <Plus className="h-3.5 w-3.5" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleReturn(receipt)} title="Trả hàng">
@@ -1091,7 +1106,7 @@ export default function ImportHistoryPage() {
                               Chỉnh sửa
                             </DropdownMenuItem>
                             {receipt.status === 'completed' && (
-                              <DropdownMenuItem onClick={() => setAddProductsReceipt(receipt)}>
+                              <DropdownMenuItem onClick={() => handleAddProducts(receipt)}>
                                 <Plus className="mr-2 h-4 w-4" />
                                 Thêm sản phẩm
                               </DropdownMenuItem>
@@ -1741,15 +1756,6 @@ export default function ImportHistoryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Products to Receipt Dialog */}
-      {addProductsReceipt && (
-        <AddProductsToReceiptDialog
-          receiptId={addProductsReceipt.id}
-          receiptCode={addProductsReceipt.code}
-          open={!!addProductsReceipt}
-          onOpenChange={(open) => !open && setAddProductsReceipt(null)}
-        />
-      )}
 
       {/* Edit Receipt Dialog */}
       <EditImportReceiptDialog

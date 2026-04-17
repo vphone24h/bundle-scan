@@ -15,6 +15,10 @@ interface AddProductInput {
   sale_price?: number | null;
   quantity: number;
   unit?: string | null;
+  variant_1?: string | null;
+  variant_2?: string | null;
+  variant_3?: string | null;
+  note?: string | null;
 }
 
 export function useAddProductsToReceipt() {
@@ -105,6 +109,10 @@ export function useAddProductsToReceipt() {
           import_receipt_id: receiptId,
           branch_id: branchId,
           tenant_id: tenantId,
+          variant_1: p.variant_1 || null,
+          variant_2: p.variant_2 || null,
+          variant_3: p.variant_3 || null,
+          note: p.note || null,
         });
       }
 
@@ -146,6 +154,10 @@ export function useAddProductsToReceipt() {
             import_receipt_id: receiptId,
             branch_id: branchId,
             tenant_id: tenantId,
+            variant_1: p.variant_1 || null,
+            variant_2: p.variant_2 || null,
+            variant_3: p.variant_3 || null,
+            note: p.note || null,
           });
         }
       }
