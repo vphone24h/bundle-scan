@@ -304,7 +304,6 @@ export default function UniversalStoreTemplate({
     }
   }, [lookupEnabled, isFetched, warrantyError, persistedResults]);
 
-  const location = useLocation();
 
   // Deep-link from path-based URLs, query params, or legacy product paths
   useEffect(() => {
