@@ -502,12 +502,14 @@ export function useWarrantyLookup(
       if (!searchValue || !tenantId) return null;
 
       const compactSearch = searchValue.trim().replace(/\s+/g, '');
-
-      // Non-blocking IP fetch with 2s timeout
-      const clientIp = await getClientIpFast().catch(() => null);
-
       const isPhoneNumber = /^0\d{9,10}$/.test(compactSearch);
       const rpcName = isPhoneNumber ? 'lookup_warranty_by_phone' : 'lookup_warranty_by_imei';
+
+      // OPTIMIZATION: Don't block on IP fetch. Use cached IP if available, otherwise null.
+      // RPC accepts null IP for rate limiting fallback. This removes up to 2s of latency.
+      const clientIp = (window as any).__WARRANTY_CACHED_IP__ || _cachedIp || null;
+      if (!clientIp) { void getClientIpFast(); }
+
       const rpcParams = isPhoneNumber
         ? { _phone: compactSearch, _tenant_id: tenantId, _ip_address: clientIp }
         : { _imei: compactSearch, _tenant_id: tenantId, _ip_address: clientIp };

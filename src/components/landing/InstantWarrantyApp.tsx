@@ -135,9 +135,13 @@ export function InstantWarrantyApp({
 
   const isPhoneSearch = /^0\d{9,10}$/.test(submittedValue.replace(/\s/g, ''));
   const firstResult = effectiveResults[0];
-  const phoneForBenefits = isPhoneSearch ? submittedValue : (firstResult?.customer_phone || '');
-  const shouldLoadLoyalty = effectiveResults.length > 0 && phoneForBenefits.replace(/\D/g, '').length > 0;
-  const lookupPhone = shouldLoadLoyalty ? phoneForBenefits : '';
+  // OPTIMIZATION: If user searches by phone, fire loyalty/voucher queries IN PARALLEL
+  // with warranty lookup (don't wait for warranty result). For IMEI search, wait for result
+  // to extract phone, then fetch.
+  const phoneForBenefits = isPhoneSearch
+    ? submittedValue.replace(/\s/g, '')
+    : (firstResult?.customer_phone || '');
+  const lookupPhone = phoneForBenefits.replace(/\D/g, '').length > 0 ? phoneForBenefits : '';
   const { data: customerPoints } = useCustomerPointsPublic(lookupPhone, tenantId);
   const { data: customerVouchers } = usePublicCustomerVouchers(lookupPhone, tenantId);
 
