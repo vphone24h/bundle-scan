@@ -33,9 +33,13 @@ export function useAddProductsToReceipt() {
     mutationFn: async ({
       receiptId,
       products,
+      payments = [],
+      skipCashBook = false,
     }: {
       receiptId: string;
       products: AddProductInput[];
+      payments?: AddPaymentInput[];
+      skipCashBook?: boolean;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -46,7 +50,7 @@ export function useAddProductsToReceipt() {
       // Fetch receipt info
       const { data: receipt, error: rErr } = await supabase
         .from('import_receipts')
-        .select('id, code, total_amount, supplier_id, branch_id, status')
+        .select('id, code, total_amount, paid_amount, debt_amount, supplier_id, branch_id, status')
         .eq('id', receiptId)
         .single();
       if (rErr || !receipt) throw new Error('Không tìm thấy phiếu nhập');
