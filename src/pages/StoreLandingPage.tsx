@@ -616,7 +616,9 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
       return;
     }
 
-    const timer = setTimeout(() => setLoadingTimedOut(true), 350);
+    // Faster fallback when prefetch cache hits — UI shows real content sooner
+    const hasPrefetchCache = typeof window !== 'undefined' && (window as any).__STORE_PREFETCH__?.fromCache;
+    const timer = setTimeout(() => setLoadingTimedOut(true), hasPrefetchCache ? 120 : 300);
     return () => clearTimeout(timer);
   }, [isLoading, isError, hasIdentifier, tenant, resolvedTenant.status, shouldKeepRecovering]);
 
