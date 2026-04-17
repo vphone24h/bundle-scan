@@ -931,7 +931,13 @@ export default function ImportNewPage() {
   const handlePaymentConfirm = (payments: PaymentSource[], skipCashBook?: boolean) => {
     // Prevent double submission
     if (isSubmitting) return;
-    
+
+    // Add-to-receipt mode: route to dedicated handler
+    if (addToReceipt) {
+      handleAddToExistingReceipt(payments, skipCashBook);
+      return;
+    }
+
     const cartSnapshot = [...cart];
     const totalSnapshot = totalAmount;
 
