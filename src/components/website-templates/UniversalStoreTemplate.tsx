@@ -190,6 +190,7 @@ export default function UniversalStoreTemplate({
 
   // Parallax for hero
   const { ref: heroRef, offset: heroOffset } = useParallax(0.3);
+  const location = useLocation();
 
   // Warranty
   const warrantySessionId = storeId || tenantId || null;
@@ -200,6 +201,11 @@ export default function UniversalStoreTemplate({
   const [persistedResults, setPersistedResults] = useState<WarrantyResult[] | null>(null);
   const [lookupEnabled, setLookupEnabled] = useState(false);
   const warrantyResultsRef = useRef<HTMLDivElement>(null);
+  const isExplicitWarrantyPath = useMemo(() => {
+    const pageInfo = detectPageFromPath(location.pathname);
+    return pageInfo?.pageView === 'warranty';
+  }, [location.pathname]);
+  const shouldRestoreWarrantyTab = isStandalone || isExplicitWarrantyPath;
 
   const {
     data: warrantyResults,
@@ -222,10 +228,13 @@ export default function UniversalStoreTemplate({
     setSubmittedValue(restoredSearch);
     setPersistedResults(Array.isArray(restored?.results) ? restored.results : []);
     setLookupEnabled(false);
-    setPageView('warranty');
+
+    if (shouldRestoreWarrantyTab) {
+      setPageView('warranty');
+    }
 
     return true;
-  }, [warrantyStorageKey]);
+  }, [warrantyStorageKey, shouldRestoreWarrantyTab]);
 
   useEffect(() => {
     if (!warrantyStorageKey || restoredSessionKey === warrantyStorageKey) return;
@@ -295,7 +304,6 @@ export default function UniversalStoreTemplate({
     }
   }, [lookupEnabled, isFetched, warrantyError, persistedResults]);
 
-  const location = useLocation();
 
   // Deep-link from path-based URLs, query params, or legacy product paths
   useEffect(() => {
