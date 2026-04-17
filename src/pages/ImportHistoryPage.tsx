@@ -68,7 +68,7 @@ import { AdjustQuantityDialog } from '@/components/products/AdjustQuantityDialog
 import { usePermissions } from '@/hooks/usePermissions';
 import { useMarkProductWarranty } from '@/hooks/useWarrantyInventory';
 import { RestoreImportReceiptItemsButton } from '@/components/import/RestoreImportReceiptItemsButton';
-import { AddProductsToReceiptDialog } from '@/components/import/AddProductsToReceiptDialog';
+
 import { WarrantyNoteDialog } from '@/components/import/WarrantyNoteDialog';
 import { ImportInventorySummary } from '@/components/import/ImportInventorySummary';
 import { TransferStockDialog } from '@/components/import/TransferStockDialog';
@@ -1756,15 +1756,6 @@ export default function ImportHistoryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Products to Receipt Dialog */}
-      {addProductsReceipt && (
-        <AddProductsToReceiptDialog
-          receiptId={addProductsReceipt.id}
-          receiptCode={addProductsReceipt.code}
-          open={!!addProductsReceipt}
-          onOpenChange={(open) => !open && setAddProductsReceipt(null)}
-        />
-      )}
 
       {/* Edit Receipt Dialog */}
       <EditImportReceiptDialog
