@@ -21,6 +21,11 @@ interface AddProductInput {
   note?: string | null;
 }
 
+interface AddPaymentInput {
+  type: 'cash' | 'bank_card' | 'e_wallet' | 'debt' | string;
+  amount: number;
+}
+
 export function useAddProductsToReceipt() {
   const queryClient = useQueryClient();
 
