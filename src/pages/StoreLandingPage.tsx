@@ -20,20 +20,23 @@ const UniversalStoreTemplate = lazy(universalImport);
 const AppleStyleLandingTemplate = lazy(appleImport);
 
 // Eagerly preload the most common template immediately for store pages.
-// PWA standalone now opens the full store template, so preload it too (was previously skipped).
+// PWA standalone opens warranty-only app, so don't preload the heavy store template there.
 const prefetch = typeof window !== 'undefined' ? (window as any).__STORE_PREFETCH__ : null;
-const isWarrantyOnlyEntry = typeof window !== 'undefined' &&
-  /^\/bao-hanh(?:\/|$)/.test(window.location.pathname);
-
-if (!isWarrantyOnlyEntry && (prefetch?.storeId || (typeof window !== 'undefined' && (
+const isStandaloneEntry = typeof window !== 'undefined' && (
   window.matchMedia('(display-mode: standalone)').matches ||
   (window.navigator as any).standalone === true
-)))) {
-  // Store page or PWA standalone → preload template immediately
+);
+const isWarrantyOnlyEntry = typeof window !== 'undefined' && (
+  /^\/bao-hanh(?:\/|$)/.test(window.location.pathname) ||
+  (isStandaloneEntry && (window.location.pathname === '/' || window.location.pathname === '/index'))
+);
+
+if (!isWarrantyOnlyEntry && prefetch?.storeId) {
+  // Browser store page → preload template immediately
   universalImport();
-} else if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+} else if (!isWarrantyOnlyEntry && typeof window !== 'undefined' && 'requestIdleCallback' in window) {
   (window as any).requestIdleCallback(() => universalImport(), { timeout: 2000 });
-} else if (typeof window !== 'undefined') {
+} else if (!isWarrantyOnlyEntry && typeof window !== 'undefined') {
   setTimeout(() => universalImport(), 100);
 }
 // === PWA Manifest Hook ===
