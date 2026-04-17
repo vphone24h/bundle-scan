@@ -616,7 +616,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
       return;
     }
 
-    const timer = setTimeout(() => setLoadingTimedOut(true), 600);
+    const timer = setTimeout(() => setLoadingTimedOut(true), 350);
     return () => clearTimeout(timer);
   }, [isLoading, isError, hasIdentifier, tenant, resolvedTenant.status, shouldKeepRecovering]);
 

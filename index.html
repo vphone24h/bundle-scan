@@ -182,28 +182,30 @@
         var hdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey, 'Content-Type': 'application/json' };
         var getHdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey };
 
-        // Check if this hostname is a company domain (not a store subdomain)
-        // Company domains should show the landing page, not a store
+        // OPTIMIZATION: For non-vkho custom domains, run company lookup AND store resolution
+        // in PARALLEL instead of sequentially. This eliminates one full round-trip on first paint.
         if (isSubdomain && !h.endsWith('.vkho.vn')) {
-          // For non-vkho.vn domains, first check if it's a company domain
-          fetch(supaUrl + '/rest/v1/rpc/lookup_company_by_domain', {
+          var companyCheckPromise = fetch(supaUrl + '/rest/v1/rpc/lookup_company_by_domain', {
             method: 'POST', headers: hdrs,
             body: JSON.stringify({ _domain: h.replace(/^www\./, '') })
           }).then(function(r) { return r.json(); }).then(function(data) {
             var company = Array.isArray(data) ? data[0] : data;
             if (company && company.domain && company.domain.toLowerCase() === h.replace(/^www\./, '').toLowerCase()) {
-              // This IS a company domain - mark it so React knows
-              window.__STORE_PREFETCH__ = { isCompanyDomain: true, companyId: company.id, companyName: company.name };
-              return; // Don't fetch store data
+              // This IS a company domain - flip the flag so React stops showing store landing
+              window.__STORE_PREFETCH__.isCompanyDomain = true;
+              window.__STORE_PREFETCH__.companyId = company.id;
+              window.__STORE_PREFETCH__.companyName = company.name;
+              return true;
             }
-            // Not a company domain - proceed with store resolution
-            proceedWithStoreResolution();
-          }).catch(function() {
-            proceedWithStoreResolution();
-          });
+            return false;
+          }).catch(function() { return false; });
+          window.__STORE_PREFETCH__.companyCheckPromise = companyCheckPromise;
+          // Run store resolution in parallel — if domain ends up being a company domain,
+          // the prefetched store data is just discarded.
+          proceedWithStoreResolution();
           return;
         }
-        
+
         proceedWithStoreResolution();
 
         function proceedWithStoreResolution() {
