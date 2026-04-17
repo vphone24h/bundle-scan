@@ -1444,7 +1444,7 @@ export default function ImportNewPage() {
         <div className="mx-3 sm:mx-6 lg:mx-8 mt-3 bg-primary/10 border border-primary/30 rounded-lg px-4 py-3 text-sm text-primary flex items-center gap-2">
           <Package className="h-4 w-4 shrink-0" />
           <span className="flex-1">
-            Đang thêm sản phẩm vào phiếu nhập <strong>{addToReceipt.code}</strong>. Nhà cung cấp & chi nhánh đã khóa theo phiếu gốc — phần thanh toán sẽ giữ nguyên.
+            Đang thêm sản phẩm vào phiếu nhập <strong>{addToReceipt.code}</strong>. Nhà cung cấp & chi nhánh đã khóa theo phiếu gốc — khi hoàn tất sẽ mở thanh toán cho phần phát sinh.
           </span>
           <Button variant="ghost" size="sm" className="ml-auto h-6 text-xs" onClick={() => navigate('/import/history')}>
             Hủy
