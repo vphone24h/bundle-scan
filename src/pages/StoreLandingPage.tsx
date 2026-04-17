@@ -605,11 +605,13 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   // If data is still unresolved after ~1.8s, render the best available UI instead of freezing on skeleton.
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   useEffect(() => {
+    // Only show skeleton if we have NO tenant at all. Once tenant is resolved,
+    // render the template immediately — products/articles will stream in via their own loading states.
     const shouldShowSkeleton =
-      (isLoading && !tenant)
-      || (isError && hasIdentifier && !tenant)
-      || (!hasIdentifier && !tenant && resolvedTenant.status === 'loading')
-      || shouldKeepRecovering;
+      (!tenant && isLoading)
+      || (!tenant && isError && hasIdentifier)
+      || (!tenant && !hasIdentifier && resolvedTenant.status === 'loading')
+      || (!tenant && shouldKeepRecovering);
 
     if (!shouldShowSkeleton) {
       setLoadingTimedOut(false);
@@ -618,15 +620,15 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
 
     // Faster fallback when prefetch cache hits — UI shows real content sooner
     const hasPrefetchCache = typeof window !== 'undefined' && (window as any).__STORE_PREFETCH__?.fromCache;
-    const timer = setTimeout(() => setLoadingTimedOut(true), hasPrefetchCache ? 120 : 300);
+    const timer = setTimeout(() => setLoadingTimedOut(true), hasPrefetchCache ? 100 : 250);
     return () => clearTimeout(timer);
   }, [isLoading, isError, hasIdentifier, tenant, resolvedTenant.status, shouldKeepRecovering]);
 
   // If timed out, stop skeleton and allow cached UI/error UI to render
-  const showSkeleton = !loadingTimedOut && (
-    (isLoading && !tenant)
-    || (isError && hasIdentifier && !tenant)
-    || (!hasIdentifier && !tenant && resolvedTenant.status === 'loading')
+  const showSkeleton = !loadingTimedOut && !tenant && (
+    isLoading
+    || (isError && hasIdentifier)
+    || (!hasIdentifier && resolvedTenant.status === 'loading')
     || shouldKeepRecovering
   );
 
