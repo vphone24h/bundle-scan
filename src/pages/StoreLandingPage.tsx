@@ -20,23 +20,19 @@ const UniversalStoreTemplate = lazy(universalImport);
 const AppleStyleLandingTemplate = lazy(appleImport);
 
 // Eagerly preload the most common template immediately for store pages.
-// PWA standalone opens warranty-only app, so don't preload the heavy store template there.
+// PWA standalone still opens the full template, just defaulting to the warranty tab.
 const prefetch = typeof window !== 'undefined' ? (window as any).__STORE_PREFETCH__ : null;
-const isStandaloneEntry = typeof window !== 'undefined' && (
+const isWarrantyOnlyEntry = typeof window !== 'undefined' &&
+  /^\/bao-hanh(?:\/|$)/.test(window.location.pathname);
+
+if (!isWarrantyOnlyEntry && (prefetch?.storeId || (typeof window !== 'undefined' && (
   window.matchMedia('(display-mode: standalone)').matches ||
   (window.navigator as any).standalone === true
-);
-const isWarrantyOnlyEntry = typeof window !== 'undefined' && (
-  /^\/bao-hanh(?:\/|$)/.test(window.location.pathname) ||
-  (isStandaloneEntry && (window.location.pathname === '/' || window.location.pathname === '/index'))
-);
-
-if (!isWarrantyOnlyEntry && prefetch?.storeId) {
-  // Browser store page → preload template immediately
+)))) {
   universalImport();
-} else if (!isWarrantyOnlyEntry && typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+} else if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
   (window as any).requestIdleCallback(() => universalImport(), { timeout: 2000 });
-} else if (!isWarrantyOnlyEntry && typeof window !== 'undefined') {
+} else if (typeof window !== 'undefined') {
   setTimeout(() => universalImport(), 100);
 }
 // === PWA Manifest Hook ===
@@ -495,13 +491,9 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     pathInfo?.contentId
   );
 
-  // Browser/link access → full store template (with tabs).
-  // PWA standalone (installed app) → dedicated warranty app.
-  // Explicit /warranty path → warranty app regardless.
-  const isWarrantyEntry = !hasDeepLinkContent && (
-    pathInfo?.pageView === 'warranty' ||
-    (isStandalone && (location.pathname === '/' || location.pathname === '/index'))
-  );
+  // Dedicated warranty-only screen is for explicit warranty route only.
+  // PWA standalone should still use the full store template and keep all tabs.
+  const isWarrantyEntry = !hasDeepLinkContent && pathInfo?.pageView === 'warranty';
 
   const shouldDeferCatalogLoading = isWarrantyEntry;
 
