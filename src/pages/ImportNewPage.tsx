@@ -864,7 +864,7 @@ export default function ImportNewPage() {
     setCart(cart.filter((item) => item.id !== id));
   };
 
-  const handleAddToExistingReceipt = async () => {
+  const handleAddToExistingReceipt = async (payments: PaymentSource[], skipCashBook?: boolean) => {
     if (!addToReceipt) return;
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -886,11 +886,17 @@ export default function ImportNewPage() {
           variant_3: item.variant3 || null,
           note: item.note || null,
         })),
+        payments: payments.map(p => ({
+          type: p.type as 'cash' | 'bank_card' | 'e_wallet' | 'debt',
+          amount: p.amount,
+        })),
+        skipCashBook,
       });
       toast({
         title: 'Đã thêm sản phẩm',
-        description: `Thêm ${result.addedCount} SP vào phiếu ${result.code} - ${result.addedAmount.toLocaleString('vi-VN')}đ`,
+        description: `Thêm ${result.addedCount} SP vào phiếu ${result.code} - ${result.addedAmount.toLocaleString('vi-VN')}đ (Đã trả: ${result.addedPaid.toLocaleString('vi-VN')}đ, Nợ thêm: ${result.addedDebt.toLocaleString('vi-VN')}đ)`,
       });
+      setPaymentOpen(false);
       setCart([]);
       draft.clearDraft();
       setVariantConfig({ enabled: false, levels: [] });
@@ -918,11 +924,7 @@ export default function ImportNewPage() {
       return;
     }
     setFieldErrors(prev => { const { supplier, ...rest } = prev; return rest; });
-    // Add-to-existing-receipt mode: skip payment dialog (payment already handled in original receipt)
-    if (addToReceipt) {
-      handleAddToExistingReceipt();
-      return;
-    }
+    // Add-to-receipt mode: still open payment dialog (only for the additional amount)
     setPaymentOpen(true);
   };
 
