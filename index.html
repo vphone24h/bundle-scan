@@ -23,10 +23,11 @@
     <!-- Preconnect to critical origins for faster loading -->
     <link rel="preconnect" href="https://rodpbhesrwykmpywiiyd.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://rodpbhesrwykmpywiiyd.supabase.co" />
-    <!-- Google Fonts - non-blocking -->
+    <!-- Google Fonts - preload to avoid FOUT but stay non-blocking -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'" />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" onload="this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" /></noscript>
     
     <!-- Icons -->
     <link rel="icon" type="image/png" href="/favicon.png" id="static-favicon" />
@@ -181,6 +182,55 @@
         var anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZHBiaGVzcnd5a21weXdpaXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MjM4MDMsImV4cCI6MjA4NDk5OTgwM30.P7Kc0pxkUdyHi8AgDBlRmPqxg0MWr2C_J_EUqORQY_s';
         var hdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey, 'Content-Type': 'application/json' };
         var getHdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey };
+
+        // ===== INSTANT PATH: serve cached prefetch from sessionStorage (5 min TTL) =====
+        // 2nd+ visits within 5 min restore branding + data instantly. Background revalidate below.
+        var CACHE_KEY = '__store_prefetch_v1__:' + h;
+        var CACHE_TTL = 5 * 60 * 1000;
+        var hadFreshCache = false;
+        try {
+          var cachedRaw = sessionStorage.getItem(CACHE_KEY);
+          if (cachedRaw) {
+            var cached = JSON.parse(cachedRaw);
+            if (cached && (Date.now() - cached.savedAt) < CACHE_TTL && cached.payload) {
+              hadFreshCache = true;
+              window.__STORE_PREFETCH__ = Object.assign({}, cached.payload, { fromCache: true });
+              window.__STORE_PREFETCH__.dataPromise = Promise.resolve(cached.payload.data);
+              if (cached.payload.companyCheckResolved !== undefined) {
+                window.__STORE_PREFETCH__.companyCheckPromise = Promise.resolve(!!cached.payload.isCompanyDomain);
+              }
+              if (cached.payload.data && cached.payload.data.settings) {
+                var s = cached.payload.data.settings;
+                if (s.store_logo_url) {
+                  var ai = document.getElementById('static-apple-icon'); if (ai) ai.href = s.store_logo_url;
+                  var fi = document.getElementById('static-favicon'); if (fi) fi.href = s.store_logo_url;
+                }
+                if (s.store_name) document.title = s.store_name;
+              }
+            }
+          }
+        } catch(e) {}
+        function persistCache() {
+          try {
+            var pf = window.__STORE_PREFETCH__;
+            if (!pf || !pf.data) return;
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+              savedAt: Date.now(),
+              payload: {
+                tenantId: pf.tenantId || null,
+                tenant: pf.tenant || null,
+                storeId: pf.storeId || null,
+                isSubdomain: pf.isSubdomain || false,
+                isCompanyDomain: pf.isCompanyDomain || false,
+                companyId: pf.companyId || null,
+                companyName: pf.companyName || null,
+                companyCheckResolved: true,
+                data: pf.data,
+              }
+            }));
+          } catch(e) {}
+        }
+        window.__STORE_PREFETCH_PERSIST__ = persistCache;
 
         // OPTIMIZATION: For non-vkho custom domains, run company lookup AND store resolution
         // in PARALLEL instead of sequentially. This eliminates one full round-trip on first paint.
@@ -364,6 +414,7 @@
               branches: results[5] || [],
             };
             window.__STORE_PREFETCH__.data = data;
+            try { if (window.__STORE_PREFETCH_PERSIST__) window.__STORE_PREFETCH_PERSIST__(); } catch(e){}
             return data;
           });
         }
