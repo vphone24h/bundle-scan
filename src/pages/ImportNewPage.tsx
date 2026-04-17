@@ -863,6 +863,45 @@ export default function ImportNewPage() {
     setCart(cart.filter((item) => item.id !== id));
   };
 
+  const handleAddToExistingReceipt = async () => {
+    if (!addToReceipt) return;
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    const cartSnapshot = [...cart];
+    try {
+      const result = await addProductsToReceipt.mutateAsync({
+        receiptId: addToReceipt.id,
+        products: cartSnapshot.map(item => ({
+          name: item.productName,
+          sku: item.sku,
+          imei: item.imei || null,
+          category_id: item.categoryId || null,
+          import_price: item.importPrice,
+          sale_price: item.salePrice || null,
+          quantity: item.quantity,
+          unit: item.unit || 'cái',
+          variant_1: item.variant1 || null,
+          variant_2: item.variant2 || null,
+          variant_3: item.variant3 || null,
+          note: item.note || null,
+        })),
+      });
+      toast({
+        title: 'Đã thêm sản phẩm',
+        description: `Thêm ${result.addedCount} SP vào phiếu ${result.code} - ${result.addedAmount.toLocaleString('vi-VN')}đ`,
+      });
+      setCart([]);
+      draft.clearDraft();
+      setVariantConfig({ enabled: false, levels: [] });
+      setSelectedVariants({});
+      navigate('/import/history');
+    } catch (error: any) {
+      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleCheckout = () => {
     if (cart.length === 0) {
       toast({
@@ -878,6 +917,11 @@ export default function ImportNewPage() {
       return;
     }
     setFieldErrors(prev => { const { supplier, ...rest } = prev; return rest; });
+    // Add-to-existing-receipt mode: skip payment dialog (payment already handled in original receipt)
+    if (addToReceipt) {
+      handleAddToExistingReceipt();
+      return;
+    }
     setPaymentOpen(true);
   };
 
