@@ -414,6 +414,7 @@
               branches: results[5] || [],
             };
             window.__STORE_PREFETCH__.data = data;
+            try { if (window.__STORE_PREFETCH_PERSIST__) window.__STORE_PREFETCH_PERSIST__(); } catch(e){}
             return data;
           });
         }
