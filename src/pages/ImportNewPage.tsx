@@ -258,10 +258,11 @@ export default function ImportNewPage() {
   const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Auto-save cart to localStorage for draft persistence
+  // Auto-save cart to localStorage for draft persistence (skip in add-to-receipt mode)
   useEffect(() => {
+    if (addToReceipt) return;
     draft.saveDraft(cart, { supplierId: selectedSupplierId, branchId: selectedBranchId });
-  }, [cart, selectedSupplierId, selectedBranchId]);
+  }, [cart, selectedSupplierId, selectedBranchId, addToReceipt]);
 
   // Handle resume draft
   const handleResumeDraft = useCallback(() => {
