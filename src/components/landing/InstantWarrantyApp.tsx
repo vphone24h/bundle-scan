@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { clearWarrantySession, readWarrantySession, writeWarrantySession } from '@/lib/warrantySession';
+import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 import { TenantLandingSettings, WarrantyResult, useCustomerPointsPublic, useWarrantyLookup } from '@/hooks/useTenantLanding';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import { formatNumber } from '@/lib/formatNumber';
