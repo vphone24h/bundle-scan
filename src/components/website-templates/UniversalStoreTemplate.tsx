@@ -205,7 +205,7 @@ export default function UniversalStoreTemplate({
     const pageInfo = detectPageFromPath(location.pathname);
     return pageInfo?.pageView === 'warranty';
   }, [location.pathname]);
-  const shouldRestoreWarrantyTab = isStandalone || isExplicitWarrantyPath || pageView === 'warranty';
+  const shouldRestoreWarrantyTab = isStandalone || isExplicitWarrantyPath;
 
   const {
     data: warrantyResults,
