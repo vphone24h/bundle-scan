@@ -491,10 +491,9 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     pathInfo?.contentId
   );
 
-  const isWarrantyEntry = !hasDeepLinkContent && (
-    pathInfo?.pageView === 'warranty' ||
-    (isStandalone && !pathInfo)
-  );
+  // Only enter dedicated warranty app when explicitly navigating to /warranty.
+  // PWA standalone now opens the full store template (with all tabs) instead of warranty-only.
+  const isWarrantyEntry = !hasDeepLinkContent && pathInfo?.pageView === 'warranty';
 
   const shouldDeferCatalogLoading = isWarrantyEntry;
 
