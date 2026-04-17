@@ -309,6 +309,18 @@ export function InstantWarrantyApp({
                           {item.note}
                         </div>
                       ) : null}
+
+                      {item.staff_user_id && tenantId ? (
+                        <StaffRatingForm
+                          staffName={item.staff_name || 'Nhân viên'}
+                          staffUserId={item.staff_user_id}
+                          tenantId={tenantId}
+                          branchId={item.branch_id}
+                          exportReceiptItemId={item.id}
+                          primaryColor={accentColor}
+                          defaultCustomerPhone={item.customer_phone || phoneForBenefits || ''}
+                        />
+                      ) : null}
                     </CardContent>
                   </Card>
                 );
