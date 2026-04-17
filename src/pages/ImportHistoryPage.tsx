@@ -304,10 +304,6 @@ export default function ImportHistoryPage() {
 
   // Add products to receipt -> navigate to full ImportNewPage in "add" mode
   const handleAddProducts = useCallback((receipt: ImportReceipt) => {
-    if (receipt.status !== 'completed') {
-      toast({ title: 'Không thể thêm', description: 'Phiếu đã hủy không thể thêm sản phẩm', variant: 'destructive' });
-      return;
-    }
     navigate('/import/new', {
       state: {
         addToReceipt: {
