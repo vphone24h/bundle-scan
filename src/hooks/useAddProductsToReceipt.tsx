@@ -21,6 +21,11 @@ interface AddProductInput {
   note?: string | null;
 }
 
+interface AddPaymentInput {
+  type: 'cash' | 'bank_card' | 'e_wallet' | 'debt' | string;
+  amount: number;
+}
+
 export function useAddProductsToReceipt() {
   const queryClient = useQueryClient();
 
@@ -28,9 +33,13 @@ export function useAddProductsToReceipt() {
     mutationFn: async ({
       receiptId,
       products,
+      payments = [],
+      skipCashBook = false,
     }: {
       receiptId: string;
       products: AddProductInput[];
+      payments?: AddPaymentInput[];
+      skipCashBook?: boolean;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -41,7 +50,7 @@ export function useAddProductsToReceipt() {
       // Fetch receipt info
       const { data: receipt, error: rErr } = await supabase
         .from('import_receipts')
-        .select('id, code, total_amount, supplier_id, branch_id, status')
+        .select('id, code, total_amount, paid_amount, debt_amount, supplier_id, branch_id, status')
         .eq('id', receiptId)
         .single();
       if (rErr || !receipt) throw new Error('Không tìm thấy phiếu nhập');
@@ -215,12 +224,61 @@ export function useAddProductsToReceipt() {
         await supabase.from('product_imports').insert(allProductImports);
       }
 
-      // Update receipt total
+      // Compute payment totals for the additional amount
+      const nonDebtPayments = payments.filter(p => p.type !== 'debt' && p.amount > 0);
+      const addedPaid = nonDebtPayments.reduce((s, p) => s + p.amount, 0);
+      const addedDebt = Math.max(0, addedAmount - addedPaid);
+
+      // Update receipt totals (total + paid + debt accumulate)
       const newTotal = Number(receipt.total_amount) + addedAmount;
+      const newPaid = Number(receipt.paid_amount || 0) + addedPaid;
+      const newDebt = Number(receipt.debt_amount || 0) + addedDebt;
       await supabase
         .from('import_receipts')
-        .update({ total_amount: newTotal })
+        .update({ total_amount: newTotal, paid_amount: newPaid, debt_amount: newDebt })
         .eq('id', receiptId);
+
+      // Insert receipt_payments rows for this addition
+      if (payments.length > 0) {
+        const rows = payments
+          .filter(p => p.amount > 0)
+          .map(p => ({ receipt_id: receiptId, payment_type: p.type, amount: p.amount }));
+        if (rows.length > 0) {
+          await supabase.from('receipt_payments').insert(rows);
+        }
+      }
+
+      // Cash book entries for non-debt payments
+      if (nonDebtPayments.length > 0 && !skipCashBook) {
+        // Get supplier name for recipient
+        let supplierName: string | null = null;
+        if (supplierId) {
+          const { data: sup } = await supabase
+            .from('suppliers').select('name').eq('id', supplierId).maybeSingle();
+          supplierName = sup?.name || null;
+        }
+        // Get staff name
+        let staffName: string | null = null;
+        const { data: prof } = await supabase
+          .from('profiles').select('display_name').eq('id', user.id).maybeSingle();
+        staffName = prof?.display_name || null;
+
+        await supabase.from('cash_book').insert(nonDebtPayments.map(p => ({
+          type: 'expense' as const,
+          category: 'Nhập hàng',
+          description: `Thanh toán bổ sung phiếu nhập ${receipt.code}`,
+          amount: p.amount,
+          payment_source: p.type,
+          is_business_accounting: false,
+          branch_id: branchId || null,
+          reference_id: receiptId,
+          reference_type: 'import_receipt',
+          created_by: user.id,
+          tenant_id: tenantId,
+          created_by_name: staffName,
+          recipient_name: supplierName,
+        })));
+      }
 
       // Audit log
       await supabase.from('audit_logs').insert([{
@@ -233,12 +291,16 @@ export function useAddProductsToReceipt() {
           code: receipt.code,
           added_products: products.length,
           added_amount: addedAmount,
+          added_paid: addedPaid,
+          added_debt: addedDebt,
           new_total: newTotal,
+          new_paid: newPaid,
+          new_debt: newDebt,
         },
-        description: `Thêm ${products.length} SP vào phiếu nhập ${receipt.code} - Thêm: ${addedAmount.toLocaleString('vi-VN')}đ`,
+        description: `Thêm ${products.length} SP vào phiếu nhập ${receipt.code} - Thêm: ${addedAmount.toLocaleString('vi-VN')}đ (TT: ${addedPaid.toLocaleString('vi-VN')}đ, Nợ: ${addedDebt.toLocaleString('vi-VN')}đ)`,
       }]);
 
-      return { code: receipt.code, addedCount: products.length, addedAmount };
+      return { code: receipt.code, addedCount: products.length, addedAmount, addedPaid, addedDebt };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['import-receipts'] });
@@ -250,6 +312,8 @@ export function useAddProductsToReceipt() {
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
       queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
       queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book-summary'] });
     },
   });
 }

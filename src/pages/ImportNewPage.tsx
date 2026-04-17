@@ -864,7 +864,7 @@ export default function ImportNewPage() {
     setCart(cart.filter((item) => item.id !== id));
   };
 
-  const handleAddToExistingReceipt = async () => {
+  const handleAddToExistingReceipt = async (payments: PaymentSource[], skipCashBook?: boolean) => {
     if (!addToReceipt) return;
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -886,11 +886,17 @@ export default function ImportNewPage() {
           variant_3: item.variant3 || null,
           note: item.note || null,
         })),
+        payments: payments.map(p => ({
+          type: p.type as 'cash' | 'bank_card' | 'e_wallet' | 'debt',
+          amount: p.amount,
+        })),
+        skipCashBook,
       });
       toast({
         title: 'Đã thêm sản phẩm',
-        description: `Thêm ${result.addedCount} SP vào phiếu ${result.code} - ${result.addedAmount.toLocaleString('vi-VN')}đ`,
+        description: `Thêm ${result.addedCount} SP vào phiếu ${result.code} - ${result.addedAmount.toLocaleString('vi-VN')}đ (Đã trả: ${result.addedPaid.toLocaleString('vi-VN')}đ, Nợ thêm: ${result.addedDebt.toLocaleString('vi-VN')}đ)`,
       });
+      setPaymentOpen(false);
       setCart([]);
       draft.clearDraft();
       setVariantConfig({ enabled: false, levels: [] });
@@ -918,18 +924,20 @@ export default function ImportNewPage() {
       return;
     }
     setFieldErrors(prev => { const { supplier, ...rest } = prev; return rest; });
-    // Add-to-existing-receipt mode: skip payment dialog (payment already handled in original receipt)
-    if (addToReceipt) {
-      handleAddToExistingReceipt();
-      return;
-    }
+    // Add-to-receipt mode: still open payment dialog (only for the additional amount)
     setPaymentOpen(true);
   };
 
   const handlePaymentConfirm = (payments: PaymentSource[], skipCashBook?: boolean) => {
     // Prevent double submission
     if (isSubmitting) return;
-    
+
+    // Add-to-receipt mode: route to dedicated handler
+    if (addToReceipt) {
+      handleAddToExistingReceipt(payments, skipCashBook);
+      return;
+    }
+
     const cartSnapshot = [...cart];
     const totalSnapshot = totalAmount;
 
@@ -1436,7 +1444,7 @@ export default function ImportNewPage() {
         <div className="mx-3 sm:mx-6 lg:mx-8 mt-3 bg-primary/10 border border-primary/30 rounded-lg px-4 py-3 text-sm text-primary flex items-center gap-2">
           <Package className="h-4 w-4 shrink-0" />
           <span className="flex-1">
-            Đang thêm sản phẩm vào phiếu nhập <strong>{addToReceipt.code}</strong>. Nhà cung cấp & chi nhánh đã khóa theo phiếu gốc — phần thanh toán sẽ giữ nguyên.
+            Đang thêm sản phẩm vào phiếu nhập <strong>{addToReceipt.code}</strong>. Nhà cung cấp & chi nhánh đã khóa theo phiếu gốc — khi hoàn tất sẽ mở thanh toán cho phần phát sinh.
           </span>
           <Button variant="ghost" size="sm" className="ml-auto h-6 text-xs" onClick={() => navigate('/import/history')}>
             Hủy
