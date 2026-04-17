@@ -610,11 +610,10 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   // This allows rendering cached tenant data instantly even if identifier is temporarily unavailable.
   const shouldKeepRecovering = isStandalone && !hasIdentifier && !tenant;
 
-  // CRITICAL FIX: Loading timeout to prevent infinite skeleton
-  // After 5 seconds, stop showing skeleton regardless of API state
+  // Reduce long blank/skeleton states.
+  // If data is still unresolved after ~1.8s, render the best available UI instead of freezing on skeleton.
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   useEffect(() => {
-    // Only start timeout if we're actually in a loading/recovering state
     const shouldShowSkeleton =
       (isLoading && !tenant)
       || (isError && hasIdentifier && !tenant)
@@ -626,7 +625,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
       return;
     }
 
-    const timer = setTimeout(() => setLoadingTimedOut(true), 5000);
+    const timer = setTimeout(() => setLoadingTimedOut(true), 1800);
     return () => clearTimeout(timer);
   }, [isLoading, isError, hasIdentifier, tenant, resolvedTenant.status, shouldKeepRecovering]);
 
