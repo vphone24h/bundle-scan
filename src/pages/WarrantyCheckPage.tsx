@@ -78,7 +78,10 @@ export default function WarrantyCheckPage() {
     queryFn: async (): Promise<WarrantyItem[]> => {
       if (!searchValue) return [];
       const compact = searchValue.replace(/\s+/g, '');
-      const clientIp = await getClientIpFast().catch(() => null);
+      // OPTIMIZATION: Don't block on IP fetch — use cached IP if available, otherwise null.
+      // Fire-and-forget background fetch so next call has IP cached.
+      const clientIp = _cachedIp || null;
+      if (!clientIp) { void fetchClientIpBackground(); }
       const isPhone = /^0\d{9,10}$/.test(compact);
 
       const { data, error } = await supabase.rpc(
