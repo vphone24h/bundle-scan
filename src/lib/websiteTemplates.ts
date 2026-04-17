@@ -63,6 +63,7 @@ export const WEBSITE_TEMPLATES: WebsiteTemplate[] = [
   { id: 'farm_store', name: 'Nông sản / Đặc sản', category: 'Chuyên biệt', description: 'Tự nhiên, sạch, nguồn gốc rõ ràng', icon: '🌾', tier: 'basic', available: true },
   { id: 'landing_page', name: 'Landing Page bán hàng', category: 'Chuyên biệt', description: 'Trang đích tối ưu chuyển đổi', icon: '🎯', tier: 'basic', available: true },
   { id: 'bakery_store', name: 'Tiệm bánh', category: 'Ẩm thực', description: 'Bánh kem nghệ thuật, 12 con giáp', icon: '🎂', tier: 'basic', available: true },
+  { id: 'bar_store', name: 'Quán nhậu chill', category: 'Ẩm thực', description: 'Tone gỗ tối, vintage, menu mồi nhậu & bia tháp nổi bật ngay trang chủ', icon: '🍺', tier: 'premium', available: true, brandInspiration: 'Đề Pa Coffee – Quán nhậu chill' },
 
   // Dịch vụ sửa chữa chuyên biệt
   { id: 'vehicle_repair', name: 'Sửa xe', category: 'Dịch vụ', description: 'Sửa xe máy, ô tô, báo giá nhanh', icon: '🏍️', tier: 'basic', available: true, brandInspiration: 'Garage chuyên nghiệp' },

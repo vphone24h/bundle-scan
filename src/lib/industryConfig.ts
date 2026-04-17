@@ -252,6 +252,7 @@ const INDUSTRY_FEATURE_PRESETS: Record<string, Partial<IndustryFeatures>> = {
   company_site: { imei: false, warranty: false, tradein: false, compare: false },
   // New templates
   bakery_store: { imei: false, warranty: false, tradein: false, compare: false, combo: true, flashSale: true, booking: true },
+  bar_store: { imei: false, warranty: false, tradein: false, compare: false, combo: true, flashSale: true, booking: true, branches: true },
   vehicle_repair: { imei: false, warranty: true, repair: true, booking: true, tradein: false, compare: false },
   hvac_repair: { imei: false, warranty: true, repair: true, booking: true, tradein: false, compare: false },
   audio_store: { imei: true, warranty: true, installment: true, compare: true, tradein: true },
@@ -282,7 +283,7 @@ const INDUSTRY_LAYOUT_STYLES: Record<string, LayoutStyle> = {
   pharmacy_store: 'minimal', company_site: 'minimal',
   baby_store: 'shopee', sports_store: 'nike', pet_store: 'organic', farm_store: 'organic',
   landing_page: 'shopee',
-  bakery_store: 'organic', vehicle_repair: 'minimal', hvac_repair: 'minimal', audio_store: 'apple', karaoke_store: 'luxury', massage_store: 'luxury',
+  bakery_store: 'organic', bar_store: 'luxury', vehicle_repair: 'minimal', hvac_repair: 'minimal', audio_store: 'apple', karaoke_store: 'luxury', massage_store: 'luxury',
 };
 
 // Per-industry home sections order
