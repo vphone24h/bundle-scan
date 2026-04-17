@@ -1431,6 +1431,18 @@ export default function ImportNewPage() {
         </div>
       )}
 
+      {addToReceipt && (
+        <div className="mx-3 sm:mx-6 lg:mx-8 mt-3 bg-primary/10 border border-primary/30 rounded-lg px-4 py-3 text-sm text-primary flex items-center gap-2">
+          <Package className="h-4 w-4 shrink-0" />
+          <span className="flex-1">
+            Đang thêm sản phẩm vào phiếu nhập <strong>{addToReceipt.code}</strong>. Nhà cung cấp & chi nhánh đã khóa theo phiếu gốc — phần thanh toán sẽ giữ nguyên.
+          </span>
+          <Button variant="ghost" size="sm" className="ml-auto h-6 text-xs" onClick={() => navigate('/import/history')}>
+            Hủy
+          </Button>
+        </div>
+      )}
+
       <div className="p-3 sm:p-6 lg:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* Form */}
@@ -1444,7 +1456,7 @@ export default function ImportNewPage() {
                 {/* Branch Selection */}
                 <div className="form-field">
                   <Label>{t('tours.importNew.importBranch')}</Label>
-                  {isSuperAdmin ? (
+                  {isSuperAdmin && !addToReceipt ? (
                     <Select
                       value={selectedBranchId}
                       onValueChange={(val) => {
@@ -1476,25 +1488,33 @@ export default function ImportNewPage() {
                 {/* Supplier Selection */}
                 <div className="form-field" data-error={!!fieldErrors.supplier || undefined}>
                   <Label>{t('tours.importNew.supplierLabel')}</Label>
-                  <div className="flex gap-2">
-                    <SupplierSearchCombobox
-                      suppliers={suppliers || []}
-                      value={selectedSupplierId}
-                      onChange={(val) => {
-                        setSelectedSupplierId(val);
-                        setFieldErrors(prev => { const { supplier, ...rest } = prev; return rest; });
-                      }}
-                      hasError={!!fieldErrors.supplier}
+                  {addToReceipt ? (
+                    <Input
+                      value={suppliers?.find(s => s.id === selectedSupplierId)?.name || 'Đang tải...'}
+                      disabled
+                      className="bg-muted"
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setSupplierDialogOpen(true)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <SupplierSearchCombobox
+                        suppliers={suppliers || []}
+                        value={selectedSupplierId}
+                        onChange={(val) => {
+                          setSelectedSupplierId(val);
+                          setFieldErrors(prev => { const { supplier, ...rest } = prev; return rest; });
+                        }}
+                        hasError={!!fieldErrors.supplier}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setSupplierDialogOpen(true)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                   {fieldErrors.supplier && <p className="text-xs text-destructive mt-1">{fieldErrors.supplier}</p>}
                 </div>
               </div>
