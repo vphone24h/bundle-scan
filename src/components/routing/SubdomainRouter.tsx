@@ -42,11 +42,12 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
   
   const routerState = useMemo(() => {
     // Unknown custom root domain must wait for company resolution.
-    // Never fallback to store/vkho branding before company lookup finishes.
+    // CRITICAL: Never flash vkho's public landing on a custom tenant domain (e.g. depadian.com).
+    // While company lookup is in flight, show store landing — it will switch to public_landing
+    // only if the domain is later confirmed as a company domain.
     if (company.status === 'loading' && !hostInfo.isMainDomain && !hostInfo.subdomain) {
       if (isAdminEntryRoute) return 'app';
-      if (location.pathname === '/' && publicLandingPage) return 'public_landing';
-      return 'app';
+      return 'store_landing';
     }
 
     if (company.status === 'resolved' && isCompanyDomain) {
