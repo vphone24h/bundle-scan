@@ -19,20 +19,26 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+      const response = await supabase.functions.invoke('send-password-reset', {
         body: {
           email,
           redirectUrl: `${window.location.origin}/reset-password`,
         },
       });
 
-      if (error) {
-        throw new Error(data?.error || error.message || 'Không thể gửi email khôi phục');
-      }
+      // Extract specific error from edge function (even on non-2xx)
+      let serverError: string | null = null;
+      try {
+        const ctx: any = (response.error as any)?.context;
+        if (ctx && typeof ctx.json === 'function') {
+          const parsed = await ctx.json();
+          if (parsed?.error) serverError = parsed.error;
+        }
+      } catch {}
+      if (!serverError && response.data?.error) serverError = response.data.error;
+      if (!serverError && response.error) serverError = response.error.message;
 
-      if (data?.error) {
-        throw new Error(data.error);
-      }
+      if (serverError) throw new Error(serverError);
 
       setSent(true);
       toast({
@@ -41,7 +47,7 @@ export default function ForgotPasswordPage() {
       });
     } catch (error: any) {
       toast({
-        title: 'Lỗi',
+        title: 'Không gửi được email khôi phục',
         description: error.message || 'Không thể gửi email khôi phục',
         variant: 'destructive',
       });
