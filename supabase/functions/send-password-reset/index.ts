@@ -8,14 +8,93 @@ const corsHeaders = {
 };
 
 function getClientIP(req: Request): string {
-  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
-    || req.headers.get('cf-connecting-ip') 
-    || req.headers.get('x-real-ip') 
-    || '0.0.0.0'
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || req.headers.get('cf-connecting-ip')
+    || req.headers.get('x-real-ip')
+    || '0.0.0.0';
 }
 
 function validateEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 320
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 320;
+}
+
+interface SmtpConfig {
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  fromEmail: string;
+  fromName: string;
+  source: 'company' | 'global';
+  companyName?: string;
+}
+
+async function resolveSmtpConfig(
+  supabaseAdmin: any,
+  email: string
+): Promise<SmtpConfig | null> {
+  // 1. Find user by email
+  try {
+    const { data: usersList } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 200,
+    });
+    const user = usersList?.users?.find((u: any) => u.email?.toLowerCase() === email);
+    if (user) {
+      // 2. Find tenant by owner_id, then company
+      const { data: tenant } = await supabaseAdmin
+        .from('tenants')
+        .select('company_id')
+        .eq('owner_id', user.id)
+        .maybeSingle();
+
+      const companyId = tenant?.company_id || user.user_metadata?.company_id;
+
+      if (companyId) {
+        const { data: cfg } = await supabaseAdmin
+          .from('company_email_config')
+          .select('smtp_host, smtp_port, smtp_user, smtp_pass, from_email, from_name, is_enabled')
+          .eq('company_id', companyId)
+          .maybeSingle();
+
+        const { data: company } = await supabaseAdmin
+          .from('companies')
+          .select('name')
+          .eq('id', companyId)
+          .maybeSingle();
+
+        if (cfg?.is_enabled && cfg.smtp_host && cfg.smtp_user && cfg.smtp_pass) {
+          return {
+            host: cfg.smtp_host,
+            port: cfg.smtp_port || 465,
+            user: cfg.smtp_user,
+            password: cfg.smtp_pass,
+            fromEmail: cfg.from_email || cfg.smtp_user,
+            fromName: cfg.from_name || company?.name || 'VKHO',
+            source: 'company',
+            companyName: company?.name,
+          };
+        }
+      }
+    }
+  } catch (e) {
+    console.error('resolveSmtpConfig user lookup error:', e);
+  }
+
+  // Fallback: global SMTP
+  const smtpUser = (Deno.env.get('SMTP_USER') || '').trim();
+  const smtpPassword = Deno.env.get('SMTP_PASSWORD');
+  if (!smtpUser || !smtpPassword) return null;
+
+  return {
+    host: 'smtp.gmail.com',
+    port: 465,
+    user: smtpUser,
+    password: smtpPassword,
+    fromEmail: smtpUser,
+    fromName: 'VKHO',
+    source: 'global',
+  };
 }
 
 Deno.serve(async (req) => {
@@ -31,7 +110,7 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Rate limiting: 5 password resets per IP per 15 minutes
+    // Rate limit
     const clientIP = getClientIP(req);
     const { data: allowed } = await supabaseAdmin.rpc('check_rate_limit', {
       _function_name: 'send-password-reset',
@@ -39,7 +118,6 @@ Deno.serve(async (req) => {
       _max_requests: 5,
       _window_minutes: 15,
     });
-
     if (!allowed) {
       return new Response(
         JSON.stringify({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau 15 phút.' }),
@@ -58,29 +136,27 @@ Deno.serve(async (req) => {
       );
     }
 
-    const smtpUser = (Deno.env.get("SMTP_USER") || "").trim();
-    const smtpPassword = Deno.env.get("SMTP_PASSWORD");
-
-    if (!smtpUser || !smtpPassword) {
-      console.error("SMTP credentials not configured");
+    // Resolve SMTP (company-specific or global fallback)
+    const smtp = await resolveSmtpConfig(supabaseAdmin, email);
+    if (!smtp) {
+      console.error('No SMTP config available');
       return new Response(
         JSON.stringify({ error: "Cấu hình email chưa hoàn tất" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Generate password recovery link using Admin API
+    console.log(`Using ${smtp.source} SMTP (${smtp.host}) for ${email}`);
+
+    // Generate recovery link
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
-      email: email,
-      options: {
-        redirectTo: redirectUrl,
-      },
+      email,
+      options: { redirectTo: redirectUrl },
     });
 
     if (linkError) {
       console.error("Generate link error:", linkError);
-      // Don't reveal if email exists or not for security
       return new Response(
         JSON.stringify({ success: true, message: "Nếu email tồn tại, link khôi phục đã được gửi." }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -89,24 +165,22 @@ Deno.serve(async (req) => {
 
     const actionLink = linkData?.properties?.action_link;
     if (!actionLink) {
-      console.error("No action link generated");
       return new Response(
         JSON.stringify({ success: true, message: "Nếu email tồn tại, link khôi phục đã được gửi." }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log("Recovery link generated for:", email);
+    const brandName = smtp.companyName || smtp.fromName || 'VKHO';
 
-    // Send email via Gmail SMTP
     const client = new SMTPClient({
       connection: {
-        hostname: "smtp.gmail.com",
-        port: 465,
-        tls: true,
+        hostname: smtp.host,
+        port: smtp.port,
+        tls: smtp.port === 465,
         auth: {
-          username: smtpUser,
-          password: smtpPassword,
+          username: smtp.user,
+          password: smtp.password,
         },
       },
     });
@@ -114,8 +188,8 @@ Deno.serve(async (req) => {
     const emailHtml = [
       '<div style="font-family:Segoe UI,Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;">',
       '<div style="background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);padding:30px;text-align:center;border-radius:8px 8px 0 0;">',
-      '<h1 style="color:#ffffff;margin:0;font-size:28px;font-weight:700;">VKHO</h1>',
-      '<p style="color:#dbeafe;margin:8px 0 0 0;font-size:14px;">Hệ thống quản lý kho hàng</p>',
+      `<h1 style="color:#ffffff;margin:0;font-size:28px;font-weight:700;">${brandName}</h1>`,
+      '<p style="color:#dbeafe;margin:8px 0 0 0;font-size:14px;">Hệ thống quản lý</p>',
       '</div>',
       '<div style="padding:32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">',
       '<h2 style="color:#1f2937;font-size:20px;margin:0 0 16px 0;">Khôi phục mật khẩu</h2>',
@@ -132,29 +206,75 @@ Deno.serve(async (req) => {
       `<a href="${actionLink}" style="color:#2563eb;word-break:break-all;font-size:11px;">${actionLink}</a></p>`,
       '</div>',
       '<div style="text-align:center;padding:16px;color:#9ca3af;font-size:11px;">',
-      `© ${new Date().getFullYear()} VKHO - Hệ thống quản lý kho hàng</div>`,
+      `© ${new Date().getFullYear()} ${brandName}</div>`,
       '</div>',
     ].join('');
 
-    await client.send({
-      from: smtpUser,
-      to: email,
-      subject: "🔐 Khôi phục mật khẩu - VKHO",
-      html: emailHtml,
-    });
+    try {
+      await client.send({
+        from: `${smtp.fromName} <${smtp.fromEmail}>`,
+        to: email,
+        subject: `🔐 Khôi phục mật khẩu - ${brandName}`,
+        html: emailHtml,
+      });
+      await client.close();
+    } catch (sendErr: any) {
+      console.error(`SMTP send failed (${smtp.source}):`, sendErr?.message || sendErr);
+      try { await client.close(); } catch {}
 
-    await client.close();
+      // If company SMTP failed, try global as last resort
+      if (smtp.source === 'company') {
+        const fallbackUser = (Deno.env.get('SMTP_USER') || '').trim();
+        const fallbackPass = Deno.env.get('SMTP_PASSWORD');
+        if (fallbackUser && fallbackPass) {
+          try {
+            const fallback = new SMTPClient({
+              connection: {
+                hostname: 'smtp.gmail.com',
+                port: 465,
+                tls: true,
+                auth: { username: fallbackUser, password: fallbackPass },
+              },
+            });
+            await fallback.send({
+              from: fallbackUser,
+              to: email,
+              subject: `🔐 Khôi phục mật khẩu - ${brandName}`,
+              html: emailHtml,
+            });
+            await fallback.close();
+            console.log('Sent via global SMTP fallback');
+          } catch (fbErr: any) {
+            console.error('Fallback SMTP also failed:', fbErr?.message || fbErr);
+            return new Response(
+              JSON.stringify({ error: 'Không thể gửi email khôi phục. Vui lòng kiểm tra cấu hình SMTP.' }),
+              { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
+          }
+        } else {
+          return new Response(
+            JSON.stringify({ error: 'Không thể gửi email khôi phục. Vui lòng kiểm tra cấu hình SMTP của công ty.' }),
+            { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+      } else {
+        return new Response(
+          JSON.stringify({ error: 'Không thể gửi email khôi phục. Vui lòng kiểm tra cấu hình SMTP.' }),
+          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
 
-    console.log("Password reset email sent to:", email);
+    console.log(`Password reset email sent to ${email} via ${smtp.source}`);
 
     return new Response(
-      JSON.stringify({ success: true, message: "Email khôi phục mật khẩu đã được gửi." }),
+      JSON.stringify({ success: true, message: "Email khôi phục mật khẩu đã được gửi.", source: smtp.source }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
     console.error("Error in send-password-reset:", error);
     return new Response(
-      JSON.stringify({ error: "Không thể gửi email khôi phục" }),
+      JSON.stringify({ error: error?.message || "Không thể gửi email khôi phục" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
