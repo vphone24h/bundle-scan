@@ -522,7 +522,45 @@ export default function ImportNewPage() {
       })();
     }
   }, [location.state, searchProductsFromDB]);
-...
+
+  const handleSelectSuggestion = async (product: ProductSuggestion) => {
+    const hasVariants = !!product.group_id || !!product.variantLevels?.length;
+
+    setForm((prev) => ({
+      ...prev,
+      productName: product.name,
+      sku: hasVariants ? '' : (product.sku || ''),
+      categoryId: product.category_id || '',
+      importPrice: !hasVariants && product.import_price ? String(product.import_price) : '',
+      salePrice: !hasVariants && product.sale_price ? String(product.sale_price) : '',
+      unit: product.unit || 'cái',
+    }));
+    setSuggestions([]);
+    setProductFormMode('form');
+
+    if (product.variantLevels && product.variantLevels.length > 0) {
+      setVariantConfig({ enabled: true, levels: product.variantLevels });
+      setSelectedVariants({});
+    } else {
+      setVariantConfig({ enabled: false, levels: [] });
+      setSelectedVariants({});
+    }
+
+    const groupId = product.group_id;
+    (async () => {
+      try {
+        if (!product.unit) {
+          const { data: existingProduct } = await supabase
+            .from('products')
+            .select('unit')
+            .ilike('name', `${product.name}%`)
+            .not('unit', 'is', null)
+            .limit(1);
+          if (existingProduct?.[0]?.unit) {
+            setForm(prev => ({ ...prev, unit: existingProduct[0].unit }));
+          }
+        }
+      } catch {}
       if (groupId && (!product.variantLevels || product.variantLevels.length === 0)) {
         try {
           const { data: groups } = await supabase
