@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -96,7 +96,12 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
   const [editName, setEditName] = useState('');
   const [editSubdomain, setEditSubdomain] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [editPassword, setEditPassword] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
   
   // Filters
   const [statusFilter, setStatusFilter] = useState('_all_');
@@ -144,6 +149,17 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
     
     return matchSearch && matchStatus && matchUsage && matchWebsite && matchEinvoice && matchNeed && matchCompany;
   });
+
+  // Reset to page 1 when filters/search change
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, usageFilter, websiteFilter, einvoiceFilter, needFilter, companyFilter, filterByCompanyId]);
+
+  const totalRows = filteredTenants?.length || 0;
+  const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const paginatedTenants = filteredTenants?.slice(pageStart, pageStart + PAGE_SIZE);
 
   const handleAction = async () => {
     if (actionDialog === 'set_days') return; // handled separately
@@ -295,6 +311,7 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
     setEditName(tenant.name);
     setEditSubdomain(tenant.subdomain);
     setEditEmail(tenant.email || '');
+    setEditPassword('');
     setActionDialog('edit');
   };
 
@@ -380,8 +397,33 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
         };
       });
 
+      // Đổi mật khẩu (nếu có) — đồng bộ với hệ thống đăng nhập
+      if (editPassword.trim()) {
+        if (editPassword.length < 6) {
+          toast({ title: 'Lỗi', description: 'Mật khẩu phải có ít nhất 6 ký tự', variant: 'destructive' });
+          setSavingEdit(false);
+          return;
+        }
+        const { data: tenantOwner } = await supabase
+          .from('tenants')
+          .select('owner_id')
+          .eq('id', selectedTenant.id)
+          .maybeSingle();
+        const ownerId = tenantOwner?.owner_id;
+        if (!ownerId) {
+          toast({ title: 'Cảnh báo', description: 'Không tìm thấy chủ cửa hàng để đổi mật khẩu', variant: 'destructive' });
+        } else {
+          const { data: pwResult, error: pwError } = await supabase.functions.invoke('update-user', {
+            body: { userId: ownerId, password: editPassword },
+          });
+          if (pwError) throw new Error(pwError.message || 'Không thể đổi mật khẩu');
+          if (pwResult?.error) throw new Error(pwResult.error);
+        }
+      }
+
       toast({ title: 'Thành công', description: `Đã cập nhật thông tin ${editName}` });
       setActionDialog(null);
+      setEditPassword('');
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['all-tenants'], refetchType: 'all' }),
         queryClient.invalidateQueries({ queryKey: ['current-tenant-combined'], refetchType: 'all' }),
@@ -510,7 +552,8 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
       {/* Desktop Table */}
       <div className="hidden md:block">
         <Card>
-          <Table>
+          <div className="overflow-x-auto">
+          <Table className="min-w-[1400px]">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[40px]" onClick={(e) => e.stopPropagation()}>
@@ -542,7 +585,7 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTenants?.map((tenant) => {
+              {paginatedTenants?.map((tenant) => {
                 const remaining = calculateRemainingDays(tenant);
                 const status = statusConfig[tenant.status];
                 const enrichment = enrichmentMap?.get(tenant.id);
@@ -705,7 +748,25 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
               })}
             </TableBody>
           </Table>
+          </div>
         </Card>
+        {/* Pagination - Desktop */}
+        {totalRows > 0 && (
+          <div className="flex items-center justify-between mt-3 px-1 text-sm">
+            <span className="text-muted-foreground">
+              Hiển thị {pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, totalRows)} / {totalRows} doanh nghiệp
+            </span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>
+                Trước
+              </Button>
+              <span className="text-muted-foreground">Trang {currentPage}/{totalPages}</span>
+              <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>
+                Sau
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mobile Cards */}
@@ -723,7 +784,7 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
           />
           <span className="text-sm text-muted-foreground">Chọn tất cả</span>
         </div>
-        {filteredTenants?.map((tenant) => {
+        {paginatedTenants?.map((tenant) => {
           const remaining = calculateRemainingDays(tenant);
           const status = statusConfig[tenant.status];
           const enrichment = enrichmentMap?.get(tenant.id);
@@ -907,6 +968,17 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
             </Card>
           );
         })}
+        {/* Pagination - Mobile */}
+        {totalRows > 0 && (
+          <div className="flex items-center justify-between pt-2 px-1 text-xs">
+            <span className="text-muted-foreground">{pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, totalRows)}/{totalRows}</span>
+            <div className="flex items-center gap-1.5">
+              <Button variant="outline" size="sm" className="h-8 px-2" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>Trước</Button>
+              <span className="text-muted-foreground">{currentPage}/{totalPages}</span>
+              <Button variant="outline" size="sm" className="h-8 px-2" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>Sau</Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Action Dialogs */}
@@ -1075,6 +1147,17 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
                 onChange={(e) => setEditEmail(e.target.value)}
                 placeholder="email@example.com"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Mật khẩu mới (tùy chọn)</Label>
+              <Input
+                type="password"
+                value={editPassword}
+                onChange={(e) => setEditPassword(e.target.value)}
+                placeholder="Để trống nếu không đổi"
+                autoComplete="new-password"
+              />
+              <p className="text-xs text-muted-foreground">Tối thiểu 6 ký tự. Khi lưu sẽ đồng bộ với hệ thống đăng nhập.</p>
             </div>
           </div>
           <DialogFooter>
