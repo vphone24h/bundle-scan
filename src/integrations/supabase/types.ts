@@ -4032,6 +4032,36 @@ export type Database = {
         }
         Relationships: []
       }
+      global_smtp_config: {
+        Row: {
+          id: number
+          smtp_host: string
+          smtp_password: string | null
+          smtp_port: number
+          smtp_user: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: number
+          smtp_host?: string
+          smtp_password?: string | null
+          smtp_port?: number
+          smtp_user?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: number
+          smtp_host?: string
+          smtp_password?: string | null
+          smtp_port?: number
+          smtp_user?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       imei_histories: {
         Row: {
           action_type: string

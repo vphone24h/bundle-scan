@@ -120,7 +120,28 @@ async function resolveSmtpConfig(
     console.error('resolveSmtpConfig user lookup error:', e);
   }
 
-  // Priority 3: global SMTP fallback
+  // Priority 3: global SMTP fallback (DB first, then env)
+  try {
+    const { data: g } = await supabaseAdmin
+      .from('global_smtp_config')
+      .select('smtp_user, smtp_password, smtp_host, smtp_port')
+      .eq('id', 1)
+      .maybeSingle();
+    if (g?.smtp_user && g?.smtp_password) {
+      return {
+        host: g.smtp_host || 'smtp.gmail.com',
+        port: g.smtp_port || 465,
+        user: g.smtp_user.trim(),
+        password: g.smtp_password,
+        fromEmail: g.smtp_user.trim(),
+        fromName: 'VKHO',
+        source: 'global-db',
+      };
+    }
+  } catch (e) {
+    console.error('global_smtp_config lookup error:', e);
+  }
+
   const smtpUser = (Deno.env.get('SMTP_USER') || '').trim();
   const smtpPassword = Deno.env.get('SMTP_PASSWORD');
   if (!smtpUser || !smtpPassword) return null;
@@ -132,7 +153,7 @@ async function resolveSmtpConfig(
     password: smtpPassword,
     fromEmail: smtpUser,
     fromName: 'VKHO',
-    source: 'global',
+    source: 'global-env',
   };
 }
 
