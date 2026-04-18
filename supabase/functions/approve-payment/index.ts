@@ -221,16 +221,19 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check if caller is platform admin
+    // Check caller role: allow platform_admin OR company_admin (for own company tenants)
     const { data: platformUser } = await supabaseAdmin
       .from('platform_users')
-      .select('platform_role')
+      .select('platform_role, company_id')
       .eq('user_id', caller.id)
       .single()
 
-    if (!platformUser || platformUser.platform_role !== 'platform_admin') {
+    const isPlatformAdmin = platformUser?.platform_role === 'platform_admin'
+    const isCompanyAdmin = platformUser?.platform_role === 'company_admin'
+
+    if (!platformUser || (!isPlatformAdmin && !isCompanyAdmin)) {
       return new Response(
-        JSON.stringify({ error: 'Chỉ Admin nền tảng mới có quyền thực hiện' }),
+        JSON.stringify({ error: 'Bạn không có quyền thực hiện thao tác này' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -260,6 +263,17 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'Không tìm thấy yêu cầu thanh toán' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // Company admin can only handle payments of tenants in their own company
+    if (isCompanyAdmin && !isPlatformAdmin) {
+      const tenantCompanyId = (payment.tenants as any)?.company_id
+      if (!tenantCompanyId || tenantCompanyId !== platformUser.company_id) {
+        return new Response(
+          JSON.stringify({ error: 'Yêu cầu thanh toán này không thuộc công ty của bạn' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
     }
 
     if (payment.status !== 'pending') {
