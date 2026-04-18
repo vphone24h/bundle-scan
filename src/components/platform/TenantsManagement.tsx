@@ -748,7 +748,25 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
               })}
             </TableBody>
           </Table>
+          </div>
         </Card>
+        {/* Pagination - Desktop */}
+        {totalRows > 0 && (
+          <div className="flex items-center justify-between mt-3 px-1 text-sm">
+            <span className="text-muted-foreground">
+              Hiển thị {pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, totalRows)} / {totalRows} doanh nghiệp
+            </span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>
+                Trước
+              </Button>
+              <span className="text-muted-foreground">Trang {currentPage}/{totalPages}</span>
+              <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>
+                Sau
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mobile Cards */}
