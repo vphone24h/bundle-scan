@@ -18,6 +18,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [tenantInfo, setTenantInfo] = useState<{ subdomain: string } | null>(null);
+  const [fieldError, setFieldError] = useState<{ field: 'password' | 'email' | 'confirmPassword' | 'subdomain' | null; message: string }>({ field: null, message: '' });
   const company = useCompany();
   const { data: companySettings } = useCompanySettings();
   const companyLogo = companySettings?.logo_url;
@@ -42,6 +43,17 @@ export default function RegisterPage() {
       ...prev,
       [name]: name === 'subdomain' ? value.toLowerCase().replace(/[^a-z0-9-]/g, '') : value,
     }));
+    // Clear error on the field being edited
+    if (fieldError.field === name) {
+      setFieldError({ field: null, message: '' });
+    }
+  };
+
+  const focusField = (name: string) => {
+    setTimeout(() => {
+      const el = document.getElementById(name) as HTMLInputElement | null;
+      el?.focus();
+    }, 50);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
