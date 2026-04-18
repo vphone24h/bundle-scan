@@ -393,9 +393,12 @@ export function ProductDetailPage({
 
       {/* Main scrollable content */}
       <main className="flex-1 pb-20">
-        {/* Image gallery */}
+        {/* Desktop 2-column wrapper: image left, info right */}
+        <div className="lg:max-w-7xl lg:mx-auto lg:px-6 lg:pt-6 lg:grid lg:grid-cols-2 lg:gap-8">
+          {/* ===== LEFT: Image gallery ===== */}
+          <div className="lg:sticky lg:top-20 lg:self-start">
         {allImages.length > 0 ? (
-          <div className="relative bg-gray-50">
+          <div className="relative bg-gray-50 lg:rounded-xl lg:overflow-hidden lg:border">
             <img
               src={allImages[currentImageIndex]}
               alt={product.name}
@@ -420,10 +423,10 @@ export function ProductDetailPage({
                   ))}
                 </div>
                 {/* Thumbnail strip */}
-                <div className="flex gap-1.5 px-3 py-2 overflow-x-auto">
+                <div className="flex gap-1.5 px-3 py-2 overflow-x-auto lg:flex-wrap lg:overflow-visible lg:px-0 lg:pt-3">
                   {allImages.map((img, idx) => (
                     <button key={idx} onClick={() => setCurrentImageIndex(idx)}
-                      className={`h-12 w-12 rounded-md border-2 overflow-hidden flex-shrink-0 ${currentImageIndex === idx ? 'border-gray-800' : 'border-transparent opacity-60'}`}>
+                      className={`h-12 w-12 lg:h-16 lg:w-16 rounded-md border-2 overflow-hidden flex-shrink-0 ${currentImageIndex === idx ? 'border-gray-800' : 'border-transparent opacity-60'}`}>
                       <img src={img} alt="" className="h-full w-full object-cover" />
                     </button>
                   ))}
@@ -432,10 +435,14 @@ export function ProductDetailPage({
             )}
           </div>
         ) : (
-          <div className="w-full aspect-square bg-gray-50 flex items-center justify-center">
+          <div className="w-full aspect-square bg-gray-50 flex items-center justify-center lg:rounded-xl lg:border">
             <Package className="h-16 w-16 text-gray-300" />
           </div>
         )}
+          </div>
+
+          {/* ===== RIGHT: Product info, variants, price, warranty, promotion ===== */}
+          <div className="lg:min-w-0">
 
         <div className="px-4 py-4 space-y-4">
           {/* Title */}
