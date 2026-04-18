@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -149,6 +149,17 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
     
     return matchSearch && matchStatus && matchUsage && matchWebsite && matchEinvoice && matchNeed && matchCompany;
   });
+
+  // Reset to page 1 when filters/search change
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, usageFilter, websiteFilter, einvoiceFilter, needFilter, companyFilter, filterByCompanyId]);
+
+  const totalRows = filteredTenants?.length || 0;
+  const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const paginatedTenants = filteredTenants?.slice(pageStart, pageStart + PAGE_SIZE);
 
   const handleAction = async () => {
     if (actionDialog === 'set_days') return; // handled separately
