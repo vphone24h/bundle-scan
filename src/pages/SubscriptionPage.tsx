@@ -9,22 +9,23 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  useCurrentTenant, 
-  useSubscriptionPlans, 
+import {
+  useCurrentTenant,
+  useSubscriptionPlans,
   useCreatePaymentRequest,
   useCancelPaymentRequest,
   usePaymentRequests,
   useSubscriptionHistory,
-  calculateRemainingDays 
+  calculateRemainingDays
 } from '@/hooks/useTenant';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAdGateSettings } from '@/hooks/useAdGate';
-import { 
-  CreditCard, 
-  Check, 
-  Clock, 
-  History, 
+import {
+  CreditCard,
+  Check,
+  Clock,
+  History,
   Loader2,
   Copy,
   CheckCircle,
@@ -67,6 +68,7 @@ interface PaymentConfig {
 export default function SubscriptionPage() {
   const { t } = useTranslation();
   const { data: tenant } = useCurrentTenant();
+  const { data: companySettings } = useCompanySettings(tenant?.company_id, !!tenant?.company_id);
   const { data: plans } = useSubscriptionPlans();
   const { data: payments } = usePaymentRequests(tenant?.id);
   const { data: history } = useSubscriptionHistory(tenant?.id);
@@ -95,8 +97,6 @@ export default function SubscriptionPage() {
     queryKey: ['payment-config-scoped', tenant?.company_id ?? 'platform'],
     queryFn: async () => {
       let query = supabase.from('payment_config').select('config_key, config_value, company_id');
-      // Tenant thuộc công ty → chỉ lấy config của công ty đó (hotline, feedback, paypal...)
-      // Tenant không thuộc công ty → lấy config gốc của platform
       if (tenant?.company_id) {
         query = query.eq('company_id', tenant.company_id);
       } else {
@@ -117,14 +117,13 @@ export default function SubscriptionPage() {
         .select('*')
         .eq('is_active', true)
         .order('display_order');
-      
-      // Show company's bank accounts if tenant belongs to a company
+
       if (tenant?.company_id) {
         query = query.eq('company_id', tenant.company_id);
       } else {
         query = query.is('company_id', null);
       }
-      
+
       const { data, error } = await query;
       if (error) throw error;
       return data as BankAccount[];
@@ -132,11 +131,11 @@ export default function SubscriptionPage() {
     enabled: !!tenant,
   });
 
-  const hotline = configs?.find(c => c.config_key === 'hotline')?.config_value || '0909 123 456';
-  const companyName = configs?.find(c => c.config_key === 'company_name')?.config_value || 'Kho Hàng Pro';
+  const hotline = configs?.find(c => c.config_key === 'hotline')?.config_value || companySettings?.phone || '';
+  const companyName = configs?.find(c => c.config_key === 'company_name')?.config_value || companySettings?.display_name || 'Kho Hàng Pro';
   const feedbackZaloUrl = configs?.find(c => c.config_key === 'feedback_zalo_url')?.config_value || '';
   const feedbackFbUrl = configs?.find(c => c.config_key === 'feedback_fb_url')?.config_value || '';
-  const feedbackHotline = configs?.find(c => c.config_key === 'feedback_hotline')?.config_value || '';
+  const feedbackHotline = configs?.find(c => c.config_key === 'feedback_hotline')?.config_value || companySettings?.phone || '';
   const paypalEmail = configs?.find(c => c.config_key === 'paypal_email')?.config_value || '';
   const paypalNoteTemplate = configs?.find(c => c.config_key === 'paypal_note_template')?.config_value || 'MUA {GOI} - {SDT}';
   const usdExchangeRate = parseFloat(configs?.find(c => c.config_key === 'usd_exchange_rate')?.config_value || '25000');

@@ -269,12 +269,18 @@ export function useSubscriptionPlans(includeInactive = false) {
         return plans;
       }
 
-      // If tenant belongs to a company → ONLY show that company's plans (no platform fallback)
       if (scopedCompanyId) {
-        return plans.filter((p) => p.company_id === scopedCompanyId);
+        const companyPlans = plans.filter((p) => p.company_id === scopedCompanyId);
+
+        // Ưu tiên tuyệt đối gói của công ty nếu công ty đã cấu hình riêng
+        if (companyPlans.length > 0) {
+          return companyPlans;
+        }
+
+        // Nếu công ty chưa có gói riêng nào, giữ fallback để trang mua gói không bị trống hoàn toàn
+        return mergeScopedSubscriptionPlans(plans, scopedCompanyId);
       }
 
-      // Tenant không thuộc công ty nào → dùng plans gốc của platform
       return plans.filter((p) => !p.company_id);
     },
   });
