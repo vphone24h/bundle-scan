@@ -22,6 +22,7 @@ import { PlatformArticlesManagement } from '@/components/platform/PlatformArticl
 import { WelcomeEmailConfig } from '@/components/platform/WelcomeEmailConfig';
 import { PlatformAISettings } from '@/components/platform/PlatformAISettings';
 import { CompanyEmailConfigForm } from '@/components/platform/CompanyEmailConfigForm';
+import { GlobalSmtpConfigCard } from '@/components/platform/GlobalSmtpConfigCard';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Navigate } from 'react-router-dom';
 import { Loader2, Users, Megaphone, FileText, Mail, Globe, MailPlus, Bell, Zap, Database, RefreshCw, ArrowDownToLine, Building2, FileCode, HardDrive } from 'lucide-react';
@@ -295,6 +296,7 @@ export default function PlatformAdminPage() {
 
           <TabsContent value="config" className="mt-6">
             <div className="space-y-6">
+              {isPlatformAdmin && <GlobalSmtpConfigCard />}
               <CompanyEmailConfigForm />
               <PlatformAISettings />
               <PaymentConfigManagement />
