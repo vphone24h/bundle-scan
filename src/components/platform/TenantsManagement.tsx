@@ -393,7 +393,12 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
           setSavingEdit(false);
           return;
         }
-        const { data: ownerId } = await supabase.rpc('get_tenant_owner_id', { _tenant_id: selectedTenant.id });
+        const { data: tenantOwner } = await supabase
+          .from('tenants')
+          .select('owner_id')
+          .eq('id', selectedTenant.id)
+          .maybeSingle();
+        const ownerId = tenantOwner?.owner_id;
         if (!ownerId) {
           toast({ title: 'Cảnh báo', description: 'Không tìm thấy chủ cửa hàng để đổi mật khẩu', variant: 'destructive' });
         } else {
