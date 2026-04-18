@@ -326,6 +326,100 @@ export function RichTextEditor({
     return null;
   }, []);
 
+  // === MULTI-CELL SELECTION (quét nhiều ô như Word) ===
+  const selectedCellsRef = useRef<HTMLTableCellElement[]>([]);
+  const dragStartCellRef = useRef<HTMLTableCellElement | null>(null);
+
+  const clearCellSelection = useCallback(() => {
+    selectedCellsRef.current.forEach((c) => c.removeAttribute('data-rte-selected'));
+    selectedCellsRef.current = [];
+  }, []);
+
+  const getCellsInRange = useCallback((a: HTMLTableCellElement, b: HTMLTableCellElement): HTMLTableCellElement[] => {
+    const tableA = a.closest('table');
+    const tableB = b.closest('table');
+    if (!tableA || tableA !== tableB) return [a];
+    const rows = Array.from(tableA.querySelectorAll('tr')) as HTMLTableRowElement[];
+    const ra = rows.findIndex((r) => Array.from(r.cells).includes(a));
+    const rb = rows.findIndex((r) => Array.from(r.cells).includes(b));
+    const ca = Array.from((a.parentElement as HTMLTableRowElement).cells).indexOf(a);
+    const cb = Array.from((b.parentElement as HTMLTableRowElement).cells).indexOf(b);
+    const [r1, r2] = [Math.min(ra, rb), Math.max(ra, rb)];
+    const [c1, c2] = [Math.min(ca, cb), Math.max(ca, cb)];
+    const result: HTMLTableCellElement[] = [];
+    for (let i = r1; i <= r2; i++) {
+      for (let j = c1; j <= c2; j++) {
+        const cell = rows[i]?.cells[j];
+        if (cell) result.push(cell as HTMLTableCellElement);
+      }
+    }
+    return result;
+  }, []);
+
+  const applyCellSelection = useCallback((cells: HTMLTableCellElement[]) => {
+    clearCellSelection();
+    cells.forEach((c) => c.setAttribute('data-rte-selected', 'true'));
+    selectedCellsRef.current = cells;
+  }, [clearCellSelection]);
+
+  const handleEditorMouseDown = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const cell = target.closest?.('td, th') as HTMLTableCellElement | null;
+    if (!cell || !editorRef.current?.contains(cell)) {
+      clearCellSelection();
+      dragStartCellRef.current = null;
+      return;
+    }
+    dragStartCellRef.current = cell;
+    clearCellSelection();
+    const onMove = (ev: MouseEvent) => {
+      const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
+      const overCell = el?.closest?.('td, th') as HTMLTableCellElement | null;
+      if (!overCell || !dragStartCellRef.current) return;
+      if (overCell === dragStartCellRef.current) {
+        clearCellSelection();
+        return;
+      }
+      const cells = getCellsInRange(dragStartCellRef.current, overCell);
+      if (cells.length > 1) {
+        ev.preventDefault();
+        applyCellSelection(cells);
+        // Clear text selection để tránh nháy
+        window.getSelection()?.removeAllRanges();
+      }
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [applyCellSelection, clearCellSelection, getCellsInRange]);
+
+  // Tô màu nền cho các ô đang chọn (hoặc ô hiện tại nếu chưa quét)
+  const setCellsBackground = useCallback((color: string | null) => {
+    let cells = selectedCellsRef.current;
+    if (!cells.length) {
+      const c = getCurrentCell();
+      if (c) cells = [c];
+    }
+    if (!cells.length) {
+      toast({ title: 'Hãy đặt con trỏ vào ô hoặc quét chọn các ô trong bảng', variant: 'destructive' });
+      return;
+    }
+    cells.forEach((cell) => {
+      if (color) {
+        cell.style.backgroundColor = color;
+        cell.setAttribute('bgcolor', color);
+      } else {
+        cell.style.backgroundColor = '';
+        cell.removeAttribute('bgcolor');
+      }
+    });
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
+  }, [getCurrentCell, onChange]);
+
+
   const tableAction = useCallback((action: 'addRow' | 'delRow' | 'addCol' | 'delCol' | 'delTable') => {
     const cell = getCurrentCell();
     if (!cell) {
