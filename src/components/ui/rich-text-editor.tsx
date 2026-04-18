@@ -725,22 +725,63 @@ export function RichTextEditor({
 
         <div className="w-px h-5 bg-border mx-1" />
 
+        {/* Font family */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="px-2 py-1 rounded hover:bg-muted transition-colors text-xs flex items-center gap-1 border border-border min-w-[90px] justify-between"
+              title="Phông chữ"
+              onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
+            >
+              <span className="truncate">Phông</span>
+              <span className="opacity-60">▾</span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-44 p-1 max-h-72 overflow-y-auto" align="start">
+            {FONT_FAMILIES.map((f) => (
+              <button
+                key={f.label}
+                type="button"
+                className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-muted transition-colors"
+                style={{ fontFamily: f.value || undefined }}
+                onClick={() => {
+                  if (!f.value) {
+                    restoreSelection();
+                    execCommand('removeFormat');
+                  } else {
+                    applyInlineStyle('fontFamily', f.value);
+                  }
+                }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </PopoverContent>
+        </Popover>
+
         {/* Font size */}
         <Popover>
           <PopoverTrigger asChild>
-            <button type="button" className="p-1.5 rounded hover:bg-muted transition-colors" title="Cỡ chữ" onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}>
-              <Type className="h-4 w-4" />
+            <button
+              type="button"
+              className="px-2 py-1 rounded hover:bg-muted transition-colors text-xs flex items-center gap-1 border border-border min-w-[64px] justify-between"
+              title="Cỡ chữ"
+              onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
+            >
+              <Type className="h-3.5 w-3.5" />
+              <span className="opacity-60">▾</span>
             </button>
           </PopoverTrigger>
-          <PopoverContent className="w-32 p-1" align="start">
-            {FONT_SIZES.map((size) => (
+          <PopoverContent className="w-24 p-1 max-h-72 overflow-y-auto" align="start">
+            {FONT_SIZES_PX.map((px) => (
               <button
-                key={size.value}
+                key={px}
                 type="button"
                 className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-muted transition-colors"
-                onClick={() => { restoreSelection(); execCommand('fontSize', size.value); }}
+                onClick={() => applyInlineStyle('fontSize', `${px}px`)}
               >
-                {size.label}
+                {px}px
               </button>
             ))}
           </PopoverContent>
