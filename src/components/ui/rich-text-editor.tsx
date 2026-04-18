@@ -26,6 +26,9 @@ import {
   Type,
   Upload,
   Loader2,
+  Table as TableIcon,
+  Plus,
+  Minus,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -105,6 +108,8 @@ export function RichTextEditor({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [resizingImg, setResizingImg] = useState<HTMLImageElement | null>(null);
   const resizeStartRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [tableOpen, setTableOpen] = useState(false);
+  const [tableHover, setTableHover] = useState<{ rows: number; cols: number }>({ rows: 0, cols: 0 });
 
   const saveSelection = useCallback(() => {
     const sel = window.getSelection();
@@ -147,7 +152,10 @@ export function RichTextEditor({
       sel?.addRange(range);
     }
 
-    document.execCommand('insertHTML', false, DOMPurify.sanitize(html));
+    document.execCommand('insertHTML', false, DOMPurify.sanitize(html, {
+      ADD_TAGS: ['table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption', 'colgroup', 'col'],
+      ADD_ATTR: ['colspan', 'rowspan', 'align', 'valign', 'style', 'width', 'height', 'bgcolor', 'cellspacing', 'cellpadding', 'border'],
+    }));
     onChange(editor.innerHTML);
     // Save the new cursor position
     saveSelection();
@@ -171,7 +179,10 @@ export function RichTextEditor({
     const html = e.clipboardData.getData('text/html');
     if (html) {
       e.preventDefault();
-      const sanitizedHtml = DOMPurify.sanitize(html);
+      const sanitizedHtml = DOMPurify.sanitize(html, {
+        ADD_TAGS: ['table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption', 'colgroup', 'col'],
+        ADD_ATTR: ['colspan', 'rowspan', 'align', 'valign', 'style', 'width', 'height', 'bgcolor', 'cellspacing', 'cellpadding', 'border'],
+      });
       document.execCommand('insertHTML', false, sanitizedHtml);
       if (editorRef.current) {
         onChange(editorRef.current.innerHTML);
@@ -220,6 +231,86 @@ export function RichTextEditor({
       setImageOpen(false);
     }
   }, [imageUrl, insertImageHtml]);
+
+  // === TABLE INSERT & EDIT ===
+  const insertTable = useCallback((rows: number, cols: number) => {
+    if (rows < 1 || cols < 1) return;
+    const colWidth = Math.floor(100 / cols);
+    let html = '<table class="rte-table" style="border-collapse:collapse;width:100%;margin:8px 0;table-layout:fixed;"><tbody>';
+    for (let r = 0; r < rows; r++) {
+      html += '<tr>';
+      for (let c = 0; c < cols; c++) {
+        const tag = r === 0 ? 'th' : 'td';
+        const style = `border:1px solid #d1d5db;padding:6px 8px;${r === 0 ? 'background:#f3f4f6;font-weight:700;text-align:center;' : ''}width:${colWidth}%;vertical-align:middle;`;
+        html += `<${tag} style="${style}">${r === 0 ? `Cột ${c + 1}` : '&nbsp;'}</${tag}>`;
+      }
+      html += '</tr>';
+    }
+    html += '</tbody></table><p><br/></p>';
+    insertAtCursorOrEnd(html);
+    setTableOpen(false);
+    setTableHover({ rows: 0, cols: 0 });
+  }, [insertAtCursorOrEnd]);
+
+  const getCurrentCell = useCallback((): HTMLTableCellElement | null => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    let node: Node | null = sel.getRangeAt(0).startContainer;
+    while (node && node !== editorRef.current) {
+      if (node instanceof HTMLElement && (node.tagName === 'TD' || node.tagName === 'TH')) {
+        return node as HTMLTableCellElement;
+      }
+      node = node.parentNode;
+    }
+    return null;
+  }, []);
+
+  const tableAction = useCallback((action: 'addRow' | 'delRow' | 'addCol' | 'delCol' | 'delTable') => {
+    const cell = getCurrentCell();
+    if (!cell) {
+      toast({ title: 'Hãy đặt con trỏ vào ô trong bảng trước', variant: 'destructive' });
+      return;
+    }
+    const row = cell.parentElement as HTMLTableRowElement;
+    const table = cell.closest('table') as HTMLTableElement;
+    const tbody = table.querySelector('tbody') || table;
+    const cellIdx = Array.from(row.cells).indexOf(cell);
+
+    if (action === 'addRow') {
+      const newRow = document.createElement('tr');
+      for (let i = 0; i < row.cells.length; i++) {
+        const td = document.createElement('td');
+        td.style.cssText = 'border:1px solid #d1d5db;padding:6px 8px;vertical-align:middle;';
+        td.innerHTML = '&nbsp;';
+        newRow.appendChild(td);
+      }
+      row.after(newRow);
+    } else if (action === 'delRow') {
+      if (tbody.querySelectorAll('tr').length > 1) row.remove();
+    } else if (action === 'addCol') {
+      Array.from(tbody.querySelectorAll('tr')).forEach((tr, idx) => {
+        const isHead = (tr as HTMLTableRowElement).cells[0]?.tagName === 'TH';
+        const cellEl = document.createElement(isHead && idx === 0 ? 'th' : 'td');
+        cellEl.style.cssText = `border:1px solid #d1d5db;padding:6px 8px;vertical-align:middle;${isHead && idx === 0 ? 'background:#f3f4f6;font-weight:700;text-align:center;' : ''}`;
+        cellEl.innerHTML = isHead && idx === 0 ? 'Cột mới' : '&nbsp;';
+        const targetCell = (tr as HTMLTableRowElement).cells[cellIdx];
+        if (targetCell) targetCell.after(cellEl);
+        else (tr as HTMLTableRowElement).appendChild(cellEl);
+      });
+    } else if (action === 'delCol') {
+      const rows = tbody.querySelectorAll('tr');
+      if (rows[0] && (rows[0] as HTMLTableRowElement).cells.length > 1) {
+        rows.forEach(tr => {
+          const c = (tr as HTMLTableRowElement).cells[cellIdx];
+          if (c) c.remove();
+        });
+      }
+    } else if (action === 'delTable') {
+      table.remove();
+    }
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
+  }, [getCurrentCell, onChange]);
+
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -566,6 +657,65 @@ export function RichTextEditor({
 
         <div className="w-px h-5 bg-border mx-1" />
 
+        {/* Table picker */}
+        <Popover open={tableOpen} onOpenChange={(open) => { if (open) saveSelection(); setTableOpen(open); }}>
+          <PopoverTrigger asChild>
+            <button type="button" className="p-1.5 rounded hover:bg-muted transition-colors" title="Chèn bảng" onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}>
+              <TableIcon className="h-4 w-4" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-3" align="start">
+            <p className="text-xs font-medium mb-2">
+              Chèn bảng {tableHover.rows > 0 ? `${tableHover.rows} × ${tableHover.cols}` : '(rê chuột để chọn kích thước)'}
+            </p>
+            <div
+              className="grid gap-0.5"
+              style={{ gridTemplateColumns: 'repeat(8, 18px)' }}
+              onMouseLeave={() => setTableHover({ rows: 0, cols: 0 })}
+            >
+              {Array.from({ length: 8 * 8 }).map((_, i) => {
+                const r = Math.floor(i / 8) + 1;
+                const c = (i % 8) + 1;
+                const active = r <= tableHover.rows && c <= tableHover.cols;
+                return (
+                  <div
+                    key={i}
+                    onMouseEnter={() => setTableHover({ rows: r, cols: c })}
+                    onClick={() => insertTable(r, c)}
+                    className="w-[18px] h-[18px] border cursor-pointer rounded-sm"
+                    style={{
+                      background: active ? 'hsl(var(--primary))' : 'hsl(var(--muted))',
+                      borderColor: active ? 'hsl(var(--primary))' : 'hsl(var(--border))',
+                    }}
+                  />
+                );
+              })}
+            </div>
+            <div className="mt-3 pt-2 border-t space-y-1">
+              <p className="text-[11px] font-medium text-muted-foreground mb-1">Sửa bảng (đặt con trỏ vào ô)</p>
+              <div className="grid grid-cols-2 gap-1">
+                <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => tableAction('addRow')}>
+                  <Plus className="h-3 w-3 mr-1" />Thêm dòng
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => tableAction('delRow')}>
+                  <Minus className="h-3 w-3 mr-1" />Xóa dòng
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => tableAction('addCol')}>
+                  <Plus className="h-3 w-3 mr-1" />Thêm cột
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => tableAction('delCol')}>
+                  <Minus className="h-3 w-3 mr-1" />Xóa cột
+                </Button>
+              </div>
+              <Button size="sm" variant="outline" className="h-7 text-[11px] w-full text-destructive" onClick={() => tableAction('delTable')}>
+                Xóa cả bảng
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        <div className="w-px h-5 bg-border mx-1" />
+
         <ToolbarButton onClick={() => execCommand('undo')} title="Hoàn tác">
           <Undo className="h-4 w-4" />
         </ToolbarButton>
@@ -573,6 +723,7 @@ export function RichTextEditor({
           <Redo className="h-4 w-4" />
         </ToolbarButton>
       </div>
+
 
       {/* Editor area */}
       <div className="relative">
@@ -641,6 +792,28 @@ export function RichTextEditor({
         [contenteditable] a {
           color: hsl(var(--primary));
           text-decoration: underline;
+        }
+        [contenteditable] table {
+          border-collapse: collapse;
+          width: 100%;
+          margin: 8px 0;
+          table-layout: fixed;
+        }
+        [contenteditable] table td,
+        [contenteditable] table th {
+          border: 1px solid #d1d5db;
+          padding: 6px 8px;
+          vertical-align: middle;
+          word-wrap: break-word;
+          min-width: 40px;
+        }
+        [contenteditable] table th {
+          background: #f3f4f6;
+          font-weight: 700;
+          text-align: center;
+        }
+        [contenteditable] table tr:nth-child(even) td {
+          background: #fafafa;
         }
       `}</style>
     </div>
