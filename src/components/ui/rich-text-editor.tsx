@@ -1096,6 +1096,26 @@ export function RichTextEditor({
                 }}
               />
             ))}
+            {tableHandles.corner && (
+              <div
+                title="Kéo để đổi kích thước cả bảng"
+                onMouseDown={startTableResize}
+                onTouchStart={startTableResize}
+                style={{
+                  position: 'absolute',
+                  top: tableHandles.corner.top - 7,
+                  left: tableHandles.corner.left - 7,
+                  width: 14,
+                  height: 14,
+                  cursor: 'nwse-resize',
+                  background: 'hsl(var(--primary))',
+                  border: '2px solid white',
+                  borderRadius: 3,
+                  zIndex: 12,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                }}
+              />
+            )}
           </>
         )}
       </div>
