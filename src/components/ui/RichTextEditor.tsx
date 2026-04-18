@@ -162,26 +162,38 @@ export function RichTextEditor({
     return null;
   };
 
+  const ensureColgroup = (table: HTMLTableElement) => {
+    let colgroup = table.querySelector('colgroup');
+    const colCount = table.rows[0]?.cells.length || 0;
+    if (!colgroup) {
+      colgroup = document.createElement('colgroup');
+      const w = Math.floor(100 / Math.max(colCount, 1));
+      for (let i = 0; i < colCount; i++) {
+        const col = document.createElement('col');
+        col.style.width = `${w}%`;
+        colgroup.appendChild(col);
+      }
+      table.insertBefore(colgroup, table.firstChild);
+    }
+    return colgroup;
+  };
+
   const modifyTable = (action: 'addRow' | 'delRow' | 'addCol' | 'delCol' | 'delTable') => {
     const cell = findParentCell();
     if (!cell) return;
     const row = cell.parentElement as HTMLTableRowElement;
-    const table = cell.closest('table');
+    const table = cell.closest('table') as HTMLTableElement | null;
     if (!row || !table) return;
     const colIndex = cell.cellIndex;
 
     if (action === 'addRow') {
-      const newRow = row.cloneNode(true) as HTMLTableRowElement;
-      Array.from(newRow.cells).forEach(c => {
-        c.innerHTML = '&nbsp;';
-        if (c.tagName === 'TH') {
-          // convert TH to TD when adding below header
-          const td = document.createElement('td');
-          td.setAttribute('style', 'border:1px solid hsl(var(--border));padding:8px;min-width:60px');
-          td.innerHTML = '&nbsp;';
-          c.replaceWith(td);
-        }
-      });
+      const newRow = document.createElement('tr');
+      const colCount = row.cells.length;
+      for (let i = 0; i < colCount; i++) {
+        const td = document.createElement('td');
+        td.innerHTML = '&nbsp;';
+        newRow.appendChild(td);
+      }
       row.after(newRow);
     } else if (action === 'delRow') {
       if (table.rows.length > 1) row.remove();
@@ -189,24 +201,127 @@ export function RichTextEditor({
       Array.from(table.rows).forEach((r, idx) => {
         const tag = idx === 0 && r.cells[0]?.tagName === 'TH' ? 'th' : 'td';
         const newCell = document.createElement(tag);
-        newCell.setAttribute('style', tag === 'th'
-          ? 'border:1px solid hsl(var(--border));padding:8px;background:hsl(var(--muted));font-weight:600;text-align:left;min-width:60px'
-          : 'border:1px solid hsl(var(--border));padding:8px;min-width:60px');
         newCell.innerHTML = '&nbsp;';
         const ref = r.cells[colIndex];
         if (ref?.nextSibling) r.insertBefore(newCell, ref.nextSibling);
         else r.appendChild(newCell);
       });
+      const colgroup = ensureColgroup(table);
+      const newCol = document.createElement('col');
+      const total = table.rows[0].cells.length;
+      newCol.style.width = `${Math.floor(100 / total)}%`;
+      colgroup.appendChild(newCol);
     } else if (action === 'delCol') {
       if (table.rows[0]?.cells.length > 1) {
         Array.from(table.rows).forEach(r => { if (r.cells[colIndex]) r.deleteCell(colIndex); });
+        const cols = table.querySelectorAll('colgroup col');
+        if (cols[colIndex]) cols[colIndex].remove();
       }
     } else if (action === 'delTable') {
       table.remove();
     }
+    setTimeout(attachResizeHandles, 0);
     isInternalUpdate.current = true;
     onChange(editorRef.current?.innerHTML || '');
   };
+
+  // ===== Resize handles for table columns & rows (Word-like drag) =====
+  const attachResizeHandles = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const tables = editor.querySelectorAll('table.rte-table');
+    tables.forEach((tbl) => {
+      const table = tbl as HTMLTableElement;
+      ensureColgroup(table);
+      const firstRow = table.rows[0];
+      if (firstRow) {
+        Array.from(firstRow.cells).forEach((cell, idx) => {
+          if (idx === firstRow.cells.length - 1) return;
+          if (cell.querySelector('.rte-col-resize')) return;
+          const handle = document.createElement('div');
+          handle.className = 'rte-col-resize';
+          handle.contentEditable = 'false';
+          cell.appendChild(handle);
+        });
+      }
+      Array.from(table.rows).forEach((row, rIdx) => {
+        if (rIdx === table.rows.length - 1) return;
+        const firstCell = row.cells[0];
+        if (!firstCell || firstCell.querySelector('.rte-row-resize')) return;
+        const handle = document.createElement('div');
+        handle.className = 'rte-row-resize';
+        handle.contentEditable = 'false';
+        firstCell.appendChild(handle);
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(attachResizeHandles, 50);
+    return () => clearTimeout(t);
+  }, [value, attachResizeHandles]);
+
+  const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const isCol = target.classList.contains('rte-col-resize');
+    const isRow = target.classList.contains('rte-row-resize');
+    if (!isCol && !isRow) return;
+    e.preventDefault();
+    e.stopPropagation();
+    target.classList.add('active');
+
+    const cell = target.closest('th, td') as HTMLTableCellElement | null;
+    const table = target.closest('table') as HTMLTableElement | null;
+    if (!cell || !table) return;
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+
+    if (isCol) {
+      const colIndex = cell.cellIndex;
+      const cols = table.querySelectorAll('colgroup col');
+      const colEl = cols[colIndex] as HTMLElement | undefined;
+      const nextColEl = cols[colIndex + 1] as HTMLElement | undefined;
+      const tableWidth = table.offsetWidth;
+      const startWidth = cell.offsetWidth;
+      const nextCell = table.rows[0].cells[colIndex + 1];
+      const nextStartWidth = nextCell?.offsetWidth || 0;
+
+      const onMove = (ev: MouseEvent) => {
+        const dx = ev.clientX - startX;
+        const newW = Math.max(40, startWidth + dx);
+        const newNextW = Math.max(40, nextStartWidth - dx);
+        if (colEl) colEl.style.width = `${(newW / tableWidth) * 100}%`;
+        if (nextColEl) nextColEl.style.width = `${(newNextW / tableWidth) * 100}%`;
+      };
+      const onUp = () => {
+        target.classList.remove('active');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        isInternalUpdate.current = true;
+        onChange(editorRef.current?.innerHTML || '');
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    } else {
+      const row = cell.parentElement as HTMLTableRowElement;
+      const startHeight = row.offsetHeight;
+      const onMove = (ev: MouseEvent) => {
+        const dy = ev.clientY - startY;
+        const newH = Math.max(24, startHeight + dy);
+        row.style.height = `${newH}px`;
+      };
+      const onUp = () => {
+        target.classList.remove('active');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        isInternalUpdate.current = true;
+        onChange(editorRef.current?.innerHTML || '');
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    }
+  }, [onChange]);
 
   const handleInsertVideo = () => {
     if (videoUrl.trim()) {
