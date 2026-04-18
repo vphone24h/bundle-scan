@@ -144,10 +144,11 @@ export function CreateProductTemplateDialog({ open, onOpenChange, initialData }:
       // If variants are enabled, create multiple template products
       if (variantConfig.enabled && variantConfig.levels.some(l => l.values.length > 0)) {
         const activeLevels = variantConfig.levels.filter(l => l.values.length > 0);
-        
-        // Save product group
+
+        // Save product group and capture its id so products are linked correctly
+        let groupId: string | null = null;
         try {
-          await createProductGroup.mutateAsync({
+          const created = await createProductGroup.mutateAsync({
             name: form.productName,
             sku_prefix: form.sku || undefined,
             category_id: form.categoryId || null,
@@ -158,7 +159,20 @@ export function CreateProductTemplateDialog({ open, onOpenChange, initialData }:
             variant_2_values: activeLevels[1]?.values || [],
             variant_3_values: activeLevels[2]?.values || [],
           });
+          groupId = (created as any)?.id || null;
         } catch {}
+
+        // Fallback: lookup existing group by name if mutation didn't return id
+        if (!groupId) {
+          const { data: existing } = await supabase
+            .from('product_groups')
+            .select('id')
+            .eq('tenant_id', tenantId)
+            .ilike('name', form.productName.trim())
+            .limit(1)
+            .maybeSingle();
+          groupId = existing?.id || null;
+        }
 
         // Generate all variant combinations
         const combinations = generateVariantCombinations(activeLevels);
@@ -177,6 +191,7 @@ export function CreateProductTemplateDialog({ open, onOpenChange, initialData }:
             status: 'template' as const,
             quantity: 0,
             total_import_cost: 0,
+            group_id: groupId,
             variant_1: combo[0] || null,
             variant_2: combo[1] || null,
             variant_3: combo[2] || null,
