@@ -176,7 +176,10 @@ export function RichTextEditor({
     const html = e.clipboardData.getData('text/html');
     if (html) {
       e.preventDefault();
-      const sanitizedHtml = DOMPurify.sanitize(html);
+      const sanitizedHtml = DOMPurify.sanitize(html, {
+        ADD_TAGS: ['table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption', 'colgroup', 'col'],
+        ADD_ATTR: ['colspan', 'rowspan', 'align', 'valign', 'style', 'width', 'height', 'bgcolor', 'cellspacing', 'cellpadding', 'border'],
+      });
       document.execCommand('insertHTML', false, sanitizedHtml);
       if (editorRef.current) {
         onChange(editorRef.current.innerHTML);
