@@ -968,6 +968,17 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
             </Card>
           );
         })}
+        {/* Pagination - Mobile */}
+        {totalRows > 0 && (
+          <div className="flex items-center justify-between pt-2 px-1 text-xs">
+            <span className="text-muted-foreground">{pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, totalRows)}/{totalRows}</span>
+            <div className="flex items-center gap-1.5">
+              <Button variant="outline" size="sm" className="h-8 px-2" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>Trước</Button>
+              <span className="text-muted-foreground">{currentPage}/{totalPages}</span>
+              <Button variant="outline" size="sm" className="h-8 px-2" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>Sau</Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Action Dialogs */}
