@@ -8833,6 +8833,7 @@ export type Database = {
           warranty_description: string | null
           warranty_hotline: string | null
           website_template: string | null
+          working_hours: string | null
           zalo_access_token: string | null
           zalo_app_id: string | null
           zalo_app_secret: string | null
@@ -8924,6 +8925,7 @@ export type Database = {
           warranty_description?: string | null
           warranty_hotline?: string | null
           website_template?: string | null
+          working_hours?: string | null
           zalo_access_token?: string | null
           zalo_app_id?: string | null
           zalo_app_secret?: string | null
@@ -9015,6 +9017,7 @@ export type Database = {
           warranty_description?: string | null
           warranty_hotline?: string | null
           website_template?: string | null
+          working_hours?: string | null
           zalo_access_token?: string | null
           zalo_app_id?: string | null
           zalo_app_secret?: string | null
