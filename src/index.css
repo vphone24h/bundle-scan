@@ -381,3 +381,62 @@ html, body, #root {
   border-color: hsl(var(--destructive)) !important;
   color: hsl(var(--destructive)) !important;
 }
+
+/* ===== Rich Text Editor Tables (đồng bộ editor & website) ===== */
+.rte-table {
+  border-collapse: collapse;
+  margin: 12px 0;
+  border: 1px solid hsl(var(--border));
+  table-layout: fixed;
+  max-width: 100%;
+  background: hsl(var(--card));
+}
+.rte-table th,
+.rte-table td {
+  border: 1px solid hsl(var(--border));
+  padding: 8px 10px;
+  vertical-align: top;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  position: relative;
+}
+.rte-table th {
+  background: hsl(var(--muted));
+  font-weight: 600;
+  text-align: left;
+  color: hsl(var(--foreground));
+}
+.rte-table tbody tr:nth-child(even) td {
+  background: hsl(var(--muted) / 0.3);
+}
+/* Resize handles - ONLY shown inside the editor */
+[contenteditable="true"] .rte-table .rte-col-resize {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 10;
+  background: transparent;
+}
+[contenteditable="true"] .rte-table .rte-col-resize:hover,
+[contenteditable="true"] .rte-table .rte-col-resize.active {
+  background: hsl(var(--primary) / 0.4);
+}
+[contenteditable="true"] .rte-table .rte-row-resize {
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 6px;
+  cursor: row-resize;
+  user-select: none;
+  z-index: 10;
+  background: transparent;
+}
+[contenteditable="true"] .rte-table .rte-row-resize:hover,
+[contenteditable="true"] .rte-table .rte-row-resize.active {
+  background: hsl(var(--primary) / 0.4);
+}
