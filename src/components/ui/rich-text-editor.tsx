@@ -964,8 +964,8 @@ export function RichTextEditor({
           onPaste={handlePaste}
           onBlur={saveSelection}
           onClick={handleEditorClick}
-          className="p-3 text-sm focus:outline-none overflow-auto prose prose-sm max-w-none"
-          style={{ minHeight }}
+          className="rte-editor-area p-3 text-sm focus:outline-none overflow-auto prose prose-sm max-w-none"
+          style={{ minHeight, resize: 'both' as any, maxHeight: '80vh' }}
           data-placeholder={placeholder}
           suppressContentEditableWarning
         />
