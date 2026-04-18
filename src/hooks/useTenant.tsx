@@ -345,22 +345,35 @@ export function useDeleteSubscriptionPlan() {
   });
 }
 
-// Get payment requests (for platform admin - all, for tenant - own)
+// Get payment requests
+// - If tenantId passed: own payments (used by tenant subscription page)
+// - Else, scoped by admin role:
+//   - platform_admin: only payments from tenants with NO company (root/standalone)
+//   - company_admin: only payments from tenants belonging to their company
 export function usePaymentRequests(tenantId?: string) {
+  const { companyId, isPlatformAdmin, isCompanyAdmin, isLoading: adminLoading } = useAdminCompanyId();
+
   return useQuery({
-    queryKey: ['payment-requests', tenantId],
+    queryKey: ['payment-requests', tenantId, companyId, isPlatformAdmin, isCompanyAdmin],
+    enabled: !!tenantId || !adminLoading,
     queryFn: async () => {
       let query = supabase
         .from('payment_requests')
         .select(`
           *,
-          tenants (*),
+          tenants!inner (*),
           subscription_plans (*)
         `)
         .order('requested_at', { ascending: false });
 
       if (tenantId) {
         query = query.eq('tenant_id', tenantId);
+      } else if (isCompanyAdmin && companyId) {
+        query = query.eq('tenants.company_id', companyId);
+      } else if (isPlatformAdmin) {
+        query = query.is('tenants.company_id', null);
+      } else {
+        return [] as PaymentRequest[];
       }
 
       const { data, error } = await query;
