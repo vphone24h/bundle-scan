@@ -247,8 +247,6 @@ Deno.serve(async (req) => {
     };
 
     const subjectText = `Khôi phục mật khẩu - ${brandName}`;
-    const encodedSubject = encodeHeader(subjectText);
-    const encodedFromName = encodeHeader(smtp.fromName);
 
     const client = new SMTPClient({
       connection: {
@@ -289,9 +287,9 @@ Deno.serve(async (req) => {
 
     try {
       await client.send({
-        from: `${encodedFromName} <${smtp.fromEmail}>`,
+        from: `${smtp.fromName} <${smtp.fromEmail}>`,
         to: email,
-        subject: encodedSubject,
+        subject: subjectText,
         content: 'Vui lòng mở email bằng ứng dụng hỗ trợ HTML để xem nội dung khôi phục mật khẩu.',
         html: emailHtml,
       });
