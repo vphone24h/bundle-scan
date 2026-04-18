@@ -250,9 +250,10 @@ Deno.serve(async (req) => {
               },
             });
             await fallback.send({
-              from: fallbackUser,
+              from: `${encodeHeader('VKHO')} <${fallbackUser}>`,
               to: email,
-              subject: `🔐 Khôi phục mật khẩu - ${brandName}`,
+              subject: encodeHeader('Khôi phục mật khẩu - VKHO'),
+              content: 'Vui lòng mở email bằng ứng dụng hỗ trợ HTML.',
               html: emailHtml,
             });
             await fallback.close();
