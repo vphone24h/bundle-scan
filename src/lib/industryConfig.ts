@@ -427,6 +427,31 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     brandInspiration: 'Apple.com',
   },
 
+  // === PRICE LIST (taoquangsang.vn style – báo giá list) ===
+  price_list: {
+    id: 'price_list',
+    heroTitle: 'BẢNG GIÁ CẬP NHẬT LIÊN TỤC',
+    heroSubtitle: 'Giá sỉ – Giá lẻ chốt nhanh, hàng có sẵn',
+    heroCta: 'Liên hệ ngay',
+    heroGradient: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
+    accentColor: '#1e3a8a',
+    trustBadges: [
+      { icon: 'Shield', title: 'Hàng chính hãng', desc: 'Nguyên seal – Có VAT' },
+      { icon: 'Award', title: 'Bảo hành Apple VN', desc: 'Tối đa 12 tháng' },
+      { icon: 'Truck', title: 'Ship COD toàn quốc', desc: 'Nội thành 2h' },
+      { icon: 'Phone', title: 'Hỗ trợ 8h–21h', desc: 'Tư vấn nhiệt tình' },
+    ],
+    categorySectionTitle: 'Danh mục',
+    articleSectionTitle: 'BẢNG GIÁ CẬP NHẬT',
+    productSectionTitle: 'Sản phẩm nổi bật',
+    productSectionSubtitle: 'Giá tốt nhất hôm nay',
+    emptyProductText: 'Chưa có bảng giá nào – vào Tin tức để tạo bài viết bảng giá',
+    navLabels: { home: 'Trang chủ', products: 'Sản phẩm', news: 'Bảng giá', warranty: 'Bảo hành' },
+    stickyBarLabels: { chat: 'Chat Zalo', call: 'Gọi ngay' },
+    fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    brandInspiration: 'taoquangsang.vn',
+  },
+
   // === TECHNOLOGY ===
   phone_store: {
     id: 'phone_store',
