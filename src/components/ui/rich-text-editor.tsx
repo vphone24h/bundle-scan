@@ -686,7 +686,7 @@ export function RichTextEditor({
   }, [resizingImg]);
 
   return (
-    <div className={cn('border rounded-md overflow-hidden', className)}>
+    <div className={cn('border rounded-md overflow-visible', className)}>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-0.5 p-1.5 border-b bg-muted/30">
         <ToolbarButton onClick={() => { saveSelection(); execCommand('bold'); }} title="In đậm">
