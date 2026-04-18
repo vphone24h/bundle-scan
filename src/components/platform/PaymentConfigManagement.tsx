@@ -195,10 +195,32 @@ export function PaymentConfigManagement() {
       ];
 
       for (const update of updates) {
-        const { error } = await supabase
+        let existingQuery = supabase
           .from('payment_config')
-          .upsert({ ...update, company_id: companyId }, { onConflict: 'config_key' });
-        if (error) throw error;
+          .select('id')
+          .eq('config_key', update.config_key);
+
+        if (companyId) {
+          existingQuery = existingQuery.eq('company_id', companyId);
+        } else {
+          existingQuery = existingQuery.is('company_id', null);
+        }
+
+        const { data: existing, error: existingError } = await existingQuery.maybeSingle();
+        if (existingError) throw existingError;
+
+        if (existing?.id) {
+          const { error } = await supabase
+            .from('payment_config')
+            .update({ config_value: update.config_value })
+            .eq('id', existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from('payment_config')
+            .insert({ ...update, company_id: companyId ?? null });
+          if (error) throw error;
+        }
       }
 
       toast({
