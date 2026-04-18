@@ -110,6 +110,11 @@ export function RichTextEditor({
   const resizeStartRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
   const [tableOpen, setTableOpen] = useState(false);
   const [tableHover, setTableHover] = useState<{ rows: number; cols: number }>({ rows: 0, cols: 0 });
+  const [activeTable, setActiveTable] = useState<HTMLTableElement | null>(null);
+  const [tableHandles, setTableHandles] = useState<{
+    cols: { left: number; top: number; height: number; index: number }[];
+    rows: { left: number; top: number; width: number; index: number }[];
+  } | null>(null);
 
   const saveSelection = useCallback(() => {
     const sel = window.getSelection();
