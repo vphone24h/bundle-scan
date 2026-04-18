@@ -784,7 +784,7 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
           />
           <span className="text-sm text-muted-foreground">Chọn tất cả</span>
         </div>
-        {filteredTenants?.map((tenant) => {
+        {paginatedTenants?.map((tenant) => {
           const remaining = calculateRemainingDays(tenant);
           const status = statusConfig[tenant.status];
           const enrichment = enrichmentMap?.get(tenant.id);
