@@ -444,7 +444,7 @@ export function ProductDetailPage({
           {/* ===== RIGHT: Product info, variants, price, warranty, promotion ===== */}
           <div className="lg:min-w-0">
 
-        <div className="px-4 py-4 space-y-4">
+        <div className="px-4 py-4 space-y-4 lg:px-0 lg:pt-0">
           {/* Title */}
           <h2 className="text-xl font-bold leading-tight">{product.name}</h2>
           {product.is_sold_out && (
