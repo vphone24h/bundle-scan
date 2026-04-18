@@ -296,7 +296,7 @@ export function RichTextEditor({
       Array.from(tbody.querySelectorAll('tr')).forEach((tr, idx) => {
         const isHead = (tr as HTMLTableRowElement).cells[0]?.tagName === 'TH';
         const cellEl = document.createElement(isHead && idx === 0 ? 'th' : 'td');
-        cellEl.style.cssText = `border:1px solid #d1d5db;padding:6px 8px;vertical-align:middle;${isHead && idx === 0 ? 'background:#f3f4f6;font-weight:700;text-align:center;' : ''}`;
+        cellEl.style.cssText = `border:1px solid #d1d5db;padding:6px 8px;vertical-align:middle;word-wrap:break-word;overflow-wrap:break-word;word-break:break-word;white-space:normal;${isHead && idx === 0 ? 'background:#f3f4f6;font-weight:700;text-align:center;' : ''}`;
         cellEl.innerHTML = isHead && idx === 0 ? 'Cột mới' : '&nbsp;';
         const targetCell = (tr as HTMLTableRowElement).cells[cellIdx];
         if (targetCell) targetCell.after(cellEl);
