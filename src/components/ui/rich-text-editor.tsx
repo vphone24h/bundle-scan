@@ -568,7 +568,36 @@ export function RichTextEditor({
     document.addEventListener('touchmove', onMove as any, { passive: false });
     document.addEventListener('touchend', onUp);
   }, [activeTable, onChange]);
-
+  // Resize toàn bộ bảng: kéo góc dưới-phải
+  const startTableResize = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!activeTable) return;
+    const startX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const startW = activeTable.offsetWidth;
+    const startH = activeTable.offsetHeight;
+    activeTable.style.tableLayout = 'fixed';
+    const onMove = (ev: MouseEvent | TouchEvent) => {
+      const cx = 'touches' in ev ? (ev as TouchEvent).touches[0].clientX : (ev as MouseEvent).clientX;
+      const cy = 'touches' in ev ? (ev as TouchEvent).touches[0].clientY : (ev as MouseEvent).clientY;
+      const newW = Math.max(80, startW + (cx - startX));
+      const newH = Math.max(40, startH + (cy - startY));
+      activeTable.style.width = `${newW}px`;
+      activeTable.style.height = `${newH}px`;
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove as any);
+      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onMove as any);
+      document.removeEventListener('touchend', onUp);
+      if (editorRef.current) onChange(editorRef.current.innerHTML);
+    };
+    document.addEventListener('mousemove', onMove as any);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove as any, { passive: false });
+    document.addEventListener('touchend', onUp);
+  }, [activeTable, onChange]);
 
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
