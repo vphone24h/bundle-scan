@@ -16,8 +16,10 @@ import { InstantWarrantyApp } from '@/components/landing/InstantWarrantyApp';
 // Lazy load heavy templates - they import DOMPurify and many components
 const universalImport = () => import('@/components/website-templates/UniversalStoreTemplate');
 const appleImport = () => import('@/components/website-templates/AppleStyleLandingTemplate');
+const priceListImport = () => import('@/components/website-templates/PriceListTemplate');
 const UniversalStoreTemplate = lazy(universalImport);
 const AppleStyleLandingTemplate = lazy(appleImport);
+const PriceListTemplate = lazy(priceListImport);
 
 // Eagerly preload the most common template IMMEDIATELY for all store pages.
 // This avoids a second skeleton flash from <Suspense> after data resolves.
@@ -741,6 +743,29 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
       <LandingCartProvider>
         <Suspense fallback={templateFallback}>
           <AppleStyleLandingTemplate
+            settings={settings}
+            tenant={tenant}
+            tenantId={tenantId}
+            storeId={storeId}
+            branches={branches}
+            productsData={productsData}
+            articlesData={articlesData}
+            searchParams={searchParams}
+            setSearchParams={setSearchParams}
+            queryClient={queryClient}
+            onRequireCatalogData={ensureCatalogDataLoaded}
+          />
+        </Suspense>
+      </LandingCartProvider>
+    );
+  }
+
+  // Price List template – standalone (taoquangsang.vn style)
+  if (template === 'price_list') {
+    return (
+      <LandingCartProvider>
+        <Suspense fallback={templateFallback}>
+          <PriceListTemplate
             settings={settings}
             tenant={tenant}
             tenantId={tenantId}
