@@ -909,6 +909,50 @@ export function RichTextEditor({
             />
           </div>
         )}
+
+        {/* Table column/row resize handles */}
+        {activeTable && tableHandles && (
+          <>
+            {tableHandles.cols.map((c) => (
+              <div
+                key={`col-${c.index}`}
+                title="Kéo để đổi rộng cột"
+                onMouseDown={(e) => startColResize(e, c.index)}
+                onTouchStart={(e) => startColResize(e, c.index)}
+                style={{
+                  position: 'absolute',
+                  top: c.top,
+                  left: c.left - 3,
+                  width: 6,
+                  height: c.height,
+                  cursor: 'col-resize',
+                  background: 'hsl(var(--primary) / 0.0)',
+                  borderLeft: '2px solid hsl(var(--primary) / 0.6)',
+                  zIndex: 11,
+                }}
+              />
+            ))}
+            {tableHandles.rows.map((r) => (
+              <div
+                key={`row-${r.index}`}
+                title="Kéo để đổi cao hàng"
+                onMouseDown={(e) => startRowResize(e, r.index)}
+                onTouchStart={(e) => startRowResize(e, r.index)}
+                style={{
+                  position: 'absolute',
+                  top: r.top - 3,
+                  left: r.left,
+                  width: r.width,
+                  height: 6,
+                  cursor: 'row-resize',
+                  background: 'hsl(var(--primary) / 0.0)',
+                  borderTop: '2px solid hsl(var(--primary) / 0.6)',
+                  zIndex: 11,
+                }}
+              />
+            ))}
+          </>
+        )}
       </div>
 
       <style>{`
