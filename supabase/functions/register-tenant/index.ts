@@ -524,16 +524,27 @@ Deno.serve(async (req) => {
 
     if (createError) {
       console.error('Create user error:', createError)
-      let errorMessage = createError.message
-      if (createError.message.includes('already been registered') || createError.message.includes('already exists')) {
-        errorMessage = 'Email này đã được sử dụng'
-      } else if (createError.message.includes('invalid email')) {
-        errorMessage = 'Định dạng email không hợp lệ'
-      } else if (createError.message.includes('password')) {
-        errorMessage = 'Mật khẩu phải có ít nhất 6 ký tự'
+      const rawMsg = createError.message || ''
+      const code = (createError as any)?.code || ''
+      let errorMessage = rawMsg
+      let errorField: 'password' | 'email' | null = null
+
+      if (/pwned|leaked|known to be|weak password/i.test(rawMsg) || code === 'weak_password') {
+        errorMessage = 'Mật khẩu này đã bị lộ trong các vụ rò rỉ dữ liệu hoặc quá yếu. Vui lòng chọn mật khẩu mạnh hơn (kết hợp chữ hoa, chữ thường, số và ký tự đặc biệt, tránh "123456", "password"...).'
+        errorField = 'password'
+      } else if (/already (been )?(registered|exists)|duplicate/i.test(rawMsg)) {
+        errorMessage = 'Email này đã được sử dụng bởi tài khoản khác.'
+        errorField = 'email'
+      } else if (/invalid email/i.test(rawMsg)) {
+        errorMessage = 'Định dạng email không hợp lệ.'
+        errorField = 'email'
+      } else if (/password.*(short|length|at least|6)/i.test(rawMsg)) {
+        errorMessage = 'Mật khẩu quá ngắn. Tối thiểu 6 ký tự.'
+        errorField = 'password'
       }
+
       return new Response(
-        JSON.stringify({ error: errorMessage }),
+        JSON.stringify({ error: errorMessage, field: errorField }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
