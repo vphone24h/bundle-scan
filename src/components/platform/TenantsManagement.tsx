@@ -386,8 +386,28 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
         };
       });
 
+      // Đổi mật khẩu (nếu có) — đồng bộ với hệ thống đăng nhập
+      if (editPassword.trim()) {
+        if (editPassword.length < 6) {
+          toast({ title: 'Lỗi', description: 'Mật khẩu phải có ít nhất 6 ký tự', variant: 'destructive' });
+          setSavingEdit(false);
+          return;
+        }
+        const { data: ownerId } = await supabase.rpc('get_tenant_owner_id', { _tenant_id: selectedTenant.id });
+        if (!ownerId) {
+          toast({ title: 'Cảnh báo', description: 'Không tìm thấy chủ cửa hàng để đổi mật khẩu', variant: 'destructive' });
+        } else {
+          const { data: pwResult, error: pwError } = await supabase.functions.invoke('update-user', {
+            body: { userId: ownerId, password: editPassword },
+          });
+          if (pwError) throw new Error(pwError.message || 'Không thể đổi mật khẩu');
+          if (pwResult?.error) throw new Error(pwResult.error);
+        }
+      }
+
       toast({ title: 'Thành công', description: `Đã cập nhật thông tin ${editName}` });
       setActionDialog(null);
+      setEditPassword('');
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['all-tenants'], refetchType: 'all' }),
         queryClient.invalidateQueries({ queryKey: ['current-tenant-combined'], refetchType: 'all' }),
