@@ -127,6 +127,7 @@ export function RichTextEditor({
   const [tableHandles, setTableHandles] = useState<{
     cols: { left: number; top: number; height: number; index: number }[];
     rows: { left: number; top: number; width: number; index: number }[];
+    corner: { left: number; top: number } | null;
   } | null>(null);
 
   const saveSelection = useCallback(() => {
