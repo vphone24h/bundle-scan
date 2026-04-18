@@ -58,31 +58,26 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFieldError({ field: null, message: '' });
     
     if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: 'Lỗi',
-        description: 'Mật khẩu xác nhận không khớp',
-        variant: 'destructive',
-      });
+      setFieldError({ field: 'confirmPassword', message: 'Mật khẩu xác nhận không khớp' });
+      toast({ title: 'Lỗi', description: 'Mật khẩu xác nhận không khớp', variant: 'destructive' });
+      focusField('confirmPassword');
       return;
     }
 
     if (formData.password.length < 6) {
-      toast({
-        title: 'Lỗi',
-        description: 'Mật khẩu phải có ít nhất 6 ký tự',
-        variant: 'destructive',
-      });
+      setFieldError({ field: 'password', message: 'Mật khẩu phải có ít nhất 6 ký tự' });
+      toast({ title: 'Lỗi', description: 'Mật khẩu phải có ít nhất 6 ký tự', variant: 'destructive' });
+      focusField('password');
       return;
     }
 
     if (formData.subdomain.length < 3) {
-      toast({
-        title: 'Lỗi',
-        description: 'Tên miền phụ phải có ít nhất 3 ký tự',
-        variant: 'destructive',
-      });
+      setFieldError({ field: 'subdomain', message: 'Tên miền phụ phải có ít nhất 3 ký tự' });
+      toast({ title: 'Lỗi', description: 'Tên miền phụ phải có ít nhất 3 ký tự', variant: 'destructive' });
+      focusField('subdomain');
       return;
     }
 
@@ -114,19 +109,29 @@ export default function RegisterPage() {
         },
       });
 
-      if (error) {
-        // Try to extract the actual error message from the response body
-        let errorMsg = 'Có lỗi xảy ra, vui lòng thử lại';
-        try {
-          const ctx = (error as any).context;
-          if (ctx) {
-            const body = typeof ctx.json === 'function' ? await ctx.json() : null;
-            if (body?.error) errorMsg = body.error;
-          }
-        } catch {}
-        throw new Error(errorMsg);
+      // Try to extract error + field from edge function response body even when status != 2xx
+      let bodyError: string | null = null;
+      let bodyField: 'password' | 'email' | null = null;
+      try {
+        const ctx = (error as any)?.context;
+        if (ctx) {
+          const body = typeof ctx.json === 'function' ? await ctx.json() : null;
+          if (body?.error) bodyError = body.error;
+          if (body?.field) bodyField = body.field;
+        }
+      } catch {}
+
+      if (error || data?.error) {
+        const errorMsg = bodyError || data?.error || 'Có lỗi xảy ra, vui lòng thử lại';
+        const errorField = bodyField || (data?.field ?? null);
+        if (errorField === 'password' || errorField === 'email') {
+          setFieldError({ field: errorField, message: errorMsg });
+          focusField(errorField);
+        }
+        toast({ title: 'Đăng ký thất bại', description: errorMsg, variant: 'destructive' });
+        setLoading(false);
+        return;
       }
-      if (data?.error) throw new Error(data.error);
 
       setTenantInfo({ subdomain: data.tenant.subdomain });
       setSuccess(true);
