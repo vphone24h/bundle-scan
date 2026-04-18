@@ -226,6 +226,86 @@ export function RichTextEditor({
     }
   }, [imageUrl, insertImageHtml]);
 
+  // === TABLE INSERT & EDIT ===
+  const insertTable = useCallback((rows: number, cols: number) => {
+    if (rows < 1 || cols < 1) return;
+    const colWidth = Math.floor(100 / cols);
+    let html = '<table class="rte-table" style="border-collapse:collapse;width:100%;margin:8px 0;table-layout:fixed;"><tbody>';
+    for (let r = 0; r < rows; r++) {
+      html += '<tr>';
+      for (let c = 0; c < cols; c++) {
+        const tag = r === 0 ? 'th' : 'td';
+        const style = `border:1px solid #d1d5db;padding:6px 8px;${r === 0 ? 'background:#f3f4f6;font-weight:700;text-align:center;' : ''}width:${colWidth}%;vertical-align:middle;`;
+        html += `<${tag} style="${style}">${r === 0 ? `Cột ${c + 1}` : '&nbsp;'}</${tag}>`;
+      }
+      html += '</tr>';
+    }
+    html += '</tbody></table><p><br/></p>';
+    insertAtCursorOrEnd(html);
+    setTableOpen(false);
+    setTableHover({ rows: 0, cols: 0 });
+  }, [insertAtCursorOrEnd]);
+
+  const getCurrentCell = useCallback((): HTMLTableCellElement | null => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    let node: Node | null = sel.getRangeAt(0).startContainer;
+    while (node && node !== editorRef.current) {
+      if (node instanceof HTMLElement && (node.tagName === 'TD' || node.tagName === 'TH')) {
+        return node as HTMLTableCellElement;
+      }
+      node = node.parentNode;
+    }
+    return null;
+  }, []);
+
+  const tableAction = useCallback((action: 'addRow' | 'delRow' | 'addCol' | 'delCol' | 'delTable') => {
+    const cell = getCurrentCell();
+    if (!cell) {
+      toast({ title: 'Hãy đặt con trỏ vào ô trong bảng trước', variant: 'destructive' });
+      return;
+    }
+    const row = cell.parentElement as HTMLTableRowElement;
+    const table = cell.closest('table') as HTMLTableElement;
+    const tbody = table.querySelector('tbody') || table;
+    const cellIdx = Array.from(row.cells).indexOf(cell);
+
+    if (action === 'addRow') {
+      const newRow = document.createElement('tr');
+      for (let i = 0; i < row.cells.length; i++) {
+        const td = document.createElement('td');
+        td.style.cssText = 'border:1px solid #d1d5db;padding:6px 8px;vertical-align:middle;';
+        td.innerHTML = '&nbsp;';
+        newRow.appendChild(td);
+      }
+      row.after(newRow);
+    } else if (action === 'delRow') {
+      if (tbody.querySelectorAll('tr').length > 1) row.remove();
+    } else if (action === 'addCol') {
+      Array.from(tbody.querySelectorAll('tr')).forEach((tr, idx) => {
+        const isHead = (tr as HTMLTableRowElement).cells[0]?.tagName === 'TH';
+        const cellEl = document.createElement(isHead && idx === 0 ? 'th' : 'td');
+        cellEl.style.cssText = `border:1px solid #d1d5db;padding:6px 8px;vertical-align:middle;${isHead && idx === 0 ? 'background:#f3f4f6;font-weight:700;text-align:center;' : ''}`;
+        cellEl.innerHTML = isHead && idx === 0 ? 'Cột mới' : '&nbsp;';
+        const targetCell = (tr as HTMLTableRowElement).cells[cellIdx];
+        if (targetCell) targetCell.after(cellEl);
+        else (tr as HTMLTableRowElement).appendChild(cellEl);
+      });
+    } else if (action === 'delCol') {
+      const rows = tbody.querySelectorAll('tr');
+      if (rows[0] && (rows[0] as HTMLTableRowElement).cells.length > 1) {
+        rows.forEach(tr => {
+          const c = (tr as HTMLTableRowElement).cells[cellIdx];
+          if (c) c.remove();
+        });
+      }
+    } else if (action === 'delTable') {
+      table.remove();
+    }
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
+  }, [getCurrentCell, onChange]);
+
+
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
