@@ -173,6 +173,18 @@ Deno.serve(async (req) => {
 
     const brandName = smtp.companyName || smtp.fromName || 'VKHO';
 
+    // RFC 2047 encode for UTF-8 headers (subject, from name with Vietnamese chars)
+    const encodeHeader = (text: string): string => {
+      // eslint-disable-next-line no-control-regex
+      if (/^[\x00-\x7F]*$/.test(text)) return text;
+      const b64 = btoa(String.fromCharCode(...new TextEncoder().encode(text)));
+      return `=?UTF-8?B?${b64}?=`;
+    };
+
+    const subjectText = `Khôi phục mật khẩu - ${brandName}`;
+    const encodedSubject = encodeHeader(subjectText);
+    const encodedFromName = encodeHeader(smtp.fromName);
+
     const client = new SMTPClient({
       connection: {
         hostname: smtp.host,
