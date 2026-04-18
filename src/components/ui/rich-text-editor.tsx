@@ -1016,6 +1016,48 @@ export function RichTextEditor({
 
         <div className="w-px h-5 bg-border mx-1" />
 
+        {/* Cell background color (Tô màu ô như Word) */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="p-1.5 rounded hover:bg-muted transition-colors"
+              title="Tô màu nền ô (quét chọn ô trước)"
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              <PaintBucket className="h-4 w-4" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-2" align="start">
+            <p className="text-[11px] font-medium text-muted-foreground mb-1.5">
+              Tô màu nền ô bảng
+            </p>
+            <div className="grid grid-cols-8 gap-1">
+              {[
+                '#fef3c7', '#fee2e2', '#dcfce7', '#dbeafe', '#ede9fe', '#fce7f3', '#f3f4f6', '#fed7aa',
+                '#fde68a', '#fca5a5', '#86efac', '#93c5fd', '#c4b5fd', '#f9a8d4', '#d1d5db', '#fdba74',
+              ].map((bg) => (
+                <button
+                  key={bg}
+                  type="button"
+                  title="Tô màu ô đã chọn"
+                  onClick={() => setCellsBackground(bg)}
+                  className="w-6 h-6 rounded border border-border hover:scale-110 transition-transform"
+                  style={{ background: bg }}
+                />
+              ))}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-[11px] w-full mt-2"
+              onClick={() => setCellsBackground(null)}
+            >
+              Xoá màu nền
+            </Button>
+          </PopoverContent>
+        </Popover>
+
         {/* Table picker */}
         <Popover open={tableOpen} onOpenChange={(open) => { if (open) saveSelection(); setTableOpen(open); }}>
           <PopoverTrigger asChild>
