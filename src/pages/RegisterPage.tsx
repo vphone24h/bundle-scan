@@ -305,8 +305,15 @@ export default function RegisterPage() {
                 placeholder="admin@congty.com"
                 value={formData.email}
                 onChange={handleChange}
+                className={cn(
+                  fieldError.field === 'email' && "border-destructive ring-1 ring-destructive focus-visible:ring-destructive"
+                )}
+                aria-invalid={fieldError.field === 'email'}
                 required
               />
+              {fieldError.field === 'email' && (
+                <p className="text-xs text-destructive font-medium">{fieldError.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -397,6 +404,10 @@ export default function RegisterPage() {
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={handleChange}
+                  className={cn(
+                    fieldError.field === 'password' && "border-destructive ring-1 ring-destructive focus-visible:ring-destructive"
+                  )}
+                  aria-invalid={fieldError.field === 'password'}
                   required
                   minLength={6}
                 />
@@ -411,11 +422,18 @@ export default function RegisterPage() {
                   placeholder="••••••••"
                   value={formData.confirmPassword}
                   onChange={handleChange}
+                  className={cn(
+                    fieldError.field === 'confirmPassword' && "border-destructive ring-1 ring-destructive focus-visible:ring-destructive"
+                  )}
+                  aria-invalid={fieldError.field === 'confirmPassword'}
                   required
                   minLength={6}
                 />
               </div>
             </div>
+            {(fieldError.field === 'password' || fieldError.field === 'confirmPassword') && (
+              <p className="text-xs text-destructive font-medium -mt-2">{fieldError.message}</p>
+            )}
 
 
             <Button type="submit" className="w-full" disabled={loading}>
