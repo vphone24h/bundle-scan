@@ -84,13 +84,25 @@ export function RichTextEditor({
     }
     document.execCommand(command, false, value);
     isInternalUpdate.current = true;
-    onChange(editor.innerHTML || '');
+    onChange(getCleanHTML());
+    setTimeout(() => attachResizeHandlesRef.current?.(), 0);
   }, [onChange]);
+
+  // Strip resize handles before persisting
+  const getCleanHTML = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return '';
+    const clone = editor.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('.rte-col-resize, .rte-row-resize').forEach(el => el.remove());
+    return clone.innerHTML;
+  }, []);
 
   const handleInput = useCallback(() => {
     isInternalUpdate.current = true;
-    onChange(editorRef.current?.innerHTML || '');
-  }, [onChange]);
+    onChange(getCleanHTML());
+  }, [onChange, getCleanHTML]);
+
+  const attachResizeHandlesRef = useRef<(() => void) | null>(null);
 
   const toolbarBtn = (icon: React.ReactNode, command: string, title: string) => (
     <Button
