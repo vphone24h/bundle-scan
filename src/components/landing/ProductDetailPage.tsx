@@ -393,9 +393,12 @@ export function ProductDetailPage({
 
       {/* Main scrollable content */}
       <main className="flex-1 pb-20">
-        {/* Image gallery */}
+        {/* Desktop 2-column wrapper: image left, info right */}
+        <div className="lg:max-w-7xl lg:mx-auto lg:px-6 lg:pt-6 lg:grid lg:grid-cols-2 lg:gap-8">
+          {/* ===== LEFT: Image gallery ===== */}
+          <div className="lg:sticky lg:top-20 lg:self-start">
         {allImages.length > 0 ? (
-          <div className="relative bg-gray-50">
+          <div className="relative bg-gray-50 lg:rounded-xl lg:overflow-hidden lg:border">
             <img
               src={allImages[currentImageIndex]}
               alt={product.name}
@@ -420,10 +423,10 @@ export function ProductDetailPage({
                   ))}
                 </div>
                 {/* Thumbnail strip */}
-                <div className="flex gap-1.5 px-3 py-2 overflow-x-auto">
+                <div className="flex gap-1.5 px-3 py-2 overflow-x-auto lg:flex-wrap lg:overflow-visible lg:px-0 lg:pt-3">
                   {allImages.map((img, idx) => (
                     <button key={idx} onClick={() => setCurrentImageIndex(idx)}
-                      className={`h-12 w-12 rounded-md border-2 overflow-hidden flex-shrink-0 ${currentImageIndex === idx ? 'border-gray-800' : 'border-transparent opacity-60'}`}>
+                      className={`h-12 w-12 lg:h-16 lg:w-16 rounded-md border-2 overflow-hidden flex-shrink-0 ${currentImageIndex === idx ? 'border-gray-800' : 'border-transparent opacity-60'}`}>
                       <img src={img} alt="" className="h-full w-full object-cover" />
                     </button>
                   ))}
@@ -432,12 +435,16 @@ export function ProductDetailPage({
             )}
           </div>
         ) : (
-          <div className="w-full aspect-square bg-gray-50 flex items-center justify-center">
+          <div className="w-full aspect-square bg-gray-50 flex items-center justify-center lg:rounded-xl lg:border">
             <Package className="h-16 w-16 text-gray-300" />
           </div>
         )}
+          </div>
 
-        <div className="px-4 py-4 space-y-4">
+          {/* ===== RIGHT: Product info, variants, price, warranty, promotion ===== */}
+          <div className="lg:min-w-0">
+
+        <div className="px-4 py-4 space-y-4 lg:px-0 lg:pt-0">
           {/* Title */}
           <h2 className="text-xl font-bold leading-tight">{product.name}</h2>
           {product.is_sold_out && (
@@ -539,7 +546,7 @@ export function ProductDetailPage({
             </div>
           )}
 
-          {/* ===== DYNAMIC SECTIONS ===== */}
+          {/* ===== DYNAMIC SECTIONS (split: right-column vs full-width) ===== */}
           {(() => {
             const defaultSections = [
               { id: 'installment', enabled: true },
@@ -553,9 +560,9 @@ export function ProductDetailPage({
               { id: 'recentlyViewed', enabled: false },
               { id: 'storeInfo', enabled: false },
             ];
-            const sections = (detailSections || defaultSections).filter(s => s.enabled);
-
-            return sections.map(section => {
+            const allSections = (detailSections || defaultSections).filter(s => s.enabled);
+            const rightSideIds = new Set(['promotion', 'warranty', 'storeInfo']);
+            return allSections.filter(s => rightSideIds.has(s.id)).map(section => {
               switch (section.id) {
                 case 'promotion':
                   if (!product.promotion_content) return null;
@@ -579,6 +586,48 @@ export function ProductDetailPage({
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.warranty_content) }} />
                     </div>
                   );
+                case 'storeInfo':
+                  if (!storeInfo) return null;
+                  return (
+                    <div key="storeInfo" className="border rounded-lg p-3 bg-gray-50 space-y-2">
+                      <h3 className="font-bold text-sm flex items-center gap-1.5">📞 Thông tin cửa hàng</h3>
+                      {storeInfo.name && <p className="text-sm font-medium">{storeInfo.name}</p>}
+                      {storeInfo.address && <p className="text-xs text-gray-500">{storeInfo.address}</p>}
+                      {storeInfo.phone && (
+                        <a href={`tel:${storeInfo.phone}`} className="text-xs font-medium flex items-center gap-1" style={{ color: primaryColor }}>
+                          <Phone className="h-3 w-3" /> {storeInfo.phone}
+                        </a>
+                      )}
+                    </div>
+                  );
+                default:
+                  return null;
+              }
+            });
+          })()}
+          </div>{/* /px-4 wrapper */}
+          </div>{/* /Right column (desktop) */}
+        </div>{/* /Desktop 2-column grid wrapper */}
+
+        {/* ===== FULL-WIDTH SECTIONS ===== */}
+        <div className="px-4 py-4 space-y-4 lg:max-w-7xl lg:mx-auto lg:px-6 lg:py-6">
+          {(() => {
+            const defaultSections = [
+              { id: 'installment', enabled: true },
+              { id: 'compare', enabled: false },
+              { id: 'tradeIn', enabled: false },
+              { id: 'promotion', enabled: true },
+              { id: 'warranty', enabled: true },
+              { id: 'description', enabled: true },
+              { id: 'relatedProducts', enabled: true },
+              { id: 'reviews', enabled: false },
+              { id: 'recentlyViewed', enabled: false },
+              { id: 'storeInfo', enabled: false },
+            ];
+            const allSections = (detailSections || defaultSections).filter(s => s.enabled);
+            const fullWidthIds = new Set(['description', 'relatedProducts', 'reviews', 'recentlyViewed']);
+            return allSections.filter(s => fullWidthIds.has(s.id)).map(section => {
+              switch (section.id) {
                 case 'description':
                   if (!product.description) return null;
                   return (
@@ -586,7 +635,7 @@ export function ProductDetailPage({
                       <div className="px-3 py-2.5 font-semibold text-sm bg-gray-100">
                         📝 MÔ TẢ SẢN PHẨM
                       </div>
-                      <div className="p-3 text-sm prose prose-sm max-w-none"
+                      <div className="p-3 text-sm prose prose-sm max-w-none lg:prose-base lg:p-5"
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.description) }} />
                     </div>
                   );
@@ -594,11 +643,11 @@ export function ProductDetailPage({
                   if (relatedProducts.length === 0) return null;
                   return (
                     <div key="relatedProducts" id="related-products" data-section="relatedProducts">
-                      <h3 className="font-bold text-base mb-3">📦 Sản phẩm liên quan</h3>
-                      <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+                      <h3 className="font-bold text-base mb-3 lg:text-xl">📦 Sản phẩm liên quan</h3>
+                      <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide lg:grid lg:grid-cols-5 lg:gap-4 lg:overflow-visible">
                         {relatedProducts.slice(0, 10).map(rp => (
                           <button key={rp.id} onClick={() => onProductClick?.(rp)}
-                            className="min-w-[140px] max-w-[160px] shrink-0 rounded-xl border overflow-hidden text-left hover:shadow-md transition-shadow bg-white">
+                            className="min-w-[140px] max-w-[160px] lg:min-w-0 lg:max-w-none shrink-0 lg:shrink rounded-xl border overflow-hidden text-left hover:shadow-md transition-shadow bg-white">
                             {rp.image_url ? (
                               <img src={rp.image_url} alt={rp.name} className="w-full aspect-square object-cover" />
                             ) : (
@@ -607,8 +656,8 @@ export function ProductDetailPage({
                               </div>
                             )}
                             <div className="p-2">
-                              <p className="text-xs font-medium line-clamp-2 leading-tight">{rp.name}</p>
-                              <p className="text-xs font-bold mt-1" style={{ color: primaryColor }}>
+                              <p className="text-xs font-medium line-clamp-2 leading-tight lg:text-sm">{rp.name}</p>
+                              <p className="text-xs font-bold mt-1 lg:text-sm" style={{ color: primaryColor }}>
                                 {formatNumber(rp.sale_price || rp.price)}đ
                               </p>
                             </div>
@@ -628,11 +677,11 @@ export function ProductDetailPage({
                   if (recentlyViewedProducts.length === 0) return null;
                   return (
                     <div key="recentlyViewed">
-                      <h3 className="font-bold text-base mb-3">👁️ Đã xem gần đây</h3>
-                      <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+                      <h3 className="font-bold text-base mb-3 lg:text-xl">👁️ Đã xem gần đây</h3>
+                      <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide lg:grid lg:grid-cols-5 lg:gap-4 lg:overflow-visible">
                         {recentlyViewedProducts.slice(0, 10).map(rp => (
                           <button key={rp.id} onClick={() => onProductClick?.(rp)}
-                            className="min-w-[140px] max-w-[160px] shrink-0 rounded-xl border overflow-hidden text-left hover:shadow-md transition-shadow bg-white">
+                            className="min-w-[140px] max-w-[160px] lg:min-w-0 lg:max-w-none shrink-0 lg:shrink rounded-xl border overflow-hidden text-left hover:shadow-md transition-shadow bg-white">
                             {rp.image_url ? (
                               <img src={rp.image_url} alt={rp.name} className="w-full aspect-square object-cover" />
                             ) : (
@@ -641,8 +690,8 @@ export function ProductDetailPage({
                               </div>
                             )}
                             <div className="p-2">
-                              <p className="text-xs font-medium line-clamp-2 leading-tight">{rp.name}</p>
-                              <p className="text-xs font-bold mt-1" style={{ color: primaryColor }}>
+                              <p className="text-xs font-medium line-clamp-2 leading-tight lg:text-sm">{rp.name}</p>
+                              <p className="text-xs font-bold mt-1 lg:text-sm" style={{ color: primaryColor }}>
                                 {formatNumber(rp.sale_price || rp.price)}đ
                               </p>
                             </div>
@@ -651,26 +700,15 @@ export function ProductDetailPage({
                       </div>
                     </div>
                   );
-                case 'storeInfo':
-                  if (!storeInfo) return null;
-                  return (
-                    <div key="storeInfo" className="border rounded-lg p-3 bg-gray-50 space-y-2">
-                      <h3 className="font-bold text-sm flex items-center gap-1.5">📞 Thông tin cửa hàng</h3>
-                      {storeInfo.name && <p className="text-sm font-medium">{storeInfo.name}</p>}
-                      {storeInfo.address && <p className="text-xs text-gray-500">{storeInfo.address}</p>}
-                      {storeInfo.phone && (
-                        <a href={`tel:${storeInfo.phone}`} className="text-xs font-medium flex items-center gap-1" style={{ color: primaryColor }}>
-                          <Phone className="h-3 w-3" /> {storeInfo.phone}
-                        </a>
-                      )}
-                    </div>
-                  );
                 default:
-                  // Layout sections handled at page level
                   return null;
               }
             });
           })()}
+        </div>
+
+        {/* ===== ORDER FORM / SUCCESS (centered on desktop) ===== */}
+        <div className="px-4 space-y-4 lg:max-w-3xl lg:mx-auto lg:px-6">
 
           {/* ===== ORDER FORM (shown when user taps Đặt mua) ===== */}
           {showOrderForm && !orderSuccess && (
