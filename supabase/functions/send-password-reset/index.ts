@@ -224,9 +224,10 @@ Deno.serve(async (req) => {
 
     try {
       await client.send({
-        from: `${smtp.fromName} <${smtp.fromEmail}>`,
+        from: `${encodedFromName} <${smtp.fromEmail}>`,
         to: email,
-        subject: `🔐 Khôi phục mật khẩu - ${brandName}`,
+        subject: encodedSubject,
+        content: 'Vui lòng mở email bằng ứng dụng hỗ trợ HTML để xem nội dung khôi phục mật khẩu.',
         html: emailHtml,
       });
       await client.close();
