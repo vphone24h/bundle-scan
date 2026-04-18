@@ -370,16 +370,146 @@ export function RichTextEditor({
     }
   }, [insertImageHtml, saveSelection]);
 
-  // Image resize: click to select, drag corner to resize
+  // Image resize: click to select, drag corner to resize. Also detect active table for col/row resize.
   const handleEditorClick = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target.tagName === 'IMG') {
       e.preventDefault();
       setResizingImg(target as HTMLImageElement);
+      setActiveTable(null);
     } else {
       setResizingImg(null);
+      const tbl = target.closest?.('table') as HTMLTableElement | null;
+      setActiveTable(tbl && editorRef.current?.contains(tbl) ? tbl : null);
     }
   }, []);
+
+  // Compute column/row handle positions for the active table
+  useEffect(() => {
+    if (!activeTable || !editorRef.current) {
+      setTableHandles(null);
+      return;
+    }
+    const compute = () => {
+      const editor = editorRef.current;
+      if (!activeTable || !editor) return;
+      const eRect = editor.getBoundingClientRect();
+      const tRect = activeTable.getBoundingClientRect();
+      const firstRow = activeTable.querySelector('tr');
+      if (!firstRow) return;
+      const cells = Array.from((firstRow as HTMLTableRowElement).cells);
+      const cols = cells.slice(0, -1).map((cell, index) => {
+        const cRect = cell.getBoundingClientRect();
+        return {
+          left: cRect.right - eRect.left + editor.scrollLeft,
+          top: tRect.top - eRect.top + editor.scrollTop,
+          height: tRect.height,
+          index,
+        };
+      });
+      const rowsEls = Array.from(activeTable.querySelectorAll('tr')) as HTMLTableRowElement[];
+      const rows = rowsEls.slice(0, -1).map((tr, index) => {
+        const rRect = tr.getBoundingClientRect();
+        return {
+          left: tRect.left - eRect.left + editor.scrollLeft,
+          top: rRect.bottom - eRect.top + editor.scrollTop,
+          width: tRect.width,
+          index,
+        };
+      });
+      setTableHandles({ cols, rows });
+    };
+    compute();
+    const observer = new MutationObserver(compute);
+    observer.observe(activeTable, { childList: true, subtree: true, attributes: true });
+    const onScroll = () => compute();
+    editorRef.current.addEventListener('scroll', onScroll);
+    window.addEventListener('resize', compute);
+    return () => {
+      observer.disconnect();
+      editorRef.current?.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', compute);
+    };
+  }, [activeTable]);
+
+  // Clear active table when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (editorRef.current && !editorRef.current.contains(e.target as Node)) {
+        setActiveTable(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Resize a column: drag right edge of cell at column index
+  const startColResize = useCallback((e: React.MouseEvent | React.TouchEvent, colIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!activeTable) return;
+    const firstRow = activeTable.querySelector('tr') as HTMLTableRowElement | null;
+    if (!firstRow) return;
+    const cell = firstRow.cells[colIndex] as HTMLTableCellElement | undefined;
+    const nextCell = firstRow.cells[colIndex + 1] as HTMLTableCellElement | undefined;
+    if (!cell) return;
+    // Switch to fixed pixel layout for predictable resize
+    activeTable.style.tableLayout = 'fixed';
+    activeTable.style.width = `${activeTable.offsetWidth}px`;
+    const startX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const startW = cell.offsetWidth;
+    const startNextW = nextCell?.offsetWidth || 0;
+    const onMove = (ev: MouseEvent | TouchEvent) => {
+      const clientX = 'touches' in ev ? (ev as TouchEvent).touches[0].clientX : (ev as MouseEvent).clientX;
+      const dx = clientX - startX;
+      const newW = Math.max(30, startW + dx);
+      cell.style.width = `${newW}px`;
+      if (nextCell) {
+        const newNext = Math.max(30, startNextW - dx);
+        nextCell.style.width = `${newNext}px`;
+      }
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove as any);
+      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onMove as any);
+      document.removeEventListener('touchend', onUp);
+      if (editorRef.current) onChange(editorRef.current.innerHTML);
+    };
+    document.addEventListener('mousemove', onMove as any);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove as any, { passive: false });
+    document.addEventListener('touchend', onUp);
+  }, [activeTable, onChange]);
+
+  // Resize a row: drag bottom edge of row
+  const startRowResize = useCallback((e: React.MouseEvent | React.TouchEvent, rowIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!activeTable) return;
+    const tr = activeTable.querySelectorAll('tr')[rowIndex] as HTMLTableRowElement | undefined;
+    if (!tr) return;
+    const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const startH = tr.offsetHeight;
+    const onMove = (ev: MouseEvent | TouchEvent) => {
+      const clientY = 'touches' in ev ? (ev as TouchEvent).touches[0].clientY : (ev as MouseEvent).clientY;
+      const dy = clientY - startY;
+      const newH = Math.max(20, startH + dy);
+      tr.style.height = `${newH}px`;
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove as any);
+      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onMove as any);
+      document.removeEventListener('touchend', onUp);
+      if (editorRef.current) onChange(editorRef.current.innerHTML);
+    };
+    document.addEventListener('mousemove', onMove as any);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove as any, { passive: false });
+    document.addEventListener('touchend', onUp);
+  }, [activeTable, onChange]);
+
 
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
