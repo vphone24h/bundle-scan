@@ -279,20 +279,20 @@ Deno.serve(async (req) => {
           } catch (fbErr: any) {
             console.error('Fallback SMTP also failed:', fbErr?.message || fbErr);
             return new Response(
-              JSON.stringify({ error: 'Không thể gửi email khôi phục. Vui lòng kiểm tra cấu hình SMTP.' }),
-              { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+              JSON.stringify({ error: translateSmtpError(String(fbErr?.message || fbErr || '')) }),
+              { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
             );
           }
         } else {
           return new Response(
-            JSON.stringify({ error: 'Không thể gửi email khôi phục. Vui lòng kiểm tra cấu hình SMTP của công ty.' }),
-            { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            JSON.stringify({ error: translateSmtpError(rawMsg) }),
+            { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
         }
       } else {
         return new Response(
-          JSON.stringify({ error: 'Không thể gửi email khôi phục. Vui lòng kiểm tra cấu hình SMTP.' }),
-          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          JSON.stringify({ error: translateSmtpError(rawMsg) }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
     }
