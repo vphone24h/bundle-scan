@@ -125,9 +125,18 @@ export default function ResetPasswordPage() {
         navigate('/auth');
       }, 2000);
     } catch (error: any) {
+      const msg = error?.message || '';
+      let friendly = msg || 'Không thể đặt lại mật khẩu';
+      if (/pwned|leaked|known to be|weak|easy to guess/i.test(msg)) {
+        friendly = 'Mật khẩu này đã bị lộ trong các vụ rò rỉ dữ liệu hoặc quá yếu. Vui lòng chọn mật khẩu mạnh hơn (kết hợp chữ hoa, chữ thường, số, ký tự đặc biệt).';
+      } else if (/should be different|same as the old/i.test(msg)) {
+        friendly = 'Mật khẩu mới phải khác mật khẩu cũ.';
+      } else if (/short|length|at least/i.test(msg)) {
+        friendly = 'Mật khẩu quá ngắn. Vui lòng nhập ít nhất 6 ký tự.';
+      }
       toast({
         title: 'Lỗi',
-        description: error.message || 'Không thể đặt lại mật khẩu',
+        description: friendly,
         variant: 'destructive',
       });
     }
