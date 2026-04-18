@@ -29,51 +29,90 @@ interface SmtpConfig {
   companyName?: string;
 }
 
+async function findCompanyByDomain(supabaseAdmin: any, hostname: string): Promise<string | null> {
+  if (!hostname) return null;
+  const host = hostname.toLowerCase().replace(/^www\./, '');
+  try {
+    const { data: cd } = await supabaseAdmin
+      .from('custom_domains')
+      .select('tenant_id')
+      .eq('domain', host)
+      .maybeSingle();
+    if (cd?.tenant_id) {
+      const { data: t } = await supabaseAdmin.from('tenants').select('company_id').eq('id', cd.tenant_id).maybeSingle();
+      if (t?.company_id) return t.company_id;
+    }
+    const { data: c } = await supabaseAdmin
+      .from('companies')
+      .select('id')
+      .eq('domain', host)
+      .maybeSingle();
+    if (c?.id) return c.id;
+  } catch (e) {
+    console.error('findCompanyByDomain error:', e);
+  }
+  return null;
+}
+
+async function getCompanySmtp(supabaseAdmin: any, companyId: string): Promise<SmtpConfig | null> {
+  const { data: cfg } = await supabaseAdmin
+    .from('company_email_config')
+    .select('smtp_host, smtp_port, smtp_user, smtp_pass, from_email, from_name, is_enabled')
+    .eq('company_id', companyId)
+    .maybeSingle();
+  const { data: company } = await supabaseAdmin
+    .from('companies')
+    .select('name')
+    .eq('id', companyId)
+    .maybeSingle();
+  if (cfg?.is_enabled && cfg.smtp_host && cfg.smtp_user && cfg.smtp_pass) {
+    return {
+      host: cfg.smtp_host,
+      port: cfg.smtp_port || 465,
+      user: cfg.smtp_user,
+      password: cfg.smtp_pass,
+      fromEmail: cfg.from_email || cfg.smtp_user,
+      fromName: cfg.from_name || company?.name || 'VKHO',
+      source: 'company',
+      companyName: company?.name,
+    };
+  }
+  return null;
+}
+
 async function resolveSmtpConfig(
   supabaseAdmin: any,
-  email: string
+  email: string,
+  hostname?: string
 ): Promise<SmtpConfig | null> {
-  // 1. Find user by email
+  // Priority 1: SMTP of the company owning the current domain
+  if (hostname) {
+    const companyId = await findCompanyByDomain(supabaseAdmin, hostname);
+    if (companyId) {
+      const smtp = await getCompanySmtp(supabaseAdmin, companyId);
+      if (smtp) {
+        console.log(`Resolved SMTP via domain ${hostname} → company ${companyId}`);
+        return smtp;
+      }
+    }
+  }
+
+  // Priority 2: SMTP of the company that owns the user's tenant
   try {
-    const { data: usersList } = await supabaseAdmin.auth.admin.listUsers({
-      page: 1,
-      perPage: 200,
-    });
+    const { data: usersList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
     const user = usersList?.users?.find((u: any) => u.email?.toLowerCase() === email);
     if (user) {
-      // 2. Find tenant by owner_id, then company
       const { data: tenant } = await supabaseAdmin
         .from('tenants')
         .select('company_id')
         .eq('owner_id', user.id)
         .maybeSingle();
-
       const companyId = tenant?.company_id || user.user_metadata?.company_id;
-
       if (companyId) {
-        const { data: cfg } = await supabaseAdmin
-          .from('company_email_config')
-          .select('smtp_host, smtp_port, smtp_user, smtp_pass, from_email, from_name, is_enabled')
-          .eq('company_id', companyId)
-          .maybeSingle();
-
-        const { data: company } = await supabaseAdmin
-          .from('companies')
-          .select('name')
-          .eq('id', companyId)
-          .maybeSingle();
-
-        if (cfg?.is_enabled && cfg.smtp_host && cfg.smtp_user && cfg.smtp_pass) {
-          return {
-            host: cfg.smtp_host,
-            port: cfg.smtp_port || 465,
-            user: cfg.smtp_user,
-            password: cfg.smtp_pass,
-            fromEmail: cfg.from_email || cfg.smtp_user,
-            fromName: cfg.from_name || company?.name || 'VKHO',
-            source: 'company',
-            companyName: company?.name,
-          };
+        const smtp = await getCompanySmtp(supabaseAdmin, companyId);
+        if (smtp) {
+          console.log(`Resolved SMTP via user → company ${companyId}`);
+          return smtp;
         }
       }
     }
@@ -81,7 +120,7 @@ async function resolveSmtpConfig(
     console.error('resolveSmtpConfig user lookup error:', e);
   }
 
-  // Fallback: global SMTP
+  // Priority 3: global SMTP fallback
   const smtpUser = (Deno.env.get('SMTP_USER') || '').trim();
   const smtpPassword = Deno.env.get('SMTP_PASSWORD');
   if (!smtpUser || !smtpPassword) return null;
