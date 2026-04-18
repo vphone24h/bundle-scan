@@ -108,6 +108,8 @@ export function RichTextEditor({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [resizingImg, setResizingImg] = useState<HTMLImageElement | null>(null);
   const resizeStartRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [tableOpen, setTableOpen] = useState(false);
+  const [tableHover, setTableHover] = useState<{ rows: number; cols: number }>({ rows: 0, cols: 0 });
 
   const saveSelection = useCallback(() => {
     const sel = window.getSelection();
