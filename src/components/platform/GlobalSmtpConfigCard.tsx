@@ -1,13 +1,58 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mail, KeyRound, Info, ExternalLink } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Mail, KeyRound, Save, Loader2, Eye, EyeOff, Info, ExternalLink } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
-/**
- * Global SMTP Config (Platform-wide fallback).
- * Stored as Lovable Cloud secrets: SMTP_USER, SMTP_PASSWORD.
- * Used when a company has no `company_email_config` enabled.
- */
 export function GlobalSmtpConfigCard() {
+  const qc = useQueryClient();
+  const [smtpUser, setSmtpUser] = useState('');
+  const [smtpPass, setSmtpPass] = useState('');
+  const [showPass, setShowPass] = useState(false);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['global-smtp-config'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('global_smtp_config')
+        .select('smtp_user, smtp_password, updated_at')
+        .eq('id', 1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (data) {
+      setSmtpUser(data.smtp_user || '');
+      setSmtpPass(data.smtp_password || '');
+    }
+  }, [data]);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const { data: res, error } = await supabase.functions.invoke('update-global-smtp', {
+        body: { smtp_user: smtpUser, smtp_password: smtpPass },
+      });
+      if (error) {
+        const msg = (res as any)?.error || error.message;
+        throw new Error(msg);
+      }
+      if ((res as any)?.error) throw new Error((res as any).error);
+      return res;
+    },
+    onSuccess: () => {
+      toast.success('Đã lưu cấu hình Email gốc');
+      qc.invalidateQueries({ queryKey: ['global-smtp-config'] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <Card className="border-amber-200 bg-amber-50/40">
       <CardHeader>
@@ -16,61 +61,85 @@ export function GlobalSmtpConfigCard() {
           Cấu hình Email gốc (Platform fallback)
         </CardTitle>
         <CardDescription>
-          Email Gmail dùng làm <strong>fallback toàn nền tảng</strong> khi công ty chưa cấu hình SMTP riêng (vd: gửi mail khôi phục mật khẩu, thông báo hệ thống).
+          Email Gmail dùng làm <strong>fallback toàn nền tảng</strong> khi công ty chưa cấu hình SMTP riêng.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="p-3 rounded-lg bg-background border space-y-2 text-sm">
-          <p className="font-medium flex items-center gap-1.5">
-            <Info className="h-4 w-4 text-blue-600" />
-            Cách cập nhật khi Gmail bị Google khóa
-          </p>
-          <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-1 text-xs">
-            <li>Tạo Gmail mới (hoặc dùng Gmail khác đã có).</li>
-            <li>Bật <strong>Xác minh 2 bước</strong> tại Google Account → Bảo mật.</li>
-            <li>Vào <strong>Mật khẩu ứng dụng</strong> → tạo mật khẩu cho "Mail" (16 ký tự).</li>
-            <li>Bấm 2 nút bên dưới để cập nhật <code className="bg-muted px-1 rounded">SMTP_USER</code> và <code className="bg-muted px-1 rounded">SMTP_PASSWORD</code>.</li>
-          </ol>
-        </div>
+        {isLoading ? (
+          <div className="flex justify-center py-6">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          </div>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Mail className="h-3.5 w-3.5" /> Email Gmail gốc (SMTP_USER)
+              </Label>
+              <Input
+                type="email"
+                value={smtpUser}
+                onChange={(e) => setSmtpUser(e.target.value)}
+                placeholder="your-email@gmail.com"
+                autoComplete="off"
+              />
+            </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Button
-            variant="outline"
-            className="justify-start"
-            onClick={() => {
-              // Trigger Lovable secrets dialog via custom event
-              window.dispatchEvent(new CustomEvent('lovable:open-secrets', { detail: { names: ['SMTP_USER'] } }));
-            }}
-          >
-            <Mail className="h-4 w-4 mr-2" />
-            Cập nhật Email gốc (SMTP_USER)
-          </Button>
-          <Button
-            variant="outline"
-            className="justify-start"
-            onClick={() => {
-              window.dispatchEvent(new CustomEvent('lovable:open-secrets', { detail: { names: ['SMTP_PASSWORD'] } }));
-            }}
-          >
-            <KeyRound className="h-4 w-4 mr-2" />
-            Cập nhật App Password (SMTP_PASSWORD)
-          </Button>
-        </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <KeyRound className="h-3.5 w-3.5" /> App Password (SMTP_PASSWORD - 16 ký tự)
+              </Label>
+              <div className="relative">
+                <Input
+                  type={showPass ? 'text' : 'password'}
+                  value={smtpPass}
+                  onChange={(e) => setSmtpPass(e.target.value)}
+                  placeholder="xxxx xxxx xxxx xxxx"
+                  autoComplete="off"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full"
+                  onClick={() => setShowPass(!showPass)}
+                >
+                  {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground flex items-start gap-1">
+                <Info className="h-3 w-3 mt-0.5 shrink-0" />
+                Tạo tại Google Account → Bảo mật → Xác minh 2 bước → Mật khẩu ứng dụng → "Mail"
+              </p>
+            </div>
 
-        <p className="text-xs text-muted-foreground flex items-start gap-1">
-          <Info className="h-3 w-3 mt-0.5 shrink-0" />
-          Sau khi cập nhật, hệ thống sẽ tự dùng email mới ngay lập tức cho tất cả các thông báo gốc. Các công ty đã có SMTP riêng (cấu hình trong Cài đặt công ty) vẫn dùng email riêng của họ.
-        </p>
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <Button onClick={() => save.mutate()} disabled={save.isPending}>
+                {save.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-1.5" />
+                )}
+                Lưu cấu hình
+              </Button>
+              <a
+                href="https://myaccount.google.com/apppasswords"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Mở trang tạo App Password
+              </a>
+            </div>
 
-        <a
-          href="https://myaccount.google.com/apppasswords"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-        >
-          <ExternalLink className="h-3 w-3" />
-          Mở trang tạo App Password của Google
-        </a>
+            {data?.updated_at && (
+              <p className="text-xs text-muted-foreground">
+                Cập nhật lần cuối: {new Date(data.updated_at).toLocaleString('vi-VN')}
+              </p>
+            )}
+          </>
+        )}
       </CardContent>
     </Card>
   );
