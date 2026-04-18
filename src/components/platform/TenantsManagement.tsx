@@ -416,7 +416,16 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
           const { data: pwResult, error: pwError } = await supabase.functions.invoke('update-user', {
             body: { userId: ownerId, password: editPassword },
           });
-          if (pwError) throw new Error(pwError.message || 'Không thể đổi mật khẩu');
+          if (pwError) {
+            let message = pwError.message || 'Không thể đổi mật khẩu';
+            try {
+              const body = typeof (pwError as any)?.context?.json === 'function'
+                ? await (pwError as any).context.json()
+                : null;
+              if (body?.error) message = body.error;
+            } catch {}
+            throw new Error(message);
+          }
           if (pwResult?.error) throw new Error(pwResult.error);
         }
       }
