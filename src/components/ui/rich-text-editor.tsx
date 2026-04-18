@@ -1281,8 +1281,14 @@ export function RichTextEditor({
           font-weight: 700;
           text-align: center;
         }
-        [contenteditable] table tr:nth-child(even) td {
+        [contenteditable] table tr:nth-child(even) td:not([style*="background"]):not([bgcolor]) {
           background: #fafafa;
+        }
+        [contenteditable] td[data-rte-selected="true"],
+        [contenteditable] th[data-rte-selected="true"] {
+          outline: 2px solid hsl(var(--primary));
+          outline-offset: -2px;
+          background-color: hsl(var(--primary) / 0.12) !important;
         }
       `}</style>
     </div>
