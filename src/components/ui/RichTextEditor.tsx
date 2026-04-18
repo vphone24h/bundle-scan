@@ -234,7 +234,7 @@ export function RichTextEditor({
     }
     setTimeout(attachResizeHandles, 0);
     isInternalUpdate.current = true;
-    onChange(editorRef.current?.innerHTML || '');
+    onChange(getCleanHTML());
   };
 
   // ===== Resize handles for table columns & rows (Word-like drag) =====
@@ -313,7 +313,7 @@ export function RichTextEditor({
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
         isInternalUpdate.current = true;
-        onChange(editorRef.current?.innerHTML || '');
+        onChange(getCleanHTML());
       };
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
@@ -330,7 +330,7 @@ export function RichTextEditor({
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
         isInternalUpdate.current = true;
-        onChange(editorRef.current?.innerHTML || '');
+        onChange(getCleanHTML());
       };
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
