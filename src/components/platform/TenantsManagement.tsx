@@ -552,7 +552,8 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
       {/* Desktop Table */}
       <div className="hidden md:block">
         <Card>
-          <Table>
+          <div className="overflow-x-auto">
+          <Table className="min-w-[1400px]">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[40px]" onClick={(e) => e.stopPropagation()}>
@@ -584,7 +585,7 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTenants?.map((tenant) => {
+              {paginatedTenants?.map((tenant) => {
                 const remaining = calculateRemainingDays(tenant);
                 const status = statusConfig[tenant.status];
                 const enrichment = enrichmentMap?.get(tenant.id);
