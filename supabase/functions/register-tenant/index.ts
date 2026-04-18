@@ -72,7 +72,7 @@ async function createCloudflareDNSRecord(subdomain: string): Promise<void> {
   }
 }
 
-async function sendRegistrationNotification(businessName: string, subdomain: string, email: string, adminName: string) {
+async function sendRegistrationNotification(businessName: string, subdomain: string, email: string, adminName: string, companyDomain: string) {
   try {
     const smtpUser = Deno.env.get('SMTP_USER')
     const smtpPassword = Deno.env.get('SMTP_PASSWORD')
@@ -98,12 +98,15 @@ async function sendRegistrationNotification(businessName: string, subdomain: str
       },
     })
 
-    const htmlContent = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f9fafb;border-radius:8px"><div style="background:#1a56db;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0;text-align:center"><h1 style="margin:0;font-size:20px">🎉 Đăng ký tài khoản mới - VKHO</h1></div><div style="background:#fff;padding:24px;border:1px solid #e5e7eb;border-radius:0 0 8px 8px"><p style="font-size:16px;color:#374151;margin-bottom:16px">Có tài khoản doanh nghiệp mới vừa đăng ký trên hệ thống VKHO:</p><table style="width:100%;border-collapse:collapse"><tr style="border-bottom:1px solid #e5e7eb"><td style="padding:10px 12px;color:#6b7280;font-weight:600;width:140px">Tên công ty</td><td style="padding:10px 12px;color:#111827;font-weight:bold">${businessName}</td></tr><tr style="border-bottom:1px solid #e5e7eb;background:#f9fafb"><td style="padding:10px 12px;color:#6b7280;font-weight:600">Tên ID (subdomain)</td><td style="padding:10px 12px;color:#111827;font-weight:bold">${subdomain}</td></tr><tr style="border-bottom:1px solid #e5e7eb"><td style="padding:10px 12px;color:#6b7280;font-weight:600">Người đăng ký</td><td style="padding:10px 12px;color:#111827">${adminName}</td></tr><tr style="border-bottom:1px solid #e5e7eb;background:#f9fafb"><td style="padding:10px 12px;color:#6b7280;font-weight:600">Gmail</td><td style="padding:10px 12px;color:#1a56db">${email}</td></tr><tr><td style="padding:10px 12px;color:#6b7280;font-weight:600">Ngày đăng ký</td><td style="padding:10px 12px;color:#111827">${dateStr}</td></tr></table><div style="margin-top:20px;padding:12px;background:#ecfdf5;border-radius:6px;text-align:center;color:#065f46;font-weight:600">✅ Tài khoản đã được tạo thành công</div></div></div>`
+    const fullDomain = `${subdomain}.${companyDomain}`
+    const accessUrl = `https://${fullDomain}`
+
+    const htmlContent = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f9fafb;border-radius:8px"><div style="background:#1a56db;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0;text-align:center"><h1 style="margin:0;font-size:20px">🎉 Đăng ký tài khoản mới - VKHO</h1></div><div style="background:#fff;padding:24px;border:1px solid #e5e7eb;border-radius:0 0 8px 8px"><p style="font-size:16px;color:#374151;margin-bottom:16px">Có tài khoản doanh nghiệp mới vừa đăng ký trên hệ thống VKHO:</p><table style="width:100%;border-collapse:collapse"><tr style="border-bottom:1px solid #e5e7eb"><td style="padding:10px 12px;color:#6b7280;font-weight:600;width:140px">Tên công ty</td><td style="padding:10px 12px;color:#111827;font-weight:bold">${businessName}</td></tr><tr style="border-bottom:1px solid #e5e7eb;background:#f9fafb"><td style="padding:10px 12px;color:#6b7280;font-weight:600">Tên ID (subdomain)</td><td style="padding:10px 12px;color:#111827;font-weight:bold">${subdomain}</td></tr><tr style="border-bottom:1px solid #e5e7eb"><td style="padding:10px 12px;color:#6b7280;font-weight:600">Đăng ký trên</td><td style="padding:10px 12px;color:#111827;font-weight:bold">${companyDomain}</td></tr><tr style="border-bottom:1px solid #e5e7eb;background:#f9fafb"><td style="padding:10px 12px;color:#6b7280;font-weight:600">Tên miền truy cập</td><td style="padding:10px 12px"><a href="${accessUrl}" style="color:#1a56db;font-weight:bold;text-decoration:none">${fullDomain}</a></td></tr><tr style="border-bottom:1px solid #e5e7eb"><td style="padding:10px 12px;color:#6b7280;font-weight:600">Người đăng ký</td><td style="padding:10px 12px;color:#111827">${adminName}</td></tr><tr style="border-bottom:1px solid #e5e7eb;background:#f9fafb"><td style="padding:10px 12px;color:#6b7280;font-weight:600">Gmail</td><td style="padding:10px 12px;color:#1a56db">${email}</td></tr><tr><td style="padding:10px 12px;color:#6b7280;font-weight:600">Ngày đăng ký</td><td style="padding:10px 12px;color:#111827">${dateStr}</td></tr></table><div style="margin-top:20px;padding:12px;background:#ecfdf5;border-radius:6px;text-align:center;color:#065f46;font-weight:600">✅ Tài khoản đã được tạo thành công</div></div></div>`
 
     await transporter.sendMail({
       from: smtpUser,
       to: 'vphone24h@gmail.com',
-      subject: `[VKHO] Đăng ký mới: ${businessName} (${subdomain})`,
+      subject: `[VKHO] Đăng ký mới: ${businessName} (${subdomain}.${companyDomain})`,
       html: htmlContent,
     })
 
@@ -683,7 +686,7 @@ Deno.serve(async (req) => {
       .catch(err => console.error('Cloudflare DNS error:', err))
 
     // Send notification email to admin (non-blocking)
-    sendRegistrationNotification(businessName, subdomain, email, adminName)
+    sendRegistrationNotification(businessName, subdomain, email, adminName, companyDomain)
       .catch(err => console.error('Email notification error:', err))
 
     // Send welcome email to new user (non-blocking)
