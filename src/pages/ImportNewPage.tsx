@@ -472,17 +472,8 @@ export default function ImportNewPage() {
             .limit(1);
 
           if (groups && groups.length > 0) {
-            const group = groups[0] as any;
-            const levels: VariantLevel[] = [];
-            if (group.variant_1_label && group.variant_1_values?.length > 0) {
-              levels.push({ label: group.variant_1_label, values: group.variant_1_values });
-            }
-            if (group.variant_2_label && group.variant_2_values?.length > 0) {
-              levels.push({ label: group.variant_2_label, values: group.variant_2_values });
-            }
-            if (group.variant_3_label && group.variant_3_values?.length > 0) {
-              levels.push({ label: group.variant_3_label, values: group.variant_3_values });
-            }
+            const group = groups[0] as ProductGroup;
+            const levels = buildVariantLevelsFromProducts([], group);
 
             if (levels.length > 0) {
               setVariantConfig({ enabled: true, levels });
@@ -531,58 +522,7 @@ export default function ImportNewPage() {
       })();
     }
   }, [location.state, searchProductsFromDB]);
-
-  const handleProductNameChange = (value: string) => {
-    setForm({ ...form, productName: value });
-    // Debounce the DB search
-    if ((window as any).__productSearchTimer) clearTimeout((window as any).__productSearchTimer);
-    (window as any).__productSearchTimer = setTimeout(() => {
-      searchProductsFromDB(value);
-    }, 300);
-  };
-
-  const handleSelectSuggestion = async (product: ProductSuggestion) => {
-    const hasVariants = !!product.group_id || !!product.variantLevels?.length;
-
-    setForm((prev) => ({
-      ...prev,
-      productName: product.name,
-      sku: hasVariants ? '' : (product.sku || ''),
-      categoryId: product.category_id || '',
-      importPrice: !hasVariants && product.import_price ? String(product.import_price) : '',
-      salePrice: !hasVariants && product.sale_price ? String(product.sale_price) : '',
-      unit: product.unit || 'cái',
-    }));
-    setSuggestions([]);
-    setProductFormMode('form');
-
-    if (product.variantLevels && product.variantLevels.length > 0) {
-      setVariantConfig({ enabled: true, levels: product.variantLevels });
-      setSelectedVariants({});
-    } else {
-      setVariantConfig({ enabled: false, levels: [] });
-      setSelectedVariants({});
-    }
-
-    // Load unit + variant config in background (non-blocking)
-    const groupId = product.group_id;
-    (async () => {
-      try {
-        if (!product.unit) {
-          // Fetch unit
-          const { data: existingProduct } = await supabase
-            .from('products')
-            .select('unit')
-            .ilike('name', `${product.name}%`)
-            .not('unit', 'is', null)
-            .limit(1);
-          if (existingProduct?.[0]?.unit) {
-            setForm(prev => ({ ...prev, unit: existingProduct[0].unit }));
-          }
-        }
-      } catch {}
-
-      // Load variant config if this is a grouped product
+...
       if (groupId && (!product.variantLevels || product.variantLevels.length === 0)) {
         try {
           const { data: groups } = await supabase
@@ -592,17 +532,8 @@ export default function ImportNewPage() {
             .limit(1);
 
           if (groups && groups.length > 0) {
-            const group = groups[0] as any;
-            const levels: VariantLevel[] = [];
-            if (group.variant_1_label && group.variant_1_values?.length > 0) {
-              levels.push({ label: group.variant_1_label, values: group.variant_1_values });
-            }
-            if (group.variant_2_label && group.variant_2_values?.length > 0) {
-              levels.push({ label: group.variant_2_label, values: group.variant_2_values });
-            }
-            if (group.variant_3_label && group.variant_3_values?.length > 0) {
-              levels.push({ label: group.variant_3_label, values: group.variant_3_values });
-            }
+            const group = groups[0] as ProductGroup;
+            const levels = buildVariantLevelsFromProducts([], group);
 
             if (levels.length > 0) {
               setVariantConfig({ enabled: true, levels });

@@ -681,6 +681,7 @@ export function useCreateImportReceipt() {
       });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['all-products'] });
+      queryClient.invalidateQueries({ queryKey: ['product-groups'] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
