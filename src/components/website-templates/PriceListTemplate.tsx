@@ -184,8 +184,7 @@ export default function PriceListTemplate({
           <div className="text-center py-16 px-4 border-2 border-dashed border-gray-300 rounded-lg my-6 text-gray-500">
             <p className="text-base font-medium mb-1">{config.emptyProductText}</p>
             <p className="text-xs">
-              Vào <span className="font-semibold">Quản lý Landing → Bài viết</span> để tạo bài viết.
-              Mỗi bài viết = 1 bảng giá. Có thể dán bảng HTML từ Excel/Word.
+              Mỗi bài viết = 1 bảng giá. Có thể dán bảng HTML trực tiếp từ Excel/Word.
             </p>
           </div>
         ) : (

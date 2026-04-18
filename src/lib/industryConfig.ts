@@ -445,7 +445,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     articleSectionTitle: 'BẢNG GIÁ CẬP NHẬT',
     productSectionTitle: 'Sản phẩm nổi bật',
     productSectionSubtitle: 'Giá tốt nhất hôm nay',
-    emptyProductText: 'Chưa có bảng giá nào – vào Tin tức để tạo bài viết bảng giá',
+    emptyProductText: 'Vào website bán hàng → Tin tức để tạo bài viết. Bổ sung nội dung vào sẽ hiện lên đây',
     navLabels: { home: 'Trang chủ', products: 'Sản phẩm', news: 'Bảng giá', warranty: 'Bảo hành' },
     stickyBarLabels: { chat: 'Chat Zalo', call: 'Gọi ngay' },
     fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
