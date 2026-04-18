@@ -18,22 +18,65 @@ export default function ResetPasswordPage() {
   const [validSession, setValidSession] = useState(false);
 
   useEffect(() => {
-    // Check if user has a valid recovery session
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setValidSession(true);
-      }
-    };
-
     // Listen for auth state changes (when user clicks the reset link)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
         setValidSession(true);
       }
     });
 
-    checkSession();
+    // Handle different recovery link formats from email
+    const handleRecoveryLink = async () => {
+      try {
+        const url = new URL(window.location.href);
+        const hash = window.location.hash.startsWith('#')
+          ? new URLSearchParams(window.location.hash.slice(1))
+          : new URLSearchParams();
+
+        // Format 1: PKCE flow — ?code=xxx
+        const code = url.searchParams.get('code');
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (!error) {
+            setValidSession(true);
+            window.history.replaceState({}, '', '/reset-password');
+            return;
+          }
+        }
+
+        // Format 2: OTP token — ?token_hash=xxx&type=recovery
+        const tokenHash = url.searchParams.get('token_hash') || hash.get('token_hash');
+        const type = url.searchParams.get('type') || hash.get('type');
+        if (tokenHash && type === 'recovery') {
+          const { error } = await supabase.auth.verifyOtp({ type: 'recovery', token_hash: tokenHash });
+          if (!error) {
+            setValidSession(true);
+            window.history.replaceState({}, '', '/reset-password');
+            return;
+          }
+        }
+
+        // Format 3: Implicit flow — #access_token=xxx&refresh_token=xxx
+        const accessToken = hash.get('access_token');
+        const refreshToken = hash.get('refresh_token');
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          if (!error) {
+            setValidSession(true);
+            window.history.replaceState({}, '', '/reset-password');
+            return;
+          }
+        }
+
+        // Fallback: existing session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) setValidSession(true);
+      } catch (err) {
+        console.error('Reset password link error:', err);
+      }
+    };
+
+    handleRecoveryLink();
 
     return () => subscription.unsubscribe();
   }, []);
