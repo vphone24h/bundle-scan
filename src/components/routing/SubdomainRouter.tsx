@@ -71,6 +71,13 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
     // OPTIMIZATION: For main domains, skip loading state entirely
     // as tenant resolution is synchronous
     if (resolvedTenant.isMainDomain && resolvedTenant.status !== 'loading') {
+      // INSTANT: If on "/" and no logged-in user yet, show public landing immediately.
+      // Don't wait for authLoading — public landing is safe to show; if a user is
+      // detected later, we can re-render to 'app'.
+      if (!user && location.pathname === '/' && publicLandingPage) {
+        return 'public_landing';
+      }
+
       if (authLoading) {
         return 'app';
       }
