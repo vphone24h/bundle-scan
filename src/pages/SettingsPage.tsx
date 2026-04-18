@@ -20,6 +20,7 @@ import { ImportHistoricalOrdersSection } from '@/components/admin/ImportHistoric
 import { SecurityPasswordSettings } from '@/components/security/SecurityPasswordSettings';
 import { DataManagementSection } from '@/components/admin/DataManagementSection';
 import { DailyBackupSection } from '@/components/settings/DailyBackupSection';
+import { ChangePasswordCard } from '@/components/settings/ChangePasswordCard';
 import { cn } from '@/lib/utils';
 
 function BusinessModeSection({ tenantId, currentMode }: { tenantId: string; currentMode: string }) {
@@ -334,6 +335,9 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Change login password — for any logged-in user */}
+        <ChangePasswordCard />
 
         {/* App Settings */}
         <Card>
