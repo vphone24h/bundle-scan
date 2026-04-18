@@ -686,7 +686,7 @@ Deno.serve(async (req) => {
       .catch(err => console.error('Cloudflare DNS error:', err))
 
     // Send notification email to admin (non-blocking)
-    sendRegistrationNotification(businessName, subdomain, email, adminName)
+    sendRegistrationNotification(businessName, subdomain, email, adminName, companyDomain)
       .catch(err => console.error('Email notification error:', err))
 
     // Send welcome email to new user (non-blocking)
