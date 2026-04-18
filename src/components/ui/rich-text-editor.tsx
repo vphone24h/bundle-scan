@@ -29,6 +29,7 @@ import {
   Table as TableIcon,
   Plus,
   Minus,
+  PaintBucket,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -324,6 +325,100 @@ export function RichTextEditor({
     }
     return null;
   }, []);
+
+  // === MULTI-CELL SELECTION (quét nhiều ô như Word) ===
+  const selectedCellsRef = useRef<HTMLTableCellElement[]>([]);
+  const dragStartCellRef = useRef<HTMLTableCellElement | null>(null);
+
+  const clearCellSelection = useCallback(() => {
+    selectedCellsRef.current.forEach((c) => c.removeAttribute('data-rte-selected'));
+    selectedCellsRef.current = [];
+  }, []);
+
+  const getCellsInRange = useCallback((a: HTMLTableCellElement, b: HTMLTableCellElement): HTMLTableCellElement[] => {
+    const tableA = a.closest('table');
+    const tableB = b.closest('table');
+    if (!tableA || tableA !== tableB) return [a];
+    const rows = Array.from(tableA.querySelectorAll('tr')) as HTMLTableRowElement[];
+    const ra = rows.findIndex((r) => Array.from(r.cells).includes(a));
+    const rb = rows.findIndex((r) => Array.from(r.cells).includes(b));
+    const ca = Array.from((a.parentElement as HTMLTableRowElement).cells).indexOf(a);
+    const cb = Array.from((b.parentElement as HTMLTableRowElement).cells).indexOf(b);
+    const [r1, r2] = [Math.min(ra, rb), Math.max(ra, rb)];
+    const [c1, c2] = [Math.min(ca, cb), Math.max(ca, cb)];
+    const result: HTMLTableCellElement[] = [];
+    for (let i = r1; i <= r2; i++) {
+      for (let j = c1; j <= c2; j++) {
+        const cell = rows[i]?.cells[j];
+        if (cell) result.push(cell as HTMLTableCellElement);
+      }
+    }
+    return result;
+  }, []);
+
+  const applyCellSelection = useCallback((cells: HTMLTableCellElement[]) => {
+    clearCellSelection();
+    cells.forEach((c) => c.setAttribute('data-rte-selected', 'true'));
+    selectedCellsRef.current = cells;
+  }, [clearCellSelection]);
+
+  const handleEditorMouseDown = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const cell = target.closest?.('td, th') as HTMLTableCellElement | null;
+    if (!cell || !editorRef.current?.contains(cell)) {
+      clearCellSelection();
+      dragStartCellRef.current = null;
+      return;
+    }
+    dragStartCellRef.current = cell;
+    clearCellSelection();
+    const onMove = (ev: MouseEvent) => {
+      const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
+      const overCell = el?.closest?.('td, th') as HTMLTableCellElement | null;
+      if (!overCell || !dragStartCellRef.current) return;
+      if (overCell === dragStartCellRef.current) {
+        clearCellSelection();
+        return;
+      }
+      const cells = getCellsInRange(dragStartCellRef.current, overCell);
+      if (cells.length > 1) {
+        ev.preventDefault();
+        applyCellSelection(cells);
+        // Clear text selection để tránh nháy
+        window.getSelection()?.removeAllRanges();
+      }
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [applyCellSelection, clearCellSelection, getCellsInRange]);
+
+  // Tô màu nền cho các ô đang chọn (hoặc ô hiện tại nếu chưa quét)
+  const setCellsBackground = useCallback((color: string | null) => {
+    let cells = selectedCellsRef.current;
+    if (!cells.length) {
+      const c = getCurrentCell();
+      if (c) cells = [c];
+    }
+    if (!cells.length) {
+      toast({ title: 'Hãy đặt con trỏ vào ô hoặc quét chọn các ô trong bảng', variant: 'destructive' });
+      return;
+    }
+    cells.forEach((cell) => {
+      if (color) {
+        cell.style.backgroundColor = color;
+        cell.setAttribute('bgcolor', color);
+      } else {
+        cell.style.backgroundColor = '';
+        cell.removeAttribute('bgcolor');
+      }
+    });
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
+  }, [getCurrentCell, onChange]);
+
 
   const tableAction = useCallback((action: 'addRow' | 'delRow' | 'addCol' | 'delCol' | 'delTable') => {
     const cell = getCurrentCell();
@@ -974,6 +1069,35 @@ export function RichTextEditor({
               <Button size="sm" variant="outline" className="h-7 text-[11px] w-full text-destructive" onClick={() => tableAction('delTable')}>
                 Xóa cả bảng
               </Button>
+              <div className="pt-2 mt-2 border-t">
+                <p className="text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
+                  <PaintBucket className="h-3 w-3" />
+                  Tô màu nền ô (quét chọn nhiều ô rồi bấm)
+                </p>
+                <div className="grid grid-cols-8 gap-1">
+                  {[
+                    '#fef3c7', '#fee2e2', '#dcfce7', '#dbeafe', '#ede9fe', '#fce7f3', '#f3f4f6', '#fed7aa',
+                    '#fde68a', '#fca5a5', '#86efac', '#93c5fd', '#c4b5fd', '#f9a8d4', '#d1d5db', '#fdba74',
+                  ].map((bg) => (
+                    <button
+                      key={bg}
+                      type="button"
+                      title="Tô màu các ô đã chọn"
+                      onClick={() => setCellsBackground(bg)}
+                      className="w-5 h-5 rounded border border-border hover:scale-110 transition-transform"
+                      style={{ background: bg }}
+                    />
+                  ))}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px] w-full mt-1.5"
+                  onClick={() => setCellsBackground(null)}
+                >
+                  Xoá màu nền
+                </Button>
+              </div>
             </div>
           </PopoverContent>
         </Popover>
@@ -998,6 +1122,7 @@ export function RichTextEditor({
           onPaste={handlePaste}
           onBlur={saveSelection}
           onClick={handleEditorClick}
+          onMouseDown={handleEditorMouseDown}
           className="rte-editor-area p-3 text-sm focus:outline-none overflow-auto prose prose-sm max-w-none rounded-b-md"
           style={{ minHeight, resize: 'both' as any, maxHeight: '80vh', minWidth: '100%' }}
           data-placeholder={placeholder}
@@ -1156,8 +1281,14 @@ export function RichTextEditor({
           font-weight: 700;
           text-align: center;
         }
-        [contenteditable] table tr:nth-child(even) td {
+        [contenteditable] table tr:nth-child(even) td:not([style*="background"]):not([bgcolor]) {
           background: #fafafa;
+        }
+        [contenteditable] td[data-rte-selected="true"],
+        [contenteditable] th[data-rte-selected="true"] {
+          outline: 2px solid hsl(var(--primary));
+          outline-offset: -2px;
+          background-color: hsl(var(--primary) / 0.12) !important;
         }
       `}</style>
     </div>
