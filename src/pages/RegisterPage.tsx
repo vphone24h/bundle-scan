@@ -122,13 +122,36 @@ export default function RegisterPage() {
       } catch {}
 
       if (error || data?.error) {
-        const errorMsg = bodyError || data?.error || 'Có lỗi xảy ra, vui lòng thử lại';
+        let errorMsg = bodyError || data?.error || 'Có lỗi xảy ra, vui lòng thử lại';
         const errorField = bodyField || (data?.field ?? null);
+
+        // Detect rate limit (429 / "too many" / "rate limit") and explain it clearly
+        const rawText = `${errorMsg} ${(error as any)?.message || ''}`.toLowerCase();
+        const isRateLimit =
+          (error as any)?.context?.status === 429 ||
+          rawText.includes('rate limit') ||
+          rawText.includes('too many') ||
+          rawText.includes('quá nhiều');
+
+        if (isRateLimit) {
+          errorMsg =
+            'Hệ thống bảo mật đã tạm chặn IP của bạn do có quá nhiều lượt đăng ký/đăng nhập trong 1 giờ qua (giới hạn ~30 lượt/giờ/IP — tính chung tất cả người dùng cùng mạng WiFi/4G).\n\n' +
+            'Cách xử lý:\n' +
+            '• Đợi khoảng 30–60 phút rồi thử lại\n' +
+            '• Hoặc đổi sang mạng khác (chuyển 4G ↔ WiFi) để có IP mới\n' +
+            '• Tránh bấm nút Đăng ký liên tục nhiều lần';
+        }
+
         if (errorField === 'password' || errorField === 'email') {
           setFieldError({ field: errorField, message: errorMsg });
           focusField(errorField);
         }
-        toast({ title: 'Đăng ký thất bại', description: errorMsg, variant: 'destructive' });
+        toast({
+          title: isRateLimit ? 'Quá nhiều yêu cầu (Rate limit)' : 'Đăng ký thất bại',
+          description: errorMsg,
+          variant: 'destructive',
+          duration: isRateLimit ? 12000 : 5000,
+        });
         setLoading(false);
         return;
       }
