@@ -254,9 +254,10 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
     wsSummary["!cols"] = [{ wch: 25 }, { wch: 20 }];
     XLSX.utils.book_append_sheet(wb, wsSummary, "Tổng quan");
 
-    // Sheet 2: Sales
+    // Sheet 2: Sales by receipt
     const salesRows: any[][] = [["STT", "Mã phiếu", "Ngày", "Khách hàng", "Sản phẩm", "SKU", "IMEI", "Giá bán", "Tổng phiếu"]];
     let stt = 1;
+    const salesProductAgg = new Map<string, { name: string; sku: string; qty: number; revenue: number; receipts: Set<string> }>();
     for (const ex of exports) {
       const items = exportItemsMap.get(ex.id);
       const cust = ex.customer_id ? customerMap.get(ex.customer_id) || "" : "";
@@ -265,16 +266,37 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
       } else {
         for (const it of items) {
           salesRows.push([stt++, ex.code, ex.export_date, cust, it.product_name || "", it.sku || "", it.imei || "", it.sale_price || 0, ex.total_amount]);
+          const key = `${it.product_name || ""}||${it.sku || ""}`;
+          const ex_agg = salesProductAgg.get(key);
+          const price = Number(it.sale_price) || 0;
+          if (ex_agg) {
+            ex_agg.qty += 1;
+            ex_agg.revenue += price;
+            ex_agg.receipts.add(ex.code);
+          } else {
+            salesProductAgg.set(key, { name: it.product_name || "", sku: it.sku || "", qty: 1, revenue: price, receipts: new Set([ex.code]) });
+          }
         }
       }
     }
     const wsSales = XLSX.utils.aoa_to_sheet(salesRows);
     wsSales["!cols"] = [{ wch: 5 }, { wch: 18 }, { wch: 16 }, { wch: 22 }, { wch: 30 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 12 }];
-    XLSX.utils.book_append_sheet(wb, wsSales, "Bán hàng");
+    XLSX.utils.book_append_sheet(wb, wsSales, "Bán theo phiếu");
 
-    // Sheet 3: Imports
+    // Sheet 3: Sales by product
+    const salesProdRows: any[][] = [["STT", "Tên sản phẩm", "SKU", "Số lượng bán", "Tổng doanh thu", "Giá bán TB", "Số phiếu"]];
+    const salesProdSorted = [...salesProductAgg.values()].sort((a, b) => b.revenue - a.revenue);
+    salesProdSorted.forEach((p, idx) => {
+      salesProdRows.push([idx + 1, p.name, p.sku, p.qty, p.revenue, p.qty > 0 ? Math.round(p.revenue / p.qty) : 0, p.receipts.size]);
+    });
+    const wsSalesProd = XLSX.utils.aoa_to_sheet(salesProdRows);
+    wsSalesProd["!cols"] = [{ wch: 5 }, { wch: 35 }, { wch: 15 }, { wch: 12 }, { wch: 16 }, { wch: 14 }, { wch: 10 }];
+    XLSX.utils.book_append_sheet(wb, wsSalesProd, "Bán theo sản phẩm");
+
+    // Sheet 4: Imports by receipt
     const impRows: any[][] = [["STT", "Mã phiếu", "Ngày", "NCC", "Sản phẩm", "SKU", "IMEI", "Giá nhập", "SL", "Tổng phiếu"]];
     let stt2 = 1;
+    const impProductAgg = new Map<string, { name: string; sku: string; qty: number; cost: number; receipts: Set<string> }>();
     for (const im of imports) {
       const items = importItemsMap.get(im.id);
       const supp = im.supplier_id ? supplierMap.get(im.supplier_id) || "" : "";
@@ -282,13 +304,34 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
         impRows.push([stt2++, im.code, im.import_date, supp, "", "", "", "", "", im.total_amount]);
       } else {
         for (const it of items) {
-          impRows.push([stt2++, im.code, im.import_date, supp, it.product_name || "", it.sku || "", it.imei || "", it.import_price || 0, it.quantity || 1, im.total_amount]);
+          const qty = Number(it.quantity) || 1;
+          const price = Number(it.import_price) || 0;
+          impRows.push([stt2++, im.code, im.import_date, supp, it.product_name || "", it.sku || "", it.imei || "", price, qty, im.total_amount]);
+          const key = `${it.product_name || ""}||${it.sku || ""}`;
+          const im_agg = impProductAgg.get(key);
+          if (im_agg) {
+            im_agg.qty += qty;
+            im_agg.cost += price * qty;
+            im_agg.receipts.add(im.code);
+          } else {
+            impProductAgg.set(key, { name: it.product_name || "", sku: it.sku || "", qty, cost: price * qty, receipts: new Set([im.code]) });
+          }
         }
       }
     }
     const wsImp = XLSX.utils.aoa_to_sheet(impRows);
     wsImp["!cols"] = [{ wch: 5 }, { wch: 18 }, { wch: 16 }, { wch: 20 }, { wch: 30 }, { wch: 12 }, { wch: 18 }, { wch: 12 }, { wch: 5 }, { wch: 12 }];
-    XLSX.utils.book_append_sheet(wb, wsImp, "Nhập hàng");
+    XLSX.utils.book_append_sheet(wb, wsImp, "Nhập theo phiếu");
+
+    // Sheet 5: Imports by product
+    const impProdRows: any[][] = [["STT", "Tên sản phẩm", "SKU", "Số lượng nhập", "Tổng giá trị nhập", "Giá nhập TB", "Số phiếu"]];
+    const impProdSorted = [...impProductAgg.values()].sort((a, b) => b.cost - a.cost);
+    impProdSorted.forEach((p, idx) => {
+      impProdRows.push([idx + 1, p.name, p.sku, p.qty, p.cost, p.qty > 0 ? Math.round(p.cost / p.qty) : 0, p.receipts.size]);
+    });
+    const wsImpProd = XLSX.utils.aoa_to_sheet(impProdRows);
+    wsImpProd["!cols"] = [{ wch: 5 }, { wch: 35 }, { wch: 15 }, { wch: 12 }, { wch: 18 }, { wch: 14 }, { wch: 10 }];
+    XLSX.utils.book_append_sheet(wb, wsImpProd, "Nhập theo sản phẩm");
 
     // Sheet 4: Inventory
     const invRows: any[][] = [["STT", "Tên sản phẩm", "SKU", "Giá nhập", "Giá bán"]];
