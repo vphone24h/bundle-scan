@@ -269,7 +269,13 @@ export function useSubscriptionPlans(includeInactive = false) {
         return plans;
       }
 
-      return mergeScopedSubscriptionPlans(plans, scopedCompanyId);
+      // If tenant belongs to a company → ONLY show that company's plans (no platform fallback)
+      if (scopedCompanyId) {
+        return plans.filter((p) => p.company_id === scopedCompanyId);
+      }
+
+      // Tenant không thuộc công ty nào → dùng plans gốc của platform
+      return plans.filter((p) => !p.company_id);
     },
   });
 }
