@@ -226,20 +226,23 @@ export default function SettingsPage() {
 
       if (error) throw error;
 
-      // Đồng bộ email đăng nhập (auth) khi email cửa hàng thay đổi
+      // Đồng bộ email đăng nhập (auth) tức thì — không cần xác nhận
       if (newEmail && newEmail !== (tenant.email || '')) {
-        const { error: authError } = await supabase.auth.updateUser({ email: newEmail });
-        if (authError) {
-          console.warn('Could not update auth email:', authError.message);
-          toast({ 
-            title: 'Email cửa hàng đã lưu, nhưng email đăng nhập chưa cập nhật được', 
-            description: authError.message,
-            variant: 'destructive' 
+        const { data: result, error: authError } = await supabase.functions.invoke('admin-update-user-email', {
+          body: { new_email: newEmail },
+        });
+        if (authError || (result as any)?.error) {
+          const msg = authError?.message || (result as any)?.error || 'Không rõ lỗi';
+          console.warn('Could not update auth email:', msg);
+          toast({
+            title: 'Email cửa hàng đã lưu, nhưng email đăng nhập chưa cập nhật được',
+            description: msg,
+            variant: 'destructive',
           });
         } else {
-          toast({ 
-            title: 'Đã gửi email xác nhận', 
-            description: `Vui lòng kiểm tra hộp thư ${newEmail} để xác nhận. Sau khi xác nhận, lần đăng nhập sau hãy dùng email mới.`,
+          toast({
+            title: '✅ Email đăng nhập đã đổi',
+            description: `Lần đăng nhập sau hãy dùng email mới: ${newEmail}`,
           });
         }
       }
