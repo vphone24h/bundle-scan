@@ -147,7 +147,19 @@ Deno.serve(async (req) => {
       const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(userId, authUpdates)
       if (authUpdateError) {
         console.error('Auth update error:', authUpdateError)
-        return new Response(JSON.stringify({ error: authUpdateError.message }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        const rawMsg = (authUpdateError as any)?.message || ''
+        const code = (authUpdateError as any)?.code || ''
+        let friendly = rawMsg
+        if (/pwned|weak|leaked|known to be/i.test(rawMsg) || code === 'weak_password') {
+          friendly = 'Mật khẩu quá yếu hoặc đã bị lộ trong các vụ rò rỉ dữ liệu. Vui lòng chọn mật khẩu mạnh hơn (kết hợp chữ hoa, chữ thường, số và ký tự đặc biệt).'
+        } else if (/email/i.test(rawMsg) && /invalid/i.test(rawMsg)) {
+          friendly = 'Email không hợp lệ.'
+        } else if (/already (registered|exists)|duplicate/i.test(rawMsg)) {
+          friendly = 'Email này đã được sử dụng bởi tài khoản khác.'
+        } else if (/password.*(short|length|at least)/i.test(rawMsg)) {
+          friendly = 'Mật khẩu quá ngắn. Tối thiểu 6 ký tự.'
+        }
+        return new Response(JSON.stringify({ error: friendly, raw: rawMsg }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
       // Sync email to platform_users
