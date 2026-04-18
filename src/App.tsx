@@ -19,6 +19,8 @@ import AuthPage from "./pages/AuthPage";
 import PlatformAuthPage from "./pages/PlatformAuthPage";
 import RegisterPage from "./pages/RegisterPage";
 import PublicLandingPage from "./pages/PublicLandingPage";
+import StoreLandingPage from "./pages/StoreLandingPage";
+import WarrantyCheckPage from "./pages/WarrantyCheckPage";
 
 // Lazy load app pages for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -49,7 +51,6 @@ const AffiliatePage = lazy(() => import("./pages/AffiliatePage"));
 const EInvoicePage = lazy(() => import("./pages/EInvoicePage"));
 const ApplicationsPage = lazy(() => import("./pages/ApplicationsPage"));
 const AdvertisementsAdminPage = lazy(() => import("./pages/AdvertisementsAdminPage"));
-const StoreLandingPage = lazy(() => import("./pages/StoreLandingPage"));
 const LandingPageAdminPage = lazy(() => import("./pages/LandingPageAdminPage"));
 const InstallAppPage = lazy(() => import("./pages/InstallAppPage"));
 const TaxPolicyPage = lazy(() => import("./pages/TaxPolicyPage"));
@@ -58,7 +59,6 @@ const PlatformArticlesPage = lazy(() => import("./pages/PlatformArticlesPage"));
 const SocialPage = lazy(() => import("./pages/SocialPage"));
 const WebsiteEditorPage = lazy(() => import("./pages/WebsiteEditorPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
-const WarrantyCheckPage = lazy(() => import("./pages/WarrantyCheckPage"));
 const RepairNewPage = lazy(() => import("./pages/RepairNewPage"));
 const RepairListPage = lazy(() => import("./pages/RepairListPage"));
 const AttendancePage = lazy(() => import("./pages/AttendancePage"));
