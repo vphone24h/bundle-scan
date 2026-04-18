@@ -1,10 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import nodemailer from 'https://esm.sh/nodemailer@6.9.10'
+import { resolveSmtpForCompany, createSmtpTransporter } from '../_shared/smtp.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
+
+const PLATFORM_FALLBACK_EMAIL = 'vphone24h@gmail.com'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -55,7 +57,7 @@ Deno.serve(async (req) => {
       .from('payment_requests')
       .select(`
         *,
-        tenants (name, subdomain, email, phone),
+        tenants (id, name, subdomain, email, phone, company_id),
         subscription_plans (name, plan_type, price)
       `)
       .eq('id', paymentRequestId)
@@ -69,19 +71,61 @@ Deno.serve(async (req) => {
       )
     }
 
-    const smtpUser = Deno.env.get('SMTP_USER')
-    const smtpPassword = Deno.env.get('SMTP_PASSWORD')
+    const tenant = payment.tenants as any
+    const plan = payment.subscription_plans as any
+    const companyId: string | null = tenant?.company_id || null
 
-    if (!smtpUser || !smtpPassword) {
-      console.error('SMTP credentials not configured')
+    // === Resolve recipient: company_admin email if tenant has a company, otherwise platform fallback
+    let recipientEmail = PLATFORM_FALLBACK_EMAIL
+
+    if (companyId) {
+      // 1) Try company_settings.email
+      const { data: companySettings } = await supabaseAdmin
+        .from('company_settings')
+        .select('email')
+        .eq('company_id', companyId)
+        .maybeSingle()
+
+      if (companySettings?.email) {
+        recipientEmail = companySettings.email
+      } else {
+        // 2) Find company_admin user(s) and use their auth email
+        const { data: admins } = await supabaseAdmin
+          .from('platform_users')
+          .select('user_id, email')
+          .eq('company_id', companyId)
+          .eq('platform_role', 'company_admin')
+          .eq('is_active', true)
+
+        if (admins && admins.length > 0) {
+          const adminEmails: string[] = []
+          for (const a of admins) {
+            if (a.email) {
+              adminEmails.push(a.email)
+            } else if (a.user_id) {
+              try {
+                const { data } = await supabaseAdmin.auth.admin.getUserById(a.user_id)
+                if (data?.user?.email) adminEmails.push(data.user.email)
+              } catch (_) { /* ignore */ }
+            }
+          }
+          if (adminEmails.length > 0) {
+            recipientEmail = adminEmails.join(', ')
+          }
+        }
+      }
+    }
+
+    // === Resolve SMTP: company SMTP if configured, else platform default
+    const smtpConfig = await resolveSmtpForCompany(supabaseAdmin, companyId)
+
+    if (!smtpConfig.smtpUser || !smtpConfig.smtpPass) {
+      console.warn('No SMTP credentials available')
       return new Response(
         JSON.stringify({ success: true, message: 'SMTP not configured' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-
-    const tenant = payment.tenants as any
-    const plan = payment.subscription_plans as any
 
     const now = new Date()
     const dateStr = now.toLocaleDateString('vi-VN', {
@@ -99,9 +143,11 @@ Deno.serve(async (req) => {
       lifetime: 'Trọn đời',
     }
 
+    const brandName = smtpConfig.fromName || 'VKHO'
+
     const htmlContent = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f9fafb;border-radius:8px">
       <div style="background:#d97706;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0;text-align:center">
-        <h1 style="margin:0;font-size:20px">💰 Yêu cầu mua gói mới - VKHO</h1>
+        <h1 style="margin:0;font-size:20px">💰 Yêu cầu mua gói mới</h1>
       </div>
       <div style="background:#fff;padding:24px;border:1px solid #e5e7eb;border-radius:0 0 8px 8px">
         <p style="font-size:16px;color:#374151;margin-bottom:16px">Có yêu cầu mua gói dịch vụ mới cần duyệt:</p>
@@ -140,32 +186,24 @@ Deno.serve(async (req) => {
           </tr>
         </table>
         <div style="margin-top:20px;padding:12px;background:#fef3c7;border-radius:6px;text-align:center;color:#92400e;font-weight:600">
-          ⏳ Đang chờ duyệt - Vui lòng kiểm tra và xử lý
+          ⏳ Đang chờ duyệt - Vui lòng đăng nhập trang quản trị để xử lý
         </div>
       </div>
     </div>`
 
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: {
-        user: smtpUser,
-        pass: smtpPassword,
-      },
-    })
+    const transporter = createSmtpTransporter(smtpConfig)
 
     await transporter.sendMail({
-      from: smtpUser,
-      to: 'vphone24h@gmail.com',
-      subject: `[VKHO] Yêu cầu mua gói: ${tenant?.name} - ${plan?.name} (${formatPrice(payment.amount)})`,
+      from: `"${brandName}" <${smtpConfig.fromEmail}>`,
+      to: recipientEmail,
+      subject: `[${brandName}] Yêu cầu mua gói: ${tenant?.name} - ${plan?.name} (${formatPrice(payment.amount)})`,
       html: htmlContent,
     })
 
-    console.log('Payment request notification email sent successfully')
+    console.log(`Payment notification sent to ${recipientEmail} (company SMTP: ${smtpConfig.isCompanySmtp})`)
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, recipient: recipientEmail, isCompanySmtp: smtpConfig.isCompanySmtp }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
