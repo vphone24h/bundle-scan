@@ -605,6 +605,7 @@ export function ProductDetailPage({
               }
             });
           })()}
+          </div>{/* /px-4 wrapper */}
           </div>{/* /Right column (desktop) */}
         </div>{/* /Desktop 2-column grid wrapper */}
 
