@@ -251,16 +251,24 @@ export default function RegisterPage() {
                   placeholder="vkho"
                   value={formData.subdomain}
                   onChange={handleChange}
-                  className="flex-1 rounded-r-none border-r-0"
+                  className={cn(
+                    "flex-1 rounded-r-none border-r-0",
+                    fieldError.field === 'subdomain' && "border-destructive ring-1 ring-destructive focus-visible:ring-destructive"
+                  )}
+                  aria-invalid={fieldError.field === 'subdomain'}
                   required
                 />
                 <span className="inline-flex items-center px-3 h-10 border border-l-0 rounded-r-md bg-muted text-muted-foreground text-sm whitespace-nowrap">
                   .{companyDomain}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Chỉ sử dụng chữ thường, số và dấu gạch ngang. Đây là ID để đăng nhập.
-              </p>
+              {fieldError.field === 'subdomain' ? (
+                <p className="text-xs text-destructive font-medium">{fieldError.message}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Chỉ sử dụng chữ thường, số và dấu gạch ngang. Đây là ID để đăng nhập.
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
