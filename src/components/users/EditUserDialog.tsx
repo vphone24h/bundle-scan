@@ -193,7 +193,14 @@ export function EditUserDialog({
 
       if (response.data?.error) throw new Error(response.data.error);
       if (response.error) {
-        throw new Error(response.error.message || 'Lỗi không xác định');
+        let message = response.error.message || 'Lỗi không xác định';
+        try {
+          const body = typeof (response.error as any)?.context?.json === 'function'
+            ? await (response.error as any).context.json()
+            : null;
+          if (body?.error) message = body.error;
+        } catch {}
+        throw new Error(message);
       }
 
       return response.data;
