@@ -6,65 +6,51 @@ const corsHeaders = {
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    // Rate limiting
     const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-    const supabaseUrlRL = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKeyRL = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const rlClient = createClient(supabaseUrlRL, supabaseServiceKeyRL, { auth: { autoRefreshToken: false, persistSession: false } })
-    const { data: allowed } = await rlClient.rpc('check_rate_limit', { _function_name: 'update-user', _ip_address: clientIP, _max_requests: 30, _window_minutes: 60 })
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+
+    const { data: allowed } = await supabaseAdmin.rpc('check_rate_limit', { _function_name: 'update-user', _ip_address: clientIP, _max_requests: 30, _window_minutes: 60 })
     if (allowed === false) {
       return new Response(JSON.stringify({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Get the authorization header to verify the caller is authenticated
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Không có quyền truy cập' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: 'Không có quyền truy cập' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Create Supabase client with service role for admin operations
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    })
-
-    // Verify the caller is a super_admin
     const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
       global: { headers: { Authorization: authHeader } },
     })
 
     const { data: { user: caller }, error: callerError } = await supabaseClient.auth.getUser()
     if (callerError || !caller) {
-      return new Response(
-        JSON.stringify({ error: 'Không thể xác thực người dùng' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: 'Không thể xác thực người dùng' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Get caller's tenant_id from platform_users
+    // Get caller's platform info (platform_role + company_id + tenant_id)
     const { data: callerPlatform } = await supabaseAdmin
       .from('platform_users')
-      .select('tenant_id')
+      .select('tenant_id, company_id, platform_role')
       .eq('user_id', caller.id)
       .maybeSingle()
 
+    const isPlatformAdmin = callerPlatform?.platform_role === 'platform_admin'
+    const isCompanyAdmin = callerPlatform?.platform_role === 'company_admin'
     const callerTenantId = callerPlatform?.tenant_id
+    const callerCompanyId = callerPlatform?.company_id
 
-    // Check if caller is super_admin (filter by tenant to avoid .single() error on multi-tenant)
+    // Check super_admin in user_roles (legacy) for backward compatibility
     let callerRoleQuery = supabaseAdmin
       .from('user_roles')
       .select('user_role')
@@ -74,75 +60,98 @@ Deno.serve(async (req) => {
       callerRoleQuery = callerRoleQuery.eq('tenant_id', callerTenantId)
     }
 
-    const { data: callerRole, error: roleError } = await callerRoleQuery.maybeSingle()
+    const { data: callerRole } = await callerRoleQuery.maybeSingle()
+    const isSuperAdmin = callerRole?.user_role === 'super_admin'
 
-    if (roleError || callerRole?.user_role !== 'super_admin') {
-      return new Response(
-        JSON.stringify({ error: 'Chỉ Admin Tổng mới có quyền chỉnh sửa tài khoản' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    if (!isPlatformAdmin && !isCompanyAdmin && !isSuperAdmin) {
+      return new Response(JSON.stringify({ error: 'Bạn không có quyền chỉnh sửa tài khoản' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Parse request body
     const body = await req.json()
     const { userId, email, password, displayName, phone } = body
-    console.log('Update user request:', { userId, hasEmail: !!email, hasPassword: !!password, hasDisplayName: !!displayName, hasPhone: phone !== undefined })
+    console.log('Update user request:', { userId, callerRole: callerPlatform?.platform_role, hasEmail: !!email, hasPassword: !!password })
 
     if (!userId) {
-      return new Response(
-        JSON.stringify({ error: 'Thiếu thông tin người dùng' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: 'Thiếu thông tin người dùng' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Check target user's role (filter by same tenant)
-    let targetRoleQuery = supabaseAdmin
-      .from('user_roles')
-      .select('user_role')
-      .eq('user_id', userId)
+    // Authorization scoping for company_admin: target user must belong to same company
+    if (isCompanyAdmin && !isPlatformAdmin) {
+      if (!callerCompanyId) {
+        return new Response(JSON.stringify({ error: 'Không xác định được công ty của bạn' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
 
-    if (callerTenantId) {
-      targetRoleQuery = targetRoleQuery.eq('tenant_id', callerTenantId)
+      // Find target user's company through platform_users OR user_roles -> tenants -> company_id
+      const { data: targetPlatform } = await supabaseAdmin
+        .from('platform_users')
+        .select('company_id, tenant_id, platform_role')
+        .eq('user_id', userId)
+        .maybeSingle()
+
+      let targetCompanyId: string | null = targetPlatform?.company_id ?? null
+
+      if (!targetCompanyId && targetPlatform?.tenant_id) {
+        const { data: t } = await supabaseAdmin.from('tenants').select('company_id').eq('id', targetPlatform.tenant_id).maybeSingle()
+        targetCompanyId = t?.company_id ?? null
+      }
+
+      if (!targetCompanyId) {
+        const { data: targetRoles } = await supabaseAdmin
+          .from('user_roles')
+          .select('tenant_id')
+          .eq('user_id', userId)
+          .not('tenant_id', 'is', null)
+
+        if (targetRoles && targetRoles.length > 0) {
+          const tenantIds = targetRoles.map(r => r.tenant_id).filter(Boolean)
+          const { data: tenants } = await supabaseAdmin.from('tenants').select('company_id').in('id', tenantIds)
+          const match = tenants?.find(t => t.company_id === callerCompanyId)
+          if (match) targetCompanyId = match.company_id
+        }
+      }
+
+      if (targetCompanyId !== callerCompanyId) {
+        return new Response(JSON.stringify({ error: 'Bạn chỉ có thể chỉnh sửa người dùng thuộc công ty của mình' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      // Block editing other platform_admin / company_admin (cannot edit peers / higher)
+      if (targetPlatform?.platform_role === 'platform_admin' && userId !== caller.id) {
+        return new Response(JSON.stringify({ error: 'Không thể chỉnh sửa tài khoản Admin Tổng' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
     }
 
-    const { data: targetRole, error: targetRoleError } = await targetRoleQuery.maybeSingle()
+    // For super_admin (legacy): keep existing scoped check
+    if (isSuperAdmin && !isPlatformAdmin && !isCompanyAdmin) {
+      let targetRoleQuery = supabaseAdmin
+        .from('user_roles')
+        .select('user_role')
+        .eq('user_id', userId)
 
-    if (targetRoleError || !targetRole) {
-      return new Response(
-        JSON.stringify({ error: 'Không tìm thấy người dùng' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      if (callerTenantId) {
+        targetRoleQuery = targetRoleQuery.eq('tenant_id', callerTenantId)
+      }
+
+      const { data: targetRole } = await targetRoleQuery.maybeSingle()
+
+      if (targetRole?.user_role === 'super_admin' && userId !== caller.id) {
+        return new Response(JSON.stringify({ error: 'Không thể chỉnh sửa tài khoản Admin Tổng khác' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
     }
 
-    if (targetRole.user_role === 'super_admin' && userId !== caller.id) {
-      return new Response(
-        JSON.stringify({ error: 'Không thể chỉnh sửa tài khoản Admin Tổng khác' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Update auth user (email/password) if provided
+    // Update auth user (email/password)
     const authUpdates: { email?: string; password?: string } = {}
     if (email) authUpdates.email = email
     if (password) authUpdates.password = password
 
     if (Object.keys(authUpdates).length > 0) {
-      const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(
-        userId,
-        authUpdates
-      )
-
+      const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(userId, authUpdates)
       if (authUpdateError) {
         console.error('Auth update error:', authUpdateError)
-        return new Response(
-          JSON.stringify({ error: authUpdateError.message }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+        return new Response(JSON.stringify({ error: authUpdateError.message }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
-      // Also update/insert email in platform_users table for display purposes
+      // Sync email to platform_users
       if (email) {
-        // First check if platform_users record exists
         const { data: existingPlatformUser } = await supabaseAdmin
           .from('platform_users')
           .select('id')
@@ -150,53 +159,12 @@ Deno.serve(async (req) => {
           .maybeSingle()
 
         if (existingPlatformUser) {
-          // Update existing record
-          const { error: platformUserError } = await supabaseAdmin
-            .from('platform_users')
-            .update({ email: email })
-            .eq('user_id', userId)
-
-          if (platformUserError) {
-            console.error('Platform user email update error:', platformUserError)
-          }
-        } else {
-          // Use already-fetched callerTenantId instead of re-querying
-          const callerPlatformTenantId = callerTenantId
-
-          // Fetch existing profile to satisfy NOT NULL display_name constraint on platform_users
-          const { data: targetProfile } = await supabaseAdmin
-            .from('profiles')
-            .select('display_name, phone')
-            .eq('user_id', userId)
-            .maybeSingle()
-
-          if (callerPlatformTenantId) {
-            const resolvedDisplayName =
-              (displayName?.trim() || '') ||
-              (targetProfile?.display_name?.trim() || '') ||
-              email
-
-            // Create new platform_users record for this user (display_name is required)
-            const { error: insertError } = await supabaseAdmin
-              .from('platform_users')
-              .insert({
-                user_id: userId,
-                email: email,
-                tenant_id: callerPlatformTenantId,
-                display_name: resolvedDisplayName,
-                phone: phone !== undefined ? phone : (targetProfile?.phone ?? null),
-                is_active: true,
-              })
-
-            if (insertError) {
-              console.error('Platform user insert error:', insertError)
-            }
-          }
+          await supabaseAdmin.from('platform_users').update({ email }).eq('user_id', userId)
         }
       }
     }
 
-    // Update profile (displayName/phone) if provided
+    // Update profile (displayName/phone)
     const profileUpdates: { display_name?: string; phone?: string } = {}
     if (displayName) profileUpdates.display_name = displayName
     if (phone !== undefined) profileUpdates.phone = phone
@@ -209,42 +177,23 @@ Deno.serve(async (req) => {
 
       if (profileError) {
         console.error('Profile update error:', profileError)
-        return new Response(
-          JSON.stringify({ error: 'Không thể cập nhật thông tin người dùng' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+        return new Response(JSON.stringify({ error: 'Không thể cập nhật thông tin người dùng' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
-      // Also sync displayName/phone to platform_users if record exists
+      // Sync to platform_users
       const platformUserUpdates: Record<string, string> = {}
       if (displayName) platformUserUpdates.display_name = displayName
       if (phone !== undefined) platformUserUpdates.phone = phone
 
       if (Object.keys(platformUserUpdates).length > 0) {
-        const { error: platformSyncError } = await supabaseAdmin
-          .from('platform_users')
-          .update(platformUserUpdates)
-          .eq('user_id', userId)
-
-        if (platformSyncError) {
-          console.error('Platform user sync error (non-fatal):', platformSyncError)
-        }
+        await supabaseAdmin.from('platform_users').update(platformUserUpdates).eq('user_id', userId)
       }
     }
 
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: 'Cập nhật thành công'
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ success: true, message: 'Cập nhật thành công' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
   } catch (error) {
     console.error('Unexpected error:', error)
-    return new Response(
-      JSON.stringify({ error: 'Lỗi hệ thống' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ error: 'Lỗi hệ thống' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   }
 })
