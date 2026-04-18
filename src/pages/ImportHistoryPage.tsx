@@ -1101,12 +1101,10 @@ export default function ImportHistoryPage() {
                               <Pencil className="mr-2 h-4 w-4" />
                               Chỉnh sửa
                             </DropdownMenuItem>
-                            {receipt.status === 'completed' && (
-                              <DropdownMenuItem onClick={() => handleAddProducts(receipt)}>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Thêm sản phẩm
-                              </DropdownMenuItem>
-                            )}
+                            <DropdownMenuItem onClick={() => handleAddProducts(receipt)}>
+                              <Plus className="mr-2 h-4 w-4" />
+                              Thêm sản phẩm
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleReturn(receipt)}>
                               <RotateCcw className="mr-2 h-4 w-4" />
                               Trả hàng
