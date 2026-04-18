@@ -964,10 +964,26 @@ export function RichTextEditor({
           onPaste={handlePaste}
           onBlur={saveSelection}
           onClick={handleEditorClick}
-          className="rte-editor-area p-3 text-sm focus:outline-none overflow-auto prose prose-sm max-w-none"
-          style={{ minHeight, resize: 'both' as any, maxHeight: '80vh' }}
+          className="rte-editor-area p-3 text-sm focus:outline-none overflow-auto prose prose-sm max-w-none rounded-b-md"
+          style={{ minHeight, resize: 'both' as any, maxHeight: '80vh', minWidth: '100%' }}
           data-placeholder={placeholder}
           suppressContentEditableWarning
+        />
+        {/* Visual hint cho resize handle góc dưới-phải editor */}
+        <div
+          aria-hidden
+          title="Kéo để đổi kích thước khung soạn thảo"
+          style={{
+            position: 'absolute',
+            right: 2,
+            bottom: 2,
+            width: 14,
+            height: 14,
+            pointerEvents: 'none',
+            background:
+              'linear-gradient(135deg, transparent 0 6px, hsl(var(--muted-foreground) / 0.5) 6px 7px, transparent 7px 9px, hsl(var(--muted-foreground) / 0.5) 9px 10px, transparent 10px)',
+            zIndex: 5,
+          }}
         />
 
         {/* Resize overlay */}
