@@ -449,7 +449,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     navLabels: { home: 'Trang chủ', products: 'Sản phẩm', news: 'Bảng giá', warranty: 'Bảo hành' },
     stickyBarLabels: { chat: 'Chat Zalo', call: 'Gọi ngay' },
     fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-    brandInspiration: 'taoquangsang.vn',
+    brandInspiration: 'taoquangsang',
   },
 
   // === TECHNOLOGY ===
