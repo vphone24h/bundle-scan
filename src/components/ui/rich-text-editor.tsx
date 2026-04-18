@@ -127,6 +127,7 @@ export function RichTextEditor({
   const [tableHandles, setTableHandles] = useState<{
     cols: { left: number; top: number; height: number; index: number }[];
     rows: { left: number; top: number; width: number; index: number }[];
+    corner: { left: number; top: number } | null;
   } | null>(null);
 
   const saveSelection = useCallback(() => {
@@ -471,7 +472,11 @@ export function RichTextEditor({
           index,
         };
       });
-      setTableHandles({ cols, rows });
+      const corner = {
+        left: tRect.right - eRect.left + editor.scrollLeft,
+        top: tRect.bottom - eRect.top + editor.scrollTop,
+      };
+      setTableHandles({ cols, rows, corner });
     };
     compute();
     const observer = new MutationObserver(compute);
@@ -563,7 +568,36 @@ export function RichTextEditor({
     document.addEventListener('touchmove', onMove as any, { passive: false });
     document.addEventListener('touchend', onUp);
   }, [activeTable, onChange]);
-
+  // Resize toàn bộ bảng: kéo góc dưới-phải
+  const startTableResize = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!activeTable) return;
+    const startX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const startW = activeTable.offsetWidth;
+    const startH = activeTable.offsetHeight;
+    activeTable.style.tableLayout = 'fixed';
+    const onMove = (ev: MouseEvent | TouchEvent) => {
+      const cx = 'touches' in ev ? (ev as TouchEvent).touches[0].clientX : (ev as MouseEvent).clientX;
+      const cy = 'touches' in ev ? (ev as TouchEvent).touches[0].clientY : (ev as MouseEvent).clientY;
+      const newW = Math.max(80, startW + (cx - startX));
+      const newH = Math.max(40, startH + (cy - startY));
+      activeTable.style.width = `${newW}px`;
+      activeTable.style.height = `${newH}px`;
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove as any);
+      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onMove as any);
+      document.removeEventListener('touchend', onUp);
+      if (editorRef.current) onChange(editorRef.current.innerHTML);
+    };
+    document.addEventListener('mousemove', onMove as any);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove as any, { passive: false });
+    document.addEventListener('touchend', onUp);
+  }, [activeTable, onChange]);
 
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -686,7 +720,7 @@ export function RichTextEditor({
   }, [resizingImg]);
 
   return (
-    <div className={cn('border rounded-md overflow-hidden', className)}>
+    <div className={cn('border rounded-md overflow-visible', className)}>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-0.5 p-1.5 border-b bg-muted/30">
         <ToolbarButton onClick={() => { saveSelection(); execCommand('bold'); }} title="In đậm">
@@ -964,10 +998,26 @@ export function RichTextEditor({
           onPaste={handlePaste}
           onBlur={saveSelection}
           onClick={handleEditorClick}
-          className="rte-editor-area p-3 text-sm focus:outline-none overflow-auto prose prose-sm max-w-none"
-          style={{ minHeight, resize: 'both' as any, maxHeight: '80vh' }}
+          className="rte-editor-area p-3 text-sm focus:outline-none overflow-auto prose prose-sm max-w-none rounded-b-md"
+          style={{ minHeight, resize: 'both' as any, maxHeight: '80vh', minWidth: '100%' }}
           data-placeholder={placeholder}
           suppressContentEditableWarning
+        />
+        {/* Visual hint cho resize handle góc dưới-phải editor */}
+        <div
+          aria-hidden
+          title="Kéo để đổi kích thước khung soạn thảo"
+          style={{
+            position: 'absolute',
+            right: 2,
+            bottom: 2,
+            width: 14,
+            height: 14,
+            pointerEvents: 'none',
+            background:
+              'linear-gradient(135deg, transparent 0 6px, hsl(var(--muted-foreground) / 0.5) 6px 7px, transparent 7px 9px, hsl(var(--muted-foreground) / 0.5) 9px 10px, transparent 10px)',
+            zIndex: 5,
+          }}
         />
 
         {/* Resize overlay */}
@@ -1046,6 +1096,26 @@ export function RichTextEditor({
                 }}
               />
             ))}
+            {tableHandles.corner && (
+              <div
+                title="Kéo để đổi kích thước cả bảng"
+                onMouseDown={startTableResize}
+                onTouchStart={startTableResize}
+                style={{
+                  position: 'absolute',
+                  top: tableHandles.corner.top - 7,
+                  left: tableHandles.corner.left - 7,
+                  width: 14,
+                  height: 14,
+                  cursor: 'nwse-resize',
+                  background: 'hsl(var(--primary))',
+                  border: '2px solid white',
+                  borderRadius: 3,
+                  zIndex: 12,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                }}
+              />
+            )}
           </>
         )}
       </div>
