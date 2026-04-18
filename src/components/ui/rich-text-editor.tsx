@@ -26,6 +26,9 @@ import {
   Type,
   Upload,
   Loader2,
+  Table as TableIcon,
+  Plus,
+  Minus,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
