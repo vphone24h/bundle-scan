@@ -46,11 +46,24 @@ const COLORS = [
   '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#0f766e', '#1e3a5f',
 ];
 
-const FONT_SIZES = [
-  { label: 'Nhỏ', value: '2' },
-  { label: 'Bình thường', value: '3' },
-  { label: 'Lớn', value: '4' },
-  { label: 'Rất lớn', value: '5' },
+// Cỡ chữ tính bằng px (dùng inline style để có nhiều mức)
+const FONT_SIZES_PX = [
+  10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28, 32, 36, 40, 48, 56, 64, 72,
+];
+
+const FONT_FAMILIES: { label: string; value: string }[] = [
+  { label: 'Mặc định', value: '' },
+  { label: 'Arial', value: 'Arial, sans-serif' },
+  { label: 'Times New Roman', value: '"Times New Roman", Times, serif' },
+  { label: 'Calibri', value: 'Calibri, sans-serif' },
+  { label: 'Tahoma', value: 'Tahoma, sans-serif' },
+  { label: 'Verdana', value: 'Verdana, sans-serif' },
+  { label: 'Georgia', value: 'Georgia, serif' },
+  { label: 'Courier New', value: '"Courier New", Courier, monospace' },
+  { label: 'Roboto', value: 'Roboto, sans-serif' },
+  { label: 'Open Sans', value: '"Open Sans", sans-serif' },
+  { label: 'Inter', value: 'Inter, sans-serif' },
+  { label: 'Comic Sans MS', value: '"Comic Sans MS", cursive' },
 ];
 
 const MAX_UPLOAD_SIZE = 15 * 1024 * 1024;
@@ -173,6 +186,47 @@ export function RichTextEditor({
       onChange(editorRef.current.innerHTML);
     }
   }, [onChange]);
+
+  // Áp dụng style (font-size px / font-family) lên vùng đang chọn bằng cách
+  // bọc vào <span style="..."> — hoạt động linh hoạt hơn execCommand('fontSize').
+  const applyInlineStyle = useCallback((styleProp: 'fontSize' | 'fontFamily', cssValue: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
+    restoreSelection();
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+
+    if (range.collapsed) {
+      // Không có vùng chọn: chèn span rỗng để gõ tiếp với style mới
+      const span = document.createElement('span');
+      (span.style as any)[styleProp] = cssValue;
+      span.appendChild(document.createTextNode('\u200B'));
+      range.insertNode(span);
+      const newRange = document.createRange();
+      newRange.setStart(span.firstChild!, 1);
+      newRange.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+    } else {
+      const span = document.createElement('span');
+      (span.style as any)[styleProp] = cssValue;
+      try {
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+        // Chọn lại nội dung vừa style
+        const newRange = document.createRange();
+        newRange.selectNodeContents(span);
+        sel.removeAllRanges();
+        sel.addRange(newRange);
+      } catch {
+        // fallback
+      }
+    }
+    saveSelection();
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
+  }, [onChange, restoreSelection, saveSelection]);
 
   const handleInput = useCallback(() => {
     if (editorRef.current) {
@@ -671,22 +725,63 @@ export function RichTextEditor({
 
         <div className="w-px h-5 bg-border mx-1" />
 
+        {/* Font family */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="px-2 py-1 rounded hover:bg-muted transition-colors text-xs flex items-center gap-1 border border-border min-w-[90px] justify-between"
+              title="Phông chữ"
+              onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
+            >
+              <span className="truncate">Phông</span>
+              <span className="opacity-60">▾</span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-44 p-1 max-h-72 overflow-y-auto" align="start">
+            {FONT_FAMILIES.map((f) => (
+              <button
+                key={f.label}
+                type="button"
+                className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-muted transition-colors"
+                style={{ fontFamily: f.value || undefined }}
+                onClick={() => {
+                  if (!f.value) {
+                    restoreSelection();
+                    execCommand('removeFormat');
+                  } else {
+                    applyInlineStyle('fontFamily', f.value);
+                  }
+                }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </PopoverContent>
+        </Popover>
+
         {/* Font size */}
         <Popover>
           <PopoverTrigger asChild>
-            <button type="button" className="p-1.5 rounded hover:bg-muted transition-colors" title="Cỡ chữ" onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}>
-              <Type className="h-4 w-4" />
+            <button
+              type="button"
+              className="px-2 py-1 rounded hover:bg-muted transition-colors text-xs flex items-center gap-1 border border-border min-w-[64px] justify-between"
+              title="Cỡ chữ"
+              onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
+            >
+              <Type className="h-3.5 w-3.5" />
+              <span className="opacity-60">▾</span>
             </button>
           </PopoverTrigger>
-          <PopoverContent className="w-32 p-1" align="start">
-            {FONT_SIZES.map((size) => (
+          <PopoverContent className="w-24 p-1 max-h-72 overflow-y-auto" align="start">
+            {FONT_SIZES_PX.map((px) => (
               <button
-                key={size.value}
+                key={px}
                 type="button"
                 className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-muted transition-colors"
-                onClick={() => { restoreSelection(); execCommand('fontSize', size.value); }}
+                onClick={() => applyInlineStyle('fontSize', `${px}px`)}
               >
-                {size.label}
+                {px}px
               </button>
             ))}
           </PopoverContent>
@@ -869,8 +964,8 @@ export function RichTextEditor({
           onPaste={handlePaste}
           onBlur={saveSelection}
           onClick={handleEditorClick}
-          className="p-3 text-sm focus:outline-none overflow-auto prose prose-sm max-w-none"
-          style={{ minHeight }}
+          className="rte-editor-area p-3 text-sm focus:outline-none overflow-auto prose prose-sm max-w-none"
+          style={{ minHeight, resize: 'both' as any, maxHeight: '80vh' }}
           data-placeholder={placeholder}
           suppressContentEditableWarning
         />
