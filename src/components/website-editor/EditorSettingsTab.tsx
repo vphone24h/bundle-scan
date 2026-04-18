@@ -284,6 +284,16 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
             </div>
           </div>
 
+          <div className="space-y-1.5">
+            <Label className="text-xs">Thời gian làm việc</Label>
+            <Input
+              value={(formData as any).working_hours || ''}
+              onChange={e => onChange('working_hours', e.target.value)}
+              placeholder="Từ 08:00 sáng đến 21:00 tối"
+            />
+            <p className="text-[10px] text-muted-foreground">💡 Hiển thị trên website ở mục "THỜI GIAN LÀM VIỆC". Để trống sẽ dùng mặc định.</p>
+          </div>
+
           <div className="border-t pt-3 mt-1 space-y-3">
             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Liên hệ & Mạng xã hội</p>
             <div className="space-y-1.5">
