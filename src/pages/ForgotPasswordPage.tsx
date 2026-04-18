@@ -23,6 +23,7 @@ export default function ForgotPasswordPage() {
         body: {
           email,
           redirectUrl: `${window.location.origin}/reset-password`,
+          hostname: window.location.hostname,
         },
       });
 
