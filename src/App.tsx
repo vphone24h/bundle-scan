@@ -50,7 +50,6 @@ const EInvoicePage = lazy(() => import("./pages/EInvoicePage"));
 const ApplicationsPage = lazy(() => import("./pages/ApplicationsPage"));
 const AdvertisementsAdminPage = lazy(() => import("./pages/AdvertisementsAdminPage"));
 const StoreLandingPage = lazy(() => import("./pages/StoreLandingPage"));
-const PublicLandingPage = lazy(() => import("./pages/PublicLandingPage"));
 const LandingPageAdminPage = lazy(() => import("./pages/LandingPageAdminPage"));
 const InstallAppPage = lazy(() => import("./pages/InstallAppPage"));
 const TaxPolicyPage = lazy(() => import("./pages/TaxPolicyPage"));
