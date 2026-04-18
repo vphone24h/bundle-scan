@@ -285,7 +285,7 @@ export function RichTextEditor({
       const newRow = document.createElement('tr');
       for (let i = 0; i < row.cells.length; i++) {
         const td = document.createElement('td');
-        td.style.cssText = 'border:1px solid #d1d5db;padding:6px 8px;vertical-align:middle;';
+        td.style.cssText = 'border:1px solid #d1d5db;padding:6px 8px;vertical-align:middle;word-wrap:break-word;overflow-wrap:break-word;word-break:break-word;white-space:normal;';
         td.innerHTML = '&nbsp;';
         newRow.appendChild(td);
       }
