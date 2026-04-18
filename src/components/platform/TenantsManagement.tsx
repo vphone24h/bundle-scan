@@ -1148,6 +1148,17 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
                 placeholder="email@example.com"
               />
             </div>
+            <div className="space-y-2">
+              <Label>Mật khẩu mới (tùy chọn)</Label>
+              <Input
+                type="password"
+                value={editPassword}
+                onChange={(e) => setEditPassword(e.target.value)}
+                placeholder="Để trống nếu không đổi"
+                autoComplete="new-password"
+              />
+              <p className="text-xs text-muted-foreground">Tối thiểu 6 ký tự. Khi lưu sẽ đồng bộ với hệ thống đăng nhập.</p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setActionDialog(null)}>Hủy</Button>
