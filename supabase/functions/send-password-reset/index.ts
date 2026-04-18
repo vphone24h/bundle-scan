@@ -167,6 +167,11 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const email = String(body.email || '').trim().toLowerCase().slice(0, 320);
     const redirectUrl = String(body.redirectUrl || '').slice(0, 500);
+    // Extract hostname from redirectUrl or explicit field (so SMTP matches the company owning current domain)
+    let hostname = String(body.hostname || '').trim().toLowerCase();
+    if (!hostname && redirectUrl) {
+      try { hostname = new URL(redirectUrl).hostname.toLowerCase(); } catch {}
+    }
 
     if (!email || !validateEmail(email)) {
       return new Response(
@@ -175,8 +180,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Resolve SMTP (company-specific or global fallback)
-    const smtp = await resolveSmtpConfig(supabaseAdmin, email);
+    // Resolve SMTP (priority: domain → user tenant → global)
+    const smtp = await resolveSmtpConfig(supabaseAdmin, email, hostname);
     if (!smtp) {
       console.error('No SMTP config available');
       return new Response(
