@@ -232,8 +232,26 @@ Deno.serve(async (req) => {
       });
       await client.close();
     } catch (sendErr: any) {
-      console.error(`SMTP send failed (${smtp.source}):`, sendErr?.message || sendErr);
+      const rawMsg = String(sendErr?.message || sendErr || '');
+      console.error(`SMTP send failed (${smtp.source}):`, rawMsg);
       try { await client.close(); } catch {}
+
+      const translateSmtpError = (msg: string): string => {
+        const m = msg.toLowerCase();
+        if (m.includes('webloginrequired') || m.includes('5.7.9') || m.includes('invalid login') || m.includes('username and password not accepted')) {
+          return `Gmail từ chối đăng nhập SMTP (tài khoản ${smtp.user}). Mật khẩu ứng dụng (App Password) đã hết hạn hoặc bị thu hồi. Vui lòng vào Cài đặt Email công ty để cập nhật App Password mới.`;
+        }
+        if (m.includes('eauth') || m.includes('authentication failed') || m.includes('535')) {
+          return `Sai thông tin đăng nhập SMTP (${smtp.user}). Vui lòng kiểm tra lại tài khoản và mật khẩu ứng dụng trong Cài đặt Email.`;
+        }
+        if (m.includes('econnrefused') || m.includes('etimedout') || m.includes('enotfound')) {
+          return `Không kết nối được tới máy chủ SMTP (${smtp.host}:${smtp.port}). Vui lòng kiểm tra cấu hình host/port.`;
+        }
+        if (m.includes('rate') || m.includes('quota')) {
+          return `SMTP đã đạt giới hạn gửi. Vui lòng thử lại sau.`;
+        }
+        return `Gửi email thất bại (${smtp.source === 'company' ? 'SMTP công ty' : 'SMTP hệ thống'}): ${msg.slice(0, 200)}`;
+      };
 
       // If company SMTP failed, try global as last resort
       if (smtp.source === 'company') {
@@ -261,20 +279,20 @@ Deno.serve(async (req) => {
           } catch (fbErr: any) {
             console.error('Fallback SMTP also failed:', fbErr?.message || fbErr);
             return new Response(
-              JSON.stringify({ error: 'Không thể gửi email khôi phục. Vui lòng kiểm tra cấu hình SMTP.' }),
-              { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+              JSON.stringify({ error: translateSmtpError(String(fbErr?.message || fbErr || '')) }),
+              { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
             );
           }
         } else {
           return new Response(
-            JSON.stringify({ error: 'Không thể gửi email khôi phục. Vui lòng kiểm tra cấu hình SMTP của công ty.' }),
-            { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            JSON.stringify({ error: translateSmtpError(rawMsg) }),
+            { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
         }
       } else {
         return new Response(
-          JSON.stringify({ error: 'Không thể gửi email khôi phục. Vui lòng kiểm tra cấu hình SMTP.' }),
-          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          JSON.stringify({ error: translateSmtpError(rawMsg) }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
     }
