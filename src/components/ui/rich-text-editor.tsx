@@ -657,6 +657,65 @@ export function RichTextEditor({
 
         <div className="w-px h-5 bg-border mx-1" />
 
+        {/* Table picker */}
+        <Popover open={tableOpen} onOpenChange={(open) => { if (open) saveSelection(); setTableOpen(open); }}>
+          <PopoverTrigger asChild>
+            <button type="button" className="p-1.5 rounded hover:bg-muted transition-colors" title="Chèn bảng" onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}>
+              <TableIcon className="h-4 w-4" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-3" align="start">
+            <p className="text-xs font-medium mb-2">
+              Chèn bảng {tableHover.rows > 0 ? `${tableHover.rows} × ${tableHover.cols}` : '(rê chuột để chọn kích thước)'}
+            </p>
+            <div
+              className="grid gap-0.5"
+              style={{ gridTemplateColumns: 'repeat(8, 18px)' }}
+              onMouseLeave={() => setTableHover({ rows: 0, cols: 0 })}
+            >
+              {Array.from({ length: 8 * 8 }).map((_, i) => {
+                const r = Math.floor(i / 8) + 1;
+                const c = (i % 8) + 1;
+                const active = r <= tableHover.rows && c <= tableHover.cols;
+                return (
+                  <div
+                    key={i}
+                    onMouseEnter={() => setTableHover({ rows: r, cols: c })}
+                    onClick={() => insertTable(r, c)}
+                    className="w-[18px] h-[18px] border cursor-pointer rounded-sm"
+                    style={{
+                      background: active ? 'hsl(var(--primary))' : 'hsl(var(--muted))',
+                      borderColor: active ? 'hsl(var(--primary))' : 'hsl(var(--border))',
+                    }}
+                  />
+                );
+              })}
+            </div>
+            <div className="mt-3 pt-2 border-t space-y-1">
+              <p className="text-[11px] font-medium text-muted-foreground mb-1">Sửa bảng (đặt con trỏ vào ô)</p>
+              <div className="grid grid-cols-2 gap-1">
+                <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => tableAction('addRow')}>
+                  <Plus className="h-3 w-3 mr-1" />Thêm dòng
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => tableAction('delRow')}>
+                  <Minus className="h-3 w-3 mr-1" />Xóa dòng
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => tableAction('addCol')}>
+                  <Plus className="h-3 w-3 mr-1" />Thêm cột
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => tableAction('delCol')}>
+                  <Minus className="h-3 w-3 mr-1" />Xóa cột
+                </Button>
+              </div>
+              <Button size="sm" variant="outline" className="h-7 text-[11px] w-full text-destructive" onClick={() => tableAction('delTable')}>
+                Xóa cả bảng
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        <div className="w-px h-5 bg-border mx-1" />
+
         <ToolbarButton onClick={() => execCommand('undo')} title="Hoàn tác">
           <Undo className="h-4 w-4" />
         </ToolbarButton>
@@ -664,6 +723,7 @@ export function RichTextEditor({
           <Redo className="h-4 w-4" />
         </ToolbarButton>
       </div>
+
 
       {/* Editor area */}
       <div className="relative">
