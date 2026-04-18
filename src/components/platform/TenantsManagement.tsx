@@ -96,7 +96,12 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
   const [editName, setEditName] = useState('');
   const [editSubdomain, setEditSubdomain] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [editPassword, setEditPassword] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
   
   // Filters
   const [statusFilter, setStatusFilter] = useState('_all_');
@@ -295,6 +300,7 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
     setEditName(tenant.name);
     setEditSubdomain(tenant.subdomain);
     setEditEmail(tenant.email || '');
+    setEditPassword('');
     setActionDialog('edit');
   };
 
