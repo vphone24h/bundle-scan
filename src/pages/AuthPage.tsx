@@ -160,7 +160,8 @@ export default function AuthPage() {
       toast({ title: t('pages.auth.loginSuccess'), description: t('pages.auth.welcomeBack') });
       navigate('/', { replace: true });
     } catch (error: any) {
-      toast({ title: t('common.error'), description: error.message, variant: 'destructive' });
+      const { translateAuthError } = await import('@/lib/authErrors');
+      toast({ title: t('common.error'), description: translateAuthError(error, t('pages.auth.wrongCredentials')), variant: 'destructive' });
       setLoading(false);
     }
   };
