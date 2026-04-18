@@ -44,6 +44,7 @@ export default function WebsiteEditorPage() {
         additional_addresses: settings.additional_addresses || [],
         store_phone: settings.store_phone || '',
         store_email: settings.store_email || '',
+        working_hours: (settings as any).working_hours || '',
         store_description: settings.store_description || '',
         banner_image_url: settings.banner_image_url || '',
         banner_link_url: settings.banner_link_url || '',
