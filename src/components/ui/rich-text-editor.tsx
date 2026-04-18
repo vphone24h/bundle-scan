@@ -241,12 +241,12 @@ export function RichTextEditor({
   const insertTable = useCallback((rows: number, cols: number) => {
     if (rows < 1 || cols < 1) return;
     const colWidth = Math.floor(100 / cols);
-    let html = '<table class="rte-table" style="border-collapse:collapse;width:100%;margin:8px 0;table-layout:fixed;"><tbody>';
+    let html = '<table class="rte-table" style="border-collapse:collapse;width:100%;margin:8px 0;table-layout:fixed;word-wrap:break-word;"><tbody>';
     for (let r = 0; r < rows; r++) {
       html += '<tr>';
       for (let c = 0; c < cols; c++) {
         const tag = r === 0 ? 'th' : 'td';
-        const style = `border:1px solid #d1d5db;padding:6px 8px;${r === 0 ? 'background:#f3f4f6;font-weight:700;text-align:center;' : ''}width:${colWidth}%;vertical-align:middle;`;
+        const style = `border:1px solid #d1d5db;padding:6px 8px;${r === 0 ? 'background:#f3f4f6;font-weight:700;text-align:center;' : ''}width:${colWidth}%;vertical-align:middle;word-wrap:break-word;overflow-wrap:break-word;word-break:break-word;white-space:normal;`;
         html += `<${tag} style="${style}">${r === 0 ? `Cột ${c + 1}` : '&nbsp;'}</${tag}>`;
       }
       html += '</tr>';
