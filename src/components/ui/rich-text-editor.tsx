@@ -152,7 +152,10 @@ export function RichTextEditor({
       sel?.addRange(range);
     }
 
-    document.execCommand('insertHTML', false, DOMPurify.sanitize(html));
+    document.execCommand('insertHTML', false, DOMPurify.sanitize(html, {
+      ADD_TAGS: ['table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption', 'colgroup', 'col'],
+      ADD_ATTR: ['colspan', 'rowspan', 'align', 'valign', 'style', 'width', 'height', 'bgcolor', 'cellspacing', 'cellpadding', 'border'],
+    }));
     onChange(editor.innerHTML);
     // Save the new cursor position
     saveSelection();
