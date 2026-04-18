@@ -18,6 +18,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [tenantInfo, setTenantInfo] = useState<{ subdomain: string } | null>(null);
+  const [fieldError, setFieldError] = useState<{ field: 'password' | 'email' | 'confirmPassword' | 'subdomain' | null; message: string }>({ field: null, message: '' });
   const company = useCompany();
   const { data: companySettings } = useCompanySettings();
   const companyLogo = companySettings?.logo_url;
@@ -42,35 +43,41 @@ export default function RegisterPage() {
       ...prev,
       [name]: name === 'subdomain' ? value.toLowerCase().replace(/[^a-z0-9-]/g, '') : value,
     }));
+    // Clear error on the field being edited
+    if (fieldError.field === name) {
+      setFieldError({ field: null, message: '' });
+    }
+  };
+
+  const focusField = (name: string) => {
+    setTimeout(() => {
+      const el = document.getElementById(name) as HTMLInputElement | null;
+      el?.focus();
+    }, 50);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFieldError({ field: null, message: '' });
     
     if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: 'Lỗi',
-        description: 'Mật khẩu xác nhận không khớp',
-        variant: 'destructive',
-      });
+      setFieldError({ field: 'confirmPassword', message: 'Mật khẩu xác nhận không khớp' });
+      toast({ title: 'Lỗi', description: 'Mật khẩu xác nhận không khớp', variant: 'destructive' });
+      focusField('confirmPassword');
       return;
     }
 
     if (formData.password.length < 6) {
-      toast({
-        title: 'Lỗi',
-        description: 'Mật khẩu phải có ít nhất 6 ký tự',
-        variant: 'destructive',
-      });
+      setFieldError({ field: 'password', message: 'Mật khẩu phải có ít nhất 6 ký tự' });
+      toast({ title: 'Lỗi', description: 'Mật khẩu phải có ít nhất 6 ký tự', variant: 'destructive' });
+      focusField('password');
       return;
     }
 
     if (formData.subdomain.length < 3) {
-      toast({
-        title: 'Lỗi',
-        description: 'Tên miền phụ phải có ít nhất 3 ký tự',
-        variant: 'destructive',
-      });
+      setFieldError({ field: 'subdomain', message: 'Tên miền phụ phải có ít nhất 3 ký tự' });
+      toast({ title: 'Lỗi', description: 'Tên miền phụ phải có ít nhất 3 ký tự', variant: 'destructive' });
+      focusField('subdomain');
       return;
     }
 
@@ -102,19 +109,29 @@ export default function RegisterPage() {
         },
       });
 
-      if (error) {
-        // Try to extract the actual error message from the response body
-        let errorMsg = 'Có lỗi xảy ra, vui lòng thử lại';
-        try {
-          const ctx = (error as any).context;
-          if (ctx) {
-            const body = typeof ctx.json === 'function' ? await ctx.json() : null;
-            if (body?.error) errorMsg = body.error;
-          }
-        } catch {}
-        throw new Error(errorMsg);
+      // Try to extract error + field from edge function response body even when status != 2xx
+      let bodyError: string | null = null;
+      let bodyField: 'password' | 'email' | null = null;
+      try {
+        const ctx = (error as any)?.context;
+        if (ctx) {
+          const body = typeof ctx.json === 'function' ? await ctx.json() : null;
+          if (body?.error) bodyError = body.error;
+          if (body?.field) bodyField = body.field;
+        }
+      } catch {}
+
+      if (error || data?.error) {
+        const errorMsg = bodyError || data?.error || 'Có lỗi xảy ra, vui lòng thử lại';
+        const errorField = bodyField || (data?.field ?? null);
+        if (errorField === 'password' || errorField === 'email') {
+          setFieldError({ field: errorField, message: errorMsg });
+          focusField(errorField);
+        }
+        toast({ title: 'Đăng ký thất bại', description: errorMsg, variant: 'destructive' });
+        setLoading(false);
+        return;
       }
-      if (data?.error) throw new Error(data.error);
 
       setTenantInfo({ subdomain: data.tenant.subdomain });
       setSuccess(true);
@@ -234,16 +251,24 @@ export default function RegisterPage() {
                   placeholder="vkho"
                   value={formData.subdomain}
                   onChange={handleChange}
-                  className="flex-1 rounded-r-none border-r-0"
+                  className={cn(
+                    "flex-1 rounded-r-none border-r-0",
+                    fieldError.field === 'subdomain' && "border-destructive ring-1 ring-destructive focus-visible:ring-destructive"
+                  )}
+                  aria-invalid={fieldError.field === 'subdomain'}
                   required
                 />
                 <span className="inline-flex items-center px-3 h-10 border border-l-0 rounded-r-md bg-muted text-muted-foreground text-sm whitespace-nowrap">
                   .{companyDomain}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Chỉ sử dụng chữ thường, số và dấu gạch ngang. Đây là ID để đăng nhập.
-              </p>
+              {fieldError.field === 'subdomain' ? (
+                <p className="text-xs text-destructive font-medium">{fieldError.message}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Chỉ sử dụng chữ thường, số và dấu gạch ngang. Đây là ID để đăng nhập.
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -280,8 +305,15 @@ export default function RegisterPage() {
                 placeholder="admin@congty.com"
                 value={formData.email}
                 onChange={handleChange}
+                className={cn(
+                  fieldError.field === 'email' && "border-destructive ring-1 ring-destructive focus-visible:ring-destructive"
+                )}
+                aria-invalid={fieldError.field === 'email'}
                 required
               />
+              {fieldError.field === 'email' && (
+                <p className="text-xs text-destructive font-medium">{fieldError.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -372,6 +404,10 @@ export default function RegisterPage() {
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={handleChange}
+                  className={cn(
+                    fieldError.field === 'password' && "border-destructive ring-1 ring-destructive focus-visible:ring-destructive"
+                  )}
+                  aria-invalid={fieldError.field === 'password'}
                   required
                   minLength={6}
                 />
@@ -386,11 +422,18 @@ export default function RegisterPage() {
                   placeholder="••••••••"
                   value={formData.confirmPassword}
                   onChange={handleChange}
+                  className={cn(
+                    fieldError.field === 'confirmPassword' && "border-destructive ring-1 ring-destructive focus-visible:ring-destructive"
+                  )}
+                  aria-invalid={fieldError.field === 'confirmPassword'}
                   required
                   minLength={6}
                 />
               </div>
             </div>
+            {(fieldError.field === 'password' || fieldError.field === 'confirmPassword') && (
+              <p className="text-xs text-destructive font-medium -mt-2">{fieldError.message}</p>
+            )}
 
 
             <Button type="submit" className="w-full" disabled={loading}>
