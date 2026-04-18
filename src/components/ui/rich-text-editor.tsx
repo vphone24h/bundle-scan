@@ -46,11 +46,24 @@ const COLORS = [
   '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#0f766e', '#1e3a5f',
 ];
 
-const FONT_SIZES = [
-  { label: 'Nhỏ', value: '2' },
-  { label: 'Bình thường', value: '3' },
-  { label: 'Lớn', value: '4' },
-  { label: 'Rất lớn', value: '5' },
+// Cỡ chữ tính bằng px (dùng inline style để có nhiều mức)
+const FONT_SIZES_PX = [
+  10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28, 32, 36, 40, 48, 56, 64, 72,
+];
+
+const FONT_FAMILIES: { label: string; value: string }[] = [
+  { label: 'Mặc định', value: '' },
+  { label: 'Arial', value: 'Arial, sans-serif' },
+  { label: 'Times New Roman', value: '"Times New Roman", Times, serif' },
+  { label: 'Calibri', value: 'Calibri, sans-serif' },
+  { label: 'Tahoma', value: 'Tahoma, sans-serif' },
+  { label: 'Verdana', value: 'Verdana, sans-serif' },
+  { label: 'Georgia', value: 'Georgia, serif' },
+  { label: 'Courier New', value: '"Courier New", Courier, monospace' },
+  { label: 'Roboto', value: 'Roboto, sans-serif' },
+  { label: 'Open Sans', value: '"Open Sans", sans-serif' },
+  { label: 'Inter', value: 'Inter, sans-serif' },
+  { label: 'Comic Sans MS', value: '"Comic Sans MS", cursive' },
 ];
 
 const MAX_UPLOAD_SIZE = 15 * 1024 * 1024;
