@@ -92,12 +92,21 @@ export default function SubscriptionPage() {
   }, []);
 
   const { data: configs } = useQuery({
-    queryKey: ['payment-config', tenant?.company_id],
+    queryKey: ['payment-config-scoped', tenant?.company_id ?? 'platform'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('payment_config').select('*');
+      let query = supabase.from('payment_config').select('config_key, config_value, company_id');
+      // Tenant thuộc công ty → chỉ lấy config của công ty đó (hotline, feedback, paypal...)
+      // Tenant không thuộc công ty → lấy config gốc của platform
+      if (tenant?.company_id) {
+        query = query.eq('company_id', tenant.company_id);
+      } else {
+        query = query.is('company_id', null);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data as PaymentConfig[];
     },
+    enabled: !!tenant,
   });
 
   const { data: bankAccounts } = useQuery({
