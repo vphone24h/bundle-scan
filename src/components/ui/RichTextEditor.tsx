@@ -232,7 +232,7 @@ export function RichTextEditor({
     } else if (action === 'delTable') {
       table.remove();
     }
-    setTimeout(attachResizeHandles, 0);
+    setTimeout(() => attachResizeHandlesRef.current?.(), 0);
     isInternalUpdate.current = true;
     onChange(getCleanHTML());
   };
