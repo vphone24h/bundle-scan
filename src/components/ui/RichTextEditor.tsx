@@ -125,16 +125,15 @@ export function RichTextEditor({
   };
 
   const buildTableHTML = (rows: number, cols: number) => {
-    let html = '<table class="rte-table" style="border-collapse:collapse;width:100%;margin:8px 0;border:1px solid hsl(var(--border))"><tbody>';
+    const colWidth = Math.floor(100 / cols);
+    let html = '<table class="rte-table"><colgroup>';
+    for (let c = 0; c < cols; c++) html += `<col style="width:${colWidth}%" />`;
+    html += '</colgroup><tbody>';
     for (let r = 0; r < rows; r++) {
       html += '<tr>';
       for (let c = 0; c < cols; c++) {
-        const isHeader = r === 0;
-        const tag = isHeader ? 'th' : 'td';
-        const style = isHeader
-          ? 'border:1px solid hsl(var(--border));padding:8px;background:hsl(var(--muted));font-weight:600;text-align:left;min-width:60px'
-          : 'border:1px solid hsl(var(--border));padding:8px;min-width:60px';
-        html += `<${tag} style="${style}">&nbsp;</${tag}>`;
+        const tag = r === 0 ? 'th' : 'td';
+        html += `<${tag}>&nbsp;</${tag}>`;
       }
       html += '</tr>';
     }
