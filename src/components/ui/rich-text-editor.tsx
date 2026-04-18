@@ -472,7 +472,11 @@ export function RichTextEditor({
           index,
         };
       });
-      setTableHandles({ cols, rows });
+      const corner = {
+        left: tRect.right - eRect.left + editor.scrollLeft,
+        top: tRect.bottom - eRect.top + editor.scrollTop,
+      };
+      setTableHandles({ cols, rows, corner });
     };
     compute();
     const observer = new MutationObserver(compute);
