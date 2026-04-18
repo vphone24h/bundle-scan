@@ -76,7 +76,7 @@ export const WEBSITE_TEMPLATES: WebsiteTemplate[] = [
   { id: 'apple_landing', name: 'Apple Style Landing', category: 'Công nghệ', description: 'Phong cách Apple.com – full-screen banners, tối giản, cao cấp', icon: '🍎', tier: 'pro', available: true, brandInspiration: 'Apple.com' },
 
   // Bảng giá list (nhập qua Tin tức – mỗi bài 1 bảng giá)
-  { id: 'price_list', name: 'Bảng giá điện thoại (Price List)', category: 'Công nghệ', description: '1 trang chủ duy nhất: banner + địa chỉ/SĐT + bảng giá list theo nhóm. Nội dung bảng giá biên tập trong mục Tin tức.', icon: '📋', tier: 'premium', available: true, brandInspiration: 'taoquangsang.vn' },
+  { id: 'price_list', name: 'Bảng giá điện thoại', category: 'Công nghệ', description: '1 trang chủ duy nhất: banner + địa chỉ/SĐT + bảng giá list theo nhóm. Nội dung bảng giá biên tập trong mục Tin tức.', icon: '📋', tier: 'premium', available: true, brandInspiration: 'taoquangsang' },
 ];
 
 export const TEMPLATE_CATEGORIES = [...new Set(WEBSITE_TEMPLATES.map(t => t.category))];
