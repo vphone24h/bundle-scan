@@ -1069,6 +1069,35 @@ export function RichTextEditor({
               <Button size="sm" variant="outline" className="h-7 text-[11px] w-full text-destructive" onClick={() => tableAction('delTable')}>
                 Xóa cả bảng
               </Button>
+              <div className="pt-2 mt-2 border-t">
+                <p className="text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
+                  <PaintBucket className="h-3 w-3" />
+                  Tô màu nền ô (quét chọn nhiều ô rồi bấm)
+                </p>
+                <div className="grid grid-cols-8 gap-1">
+                  {[
+                    '#fef3c7', '#fee2e2', '#dcfce7', '#dbeafe', '#ede9fe', '#fce7f3', '#f3f4f6', '#fed7aa',
+                    '#fde68a', '#fca5a5', '#86efac', '#93c5fd', '#c4b5fd', '#f9a8d4', '#d1d5db', '#fdba74',
+                  ].map((bg) => (
+                    <button
+                      key={bg}
+                      type="button"
+                      title="Tô màu các ô đã chọn"
+                      onClick={() => setCellsBackground(bg)}
+                      className="w-5 h-5 rounded border border-border hover:scale-110 transition-transform"
+                      style={{ background: bg }}
+                    />
+                  ))}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px] w-full mt-1.5"
+                  onClick={() => setCellsBackground(null)}
+                >
+                  Xoá màu nền
+                </Button>
+              </div>
             </div>
           </PopoverContent>
         </Popover>
