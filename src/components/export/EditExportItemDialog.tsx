@@ -183,6 +183,11 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['export-receipts'] });
       queryClient.invalidateQueries({ queryKey: ['export-receipt-items'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['report-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-stats'] });
     },
   });
 
