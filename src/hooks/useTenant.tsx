@@ -80,6 +80,17 @@ export interface PlatformUser {
   company_id?: string | null;
 }
 
+async function fetchTenantById(tenantId: string): Promise<Tenant | null> {
+  const { data, error } = await supabase
+    .from('tenants')
+    .select('*')
+    .eq('id', tenantId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as Tenant | null) ?? null;
+}
+
 const getScopedPlanKey = (plan: SubscriptionPlan) =>
   `${plan.plan_type}:${plan.duration_days ?? 'lifetime'}`;
 
@@ -145,7 +156,6 @@ export function useCurrentTenant() {
     queryFn: async () => {
       if (!user?.id) return null;
       
-      // Single join query instead of 2 sequential queries
       const { data, error } = await supabase
         .from('platform_users')
         .select('tenant_id, tenants(*)')
@@ -153,22 +163,30 @@ export function useCurrentTenant() {
         .maybeSingle();
 
       if (error) throw error;
+
       if (data?.tenants) {
         return data.tenants as unknown as Tenant;
       }
 
-      if (!resolvedTenant.tenantId) return null;
+      if (data?.tenant_id) {
+        return await fetchTenantById(data.tenant_id);
+      }
 
-      const { data: resolvedData, error: resolvedError } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('id', resolvedTenant.tenantId)
+      const { data: userRole, error: userRoleError } = await supabase
+        .from('user_roles')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .not('tenant_id', 'is', null)
+        .limit(1)
         .maybeSingle();
 
-      if (resolvedError) throw resolvedError;
-      if (!resolvedData) return null;
-      
-      return resolvedData as Tenant;
+      if (userRoleError) throw userRoleError;
+      if (userRole?.tenant_id) {
+        return await fetchTenantById(userRole.tenant_id);
+      }
+
+      if (!resolvedTenant.tenantId) return null;
+      return await fetchTenantById(resolvedTenant.tenantId);
     },
     enabled: !!user?.id && resolvedTenant.status !== 'loading',
     staleTime: 1000 * 30, // 30s — use persisted cache on startup, refetch in background
