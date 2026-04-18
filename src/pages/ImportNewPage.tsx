@@ -523,6 +523,15 @@ export default function ImportNewPage() {
     }
   }, [location.state, searchProductsFromDB]);
 
+  const handleProductNameChange = (value: string) => {
+    setForm(prev => ({ ...prev, productName: value }));
+    if (value.trim().length >= 1) {
+      searchProductsFromDB(value);
+    } else {
+      setSuggestions([]);
+    }
+  };
+
   const handleSelectSuggestion = async (product: ProductSuggestion) => {
     const hasVariants = !!product.group_id || !!product.variantLevels?.length;
 
