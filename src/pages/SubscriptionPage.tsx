@@ -131,7 +131,7 @@ export default function SubscriptionPage() {
     enabled: !!tenant,
   });
 
-  const hotline = configs?.find(c => c.config_key === 'hotline')?.config_value || companySettings?.phone || '0909 123 456';
+  const hotline = configs?.find(c => c.config_key === 'hotline')?.config_value || companySettings?.phone || '';
   const companyName = configs?.find(c => c.config_key === 'company_name')?.config_value || companySettings?.display_name || 'Kho Hàng Pro';
   const feedbackZaloUrl = configs?.find(c => c.config_key === 'feedback_zalo_url')?.config_value || '';
   const feedbackFbUrl = configs?.find(c => c.config_key === 'feedback_fb_url')?.config_value || '';
