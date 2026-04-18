@@ -72,7 +72,7 @@ async function createCloudflareDNSRecord(subdomain: string): Promise<void> {
   }
 }
 
-async function sendRegistrationNotification(businessName: string, subdomain: string, email: string, adminName: string) {
+async function sendRegistrationNotification(businessName: string, subdomain: string, email: string, adminName: string, companyDomain: string) {
   try {
     const smtpUser = Deno.env.get('SMTP_USER')
     const smtpPassword = Deno.env.get('SMTP_PASSWORD')
