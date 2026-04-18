@@ -793,6 +793,28 @@ export function RichTextEditor({
           color: hsl(var(--primary));
           text-decoration: underline;
         }
+        [contenteditable] table {
+          border-collapse: collapse;
+          width: 100%;
+          margin: 8px 0;
+          table-layout: fixed;
+        }
+        [contenteditable] table td,
+        [contenteditable] table th {
+          border: 1px solid #d1d5db;
+          padding: 6px 8px;
+          vertical-align: middle;
+          word-wrap: break-word;
+          min-width: 40px;
+        }
+        [contenteditable] table th {
+          background: #f3f4f6;
+          font-weight: 700;
+          text-align: center;
+        }
+        [contenteditable] table tr:nth-child(even) td {
+          background: #fafafa;
+        }
       `}</style>
     </div>
   );
