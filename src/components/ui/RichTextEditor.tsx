@@ -268,6 +268,8 @@ export function RichTextEditor({
     });
   }, []);
 
+  attachResizeHandlesRef.current = attachResizeHandles;
+
   useEffect(() => {
     const t = setTimeout(attachResizeHandles, 50);
     return () => clearTimeout(t);
