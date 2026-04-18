@@ -1093,6 +1093,7 @@ export function RichTextEditor({
           onPaste={handlePaste}
           onBlur={saveSelection}
           onClick={handleEditorClick}
+          onMouseDown={handleEditorMouseDown}
           className="rte-editor-area p-3 text-sm focus:outline-none overflow-auto prose prose-sm max-w-none rounded-b-md"
           style={{ minHeight, resize: 'both' as any, maxHeight: '80vh', minWidth: '100%' }}
           data-placeholder={placeholder}
