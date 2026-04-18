@@ -187,6 +187,47 @@ export function RichTextEditor({
     }
   }, [onChange]);
 
+  // Áp dụng style (font-size px / font-family) lên vùng đang chọn bằng cách
+  // bọc vào <span style="..."> — hoạt động linh hoạt hơn execCommand('fontSize').
+  const applyInlineStyle = useCallback((styleProp: 'fontSize' | 'fontFamily', cssValue: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
+    restoreSelection();
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+
+    if (range.collapsed) {
+      // Không có vùng chọn: chèn span rỗng để gõ tiếp với style mới
+      const span = document.createElement('span');
+      (span.style as any)[styleProp] = cssValue;
+      span.appendChild(document.createTextNode('\u200B'));
+      range.insertNode(span);
+      const newRange = document.createRange();
+      newRange.setStart(span.firstChild!, 1);
+      newRange.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+    } else {
+      const span = document.createElement('span');
+      (span.style as any)[styleProp] = cssValue;
+      try {
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+        // Chọn lại nội dung vừa style
+        const newRange = document.createRange();
+        newRange.selectNodeContents(span);
+        sel.removeAllRanges();
+        sel.addRange(newRange);
+      } catch {
+        // fallback
+      }
+    }
+    saveSelection();
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
+  }, [onChange, restoreSelection, saveSelection]);
+
   const handleInput = useCallback(() => {
     if (editorRef.current) {
       onChange(editorRef.current.innerHTML);
