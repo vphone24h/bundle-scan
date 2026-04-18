@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { KeyRound, Loader2, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { translateAuthError } from '@/lib/authErrors';
 
 export function ChangePasswordCard() {
   const [currentPw, setCurrentPw] = useState('');
@@ -59,17 +60,7 @@ export function ChangePasswordCard() {
       // Update to new password — synced with auth system
       const { error: updateError } = await supabase.auth.updateUser({ password: newPw });
       if (updateError) {
-        const msg = updateError.message || '';
-        let friendly = msg;
-        let field: 'new' | null = 'new';
-        if (/pwned|leaked|known to be|weak/i.test(msg)) {
-          friendly = 'Mật khẩu này đã bị lộ trong các vụ rò rỉ dữ liệu hoặc quá yếu. Vui lòng chọn mật khẩu mạnh hơn (kết hợp chữ hoa, chữ thường, số, ký tự đặc biệt).';
-        } else if (/short|length|6/i.test(msg)) {
-          friendly = 'Mật khẩu quá ngắn. Tối thiểu 6 ký tự.';
-        } else if (/same/i.test(msg)) {
-          friendly = 'Mật khẩu mới phải khác mật khẩu cũ.';
-        }
-        setError({ field, message: friendly });
+        setError({ field: 'new', message: translateAuthError(updateError, 'Không thể đổi mật khẩu') });
         setLoading(false);
         return;
       }
@@ -77,7 +68,7 @@ export function ChangePasswordCard() {
       toast.success('Đã đổi mật khẩu thành công. Lần đăng nhập sau hãy dùng mật khẩu mới.');
       reset();
     } catch (e: any) {
-      toast.error(e.message || 'Không thể đổi mật khẩu');
+      toast.error(translateAuthError(e, 'Không thể đổi mật khẩu'));
     } finally {
       setLoading(false);
     }
