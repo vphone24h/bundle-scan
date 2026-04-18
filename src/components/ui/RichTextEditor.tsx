@@ -494,10 +494,11 @@ export function RichTextEditor({
       <div
         ref={editorRef}
         contentEditable
-        className="p-3 text-sm outline-none prose prose-sm dark:prose-invert max-w-none overflow-y-auto"
+        className="rte-content p-3 text-sm outline-none prose prose-sm dark:prose-invert max-w-none overflow-y-auto"
         style={{ minHeight }}
         onInput={handleInput}
         onBlur={saveSelection}
+        onMouseDown={handleResizeMouseDown}
         data-placeholder={placeholder}
         suppressContentEditableWarning
       />
