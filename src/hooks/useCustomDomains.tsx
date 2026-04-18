@@ -154,23 +154,15 @@ export function useAdminCustomDomains() {
         return data;
       }
 
-      // Company admin: only domains belonging to tenants of their company
+      // Company admin: query domains directly by related tenant.company_id.
+      // Avoid building a huge tenant_id IN (...) list for companies with many shops.
       if (!companyId) return [];
-      
-      // First get tenant IDs for this company
-      const { data: companyTenants, error: tErr } = await supabase
-        .from('tenants')
-        .select('id')
-        .eq('company_id', companyId);
-      if (tErr) throw tErr;
-      if (!companyTenants || companyTenants.length === 0) return [];
 
-      const tenantIds = companyTenants.map(t => t.id);
       const { data, error } = await supabase
         .from('custom_domains')
         .select(`
           *,
-          tenants:tenant_id (
+          tenants:tenant_id!inner (
             id,
             name,
             subdomain,
@@ -178,7 +170,7 @@ export function useAdminCustomDomains() {
             company_id
           )
         `)
-        .in('tenant_id', tenantIds)
+        .eq('tenants.company_id', companyId)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
