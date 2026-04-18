@@ -38,13 +38,13 @@ export default function PriceListTemplate({
 }: PriceListTemplateProps) {
   const config = getIndustryConfig('price_list');
   const accentColor = settings?.primary_color || config.accentColor;
-  const storeName = settings?.display_name || tenant?.name || 'Cửa hàng';
-  const logoUrl = settings?.logo_url || null;
+  const storeName = settings?.store_name || tenant?.name || 'Cửa hàng';
+  const logoUrl = settings?.store_logo_url || null;
   const phone = settings?.store_phone || null;
   const address = settings?.store_address || branches?.[0]?.address || null;
-  const additionalAddresses = (settings as any)?.additional_addresses as string[] | null;
+  const additionalAddresses = settings?.additional_addresses || null;
   const zaloUrl = settings?.zalo_url || null;
-  const bannerUrl = (settings as any)?.banner_url || (settings as any)?.hero_image_url || null;
+  const bannerUrl = settings?.banner_image_url || null;
   const workingHours = (settings as any)?.working_hours || 'Từ 08:00 sáng đến 21:00 tối';
 
   // Trigger catalog data load (articles)
