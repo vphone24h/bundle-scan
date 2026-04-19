@@ -93,6 +93,7 @@ export function PlatformEmailAutomationManagement() {
   const [subject, setSubject] = useState('');
   const [htmlContent, setHtmlContent] = useState('');
   const [targetAudience, setTargetAudience] = useState('all');
+  const [maxSends, setMaxSends] = useState(1);
 
   const resetForm = () => {
     setName('');
@@ -101,6 +102,7 @@ export function PlatformEmailAutomationManagement() {
     setSubject('');
     setHtmlContent('');
     setTargetAudience('all');
+    setMaxSends(1);
     setEditing(null);
   };
 
@@ -112,6 +114,7 @@ export function PlatformEmailAutomationManagement() {
     setSubject(a.subject);
     setHtmlContent(a.html_content);
     setTargetAudience(a.target_audience);
+    setMaxSends(a.max_sends_per_recipient || 1);
     setDialogOpen(true);
   };
 
@@ -142,6 +145,7 @@ export function PlatformEmailAutomationManagement() {
       subject: subject.trim(),
       html_content: htmlContent,
       target_audience: targetAudience,
+      max_sends_per_recipient: maxSends,
     };
     if (editing) {
       await updateMutation.mutateAsync({ id: editing.id, ...payload });
@@ -303,6 +307,9 @@ export function PlatformEmailAutomationManagement() {
                           <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5">
                             <Users className="h-3 w-3" /> {AUDIENCE_LABELS[a.target_audience] || a.target_audience}
                           </Badge>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            Gửi tối đa {a.max_sends_per_recipient || 1} lần
+                          </Badge>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
@@ -385,16 +392,34 @@ export function PlatformEmailAutomationManagement() {
               </p>
             )}
 
-            <div>
-              <Label>Đối tượng nhận</Label>
-              <Select value={targetAudience} onValueChange={setTargetAudience}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(AUDIENCE_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label>Đối tượng nhận</Label>
+                <Select value={targetAudience} onValueChange={setTargetAudience}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(AUDIENCE_LABELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Số lần gửi tối đa cho mỗi người</Label>
+                <Select value={String(maxSends)} onValueChange={(v) => setMaxSends(Number(v))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 lần (mặc định)</SelectItem>
+                    <SelectItem value="2">2 lần</SelectItem>
+                    <SelectItem value="3">3 lần</SelectItem>
+                    <SelectItem value="5">5 lần</SelectItem>
+                    <SelectItem value="10">10 lần</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Tránh spam — mỗi tài khoản chỉ nhận tối đa số lần này.
+                </p>
+              </div>
             </div>
 
             <div className="border rounded-lg p-3 bg-muted/30">
