@@ -58,7 +58,7 @@ export function InvoicePrintDialog({
   const receiptTenantId = receipt?.tenant_id as string | undefined;
   const { data: receiptDomains } = useQuery({
     queryKey: ['custom-domains-by-tenant', receiptTenantId],
-    enabled: !!receiptTenantId && !!(template as any)?.show_warranty_qr,
+    enabled: !!receiptTenantId,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
