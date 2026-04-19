@@ -1,41 +1,45 @@
 
+## Mục tiêu
+Thêm "Tần suất gửi tối đa" (max_sends_per_recipient) cho từng kịch bản email tự động — mỗi người chỉ nhận tối đa N lần (mặc định 1). Áp dụng cho cả hệ thống Platform (admin gốc) và hệ thống công ty/shop (admin công ty), đồng bộ logic dedup ở edge functions.
 
-## Phân tích vấn đề
+## Phạm vi
+**2 hệ thống email automation:**
+1. `platform_email_automations` (Platform Admin gốc)
+2. `email_automations` (Admin công ty/shop)
 
-Khi bạn check (tick) tất cả 5 sản phẩm IMEI trong phiếu kiểm kho, bên trong chi tiết hiển thị đúng (actual=1, OK), nhưng **danh sách phiếu vẫn hiện Hệ thống=5, Thực tế=0, Lệch=-5**.
+## Thay đổi
 
-### Nguyên nhân gốc (2 lỗi)
+### 1. Database (migration)
+Thêm cột `max_sends_per_recipient INTEGER DEFAULT 1 NOT NULL CHECK (max_sends_per_recipient >= 1 AND max_sends_per_recipient <= 10)` cho 2 bảng:
+- `platform_email_automations`
+- `email_automations`
 
-1. **Cập nhật tổng bị silent fail**: Khi check từng item, hệ thống cập nhật tổng trên bảng `stock_counts` nhưng **không kiểm tra lỗi** (dòng 511-518 trong `useStockCounts.tsx`). Nếu RLS hoặc lỗi mạng xảy ra, tổng không được cập nhật mà không có thông báo nào.
+### 2. UI Form (2 chỗ)
+- `src/components/platform/PlatformEmailAutomationManagement.tsx` — form tạo/sửa kịch bản platform
+- `src/components/admin/EmailAutomationTab.tsx` — form tạo/sửa kịch bản công ty
 
-2. **Race condition khi check nhanh**: Khi bạn check nhiều item liên tiếp, các mutation chạy song song. Mỗi mutation fetch toàn bộ items rồi tính tổng - nhưng fetch có thể trả về dữ liệu cũ của các item khác (chưa kịp cập nhật). Kết quả: mutation cuối cùng có thể ghi đè tổng bằng giá trị sai.
+Thêm field **"Số lần gửi tối đa cho mỗi người"** (Select: 1, 2, 3, 5 lần) ngay dưới "Số ngày". Hiển thị badge "Gửi tối đa X lần" trên card kịch bản.
 
-### Kế hoạch sửa
+### 3. Hook types (TS)
+- `src/hooks/usePlatformEmailAutomations.tsx` — thêm `max_sends_per_recipient` vào interface
+- `src/hooks/useEmailAutomations.tsx` — thêm `max_sends_per_recipient` vào interface
 
-**File: `src/hooks/useStockCounts.tsx`**
+### 4. Edge functions — logic dedup theo tần suất
+**`supabase/functions/run-platform-email-automations/index.ts`:**
+- Trước khi gửi, đếm số log đã gửi cho `(automation_id, tenant_id)` với status='sent'.
+- Nếu `count >= max_sends_per_recipient` → skip.
+- Vẫn giữ dedup "đã gửi hôm nay" để tránh gửi nhiều lần trong cùng 1 ngày.
 
-1. **Thêm error handling** cho phần cập nhật tổng `stock_counts` - log lỗi và retry nếu cần.
+**`supabase/functions/run-email-automations/index.ts`:**
+- Trong block `oncePerCustomerTriggers` và block else, thay điều kiện `count > 0 → skip` bằng `count >= automation.max_sends_per_recipient → skip`.
+- Áp dụng đồng nhất cho cả triggers per-customer và per-receipt.
 
-2. **Thay đổi cách tính tổng**: Thay vì fetch items song song với update (gây race condition), sẽ:
-   - Update item trước (await)
-   - Sau đó fetch lại tất cả items để tính tổng chính xác
-   - Cập nhật tổng stock_counts với error check
+### 5. Đồng bộ
+- Field tự động xuất hiện trong cả 2 trang quản lý (Platform Admin và Admin Công ty).
+- Logic gửi tự động đọc field từ DB → áp dụng giới hạn ngay vòng cron tiếp theo.
+- Không cần migrate dữ liệu cũ — kịch bản hiện tại default = 1 lần (giữ nguyên hành vi cũ).
 
-3. **Thêm debounce/serial queue**: Đảm bảo các mutation cập nhật tổng chạy tuần tự, không ghi đè lẫn nhau.
-
-4. **Thêm nút "Tính lại tổng"**: Cho phép admin bấm để recalculate tổng từ items thực tế, phòng trường hợp lệch dữ liệu.
-
-### Chi tiết kỹ thuật
-
-```text
-Luồng hiện tại (lỗi):
-  Check item1 ──┬── Update item1 ──────────────────> Done
-                └── Fetch all items (stale!) ──> Calc totals ──> Update stock_counts (wrong!)
-
-Luồng mới (fix):
-  Check item1 ──> Update item1 ──> Fetch all items (fresh) ──> Update stock_counts ──> Done
-                                                                    ↑ error check + retry
-```
-
-Ngoài ra sẽ thêm logic: khi mở detail view, tự động recalculate tổng từ items thực tế và sync lại `stock_counts` nếu phát hiện lệch.
-
+## Ghi chú kỹ thuật
+- Dùng `count` query với `head: true` để hiệu năng tốt.
+- CHECK constraint giới hạn 1-10 để tránh spam.
+- Default = 1 → an toàn cho mọi kịch bản đang chạy (không thay đổi hành vi).
