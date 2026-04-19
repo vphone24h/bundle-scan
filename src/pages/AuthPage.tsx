@@ -14,6 +14,7 @@ import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { validateTenantCompany } from '@/lib/companyHelpers';
 import { useCompany } from '@/hooks/useCompanyResolver';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
+import { sendLoginAlert } from '@/lib/loginAlert';
 
 const CURRENT_STORE_ID_KEY = 'current_store_id';
 
@@ -113,6 +114,9 @@ export default function AuthPage() {
       const platformUser = platformRes.data;
       const userRole = roleRes.data;
       const userTenantId = platformUser?.tenant_id || userRole?.tenant_id;
+
+      // Fire-and-forget cảnh báo đăng nhập
+      sendLoginAlert(loggedInUser.id, loggedInUser.email ?? loginEmail, userTenantId ?? null);
 
       if (platformUser?.platform_role === 'platform_admin' || platformUser?.platform_role === 'company_admin') {
         toast({ title: t('pages.auth.loginSuccess'), description: t('pages.auth.welcomeAdmin') });

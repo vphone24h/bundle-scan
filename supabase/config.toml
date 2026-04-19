@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.cross-platform-restore-v3]
 verify_jwt = false
+
+[functions.send-login-alert]
+verify_jwt = false
