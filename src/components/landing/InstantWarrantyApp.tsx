@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -61,6 +62,7 @@ export function InstantWarrantyApp({
   tenantId,
   onBack,
 }: InstantWarrantyAppProps) {
+  const [searchParams] = useSearchParams();
   const warrantySessionId = storeId || tenantId || null;
   const warrantyStorageKey = warrantySessionId ? `warranty_session_${warrantySessionId}` : null;
   const [restoredSessionKey, setRestoredSessionKey] = useState<string | null>(null);
@@ -69,6 +71,11 @@ export function InstantWarrantyApp({
   const [persistedResults, setPersistedResults] = useState<WarrantyResult[] | null>(null);
   const [lookupEnabled, setLookupEnabled] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const qrPrefillValue = useMemo(() => {
+    const imei = searchParams.get('imei')?.trim();
+    const phone = searchParams.get('phone')?.trim() || searchParams.get('sdt')?.trim();
+    return imei || phone || '';
+  }, [searchParams]);
 
   const {
     data: warrantyResults,
@@ -86,6 +93,17 @@ export function InstantWarrantyApp({
   }, []);
 
   useEffect(() => {
+    if (qrPrefillValue) {
+      setSearchValue(qrPrefillValue);
+      setSubmittedValue(qrPrefillValue);
+      setPersistedResults(null);
+      setLookupEnabled(true);
+      if (warrantyStorageKey) {
+        setRestoredSessionKey(warrantyStorageKey);
+      }
+      return;
+    }
+
     if (!warrantyStorageKey || restoredSessionKey === warrantyStorageKey) return;
 
     const restored = readWarrantySession<WarrantyResult>(warrantyStorageKey);
@@ -103,16 +121,18 @@ export function InstantWarrantyApp({
 
     setLookupEnabled(false);
     setRestoredSessionKey(warrantyStorageKey);
-  }, [restoredSessionKey, warrantyStorageKey]);
+  }, [qrPrefillValue, restoredSessionKey, warrantyStorageKey]);
 
   useEffect(() => {
-    if (!warrantyStorageKey || !lookupEnabled || !submittedValue || !isFetched || error || !warrantyResults) return;
+    if (!lookupEnabled || !submittedValue || !isFetched || error || !warrantyResults) return;
 
     setPersistedResults(warrantyResults);
-    writeWarrantySession(warrantyStorageKey, {
-      searchValue: submittedValue,
-      results: warrantyResults,
-    });
+    if (warrantyStorageKey) {
+      writeWarrantySession(warrantyStorageKey, {
+        searchValue: submittedValue,
+        results: warrantyResults,
+      });
+    }
     setLookupEnabled(false);
 
     if (warrantyResults.length > 0) {
