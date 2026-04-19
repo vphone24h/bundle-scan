@@ -283,9 +283,9 @@ export function usePublicLandingProducts(
 ) {
   const queryEnabled = options.enabled ?? true;
 
-  // Use prefetched data ONLY as initial placeholder, not as permanent return value
+  // Use prefetched data as initial data so React Query treats it as fresh (no refetch on mount)
   const prefetch = typeof window !== 'undefined' ? (window as any).__STORE_PREFETCH__ : null;
-  const prefetchData = prefetch?.data && prefetch.tenantId === tenantId
+  const initialData = prefetch?.data && prefetch.tenantId === tenantId
     ? {
         categories: (prefetch.data.productCategories || []) as unknown as LandingProductCategory[],
         products: (prefetch.data.products || []) as unknown as LandingProduct[],
@@ -306,10 +306,12 @@ export function usePublicLandingProducts(
       };
     },
     enabled: queryEnabled && !!tenantId,
-    placeholderData: prefetchData,
-    staleTime: 1000 * 60 * 2,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
+    initialData,
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
 
