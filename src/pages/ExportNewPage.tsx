@@ -52,6 +52,7 @@ import { useInvoiceTemplateByBranch } from '@/hooks/useInvoiceTemplates';
 import { useBranches } from '@/hooks/useBranches';
 import { usePointSettings } from '@/hooks/useCustomerPoints';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useCurrentUserBranchAccess } from '@/hooks/useUserBranchAccess';
 import { useStaffList } from '@/hooks/useCRM';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenantLandingSettings } from '@/hooks/useTenantLanding';
