@@ -525,6 +525,15 @@ export function InvoicePrintDialog({
               </div>
             )}
 
+            {(settings as any).show_warranty_qr && warrantyQrDataUrl && (
+              <div className="mt-3 flex flex-col items-center gap-1">
+                <img src={warrantyQrDataUrl} alt="QR Bảo hành" style={{ width: 100, height: 100 }} />
+                <div className="text-xs italic" style={{ color: '#555' }}>
+                  {(settings as any).warranty_qr_label || 'Quét mã để tra cứu bảo hành'}
+                </div>
+              </div>
+            )}
+
             {settings.show_thank_you && (
               <div className="mt-4 text-center italic">
                 {settings.thank_you_text || 'Cảm ơn quý khách!'}
