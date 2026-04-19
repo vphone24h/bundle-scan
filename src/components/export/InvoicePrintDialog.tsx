@@ -232,14 +232,35 @@ export function InvoicePrintDialog({
     };
     printWindow.onafterprint = cleanup;
 
-    printWindow.focus();
-    setTimeout(() => {
+    const triggerPrint = () => {
       try {
+        printWindow.focus();
         printWindow.print();
       } finally {
         setTimeout(cleanup, 1000);
       }
-    }, 50);
+    };
+
+    // Wait for all images (including QR) to load before printing to avoid layout shift
+    const waitForImages = () => {
+      const imgs = Array.from(printWindow.document.images || []);
+      if (imgs.length === 0) return Promise.resolve();
+      return Promise.all(
+        imgs.map((img) =>
+          img.complete && img.naturalWidth > 0
+            ? Promise.resolve()
+            : new Promise<void>((resolve) => {
+                img.onload = () => resolve();
+                img.onerror = () => resolve();
+                setTimeout(() => resolve(), 1500);
+              })
+        )
+      );
+    };
+
+    setTimeout(() => {
+      waitForImages().then(triggerPrint);
+    }, 100);
   };
 
   const settings = template || {
