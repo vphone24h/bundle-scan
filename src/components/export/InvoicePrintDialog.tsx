@@ -159,6 +159,13 @@ export function InvoicePrintDialog({
             tr { page-break-inside: avoid; page-break-after: auto; }
             thead { display: table-row-group; }
             .separator { border-top: 1px dashed #333; margin: 8px 0; }
+            .rich-text-content ul { list-style: disc; padding-left: 1.25rem; margin: 4px 0; }
+            .rich-text-content ol { list-style: decimal; padding-left: 1.25rem; margin: 4px 0; }
+            .rich-text-content li { margin: 2px 0; }
+            .rich-text-content b, .rich-text-content strong { font-weight: bold; }
+            .rich-text-content i, .rich-text-content em { font-style: italic; }
+            .rich-text-content u { text-decoration: underline; }
+            .rich-text-content p { margin: 4px 0; }
             @media print {
               body { width: ${width}; }
               thead { display: table-row-group; }
