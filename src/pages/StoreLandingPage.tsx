@@ -678,6 +678,29 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     );
   }
   if (!tenant) {
+    // GUARD: Don't flash "Không tìm thấy cửa hàng" while resolution is still in flight.
+    // This happens on slow networks where the 250ms timeout fires before tenant data arrives.
+    const stillResolving =
+      isLoading
+      || resolvedTenant.status === 'loading'
+      || (isError && hasIdentifier)
+      || (!hasIdentifier && !isError);
+    if (stillResolving) {
+      return (
+        <div className="min-h-screen bg-white">
+          <div className="h-14 bg-gray-100 animate-pulse" />
+          <div className="h-48 bg-gray-100 animate-pulse" />
+          <div className="p-4 space-y-3">
+            <div className="h-6 w-40 bg-gray-200 rounded animate-pulse" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="h-32 bg-gray-100 rounded-lg animate-pulse" />
+              <div className="h-32 bg-gray-100 rounded-lg animate-pulse" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // Hide preloader on terminal states
     (window as any).__hideAppPreloader?.();
     // and keep app in recover mode instead.
