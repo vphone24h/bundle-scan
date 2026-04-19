@@ -114,6 +114,9 @@ export default function AuthPage() {
       const userRole = roleRes.data;
       const userTenantId = platformUser?.tenant_id || userRole?.tenant_id;
 
+      // Fire-and-forget cảnh báo đăng nhập
+      sendLoginAlert(loggedInUser.id, loggedInUser.email ?? loginEmail, userTenantId ?? null);
+
       if (platformUser?.platform_role === 'platform_admin' || platformUser?.platform_role === 'company_admin') {
         toast({ title: t('pages.auth.loginSuccess'), description: t('pages.auth.welcomeAdmin') });
         navigate('/platform-admin', { replace: true });
