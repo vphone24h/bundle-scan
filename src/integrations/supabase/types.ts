@@ -9901,6 +9901,28 @@ export type Database = {
       delete_branch_safe: { Args: { _branch_id: string }; Returns: undefined }
       dispatch_daily_backups: { Args: never; Returns: undefined }
       encrypt_api_key: { Args: { _plaintext: string }; Returns: string }
+      find_landing_article_by_short_id: {
+        Args: { _short_id: string; _tenant_id: string }
+        Returns: {
+          content: string
+          created_at: string
+          id: string
+          summary: string
+          thumbnail_url: string
+          title: string
+        }[]
+      }
+      find_landing_product_by_short_id: {
+        Args: { _short_id: string; _tenant_id: string }
+        Returns: {
+          description: string
+          id: string
+          image_url: string
+          name: string
+          price: number
+          sale_price: number
+        }[]
+      }
       generate_affiliate_code: { Args: never; Returns: string }
       generate_domain_verification_token: { Args: never; Returns: string }
       generate_shop_ctv_code: { Args: { _tenant_id: string }; Returns: string }
