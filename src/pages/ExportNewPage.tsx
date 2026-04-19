@@ -277,14 +277,18 @@ export default function ExportNewPage() {
 
   // Helper: check if user can export from a specific branch
   // ⚠️ Quyền "Xem tồn kho chi nhánh khác" (view_other_branches) CHỈ cho phép XEM,
-  // KHÔNG cho phép xuất hàng từ chi nhánh khác. Chỉ Super Admin mới được xuất xuyên chi nhánh.
+  // KHÔNG cho phép xuất hàng từ chi nhánh khác.
+  // User chỉ được xuất hàng từ: chi nhánh chính + các chi nhánh được gán thêm (user_branch_access).
   const canExportFromBranch = (productBranchId: string | null | undefined): boolean => {
     // Only Super Admin can export from any branch
     if (permissions?.role === 'super_admin') return true;
     // No branch info on product -> allow
     if (!productBranchId) return true;
-    // Other roles must belong to the product's branch (even if they have view_other_branches)
-    return permissions?.branchId === productBranchId;
+    // User's primary branch
+    if (permissions?.branchId === productBranchId) return true;
+    // Extra assigned branches
+    if (extraBranchIds && extraBranchIds.includes(productBranchId)) return true;
+    return false;
   };
 
   const getBlockedExportMessage = (branchName?: string | null): string => {
