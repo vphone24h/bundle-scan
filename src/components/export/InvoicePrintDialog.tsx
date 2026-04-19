@@ -1,5 +1,7 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import DOMPurify from 'dompurify';
+import QRCode from 'qrcode';
+import { useCustomDomains } from '@/hooks/useCustomDomains';
 import {
   Dialog,
   DialogContent,
