@@ -121,19 +121,22 @@ const buildSeoTitle = (productName: string, store: string, price?: number | null
  * Auto-generate meta description for product
  * Format: "Mua ProductName giá Xđ tại StoreName. Giao hàng nhanh, bảo hành chính hãng."
  */
+const stripHtml = (html: string): string =>
+  html.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+
 const buildSeoDescription = (
   productName: string,
   store: string,
   price?: number | null,
   originalDesc?: string | null,
 ): string => {
-  if (originalDesc && originalDesc.length > 30) {
-    // Prepend price if not already in description
-    if (price && !originalDesc.includes(formatPrice(price))) {
-      const withPrice = `${formatPrice(price)}đ - ${originalDesc}`;
+  const cleanDesc = originalDesc ? stripHtml(originalDesc) : "";
+  if (cleanDesc && cleanDesc.length > 30) {
+    if (price && !cleanDesc.includes(formatPrice(price))) {
+      const withPrice = `${formatPrice(price)}đ - ${cleanDesc}`;
       return withPrice.length <= 160 ? withPrice : withPrice.substring(0, 157) + "...";
     }
-    return originalDesc.length <= 160 ? originalDesc : originalDesc.substring(0, 157) + "...";
+    return cleanDesc.length <= 160 ? cleanDesc : cleanDesc.substring(0, 157) + "...";
   }
   const parts = [`Mua ${productName}`];
   if (price) parts[0] += ` giá ${formatPrice(price)}đ`;
