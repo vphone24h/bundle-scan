@@ -1158,6 +1158,20 @@ export default function InvoiceTemplatePage() {
                   </div>
                 )}
 
+                {/* Warranty QR - between Custom description and Thank you */}
+                {(currentSettings.show_warranty_qr ?? false) && hasCustomDomain && (
+                  <div className="mt-3 flex flex-col items-center gap-1">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://${verifiedDomain}/warranty-check?phone=0901234567`)}`}
+                      alt="QR Bảo hành"
+                      style={{ width: 90, height: 90 }}
+                    />
+                    <div className="text-xs italic" style={{ color: '#555' }}>
+                      {currentSettings.warranty_qr_label || 'Quét mã để tra cứu bảo hành'}
+                    </div>
+                  </div>
+                )}
+
                 {/* Thank you - NOW AFTER Custom description */}
                 {(currentSettings.show_thank_you ?? true) && (
                   <div className="mt-4 text-center italic">
