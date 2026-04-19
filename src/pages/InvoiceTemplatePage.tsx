@@ -60,7 +60,6 @@ import {
 } from '@/hooks/useInvoiceTemplates';
 import { useBranches } from '@/hooks/useBranches';
 import { useCustomDomains } from '@/hooks/useCustomDomains';
-import QRCode from 'qrcode';
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from 'react-i18next';
 import { generateWarrantyQrCard } from '@/lib/warrantyQrCard';
@@ -179,6 +178,7 @@ export default function InvoiceTemplatePage() {
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [settings, setSettings] = useState<Partial<InvoiceTemplate>>({});
   const [isUploading, setIsUploading] = useState(false);
+  const [previewWarrantyQrCard, setPreviewWarrantyQrCard] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Get current template based on selected branch
@@ -204,6 +204,20 @@ export default function InvoiceTemplatePage() {
   useEffect(() => {
     setSettings({});
   }, [selectedBranchId]);
+
+  useEffect(() => {
+    if (!(currentSettings.show_warranty_qr ?? false) || !hasCustomDomain || !verifiedDomain) {
+      setPreviewWarrantyQrCard('');
+      return;
+    }
+
+    generateWarrantyQrCard({
+      qrUrl: `https://${verifiedDomain}/warranty-check?phone=0901234567`,
+      label: currentSettings.warranty_qr_label || 'Quét mã để tra cứu bảo hành',
+    })
+      .then(setPreviewWarrantyQrCard)
+      .catch(() => setPreviewWarrantyQrCard(''));
+  }, [currentSettings.show_warranty_qr, currentSettings.warranty_qr_label, hasCustomDomain, verifiedDomain]);
 
   // Handle branch change - create template if needed
   const handleBranchChange = async (branchId: string) => {
