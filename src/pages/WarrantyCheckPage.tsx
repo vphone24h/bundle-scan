@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { Shield, Search, Package, Calendar, Store, Phone, ArrowLeft, Loader2, AlertCircle, CheckCircle2, MessageSquareText, Wrench } from 'lucide-react';
 import { format, differenceInDays, addMonths } from 'date-fns';
@@ -66,6 +66,7 @@ const WARRANTY_STORAGE_KEY = 'global_warranty_session';
 
 export default function WarrantyCheckPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [input, setInput] = useState('');
   const [searchValue, setSearchValue] = useState('');
   const [searchTab, setSearchTab] = useState<'warranty' | 'repair'>('warranty');
@@ -133,6 +134,20 @@ export default function WarrantyCheckPage() {
   });
 
   useEffect(() => {
+    // Ưu tiên query params từ QR (?imei=... hoặc ?phone=...)
+    const qpImei = searchParams.get('imei')?.trim();
+    const qpPhone = searchParams.get('phone')?.trim();
+    const fromQr = qpImei || qpPhone;
+
+    if (fromQr) {
+      setInput(fromQr);
+      setSearchValue(fromQr);
+      setPersistedResults(null);
+      setSearchTab('warranty');
+      setLookupEnabled(true);
+      return;
+    }
+
     const restored = readWarrantySession<WarrantyItem>(WARRANTY_STORAGE_KEY);
     const restoredSearch = restored?.searchValue?.trim() || '';
     if (!restoredSearch) return;
@@ -141,7 +156,7 @@ export default function WarrantyCheckPage() {
     setSearchValue(restoredSearch);
     setPersistedResults(restored?.results ?? []);
     setLookupEnabled(false);
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!lookupEnabled || !searchValue || !isFetched || error || !results) return;
