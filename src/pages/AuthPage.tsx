@@ -14,6 +14,7 @@ import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { validateTenantCompany } from '@/lib/companyHelpers';
 import { useCompany } from '@/hooks/useCompanyResolver';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
+import { sendLoginAlert } from '@/lib/loginAlert';
 
 const CURRENT_STORE_ID_KEY = 'current_store_id';
 

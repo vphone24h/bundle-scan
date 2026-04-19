@@ -9,6 +9,7 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { useTranslation } from 'react-i18next';
+import { sendLoginAlert } from '@/lib/loginAlert';
 
 export default function PlatformAuthPage() {
   const { t } = useTranslation();
@@ -52,9 +53,11 @@ export default function PlatformAuthPage() {
 
         const { data: platformUser } = await supabase
           .from('platform_users')
-          .select('platform_role')
+          .select('platform_role, tenant_id')
           .eq('user_id', user.id)
           .maybeSingle();
+
+        sendLoginAlert(user.id, user.email ?? email, platformUser?.tenant_id ?? null);
 
         if (platformUser?.platform_role !== 'platform_admin' && platformUser?.platform_role !== 'company_admin') {
           await supabase.auth.signOut({ scope: 'local' });
