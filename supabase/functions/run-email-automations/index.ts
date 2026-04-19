@@ -601,6 +601,8 @@ Deno.serve(async (req) => {
           const customer = Array.isArray(receipt.customers) ? receipt.customers[0] : receipt.customers
           if (!customer?.email && !customer?.phone) continue
 
+          const maxSends = Math.max(1, Number((automation as any).max_sends_per_recipient) || 1)
+
           // Triggers that send ONCE per customer (regardless of how many records match)
           const oncePerCustomerTriggers = [
             'days_after_purchase_onwards', 'days_inactive',
@@ -615,19 +617,31 @@ Deno.serve(async (req) => {
                 .select('id', { count: 'exact', head: true })
                 .eq('automation_id', automation.id)
                 .eq('customer_id', customerId)
+                .eq('status', 'sent')
 
-              if ((count || 0) > 0) continue
+              if ((count || 0) >= maxSends) continue
             }
           } else {
-            // Other triggers: check per receipt
-            const { count } = await supabase
+            // Other triggers: check per receipt, but cap by maxSends per customer
+            const { count: receiptCount } = await supabase
               .from('email_automation_logs')
               .select('id', { count: 'exact', head: true })
               .eq('automation_id', automation.id)
               .eq('customer_id', customer.id)
               .eq('export_receipt_id', receipt.id || '00000000-0000-0000-0000-000000000000')
 
-            if ((count || 0) > 0) continue
+            if ((receiptCount || 0) > 0) continue
+
+            // Also enforce overall frequency cap per customer
+            if (customer.id) {
+              const { count: totalCount } = await supabase
+                .from('email_automation_logs')
+                .select('id', { count: 'exact', head: true })
+                .eq('automation_id', automation.id)
+                .eq('customer_id', customer.id)
+                .eq('status', 'sent')
+              if ((totalCount || 0) >= maxSends) continue
+            }
           }
 
           const vars: Record<string, string> = {

@@ -11,6 +11,7 @@ export interface PlatformEmailAutomation {
   html_content: string;
   is_enabled: boolean;
   target_audience: string;
+  max_sends_per_recipient: number;
   created_at: string;
   updated_at: string;
 }

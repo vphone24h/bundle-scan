@@ -354,6 +354,7 @@ function AutomationFormDialog({
   const [triggerDays, setTriggerDays] = useState(automation?.trigger_days || prefilledTemplate?.triggerDays || 7);
   const [subject, setSubject] = useState(automation?.subject || prefilledTemplate?.subject || '');
   const [isActive, setIsActive] = useState(automation?.is_active || false);
+  const [maxSends, setMaxSends] = useState(automation?.max_sends_per_recipient || 1);
   const [blocks, setBlocks] = useState<BlockItem[]>(
     prefilledTemplate?.blocks?.map(b => ({ tempId: crypto.randomUUID(), block_type: b.block_type, content: b.content })) || []
   );
@@ -404,9 +405,9 @@ function AutomationFormDialog({
     try {
       let automationId = automation?.id;
       if (isEdit) {
-        await updateMut.mutateAsync({ id: automation!.id, name, trigger_type: triggerType, trigger_days: triggerDays, subject, is_active: isActive });
+        await updateMut.mutateAsync({ id: automation!.id, name, trigger_type: triggerType, trigger_days: triggerDays, subject, is_active: isActive, max_sends_per_recipient: maxSends });
       } else {
-        const result = await createMut.mutateAsync({ tenant_id: tenantId, name, trigger_type: triggerType, trigger_days: triggerDays, subject, is_active: isActive });
+        const result = await createMut.mutateAsync({ tenant_id: tenantId, name, trigger_type: triggerType, trigger_days: triggerDays, subject, is_active: isActive, max_sends_per_recipient: maxSends });
         automationId = result.id;
       }
 
@@ -477,6 +478,22 @@ function AutomationFormDialog({
             <div>
               <Label>Tiêu đề email (Subject)</Label>
               <Input value={subject} onChange={e => setSubject(e.target.value)} placeholder="VD: Cảm ơn bạn đã mua hàng tại {{store_name}}" />
+            </div>
+            <div>
+              <Label>Số lần gửi tối đa cho mỗi người</Label>
+              <Select value={String(maxSends)} onValueChange={(v) => setMaxSends(Number(v))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 lần (mặc định)</SelectItem>
+                  <SelectItem value="2">2 lần</SelectItem>
+                  <SelectItem value="3">3 lần</SelectItem>
+                  <SelectItem value="5">5 lần</SelectItem>
+                  <SelectItem value="10">10 lần</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Tránh spam — mỗi khách hàng chỉ nhận tối đa số lần này.
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <Switch checked={isActive} onCheckedChange={setIsActive} />
