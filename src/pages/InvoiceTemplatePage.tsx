@@ -168,6 +168,9 @@ const getAlignClass = (align: TextAlign | undefined) => {
 export default function InvoiceTemplatePage() {
   const { t } = useTranslation();
   const { data: branches, isLoading: branchesLoading } = useBranches();
+  const { data: customDomains } = useCustomDomains();
+  const verifiedDomain = customDomains?.find(d => d.is_verified)?.domain || customDomains?.[0]?.domain || null;
+  const hasCustomDomain = !!verifiedDomain;
   const { data: allTemplates, isLoading: templatesLoading } = useInvoiceTemplates();
   const updateTemplate = useUpdateInvoiceTemplate();
   const getOrCreateBranchTemplate = useGetOrCreateBranchTemplate();
