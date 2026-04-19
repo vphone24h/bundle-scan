@@ -51,6 +51,26 @@ export function InvoicePrintDialog({
 }: InvoicePrintDialogProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const { data: customTemplates = [] } = useActiveCustomPrintTemplates(receipt?.branch_id);
+  const { data: customDomains } = useCustomDomains();
+  const verifiedDomain = customDomains?.find(d => d.is_verified)?.domain || customDomains?.[0]?.domain || null;
+
+  // Build warranty QR URL: prefer IMEI, fallback to phone
+  const warrantyQrUrl = useMemo(() => {
+    if (!verifiedDomain) return null;
+    const firstImei = receipt?.items?.find((i: any) => i?.imei)?.imei;
+    const phone = receipt?.customer?.phone;
+    const param = firstImei ? `imei=${encodeURIComponent(firstImei)}` : (phone ? `phone=${encodeURIComponent(phone)}` : null);
+    if (!param) return null;
+    return `https://${verifiedDomain}/warranty-check?${param}`;
+  }, [verifiedDomain, receipt]);
+
+  const [warrantyQrDataUrl, setWarrantyQrDataUrl] = useState<string>('');
+  useEffect(() => {
+    if (!warrantyQrUrl) { setWarrantyQrDataUrl(''); return; }
+    QRCode.toDataURL(warrantyQrUrl, { width: 240, margin: 1 })
+      .then(setWarrantyQrDataUrl)
+      .catch(() => setWarrantyQrDataUrl(''));
+  }, [warrantyQrUrl]);
 
   // 'thermal' = old template, or custom template ID
   const [printMode, setPrintMode] = useState<string>('thermal');
