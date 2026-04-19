@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import DOMPurify from 'dompurify';
 import {
   Dialog,
   DialogContent,
@@ -158,6 +159,13 @@ export function InvoicePrintDialog({
             tr { page-break-inside: avoid; page-break-after: auto; }
             thead { display: table-row-group; }
             .separator { border-top: 1px dashed #333; margin: 8px 0; }
+            .rich-text-content ul { list-style: disc; padding-left: 1.25rem; margin: 4px 0; }
+            .rich-text-content ol { list-style: decimal; padding-left: 1.25rem; margin: 4px 0; }
+            .rich-text-content li { margin: 2px 0; }
+            .rich-text-content b, .rich-text-content strong { font-weight: bold; }
+            .rich-text-content i, .rich-text-content em { font-style: italic; }
+            .rich-text-content u { text-decoration: underline; }
+            .rich-text-content p { margin: 4px 0; }
             @media print {
               body { width: ${width}; }
               thead { display: table-row-group; }
@@ -479,9 +487,8 @@ export function InvoicePrintDialog({
 
             {settings.show_custom_description && (settings.custom_description_text || settings.custom_description_image_url) && (
               <div 
-                className={`mt-2 text-sm ${getAlignClass(settings.custom_description_align)}`}
+                className={`mt-2 text-sm rich-text-content ${getAlignClass(settings.custom_description_align)}`}
                 style={{ 
-                  whiteSpace: 'pre-wrap',
                   fontWeight: settings.custom_description_bold ? 'bold' : 'normal'
                 }}
               >
@@ -492,7 +499,7 @@ export function InvoicePrintDialog({
                     style={{ maxWidth: '100%', maxHeight: '60px', marginBottom: '4px' }}
                   />
                 )}
-                {settings.custom_description_text}
+                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.custom_description_text || '') }} />
               </div>
             )}
 

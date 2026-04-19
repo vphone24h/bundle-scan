@@ -48,6 +48,8 @@ import {
   Copy
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import DOMPurify from 'dompurify';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   useInvoiceTemplates, 
@@ -769,11 +771,11 @@ export default function InvoiceTemplatePage() {
               onCheckedChange={(v) => updateSetting('show_custom_description', v)}
             >
               <div className="space-y-3">
-                <Textarea
-                  placeholder="Nhập nội dung mô tả khác. Ví dụ:&#10;- STK: 0123456789 - Ngân hàng ABC - Chủ TK: Nguyễn Văn A&#10;- Chính sách đổi trả, bảo hành..."
+                <RichTextEditor
                   value={currentSettings.custom_description_text || ''}
-                  onChange={(e) => updateSetting('custom_description_text', e.target.value)}
-                  rows={3}
+                  onChange={(html) => updateSetting('custom_description_text', html)}
+                  placeholder="Nhập nội dung. Hỗ trợ in đậm, in nghiêng, gạch chân, danh sách, xuống dòng..."
+                  minHeight="120px"
                 />
                 
                 {/* Image upload */}
@@ -1099,10 +1101,9 @@ export default function InvoiceTemplatePage() {
                 {/* Custom description - NOW BEFORE Thank you */}
                 {(currentSettings.show_custom_description ?? false) && (currentSettings.custom_description_text || currentSettings.custom_description_image_url) && (
                   <div 
-                    className={`mt-2 text-sm ${getAlignClass((currentSettings.custom_description_align || 'center') as TextAlign)}`}
+                    className={`mt-2 text-sm rich-text-content ${getAlignClass((currentSettings.custom_description_align || 'center') as TextAlign)}`}
                     style={{ 
                       color: '#333', 
-                      whiteSpace: 'pre-wrap',
                       fontWeight: currentSettings.custom_description_bold ? 'bold' : 'normal'
                     }}
                   >
@@ -1113,7 +1114,7 @@ export default function InvoiceTemplatePage() {
                         style={{ maxWidth: '100%', maxHeight: '60px', marginBottom: '4px' }}
                       />
                     )}
-                    {currentSettings.custom_description_text}
+                    <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentSettings.custom_description_text || '') }} />
                   </div>
                 )}
 
