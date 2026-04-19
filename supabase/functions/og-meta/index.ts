@@ -265,18 +265,22 @@ Deno.serve(async (req) => {
         ${data.image_url ? `<img src="${escHtml(data.image_url)}" alt="${escHtml(data.name)}" />` : ""}`;
     }
   } else if (type === "article" && tenantId && id && id !== "store") {
-    let query = supabase
-      .from("landing_articles")
-      .select("id, title, summary, thumbnail_url, created_at, content")
-      .eq("tenant_id", tenantId);
-
+    let data: any = null;
     if (/^[a-f0-9]{8}$/i.test(id)) {
-      query = query.ilike("id", `${id}%`);
+      const { data: rpcData } = await supabase.rpc("find_landing_article_by_short_id", {
+        _tenant_id: tenantId,
+        _short_id: id.toLowerCase(),
+      });
+      data = Array.isArray(rpcData) ? rpcData[0] : rpcData;
     } else {
-      query = query.eq("id", id);
+      const { data: row } = await supabase
+        .from("landing_articles")
+        .select("id, title, summary, thumbnail_url, content, created_at")
+        .eq("tenant_id", tenantId)
+        .eq("id", id)
+        .maybeSingle();
+      data = row;
     }
-
-    const { data } = await query.limit(1).maybeSingle();
 
     if (data) {
       // SEO title for articles: "Title | StoreName" (under 60 chars)
