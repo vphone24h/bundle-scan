@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useCustomDomainArticlePublic } from '@/hooks/useAppConfig';
+import { useCustomDomainArticlePublic, useAppConfig } from '@/hooks/useAppConfig';
 import { useNavigate } from 'react-router-dom';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings, TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
 import { useLandingProductCategories } from '@/hooks/useLandingProducts';
@@ -258,10 +258,14 @@ function CustomDomainCTA() {
   const { data: tenant } = useCurrentTenant();
   const storeUrl = tenant?.subdomain ? `https://${tenant.subdomain}.vkho.vn` : null;
   const { data: article } = useCustomDomainArticlePublic();
+  const { data: configs } = useAppConfig();
 
-  const ADMIN_PHONE = '0355820185';
-  const ADMIN_PHONE_DISPLAY = '0355 820 185';
-  const ZALO_URL = `https://zalo.me/${ADMIN_PHONE}`;
+  const feedbackZaloUrl = configs?.find(c => c.config_key === 'feedback_zalo_url')?.config_value || '';
+  const feedbackFbUrl = configs?.find(c => c.config_key === 'feedback_fb_url')?.config_value || '';
+  const feedbackHotline = configs?.find(c => c.config_key === 'feedback_hotline')?.config_value || '';
+  const ADMIN_PHONE = feedbackHotline.replace(/\s/g, '');
+  const ADMIN_PHONE_DISPLAY = feedbackHotline ? feedbackHotline.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3') : '';
+  const ZALO_URL = feedbackZaloUrl ? (feedbackZaloUrl.startsWith('http') ? feedbackZaloUrl : `https://zalo.me/${feedbackZaloUrl}`) : '';
 
   return (
     <>
@@ -322,22 +326,36 @@ function CustomDomainCTA() {
           <div className="rounded-lg border bg-muted/50 p-4 mt-3 space-y-3">
             <p className="text-sm font-medium">👉 Để kích hoạt tính năng, vui lòng liên hệ Admin:</p>
             <div className="flex flex-col sm:flex-row gap-2">
-              <a
-                href={`tel:${ADMIN_PHONE}`}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-background hover:bg-accent transition-colors text-sm font-medium"
-              >
-                <Phone className="h-4 w-4" />
-                {ADMIN_PHONE_DISPLAY}
-              </a>
-              <a
-                href={ZALO_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0068FF] hover:bg-[#0055DD] text-white transition-colors text-sm font-medium"
-              >
-                <MessageCircle className="h-4 w-4" />
-                Nhắn Zalo
-              </a>
+              {ADMIN_PHONE && (
+                <a
+                  href={`tel:${ADMIN_PHONE}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-background hover:bg-accent transition-colors text-sm font-medium"
+                >
+                  <Phone className="h-4 w-4" />
+                  {ADMIN_PHONE_DISPLAY}
+                </a>
+              )}
+              {ZALO_URL && (
+                <a
+                  href={ZALO_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0068FF] hover:bg-[#0055DD] text-white transition-colors text-sm font-medium"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Nhắn Zalo
+                </a>
+              )}
+              {feedbackFbUrl && (
+                <a
+                  href={feedbackFbUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-background hover:bg-accent transition-colors text-sm font-medium"
+                >
+                  📘 Facebook
+                </a>
+              )}
             </div>
           </div>
         </DialogContent>
