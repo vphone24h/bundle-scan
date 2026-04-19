@@ -177,6 +177,7 @@ export default function ExportNewPage() {
   const { data: pointSettings } = usePointSettings();
   const { data: branches } = useBranches();
   const { data: permissions } = usePermissions();
+  const { data: extraBranchIds } = useCurrentUserBranchAccess();
   const { data: staffList } = useStaffList();
   const { data: landingSettings } = useTenantLandingSettings();
   const { isLimitReached, orderCount, freeOrderLimit } = useOrderLimitCheck();
