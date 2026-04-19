@@ -59,6 +59,8 @@ import {
   type TextAlign 
 } from '@/hooks/useInvoiceTemplates';
 import { useBranches } from '@/hooks/useBranches';
+import { useCustomDomains } from '@/hooks/useCustomDomains';
+import QRCode from 'qrcode';
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from 'react-i18next';
 
