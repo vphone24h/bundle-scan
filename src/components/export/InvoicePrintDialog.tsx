@@ -243,6 +243,8 @@ export function InvoicePrintDialog({
     custom_description_bold: false,
     custom_description_align: 'center' as TextAlign,
     custom_description_image_url: null as string | null,
+    show_warranty_qr: false,
+    warranty_qr_label: 'Quét mã để tra cứu bảo hành',
     thank_you_text: 'Cảm ơn quý khách!',
     section1_align: 'center' as TextAlign,
     section2_align: 'center' as TextAlign,
