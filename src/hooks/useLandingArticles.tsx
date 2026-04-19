@@ -223,18 +223,19 @@ export function usePublicLandingArticles(
 ) {
   const queryEnabled = options.enabled ?? true;
 
+  // Use prefetched data as initial data so React Query treats it as fresh (no refetch on mount)
+  const prefetch = typeof window !== 'undefined' ? (window as any).__STORE_PREFETCH__ : null;
+  const initialData = prefetch?.data && prefetch.tenantId === tenantId
+    ? {
+        categories: (prefetch.data.articleCategories || []) as unknown as LandingArticleCategory[],
+        articles: (prefetch.data.articles || []) as unknown as LandingArticle[],
+      }
+    : undefined;
+
   return useQuery({
     queryKey: ['public-landing-articles', tenantId],
     queryFn: async () => {
       if (!tenantId) return { categories: [], articles: [] };
-      // Use prefetched data from inline script if available
-      const prefetch = (window as any).__STORE_PREFETCH__;
-      if (prefetch?.data && prefetch.tenantId === tenantId) {
-        return {
-          categories: (prefetch.data.articleCategories || []) as unknown as LandingArticleCategory[],
-          articles: (prefetch.data.articles || []) as unknown as LandingArticle[],
-        };
-      }
       const [catRes, artRes] = await Promise.all([
         supabase.from('landing_article_categories' as any).select('*').eq('tenant_id', tenantId).eq('is_visible', true).order('display_order'),
         supabase.from('landing_articles' as any).select('*').eq('tenant_id', tenantId).eq('is_published', true).order('display_order'),
@@ -245,7 +246,12 @@ export function usePublicLandingArticles(
       };
     },
     enabled: queryEnabled && !!tenantId,
-    staleTime: 1000 * 60 * 5,
+    initialData,
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
 
