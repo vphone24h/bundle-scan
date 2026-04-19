@@ -346,11 +346,13 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Fallback title/desc
+  // Fallback title/desc — store-level prefers banner image
   if (!title) {
     title = storeName || "Cùng trãi nghiệm";
     description = storeDescription || (storeName ? `Truy cập ${storeName} để trải nghiệm ngay` : "Truy cập website để trải nghiệm ngay.");
-    imageUrl = storeLogoUrl || "";
+    imageUrl = storeBannerUrl || storeLogoUrl || "";
+  } else if (type === "store" && storeBannerUrl) {
+    imageUrl = storeBannerUrl;
   }
 
   if (!title && redirectUrl) {
