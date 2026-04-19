@@ -576,9 +576,9 @@ export function InvoicePrintDialog({
             {(settings as any).show_warranty_qr && warrantyQrDataUrl && (
               <div className="warranty-qr-box">
                 <img src={warrantyQrDataUrl} alt="QR Bảo hành" />
-                <div className="qr-label">
+                <span className="qr-label">
                   {(settings as any).warranty_qr_label || 'Quét mã để tra cứu bảo hành'}
-                </div>
+                </span>
               </div>
             )}
 
