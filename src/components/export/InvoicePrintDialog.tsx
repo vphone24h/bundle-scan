@@ -1,5 +1,7 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import DOMPurify from 'dompurify';
+import QRCode from 'qrcode';
+import { useCustomDomains } from '@/hooks/useCustomDomains';
 import {
   Dialog,
   DialogContent,
@@ -49,6 +51,26 @@ export function InvoicePrintDialog({
 }: InvoicePrintDialogProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const { data: customTemplates = [] } = useActiveCustomPrintTemplates(receipt?.branch_id);
+  const { data: customDomains } = useCustomDomains();
+  const verifiedDomain = customDomains?.find(d => d.is_verified)?.domain || customDomains?.[0]?.domain || null;
+
+  // Build warranty QR URL: prefer IMEI, fallback to phone
+  const warrantyQrUrl = useMemo(() => {
+    if (!verifiedDomain) return null;
+    const firstImei = receipt?.items?.find((i: any) => i?.imei)?.imei;
+    const phone = receipt?.customer?.phone;
+    const param = firstImei ? `imei=${encodeURIComponent(firstImei)}` : (phone ? `phone=${encodeURIComponent(phone)}` : null);
+    if (!param) return null;
+    return `https://${verifiedDomain}/warranty-check?${param}`;
+  }, [verifiedDomain, receipt]);
+
+  const [warrantyQrDataUrl, setWarrantyQrDataUrl] = useState<string>('');
+  useEffect(() => {
+    if (!warrantyQrUrl) { setWarrantyQrDataUrl(''); return; }
+    QRCode.toDataURL(warrantyQrUrl, { width: 240, margin: 1 })
+      .then(setWarrantyQrDataUrl)
+      .catch(() => setWarrantyQrDataUrl(''));
+  }, [warrantyQrUrl]);
 
   // 'thermal' = old template, or custom template ID
   const [printMode, setPrintMode] = useState<string>('thermal');
@@ -221,6 +243,8 @@ export function InvoicePrintDialog({
     custom_description_bold: false,
     custom_description_align: 'center' as TextAlign,
     custom_description_image_url: null as string | null,
+    show_warranty_qr: false,
+    warranty_qr_label: 'Quét mã để tra cứu bảo hành',
     thank_you_text: 'Cảm ơn quý khách!',
     section1_align: 'center' as TextAlign,
     section2_align: 'center' as TextAlign,
@@ -500,6 +524,15 @@ export function InvoicePrintDialog({
                   />
                 )}
                 <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.custom_description_text || '') }} />
+              </div>
+            )}
+
+            {(settings as any).show_warranty_qr && warrantyQrDataUrl && (
+              <div className="mt-3 flex flex-col items-center gap-1">
+                <img src={warrantyQrDataUrl} alt="QR Bảo hành" style={{ width: 100, height: 100 }} />
+                <div className="text-xs italic" style={{ color: '#555' }}>
+                  {(settings as any).warranty_qr_label || 'Quét mã để tra cứu bảo hành'}
+                </div>
               </div>
             )}
 

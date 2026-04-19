@@ -4379,6 +4379,7 @@ export type Database = {
           show_thank_you: boolean | null
           show_total: boolean | null
           show_warranty: boolean | null
+          show_warranty_qr: boolean
           store_address: string | null
           store_name: string | null
           store_phone: string | null
@@ -4386,6 +4387,7 @@ export type Database = {
           text_align: string | null
           thank_you_text: string | null
           updated_at: string
+          warranty_qr_label: string | null
         }
         Insert: {
           branch_id?: string | null
@@ -4427,6 +4429,7 @@ export type Database = {
           show_thank_you?: boolean | null
           show_total?: boolean | null
           show_warranty?: boolean | null
+          show_warranty_qr?: boolean
           store_address?: string | null
           store_name?: string | null
           store_phone?: string | null
@@ -4434,6 +4437,7 @@ export type Database = {
           text_align?: string | null
           thank_you_text?: string | null
           updated_at?: string
+          warranty_qr_label?: string | null
         }
         Update: {
           branch_id?: string | null
@@ -4475,6 +4479,7 @@ export type Database = {
           show_thank_you?: boolean | null
           show_total?: boolean | null
           show_warranty?: boolean | null
+          show_warranty_qr?: boolean
           store_address?: string | null
           store_name?: string | null
           store_phone?: string | null
@@ -4482,6 +4487,7 @@ export type Database = {
           text_align?: string | null
           thank_you_text?: string | null
           updated_at?: string
+          warranty_qr_label?: string | null
         }
         Relationships: [
           {
