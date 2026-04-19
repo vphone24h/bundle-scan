@@ -89,6 +89,7 @@ Deno.serve(async (req) => {
 
     for (const automation of automations) {
       const { trigger_type, trigger_days, target_audience, subject, html_content, id: automationId } = automation;
+      const maxSends = Math.max(1, Number(automation.max_sends_per_recipient) || 1);
 
       const { data: tenants, error: rpcErr } = await supabase.rpc('get_automation_eligible_tenants', {
         p_target_audience: target_audience || 'all',
@@ -105,7 +106,7 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      debugInfo.push(`${automation.name}: ${tenants.length} tenants`);
+      debugInfo.push(`${automation.name}: ${tenants.length} tenants (max ${maxSends}/người)`);
       const now = new Date();
       let sent = 0;
 
@@ -131,13 +132,7 @@ Deno.serve(async (req) => {
             break;
           case "no_login_since": {
             if (daysSinceLogin >= trigger_days) {
-              const { data: existing } = await supabase
-                .from("platform_email_automation_logs")
-                .select("id")
-                .eq("automation_id", automationId)
-                .eq("tenant_id", t.tenant_id)
-                .limit(1);
-              shouldSend = !existing?.length;
+              shouldSend = true; // freq check below handles dedup
             }
             break;
           }
@@ -181,13 +176,7 @@ Deno.serve(async (req) => {
             if (lastExport?.export_date) {
               const days = Math.floor((now.getTime() - new Date(lastExport.export_date).getTime()) / 86400000);
               if (days >= trigger_days) {
-                const { data: existing } = await supabase
-                  .from("platform_email_automation_logs")
-                  .select("id")
-                  .eq("automation_id", automationId)
-                  .eq("tenant_id", t.tenant_id)
-                  .limit(1);
-                shouldSend = !existing?.length;
+                shouldSend = true; // freq check below handles dedup
               }
             }
             break;
@@ -196,19 +185,26 @@ Deno.serve(async (req) => {
 
         if (!shouldSend) continue;
 
-        // Dedup: already sent today
-        if (trigger_type !== "no_login_since" && trigger_type !== "post_purchase_days") {
-          const todayStart = new Date();
-          todayStart.setHours(0, 0, 0, 0);
-          const { data: todayLog } = await supabase
-            .from("platform_email_automation_logs")
-            .select("id")
-            .eq("automation_id", automationId)
-            .eq("tenant_id", t.tenant_id)
-            .gte("created_at", todayStart.toISOString())
-            .limit(1);
-          if (todayLog?.length) continue;
-        }
+        // Frequency cap: count successful sends for (automation, tenant)
+        const { count: sentCount } = await supabase
+          .from("platform_email_automation_logs")
+          .select("id", { count: "exact", head: true })
+          .eq("automation_id", automationId)
+          .eq("tenant_id", t.tenant_id)
+          .eq("status", "sent");
+        if ((sentCount || 0) >= maxSends) continue;
+
+        // Dedup: already sent today (avoid multiple sends in same day)
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const { data: todayLog } = await supabase
+          .from("platform_email_automation_logs")
+          .select("id")
+          .eq("automation_id", automationId)
+          .eq("tenant_id", t.tenant_id)
+          .gte("created_at", todayStart.toISOString())
+          .limit(1);
+        if (todayLog?.length) continue;
 
         const finalSubject = subject
           .replace(/\{\{tenant_name\}\}/g, tenantName)
