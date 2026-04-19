@@ -52,6 +52,7 @@ import { useInvoiceTemplateByBranch } from '@/hooks/useInvoiceTemplates';
 import { useBranches } from '@/hooks/useBranches';
 import { usePointSettings } from '@/hooks/useCustomerPoints';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useCurrentUserBranchAccess } from '@/hooks/useUserBranchAccess';
 import { useStaffList } from '@/hooks/useCRM';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenantLandingSettings } from '@/hooks/useTenantLanding';
@@ -176,6 +177,7 @@ export default function ExportNewPage() {
   const { data: pointSettings } = usePointSettings();
   const { data: branches } = useBranches();
   const { data: permissions } = usePermissions();
+  const { data: extraBranchIds } = useCurrentUserBranchAccess();
   const { data: staffList } = useStaffList();
   const { data: landingSettings } = useTenantLandingSettings();
   const { isLimitReached, orderCount, freeOrderLimit } = useOrderLimitCheck();
@@ -274,13 +276,19 @@ export default function ExportNewPage() {
   const cartBranch = cartBranchId ? branches?.find(b => b.id === cartBranchId) : null;
 
   // Helper: check if user can export from a specific branch
+  // ⚠️ Quyền "Xem tồn kho chi nhánh khác" (view_other_branches) CHỈ cho phép XEM,
+  // KHÔNG cho phép xuất hàng từ chi nhánh khác.
+  // User chỉ được xuất hàng từ: chi nhánh chính + các chi nhánh được gán thêm (user_branch_access).
   const canExportFromBranch = (productBranchId: string | null | undefined): boolean => {
-    // Super Admin can export from any branch
-    if (permissions?.canViewAllBranches) return true;
+    // Only Super Admin can export from any branch
+    if (permissions?.role === 'super_admin') return true;
     // No branch info on product -> allow
     if (!productBranchId) return true;
-    // User must belong to the product's branch
-    return permissions?.branchId === productBranchId;
+    // User's primary branch
+    if (permissions?.branchId === productBranchId) return true;
+    // Extra assigned branches
+    if (extraBranchIds && extraBranchIds.includes(productBranchId)) return true;
+    return false;
   };
 
   const getBlockedExportMessage = (branchName?: string | null): string => {
