@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import DOMPurify from 'dompurify';
 import {
   Dialog,
   DialogContent,
@@ -479,9 +480,8 @@ export function InvoicePrintDialog({
 
             {settings.show_custom_description && (settings.custom_description_text || settings.custom_description_image_url) && (
               <div 
-                className={`mt-2 text-sm ${getAlignClass(settings.custom_description_align)}`}
+                className={`mt-2 text-sm rich-text-content ${getAlignClass(settings.custom_description_align)}`}
                 style={{ 
-                  whiteSpace: 'pre-wrap',
                   fontWeight: settings.custom_description_bold ? 'bold' : 'normal'
                 }}
               >
@@ -492,7 +492,7 @@ export function InvoicePrintDialog({
                     style={{ maxWidth: '100%', maxHeight: '60px', marginBottom: '4px' }}
                   />
                 )}
-                {settings.custom_description_text}
+                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(settings.custom_description_text || '') }} />
               </div>
             )}
 
