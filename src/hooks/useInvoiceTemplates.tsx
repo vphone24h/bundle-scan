@@ -36,6 +36,8 @@ export interface InvoiceTemplate {
   custom_description_align: TextAlign;
   custom_description_image_url: string | null;
   show_points_earned: boolean;
+  show_warranty_qr: boolean;
+  warranty_qr_label: string | null;
   thank_you_text: string | null;
   font_size: 'small' | 'medium' | 'large';
   text_align: TextAlign;
