@@ -9,7 +9,9 @@ export function useScrollReveal<T extends HTMLElement = HTMLDivElement>(
 ) {
   const ref = useRef<T>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const { threshold = 0.1, rootMargin = '0px 0px -50px 0px', once = true } = options || {};
+  // Pre-reveal: trigger 200px BEFORE the element enters the viewport so content
+  // is already visible by the time the user scrolls to it (no perceived lag).
+  const { threshold = 0, rootMargin = '200px 0px 200px 0px', once = true } = options || {};
 
   useEffect(() => {
     const el = ref.current;

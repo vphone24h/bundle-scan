@@ -1218,8 +1218,8 @@ export default function UniversalStoreTemplate({
                     return (
                       <div key="allProducts">
                         <div className={getProductGridClass(config.layoutStyle)}>
-                          {filteredProducts.map((p, i) => (
-                            <ScrollReveal key={p.id} animation="fade-up" delay={i * 50} once>
+                          {filteredProducts.map((p) => (
+                            <ScrollReveal key={p.id} animation="fade-up" once>
                               <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
                             </ScrollReveal>
                           ))}
