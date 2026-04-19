@@ -51,9 +51,9 @@ const inferMetaTargetFromUrl = (redirectUrl: string): { type: MetaType; id: stri
   if (!redirectUrl) return { type: "store", id: "store" };
   try {
     const pathname = new URL(redirectUrl).pathname;
-    const shortId = pathname.match(/-([a-f0-9]{8})$/i)?.[1];
-    if (pathname.startsWith("/san-pham/") && shortId) return { type: "product", id: shortId };
-    if (pathname.startsWith("/tin-tuc/") && shortId) return { type: "article", id: shortId };
+    const shortId = pathname.match(/-([a-f0-9]{8})(?:\/)?$/i)?.[1];
+    if (/^\/san-pham(\/|$)/.test(pathname) && shortId) return { type: "product", id: shortId };
+    if (/^\/tin-tuc(\/|$)/.test(pathname) && shortId) return { type: "article", id: shortId };
   } catch { /* ignore */ }
   return { type: "store", id: "store" };
 };
