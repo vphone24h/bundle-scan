@@ -11,6 +11,7 @@ export interface EmailAutomation {
   subject: string;
   is_active: boolean;
   zalo_enabled: boolean;
+  max_sends_per_recipient: number;
   created_at: string;
   updated_at: string;
 }
