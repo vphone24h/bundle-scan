@@ -3381,6 +3381,7 @@ export type Database = {
           created_by: string | null
           id: string
           is_active: boolean
+          max_sends_per_recipient: number
           name: string
           subject: string
           tenant_id: string
@@ -3394,6 +3395,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_active?: boolean
+          max_sends_per_recipient?: number
           name: string
           subject?: string
           tenant_id: string
@@ -3407,6 +3409,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_active?: boolean
+          max_sends_per_recipient?: number
           name?: string
           subject?: string
           tenant_id?: string
@@ -5738,6 +5741,7 @@ export type Database = {
           html_content: string
           id: string
           is_enabled: boolean
+          max_sends_per_recipient: number
           name: string
           subject: string
           target_audience: string
@@ -5750,6 +5754,7 @@ export type Database = {
           html_content?: string
           id?: string
           is_enabled?: boolean
+          max_sends_per_recipient?: number
           name: string
           subject?: string
           target_audience?: string
@@ -5762,6 +5767,7 @@ export type Database = {
           html_content?: string
           id?: string
           is_enabled?: boolean
+          max_sends_per_recipient?: number
           name?: string
           subject?: string
           target_audience?: string
