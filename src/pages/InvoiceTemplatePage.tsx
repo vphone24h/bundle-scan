@@ -212,7 +212,7 @@ export default function InvoiceTemplatePage() {
     }
 
     generateWarrantyQrCard({
-      qrUrl: `https://${verifiedDomain}/warranty-check?phone=0901234567`,
+      qrUrl: `https://${verifiedDomain}/bao-hanh?phone=0901234567`,
       label: currentSettings.warranty_qr_label || 'Quét mã để tra cứu bảo hành',
     })
       .then(setPreviewWarrantyQrCard)

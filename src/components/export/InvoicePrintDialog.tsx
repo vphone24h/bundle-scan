@@ -79,7 +79,7 @@ export function InvoicePrintDialog({
     const phone = receipt?.customer?.phone;
     const param = firstImei ? `imei=${encodeURIComponent(firstImei)}` : (phone ? `phone=${encodeURIComponent(phone)}` : null);
     if (!param) return null;
-    return `https://${verifiedDomain}/warranty-check?${param}`;
+    return `https://${verifiedDomain}/bao-hanh?${param}`;
   }, [verifiedDomain, receipt]);
 
   const [warrantyQrDataUrl, setWarrantyQrDataUrl] = useState<string>('');
