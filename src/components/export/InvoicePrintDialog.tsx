@@ -22,6 +22,7 @@ import { Printer, X } from 'lucide-react';
 import type { InvoiceTemplate, TextAlign } from '@/hooks/useInvoiceTemplates';
 import { useActiveCustomPrintTemplates, type CustomPrintTemplate } from '@/hooks/useCustomPrintTemplates';
 import { renderCustomPrintHTML } from '@/components/print-templates/customPrintRenderer';
+import { generateWarrantyQrCard } from '@/lib/warrantyQrCard';
 
 interface InvoicePrintDialogProps {
   open: boolean;
@@ -85,10 +86,13 @@ export function InvoicePrintDialog({
   const [warrantyQrDataUrl, setWarrantyQrDataUrl] = useState<string>('');
   useEffect(() => {
     if (!warrantyQrUrl) { setWarrantyQrDataUrl(''); return; }
-    QRCode.toDataURL(warrantyQrUrl, { width: 240, margin: 1 })
+    generateWarrantyQrCard({
+      qrUrl: warrantyQrUrl,
+      label: (template?.warranty_qr_label || 'Quét mã để tra cứu bảo hành'),
+    })
       .then(setWarrantyQrDataUrl)
       .catch(() => setWarrantyQrDataUrl(''));
-  }, [warrantyQrUrl]);
+  }, [template?.warranty_qr_label, warrantyQrUrl]);
 
   // 'thermal' = old template, or custom template ID
   const [printMode, setPrintMode] = useState<string>('thermal');
@@ -140,16 +144,29 @@ export function InvoicePrintDialog({
     const isK80 = template?.paper_size === 'K80';
     const contentHeightPx = Math.ceil(printContent.scrollHeight + 24);
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
     const fontSize = template?.font_size === 'small' ? '12px' : template?.font_size === 'large' ? '16px' : '14px';
     const width = isK80 ? '80mm' : '210mm';
     const marginLeft = template?.margin_left ?? 0;
     const marginRight = template?.margin_right ?? 0;
     const pageSize = isK80 ? `${width} ${contentHeightPx}px` : 'A4';
 
-    printWindow.document.write(`
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const printWindow = iframe.contentWindow;
+    const printDocument = iframe.contentDocument || printWindow?.document;
+    if (!printWindow || !printDocument) {
+      document.body.removeChild(iframe);
+      return;
+    }
+
+    printDocument.write(`
       <html>
         <head>
           <title>Hóa đơn ${receipt.code}</title>
@@ -225,10 +242,10 @@ export function InvoicePrintDialog({
         </body>
       </html>
     `);
-    printWindow.document.close();
+    printDocument.close();
 
     const cleanup = () => {
-      try { printWindow.close(); } catch { /* noop */ }
+      try { document.body.removeChild(iframe); } catch { /* noop */ }
     };
     printWindow.onafterprint = cleanup;
 
@@ -243,7 +260,7 @@ export function InvoicePrintDialog({
 
     // Wait for all images (including QR) to load before printing to avoid layout shift
     const waitForImages = () => {
-      const imgs = Array.from(printWindow.document.images || []);
+      const imgs = Array.from(printDocument.images || []);
       if (imgs.length === 0) return Promise.resolve();
       return Promise.all(
         imgs.map((img) =>
@@ -252,7 +269,7 @@ export function InvoicePrintDialog({
             : new Promise<void>((resolve) => {
                 img.onload = () => resolve();
                 img.onerror = () => resolve();
-                setTimeout(() => resolve(), 1500);
+                setTimeout(() => resolve(), 2000);
               })
         )
       );
@@ -587,32 +604,15 @@ export function InvoicePrintDialog({
               >
                 <img
                   src={warrantyQrDataUrl}
-                  alt="QR Bảo hành"
+                  alt="QR bảo hành và hướng dẫn tra cứu"
                   style={{
                     display: 'block',
-                    width: '100px',
-                    height: '100px',
+                    width: '120px',
+                    height: 'auto',
                     margin: '0 auto',
                     verticalAlign: 'top',
                   }}
                 />
-                <span
-                  className="qr-label"
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    marginTop: '4px',
-                    textAlign: 'center',
-                    fontSize: '11px',
-                    lineHeight: '1.3',
-                    fontStyle: 'italic',
-                    color: '#555',
-                    whiteSpace: 'normal',
-                    wordBreak: 'break-word',
-                  }}
-                >
-                  {(settings as any).warranty_qr_label || 'Quét mã để tra cứu bảo hành'}
-                </span>
               </div>
             )}
 

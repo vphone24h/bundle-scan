@@ -63,6 +63,7 @@ import { useCustomDomains } from '@/hooks/useCustomDomains';
 import QRCode from 'qrcode';
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from 'react-i18next';
+import { generateWarrantyQrCard } from '@/lib/warrantyQrCard';
 
 interface SettingItemProps {
   icon: React.ReactNode;
@@ -1159,16 +1160,13 @@ export default function InvoiceTemplatePage() {
                 )}
 
                 {/* Warranty QR - between Custom description and Thank you */}
-                {(currentSettings.show_warranty_qr ?? false) && hasCustomDomain && (
-                  <div className="mt-3 flex flex-col items-center gap-1">
+                {(currentSettings.show_warranty_qr ?? false) && hasCustomDomain && previewWarrantyQrCard && (
+                  <div className="mt-3 text-center">
                     <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://${verifiedDomain}/warranty-check?phone=0901234567`)}`}
-                      alt="QR Bảo hành"
-                      style={{ width: 90, height: 90 }}
+                      src={previewWarrantyQrCard}
+                      alt="QR bảo hành và hướng dẫn tra cứu"
+                      style={{ width: 108, height: 'auto', margin: '0 auto' }}
                     />
-                    <div className="text-xs italic" style={{ color: '#555' }}>
-                      {currentSettings.warranty_qr_label || 'Quét mã để tra cứu bảo hành'}
-                    </div>
                   </div>
                 )}
 
