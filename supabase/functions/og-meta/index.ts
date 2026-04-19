@@ -206,18 +206,22 @@ Deno.serve(async (req) => {
 
   // Product detail
   if (type === "product" && tenantId && id && id !== "store") {
-    let query = supabase
-      .from("landing_products")
-      .select("id, name, description, image_url, price, sale_price")
-      .eq("tenant_id", tenantId);
-
+    let data: any = null;
     if (/^[a-f0-9]{8}$/i.test(id)) {
-      query = query.ilike("id", `${id}%`);
+      const { data: rpcData } = await supabase.rpc("find_landing_product_by_short_id", {
+        _tenant_id: tenantId,
+        _short_id: id.toLowerCase(),
+      });
+      data = Array.isArray(rpcData) ? rpcData[0] : rpcData;
     } else {
-      query = query.eq("id", id);
+      const { data: row } = await supabase
+        .from("landing_products")
+        .select("id, name, description, image_url, price, sale_price")
+        .eq("tenant_id", tenantId)
+        .eq("id", id)
+        .maybeSingle();
+      data = row;
     }
-
-    const { data } = await query.limit(1).maybeSingle();
 
     if (data) {
       const price = data.sale_price || data.price;
