@@ -852,6 +852,41 @@ export default function InvoiceTemplatePage() {
             </SettingItem>
 
             <SettingItem
+              icon={<Shield className="h-4 w-4" />}
+              label="QR Bảo hành"
+              checked={(currentSettings.show_warranty_qr ?? false) && hasCustomDomain}
+              onCheckedChange={(v) => {
+                if (v && !hasCustomDomain) {
+                  toast({
+                    title: 'Cần tên miền riêng',
+                    description: 'Tính năng QR Bảo hành yêu cầu shop đã cấu hình tên miền website riêng. Vui lòng thêm tên miền trong Cài đặt → Tên miền riêng.',
+                    variant: 'destructive',
+                  });
+                  return;
+                }
+                updateSetting('show_warranty_qr', v);
+              }}
+            >
+              {!hasCustomDomain ? (
+                <div className="rounded-md border border-dashed border-muted-foreground/40 bg-muted/30 p-3 text-xs text-muted-foreground">
+                  ⚠️ Cần tên miền riêng để bật. Khi quét QR, khách sẽ được chuyển đến trang bảo hành <span className="font-mono">tenmiencua-ban.com/warranty-check</span> và tự tra cứu theo IMEI/SĐT.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Chú thích dưới QR</Label>
+                  <Input
+                    placeholder="Quét mã để tra cứu bảo hành"
+                    value={currentSettings.warranty_qr_label || ''}
+                    onChange={(e) => updateSetting('warranty_qr_label', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    QR sẽ trỏ đến: <span className="font-mono">{verifiedDomain}/warranty-check?imei=...</span> hoặc <span className="font-mono">?phone=...</span>
+                  </p>
+                </div>
+              )}
+            </SettingItem>
+
+            <SettingItem
               icon={<Heart className="h-4 w-4" />}
               label="Lời cảm ơn"
               checked={currentSettings.show_thank_you ?? true}
