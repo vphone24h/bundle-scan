@@ -177,6 +177,7 @@ Deno.serve(async (req) => {
   let storeName = "";
   let storeDescription = "";
   let storeLogoUrl = "";
+  let storeBannerUrl = "";
   let storePhone = "";
   let storeAddress = "";
 
@@ -184,16 +185,17 @@ Deno.serve(async (req) => {
   if (tenantId) {
     const { data: settings } = await supabase
       .from("tenant_landing_settings")
-      .select("store_name, store_logo_url, store_description, meta_description, hotline, store_address")
+      .select("store_name, store_logo_url, banner_image_url, store_description, meta_description, meta_title, warranty_hotline, store_phone, store_address")
       .eq("tenant_id", tenantId)
       .eq("is_enabled", true)
       .maybeSingle();
 
     if (settings) {
-      storeName = settings.store_name || "";
-      storeDescription = settings.store_description || settings.meta_description || "";
+      storeName = (settings as any).meta_title || settings.store_name || "";
+      storeDescription = settings.store_description || (settings as any).meta_description || "";
       storeLogoUrl = settings.store_logo_url || "";
-      storePhone = (settings as any).hotline || "";
+      storeBannerUrl = (settings as any).banner_image_url || "";
+      storePhone = (settings as any).warranty_hotline || (settings as any).store_phone || "";
       storeAddress = (settings as any).store_address || "";
     }
   }
