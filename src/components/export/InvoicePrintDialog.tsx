@@ -203,9 +203,9 @@ export function InvoicePrintDialog({
             .items-center { align-items: center; }
             .gap-1 { gap: 4px; }
             .mt-3 { margin-top: 12px; }
-            .warranty-qr-box { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; margin-top: 12px; text-align: center; page-break-inside: avoid; }
-            .warranty-qr-box img { display: block; width: 100px; height: 100px; }
-            .warranty-qr-box .qr-label { font-size: 11px; font-style: italic; color: #555; margin-top: 2px; }
+            .warranty-qr-box { width: 100%; margin-top: 12px; text-align: center; page-break-inside: avoid; break-inside: avoid; }
+            .warranty-qr-box img { display: block; width: 100px; height: 100px; margin: 0 auto; }
+            .warranty-qr-box .qr-label { display: block; width: 100%; font-size: 11px; line-height: 1.3; font-style: italic; color: #555; margin-top: 4px; text-align: center; white-space: normal; }
             .rich-text-content ul { list-style: disc; padding-left: 1.25rem; margin: 4px 0; }
             .rich-text-content ol { list-style: decimal; padding-left: 1.25rem; margin: 4px 0; }
             .rich-text-content li { margin: 2px 0; }
@@ -574,11 +574,45 @@ export function InvoicePrintDialog({
             )}
 
             {(settings as any).show_warranty_qr && warrantyQrDataUrl && (
-              <div className="warranty-qr-box">
-                <img src={warrantyQrDataUrl} alt="QR Bảo hành" />
-                <div className="qr-label">
+              <div
+                className="warranty-qr-box"
+                style={{
+                  width: '100%',
+                  marginTop: '12px',
+                  textAlign: 'center',
+                  pageBreakInside: 'avoid',
+                  breakInside: 'avoid',
+                  overflow: 'hidden',
+                }}
+              >
+                <img
+                  src={warrantyQrDataUrl}
+                  alt="QR Bảo hành"
+                  style={{
+                    display: 'block',
+                    width: '100px',
+                    height: '100px',
+                    margin: '0 auto',
+                    verticalAlign: 'top',
+                  }}
+                />
+                <span
+                  className="qr-label"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    marginTop: '4px',
+                    textAlign: 'center',
+                    fontSize: '11px',
+                    lineHeight: '1.3',
+                    fontStyle: 'italic',
+                    color: '#555',
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                  }}
+                >
                   {(settings as any).warranty_qr_label || 'Quét mã để tra cứu bảo hành'}
-                </div>
+                </span>
               </div>
             )}
 
