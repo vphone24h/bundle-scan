@@ -1,7 +1,8 @@
 import { useRef, useState, useEffect, useMemo } from 'react';
 import DOMPurify from 'dompurify';
 import QRCode from 'qrcode';
-import { useCustomDomains } from '@/hooks/useCustomDomains';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -51,8 +52,25 @@ export function InvoicePrintDialog({
 }: InvoicePrintDialogProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const { data: customTemplates = [] } = useActiveCustomPrintTemplates(receipt?.branch_id);
-  const { data: customDomains } = useCustomDomains();
-  const verifiedDomain = customDomains?.find(d => d.is_verified)?.domain || customDomains?.[0]?.domain || null;
+
+  // Fetch custom domain for the RECEIPT's tenant (not the logged-in user's tenant).
+  // This ensures QR points to the correct shop when admin views/prints another shop's receipt.
+  const receiptTenantId = receipt?.tenant_id as string | undefined;
+  const { data: receiptDomains } = useQuery({
+    queryKey: ['custom-domains-by-tenant', receiptTenantId],
+    enabled: !!receiptTenantId && !!(template as any)?.show_warranty_qr,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('custom_domains')
+        .select('domain, is_verified')
+        .eq('tenant_id', receiptTenantId!)
+        .order('is_verified', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+  const verifiedDomain = receiptDomains?.find(d => d.is_verified)?.domain || receiptDomains?.[0]?.domain || null;
 
   // Build warranty QR URL: prefer IMEI, fallback to phone
   const warrantyQrUrl = useMemo(() => {
@@ -181,6 +199,13 @@ export function InvoicePrintDialog({
             tr { page-break-inside: avoid; page-break-after: auto; }
             thead { display: table-row-group; }
             .separator { border-top: 1px dashed #333; margin: 8px 0; }
+            .flex-col { flex-direction: column; }
+            .items-center { align-items: center; }
+            .gap-1 { gap: 4px; }
+            .mt-3 { margin-top: 12px; }
+            .warranty-qr-box { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; margin-top: 12px; text-align: center; page-break-inside: avoid; }
+            .warranty-qr-box img { display: block; width: 100px; height: 100px; }
+            .warranty-qr-box .qr-label { font-size: 11px; font-style: italic; color: #555; margin-top: 2px; }
             .rich-text-content ul { list-style: disc; padding-left: 1.25rem; margin: 4px 0; }
             .rich-text-content ol { list-style: decimal; padding-left: 1.25rem; margin: 4px 0; }
             .rich-text-content li { margin: 2px 0; }
@@ -528,9 +553,9 @@ export function InvoicePrintDialog({
             )}
 
             {(settings as any).show_warranty_qr && warrantyQrDataUrl && (
-              <div className="mt-3 flex flex-col items-center gap-1">
-                <img src={warrantyQrDataUrl} alt="QR Bảo hành" style={{ width: 100, height: 100 }} />
-                <div className="text-xs italic" style={{ color: '#555' }}>
+              <div className="warranty-qr-box">
+                <img src={warrantyQrDataUrl} alt="QR Bảo hành" />
+                <div className="qr-label">
                   {(settings as any).warranty_qr_label || 'Quét mã để tra cứu bảo hành'}
                 </div>
               </div>
