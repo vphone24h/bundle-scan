@@ -51,9 +51,9 @@ const inferMetaTargetFromUrl = (redirectUrl: string): { type: MetaType; id: stri
   if (!redirectUrl) return { type: "store", id: "store" };
   try {
     const pathname = new URL(redirectUrl).pathname;
-    const shortId = pathname.match(/-([a-f0-9]{8})$/i)?.[1];
-    if (pathname.startsWith("/san-pham/") && shortId) return { type: "product", id: shortId };
-    if (pathname.startsWith("/tin-tuc/") && shortId) return { type: "article", id: shortId };
+    const shortId = pathname.match(/-([a-f0-9]{8})(?:\/)?$/i)?.[1];
+    if (/^\/san-pham(\/|$)/.test(pathname) && shortId) return { type: "product", id: shortId };
+    if (/^\/tin-tuc(\/|$)/.test(pathname) && shortId) return { type: "article", id: shortId };
   } catch { /* ignore */ }
   return { type: "store", id: "store" };
 };
@@ -121,19 +121,22 @@ const buildSeoTitle = (productName: string, store: string, price?: number | null
  * Auto-generate meta description for product
  * Format: "Mua ProductName giá Xđ tại StoreName. Giao hàng nhanh, bảo hành chính hãng."
  */
+const stripHtml = (html: string): string =>
+  html.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+
 const buildSeoDescription = (
   productName: string,
   store: string,
   price?: number | null,
   originalDesc?: string | null,
 ): string => {
-  if (originalDesc && originalDesc.length > 30) {
-    // Prepend price if not already in description
-    if (price && !originalDesc.includes(formatPrice(price))) {
-      const withPrice = `${formatPrice(price)}đ - ${originalDesc}`;
+  const cleanDesc = originalDesc ? stripHtml(originalDesc) : "";
+  if (cleanDesc && cleanDesc.length > 30) {
+    if (price && !cleanDesc.includes(formatPrice(price))) {
+      const withPrice = `${formatPrice(price)}đ - ${cleanDesc}`;
       return withPrice.length <= 160 ? withPrice : withPrice.substring(0, 157) + "...";
     }
-    return originalDesc.length <= 160 ? originalDesc : originalDesc.substring(0, 157) + "...";
+    return cleanDesc.length <= 160 ? cleanDesc : cleanDesc.substring(0, 157) + "...";
   }
   const parts = [`Mua ${productName}`];
   if (price) parts[0] += ` giá ${formatPrice(price)}đ`;
@@ -206,18 +209,22 @@ Deno.serve(async (req) => {
 
   // Product detail
   if (type === "product" && tenantId && id && id !== "store") {
-    let query = supabase
-      .from("landing_products")
-      .select("id, name, description, image_url, price, sale_price")
-      .eq("tenant_id", tenantId);
-
+    let data: any = null;
     if (/^[a-f0-9]{8}$/i.test(id)) {
-      query = query.ilike("id", `${id}%`);
+      const { data: rpcData } = await supabase.rpc("find_landing_product_by_short_id", {
+        _tenant_id: tenantId,
+        _short_id: id.toLowerCase(),
+      });
+      data = Array.isArray(rpcData) ? rpcData[0] : rpcData;
     } else {
-      query = query.eq("id", id);
+      const { data: row } = await supabase
+        .from("landing_products")
+        .select("id, name, description, image_url, price, sale_price")
+        .eq("tenant_id", tenantId)
+        .eq("id", id)
+        .maybeSingle();
+      data = row;
     }
-
-    const { data } = await query.limit(1).maybeSingle();
 
     if (data) {
       const price = data.sale_price || data.price;
@@ -261,18 +268,22 @@ Deno.serve(async (req) => {
         ${data.image_url ? `<img src="${escHtml(data.image_url)}" alt="${escHtml(data.name)}" />` : ""}`;
     }
   } else if (type === "article" && tenantId && id && id !== "store") {
-    let query = supabase
-      .from("landing_articles")
-      .select("id, title, summary, thumbnail_url, created_at, content")
-      .eq("tenant_id", tenantId);
-
+    let data: any = null;
     if (/^[a-f0-9]{8}$/i.test(id)) {
-      query = query.ilike("id", `${id}%`);
+      const { data: rpcData } = await supabase.rpc("find_landing_article_by_short_id", {
+        _tenant_id: tenantId,
+        _short_id: id.toLowerCase(),
+      });
+      data = Array.isArray(rpcData) ? rpcData[0] : rpcData;
     } else {
-      query = query.eq("id", id);
+      const { data: row } = await supabase
+        .from("landing_articles")
+        .select("id, title, summary, thumbnail_url, content, created_at")
+        .eq("tenant_id", tenantId)
+        .eq("id", id)
+        .maybeSingle();
+      data = row;
     }
-
-    const { data } = await query.limit(1).maybeSingle();
 
     if (data) {
       // SEO title for articles: "Title | StoreName" (under 60 chars)
