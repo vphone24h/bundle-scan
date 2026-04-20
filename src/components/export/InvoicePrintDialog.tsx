@@ -96,13 +96,20 @@ export function InvoicePrintDialog({
   // 'thermal' = old template, or custom template ID
   const [printMode, setPrintMode] = useState<string>('thermal');
 
+  // Auto-select default custom template if one is marked is_default
+  useEffect(() => {
+    if (customTemplates.length === 0) return;
+    const defaultCustom = customTemplates.find(t => t.is_default);
+    if (defaultCustom && printMode === 'thermal') {
+      setPrintMode(defaultCustom.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customTemplates.length]);
+
   // Find the selected custom template
   const selectedCustomTemplate = printMode !== 'thermal'
     ? customTemplates.find(t => t.id === printMode)
     : null;
-
-  // Auto-select default custom template if one exists and is_default
-  const defaultCustom = customTemplates.find(t => t.is_default);
 
   if (!receipt) return null;
 
