@@ -17,6 +17,7 @@ interface DebtOffsetDialogProps {
 export function DebtOffsetDialog({ open, onOpenChange, match }: DebtOffsetDialogProps) {
   const [note, setNote] = useState('');
   const executeOffset = useExecuteDebtOffset();
+  const [verifying, setVerifying] = useState(false);
 
   const customerDebt = match.customerDebt.remaining_amount;
   const supplierDebt = match.supplierDebt.remaining_amount;
@@ -24,25 +25,96 @@ export function DebtOffsetDialog({ open, onOpenChange, match }: DebtOffsetDialog
   const customerDebtAfter = customerDebt - offsetAmount;
   const supplierDebtAfter = supplierDebt - offsetAmount;
 
-  const handleConfirm = async () => {
+  /**
+   * Re-check actual remaining debt on both sides directly from DB before confirming.
+   * Prevents executing offset on stale cached data (e.g. supplier already fully paid).
+   */
+  const verifyRemaining = async (): Promise<{ customer: number; supplier: number } | null> => {
     try {
+      const supplierIds = (match.supplierDebt.merged_entity_ids && match.supplierDebt.merged_entity_ids.length > 0)
+        ? match.supplierDebt.merged_entity_ids
+        : [match.supplierDebt.entity_id];
+
+      // Customer side: sum debt_amount on export_receipts + (addition - allocated)
+      const [exportRes, customerAdds, importRes, supplierAdds] = await Promise.all([
+        supabase.from('export_receipts')
+          .select('debt_amount')
+          .eq('customer_id', match.customerDebt.entity_id)
+          .in('status', ['completed', 'partial_return', 'full_return']),
+        supabase.from('debt_payments')
+          .select('amount, allocated_amount')
+          .eq('entity_type', 'customer')
+          .eq('entity_id', match.customerDebt.entity_id)
+          .eq('payment_type', 'addition'),
+        supabase.from('import_receipts')
+          .select('debt_amount')
+          .in('supplier_id', supplierIds)
+          .eq('status', 'completed'),
+        supabase.from('debt_payments')
+          .select('amount, allocated_amount')
+          .eq('entity_type', 'supplier')
+          .in('entity_id', supplierIds)
+          .eq('payment_type', 'addition'),
+      ]);
+
+      const customerOrderDebt = (exportRes.data || []).reduce((s, r) => s + (Number(r.debt_amount) || 0), 0);
+      const customerAdditionDebt = (customerAdds.data || []).reduce(
+        (s, r) => s + Math.max(0, (Number(r.amount) || 0) - (Number(r.allocated_amount) || 0)),
+        0
+      );
+      const supplierOrderDebt = (importRes.data || []).reduce((s, r) => s + (Number(r.debt_amount) || 0), 0);
+      const supplierAdditionDebt = (supplierAdds.data || []).reduce(
+        (s, r) => s + Math.max(0, (Number(r.amount) || 0) - (Number(r.allocated_amount) || 0)),
+        0
+      );
+
+      return {
+        customer: customerOrderDebt + customerAdditionDebt,
+        supplier: supplierOrderDebt + supplierAdditionDebt,
+      };
+    } catch (e) {
+      console.error('verifyRemaining error', e);
+      return null;
+    }
+  };
+
+  const handleConfirm = async () => {
+    setVerifying(true);
+    try {
+      const live = await verifyRemaining();
+      if (!live) {
+        toast.error('Không kiểm tra được công nợ thực tế. Vui lòng làm mới và thử lại.');
+        onOpenChange(false);
+        return;
+      }
+      if (live.customer <= 0 || live.supplier <= 0) {
+        toast.error(
+          `Công nợ đã thay đổi: KH còn ${live.customer.toLocaleString('vi-VN')}đ, NCC còn ${live.supplier.toLocaleString('vi-VN')}đ. Không thể bù trừ.`
+        );
+        onOpenChange(false);
+        return;
+      }
+      const liveOffset = Math.min(live.customer, live.supplier);
+
       await executeOffset.mutateAsync({
         customerEntityId: match.customerDebt.entity_id,
         supplierEntityId: match.supplierDebt.entity_id,
         customerName: match.customerDebt.entity_name,
         supplierName: match.supplierDebt.entity_name,
-        customerDebtBefore: customerDebt,
-        supplierDebtBefore: supplierDebt,
-        offsetAmount,
+        customerDebtBefore: live.customer,
+        supplierDebtBefore: live.supplier,
+        offsetAmount: liveOffset,
         customerBranchId: match.customerDebt.branch_id,
         supplierBranchId: match.supplierDebt.branch_id,
         supplierMergedEntityIds: match.supplierDebt.merged_entity_ids,
         note: note || undefined,
       });
-      toast.success(`Bù trừ thành công ${formatNumber(offsetAmount)}đ`);
+      toast.success(`Bù trừ thành công ${formatNumber(liveOffset)}đ`);
       onOpenChange(false);
     } catch (err: any) {
       toast.error('Lỗi bù trừ: ' + (err.message || 'Không xác định'));
+    } finally {
+      setVerifying(false);
     }
   };
 
