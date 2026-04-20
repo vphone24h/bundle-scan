@@ -204,6 +204,11 @@ export default function CustomersPage() {
         <TabsContent value="dashboard"><CRMDashboardTab /></TabsContent>
         <TabsContent value="reports"><CRMReportsTab /></TabsContent>
         <TabsContent value="reviews"><StaffReviewsTab /></TabsContent>
+        <TabsContent value="automation">
+          <Suspense fallback={<div className="p-8 text-center text-sm text-muted-foreground">Đang tải...</div>}>
+            <EmailAutomationTab />
+          </Suspense>
+        </TabsContent>
       </Tabs>
     </MainLayout>
   );
