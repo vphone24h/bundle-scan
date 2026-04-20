@@ -155,7 +155,7 @@ export default function CustomersPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-3 sm:space-y-4">
-        <TabsList className="grid w-full grid-cols-7 h-auto">
+        <TabsList className="grid w-full grid-cols-8 h-auto">
           <TabsTrigger value="list" className="text-xs sm:text-sm py-2 px-1 sm:px-3 gap-1 sm:gap-2">
             <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">{t('pages.customers.list')}</span>
           </TabsTrigger>
@@ -176,6 +176,9 @@ export default function CustomersPage() {
           </TabsTrigger>
           <TabsTrigger value="reviews" className="text-xs sm:text-sm py-2 px-1 sm:px-3 gap-1 sm:gap-2">
             <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Đánh giá</span>
+          </TabsTrigger>
+          <TabsTrigger value="automation" className="text-xs sm:text-sm py-2 px-1 sm:px-3 gap-1 sm:gap-2">
+            <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Nhắn tin tự động</span>
           </TabsTrigger>
         </TabsList>
 
