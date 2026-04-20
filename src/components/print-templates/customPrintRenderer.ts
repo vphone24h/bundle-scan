@@ -4,7 +4,12 @@ import type { CustomPrintTemplate } from '@/hooks/useCustomPrintTemplates';
 /**
  * Map dynamic field keys to actual receipt data values.
  */
-function resolveField(key: string, receipt: any, branchInfo?: any): string {
+interface RenderExtras {
+  warrantyQrDataUrl?: string;
+  warrantyQrLabel?: string;
+}
+
+function resolveField(key: string, receipt: any, branchInfo?: any, extras?: RenderExtras): string {
   const customer = receipt.customer || {};
   const fmt = (n: number | undefined | null) =>
     n != null ? n.toLocaleString('vi-VN') + 'đ' : '';
