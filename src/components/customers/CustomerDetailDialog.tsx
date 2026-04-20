@@ -827,6 +827,18 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
             customerPhone={customer.phone}
             customerEmail={customer.email}
           />
+          <BulkCareEmailDialog
+            open={showSendEmail}
+            onOpenChange={setShowSendEmail}
+            customerIds={[customer.id]}
+            onSuccess={() => {}}
+          />
+          <BulkCareZaloDialog
+            open={showSendZalo}
+            onOpenChange={setShowSendZalo}
+            customerIds={[customer.id]}
+            onSuccess={() => {}}
+          />
         </>
       )}
 
