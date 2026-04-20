@@ -421,6 +421,21 @@ export function CustomerListTab({
                         <TableCell className="text-right font-medium">
                           {formatNumber(customer.total_spent)}
                         </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          {(() => {
+                            const r = customer.phone ? ratingsMap?.get(customer.phone.trim()) : undefined;
+                            if (!r || r.count === 0) {
+                              return <span className="text-muted-foreground text-sm">-</span>;
+                            }
+                            return (
+                              <div className="flex items-center gap-1" title={`${r.count} đánh giá`}>
+                                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                                <span className="text-sm font-medium">{r.average.toFixed(1)}</span>
+                                <span className="text-xs text-muted-foreground">({r.count})</span>
+                              </div>
+                            );
+                          })()}
+                        </TableCell>
                         <TableCell className="hidden xl:table-cell">
                           {customer.last_care_date
                             ? format(new Date(customer.last_care_date), 'dd/MM/yyyy', { locale: vi })
