@@ -336,7 +336,9 @@ export function DebtPaymentEditDialog({
         new_data: { amount: numAmount, reason: reason.trim(), ...(dateChanged ? { created_at: new Date(newDate).toISOString() } : {}) },
       }]);
 
-      if (payment.payment_type === 'payment') {
+      // Đồng bộ sổ quỹ cho cả phiếu THU nợ và phiếu THÊM nợ
+      // (chỉ ảnh hưởng nếu phiếu gốc đã ghi sổ quỹ với reference_id tương ứng)
+      {
         const cashBookUpdate: Record<string, any> = {};
         if (numAmount !== payment.amount) {
           cashBookUpdate.amount = numAmount;
@@ -346,10 +348,11 @@ export function DebtPaymentEditDialog({
         }
 
         if (Object.keys(cashBookUpdate).length > 0) {
+          const refType = payment.payment_type === 'payment' ? 'debt_payment' : 'debt_addition';
           await supabase.from('cash_book')
             .update(cashBookUpdate)
             .eq('reference_id', payment.id)
-            .eq('reference_type', 'debt_payment');
+            .eq('reference_type', refType);
         }
       }
 
