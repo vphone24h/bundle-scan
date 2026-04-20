@@ -16,10 +16,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PriceInput } from '@/components/ui/price-input';
-import { Loader2, Building2, Search, Plus, Phone, User, X, Truck } from 'lucide-react';
+import { Loader2, Building2, Search, Plus, Phone, User, X, Truck, Wallet } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useBranches } from '@/hooks/useBranches';
 import { useSuppliers, type Supplier } from '@/hooks/useSuppliers';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombobox';
 
 interface CreateDebtDialogProps {
