@@ -50,6 +50,7 @@ import { useBranches } from '@/hooks/useBranches';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useProducts } from '@/hooks/useProducts';
 import { useExportReceiptItems, useExportReceiptItemById, type ExportReceiptItemDetail } from '@/hooks/useExportReceipts';
+import { useProductById } from '@/hooks/useProducts';
 import { useImportReturns, useExportReturns, useAllProfiles, useDeleteImportReturn, useDeleteExportReturn, type ImportReturn, type ExportReturn } from '@/hooks/useReturns';
 import { usePermissions } from '@/hooks/usePermissions';
 import { formatNumberWithSpaces } from '@/lib/formatNumber';
@@ -131,6 +132,8 @@ export default function ReturnsPage() {
   const { data: branches } = useBranches();
   const { data: suppliers } = useSuppliers();
   const { data: products } = useProducts();
+  const productIdFromUrl = searchParams.get('productId');
+  const { data: productById } = useProductById(productIdFromUrl);
   const { data: exportItems } = useExportReceiptItems();
   const exportItemIdFromUrl = searchParams.get('itemId');
   const { data: exportItemById } = useExportReceiptItemById(exportItemIdFromUrl);
@@ -198,10 +201,16 @@ export default function ReturnsPage() {
     const productId = searchParams.get('productId');
     const itemId = searchParams.get('itemId');
 
-    if (type === 'import' && productId && products) {
-      const product = products.find(p => p.id === productId);
-      if (product && product.status === 'in_stock') {
-        setSelectedImportProduct(product);
+    if (type === 'import' && productId) {
+      // Try cached list first, fallback to direct fetch by ID
+      const product = products?.find(p => p.id === productId) || productById;
+      if (product) {
+        if (product.status !== 'in_stock') {
+          toast.error('Sản phẩm này không thể trả (đã bán hoặc đã trả).');
+          setSearchParams({});
+          return;
+        }
+        setSelectedImportProduct(product as Product);
         setViewMode('import-return');
       }
     } else if (type === 'export' && itemId) {
@@ -211,7 +220,7 @@ export default function ReturnsPage() {
         setViewMode('export-return');
       }
     }
-  }, [searchParams, products, exportItems, exportItemById]);
+  }, [searchParams, products, productById, exportItems, exportItemById]);
 
   const hasActiveFilters = dateFrom || dateTo || branchFilter !== '_all_' || employeeFilter !== '_all_' || feeTypeFilter !== '_all_' || paymentSourceFilters.length > 0;
 
