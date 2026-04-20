@@ -330,6 +330,7 @@ export function DebtDetailDialog({
                     description: p.description,
                     createdBy: p.profiles?.display_name || null,
                     storedBalance: (p as any).balance_after != null ? Number((p as any).balance_after) : null,
+                    paymentSource: p.payment_source || null,
                   }));
 
                 const receiptRows = (receipts || []).map((r: any) => {
@@ -485,7 +486,7 @@ export function DebtDetailDialog({
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={(e) => { e.stopPropagation(); setDeletingPayment({ id: p.id, amount: p.amount, description: p.description, payment_type: 'payment', entity_type: entityType, entity_id: entityId, created_at: p.date }); }}
+                                  onClick={(e) => { e.stopPropagation(); setDeletingPayment({ id: p.id, amount: p.amount, description: p.description, payment_type: 'payment', entity_type: entityType, entity_id: entityId, created_at: p.date, payment_source: (p as any).paymentSource || null }); }}
                                   className="p-1 rounded hover:bg-muted text-destructive hover:text-destructive transition-colors"
                                   title="Xóa phiếu"
                                 >
@@ -551,7 +552,7 @@ export function DebtDetailDialog({
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={(e) => { e.stopPropagation(); setDeletingPayment({ id: a.id, amount: a.amount, description: a.description, payment_type: 'addition', entity_type: entityType, entity_id: entityId, created_at: a.date }); }}
+                                  onClick={(e) => { e.stopPropagation(); setDeletingPayment({ id: a.id, amount: a.amount, description: a.description, payment_type: 'addition', entity_type: entityType, entity_id: entityId, created_at: a.date, payment_source: (a as any).paymentSource || null }); }}
                                   className="p-1 rounded hover:bg-muted text-destructive hover:text-destructive transition-colors"
                                   title="Xóa phiếu"
                                 >
@@ -663,7 +664,7 @@ export function DebtDetailDialog({
                               </button>
                               <button
                                 type="button"
-                                onClick={(e) => { e.stopPropagation(); setDeletingPayment({ id: payment.id, amount: payment.amount, description: payment.description, payment_type: payment.payment_type, entity_type: entityType, entity_id: entityId, created_at: payment.created_at }); }}
+                                onClick={(e) => { e.stopPropagation(); setDeletingPayment({ id: payment.id, amount: payment.amount, description: payment.description, payment_type: payment.payment_type, entity_type: entityType, entity_id: entityId, created_at: payment.created_at, payment_source: (payment as any).payment_source || null }); }}
                                 className="p-1 rounded hover:bg-muted text-destructive hover:text-destructive transition-colors"
                                 title="Xóa phiếu"
                               >

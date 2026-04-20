@@ -16,10 +16,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PriceInput } from '@/components/ui/price-input';
-import { Loader2, Building2, Search, Plus, Phone, User, X, Truck } from 'lucide-react';
+import { Loader2, Building2, Search, Plus, Phone, User, X, Truck, Wallet } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useBranches } from '@/hooks/useBranches';
 import { useSuppliers, type Supplier } from '@/hooks/useSuppliers';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombobox';
 
 interface CreateDebtDialogProps {
@@ -55,6 +56,15 @@ export function CreateDebtDialog({
   const [amount, setAmount] = useState(0);
   const [note, setNote] = useState('');
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
+  const [paymentSource, setPaymentSource] = useState<string>('outside');
+
+  const { data: customPaymentSources = [] } = useCustomPaymentSources();
+  const allPaymentSources = [
+    { value: 'outside', label: 'Tiền ngoài (không ghi sổ quỹ)' },
+    { value: 'cash', label: 'Tiền mặt' },
+    { value: 'bank', label: 'Chuyển khoản' },
+    ...customPaymentSources.map((s: any) => ({ value: s.source_key, label: s.name })),
+  ];
 
   // Customer search state (for CustomerSearchCombobox)
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
@@ -205,7 +215,7 @@ export function CreateDebtDialog({
       }
 
       // Create debt payment
-      const { error: debtError } = await supabase
+      const { data: createdPayment, error: debtError } = await supabase
         .from('debt_payments')
         .insert([{
           entity_type: entityType,
@@ -213,18 +223,63 @@ export function CreateDebtDialog({
           payment_type: 'addition',
           amount,
           description: note.trim() || (isCustomer ? 'Công nợ khách hàng mới' : 'Công nợ nhà cung cấp mới'),
+          payment_source: paymentSource === 'outside' ? null : paymentSource,
           created_by: user?.id,
           tenant_id: tenantId,
           branch_id: selectedBranchId,
-        }]);
+        }])
+        .select('id')
+        .single();
       if (debtError) throw debtError;
+
+      // Sync cash_book if user picked a real payment source
+      // Logic đảo chiều:
+      //  - Thêm nợ NCC (mình mượn NCC)  → THU VÀO sổ quỹ (income)
+      //  - Thêm nợ Khách (cho khách mượn) → CHI RA sổ quỹ (expense)
+      if (paymentSource && paymentSource !== 'outside' && createdPayment?.id) {
+        const { data: staffProfile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', user?.id)
+          .maybeSingle();
+        const staffName = staffProfile?.display_name || user?.email || null;
+
+        const cashType = isCustomer ? 'expense' as const : 'income' as const;
+        const category = isCustomer
+          ? 'Cho khách mượn (thêm công nợ)'
+          : 'Mượn tiền NCC (thêm công nợ)';
+        const desc = isCustomer
+          ? `Cho ${entityName} mượn - ghi công nợ ${amount.toLocaleString('vi-VN')}đ`
+          : `Mượn tiền NCC ${entityName} - ghi công nợ ${amount.toLocaleString('vi-VN')}đ`;
+
+        const { error: cashErr } = await supabase.from('cash_book').insert([{
+          type: cashType,
+          amount,
+          category,
+          description: desc,
+          payment_source: paymentSource,
+          branch_id: selectedBranchId,
+          created_by: user?.id,
+          created_by_name: staffName,
+          recipient_name: entityName,
+          tenant_id: tenantId,
+          is_business_accounting: false,
+          reference_id: createdPayment.id,
+          reference_type: 'debt_addition',
+          transaction_date: new Date().toISOString(),
+        }]);
+        if (cashErr) {
+          console.error('Cash book insert error:', cashErr);
+          throw cashErr;
+        }
+      }
 
       await supabase.from('audit_logs').insert([{
         user_id: user?.id,
         action_type: 'create',
         table_name: 'debt_payments',
         branch_id: selectedBranchId,
-        description: `Thêm công nợ mới: ${entityName} - ${amount.toLocaleString('vi-VN')}đ`,
+        description: `Thêm công nợ mới: ${entityName} - ${amount.toLocaleString('vi-VN')}đ${paymentSource !== 'outside' ? ` | Nguồn tiền: ${allPaymentSources.find(s => s.value === paymentSource)?.label}` : ' | Tiền ngoài'}`,
       }]);
 
       return { entityId, name: entityName };
@@ -235,6 +290,9 @@ export function CreateDebtDialog({
       queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      queryClient.removeQueries({ queryKey: ['cash-book'] });
+      queryClient.removeQueries({ queryKey: ['cash-book-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       resetForm();
       onOpenChange(false);
     },
@@ -259,6 +317,7 @@ export function CreateDebtDialog({
     setNewSupplierName('');
     setNewSupplierPhone('');
     if (isSuperAdmin) setSelectedBranchId('');
+    setPaymentSource('outside');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -474,6 +533,36 @@ export function CreateDebtDialog({
               {isCustomer ? 'Số tiền khách nợ' : 'Số tiền mình nợ'} <span className="text-destructive">*</span>
             </Label>
             <PriceInput value={amount} onChange={setAmount} placeholder="Nhập số tiền" />
+          </div>
+
+          {/* Payment Source - đảo chiều dòng tiền */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <Wallet className="h-3.5 w-3.5" />
+              Nguồn tiền
+            </Label>
+            <Select value={paymentSource} onValueChange={setPaymentSource}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {allPaymentSources.map(s => (
+                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {paymentSource !== 'outside' && (
+              <p className="text-xs text-muted-foreground">
+                {isCustomer
+                  ? `→ Sẽ ghi CHI ${amount > 0 ? amount.toLocaleString('vi-VN') + 'đ' : ''} vào sổ quỹ (cho khách mượn)`
+                  : `→ Sẽ ghi THU ${amount > 0 ? amount.toLocaleString('vi-VN') + 'đ' : ''} vào sổ quỹ (mượn tiền NCC)`}
+              </p>
+            )}
+            {paymentSource === 'outside' && (
+              <p className="text-xs text-muted-foreground">
+                Không ghi sổ quỹ — chỉ tạo công nợ
+              </p>
+            )}
           </div>
 
           {/* Note */}
