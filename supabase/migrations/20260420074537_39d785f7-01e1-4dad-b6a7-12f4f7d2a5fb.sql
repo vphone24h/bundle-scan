@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS public.customer_ratings CASCADE;
