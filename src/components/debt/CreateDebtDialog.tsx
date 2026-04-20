@@ -215,7 +215,7 @@ export function CreateDebtDialog({
       }
 
       // Create debt payment
-      const { error: debtError } = await supabase
+      const { data: createdPayment, error: debtError } = await supabase
         .from('debt_payments')
         .insert([{
           entity_type: entityType,
@@ -223,18 +223,63 @@ export function CreateDebtDialog({
           payment_type: 'addition',
           amount,
           description: note.trim() || (isCustomer ? 'Công nợ khách hàng mới' : 'Công nợ nhà cung cấp mới'),
+          payment_source: paymentSource === 'outside' ? null : paymentSource,
           created_by: user?.id,
           tenant_id: tenantId,
           branch_id: selectedBranchId,
-        }]);
+        }])
+        .select('id')
+        .single();
       if (debtError) throw debtError;
+
+      // Sync cash_book if user picked a real payment source
+      // Logic đảo chiều:
+      //  - Thêm nợ NCC (mình mượn NCC)  → THU VÀO sổ quỹ (income)
+      //  - Thêm nợ Khách (cho khách mượn) → CHI RA sổ quỹ (expense)
+      if (paymentSource && paymentSource !== 'outside' && createdPayment?.id) {
+        const { data: staffProfile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', user?.id)
+          .maybeSingle();
+        const staffName = staffProfile?.display_name || user?.email || null;
+
+        const cashType = isCustomer ? 'expense' as const : 'income' as const;
+        const category = isCustomer
+          ? 'Cho khách mượn (thêm công nợ)'
+          : 'Mượn tiền NCC (thêm công nợ)';
+        const desc = isCustomer
+          ? `Cho ${entityName} mượn - ghi công nợ ${amount.toLocaleString('vi-VN')}đ`
+          : `Mượn tiền NCC ${entityName} - ghi công nợ ${amount.toLocaleString('vi-VN')}đ`;
+
+        const { error: cashErr } = await supabase.from('cash_book').insert([{
+          type: cashType,
+          amount,
+          category,
+          description: desc,
+          payment_source: paymentSource,
+          branch_id: selectedBranchId,
+          created_by: user?.id,
+          created_by_name: staffName,
+          recipient_name: entityName,
+          tenant_id: tenantId,
+          is_business_accounting: false,
+          reference_id: createdPayment.id,
+          reference_type: 'debt_addition',
+          transaction_date: new Date().toISOString(),
+        }]);
+        if (cashErr) {
+          console.error('Cash book insert error:', cashErr);
+          throw cashErr;
+        }
+      }
 
       await supabase.from('audit_logs').insert([{
         user_id: user?.id,
         action_type: 'create',
         table_name: 'debt_payments',
         branch_id: selectedBranchId,
-        description: `Thêm công nợ mới: ${entityName} - ${amount.toLocaleString('vi-VN')}đ`,
+        description: `Thêm công nợ mới: ${entityName} - ${amount.toLocaleString('vi-VN')}đ${paymentSource !== 'outside' ? ` | Nguồn tiền: ${allPaymentSources.find(s => s.value === paymentSource)?.label}` : ' | Tiền ngoài'}`,
       }]);
 
       return { entityId, name: entityName };
@@ -245,6 +290,9 @@ export function CreateDebtDialog({
       queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      queryClient.removeQueries({ queryKey: ['cash-book'] });
+      queryClient.removeQueries({ queryKey: ['cash-book-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       resetForm();
       onOpenChange(false);
     },
