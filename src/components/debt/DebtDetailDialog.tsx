@@ -330,6 +330,7 @@ export function DebtDetailDialog({
                     description: p.description,
                     createdBy: p.profiles?.display_name || null,
                     storedBalance: (p as any).balance_after != null ? Number((p as any).balance_after) : null,
+                    paymentSource: p.payment_source || null,
                   }));
 
                 const receiptRows = (receipts || []).map((r: any) => {
