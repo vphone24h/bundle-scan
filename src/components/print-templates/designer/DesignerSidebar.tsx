@@ -27,7 +27,12 @@ export function DesignerSidebar({ onAddElement, onAddPreset }: Props) {
   const [keywordOpen, setKeywordOpen] = useState(false);
 
   const handleKeywordSelect = (key: string, label: string) => {
-    onAddElement({ type: 'dynamic', x: 10, y: 10, w: 50, h: 4, field: key, fieldLabel: getDefaultFieldLabel(key), fontSize: 11, textAlign: 'left' });
+    if (key === 'warranty_qr') {
+      // QR is square: w=30 grid (~31.5mm), h=11 grid (~32.7mm) ≈ square on A4
+      onAddElement({ type: 'dynamic', x: 10, y: 10, w: 30, h: 11, field: key, fontSize: 11, textAlign: 'center' });
+    } else {
+      onAddElement({ type: 'dynamic', x: 10, y: 10, w: 50, h: 4, field: key, fieldLabel: getDefaultFieldLabel(key), fontSize: 11, textAlign: 'left' });
+    }
   };
 
   return (
@@ -113,7 +118,13 @@ export function DesignerSidebar({ onAddElement, onAddPreset }: Props) {
                       key={f.key}
                       variant="secondary"
                       className="text-xs cursor-pointer hover:bg-primary/10 transition-colors"
-                      onClick={() => onAddElement({ type: 'dynamic', x: 10, y: 10, w: 50, h: 4, field: f.key, fieldLabel: getDefaultFieldLabel(f.key), fontSize: 11, textAlign: 'left' })}
+                      onClick={() => {
+                        if (f.key === 'warranty_qr') {
+                          onAddElement({ type: 'dynamic', x: 10, y: 10, w: 30, h: 11, field: f.key, fontSize: 11, textAlign: 'center' });
+                        } else {
+                          onAddElement({ type: 'dynamic', x: 10, y: 10, w: 50, h: 4, field: f.key, fieldLabel: getDefaultFieldLabel(f.key), fontSize: 11, textAlign: 'left' });
+                        }
+                      }}
                     >
                       {f.label}
                     </Badge>
