@@ -218,7 +218,7 @@ export function DebtAdditionDialog({
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-popover z-[9999]" position="popper" sideOffset={4}>
                 {allPaymentSources.map((s) => (
                   <SelectItem key={s.value} value={s.value}>
                     {s.label}
