@@ -201,10 +201,16 @@ export default function ReturnsPage() {
     const productId = searchParams.get('productId');
     const itemId = searchParams.get('itemId');
 
-    if (type === 'import' && productId && products) {
-      const product = products.find(p => p.id === productId);
-      if (product && product.status === 'in_stock') {
-        setSelectedImportProduct(product);
+    if (type === 'import' && productId) {
+      // Try cached list first, fallback to direct fetch by ID
+      const product = products?.find(p => p.id === productId) || productById;
+      if (product) {
+        if (product.status !== 'in_stock') {
+          toast.error('Sản phẩm này không thể trả (đã bán hoặc đã trả).');
+          setSearchParams({});
+          return;
+        }
+        setSelectedImportProduct(product as Product);
         setViewMode('import-return');
       }
     } else if (type === 'export' && itemId) {
@@ -214,7 +220,7 @@ export default function ReturnsPage() {
         setViewMode('export-return');
       }
     }
-  }, [searchParams, products, exportItems, exportItemById]);
+  }, [searchParams, products, productById, exportItems, exportItemById]);
 
   const hasActiveFilters = dateFrom || dateTo || branchFilter !== '_all_' || employeeFilter !== '_all_' || feeTypeFilter !== '_all_' || paymentSourceFilters.length > 0;
 
