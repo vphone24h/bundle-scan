@@ -4,9 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Popover, PopoverContent, PopoverTrigger 
 } from '@/components/ui/popover';
-import { UserCircle, Tag, X, Mail } from 'lucide-react';
+import { UserCircle, Tag, X, Mail, MessageCircle } from 'lucide-react';
 import { useStaffList, useCustomerTags, useBulkAssignStaff, useBulkAssignTag } from '@/hooks/useCRM';
 import { BulkCareEmailDialog } from '@/components/customers/BulkCareEmailDialog';
+import { BulkCareZaloDialog } from '@/components/customers/BulkCareZaloDialog';
 import { toast } from 'sonner';
 
 interface CustomerBulkActionsProps {
@@ -22,6 +23,7 @@ export function CustomerBulkActions({ selectedIds, onClearSelection }: CustomerB
   const [staffOpen, setStaffOpen] = useState(false);
   const [tagOpen, setTagOpen] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
+  const [zaloOpen, setZaloOpen] = useState(false);
 
   const count = selectedIds.length;
   if (count === 0) return null;
@@ -62,6 +64,17 @@ export function CustomerBulkActions({ selectedIds, onClearSelection }: CustomerB
         <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => setEmailOpen(true)}>
           <Mail className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Gửi email</span>
+        </Button>
+
+        {/* Send Zalo OA */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs gap-1 border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30"
+          onClick={() => setZaloOpen(true)}
+        >
+          <MessageCircle className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Gửi Zalo OA</span>
         </Button>
 
         {/* Assign Staff */}
@@ -135,6 +148,13 @@ export function CustomerBulkActions({ selectedIds, onClearSelection }: CustomerB
       <BulkCareEmailDialog
         open={emailOpen}
         onOpenChange={setEmailOpen}
+        customerIds={selectedIds}
+        onSuccess={onClearSelection}
+      />
+
+      <BulkCareZaloDialog
+        open={zaloOpen}
+        onOpenChange={setZaloOpen}
         customerIds={selectedIds}
         onSuccess={onClearSelection}
       />
