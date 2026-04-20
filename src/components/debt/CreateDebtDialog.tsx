@@ -56,6 +56,15 @@ export function CreateDebtDialog({
   const [amount, setAmount] = useState(0);
   const [note, setNote] = useState('');
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
+  const [paymentSource, setPaymentSource] = useState<string>('outside');
+
+  const { data: customPaymentSources = [] } = useCustomPaymentSources();
+  const allPaymentSources = [
+    { value: 'outside', label: 'Tiền ngoài (không ghi sổ quỹ)' },
+    { value: 'cash', label: 'Tiền mặt' },
+    { value: 'bank', label: 'Chuyển khoản' },
+    ...customPaymentSources.map((s: any) => ({ value: s.source_key, label: s.name })),
+  ];
 
   // Customer search state (for CustomerSearchCombobox)
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
