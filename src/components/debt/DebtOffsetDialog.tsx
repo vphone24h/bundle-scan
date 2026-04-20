@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { formatNumber } from '@/lib/formatNumber';
 import { useExecuteDebtOffset, DebtOffsetMatch } from '@/hooks/useDebtOffset';
 import { toast } from 'sonner';
-import { ArrowLeftRight, CheckCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { ArrowLeftRight, CheckCircle, Loader2 } from 'lucide-react';
 
 interface DebtOffsetDialogProps {
   open: boolean;
