@@ -53,6 +53,7 @@ export const DYNAMIC_FIELDS = [
     { key: 'source', label: 'Nguồn đơn' },
     { key: 'order_note', label: 'Ghi chú đơn hàng' },
     { key: 'warranty_number', label: 'Số bảo hành' },
+    { key: 'warranty_qr', label: 'QR bảo hành' },
   ]},
   { group: 'Khách hàng', icon: 'User', fields: [
     { key: 'customer_name', label: 'Tên khách hàng' },

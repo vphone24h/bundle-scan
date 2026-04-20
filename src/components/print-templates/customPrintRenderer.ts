@@ -4,7 +4,12 @@ import type { CustomPrintTemplate } from '@/hooks/useCustomPrintTemplates';
 /**
  * Map dynamic field keys to actual receipt data values.
  */
-function resolveField(key: string, receipt: any, branchInfo?: any): string {
+interface RenderExtras {
+  warrantyQrDataUrl?: string;
+  warrantyQrLabel?: string;
+}
+
+function resolveField(key: string, receipt: any, branchInfo?: any, extras?: RenderExtras): string {
   const customer = receipt.customer || {};
   const fmt = (n: number | undefined | null) =>
     n != null ? n.toLocaleString('vi-VN') + 'đ' : '';
@@ -147,7 +152,7 @@ function elementStyle(el: TemplateElement): string {
 /**
  * Render a single element to HTML string.
  */
-function renderElement(el: TemplateElement, receipt: any, branchInfo?: any): string {
+function renderElement(el: TemplateElement, receipt: any, branchInfo?: any, extras?: RenderExtras): string {
   const style = elementStyle(el);
 
   switch (el.type) {
@@ -155,7 +160,15 @@ function renderElement(el: TemplateElement, receipt: any, branchInfo?: any): str
       return `<div style="${style}">${el.content || ''}</div>`;
 
     case 'dynamic': {
-      const value = resolveField(el.field || '', receipt, branchInfo);
+      // Special: warranty QR is rendered as an image
+      if (el.field === 'warranty_qr') {
+        const qrSrc = extras?.warrantyQrDataUrl;
+        if (!qrSrc) {
+          return `<div style="${style}; display:flex; align-items:center; justify-content:center; border:1px dashed #999; color:#999; font-size:10px; text-align:center;">QR bảo hành<br/>(chưa có IMEI/SĐT hoặc tên miền)</div>`;
+        }
+        return `<div style="${style}; display:flex; align-items:center; justify-content:center;"><img src="${qrSrc}" style="max-width:100%;max-height:100%;object-fit:contain;" /></div>`;
+      }
+      const value = resolveField(el.field || '', receipt, branchInfo, extras);
       const prefix = el.fieldLabel || '';
       return `<div style="${style}">${prefix}${value}</div>`;
     }
@@ -202,6 +215,7 @@ export function renderCustomPrintHTML(
   template: CustomPrintTemplate,
   receipt: any,
   branchInfo?: { name: string; address: string | null; phone: string | null } | null,
+  extras?: RenderExtras,
 ): string {
   const elements = (template.template_data as any)?.elements as TemplateElement[] | undefined;
   if (!elements?.length) return '<p style="text-align:center;padding:40px;">Mẫu in chưa có nội dung. Vui lòng thiết kế mẫu trước.</p>';
@@ -216,7 +230,7 @@ export function renderCustomPrintHTML(
   const mr = template.margin_right || 0;
   const scale = (template.scale_percent || 100) / 100;
 
-  const elementsHTML = elements.map(el => renderElement(el, receipt, branchInfo)).join('\n');
+  const elementsHTML = elements.map(el => renderElement(el, receipt, branchInfo, extras)).join('\n');
 
   return `
     <html>
