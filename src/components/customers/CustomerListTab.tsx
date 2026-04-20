@@ -13,8 +13,9 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreHorizontal, Eye, ShoppingCart, Wallet, Merge, Pencil, Calendar, Settings, Tag } from 'lucide-react';
+import { Plus, MoreHorizontal, Eye, ShoppingCart, Wallet, Merge, Pencil, Calendar, Settings, Tag, Star } from 'lucide-react';
 import { useCustomerSources } from '@/hooks/useCustomerSources';
+import { useCustomerRatingsByPhone } from '@/hooks/useCustomerRatingsByPhone';
 import { useCustomersWithPoints, MEMBERSHIP_TIER_NAMES, MEMBERSHIP_TIER_COLORS } from '@/hooks/useCustomerPoints';
 import { CRM_STATUS_LABELS, CRM_STATUS_COLORS, CRMStatus, useStaffList, useCustomerTags } from '@/hooks/useCRM';
 import { useBranches } from '@/hooks/useBranches';
@@ -114,6 +115,7 @@ export function CustomerListTab({
     const { data: customerSources } = useCustomerSources();
     const { data: staffList } = useStaffList();
     const { data: tags } = useCustomerTags();
+    const { data: ratingsMap } = useCustomerRatingsByPhone();
     
     const filteredCustomers = customers?.filter(c => {
       if (sourceFilter !== '_all_') {
@@ -354,6 +356,7 @@ export function CustomerListTab({
                     <TableHead className="hidden lg:table-cell">NV phụ trách</TableHead>
                     <TableHead className="hidden lg:table-cell">Trạng thái CRM</TableHead>
                     <TableHead className="text-right">Chi tiêu</TableHead>
+                    <TableHead className="hidden lg:table-cell">Đánh giá</TableHead>
                     <TableHead className="hidden xl:table-cell">Chăm sóc gần nhất</TableHead>
                     <TableHead className="w-[60px]"></TableHead>
                   </TableRow>
@@ -361,11 +364,11 @@ export function CustomerListTab({
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8">Đang tải...</TableCell>
+                      <TableCell colSpan={9} className="text-center py-8">Đang tải...</TableCell>
                     </TableRow>
                   ) : filteredCustomers?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         Chưa có khách hàng nào
                       </TableCell>
                     </TableRow>
@@ -417,6 +420,21 @@ export function CustomerListTab({
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           {formatNumber(customer.total_spent)}
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          {(() => {
+                            const r = customer.phone ? ratingsMap?.get(customer.phone.trim()) : undefined;
+                            if (!r || r.count === 0) {
+                              return <span className="text-muted-foreground text-sm">-</span>;
+                            }
+                            return (
+                              <div className="flex items-center gap-1" title={`${r.count} đánh giá`}>
+                                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                                <span className="text-sm font-medium">{r.average.toFixed(1)}</span>
+                                <span className="text-xs text-muted-foreground">({r.count})</span>
+                              </div>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell className="hidden xl:table-cell">
                           {customer.last_care_date
