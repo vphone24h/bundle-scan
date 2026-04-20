@@ -384,13 +384,18 @@ export function InvoicePrintDialog({
                   const elements = (selectedCustomTemplate.template_data as any)?.elements || [];
                   return elements.map((el: any) => {
                     // Inline mini-render for preview
+                    const isAutoHeight = el.type === 'text' || el.type === 'dynamic' || el.type === 'table';
                     const style = [
                       `position: absolute`,
                       `left: ${(el.x / 200) * 100}%`,
                       `top: ${(el.y / 100) * 100}%`,
                       `width: ${(el.w / 200) * 100}%`,
-                      `height: ${(el.h / 100) * 100}%`,
-                      `overflow: hidden`,
+                      isAutoHeight ? `min-height: ${(el.h / 100) * 100}%` : `height: ${(el.h / 100) * 100}%`,
+                      isAutoHeight ? `overflow: visible` : `overflow: hidden`,
+                      `white-space: pre-wrap`,
+                      `word-wrap: break-word`,
+                      `overflow-wrap: break-word`,
+                      `box-sizing: border-box`,
                       el.fontSize ? `font-size: ${el.fontSize * 0.55}px` : '',
                       el.fontWeight === 'bold' ? 'font-weight: bold' : '',
                       el.fontStyle === 'italic' ? 'font-style: italic' : '',
