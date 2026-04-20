@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout, Bot, ImageIcon, Award, Truck, CreditCard, Clock, Star, Eye, EyeOff, Menu as MenuIcon, Sparkles, Trash2, ChevronUp, ChevronDown, Type, Layers, PanelTop, Mail, HelpCircle, MessageCircle, FileText } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout, Bot, ImageIcon, Award, Truck, CreditCard, Clock, Star, Eye, EyeOff, Menu as MenuIcon, Sparkles, Trash2, ChevronUp, ChevronDown, Type, Layers, PanelTop, Mail, HelpCircle, MessageCircle, FileText, Pencil } from 'lucide-react';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Separator } from '@/components/ui/separator';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
@@ -1214,7 +1214,10 @@ export function LandingPageSettings() {
           {/* B1: Bật Website bán hàng */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Bật Website bán hàng</Label>
+              <Label className="flex items-center gap-2">
+                <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-bold">B1</span>
+                Bật Website bán hàng
+              </Label>
               <p className="text-sm text-muted-foreground">
                 Bật lên để khách hàng đặt hàng online, tắt sẽ không đặt hàng được
               </p>
@@ -1285,6 +1288,7 @@ export function LandingPageSettings() {
             <CollapsibleTrigger asChild>
               <button type="button" className="w-full flex items-center justify-between rounded-lg border border-border bg-card p-3 hover:bg-accent/50 transition-colors">
                 <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-bold shrink-0">B2</span>
                   <Layout className="h-4 w-4 text-primary" />
                   <div className="text-left">
                     <span className="text-sm font-medium">Chọn mẫu Website</span>
@@ -1323,27 +1327,55 @@ export function LandingPageSettings() {
             </CollapsibleContent>
           </Collapsible>
 
-          {/* Email tự động đơn hàng */}
-          <OrderEmailConfigSection formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} onSave={() => {
-            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-            updateSettings.mutateAsync(formData).then(() => {
-              setHasChanges(false);
-            }).catch(() => {
-              toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
-            });
-          }} onDeleteEmail={() => {
-            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-            const clearedData = { ...formData, order_email_sender: '', order_email_app_password: '' };
-            updateSettings.mutateAsync(clearedData).then(() => {
-              setHasChanges(false);
-            }).catch(() => {
-              toast({ title: 'Lỗi', description: 'Không thể xóa email. Vui lòng thử lại.', variant: 'destructive' });
-            });
-          }} />
+          {/* B3: Chỉnh sửa Website */}
+          <button
+            type="button"
+            onClick={() => navigate('/website-editor')}
+            className="w-full flex items-center justify-between rounded-lg border border-primary/40 bg-primary/5 p-3 hover:bg-primary/10 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-bold shrink-0">B3</span>
+              <Pencil className="h-4 w-4 text-primary" />
+              <div className="text-left">
+                <span className="text-sm font-medium">Chỉnh sửa Website</span>
+                <p className="text-xs text-muted-foreground">Tùy biến nội dung, hình ảnh, banner trên website của bạn</p>
+              </div>
+            </div>
+            <ExternalLink className="h-4 w-4 text-muted-foreground" />
+          </button>
 
-          {/* Zalo ZNS Manager - ngay dưới Email */}
-          <div className="pt-2">
-            <ZaloZnsManager />
+          {/* B4: Email + Zalo tự động */}
+          <div className="rounded-lg border border-border p-3 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-bold shrink-0">B4</span>
+              <Mail className="h-4 w-4 text-primary" />
+              <div>
+                <span className="text-sm font-medium">Cấu hình Email & Zalo tự động</span>
+                <p className="text-xs text-muted-foreground">Gửi email/Zalo xác nhận đơn hàng tự động cho khách</p>
+              </div>
+            </div>
+            {/* Email tự động đơn hàng */}
+            <OrderEmailConfigSection formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} onSave={() => {
+              if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+              updateSettings.mutateAsync(formData).then(() => {
+                setHasChanges(false);
+              }).catch(() => {
+                toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
+              });
+            }} onDeleteEmail={() => {
+              if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+              const clearedData = { ...formData, order_email_sender: '', order_email_app_password: '' };
+              updateSettings.mutateAsync(clearedData).then(() => {
+                setHasChanges(false);
+              }).catch(() => {
+                toast({ title: 'Lỗi', description: 'Không thể xóa email. Vui lòng thử lại.', variant: 'destructive' });
+              });
+            }} />
+
+            {/* Zalo ZNS Manager */}
+            <div className="pt-2">
+              <ZaloZnsManager />
+            </div>
           </div>
           </>)}
         </CardContent>
