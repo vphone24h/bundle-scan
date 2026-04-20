@@ -13,8 +13,9 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreHorizontal, Eye, ShoppingCart, Wallet, Merge, Pencil, Calendar, Settings, Tag } from 'lucide-react';
+import { Plus, MoreHorizontal, Eye, ShoppingCart, Wallet, Merge, Pencil, Calendar, Settings, Tag, Star } from 'lucide-react';
 import { useCustomerSources } from '@/hooks/useCustomerSources';
+import { useCustomerRatingsByPhone } from '@/hooks/useCustomerRatingsByPhone';
 import { useCustomersWithPoints, MEMBERSHIP_TIER_NAMES, MEMBERSHIP_TIER_COLORS } from '@/hooks/useCustomerPoints';
 import { CRM_STATUS_LABELS, CRM_STATUS_COLORS, CRMStatus, useStaffList, useCustomerTags } from '@/hooks/useCRM';
 import { useBranches } from '@/hooks/useBranches';
