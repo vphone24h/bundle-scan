@@ -1347,7 +1347,13 @@ export function LandingPageSettings() {
           {/* B4: Email + Zalo tự động — đã chuyển sang tab "Nhắn tin tự động" → "Cấu hình" */}
           <button
             type="button"
-            onClick={() => navigate('/customers?tab=automation')}
+            onClick={() => {
+              const url = new URL(window.location.href);
+              url.searchParams.set('tab', 'email-automation');
+              url.searchParams.set('sub', 'config');
+              window.history.pushState({}, '', url.toString());
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
             className="w-full flex items-center justify-between rounded-lg border border-primary/40 bg-primary/5 p-3 hover:bg-primary/10 transition-colors"
           >
             <div className="flex items-center gap-2">
@@ -1355,7 +1361,7 @@ export function LandingPageSettings() {
               <Mail className="h-4 w-4 text-primary" />
               <div className="text-left">
                 <span className="text-sm font-medium">Cấu hình Email & Zalo tự động</span>
-                <p className="text-xs text-muted-foreground">Đã chuyển sang Khách hàng & CRM → Nhắn tin tự động → Cấu hình</p>
+                <p className="text-xs text-muted-foreground">Mở tab Nhắn tin tự động → Cấu hình</p>
               </div>
             </div>
             <ExternalLink className="h-4 w-4 text-muted-foreground" />
