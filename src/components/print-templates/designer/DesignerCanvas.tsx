@@ -125,10 +125,16 @@ export function DesignerCanvas({ elements, selectedId, paperSize, onSelect, onUp
               }}>
                 {el.type === 'text' && <span className="w-full whitespace-pre-wrap">{el.content || 'Text'}</span>}
                 {el.type === 'dynamic' && (
-                  <span className="w-full text-blue-600 border border-dashed border-blue-300 bg-blue-50/50 px-0.5 rounded-sm">
-                    {el.fieldLabel && <span className="text-blue-800 font-medium">{el.fieldLabel}</span>}
-                    {`{${el.field}}`} <span className="text-blue-400 text-[8px]">{getFieldLabel(el.field || '')}</span>
-                  </span>
+                  el.field === 'warranty_qr' ? (
+                    <div className="w-full h-full border border-dashed border-blue-400 bg-blue-50/40 flex items-center justify-center text-[8px] text-blue-600 text-center p-0.5">
+                      QR bảo hành<br/>(tự sinh khi in)
+                    </div>
+                  ) : (
+                    <span className="w-full text-blue-600 border border-dashed border-blue-300 bg-blue-50/50 px-0.5 rounded-sm">
+                      {el.fieldLabel && <span className="text-blue-800 font-medium">{el.fieldLabel}</span>}
+                      {`{${el.field}}`} <span className="text-blue-400 text-[8px]">{getFieldLabel(el.field || '')}</span>
+                    </span>
+                  )
                 )}
                 {el.type === 'image' && (
                   <div className="w-full h-full border border-dashed border-muted-foreground/30 bg-muted/20 flex items-center justify-center">
