@@ -317,6 +317,7 @@ export function CreateDebtDialog({
     setNewSupplierName('');
     setNewSupplierPhone('');
     if (isSuperAdmin) setSelectedBranchId('');
+    setPaymentSource('outside');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -533,6 +534,35 @@ export function CreateDebtDialog({
             </Label>
             <PriceInput value={amount} onChange={setAmount} placeholder="Nhập số tiền" />
           </div>
+
+          {/* Payment Source - đảo chiều dòng tiền */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <Wallet className="h-3.5 w-3.5" />
+              Nguồn tiền
+            </Label>
+            <Select value={paymentSource} onValueChange={setPaymentSource}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {allPaymentSources.map(s => (
+                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {paymentSource !== 'outside' && (
+              <p className="text-xs text-muted-foreground">
+                {isCustomer
+                  ? `→ Sẽ ghi CHI ${amount > 0 ? amount.toLocaleString('vi-VN') + 'đ' : ''} vào sổ quỹ (cho khách mượn)`
+                  : `→ Sẽ ghi THU ${amount > 0 ? amount.toLocaleString('vi-VN') + 'đ' : ''} vào sổ quỹ (mượn tiền NCC)`}
+              </p>
+            )}
+            {paymentSource === 'outside' && (
+              <p className="text-xs text-muted-foreground">
+                Không ghi sổ quỹ — chỉ tạo công nợ
+              </p>
+            )}
 
           {/* Note */}
           <div className="space-y-2">
