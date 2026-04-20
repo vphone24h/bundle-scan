@@ -50,6 +50,7 @@ import { useBranches } from '@/hooks/useBranches';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useProducts } from '@/hooks/useProducts';
 import { useExportReceiptItems, useExportReceiptItemById, type ExportReceiptItemDetail } from '@/hooks/useExportReceipts';
+import { useProductById } from '@/hooks/useProducts';
 import { useImportReturns, useExportReturns, useAllProfiles, useDeleteImportReturn, useDeleteExportReturn, type ImportReturn, type ExportReturn } from '@/hooks/useReturns';
 import { usePermissions } from '@/hooks/usePermissions';
 import { formatNumberWithSpaces } from '@/lib/formatNumber';
