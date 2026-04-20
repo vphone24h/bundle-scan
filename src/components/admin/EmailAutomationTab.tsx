@@ -32,6 +32,7 @@ import {
 } from '@/hooks/useEmailAutomations';
 import { EmailTemplatePickerDialog, EmailTemplatePreset, ORDER_EMAIL_PRESETS, TRIGGER_TYPE_PRESETS } from './EmailTemplatePickerDialog';
 import { ZaloLogSection } from './ZaloLogSection';
+import { OrderEmailZaloConfigTab } from './OrderEmailZaloConfigTab';
 
 const TRIGGER_TYPES = [
   // Nhóm mua hàng
@@ -1100,7 +1101,12 @@ export function EmailAutomationTab() {
             <TabsTrigger value="scenarios" className="flex-1 sm:flex-none">Kịch bản ({automations?.length || 0})</TabsTrigger>
             <TabsTrigger value="logs" className="flex-1 sm:flex-none">Lịch sử Mail ({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</TabsTrigger>
             <TabsTrigger value="zalo-logs" className="flex-1 sm:flex-none">Lịch sử Zalo ({zaloLogs?.length || 0})</TabsTrigger>
+            <TabsTrigger value="config" className="flex-1 sm:flex-none">Cấu hình</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="config" className="mt-4">
+            <OrderEmailZaloConfigTab />
+          </TabsContent>
 
           <TabsContent value="scenarios" className="mt-4 space-y-6">
             {/* === Email đơn hàng mặc định === */}

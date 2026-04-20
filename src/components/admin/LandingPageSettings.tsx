@@ -1344,39 +1344,22 @@ export function LandingPageSettings() {
             <ExternalLink className="h-4 w-4 text-muted-foreground" />
           </button>
 
-          {/* B4: Email + Zalo tự động */}
-          <div className="rounded-lg border border-border p-3 space-y-3">
+          {/* B4: Email + Zalo tự động — đã chuyển sang tab "Nhắn tin tự động" → "Cấu hình" */}
+          <button
+            type="button"
+            onClick={() => navigate('/customers?tab=automation')}
+            className="w-full flex items-center justify-between rounded-lg border border-primary/40 bg-primary/5 p-3 hover:bg-primary/10 transition-colors"
+          >
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-bold shrink-0">B4</span>
               <Mail className="h-4 w-4 text-primary" />
-              <div>
+              <div className="text-left">
                 <span className="text-sm font-medium">Cấu hình Email & Zalo tự động</span>
-                <p className="text-xs text-muted-foreground">Gửi email/Zalo xác nhận đơn hàng tự động cho khách</p>
+                <p className="text-xs text-muted-foreground">Đã chuyển sang Khách hàng & CRM → Nhắn tin tự động → Cấu hình</p>
               </div>
             </div>
-            {/* Email tự động đơn hàng */}
-            <OrderEmailConfigSection formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} onSave={() => {
-              if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-              updateSettings.mutateAsync(formData).then(() => {
-                setHasChanges(false);
-              }).catch(() => {
-                toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
-              });
-            }} onDeleteEmail={() => {
-              if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-              const clearedData = { ...formData, order_email_sender: '', order_email_app_password: '' };
-              updateSettings.mutateAsync(clearedData).then(() => {
-                setHasChanges(false);
-              }).catch(() => {
-                toast({ title: 'Lỗi', description: 'Không thể xóa email. Vui lòng thử lại.', variant: 'destructive' });
-              });
-            }} />
-
-            {/* Zalo ZNS Manager */}
-            <div className="pt-2">
-              <ZaloZnsManager />
-            </div>
-          </div>
+            <ExternalLink className="h-4 w-4 text-muted-foreground" />
+          </button>
           </>)}
         </CardContent>
       </Card>
