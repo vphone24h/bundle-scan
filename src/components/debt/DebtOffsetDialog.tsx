@@ -194,9 +194,9 @@ export function DebtOffsetDialog({ open, onOpenChange, match }: DebtOffsetDialog
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Hủy</Button>
-          <Button onClick={handleConfirm} disabled={executeOffset.isPending}>
-            <CheckCircle className="mr-2 h-4 w-4" />
-            {executeOffset.isPending ? 'Đang xử lý...' : 'Xác nhận bù trừ'}
+          <Button onClick={handleConfirm} disabled={executeOffset.isPending || verifying}>
+            {(executeOffset.isPending || verifying) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+            {verifying ? 'Đang kiểm tra...' : (executeOffset.isPending ? 'Đang xử lý...' : 'Xác nhận bù trừ')}
           </Button>
         </DialogFooter>
       </DialogContent>
