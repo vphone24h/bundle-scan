@@ -277,14 +277,23 @@ export function useExecuteDebtOffset() {
 
       return { customerDebtAfter, supplierDebtAfter };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
-      queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
-      queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
-      queryClient.invalidateQueries({ queryKey: ['debt-payment-history'] });
-      queryClient.invalidateQueries({ queryKey: ['import-receipts'] });
-      queryClient.invalidateQueries({ queryKey: ['export-receipts'] });
-      queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['customer-debts'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['supplier-debts'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['debt-detail'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['debt-payment-history'], type: 'active' }),
+      ]);
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['customer-debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['supplier-debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['debt-detail'] }),
+        queryClient.invalidateQueries({ queryKey: ['debt-payment-history'] }),
+        queryClient.invalidateQueries({ queryKey: ['import-receipts'] }),
+        queryClient.invalidateQueries({ queryKey: ['export-receipts'] }),
+        queryClient.invalidateQueries({ queryKey: ['audit-logs'] }),
+      ]);
     },
   });
 }
