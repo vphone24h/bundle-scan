@@ -284,12 +284,18 @@ export function CreateDebtDialog({
 
       return { entityId, name: entityName };
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       toast.success(`Đã thêm công nợ cho ${data.name}`);
-      queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
-      queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
-      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['customer-debts'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['supplier-debts'], type: 'active' }),
+      ]);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['customer-debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['supplier-debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['customers'] }),
+        queryClient.invalidateQueries({ queryKey: ['suppliers'] }),
+      ]);
       queryClient.removeQueries({ queryKey: ['cash-book'] });
       queryClient.removeQueries({ queryKey: ['cash-book-balances'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });

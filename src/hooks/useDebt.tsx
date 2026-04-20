@@ -410,16 +410,25 @@ export function useCreateDebtPayment() {
 
       return data;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
-      queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
-      queryClient.invalidateQueries({ queryKey: ['debt-detail', variables.entity_type, variables.entity_id] });
-      queryClient.invalidateQueries({ queryKey: ['debt-payment-history', variables.entity_type, variables.entity_id] });
-      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
-      queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] });
-      queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
-      queryClient.invalidateQueries({ queryKey: ['import-receipts'] });
-      queryClient.invalidateQueries({ queryKey: ['export-receipts'] });
+    onSuccess: async (_, variables) => {
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['customer-debts'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['supplier-debts'], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['debt-detail', variables.entity_type, variables.entity_id], type: 'active' }),
+        queryClient.refetchQueries({ queryKey: ['debt-payment-history', variables.entity_type, variables.entity_id], type: 'active' }),
+      ]);
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['customer-debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['supplier-debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['debt-detail', variables.entity_type, variables.entity_id] }),
+        queryClient.invalidateQueries({ queryKey: ['debt-payment-history', variables.entity_type, variables.entity_id] }),
+        queryClient.invalidateQueries({ queryKey: ['cash-book'] }),
+        queryClient.invalidateQueries({ queryKey: ['cash-book-balances'] }),
+        queryClient.invalidateQueries({ queryKey: ['audit-logs'] }),
+        queryClient.invalidateQueries({ queryKey: ['import-receipts'] }),
+        queryClient.invalidateQueries({ queryKey: ['export-receipts'] }),
+      ]);
     },
   });
 }
