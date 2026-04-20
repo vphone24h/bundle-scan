@@ -115,6 +115,7 @@ export function CustomerListTab({
     const { data: customerSources } = useCustomerSources();
     const { data: staffList } = useStaffList();
     const { data: tags } = useCustomerTags();
+    const { data: ratingsMap } = useCustomerRatingsByPhone();
     
     const filteredCustomers = customers?.filter(c => {
       if (sourceFilter !== '_all_') {
