@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout, Bot, ImageIcon, Award, Truck, CreditCard, Clock, Star, Eye, EyeOff, Menu as MenuIcon, Sparkles, Trash2, ChevronUp, ChevronDown, Type, Layers, PanelTop, Mail, HelpCircle, MessageCircle, FileText } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout, Bot, ImageIcon, Award, Truck, CreditCard, Clock, Star, Eye, EyeOff, Menu as MenuIcon, Sparkles, Trash2, ChevronUp, ChevronDown, Type, Layers, PanelTop, Mail, HelpCircle, MessageCircle, FileText, Pencil } from 'lucide-react';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Separator } from '@/components/ui/separator';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
