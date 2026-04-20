@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
@@ -928,7 +928,18 @@ export function EmailAutomationTab() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<EmailAutomation | null>(null);
-  const [tab, setTab] = useState('scenarios');
+  const [tab, setTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const sub = new URLSearchParams(window.location.search).get('sub');
+      if (sub) return sub;
+    }
+    return 'scenarios';
+  });
+  useEffect(() => {
+    const sub = new URLSearchParams(window.location.search).get('sub');
+    if (sub) setTab(sub);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typeof window !== 'undefined' ? window.location.search : '']);
   const [logSubTab, setLogSubTab] = useState('automation');
   const [logStatusFilter, setLogStatusFilter] = useState<'all' | 'sent' | 'failed'>('all');
   const [pickerOpen, setPickerOpen] = useState(false);
