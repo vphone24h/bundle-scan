@@ -123,7 +123,10 @@ export function InvoicePrintDialog({
   const handlePrint = () => {
     // Custom template print via iframe (stable on mobile)
     if (selectedCustomTemplate) {
-      const html = renderCustomPrintHTML(selectedCustomTemplate, receipt, branchInfo);
+      const html = renderCustomPrintHTML(selectedCustomTemplate, receipt, branchInfo, {
+        warrantyQrDataUrl,
+        warrantyQrLabel: template?.warranty_qr_label || 'Quét mã để tra cứu bảo hành',
+      });
       const iframe = document.createElement('iframe');
       iframe.style.position = 'fixed';
       iframe.style.left = '-9999px';
@@ -398,6 +401,12 @@ export function InvoicePrintDialog({
 
                     if (el.type === 'text') return `<div style="${style}">${el.content || ''}</div>`;
                     if (el.type === 'dynamic') {
+                      if (el.field === 'warranty_qr') {
+                        if (warrantyQrDataUrl) {
+                          return `<div style="${style}; display:flex; align-items:center; justify-content:center;"><img src="${warrantyQrDataUrl}" style="max-width:100%;max-height:100%;object-fit:contain;" /></div>`;
+                        }
+                        return `<div style="${style}; display:flex; align-items:center; justify-content:center; border:1px dashed #999; color:#999; font-size:8px; text-align:center;">QR bảo hành</div>`;
+                      }
                       const val = resolveFieldPreview(el.field, receipt, branchInfo);
                       return `<div style="${style}">${val}</div>`;
                     }
