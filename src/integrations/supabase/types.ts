@@ -10296,6 +10296,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      heal_debt_allocations: {
+        Args: { p_entity_id: string; p_entity_type: string }
+        Returns: Json
+      }
+      heal_debt_allocations_for_tenant: {
+        Args: { p_tenant_id: string }
+        Returns: Json
+      }
       is_authenticated: { Args: never; Returns: boolean }
       is_company_admin: {
         Args: { _company_id?: string; _user_id: string }
