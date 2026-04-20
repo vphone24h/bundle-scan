@@ -563,6 +563,7 @@ export function CreateDebtDialog({
                 Không ghi sổ quỹ — chỉ tạo công nợ
               </p>
             )}
+          </div>
 
           {/* Note */}
           <div className="space-y-2">
