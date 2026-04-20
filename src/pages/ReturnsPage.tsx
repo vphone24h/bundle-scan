@@ -131,6 +131,8 @@ export default function ReturnsPage() {
   const { data: branches } = useBranches();
   const { data: suppliers } = useSuppliers();
   const { data: products } = useProducts();
+  const productIdFromUrl = searchParams.get('productId');
+  const { data: productById } = useProductById(productIdFromUrl);
   const { data: exportItems } = useExportReceiptItems();
   const exportItemIdFromUrl = searchParams.get('itemId');
   const { data: exportItemById } = useExportReceiptItemById(exportItemIdFromUrl);
