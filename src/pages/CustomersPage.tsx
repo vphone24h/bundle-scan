@@ -4,7 +4,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Calendar, History, BarChart3, FileText, ShoppingCart, Wallet, Ticket } from 'lucide-react';
+import { Users, Calendar, History, BarChart3, FileText, ShoppingCart, Wallet, Ticket, Star } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CustomerListTab } from '@/components/customers/CustomerListTab';
 import { CareScheduleTab } from '@/components/customers/CareScheduleTab';
@@ -12,6 +12,7 @@ import { CareTimelineTab } from '@/components/customers/CareTimelineTab';
 import { CRMDashboardTab } from '@/components/customers/CRMDashboardTab';
 import { CRMReportsTab } from '@/components/customers/CRMReportsTab';
 import { VoucherHistoryTab } from '@/components/voucher/VoucherHistoryTab';
+import { StaffReviewsTab } from '@/components/users/StaffReviewsTab';
 import { useCustomerDetail, useCustomerStats } from '@/hooks/useCustomerPoints';
 import { formatNumber } from '@/lib/formatNumber';
 import { useSearchParams } from 'react-router-dom';
@@ -152,7 +153,7 @@ export default function CustomersPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-3 sm:space-y-4">
-        <TabsList className="grid w-full grid-cols-6 h-auto">
+        <TabsList className="grid w-full grid-cols-7 h-auto">
           <TabsTrigger value="list" className="text-xs sm:text-sm py-2 px-1 sm:px-3 gap-1 sm:gap-2">
             <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">{t('pages.customers.list')}</span>
           </TabsTrigger>
@@ -170,6 +171,9 @@ export default function CustomersPage() {
           </TabsTrigger>
           <TabsTrigger value="reports" className="text-xs sm:text-sm py-2 px-1 sm:px-3 gap-1 sm:gap-2">
             <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">{t('pages.customers.reports')}</span>
+          </TabsTrigger>
+          <TabsTrigger value="reviews" className="text-xs sm:text-sm py-2 px-1 sm:px-3 gap-1 sm:gap-2">
+            <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Đánh giá</span>
           </TabsTrigger>
         </TabsList>
 
@@ -194,6 +198,7 @@ export default function CustomersPage() {
         <TabsContent value="vouchers"><VoucherHistoryTab /></TabsContent>
         <TabsContent value="dashboard"><CRMDashboardTab /></TabsContent>
         <TabsContent value="reports"><CRMReportsTab /></TabsContent>
+        <TabsContent value="reviews"><StaffReviewsTab /></TabsContent>
       </Tabs>
     </MainLayout>
   );
