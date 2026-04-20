@@ -1288,6 +1288,7 @@ export function LandingPageSettings() {
             <CollapsibleTrigger asChild>
               <button type="button" className="w-full flex items-center justify-between rounded-lg border border-border bg-card p-3 hover:bg-accent/50 transition-colors">
                 <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-bold shrink-0">B2</span>
                   <Layout className="h-4 w-4 text-primary" />
                   <div className="text-left">
                     <span className="text-sm font-medium">Chọn mẫu Website</span>
