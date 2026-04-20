@@ -367,6 +367,33 @@ export function useCreateProduct() {
   });
 }
 
+// Fetch a single product by ID directly (bypasses pagination/branch filter caches)
+export function useProductById(productId: string | null | undefined) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['product-by-id', productId, user?.id],
+    queryFn: async () => {
+      if (!productId) return null;
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          id, name, sku, imei, category_id, sale_price, import_price,
+          import_date, supplier_id, branch_id, import_receipt_id, status,
+          note, quantity, unit, is_printed,
+          group_id, variant_1, variant_2, variant_3,
+          suppliers(name),
+          branches(name),
+          categories(name)
+        `)
+        .eq('id', productId)
+        .maybeSingle();
+      if (error) throw error;
+      return data as Product | null;
+    },
+    enabled: !!productId && !!user?.id,
+  });
+}
+
 export function useUpdateProduct() {
   const queryClient = useQueryClient();
 
