@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Phone, MapPin, Mail, Calendar, Edit2, ShoppingCart, Wallet, Star, Eye, Ticket, Gift } from 'lucide-react';
+import { Phone, MapPin, Mail, Calendar, Edit2, ShoppingCart, Wallet, Star, Eye, Ticket, Gift, MessageCircle, Send } from 'lucide-react';
 import { UserCircle } from 'lucide-react';
 import {
   useCustomerDetail,
@@ -37,6 +37,8 @@ import { CustomerFormDialog } from './CustomerFormDialog';
 import { PointAdjustDialog } from './PointAdjustDialog';
 import { IssueVoucherDialog } from './IssueVoucherDialog';
 import { CustomerPurchaseDetailDialog } from './CustomerPurchaseDetailDialog';
+import { BulkCareEmailDialog } from './BulkCareEmailDialog';
+import { BulkCareZaloDialog } from './BulkCareZaloDialog';
 import { StaffAssignSelect } from '@/components/crm/StaffAssignSelect';
 import { useAssignStaffToCustomer, useStaffList, CRM_STATUS_LABELS, CRM_STATUS_COLORS, CRMStatus, useUpdateCustomerCRMStatus } from '@/hooks/useCRM';
 import {
@@ -62,6 +64,8 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
   const [showVoucherDialog, setShowVoucherDialog] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
   const [showPurchaseDetail, setShowPurchaseDetail] = useState(false);
+  const [showSendEmail, setShowSendEmail] = useState(false);
+  const [showSendZalo, setShowSendZalo] = useState(false);
   const { mutate: assignStaff, isPending: isAssigning } = useAssignStaffToCustomer();
   const { mutate: updateCRMStatus, isPending: isUpdatingStatus } = useUpdateCustomerCRMStatus();
   const { data: staffList } = useStaffList();
@@ -156,12 +160,35 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
                         )}
                       </div>
                     </div>
-                      {canEdit && (
-                        <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)} className="flex-shrink-0">
-                          <Edit2 className="h-4 w-4 sm:mr-2" />
-                          <span className="hidden sm:inline">Sửa</span>
+                      <div className="flex flex-wrap gap-1.5 flex-shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowSendEmail(true)}
+                          disabled={!customer.email}
+                          title={customer.email ? 'Gửi email cho khách' : 'KH chưa có email'}
+                        >
+                          <Send className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Gửi mail</span>
                         </Button>
-                      )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowSendZalo(true)}
+                          disabled={!customer.phone}
+                          title={customer.phone ? 'Gửi Zalo OA cho khách' : 'KH chưa có SĐT'}
+                          className="border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                        >
+                          <MessageCircle className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Gửi Zalo</span>
+                        </Button>
+                        {canEdit && (
+                          <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
+                            <Edit2 className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Sửa</span>
+                          </Button>
+                        )}
+                      </div>
                   </div>
 
                     <Separator />
