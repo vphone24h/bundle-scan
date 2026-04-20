@@ -1214,7 +1214,10 @@ export function LandingPageSettings() {
           {/* B1: Bật Website bán hàng */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Bật Website bán hàng</Label>
+              <Label className="flex items-center gap-2">
+                <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-bold">B1</span>
+                Bật Website bán hàng
+              </Label>
               <p className="text-sm text-muted-foreground">
                 Bật lên để khách hàng đặt hàng online, tắt sẽ không đặt hàng được
               </p>
