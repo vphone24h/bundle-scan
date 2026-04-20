@@ -2212,6 +2212,50 @@ export type Database = {
           },
         ]
       }
+      customer_ratings: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          note: string | null
+          rated_by: string | null
+          rated_by_name: string | null
+          rating: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          note?: string | null
+          rated_by?: string | null
+          rated_by_name?: string | null
+          rating: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          note?: string | null
+          rated_by?: string | null
+          rated_by_name?: string | null
+          rating?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_ratings_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_sources: {
         Row: {
           created_at: string
