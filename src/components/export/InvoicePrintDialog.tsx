@@ -183,7 +183,14 @@ export function InvoicePrintDialog({
               margin: 0 !important;
               padding: 2mm ${marginRight}mm 2mm ${marginLeft}mm;
               box-sizing: border-box;
+              color: #000 !important;
+              ${isK80 ? 'font-weight: 600; -webkit-font-smoothing: none; -webkit-print-color-adjust: exact; print-color-adjust: exact;' : ''}
             }
+            ${isK80 ? `
+            * { color: #000 !important; }
+            .text-gray, .text-muted-foreground { color: #000 !important; }
+            b, strong, .font-bold { font-weight: 800 !important; }
+            ` : ''}
             ${isK80 ? `html, body { height: ${contentHeightPx}px !important; overflow: hidden; }` : ''}
             .section { margin-bottom: 8px; }
             .text-center { text-align: center !important; }
