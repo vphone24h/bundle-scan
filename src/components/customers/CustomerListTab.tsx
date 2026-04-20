@@ -356,6 +356,7 @@ export function CustomerListTab({
                     <TableHead className="hidden lg:table-cell">NV phụ trách</TableHead>
                     <TableHead className="hidden lg:table-cell">Trạng thái CRM</TableHead>
                     <TableHead className="text-right">Chi tiêu</TableHead>
+                    <TableHead className="hidden lg:table-cell">Đánh giá</TableHead>
                     <TableHead className="hidden xl:table-cell">Chăm sóc gần nhất</TableHead>
                     <TableHead className="w-[60px]"></TableHead>
                   </TableRow>
@@ -363,11 +364,11 @@ export function CustomerListTab({
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8">Đang tải...</TableCell>
+                      <TableCell colSpan={9} className="text-center py-8">Đang tải...</TableCell>
                     </TableRow>
                   ) : filteredCustomers?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         Chưa có khách hàng nào
                       </TableCell>
                     </TableRow>
