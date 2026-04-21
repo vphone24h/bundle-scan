@@ -4,7 +4,6 @@ import { useCustomDomainArticlePublic, useAppConfig } from '@/hooks/useAppConfig
 import { useNavigate } from 'react-router-dom';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings, TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
 import { useLandingProductCategories } from '@/hooks/useLandingProducts';
-import { useVoucherTemplates } from '@/hooks/useVouchers';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCustomDomains } from '@/hooks/useCustomDomains';
 import { useCurrentTenant } from '@/hooks/useTenant';
@@ -891,9 +890,7 @@ export function LandingPageSettings() {
   const updateSettings = useUpdateTenantLandingSettings();
   const navigate = useNavigate();
 
-  const { data: voucherTemplates } = useVoucherTemplates();
   const { data: landingCategories } = useLandingProductCategories();
-  const activeTemplates = (voucherTemplates || []).filter(t => t.is_active);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
