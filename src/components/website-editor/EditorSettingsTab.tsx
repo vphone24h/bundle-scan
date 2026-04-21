@@ -509,14 +509,25 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
       <SettingsBlock
         id="banner"
         icon="🎯"
-        title="Banner trang chủ"
-        description="Tiêu đề, mô tả, nút CTA, hình ảnh"
+        title="Banner & Nội dung trang chủ"
+        description="Banner quảng cáo, tiêu đề, mô tả, nút CTA"
         isExpanded={expandedBlocks.has('banner')}
         onToggle={() => toggleBlock('banner')}
       >
         <div className="space-y-3">
+          {/* Banner quảng cáo */}
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Banner quảng cáo</p>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Hiển thị banner</Label>
+            <Switch
+              checked={formData.show_banner ?? true}
+              onCheckedChange={(checked) => onChange('show_banner', checked)}
+            />
+          </div>
+          {(formData.show_banner ?? true) && (
+          <>
           <div className="space-y-1.5">
-            <Label className="text-xs">Ảnh banner (tuỳ chọn)</Label>
+            <Label className="text-xs">Hình ảnh banner</Label>
             <div className="flex items-center gap-2">
               {formData.banner_image_url ? (
                 <div className="relative">
@@ -532,15 +543,18 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
                 <span className="ml-1.5">{formData.banner_image_url ? 'Đổi' : 'Upload'}</span>
               </Button>
             </div>
+            <p className="text-[10px] text-muted-foreground">Tối đa 5MB, khuyến nghị 1200×400px</p>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Link khi nhấn banner</Label>
+            <Label className="text-xs">Link khi click banner (tuỳ chọn)</Label>
             <Input
               value={formData.banner_link_url || ''}
               onChange={e => onChange('banner_link_url', e.target.value)}
               placeholder="https://..."
             />
           </div>
+          </>
+          )}
           <Separator />
           <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Nội dung Banner chính</p>
           <div className="space-y-1.5">
