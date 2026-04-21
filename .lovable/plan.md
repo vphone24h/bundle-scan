@@ -1,45 +1,40 @@
 
-## Mục tiêu
-Thêm "Tần suất gửi tối đa" (max_sends_per_recipient) cho từng kịch bản email tự động — mỗi người chỉ nhận tối đa N lần (mặc định 1). Áp dụng cho cả hệ thống Platform (admin gốc) và hệ thống công ty/shop (admin công ty), đồng bộ logic dedup ở edge functions.
 
-## Phạm vi
-**2 hệ thống email automation:**
-1. `platform_email_automations` (Platform Admin gốc)
-2. `email_automations` (Admin công ty/shop)
+## Redesign bộ lọc biểu đồ giá trị toàn kho
 
-## Thay đổi
+### Vấn đề hiện tại
+Biểu đồ chỉ có 1 bộ lọc thời gian (7 ngày, 30 ngày, Tháng này, 3 tháng, Tùy chọn) và hiển thị mỗi ngày 1 cột. Khi chọn khoảng dài (3 tháng), biểu đồ quá nhiều cột, khó đọc.
 
-### 1. Database (migration)
-Thêm cột `max_sends_per_recipient INTEGER DEFAULT 1 NOT NULL CHECK (max_sends_per_recipient >= 1 AND max_sends_per_recipient <= 10)` cho 2 bảng:
-- `platform_email_automations`
-- `email_automations`
+### Thiết kế mới: 2 bộ lọc tách biệt
 
-### 2. UI Form (2 chỗ)
-- `src/components/platform/PlatformEmailAutomationManagement.tsx` — form tạo/sửa kịch bản platform
-- `src/components/admin/EmailAutomationTab.tsx` — form tạo/sửa kịch bản công ty
+**Bộ lọc 1 — Khoảng thời gian:**
+- Tuần này
+- Tháng này
+- Tháng trước
+- Năm nay
+- Tùy chỉnh (chọn ngày bắt đầu/kết thúc)
+- Toàn bộ (tất cả dữ liệu snapshot)
 
-Thêm field **"Số lần gửi tối đa cho mỗi người"** (Select: 1, 2, 3, 5 lần) ngay dưới "Số ngày". Hiển thị badge "Gửi tối đa X lần" trên card kịch bản.
+**Bộ lọc 2 — Nhóm cột (granularity):**
+- 1 ngày (mỗi cột = 1 ngày snapshot)
+- 7 ngày (mỗi cột = tổng hợp trung bình 7 ngày)
+- 30 ngày (mỗi cột = tổng hợp trung bình 30 ngày)
 
-### 3. Hook types (TS)
-- `src/hooks/usePlatformEmailAutomations.tsx` — thêm `max_sends_per_recipient` vào interface
-- `src/hooks/useEmailAutomations.tsx` — thêm `max_sends_per_recipient` vào interface
+### Chi tiết kỹ thuật
 
-### 4. Edge functions — logic dedup theo tần suất
-**`supabase/functions/run-platform-email-automations/index.ts`:**
-- Trước khi gửi, đếm số log đã gửi cho `(automation_id, tenant_id)` với status='sent'.
-- Nếu `count >= max_sends_per_recipient` → skip.
-- Vẫn giữ dedup "đã gửi hôm nay" để tránh gửi nhiều lần trong cùng 1 ngày.
+**File: `src/components/reports/WarehouseValueChart.tsx`**
+- Thay `TIME_OPTIONS` cũ bằng 2 bộ lọc riêng biệt: `RANGE_OPTIONS` và `GROUP_OPTIONS`
+- State mới: `timeRange` (week/month/last_month/year/custom/all) + `groupBy` (1/7/30)
+- Tính `fromDate`/`toDate` dựa trên `timeRange` (dùng date-fns: startOfWeek, startOfMonth, startOfYear)
+- "Toàn bộ": không truyền giới hạn ngày, lấy tất cả snapshots
+- "Tháng trước": startOfMonth(subMonths(now,1)) đến endOfMonth(subMonths(now,1))
 
-**`supabase/functions/run-email-automations/index.ts`:**
-- Trong block `oncePerCustomerTriggers` và block else, thay điều kiện `count > 0 → skip` bằng `count >= automation.max_sends_per_recipient → skip`.
-- Áp dụng đồng nhất cho cả triggers per-customer và per-receipt.
+**File: `src/hooks/useWarehouseValueSnapshots.ts`**
+- Thêm logic aggregate data theo `groupBy`:
+  - Nhóm các snapshot theo khoảng (7 ngày hoặc 30 ngày)
+  - Mỗi nhóm tính giá trị trung bình (hoặc lấy giá trị cuối cùng trong nhóm)
+  - Hiển thị label dạng "01/03 - 07/03" cho nhóm 7 ngày, "Tháng 03" cho nhóm 30 ngày
+- Khi `groupBy = 1`: giữ nguyên logic hiện tại (mỗi snapshot 1 điểm)
 
-### 5. Đồng bộ
-- Field tự động xuất hiện trong cả 2 trang quản lý (Platform Admin và Admin Công ty).
-- Logic gửi tự động đọc field từ DB → áp dụng giới hạn ngay vòng cron tiếp theo.
-- Không cần migrate dữ liệu cũ — kịch bản hiện tại default = 1 lần (giữ nguyên hành vi cũ).
+**Hiệu ứng mặc định:** Mặc định chọn "Tháng này" + "1 ngày" để giữ trải nghiệm tương tự hiện tại.
 
-## Ghi chú kỹ thuật
-- Dùng `count` query với `head: true` để hiệu năng tốt.
-- CHECK constraint giới hạn 1-10 để tránh spam.
-- Default = 1 → an toàn cho mọi kịch bản đang chạy (không thay đổi hành vi).
