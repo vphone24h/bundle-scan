@@ -134,7 +134,7 @@ export function DailyBackupSection() {
         ) : (
           <>
             <p className="text-xs text-muted-foreground mt-1">
-              Gói miễn phí chỉ hỗ trợ backup thủ công. Nâng cấp gói sử dụng để được <strong>backup tự động hàng ngày</strong>.
+              Chức năng backup tự động chỉ khả dụng với tài khoản mua gói sử dụng. Gói miễn phí vui lòng nhấn nút "Tạo ngay" để backup thủ công.
             </p>
             <div className="flex flex-col sm:flex-row gap-2 mt-2">
               <Button
