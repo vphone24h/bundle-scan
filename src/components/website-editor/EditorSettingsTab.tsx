@@ -34,6 +34,7 @@ interface EditorSettingsTabProps {
   onClearFocus: () => void;
   tenantId: string | null;
   onSave?: () => void;
+  onBatchSave?: (changes: Record<string, unknown>) => void;
   isSaving?: boolean;
   hasChanges?: boolean;
 }
@@ -102,7 +103,7 @@ const SECTION_TO_BLOCK: Record<string, string> = {
   'cta-buttons': 'product-detail-layout',
 };
 
-export function EditorSettingsTab({ formData, onChange, focusSection, onClearFocus, tenantId, onSave, isSaving, hasChanges }: EditorSettingsTabProps) {
+export function EditorSettingsTab({ formData, onChange, focusSection, onClearFocus, tenantId, onSave, onBatchSave, isSaving, hasChanges }: EditorSettingsTabProps) {
   const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set());
   const { data: landingCategories } = useLandingProductCategories();
   const logoInputRef = useRef<HTMLInputElement>(null);
