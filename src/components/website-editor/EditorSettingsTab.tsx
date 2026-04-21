@@ -24,6 +24,7 @@ import {
   Shield, Star, MapPin, Globe, Eye, EyeOff, Sparkles, Layers, PanelTop, Save
 } from 'lucide-react';
 import { WarrantySettingsContent } from '@/components/admin/WarrantySettingsContent';
+import { BankAccountEditor } from '@/components/admin/BankAccountEditor';
 
 interface EditorSettingsTabProps {
   formData: Partial<TenantLandingSettings>;
@@ -349,33 +350,20 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
             </div>
           </div>
 
-          <div className="border-t pt-3 mt-1 space-y-3">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Tài khoản ngân hàng</p>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Ngân hàng</Label>
-              <Select value={formData.payment_bank_name || ''} onValueChange={v => onChange('payment_bank_name', v)}>
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="Chọn ngân hàng..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {VIETNAMESE_BANKS.map(bank => (
-                    <SelectItem key={bank.code} value={bank.code}>
-                      {bank.name} ({bank.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Số tài khoản</Label>
-                <Input value={formData.payment_account_number || ''} onChange={e => onChange('payment_account_number', e.target.value)} placeholder="0123456789" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Chủ tài khoản</Label>
-                <Input value={formData.payment_account_holder || ''} onChange={e => onChange('payment_account_holder', e.target.value)} placeholder="NGUYEN VAN A" />
-              </div>
-            </div>
+          <div className="border-t pt-3 mt-1">
+            <BankAccountEditor
+              bankName={formData.payment_bank_name || ''}
+              accountNumber={formData.payment_account_number || ''}
+              accountHolder={formData.payment_account_holder || ''}
+              onSave={(bank, account, holder) => {
+                onChange('payment_bank_name', bank);
+                onChange('payment_account_number', account);
+                onChange('payment_account_holder', holder);
+                if (onSave) onSave();
+              }}
+              compact
+              isSaving={isSaving}
+            />
           </div>
         </div>
       </SettingsBlock>
