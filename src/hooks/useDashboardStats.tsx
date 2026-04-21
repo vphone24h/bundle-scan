@@ -86,9 +86,9 @@ export function useDashboardStats() {
       } as DashboardStats;
     },
     enabled: !isTenantLoading && !branchLoading,
-    staleTime: 30 * 1000, // 30s — use cache on startup, refetch in background
+    staleTime: 0,
     gcTime: 30 * 60 * 1000,
-    placeholderData: (previous: any) => previous,
+    placeholderData: undefined,
     refetchOnWindowFocus: true,
     refetchOnReconnect: false,
     refetchOnMount: 'always',
