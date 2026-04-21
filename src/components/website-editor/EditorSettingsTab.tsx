@@ -349,7 +349,86 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
         </div>
       </SettingsBlock>
 
-      {/* Màu thương hiệu */}
+      {/* Tra cứu bảo hành */}
+      {/* Banner - moved here right after store info */}
+      <SettingsBlock
+        id="banner"
+        icon="🎯"
+        title="Banner & Nội dung trang chủ"
+        description="Banner quảng cáo, tiêu đề, mô tả, nút CTA"
+        isExpanded={expandedBlocks.has('banner')}
+        onToggle={() => toggleBlock('banner')}
+      >
+        <div className="space-y-3">
+          {/* Banner quảng cáo */}
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Banner quảng cáo</p>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Hiển thị banner</Label>
+            <Switch
+              checked={formData.show_banner ?? true}
+              onCheckedChange={(checked) => onChange('show_banner', checked)}
+            />
+          </div>
+          {(formData.show_banner ?? true) && (
+          <>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Hình ảnh banner</Label>
+            <div className="flex items-center gap-2">
+              {formData.banner_image_url ? (
+                <div className="relative">
+                  <img src={formData.banner_image_url} alt="Banner" className="h-16 w-28 rounded-lg object-cover border" />
+                  <button type="button" onClick={() => onChange('banner_image_url', '')}
+                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : null}
+              <Button type="button" variant="outline" size="sm" onClick={() => bannerInputRef.current?.click()} disabled={uploadingBanner}>
+                {uploadingBanner ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                <span className="ml-1.5">{formData.banner_image_url ? 'Đổi' : 'Upload'}</span>
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground">Tối đa 5MB, khuyến nghị 1200×400px</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Link khi click banner (tuỳ chọn)</Label>
+            <Input
+              value={formData.banner_link_url || ''}
+              onChange={e => onChange('banner_link_url', e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+          </>
+          )}
+          <Separator />
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Nội dung Banner chính</p>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Tiêu đề chính</Label>
+            <Input
+              value={(formData as any).hero_title || ''}
+              onChange={e => onChange('hero_title', e.target.value || null)}
+              placeholder={config.heroTitle}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Mô tả phụ</Label>
+            <Input
+              value={(formData as any).hero_subtitle || ''}
+              onChange={e => onChange('hero_subtitle', e.target.value || null)}
+              placeholder={config.heroSubtitle}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Nút CTA</Label>
+            <Input
+              value={(formData as any).hero_cta || ''}
+              onChange={e => onChange('hero_cta', e.target.value || null)}
+              placeholder={config.heroCta}
+            />
+          </div>
+          <p className="text-[10px] text-muted-foreground">💡 Để trống sẽ sử dụng nội dung mặc định theo ngành</p>
+        </div>
+      </SettingsBlock>
 
       {/* Tra cứu bảo hành */}
       <SettingsBlock
@@ -503,86 +582,6 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
           customNavItems={(formData as any)?.custom_nav_items || null}
           onChange={(items) => onChange('custom_nav_items', items)}
         />
-      </SettingsBlock>
-
-      {/* Banner */}
-      <SettingsBlock
-        id="banner"
-        icon="🎯"
-        title="Banner & Nội dung trang chủ"
-        description="Banner quảng cáo, tiêu đề, mô tả, nút CTA"
-        isExpanded={expandedBlocks.has('banner')}
-        onToggle={() => toggleBlock('banner')}
-      >
-        <div className="space-y-3">
-          {/* Banner quảng cáo */}
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Banner quảng cáo</p>
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">Hiển thị banner</Label>
-            <Switch
-              checked={formData.show_banner ?? true}
-              onCheckedChange={(checked) => onChange('show_banner', checked)}
-            />
-          </div>
-          {(formData.show_banner ?? true) && (
-          <>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Hình ảnh banner</Label>
-            <div className="flex items-center gap-2">
-              {formData.banner_image_url ? (
-                <div className="relative">
-                  <img src={formData.banner_image_url} alt="Banner" className="h-16 w-28 rounded-lg object-cover border" />
-                  <button type="button" onClick={() => onChange('banner_image_url', '')}
-                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center">
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ) : null}
-              <Button type="button" variant="outline" size="sm" onClick={() => bannerInputRef.current?.click()} disabled={uploadingBanner}>
-                {uploadingBanner ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                <span className="ml-1.5">{formData.banner_image_url ? 'Đổi' : 'Upload'}</span>
-              </Button>
-            </div>
-            <p className="text-[10px] text-muted-foreground">Tối đa 5MB, khuyến nghị 1200×400px</p>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Link khi click banner (tuỳ chọn)</Label>
-            <Input
-              value={formData.banner_link_url || ''}
-              onChange={e => onChange('banner_link_url', e.target.value)}
-              placeholder="https://..."
-            />
-          </div>
-          </>
-          )}
-          <Separator />
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Nội dung Banner chính</p>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Tiêu đề chính</Label>
-            <Input
-              value={(formData as any).hero_title || ''}
-              onChange={e => onChange('hero_title', e.target.value || null)}
-              placeholder={config.heroTitle}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Mô tả phụ</Label>
-            <Input
-              value={(formData as any).hero_subtitle || ''}
-              onChange={e => onChange('hero_subtitle', e.target.value || null)}
-              placeholder={config.heroSubtitle}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Nút CTA</Label>
-            <Input
-              value={(formData as any).hero_cta || ''}
-              onChange={e => onChange('hero_cta', e.target.value || null)}
-              placeholder={config.heroCta}
-            />
-          </div>
-          <p className="text-[10px] text-muted-foreground">💡 Để trống sẽ sử dụng nội dung mặc định theo ngành</p>
-        </div>
       </SettingsBlock>
 
       {/* Trust Badges */}
