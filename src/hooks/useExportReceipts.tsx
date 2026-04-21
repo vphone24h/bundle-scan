@@ -961,13 +961,46 @@ export function useDeleteExportReceipt() {
 
       // 4. Restore products to in_stock (for sold items)
       if (productIds.length > 0) {
-        for (let i = 0; i < productIds.length; i += 200) {
-          const chunk = productIds.slice(i, i + 200);
-          await supabase
+        // Restore each product individually - handle both IMEI and non-IMEI
+        for (const item of (items || [])) {
+          if (!item.product_id) continue;
+          const qty = item.quantity || 1;
+
+          // Fetch current product state
+          const { data: product } = await supabase
             .from('products')
-            .update({ status: 'in_stock' })
-            .in('id', chunk)
-            .in('status', ['sold']);
+            .select('imei, quantity, status, import_price, total_import_cost')
+            .eq('id', item.product_id)
+            .single();
+
+          if (!product) continue;
+
+          if (product.imei) {
+            // IMEI product: simply restore status to in_stock
+            if (product.status === 'sold') {
+              await supabase
+                .from('products')
+                .update({ status: 'in_stock' })
+                .eq('id', item.product_id);
+            }
+          } else {
+            // Non-IMEI product: restore quantity and total_import_cost
+            const currentQty = Number(product.quantity) || 0;
+            const newQuantity = Math.round((currentQty + qty) * 1000) / 1000;
+            const avgPrice = Number(product.import_price) || 0;
+            const currentTotalCost = Number(product.total_import_cost) || 0;
+            const restoredCost = avgPrice * qty;
+            const newTotalCost = currentTotalCost + restoredCost;
+
+            await supabase
+              .from('products')
+              .update({
+                status: 'in_stock',
+                quantity: newQuantity,
+                total_import_cost: newTotalCost,
+              })
+              .eq('id', item.product_id);
+          }
         }
       }
 
