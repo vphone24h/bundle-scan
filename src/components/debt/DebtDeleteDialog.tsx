@@ -44,10 +44,11 @@ export function DebtDeleteDialog({
   const allPaymentSources = useMemo(() => {
     const defaults = [
       { value: 'cash', label: 'Tiền mặt' },
-      { value: 'bank', label: 'Chuyển khoản' },
+      { value: 'bank_card', label: 'Thẻ ngân hàng' },
+      { value: 'e_wallet', label: 'Ví điện tử' },
     ];
     const custom = customPaymentSources.map((s: any) => ({
-      value: s.source_key, label: s.name,
+      value: s.id, label: s.name,
     }));
     return [...defaults, ...custom];
   }, [customPaymentSources]);
