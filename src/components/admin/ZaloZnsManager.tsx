@@ -255,6 +255,9 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
                 oa.zalo.me <ExternalLink className="h-3 w-3" />
               </a>
             </p>
+            <p className="text-[11px] text-destructive font-medium mt-1">
+              ⚠️ Zalo OA bạn phải mua Gói của Zalo mới có thể tự gửi tin nhắn được. Đây là quy định của Zalo.
+            </p>
           </div>
         </div>
       ) : (
