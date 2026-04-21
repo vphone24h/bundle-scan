@@ -188,7 +188,7 @@ export function useCurrentTenant() {
       if (!resolvedTenant.tenantId) return null;
       return await fetchTenantById(resolvedTenant.tenantId);
     },
-    enabled: !!user?.id && resolvedTenant.status !== 'loading',
+    enabled: !!user?.id && (resolvedTenant.isMainDomain || resolvedTenant.status !== 'loading'),
     staleTime: 1000 * 30, // 30s — use persisted cache on startup, refetch in background
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: true,
