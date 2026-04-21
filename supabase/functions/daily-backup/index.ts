@@ -30,6 +30,14 @@ Deno.serve(async (req) => {
           results.push({ tenantId: t.id, error: e.message });
         }
       }
+      // Auto-save warehouse value snapshots for all tenants
+      for (const t of tenants || []) {
+        try {
+          await saveWarehouseSnapshot(admin, t.id, todayStr());
+        } catch (e) {
+          console.error(`Snapshot error for ${t.id}:`, e.message);
+        }
+      }
       await cleanupExpired(admin);
       await cleanupStuck(admin);
       return new Response(JSON.stringify({ ok: true, results }), {
@@ -55,6 +63,128 @@ function todayStr() {
   const now = new Date();
   now.setHours(now.getHours() + 7);
   return now.toISOString().split("T")[0];
+}
+
+async function saveWarehouseSnapshot(admin: any, tenantId: string, snapshotDate: string) {
+  // Check if already saved today (total)
+  const { data: existing } = await admin
+    .from("warehouse_value_snapshots")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .eq("snapshot_date", snapshotDate)
+    .is("branch_id", null)
+    .maybeSingle();
+  if (existing) return;
+
+  // Get branches
+  const { data: branches } = await admin
+    .from("branches")
+    .select("id")
+    .eq("tenant_id", tenantId);
+
+  let totalInventory = 0;
+  let totalCash = 0;
+  let totalCustomerDebt = 0;
+  let totalSupplierDebt = 0;
+
+  // Calculate per branch
+  for (const branch of branches || []) {
+    const inv = await calcBranchInventory(admin, tenantId, branch.id);
+    const cash = await calcBranchCash(admin, tenantId, branch.id);
+    const custDebt = await calcBranchCustomerDebt(admin, tenantId, branch.id);
+    const suppDebt = await calcBranchSupplierDebt(admin, tenantId, branch.id);
+
+    totalInventory += inv;
+    totalCash += cash;
+    totalCustomerDebt += custDebt;
+    totalSupplierDebt += suppDebt;
+
+    await admin.from("warehouse_value_snapshots").insert({
+      tenant_id: tenantId,
+      branch_id: branch.id,
+      snapshot_date: snapshotDate,
+      inventory_value: inv,
+      cash_balance: cash,
+      customer_debt: custDebt,
+      supplier_debt: suppDebt,
+      total_value: inv + cash + custDebt - suppDebt,
+    });
+  }
+
+  // Save total snapshot
+  await admin.from("warehouse_value_snapshots").insert({
+    tenant_id: tenantId,
+    branch_id: null,
+    snapshot_date: snapshotDate,
+    inventory_value: totalInventory,
+    cash_balance: totalCash,
+    customer_debt: totalCustomerDebt,
+    supplier_debt: totalSupplierDebt,
+    total_value: totalInventory + totalCash + totalCustomerDebt - totalSupplierDebt,
+  });
+}
+
+async function calcBranchInventory(admin: any, tenantId: string, branchId: string): Promise<number> {
+  // IMEI products
+  const { data: imeiItems } = await admin
+    .from("product_imeis")
+    .select("import_price, products!inner(tenant_id)")
+    .eq("products.tenant_id", tenantId)
+    .eq("branch_id", branchId)
+    .eq("status", "in_stock");
+  const imeiVal = (imeiItems || []).reduce((s: number, i: any) => s + (Number(i.import_price) || 0), 0);
+
+  // Non-IMEI products
+  const { data: nonImei } = await admin
+    .from("products")
+    .select("stock_quantity, import_price, cost_price")
+    .eq("tenant_id", tenantId)
+    .eq("branch_id", branchId)
+    .eq("track_imei", false);
+  const nonImeiVal = (nonImei || []).reduce((s: number, p: any) => {
+    const price = Number(p.cost_price) || Number(p.import_price) || 0;
+    return s + price * (Number(p.stock_quantity) || 0);
+  }, 0);
+
+  return imeiVal + nonImeiVal;
+}
+
+async function calcBranchCash(admin: any, tenantId: string, branchId: string): Promise<number> {
+  const { data: income } = await admin
+    .from("cash_book")
+    .select("amount")
+    .eq("tenant_id", tenantId)
+    .eq("branch_id", branchId)
+    .eq("type", "income");
+  const { data: expense } = await admin
+    .from("cash_book")
+    .select("amount")
+    .eq("tenant_id", tenantId)
+    .eq("branch_id", branchId)
+    .eq("type", "expense");
+  const totalIn = (income || []).reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
+  const totalOut = (expense || []).reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
+  return totalIn - totalOut;
+}
+
+async function calcBranchCustomerDebt(admin: any, tenantId: string, branchId: string): Promise<number> {
+  const { data } = await admin
+    .from("customers")
+    .select("debt")
+    .eq("tenant_id", tenantId)
+    .eq("branch_id", branchId)
+    .gt("debt", 0);
+  return (data || []).reduce((s: number, c: any) => s + (Number(c.debt) || 0), 0);
+}
+
+async function calcBranchSupplierDebt(admin: any, tenantId: string, branchId: string): Promise<number> {
+  const { data } = await admin
+    .from("suppliers")
+    .select("debt")
+    .eq("tenant_id", tenantId)
+    .eq("branch_id", branchId)
+    .gt("debt", 0);
+  return (data || []).reduce((s: number, c: any) => s + (Number(c.debt) || 0), 0);
 }
 
 async function cleanupExpired(admin: any) {

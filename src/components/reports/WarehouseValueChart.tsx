@@ -11,7 +11,8 @@ import { useBranchFilter } from '@/hooks/useBranchFilter';
 import { formatNumber } from '@/lib/formatNumber';
 import { format, parseISO, startOfWeek, startOfMonth, endOfMonth, startOfYear, subMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, RotateCcw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const RANGE_OPTIONS = [
   { value: 'week', label: 'Tuần này' },
@@ -81,6 +82,18 @@ export function WarehouseValueChart() {
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
+        {displayData.length < 7 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => backfillMutation.mutate()}
+            disabled={backfillMutation.isPending}
+            className="gap-1.5"
+          >
+            <RotateCcw className={`h-3.5 w-3.5 ${backfillMutation.isPending ? 'animate-spin' : ''}`} />
+            <span className="text-xs">Khôi phục dữ liệu</span>
+          </Button>
+        )}
         <Select value={timeRange} onValueChange={setTimeRange}>
           <SelectTrigger className="w-[130px]">
             <SelectValue />
