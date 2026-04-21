@@ -197,8 +197,13 @@ export function useWarehouseValueSnapshots(
       if (error) throw error;
       return data as number;
     },
-    onSuccess: (count) => {
-      queryClient.invalidateQueries({ queryKey: ['warehouse-snapshots'] });
+    onSuccess: async (count) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['warehouse-snapshots'] }),
+        queryClient.invalidateQueries({ queryKey: ['wv-history'] }),
+        queryClient.refetchQueries({ queryKey: ['warehouse-snapshots'] }),
+        queryClient.refetchQueries({ queryKey: ['wv-history'] }),
+      ]);
       toast.success(`Đã khôi phục ${count} ngày dữ liệu lịch sử`);
     },
     onError: () => {
