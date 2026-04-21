@@ -20,9 +20,13 @@ Deno.serve(async (req) => {
 
     if (!tenantId) {
       // Cron mode: backup all tenants
-      const { data: tenants } = await admin.from("tenants").select("id");
+      const { data: tenants } = await admin.from("tenants").select("id, subscription_plan, subscription_end_date");
       const results = [];
+      const now = new Date();
       for (const t of tenants || []) {
+        const hasPaidPlan = t.subscription_plan === 'lifetime' ||
+          (t.subscription_plan && t.subscription_end_date && new Date(t.subscription_end_date) > now);
+        if (!hasPaidPlan) continue; // Skip free plan tenants
         try {
           const res = await runBackup(admin, t.id, date || todayStr(), "daily");
           results.push({ tenantId: t.id, ...res });
@@ -32,6 +36,9 @@ Deno.serve(async (req) => {
       }
       // Auto-save warehouse value snapshots for all tenants
       for (const t of tenants || []) {
+        const hasPaidPlan = t.subscription_plan === 'lifetime' ||
+          (t.subscription_plan && t.subscription_end_date && new Date(t.subscription_end_date) > now);
+        if (!hasPaidPlan) continue; // Skip free plan tenants
         try {
           await saveWarehouseSnapshot(admin, t.id, todayStr());
         } catch (e) {
