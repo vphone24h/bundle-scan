@@ -639,6 +639,13 @@ export default function ExportNewPage() {
     const cartProductIds = new Set(cart.filter(c => c.imei).map(c => c.product_id));
 
     return (results || []).filter((p: any) => {
+      // Branch permission filter: if user can't view other branches, only show products from allowed branches
+      if (!permissions?.canViewAllBranches && p.branch_id) {
+        const allowedBranches = new Set<string>();
+        if (permissions?.branchId) allowedBranches.add(permissions.branchId);
+        if (extraBranchIds) extraBranchIds.forEach((id: string) => allowedBranches.add(id));
+        if (!allowedBranches.has(p.branch_id)) return false;
+      }
       if (p.imei) {
         return !cartImeis.has(p.imei) && !cartProductIds.has(p.id);
       }
