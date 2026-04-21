@@ -346,10 +346,40 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
               isSaving={isSaving}
             />
           </div>
+
+          {/* Link xác nhận thanh toán */}
+          {(formData as any).payment_transfer_enabled && (
+            <div className="border-t pt-3 mt-1 space-y-3">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                <Label className="text-xs font-medium">Link xác nhận thanh toán</Label>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Sau khi chuyển khoản, khách sẽ được hướng dẫn gửi ảnh xác nhận qua Zalo hoặc Messenger
+              </p>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Link Zalo</Label>
+                <Input
+                  value={(formData as any).payment_confirm_zalo_url || ''}
+                  onChange={e => onChange('payment_confirm_zalo_url', e.target.value)}
+                  placeholder="VD: https://zalo.me/0901234567"
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Link Facebook Messenger</Label>
+                <Input
+                  value={(formData as any).payment_confirm_messenger_url || ''}
+                  onChange={e => onChange('payment_confirm_messenger_url', e.target.value)}
+                  placeholder="VD: https://m.me/tenfanpage"
+                  className="h-9 text-sm"
+                />
+              </div>
+            </div>
+          )}
         </div>
       </SettingsBlock>
 
-      {/* Tra cứu bảo hành */}
       {/* Banner - moved here right after store info */}
       <SettingsBlock
         id="banner"
