@@ -4,7 +4,6 @@ import { useCustomDomainArticlePublic, useAppConfig } from '@/hooks/useAppConfig
 import { useNavigate } from 'react-router-dom';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings, TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
 import { useLandingProductCategories } from '@/hooks/useLandingProducts';
-import { useVoucherTemplates } from '@/hooks/useVouchers';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCustomDomains } from '@/hooks/useCustomDomains';
 import { useCurrentTenant } from '@/hooks/useTenant';
@@ -21,6 +20,7 @@ import { Separator } from '@/components/ui/separator';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
 import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, PageItemConfig, InstallmentRateConfig, DEFAULT_INSTALLMENT_RATES, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, getFullNavItems, SYSTEM_PAGES, SYSTEM_PAGE_IDS, getSystemPageById, DEFAULT_PAGE_ITEMS, LayoutStyle, GOOGLE_FONTS } from '@/lib/industryConfig';
 import { HomeSectionManager, HomeSectionItem } from './HomeSectionManager';
+import { WarrantySettingsContent } from './WarrantySettingsContent';
 import { ZaloOASetupWizard } from './ZaloOASetupWizard';
 import { ZaloZnsManager } from './ZaloZnsManager';
 import { PaymentConfigSection } from './PaymentConfigSection';
@@ -890,9 +890,7 @@ export function LandingPageSettings() {
   const updateSettings = useUpdateTenantLandingSettings();
   const navigate = useNavigate();
 
-  const { data: voucherTemplates } = useVoucherTemplates();
   const { data: landingCategories } = useLandingProductCategories();
-  const activeTemplates = (voucherTemplates || []).filter(t => t.is_active);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -1367,6 +1365,25 @@ export function LandingPageSettings() {
             <ExternalLink className="h-4 w-4 text-muted-foreground" />
           </button>
           </>)}
+
+          {/* Tra cứu bảo hành - Collapsible */}
+          {formData.is_enabled && (
+            <Collapsible>
+              <CollapsibleTrigger className="w-full flex items-center justify-between rounded-lg border p-3 hover:bg-muted/30 transition-colors mt-2" data-tour="landing-warranty-card">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Tra cứu bảo hành</span>
+                </div>
+                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform [[data-state=open]_&]:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-3">
+                <WarrantySettingsContent
+                  formData={formData as any}
+                  onChange={(field, value) => handleChange(field as any, value)}
+                />
+              </CollapsibleContent>
+            </Collapsible>
+          )}
         </CardContent>
       </Card>
 
@@ -1708,170 +1725,6 @@ export function LandingPageSettings() {
       </Card>
 
       {/* Tra cứu bảo hành */}
-      <Card data-tour="landing-warranty-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Shield className="h-4 w-4" />
-            Tra cứu bảo hành
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Cho phép tra cứu bảo hành</Label>
-              <p className="text-sm text-muted-foreground">
-                Khách hàng có thể nhập IMEI hoặc SĐT để kiểm tra bảo hành
-              </p>
-            </div>
-            <Switch
-              checked={formData.show_warranty_lookup}
-              onCheckedChange={(checked) => handleChange('show_warranty_lookup', checked)}
-            />
-          </div>
-
-          {/* Voucher */}
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-sm">Tặng Voucher cho khách</p>
-              <p className="text-xs text-muted-foreground">Khách điền thông tin trên website để nhận voucher</p>
-            </div>
-            <Switch
-              checked={(formData as any).voucher_enabled}
-              onCheckedChange={(checked) => handleChange('voucher_enabled' as any, checked)}
-            />
-          </div>
-          {(formData as any).voucher_enabled && (
-            <div className="space-y-2 pl-1">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs">Chọn mẫu Voucher tặng khách</Label>
-                <Button
-                  type="button"
-                  variant="link"
-                  size="sm"
-                  className="text-xs h-auto p-0 gap-1"
-                  onClick={() => navigate('/customers?tab=list&openSettings=voucher')}
-                >
-                  <Plus className="h-3 w-3" />
-                  Thêm mẫu voucher
-                </Button>
-              </div>
-              {activeTemplates.length === 0 ? (
-                <div className="rounded-lg border border-dashed p-3 text-center space-y-1">
-                  <p className="text-xs text-muted-foreground">Chưa có mẫu voucher nào.</p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-xs gap-1"
-                    onClick={() => navigate('/customers?tab=list&openSettings=voucher')}
-                  >
-                    <Plus className="h-3 w-3" />
-                    Tạo mẫu voucher
-                  </Button>
-                  <p className="text-[10px] text-muted-foreground">
-                    Menu → Khách hàng & CRM → ⚙️ Cài đặt → Voucher
-                  </p>
-                </div>
-              ) : (
-                <Select
-                  value={(formData as any).voucher_template_id || ''}
-                  onValueChange={(val) => handleChange('voucher_template_id' as any, val)}
-                >
-                  <SelectTrigger className="h-10">
-                    <SelectValue placeholder="Chọn mẫu voucher" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {activeTemplates.map(t => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.name} — {t.discount_type === 'percentage' ? `${t.discount_value}%` : `${t.discount_value.toLocaleString()}đ`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              <p className="text-[10px] text-muted-foreground">
-                💡 Quản lý mẫu voucher tại: Menu → Khách hàng & CRM → ⚙️ Cài đặt → Voucher
-              </p>
-            </div>
-          )}
-          
-          {formData.show_warranty_lookup && (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  Hotline bảo hành
-                </Label>
-                <Input
-                  value={formData.warranty_hotline || ''}
-                  onChange={(e) => handleChange('warranty_hotline', e.target.value)}
-                  placeholder="VD: 1900 xxxx hoặc 0xxx xxx xxx"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Hiển thị trong kết quả tra cứu để khách hàng liên hệ bảo hành
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Link nhóm hỗ trợ
-                </Label>
-                <Input
-                  value={(formData as any).support_group_url || ''}
-                  onChange={(e) => handleChange('support_group_url' as any, e.target.value)}
-                  placeholder="VD: https://zalo.me/g/xxx hoặc link Facebook group"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Link nhóm Zalo/Facebook/Telegram để khách hàng tham gia nhận hỗ trợ
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Mô tả / Quảng cáo bảo hành
-                </Label>
-                <RichTextEditor
-                  value={(formData as any).warranty_description || ''}
-                  onChange={(v) => handleChange('warranty_description' as any, v)}
-                  placeholder="VD: THU LẠI MÁY CŨ GIÁ CAO BẰNG 90% GIÁ BÁN…"
-                  minHeight="100px"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Nội dung hiển thị trên trang bảo hành, hỗ trợ in đậm, màu sắc và chèn link
-                </p>
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Hiện điểm tích lũy</Label>
-                  <p className="text-xs text-muted-foreground">Hiện điểm và số tiền giảm lần mua tiếp theo</p>
-                </div>
-                <Switch
-                  checked={(formData as any).show_warranty_points !== false}
-                  onCheckedChange={(checked) => handleChange('show_warranty_points' as any, checked)}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Hiện voucher</Label>
-                  <p className="text-xs text-muted-foreground">Hiện voucher của khách trên trang bảo hành</p>
-                </div>
-                <Switch
-                  checked={(formData as any).show_warranty_vouchers !== false}
-                  onCheckedChange={(checked) => handleChange('show_warranty_vouchers' as any, checked)}
-                />
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Banner/Quảng cáo */}
       <Card data-tour="landing-banner-card">
