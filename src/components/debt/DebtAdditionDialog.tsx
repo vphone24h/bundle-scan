@@ -61,8 +61,9 @@ export function DebtAdditionDialog({
   const allPaymentSources = [
     { value: 'outside', label: 'Tiền ngoài (không ghi sổ quỹ)' },
     { value: 'cash', label: 'Tiền mặt' },
-    { value: 'bank', label: 'Chuyển khoản' },
-    ...customPaymentSources.map((s: any) => ({ value: s.source_key, label: s.name })),
+    { value: 'bank_card', label: 'Thẻ ngân hàng' },
+    { value: 'e_wallet', label: 'Ví điện tử' },
+    ...customPaymentSources.map((s: any) => ({ value: s.id, label: s.name })),
   ];
 
   const resetForm = () => {
