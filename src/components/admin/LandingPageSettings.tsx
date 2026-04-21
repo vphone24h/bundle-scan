@@ -1366,6 +1366,26 @@ export function LandingPageSettings() {
       </Card>
 
       {formData.is_enabled && (<>
+      {/* Cấu hình chi tiết - Collapsible */}
+      <Collapsible>
+        <Card>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <CardTitle className="flex items-center justify-between text-base">
+                <span className="flex items-center gap-2">
+                  <Layers className="h-4 w-4" />
+                  Cấu hình chi tiết
+                </span>
+                <ChevronDown className="h-4 w-4 transition-transform duration-200 [details[open]_&]:rotate-180" />
+              </CardTitle>
+              <CardDescription>
+                Menu, phong cách, bố cục, thông tin cửa hàng, banner, giao diện, kênh thông tin, thanh toán
+              </CardDescription>
+            </CardHeader>
+          </CollapsibleTrigger>
+        </Card>
+        <CollapsibleContent className="space-y-4 mt-4">
+
       {/* Menu Website */}
       <Card>
         <CardHeader>
@@ -1885,6 +1905,9 @@ export function LandingPageSettings() {
         formData={formData as any}
         onChange={(key, value) => handleChange(key as any, value)}
       />
+
+      </CollapsibleContent>
+      </Collapsible>
 
       {/* Auto-save indicator */}
       {updateSettings.isPending && (
