@@ -243,9 +243,12 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
             mainAddress={formData.store_address || ''}
             additionalAddresses={(formData as any).additional_addresses || []}
             onSave={(main, additional) => {
-              onChange('store_address', main);
-              onChange('additional_addresses', additional);
-              if (onSave) onSave();
+              if (onBatchSave) {
+                onBatchSave({ store_address: main, additional_addresses: additional });
+              } else {
+                onChange('store_address', main);
+                onChange('additional_addresses', additional);
+              }
             }}
             compact
             isSaving={isSaving}
@@ -331,10 +334,13 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
               accountNumber={formData.payment_account_number || ''}
               accountHolder={formData.payment_account_holder || ''}
               onSave={(bank, account, holder) => {
-                onChange('payment_bank_name', bank);
-                onChange('payment_account_number', account);
-                onChange('payment_account_holder', holder);
-                if (onSave) onSave();
+                if (onBatchSave) {
+                  onBatchSave({ payment_bank_name: bank, payment_account_number: account, payment_account_holder: holder });
+                } else {
+                  onChange('payment_bank_name', bank);
+                  onChange('payment_account_number', account);
+                  onChange('payment_account_holder', holder);
+                }
               }}
               compact
               isSaving={isSaving}
