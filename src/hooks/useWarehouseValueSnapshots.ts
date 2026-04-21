@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useWarehouseValue, type WarehouseValueData } from './useWarehouseValue';
 import { toast } from 'sonner';
-import { startOfDay, subDays, format } from 'date-fns';
+import { startOfDay, subDays, format, parseISO } from 'date-fns';
 
 export interface WarehouseSnapshot {
   date: string;
@@ -86,7 +86,8 @@ export function useWarehouseValueSnapshots(
   days: number,
   branchId?: string,
   customFrom?: string,
-  customTo?: string
+  customTo?: string,
+  groupBy: number = 1
 ) {
   const { data: tenant } = useCurrentTenant();
   const { data: currentData } = useWarehouseValue(branchId);
@@ -179,4 +180,34 @@ export function useWarehouseValueSnapshots(
   });
 
   return { chartData, isLoading, percentChange, backfillMutation };
+}
+
+/** Aggregate snapshots by groupBy days */
+export function aggregateSnapshots(data: WarehouseSnapshot[], groupBy: number): WarehouseSnapshot[] {
+  if (groupBy <= 1 || data.length === 0) return data;
+
+  const result: WarehouseSnapshot[] = [];
+  for (let i = 0; i < data.length; i += groupBy) {
+    const chunk = data.slice(i, i + groupBy);
+    const avg = (key: keyof Omit<WarehouseSnapshot, 'date'>) =>
+      Math.round(chunk.reduce((s, c) => s + c[key], 0) / chunk.length);
+
+    const startDate = chunk[0].date;
+    const endDate = chunk[chunk.length - 1].date;
+    const label = startDate === endDate
+      ? startDate
+      : groupBy >= 30
+        ? `T${format(parseISO(startDate), 'MM/yy')}`
+        : `${format(parseISO(startDate), 'dd/MM')}-${format(parseISO(endDate), 'dd/MM')}`;
+
+    result.push({
+      date: label,
+      totalValue: avg('totalValue'),
+      inventoryValue: avg('inventoryValue'),
+      cashBalance: avg('cashBalance'),
+      customerDebt: avg('customerDebt'),
+      supplierDebt: avg('supplierDebt'),
+    });
+  }
+  return result;
 }

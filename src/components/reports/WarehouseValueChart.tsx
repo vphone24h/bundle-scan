@@ -1,24 +1,31 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { useWarehouseValueSnapshots } from '@/hooks/useWarehouseValueSnapshots';
+import { useWarehouseValueSnapshots, aggregateSnapshots } from '@/hooks/useWarehouseValueSnapshots';
 import { useBranches } from '@/hooks/useBranches';
 import { useBranchFilter } from '@/hooks/useBranchFilter';
 import { formatNumber } from '@/lib/formatNumber';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfWeek, startOfMonth, endOfMonth, startOfYear, subMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
-const TIME_OPTIONS = [
+const RANGE_OPTIONS = [
+  { value: 'week', label: 'Tuần này' },
+  { value: 'month', label: 'Tháng này' },
+  { value: 'last_month', label: 'Tháng trước' },
+  { value: 'year', label: 'Năm nay' },
+  { value: 'custom', label: 'Tùy chỉnh' },
+  { value: 'all', label: 'Toàn bộ' },
+];
+
+const GROUP_OPTIONS = [
+  { value: '1', label: '1 ngày' },
   { value: '7', label: '7 ngày' },
   { value: '30', label: '30 ngày' },
-  { value: 'month', label: 'Tháng này' },
-  { value: '90', label: '3 tháng' },
-  { value: 'custom', label: 'Tùy chọn' },
 ];
 
 const chartConfig = {
@@ -29,7 +36,8 @@ const chartConfig = {
 };
 
 export function WarehouseValueChart() {
-  const [timeRange, setTimeRange] = useState('30');
+  const [timeRange, setTimeRange] = useState('month');
+  const [groupBy, setGroupBy] = useState('1');
   const [selectedBranch, setSelectedBranch] = useState<string>('all');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
@@ -37,33 +45,59 @@ export function WarehouseValueChart() {
   const { data: branches } = useBranches();
   const { shouldFilter } = useBranchFilter();
 
-  const getDays = () => {
-    if (timeRange === 'month') {
-      const now = new Date();
-      return now.getDate();
+  const { computedFrom, computedTo } = useMemo(() => {
+    const now = new Date();
+    switch (timeRange) {
+      case 'week':
+        return { computedFrom: format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'), computedTo: format(now, 'yyyy-MM-dd') };
+      case 'month':
+        return { computedFrom: format(startOfMonth(now), 'yyyy-MM-dd'), computedTo: format(now, 'yyyy-MM-dd') };
+      case 'last_month': {
+        const prev = subMonths(now, 1);
+        return { computedFrom: format(startOfMonth(prev), 'yyyy-MM-dd'), computedTo: format(endOfMonth(prev), 'yyyy-MM-dd') };
+      }
+      case 'year':
+        return { computedFrom: format(startOfYear(now), 'yyyy-MM-dd'), computedTo: format(now, 'yyyy-MM-dd') };
+      case 'custom':
+        return { computedFrom: customFrom || undefined, computedTo: customTo || undefined };
+      case 'all':
+        return { computedFrom: '2020-01-01', computedTo: format(now, 'yyyy-MM-dd') };
+      default:
+        return { computedFrom: format(startOfMonth(now), 'yyyy-MM-dd'), computedTo: format(now, 'yyyy-MM-dd') };
     }
-    if (timeRange === 'custom') return 0;
-    return parseInt(timeRange);
-  };
+  }, [timeRange, customFrom, customTo]);
 
   const branchId = selectedBranch !== 'all' ? selectedBranch : undefined;
   const { chartData, isLoading, percentChange, backfillMutation } = useWarehouseValueSnapshots(
-    getDays(),
+    0,
     branchId,
-    timeRange === 'custom' ? customFrom : undefined,
-    timeRange === 'custom' ? customTo : undefined
+    computedFrom,
+    computedTo
   );
+
+  const displayData = useMemo(() => aggregateSnapshots(chartData, parseInt(groupBy)), [chartData, groupBy]);
 
   return (
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[130px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {TIME_OPTIONS.map((opt) => (
+            {RANGE_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={groupBy} onValueChange={setGroupBy}>
+          <SelectTrigger className="w-[110px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {GROUP_OPTIONS.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
             ))}
           </SelectContent>
@@ -130,7 +164,7 @@ export function WarehouseValueChart() {
       {/* Chart */}
       {isLoading ? (
         <Skeleton className="h-[300px] w-full" />
-      ) : chartData.length === 0 ? (
+      ) : displayData.length === 0 ? (
         <Card>
           <CardContent className="p-6 text-center text-muted-foreground">
             Chưa có dữ liệu biểu đồ cho khoảng thời gian này.
@@ -143,13 +177,16 @@ export function WarehouseValueChart() {
           </CardHeader>
           <CardContent className="p-2 sm:p-4">
             <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <ComposedChart data={chartData}>
+              <ComposedChart data={displayData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
                 <XAxis
                   dataKey="date"
                   tickFormatter={(val) => {
                     try {
-                      return format(parseISO(val), 'dd/MM', { locale: vi });
+                      if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+                        return format(parseISO(val), 'dd/MM', { locale: vi });
+                      }
+                      return val;
                     } catch {
                       return val;
                     }
@@ -173,9 +210,13 @@ export function WarehouseValueChart() {
                       labelFormatter={(_, payload) => {
                         if (payload?.[0]?.payload?.date) {
                           try {
-                            return format(parseISO(payload[0].payload.date), 'dd/MM/yyyy', { locale: vi });
+                            const d = payload[0].payload.date;
+                            if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+                              return format(parseISO(d), 'dd/MM/yyyy', { locale: vi });
+                            }
+                            return d;
                           } catch {
-                            return '';
+                            return payload[0].payload.date;
                           }
                         }
                         return '';
