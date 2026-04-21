@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export function PushNotificationToggle({ className }: { className?: string }) {
-  const { data: vapidKey, isLoading: vapidLoading } = useVapidPublicKey();
+  const { data: vapidKey, isLoading: vapidLoading, error: vapidError } = useVapidPublicKey();
   const { data: isSubscribed, isLoading: statusLoading } = usePushSubscriptionStatus();
   const subscribePush = useSubscribePush();
   const unsubscribePush = useUnsubscribePush();
@@ -32,7 +32,8 @@ export function PushNotificationToggle({ className }: { className?: string }) {
       unsubscribePush.mutate();
     } else {
       if (!vapidKey) {
-        toast.error('Chưa có cấu hình thông báo đẩy. Vui lòng liên hệ quản trị viên.');
+        const errorDetail = vapidError ? (vapidError as Error).message : 'Chưa có cấu hình VAPID key';
+        toast.error(`Không thể bật thông báo đẩy: ${errorDetail}. Vui lòng liên hệ quản trị viên.`, { duration: 6000 });
       } else {
         subscribePush.mutate(vapidKey);
       }
