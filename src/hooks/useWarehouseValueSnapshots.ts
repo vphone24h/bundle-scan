@@ -35,16 +35,46 @@ function useSaveSnapshot(data: WarehouseValueData | undefined, branchId?: string
         total_value: data.totalValue,
       };
 
-      // Upsert total snapshot – always update with latest live data
-      await supabase.from('warehouse_value_snapshots').upsert(snapshotRow, {
-        onConflict: 'tenant_id,snapshot_date,branch_id',
-        ignoreDuplicates: false,
-      });
+      // Check if today's snapshot exists, then update or insert
+      let checkQuery = supabase
+        .from('warehouse_value_snapshots')
+        .select('id')
+        .eq('tenant_id', tenant.id)
+        .eq('snapshot_date', today);
+      if (branchId) {
+        checkQuery = checkQuery.eq('branch_id', branchId);
+      } else {
+        checkQuery = checkQuery.is('branch_id', null);
+      }
+      const { data: existing } = await checkQuery.maybeSingle();
+
+      if (existing) {
+        // Update with latest live data
+        await supabase.from('warehouse_value_snapshots')
+          .update({
+            inventory_value: data.inventoryValue,
+            cash_balance: data.cashBalance,
+            customer_debt: data.customerDebt,
+            supplier_debt: data.supplierDebt,
+            total_value: data.totalValue,
+          })
+          .eq('id', existing.id);
+      } else {
+        await supabase.from('warehouse_value_snapshots').insert(snapshotRow);
+      }
 
       // Save per-branch snapshots
       if (!branchId && data.branches.length > 0) {
         for (const branch of data.branches) {
-          await supabase.from('warehouse_value_snapshots').upsert({
+          const { data: branchExisting } = await supabase
+            .from('warehouse_value_snapshots')
+            .select('id')
+            .eq('tenant_id', tenant.id)
+            .eq('snapshot_date', today)
+            .eq('branch_id', branch.branchId)
+            .maybeSingle();
+
+          const branchRow = {
             tenant_id: tenant.id,
             branch_id: branch.branchId,
             snapshot_date: today,
@@ -53,10 +83,21 @@ function useSaveSnapshot(data: WarehouseValueData | undefined, branchId?: string
             customer_debt: branch.customerDebt,
             supplier_debt: branch.supplierDebt,
             total_value: branch.totalValue,
-          }, {
-            onConflict: 'tenant_id,snapshot_date,branch_id',
-            ignoreDuplicates: false,
-          });
+          };
+
+          if (branchExisting) {
+            await supabase.from('warehouse_value_snapshots')
+              .update({
+                inventory_value: branch.inventoryValue,
+                cash_balance: branch.cashBalance,
+                customer_debt: branch.customerDebt,
+                supplier_debt: branch.supplierDebt,
+                total_value: branch.totalValue,
+              })
+              .eq('id', branchExisting.id);
+          } else {
+            await supabase.from('warehouse_value_snapshots').insert(branchRow);
+          }
         }
       }
     };
