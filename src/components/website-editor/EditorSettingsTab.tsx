@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { WarrantySettingsContent } from '@/components/admin/WarrantySettingsContent';
 import { BankAccountEditor } from '@/components/admin/BankAccountEditor';
+import { AddressEditor } from '@/components/admin/AddressEditor';
 
 interface EditorSettingsTabProps {
   formData: Partial<TenantLandingSettings>;
@@ -237,44 +238,17 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
             <Textarea value={formData.store_description || ''} onChange={e => onChange('store_description', e.target.value)} placeholder="Mô tả..." rows={2} />
           </div>
 
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs">Địa chỉ</Label>
-              <button
-                type="button"
-                className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-0.5"
-                onClick={() => {
-                  const current = (formData as any).additional_addresses || [];
-                  onChange('additional_addresses', [...current, '']);
-                }}
-              >
-                + Thêm địa chỉ
-              </button>
-            </div>
-            <Input value={formData.store_address || ''} onChange={e => onChange('store_address', e.target.value)} placeholder="Địa chỉ cửa hàng" />
-            {((formData as any).additional_addresses || []).map((addr: string, index: number) => (
-              <div key={index} className="flex gap-2">
-                <Input
-                  value={addr}
-                  onChange={e => {
-                    const current = [...((formData as any).additional_addresses || [])];
-                    current[index] = e.target.value;
-                    onChange('additional_addresses', current);
-                  }}
-                  placeholder={`Địa chỉ ${index + 2}`}
-                />
-                <button
-                  type="button"
-                  className="text-red-500 hover:text-red-700 shrink-0 px-1"
-                  onClick={() => {
-                    const current = [...((formData as any).additional_addresses || [])];
-                    current.splice(index, 1);
-                    onChange('additional_addresses', current);
-                  }}
-                >×</button>
-              </div>
-            ))}
-          </div>
+          <AddressEditor
+            mainAddress={formData.store_address || ''}
+            additionalAddresses={(formData as any).additional_addresses || []}
+            onSave={(main, additional) => {
+              onChange('store_address', main);
+              onChange('additional_addresses', additional);
+              if (onSave) onSave();
+            }}
+            compact
+            isSaving={isSaving}
+          />
 
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1.5">
