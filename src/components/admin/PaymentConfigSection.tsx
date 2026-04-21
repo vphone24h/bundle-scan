@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,7 +22,6 @@ interface PaymentConfigSectionProps {
 }
 
 export function PaymentConfigSection({ formData, onChange }: PaymentConfigSectionProps) {
-  const [editingLinks, setEditingLinks] = useState(false);
 
   return (
     <Card>
