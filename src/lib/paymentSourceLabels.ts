@@ -10,7 +10,9 @@ const LEGACY_SOURCE_MAP: Record<string, string> = {
 const DEFAULT_LABELS: Record<string, string> = {
   cash: 'Tiền mặt',
   bank_card: 'Thẻ ngân hàng',
+  bank: 'Ngân hàng',
   e_wallet: 'Ví điện tử',
+  debt: 'Công nợ',
 };
 
 export function normalizePaymentSource(source: string): string {
