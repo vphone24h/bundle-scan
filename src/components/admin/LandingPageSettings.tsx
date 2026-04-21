@@ -21,6 +21,7 @@ import { TemplateSelector } from '@/components/website-templates/TemplateSelecto
 import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, PageItemConfig, InstallmentRateConfig, DEFAULT_INSTALLMENT_RATES, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, getFullNavItems, SYSTEM_PAGES, SYSTEM_PAGE_IDS, getSystemPageById, DEFAULT_PAGE_ITEMS, LayoutStyle, GOOGLE_FONTS } from '@/lib/industryConfig';
 import { HomeSectionManager, HomeSectionItem } from './HomeSectionManager';
 import { WarrantySettingsContent } from './WarrantySettingsContent';
+import { AddressEditor } from './AddressEditor';
 import { ZaloOASetupWizard } from './ZaloOASetupWizard';
 import { ZaloZnsManager } from './ZaloZnsManager';
 import { PaymentConfigSection } from './PaymentConfigSection';
@@ -1638,51 +1639,14 @@ export function LandingPageSettings() {
               />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <div className="flex items-center justify-between">
-                <Label>Địa chỉ</Label>
-                <Button
-                  type="button"
-                  variant="link"
-                  size="sm"
-                  className="h-auto p-0 text-xs gap-1"
-                  onClick={handleAddAddress}
-                >
-                  <Plus className="h-3 w-3" />
-                  Thêm địa chỉ
-                </Button>
-              </div>
-              <Input
-                value={formData.store_address}
-                onChange={(e) => handleChange('store_address', e.target.value)}
-                placeholder="Địa chỉ chính"
+              <AddressEditor
+                mainAddress={formData.store_address || ''}
+                additionalAddresses={formData.additional_addresses || []}
+                onSave={(main, additional) => {
+                  handleChange('store_address', main);
+                  handleChange('additional_addresses' as any, additional);
+                }}
               />
-              
-              {/* Các địa chỉ bổ sung */}
-              {(formData.additional_addresses || []).map((addr, index) => (
-                <div key={index} className="flex gap-2">
-                  <Input
-                    value={addr}
-                    onChange={(e) => handleAddressChange(index, e.target.value)}
-                    placeholder={`Địa chỉ ${index + 2}`}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 text-destructive hover:text-destructive"
-                    onClick={() => handleRemoveAddress(index)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              
-              {(formData.additional_addresses || []).length === 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Nếu bạn có nhiều chi nhánh, hãy nhấn "Thêm địa chỉ"
-                </p>
-              )}
             </div>
             <div className="space-y-2">
               <Label>Số điện thoại</Label>
