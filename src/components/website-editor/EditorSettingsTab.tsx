@@ -23,6 +23,7 @@ import {
   Image, Palette, Type, Menu, Layout, Phone, MessageCircle,
   Shield, Star, MapPin, Globe, Eye, EyeOff, Sparkles, Layers, PanelTop, Save
 } from 'lucide-react';
+import { WarrantySettingsContent } from '@/components/admin/WarrantySettingsContent';
 
 interface EditorSettingsTabProps {
   formData: Partial<TenantLandingSettings>;
@@ -84,7 +85,7 @@ const SECTION_TO_BLOCK: Record<string, string> = {
   'products': 'layout',
   'articles': 'layout',
   'warranty': 'store-info',
-  'voucher': 'store-info',
+  'voucher': 'warranty',
   'reviews': 'layout',
   'layout': 'layout',
   'footer': 'footer-why-choose',
@@ -376,6 +377,24 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
             </div>
           </div>
         </div>
+      </SettingsBlock>
+
+      {/* Màu thương hiệu */}
+
+      {/* Tra cứu bảo hành */}
+      <SettingsBlock
+        id="warranty"
+        icon="🔍"
+        title="Tra cứu bảo hành"
+        description="Bảo hành, voucher, hotline, nhóm hỗ trợ"
+        isExpanded={expandedBlocks.has('warranty')}
+        onToggle={() => toggleBlock('warranty')}
+      >
+        <WarrantySettingsContent
+          formData={formData as any}
+          onChange={onChange}
+          compact
+        />
       </SettingsBlock>
 
       {/* Màu thương hiệu */}
