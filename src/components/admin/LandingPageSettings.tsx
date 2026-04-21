@@ -1690,6 +1690,50 @@ export function LandingPageSettings() {
                     placeholder="https://..."
                   />
                 </div>
+
+                <Separator />
+
+                {(() => {
+                  const templateId = (formData as any).website_template || 'phone_store';
+                  const config = getIndustryConfig(templateId);
+                  return (
+                    <>
+                      <div className="space-y-1">
+                        <Label>Nội dung Banner chính</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Tuỳ chỉnh tiêu đề, mô tả và nút CTA trên banner trang chủ.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Tiêu đề chính</Label>
+                        <Input
+                          value={(formData as any).hero_title || ''}
+                          onChange={(e) => handleChange('hero_title' as any, e.target.value || null)}
+                          placeholder={config.heroTitle}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Mô tả phụ</Label>
+                        <Input
+                          value={(formData as any).hero_subtitle || ''}
+                          onChange={(e) => handleChange('hero_subtitle' as any, e.target.value || null)}
+                          placeholder={config.heroSubtitle}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Nút kêu gọi hành động (CTA)</Label>
+                        <Input
+                          value={(formData as any).hero_cta || ''}
+                          onChange={(e) => handleChange('hero_cta' as any, e.target.value || null)}
+                          placeholder={config.heroCta}
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        💡 Để trống sẽ dùng nội dung mặc định theo ngành.
+                      </p>
+                    </>
+                  );
+                })()}
               </div>
             </>
           )}
