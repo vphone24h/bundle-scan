@@ -516,31 +516,6 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
       >
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label className="text-xs">Tiêu đề chính</Label>
-            <Input
-              value={(formData as any).hero_title || ''}
-              onChange={e => onChange('hero_title', e.target.value || null)}
-              placeholder={config.heroTitle}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Mô tả phụ</Label>
-            <Input
-              value={(formData as any).hero_subtitle || ''}
-              onChange={e => onChange('hero_subtitle', e.target.value || null)}
-              placeholder={config.heroSubtitle}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Nút CTA</Label>
-            <Input
-              value={(formData as any).hero_cta || ''}
-              onChange={e => onChange('hero_cta', e.target.value || null)}
-              placeholder={config.heroCta}
-            />
-          </div>
-          <Separator />
-          <div className="space-y-1.5">
             <Label className="text-xs">Ảnh banner (tuỳ chọn)</Label>
             <div className="flex items-center gap-2">
               {formData.banner_image_url ? (
@@ -566,6 +541,33 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
               placeholder="https://..."
             />
           </div>
+          <Separator />
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Nội dung Banner chính</p>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Tiêu đề chính</Label>
+            <Input
+              value={(formData as any).hero_title || ''}
+              onChange={e => onChange('hero_title', e.target.value || null)}
+              placeholder={config.heroTitle}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Mô tả phụ</Label>
+            <Input
+              value={(formData as any).hero_subtitle || ''}
+              onChange={e => onChange('hero_subtitle', e.target.value || null)}
+              placeholder={config.heroSubtitle}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Nút CTA</Label>
+            <Input
+              value={(formData as any).hero_cta || ''}
+              onChange={e => onChange('hero_cta', e.target.value || null)}
+              placeholder={config.heroCta}
+            />
+          </div>
+          <p className="text-[10px] text-muted-foreground">💡 Để trống sẽ sử dụng nội dung mặc định theo ngành</p>
         </div>
       </SettingsBlock>
 
