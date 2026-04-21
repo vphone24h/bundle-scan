@@ -6,14 +6,26 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { toast } from 'sonner';
-import { Database, Download, Loader2, CheckCircle2, XCircle, Clock, RefreshCw, Archive } from 'lucide-react';
+import { Database, Download, Loader2, CheckCircle2, XCircle, Clock, RefreshCw, Archive, Crown } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 
 export function DailyBackupSection() {
   const { data: tenant } = useCurrentTenant();
   const [downloading, setDownloading] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const navigate = useNavigate();
+
+  // Check if tenant has active paid plan
+  const hasPaidPlan = (() => {
+    if (!tenant) return false;
+    if (tenant.subscription_plan === 'lifetime') return true;
+    if (tenant.subscription_plan && tenant.subscription_end_date) {
+      return new Date(tenant.subscription_end_date) > new Date();
+    }
+    return false;
+  })();
 
   const { data: backups, isLoading, refetch } = useQuery({
     queryKey: ['daily-backups', tenant?.id],
@@ -99,23 +111,57 @@ export function DailyBackupSection() {
           <Database className="h-5 w-5 text-primary" />
           Backup dữ liệu
         </CardTitle>
-        <p className="text-xs text-muted-foreground mt-1">
-          Hệ thống tự động backup dữ liệu trong ngày lúc 23:59 mỗi ngày. Nhấn "Tạo ngay" để backup toàn bộ lịch sử bán/nhập hàng. File lưu trữ 60 ngày.
-        </p>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handleManualBackup}
-          disabled={generating}
-          className="mt-2 w-full sm:w-auto"
-        >
-          {generating ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <Archive className="h-4 w-4 mr-2" />
-          )}
-          {generating ? 'Đang tạo...' : 'Tạo ngay (toàn bộ dữ liệu)'}
-        </Button>
+        {hasPaidPlan ? (
+          <>
+            <p className="text-xs text-muted-foreground mt-1">
+              Hệ thống tự động backup dữ liệu trong ngày lúc 23:59 mỗi ngày. Nhấn "Tạo ngay" để backup toàn bộ lịch sử bán/nhập hàng. File lưu trữ 60 ngày.
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleManualBackup}
+              disabled={generating}
+              className="mt-2 w-full sm:w-auto"
+            >
+              {generating ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Archive className="h-4 w-4 mr-2" />
+              )}
+              {generating ? 'Đang tạo...' : 'Tạo ngay (toàn bộ dữ liệu)'}
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground mt-1">
+              Gói miễn phí chỉ hỗ trợ backup thủ công. Nâng cấp gói sử dụng để được <strong>backup tự động hàng ngày</strong>.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2 mt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleManualBackup}
+                disabled={generating}
+                className="w-full sm:w-auto"
+              >
+                {generating ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Archive className="h-4 w-4 mr-2" />
+                )}
+                {generating ? 'Đang tạo...' : 'Tạo ngay (thủ công)'}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => navigate('/subscription')}
+                className="w-full sm:w-auto gap-1.5"
+              >
+                <Crown className="h-4 w-4" />
+                Nâng cấp gói sử dụng
+              </Button>
+            </div>
+          </>
+        )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
