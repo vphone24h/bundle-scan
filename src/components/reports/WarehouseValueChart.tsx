@@ -36,7 +36,8 @@ const chartConfig = {
 };
 
 export function WarehouseValueChart() {
-  const [timeRange, setTimeRange] = useState('30');
+  const [timeRange, setTimeRange] = useState('month');
+  const [groupBy, setGroupBy] = useState('1');
   const [selectedBranch, setSelectedBranch] = useState<string>('all');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
@@ -44,22 +45,37 @@ export function WarehouseValueChart() {
   const { data: branches } = useBranches();
   const { shouldFilter } = useBranchFilter();
 
-  const getDays = () => {
-    if (timeRange === 'month') {
-      const now = new Date();
-      return now.getDate();
+  const { computedFrom, computedTo } = useMemo(() => {
+    const now = new Date();
+    switch (timeRange) {
+      case 'week':
+        return { computedFrom: format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'), computedTo: format(now, 'yyyy-MM-dd') };
+      case 'month':
+        return { computedFrom: format(startOfMonth(now), 'yyyy-MM-dd'), computedTo: format(now, 'yyyy-MM-dd') };
+      case 'last_month': {
+        const prev = subMonths(now, 1);
+        return { computedFrom: format(startOfMonth(prev), 'yyyy-MM-dd'), computedTo: format(endOfMonth(prev), 'yyyy-MM-dd') };
+      }
+      case 'year':
+        return { computedFrom: format(startOfYear(now), 'yyyy-MM-dd'), computedTo: format(now, 'yyyy-MM-dd') };
+      case 'custom':
+        return { computedFrom: customFrom || undefined, computedTo: customTo || undefined };
+      case 'all':
+        return { computedFrom: '2020-01-01', computedTo: format(now, 'yyyy-MM-dd') };
+      default:
+        return { computedFrom: format(startOfMonth(now), 'yyyy-MM-dd'), computedTo: format(now, 'yyyy-MM-dd') };
     }
-    if (timeRange === 'custom') return 0;
-    return parseInt(timeRange);
-  };
+  }, [timeRange, customFrom, customTo]);
 
   const branchId = selectedBranch !== 'all' ? selectedBranch : undefined;
   const { chartData, isLoading, percentChange, backfillMutation } = useWarehouseValueSnapshots(
-    getDays(),
+    0,
     branchId,
-    timeRange === 'custom' ? customFrom : undefined,
-    timeRange === 'custom' ? customTo : undefined
+    computedFrom,
+    computedTo
   );
+
+  const displayData = useMemo(() => aggregateSnapshots(chartData, parseInt(groupBy)), [chartData, groupBy]);
 
   return (
     <div className="space-y-4">
