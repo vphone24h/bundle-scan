@@ -85,6 +85,7 @@ const SECTION_TO_BLOCK: Record<string, string> = {
   'products': 'layout',
   'articles': 'layout',
   'warranty': 'store-info',
+  'warranty-settings': 'warranty',
   'voucher': 'warranty',
   'reviews': 'layout',
   'layout': 'layout',
