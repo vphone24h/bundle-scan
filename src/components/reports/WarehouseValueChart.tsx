@@ -82,11 +82,22 @@ export function WarehouseValueChart() {
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-[130px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {TIME_OPTIONS.map((opt) => (
+            {RANGE_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={groupBy} onValueChange={setGroupBy}>
+          <SelectTrigger className="w-[110px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {GROUP_OPTIONS.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
             ))}
           </SelectContent>
