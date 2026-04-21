@@ -6,16 +6,15 @@ import {
   usePushSubscriptionStatus,
   useSubscribePush,
   useUnsubscribePush,
-  useGenerateVapidKeys,
 } from '@/hooks/usePushNotifications';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export function PushNotificationToggle({ className }: { className?: string }) {
   const { data: vapidKey, isLoading: vapidLoading } = useVapidPublicKey();
   const { data: isSubscribed, isLoading: statusLoading } = usePushSubscriptionStatus();
   const subscribePush = useSubscribePush();
   const unsubscribePush = useUnsubscribePush();
-  const generateKeys = useGenerateVapidKeys();
   const [supported, setSupported] = useState(true);
 
   useEffect(() => {
@@ -26,18 +25,14 @@ export function PushNotificationToggle({ className }: { className?: string }) {
 
   if (!supported) return null;
 
-  const isLoading = vapidLoading || statusLoading || subscribePush.isPending || unsubscribePush.isPending || generateKeys.isPending;
+  const isLoading = vapidLoading || statusLoading || subscribePush.isPending || unsubscribePush.isPending;
 
   const handleToggle = async () => {
     if (isSubscribed) {
       unsubscribePush.mutate();
     } else {
-      // If no VAPID key, generate first
       if (!vapidKey) {
-        const result = await generateKeys.mutateAsync();
-        if (result?.public_key) {
-          subscribePush.mutate(result.public_key);
-        }
+        toast.error('Chưa có cấu hình thông báo đẩy. Vui lòng liên hệ quản trị viên.');
       } else {
         subscribePush.mutate(vapidKey);
       }
