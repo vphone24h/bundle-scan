@@ -1,24 +1,31 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { useWarehouseValueSnapshots } from '@/hooks/useWarehouseValueSnapshots';
+import { useWarehouseValueSnapshots, aggregateSnapshots } from '@/hooks/useWarehouseValueSnapshots';
 import { useBranches } from '@/hooks/useBranches';
 import { useBranchFilter } from '@/hooks/useBranchFilter';
 import { formatNumber } from '@/lib/formatNumber';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfWeek, startOfMonth, endOfMonth, startOfYear, subMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
-const TIME_OPTIONS = [
+const RANGE_OPTIONS = [
+  { value: 'week', label: 'Tuần này' },
+  { value: 'month', label: 'Tháng này' },
+  { value: 'last_month', label: 'Tháng trước' },
+  { value: 'year', label: 'Năm nay' },
+  { value: 'custom', label: 'Tùy chỉnh' },
+  { value: 'all', label: 'Toàn bộ' },
+];
+
+const GROUP_OPTIONS = [
+  { value: '1', label: '1 ngày' },
   { value: '7', label: '7 ngày' },
   { value: '30', label: '30 ngày' },
-  { value: 'month', label: 'Tháng này' },
-  { value: '90', label: '3 tháng' },
-  { value: 'custom', label: 'Tùy chọn' },
 ];
 
 const chartConfig = {

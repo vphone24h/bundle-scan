@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useWarehouseValue, type WarehouseValueData } from './useWarehouseValue';
 import { toast } from 'sonner';
-import { startOfDay, subDays, format } from 'date-fns';
+import { startOfDay, subDays, format, parseISO } from 'date-fns';
 
 export interface WarehouseSnapshot {
   date: string;
