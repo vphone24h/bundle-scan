@@ -110,7 +110,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (event === 'SIGNED_IN') {
-            queryClient.clear();
+            // Only clear cache if switching users — same-user re-login keeps cache for faster startup
+            const previousUserId = user?.id;
+            const newUserId = newSession?.user?.id;
+            if (previousUserId && previousUserId !== newUserId) {
+              queryClient.clear();
+            } else {
+              // Same user or first login — invalidate instead of clear to trigger background refetch
+              queryClient.invalidateQueries();
+            }
             
             // Auto-detect CTV user: if user has ctv_tenant_id in metadata,
             // set ctv_store_mode so they stay on the store page (not admin)
