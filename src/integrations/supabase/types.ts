@@ -9847,6 +9847,12 @@ export type Database = {
           points_added: number
         }[]
       }
+      anon_can_lookup_landing_order: {
+        Args: {
+          order_row: Database["public"]["Tables"]["landing_orders"]["Row"]
+        }
+        Returns: boolean
+      }
       auto_checkout_expired: { Args: never; Returns: undefined }
       backfill_warehouse_snapshots_v2: {
         Args: { _tid: string }
