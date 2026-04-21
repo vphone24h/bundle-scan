@@ -1009,29 +1009,6 @@ export function LandingPageSettings() {
     }
   }, [settings, tenant]);
 
-  const handleAddAddress = () => {
-    const current = formData.additional_addresses || [];
-    setFormData(prev => ({ ...prev, additional_addresses: [...current, ''] }));
-    setHasChanges(true);
-  };
-
-  const handleRemoveAddress = (index: number) => {
-    const current = formData.additional_addresses || [];
-    setFormData(prev => ({ 
-      ...prev, 
-      additional_addresses: current.filter((_, i) => i !== index) 
-    }));
-    setHasChanges(true);
-  };
-
-  const handleAddressChange = (index: number, value: string) => {
-    const current = formData.additional_addresses || [];
-    const updated = [...current];
-    updated[index] = value;
-    setFormData(prev => ({ ...prev, additional_addresses: updated }));
-    setHasChanges(true);
-  };
-
   const handleChange = (field: keyof TenantLandingSettings, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setHasChanges(true);
