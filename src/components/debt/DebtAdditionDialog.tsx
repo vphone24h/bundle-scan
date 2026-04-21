@@ -97,82 +97,68 @@ export function DebtAdditionDialog({
     }
 
     try {
-      // Capture values before closing
-      const submitData = {
-        entityType, entityId, entityName, numAmount, reason,
-        remainingAmount, branchId, paymentSource, isCustomer,
-        transactionDateISO: transactionDate.toISOString(),
-      };
+      const created: any = await createPayment.mutateAsync({
+        entity_type: entityType,
+        entity_id: entityId,
+        entity_name: entityName,
+        payment_type: 'addition',
+        amount: numAmount,
+        remaining_amount: remainingAmount,
+        description: reason,
+        branch_id: branchId,
+        payment_source: paymentSource === 'outside' ? undefined : paymentSource,
+        transaction_date: transactionDate.toISOString(),
+      });
 
-      // Close immediately
-      handleDialogOpenChange(false);
-      toast.info('Đang xử lý cộng nợ...');
+      // Sync cash_book if user picked a real payment source
+      // Logic đảo chiều:
+      //  - Thêm nợ NCC (mình mượn NCC)  → THU VÀO sổ quỹ (income)
+      //  - Thêm nợ Khách (cho khách mượn) → CHI RA sổ quỹ (expense)
+      if (paymentSource && paymentSource !== 'outside' && created?.id) {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+        const { data: staffProfile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', user?.id)
+          .maybeSingle();
+        const staffName = staffProfile?.display_name || user?.email || null;
 
-      // Background processing
-      (async () => {
-        try {
-          const created: any = await createPayment.mutateAsync({
-            entity_type: submitData.entityType,
-            entity_id: submitData.entityId,
-            entity_name: submitData.entityName,
-            payment_type: 'addition',
-            amount: submitData.numAmount,
-            remaining_amount: submitData.remainingAmount,
-            description: submitData.reason,
-            branch_id: submitData.branchId,
-            payment_source: submitData.paymentSource === 'outside' ? undefined : submitData.paymentSource,
-            transaction_date: submitData.transactionDateISO,
-          });
+        const cashType = isCustomer ? 'expense' as const : 'income' as const;
+        const category = isCustomer
+          ? 'Cho khách mượn (thêm công nợ)'
+          : 'Mượn tiền NCC (thêm công nợ)';
+        const desc = isCustomer
+          ? `Cho ${entityName} mượn - ghi công nợ ${numAmount.toLocaleString('vi-VN')}đ`
+          : `Mượn tiền NCC ${entityName} - ghi công nợ ${numAmount.toLocaleString('vi-VN')}đ`;
 
-          // Sync cash_book if user picked a real payment source
-          if (submitData.paymentSource && submitData.paymentSource !== 'outside' && created?.id) {
-            const { data: { user } } = await supabase.auth.getUser();
-            const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
-            const { data: staffProfile } = await supabase
-              .from('profiles')
-              .select('display_name')
-              .eq('user_id', user?.id)
-              .maybeSingle();
-            const staffName = staffProfile?.display_name || user?.email || null;
-
-            const cashType = submitData.isCustomer ? 'expense' as const : 'income' as const;
-            const category = submitData.isCustomer
-              ? 'Cho khách mượn (thêm công nợ)'
-              : 'Mượn tiền NCC (thêm công nợ)';
-            const desc = submitData.isCustomer
-              ? `Cho ${submitData.entityName} mượn - ghi công nợ ${submitData.numAmount.toLocaleString('vi-VN')}đ`
-              : `Mượn tiền NCC ${submitData.entityName} - ghi công nợ ${submitData.numAmount.toLocaleString('vi-VN')}đ`;
-
-            const { error: cashErr } = await supabase.from('cash_book').insert([{
-              type: cashType,
-              amount: submitData.numAmount,
-              category,
-              description: desc,
-              payment_source: submitData.paymentSource,
-              branch_id: submitData.branchId,
-              created_by: user?.id,
-              created_by_name: staffName,
-              recipient_name: submitData.entityName,
-              tenant_id: tenantId,
-              is_business_accounting: false,
-              reference_id: created.id,
-              reference_type: 'debt_addition',
-              transaction_date: submitData.transactionDateISO,
-            }]);
-            if (cashErr) {
-              console.error('Cash book insert error:', cashErr);
-              toast.error('Đã ghi nợ nhưng lỗi đồng bộ sổ quỹ');
-            }
-
-            queryClient.removeQueries({ queryKey: ['cash-book'] });
-            queryClient.removeQueries({ queryKey: ['cash-book-balances'] });
-          }
-
-          toast.success('Đã cộng thêm nợ thành công');
-        } catch {
-          toast.error('Có lỗi xảy ra khi cộng nợ');
+        const { error: cashErr } = await supabase.from('cash_book').insert([{
+          type: cashType,
+          amount: numAmount,
+          category,
+          description: desc,
+          payment_source: paymentSource,
+          branch_id: branchId,
+          created_by: user?.id,
+          created_by_name: staffName,
+          recipient_name: entityName,
+          tenant_id: tenantId,
+          is_business_accounting: false,
+          reference_id: created.id,
+          reference_type: 'debt_addition',
+          transaction_date: transactionDate.toISOString(),
+        }]);
+        if (cashErr) {
+          console.error('Cash book insert error:', cashErr);
+          toast.error('Đã ghi nợ nhưng lỗi đồng bộ sổ quỹ');
         }
-      })();
+
+        queryClient.removeQueries({ queryKey: ['cash-book'] });
+        queryClient.removeQueries({ queryKey: ['cash-book-balances'] });
+      }
+
+      toast.success('Đã cộng thêm nợ');
+      handleDialogOpenChange(false);
     } catch (error) {
       toast.error('Có lỗi xảy ra');
     }

@@ -56,44 +56,42 @@ export function DebtOffsetScanDialog({ open, onOpenChange }: DebtOffsetScanDialo
     const selected = matches.filter((_, i) => selectedIndexes.has(i));
     if (selected.length === 0) return;
 
-    // Close immediately, process in background
-    onOpenChange(false);
-    toast.info(`Đang xử lý bù trừ ${selected.length} cặp...`);
+    setProcessing(true);
+    setProcessedCount(0);
+    let success = 0;
+    let failed = 0;
 
-    // Background processing
-    (async () => {
-      let success = 0;
-      let failed = 0;
+    for (const match of selected) {
+      const offsetAmount = Math.min(match.customerDebt.remaining_amount, match.supplierDebt.remaining_amount);
+      if (offsetAmount <= 0) continue;
 
-      for (const match of selected) {
-        const offsetAmount = Math.min(match.customerDebt.remaining_amount, match.supplierDebt.remaining_amount);
-        if (offsetAmount <= 0) continue;
-
-        try {
-          await executeOffset.mutateAsync({
-            customerEntityId: match.customerDebt.entity_id,
-            supplierEntityId: match.supplierDebt.entity_id,
-            customerName: match.customerDebt.entity_name,
-            supplierName: match.supplierDebt.entity_name,
-            customerDebtBefore: match.customerDebt.remaining_amount,
-            supplierDebtBefore: match.supplierDebt.remaining_amount,
-            offsetAmount,
-            customerBranchId: match.customerDebt.branch_id,
-            supplierBranchId: match.supplierDebt.branch_id,
-            supplierMergedEntityIds: match.supplierDebt.merged_entity_ids,
-          });
-          success++;
-        } catch {
-          failed++;
-        }
+      try {
+        await executeOffset.mutateAsync({
+          customerEntityId: match.customerDebt.entity_id,
+          supplierEntityId: match.supplierDebt.entity_id,
+          customerName: match.customerDebt.entity_name,
+          supplierName: match.supplierDebt.entity_name,
+          customerDebtBefore: match.customerDebt.remaining_amount,
+          supplierDebtBefore: match.supplierDebt.remaining_amount,
+          offsetAmount,
+          customerBranchId: match.customerDebt.branch_id,
+          supplierBranchId: match.supplierDebt.branch_id,
+          supplierMergedEntityIds: match.supplierDebt.merged_entity_ids,
+        });
+        success++;
+      } catch {
+        failed++;
       }
+      setProcessedCount(prev => prev + 1);
+    }
 
-      if (failed === 0) {
-        toast.success(`Bù trừ thành công ${success} cặp công nợ`);
-      } else {
-        toast.error(`Thành công ${success}, thất bại ${failed}`);
-      }
-    })();
+    setProcessing(false);
+    if (failed === 0) {
+      toast.success(`Bù trừ thành công ${success} cặp công nợ`);
+      onOpenChange(false);
+    } else {
+      toast.error(`Thành công ${success}, thất bại ${failed}`);
+    }
   };
 
   return (
