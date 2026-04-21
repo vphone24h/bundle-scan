@@ -34,6 +34,7 @@ interface EditorSettingsTabProps {
   onClearFocus: () => void;
   tenantId: string | null;
   onSave?: () => void;
+  onBatchSave?: (changes: Record<string, unknown>) => void;
   isSaving?: boolean;
   hasChanges?: boolean;
 }
@@ -102,7 +103,7 @@ const SECTION_TO_BLOCK: Record<string, string> = {
   'cta-buttons': 'product-detail-layout',
 };
 
-export function EditorSettingsTab({ formData, onChange, focusSection, onClearFocus, tenantId, onSave, isSaving, hasChanges }: EditorSettingsTabProps) {
+export function EditorSettingsTab({ formData, onChange, focusSection, onClearFocus, tenantId, onSave, onBatchSave, isSaving, hasChanges }: EditorSettingsTabProps) {
   const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set());
   const { data: landingCategories } = useLandingProductCategories();
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -242,9 +243,12 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
             mainAddress={formData.store_address || ''}
             additionalAddresses={(formData as any).additional_addresses || []}
             onSave={(main, additional) => {
-              onChange('store_address', main);
-              onChange('additional_addresses', additional);
-              if (onSave) onSave();
+              if (onBatchSave) {
+                onBatchSave({ store_address: main, additional_addresses: additional });
+              } else {
+                onChange('store_address', main);
+                onChange('additional_addresses', additional);
+              }
             }}
             compact
             isSaving={isSaving}
@@ -330,10 +334,13 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
               accountNumber={formData.payment_account_number || ''}
               accountHolder={formData.payment_account_holder || ''}
               onSave={(bank, account, holder) => {
-                onChange('payment_bank_name', bank);
-                onChange('payment_account_number', account);
-                onChange('payment_account_holder', holder);
-                if (onSave) onSave();
+                if (onBatchSave) {
+                  onBatchSave({ payment_bank_name: bank, payment_account_number: account, payment_account_holder: holder });
+                } else {
+                  onChange('payment_bank_name', bank);
+                  onChange('payment_account_number', account);
+                  onChange('payment_account_holder', holder);
+                }
               }}
               compact
               isSaving={isSaving}

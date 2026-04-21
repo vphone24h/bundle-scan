@@ -113,6 +113,22 @@ export default function WebsiteEditorPage() {
     setHasChanges(true);
   }, [updateSettings]);
 
+  /** Batch update multiple fields and save immediately (skips auto-save debounce) */
+  const handleBatchSave = useCallback((changes: Record<string, unknown>) => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    setFormData(prev => {
+      const updated = { ...prev, ...changes };
+      updateSettings.mutateAsync(updated).then(() => {
+        setHasChanges(false);
+        toast({ title: '✓ Đã lưu' });
+      }).catch(() => {
+        toast({ title: 'Lỗi', description: 'Không thể lưu.', variant: 'destructive' });
+      });
+      return updated;
+    });
+    setHasChanges(false);
+  }, [updateSettings]);
+
   // Auto-save: debounce 1.5s after any change
   useEffect(() => {
     if (!hasChanges || !isInitializedRef.current) return;
@@ -233,6 +249,7 @@ export default function WebsiteEditorPage() {
             onClearFocus={() => setFocusSection(null)}
             tenantId={tenant?.id || null}
             onSave={handleSave}
+            onBatchSave={handleBatchSave}
             isSaving={updateSettings.isPending}
             hasChanges={hasChanges}
           />
