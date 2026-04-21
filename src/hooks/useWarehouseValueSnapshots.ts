@@ -24,23 +24,7 @@ function useSaveSnapshot(data: WarehouseValueData | undefined, branchId?: string
     const today = format(new Date(), 'yyyy-MM-dd');
 
     const save = async () => {
-      let checkQuery = supabase
-        .from('warehouse_value_snapshots')
-        .select('id')
-        .eq('tenant_id', tenant.id)
-        .eq('snapshot_date', today);
-      
-      if (branchId) {
-        checkQuery = checkQuery.eq('branch_id', branchId);
-      } else {
-        checkQuery = checkQuery.is('branch_id', null);
-      }
-      const { data: existing } = await checkQuery.maybeSingle();
-
-      if (existing) return;
-
-      // Save total snapshot
-      await supabase.from('warehouse_value_snapshots').insert({
+      const snapshotRow = {
         tenant_id: tenant.id,
         branch_id: branchId ?? null,
         snapshot_date: today,
@@ -49,7 +33,35 @@ function useSaveSnapshot(data: WarehouseValueData | undefined, branchId?: string
         customer_debt: data.customerDebt,
         supplier_debt: data.supplierDebt,
         total_value: data.totalValue,
-      });
+      };
+
+      // Check if today's snapshot exists, then update or insert
+      let checkQuery = supabase
+        .from('warehouse_value_snapshots')
+        .select('id')
+        .eq('tenant_id', tenant.id)
+        .eq('snapshot_date', today);
+      if (branchId) {
+        checkQuery = checkQuery.eq('branch_id', branchId);
+      } else {
+        checkQuery = checkQuery.is('branch_id', null);
+      }
+      const { data: existing } = await checkQuery.maybeSingle();
+
+      if (existing) {
+        // Update with latest live data
+        await supabase.from('warehouse_value_snapshots')
+          .update({
+            inventory_value: data.inventoryValue,
+            cash_balance: data.cashBalance,
+            customer_debt: data.customerDebt,
+            supplier_debt: data.supplierDebt,
+            total_value: data.totalValue,
+          })
+          .eq('id', existing.id);
+      } else {
+        await supabase.from('warehouse_value_snapshots').insert(snapshotRow);
+      }
 
       // Save per-branch snapshots
       if (!branchId && data.branches.length > 0) {
@@ -62,17 +74,29 @@ function useSaveSnapshot(data: WarehouseValueData | undefined, branchId?: string
             .eq('branch_id', branch.branchId)
             .maybeSingle();
 
-          if (!branchExisting) {
-            await supabase.from('warehouse_value_snapshots').insert({
-              tenant_id: tenant.id,
-              branch_id: branch.branchId,
-              snapshot_date: today,
-              inventory_value: branch.inventoryValue,
-              cash_balance: branch.cashBalance,
-              customer_debt: branch.customerDebt,
-              supplier_debt: branch.supplierDebt,
-              total_value: branch.totalValue,
-            });
+          const branchRow = {
+            tenant_id: tenant.id,
+            branch_id: branch.branchId,
+            snapshot_date: today,
+            inventory_value: branch.inventoryValue,
+            cash_balance: branch.cashBalance,
+            customer_debt: branch.customerDebt,
+            supplier_debt: branch.supplierDebt,
+            total_value: branch.totalValue,
+          };
+
+          if (branchExisting) {
+            await supabase.from('warehouse_value_snapshots')
+              .update({
+                inventory_value: branch.inventoryValue,
+                cash_balance: branch.cashBalance,
+                customer_debt: branch.customerDebt,
+                supplier_debt: branch.supplierDebt,
+                total_value: branch.totalValue,
+              })
+              .eq('id', branchExisting.id);
+          } else {
+            await supabase.from('warehouse_value_snapshots').insert(branchRow);
           }
         }
       }
@@ -140,13 +164,16 @@ export function useWarehouseValueSnapshots(
       return [];
     }
 
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+
     return snapshots.map((s) => ({
       date: s.snapshot_date,
-      totalValue: Number(s.total_value),
-      inventoryValue: Number(s.inventory_value),
-      cashBalance: Number(s.cash_balance),
-      customerDebt: Number(s.customer_debt),
-      supplierDebt: Number(s.supplier_debt),
+      // For today, always use live data from useWarehouseValue (the same formula as the data tab)
+      totalValue: s.snapshot_date === todayStr && currentData ? currentData.totalValue : Number(s.total_value),
+      inventoryValue: s.snapshot_date === todayStr && currentData ? currentData.inventoryValue : Number(s.inventory_value),
+      cashBalance: s.snapshot_date === todayStr && currentData ? currentData.cashBalance : Number(s.cash_balance),
+      customerDebt: s.snapshot_date === todayStr && currentData ? currentData.customerDebt : Number(s.customer_debt),
+      supplierDebt: s.snapshot_date === todayStr && currentData ? currentData.supplierDebt : Number(s.supplier_debt),
     }));
   }, [snapshots, currentData]);
 
