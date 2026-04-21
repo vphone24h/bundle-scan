@@ -41,16 +41,25 @@ export function BulkCareZaloDialog({ open, onOpenChange, customerIds, onSuccess 
       if (data?.error) throw new Error(data.error);
 
       const { sent, failed, skipped } = data;
-      let msg = `Đã gửi ${sent} Zalo thành công`;
-      if (failed > 0) msg += `, ${failed} thất bại (chưa follow OA)`;
+      let msg = `Đã gửi ${sent}/${sent + failed} Zalo thành công`;
+      if (failed > 0) msg += `. ${failed} thất bại`;
+      if (data?.failedPhones?.length > 0) msg += ` (SĐT: ${data.failedPhones.slice(0, 5).join(', ')}${data.failedPhones.length > 5 ? '...' : ''})`;
       if (skipped > 0) msg += `, ${skipped} KH không có SĐT`;
-      toast.success(msg);
+      
+      if (failed > 0 && sent === 0) {
+        toast.error(msg);
+      } else if (failed > 0) {
+        toast.warning(msg);
+      } else {
+        toast.success(msg);
+      }
 
       setMessage('');
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
-      toast.error(error.message || 'Lỗi gửi Zalo');
+      const errMsg = error.message || 'Lỗi gửi Zalo';
+      toast.error(errMsg, { duration: 8000 });
     } finally {
       setSending(false);
     }

@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
       if (!follower?.zalo_user_id) {
         failed++
         failedPhones.push(customer.phone!)
-        await supabaseAdmin.from('zalo_message_logs').insert({
+        try { await supabaseAdmin.from('zalo_message_logs').insert({
           tenant_id: tenantId,
           customer_phone: customer.phone,
           customer_name: customer.name || '',
@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
           status: 'failed',
           error_message: 'Khách chưa follow OA',
           sent_at: new Date().toISOString(),
-        }).catch(() => {})
+        }) } catch(_) {}
         continue
       }
 
@@ -139,11 +139,11 @@ Deno.serve(async (req) => {
           status: ok ? 'sent' : 'failed',
           error_message: ok ? null : JSON.stringify(result),
           sent_at: new Date().toISOString(),
-        }).catch(() => {})
+        })
       } catch (e: any) {
         failed++
         failedPhones.push(customer.phone!)
-        await supabaseAdmin.from('zalo_message_logs').insert({
+        try { await supabaseAdmin.from('zalo_message_logs').insert({
           tenant_id: tenantId,
           customer_phone: customer.phone,
           customer_name: customer.name || '',
@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
           status: 'failed',
           error_message: e.message || 'Unknown',
           sent_at: new Date().toISOString(),
-        }).catch(() => {})
+        }) } catch(_) {}
       }
 
       if ((sent + failed) % 10 === 0) await new Promise(r => setTimeout(r, 1000))
