@@ -352,7 +352,6 @@ export function DataManagementSection() {
 
   return (
     <div className="space-y-6">
-      <DataBackupSection />
       <CrossPlatformBackupSection />
 
       <Card className="border-orange-200 bg-orange-50/50">
