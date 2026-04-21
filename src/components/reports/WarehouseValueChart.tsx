@@ -164,7 +164,7 @@ export function WarehouseValueChart() {
       {/* Chart */}
       {isLoading ? (
         <Skeleton className="h-[300px] w-full" />
-      ) : chartData.length === 0 ? (
+      ) : displayData.length === 0 ? (
         <Card>
           <CardContent className="p-6 text-center text-muted-foreground">
             Chưa có dữ liệu biểu đồ cho khoảng thời gian này.
@@ -177,13 +177,16 @@ export function WarehouseValueChart() {
           </CardHeader>
           <CardContent className="p-2 sm:p-4">
             <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <ComposedChart data={chartData}>
+              <ComposedChart data={displayData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
                 <XAxis
                   dataKey="date"
                   tickFormatter={(val) => {
                     try {
-                      return format(parseISO(val), 'dd/MM', { locale: vi });
+                      if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+                        return format(parseISO(val), 'dd/MM', { locale: vi });
+                      }
+                      return val;
                     } catch {
                       return val;
                     }
@@ -207,9 +210,13 @@ export function WarehouseValueChart() {
                       labelFormatter={(_, payload) => {
                         if (payload?.[0]?.payload?.date) {
                           try {
-                            return format(parseISO(payload[0].payload.date), 'dd/MM/yyyy', { locale: vi });
+                            const d = payload[0].payload.date;
+                            if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+                              return format(parseISO(d), 'dd/MM/yyyy', { locale: vi });
+                            }
+                            return d;
                           } catch {
-                            return '';
+                            return payload[0].payload.date;
                           }
                         }
                         return '';
