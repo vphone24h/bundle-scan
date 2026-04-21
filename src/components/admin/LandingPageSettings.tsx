@@ -21,6 +21,7 @@ import { Separator } from '@/components/ui/separator';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
 import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, PageItemConfig, InstallmentRateConfig, DEFAULT_INSTALLMENT_RATES, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, getFullNavItems, SYSTEM_PAGES, SYSTEM_PAGE_IDS, getSystemPageById, DEFAULT_PAGE_ITEMS, LayoutStyle, GOOGLE_FONTS } from '@/lib/industryConfig';
 import { HomeSectionManager, HomeSectionItem } from './HomeSectionManager';
+import { WarrantySettingsContent } from './WarrantySettingsContent';
 import { ZaloOASetupWizard } from './ZaloOASetupWizard';
 import { ZaloZnsManager } from './ZaloZnsManager';
 import { PaymentConfigSection } from './PaymentConfigSection';
@@ -1367,6 +1368,25 @@ export function LandingPageSettings() {
             <ExternalLink className="h-4 w-4 text-muted-foreground" />
           </button>
           </>)}
+
+          {/* Tra cứu bảo hành - Collapsible */}
+          {formData.is_enabled && (
+            <Collapsible>
+              <CollapsibleTrigger className="w-full flex items-center justify-between rounded-lg border p-3 hover:bg-muted/30 transition-colors mt-2" data-tour="landing-warranty-card">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Tra cứu bảo hành</span>
+                </div>
+                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform [[data-state=open]_&]:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-3">
+                <WarrantySettingsContent
+                  formData={formData as any}
+                  onChange={(field, value) => handleChange(field as any, value)}
+                />
+              </CollapsibleContent>
+            </Collapsible>
+          )}
         </CardContent>
       </Card>
 
