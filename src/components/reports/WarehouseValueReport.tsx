@@ -167,17 +167,6 @@ export function WarehouseValueReport() {
       <TabsContent value="data" className="space-y-4">
         {/* Filters row */}
         <div className="flex flex-wrap gap-2">
-          <Select value={dateFilter} onValueChange={setDateFilter}>
-            <SelectTrigger className="w-[130px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DATE_FILTERS.map((f) => (
-                <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
           {!shouldFilter && (
             <Select value={selectedBranch} onValueChange={setSelectedBranch}>
               <SelectTrigger className="flex-1 min-w-[140px]">
@@ -192,15 +181,6 @@ export function WarehouseValueReport() {
             </Select>
           )}
         </div>
-
-        {dateFilter === 'custom' && (
-          <div className="flex gap-2">
-            <Input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="flex-1" />
-            <Input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="flex-1" />
-          </div>
-        )}
-
-        <DateFilterLabel filter={dateFilter} customFrom={customFrom} customTo={customTo} />
 
         {isLoading ? (
           <div className="space-y-3">
@@ -301,7 +281,6 @@ export function WarehouseValueReport() {
             {!valueHidden && (
               <WarehouseValueHistory
                 currentData={data}
-                dateRange={getDateRange(dateFilter)}
               />
             )}
           </>
