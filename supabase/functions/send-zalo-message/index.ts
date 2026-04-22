@@ -477,7 +477,7 @@ Deno.serve(async (req) => {
 
       if (zaloResult.error && zaloResult.error !== 0) {
         // CS failed, try ZNS if available
-        if (znsTemplateId && customer_phone && message_type !== "test") {
+        if (znsTemplateId && customer_phone) {
           console.log("CS failed, trying ZNS fallback...");
           const { result: znsResult, attempts } = await sendZNSWithRetry(
             settings.zalo_access_token,
