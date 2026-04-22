@@ -175,10 +175,11 @@ async function trySendCSToRecentFollowers(
   maxTry: number = 10,
 ): Promise<{ userId: string | null; result: any }> {
   try {
+    // First get total count
     const res = await fetch("https://openapi.zalo.me/v3.0/oa/user/getlist", {
       method: "POST",
       headers: { "Content-Type": "application/json", access_token: accessToken },
-      body: JSON.stringify({ offset: 0, count: Math.min(maxTry, 50) }),
+      body: JSON.stringify({ offset: 0, count: 1 }),
     });
     const rawText = await res.text();
     let data: any;
@@ -186,13 +187,26 @@ async function trySendCSToRecentFollowers(
     if (data.error && data.error !== 0) {
       return { userId: null, result: data };
     }
-    const users = data.data?.users || [];
-    if (users.length === 0) return { userId: null, result: { error: "no_followers" } };
+    const total = data.data?.total || 0;
+    if (total === 0) return { userId: null, result: { error: "no_followers" } };
 
+    // Get the LAST N followers (most recently added = most likely to have interacted recently)
+    const count = Math.min(maxTry, 50);
+    const offset = Math.max(0, total - count);
+    console.log(`Getting followers offset=${offset} count=${count} (total=${total})`);
+    
+    const res2 = await fetch("https://openapi.zalo.me/v3.0/oa/user/getlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", access_token: accessToken },
+      body: JSON.stringify({ offset, count }),
+    });
+    const rawText2 = await res2.text();
+    
     // Extract all user_ids safely from raw text
-    const userIdMatches = [...rawText.matchAll(/"user_id"\s*:\s*"(\d+)"/g)];
-    const userIds = userIdMatches.map(m => m[1]);
-    console.log(`Testing CS to ${userIds.length} followers...`);
+    const userIdMatches = [...rawText2.matchAll(/"user_id"\s*:\s*"(\d+)"/g)];
+    // Reverse so most recent follower is tried first
+    const userIds = userIdMatches.map(m => m[1]).reverse();
+    console.log(`Testing CS to ${userIds.length} recent followers...`);
 
     for (const uid of userIds) {
       const csRes = await fetch("https://openapi.zalo.me/v3.0/oa/message/cs", {
