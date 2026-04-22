@@ -505,6 +505,27 @@ Deno.serve(async (req) => {
       console.log("Zalo CS result:", JSON.stringify(zaloResult));
 
       if (zaloResult.error && zaloResult.error !== 0) {
+        // CS by user_id failed — try CS by phone number first
+        if (customer_phone) {
+          console.log("CS by user_id failed, trying CS by phone...");
+          const csByPhone = await sendCSByPhone(settings.zalo_access_token, customer_phone, messageText);
+          if (csByPhone.success) {
+            if (logId) {
+              await supabaseAdmin.from("zalo_message_logs").update({
+                status: "sent",
+                sent_at: new Date().toISOString(),
+                message_content: messageText + " [via CS-phone]",
+                zalo_response: csByPhone.result,
+              }).eq("id", logId);
+            }
+            return new Response(
+              JSON.stringify({ success: true, message: "Sent via CS by phone" }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          console.log("CS by phone also failed:", JSON.stringify(csByPhone.result));
+        }
+
         // CS failed, try ZNS if available
         if (znsTemplateId && customer_phone) {
           console.log("CS failed, trying ZNS fallback...");
