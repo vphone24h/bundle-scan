@@ -605,7 +605,28 @@ Deno.serve(async (req) => {
       );
     }
 
-    // No follower found — try ZNS directly
+    // No follower found — try CS by phone first, then ZNS
+    if (customer_phone && message_type !== "test") {
+      console.log("No follower found, trying CS by phone...");
+      const csByPhone = await sendCSByPhone(settings.zalo_access_token, customer_phone, messageText);
+      if (csByPhone.success) {
+        if (logId) {
+          await supabaseAdmin.from("zalo_message_logs").update({
+            status: "sent",
+            sent_at: new Date().toISOString(),
+            message_content: messageText + " [via CS-phone]",
+            zalo_response: csByPhone.result,
+          }).eq("id", logId);
+        }
+        return new Response(
+          JSON.stringify({ success: true, message: "Sent via CS by phone" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      console.log("CS by phone failed:", JSON.stringify(csByPhone.result));
+    }
+
+    // Try ZNS as last resort
     if (znsTemplateId && customer_phone && message_type !== "test") {
       const { result: znsResult, attempts } = await sendZNSWithRetry(
         settings.zalo_access_token,
