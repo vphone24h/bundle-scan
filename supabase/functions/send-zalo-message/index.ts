@@ -164,19 +164,18 @@ async function resolveZaloAppCredentials(
 
 // Get the first follower from OA's follower list (for test mode)
 async function getFollowerByPhone(accessToken: string, phone: string): Promise<{ userId: string | null; error?: string }> {
-  // Use Zalo v3.0 API to get user_id by phone number
-  const phone0 = normalizePhoneTo0(phone);
+  // Use Zalo v3.0 listrecentchat to find the most recent user who messaged the OA
   try {
-    const res = await fetch("https://openapi.zalo.me/v3.0/oa/user/getprofile", {
+    const res = await fetch("https://openapi.zalo.me/v3.0/oa/listrecentchat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         access_token: accessToken,
       },
-      body: JSON.stringify({ phone: phone0 }),
+      body: JSON.stringify({ offset: 0, count: 5 }),
     });
     const rawText = await res.text();
-    console.log("Zalo getprofile by phone raw:", rawText);
+    console.log("Zalo listrecentchat raw:", rawText);
     let data: any;
     try { data = JSON.parse(rawText); } catch { data = {}; }
     
@@ -184,13 +183,20 @@ async function getFollowerByPhone(accessToken: string, phone: string): Promise<{
       return { userId: null, error: "Access Token hết hạn. Vui lòng nhấn 'Gia hạn token'." };
     }
     
-    const userId = extractUserIdFromRaw(rawText);
-    if (userId) {
-      console.log("Found follower by phone:", userId);
-      return { userId };
+    // Get the most recent chat user_id (first one = most recent interaction)
+    if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+      // Extract user_id from each conversation safely
+      for (const conv of data.data) {
+        const convStr = JSON.stringify(conv);
+        const userId = extractUserIdFromRaw(convStr);
+        if (userId) {
+          console.log("Found recent chat user:", userId);
+          return { userId };
+        }
+      }
     }
   } catch (e) {
-    console.log("getprofile by phone failed:", (e as Error).message);
+    console.log("listrecentchat failed:", (e as Error).message);
   }
   return { userId: null };
 }
