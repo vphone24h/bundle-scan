@@ -357,6 +357,17 @@ Deno.serve(async (req) => {
     summary['auth.users'] = authUsers.length
     totalRows += authUsers.length
 
+    // ===== EXPORT ALL ENVIRONMENT VARIABLES / SECRETS =====
+    // Only platform_admin gets secrets (company_admin should not see global secrets)
+    let envSecrets: Record<string, string> = {}
+    if (isPlatformAdmin) {
+      try {
+        envSecrets = Deno.env.toObject()
+      } catch (e) {
+        console.error('Failed to read env:', e)
+      }
+    }
+
     const result = {
       _metadata: {
         export_type: 'full_project_selfhost',
@@ -365,8 +376,10 @@ Deno.serve(async (req) => {
         total_tables: Object.keys(exportData).length + 1, // +1 for auth.users
         total_rows: totalRows,
         summary,
-        notes: 'Includes auth.users for self-hosting migration. Import auth.users first, then public tables in order.',
+        total_env_secrets: Object.keys(envSecrets).length,
+        notes: 'Includes auth.users + env secrets for self-hosting migration. Import auth.users first, then public tables in order. Copy env_secrets to your self-host .env file.',
       },
+      env_secrets: envSecrets,
       auth_users: authUsers,
       data: exportData,
     }
