@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { History, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { format, eachDayOfInterval, startOfDay, subDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { formatNumber } from '@/lib/formatNumber';
@@ -18,6 +19,8 @@ interface Props {
   currentData: WarehouseValueData | undefined;
   dateRange: { from: Date; to: Date };
 }
+
+const ALERT_THRESHOLD = 0.20; // 20%
 
 export function WarehouseValueHistory({ currentData, dateRange }: Props) {
   const [expanded, setExpanded] = useState(false);
@@ -152,19 +155,28 @@ export function WarehouseValueHistory({ currentData, dateRange }: Props) {
               dailyData.map((day, i) => {
                 const prevDay = dailyData[i + 1]; // reversed, so next index = previous day
                 const change = prevDay?.hasData && day.hasData ? day.total - prevDay.total : null;
+                const changePct = (change !== null && prevDay.total !== 0) ? change / prevDay.total : null;
+                const isAlert = changePct !== null && Math.abs(changePct) >= ALERT_THRESHOLD;
 
                 return (
                   <div
                     key={day.date}
-                    className={cn("p-2.5 rounded-lg border bg-card cursor-pointer transition-colors", selectedDate === day.date && "border-primary/40 bg-primary/5")}
+                    className={cn(
+                      "p-2.5 rounded-lg border bg-card cursor-pointer transition-colors",
+                      selectedDate === day.date && "border-primary/40 bg-primary/5",
+                      isAlert && "border-orange-400/60 bg-orange-50/50 dark:bg-orange-950/20"
+                    )}
                     onClick={() => day.hasData && setSelectedDate(prev => prev === day.date ? null : day.date)}
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-xs">
-                          {day.dateStr}{' '}
-                          <span className="text-muted-foreground capitalize">({day.dayLabel})</span>
-                        </p>
+                        <div className="flex items-center gap-1">
+                          {isAlert && <AlertTriangle className="h-3.5 w-3.5 text-orange-500 flex-shrink-0" />}
+                          <p className="font-medium text-xs">
+                            {day.dateStr}{' '}
+                            <span className="text-muted-foreground capitalize">({day.dayLabel})</span>
+                          </p>
+                        </div>
                         {day.hasData ? (
                           <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
                             <span className="text-[10px] text-muted-foreground">TK: {formatNumber(day.inventory)}</span>
@@ -187,6 +199,14 @@ export function WarehouseValueHistory({ currentData, dateRange }: Props) {
                             change > 0 ? 'text-emerald-600' : change < 0 ? 'text-destructive' : 'text-muted-foreground'
                           )}>
                             {change > 0 ? '+' : ''}{formatNumber(change)} đ
+                          </span>
+                        )}
+                        {changePct !== null && Math.abs(changePct) >= 0.01 && (
+                          <span className={cn(
+                            "text-[9px]",
+                            isAlert ? 'font-semibold text-orange-600 dark:text-orange-400' : 'text-muted-foreground'
+                          )}>
+                            ({changePct > 0 ? '+' : ''}{(changePct * 100).toFixed(1)}%)
                           </span>
                         )}
                       </div>
