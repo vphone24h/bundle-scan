@@ -108,10 +108,14 @@ function extractUserIdFromRaw(rawText: string): string | null {
 // Get the first follower from OA's follower list (for test mode)
 async function getFirstFollower(accessToken: string): Promise<{ userId: string | null; error?: string }> {
   try {
-    // Try v3.0 API first
-    const res = await fetch("https://openapi.zalo.me/v3.0/oa/user/getlist?offset=0&count=1", {
-      method: "GET",
-      headers: { access_token: accessToken },
+    // v3.0 API requires POST with JSON body
+    const res = await fetch("https://openapi.zalo.me/v3.0/oa/user/getlist", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        access_token: accessToken,
+      },
+      body: JSON.stringify({ offset: 0, count: 1 }),
     });
     const rawText = await res.text();
     console.log("Follower list v3.0 raw:", rawText);
