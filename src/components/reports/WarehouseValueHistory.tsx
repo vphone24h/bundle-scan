@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import type { WarehouseValueData } from '@/hooks/useWarehouseValue';
+import { DailyChangeBreakdown } from './DailyChangeBreakdown';
 
 interface Props {
   currentData: WarehouseValueData | undefined;
@@ -20,6 +21,7 @@ interface Props {
 
 export function WarehouseValueHistory({ currentData, dateRange }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const { data: tenant } = useCurrentTenant();
 
   const fromStr = format(dateRange.from, 'yyyy-MM-dd');
@@ -152,7 +154,11 @@ export function WarehouseValueHistory({ currentData, dateRange }: Props) {
                 const change = prevDay?.hasData && day.hasData ? day.total - prevDay.total : null;
 
                 return (
-                  <div key={day.date} className="p-2.5 rounded-lg border bg-card">
+                  <div
+                    key={day.date}
+                    className={cn("p-2.5 rounded-lg border bg-card cursor-pointer transition-colors", selectedDate === day.date && "border-primary/40 bg-primary/5")}
+                    onClick={() => day.hasData && setSelectedDate(prev => prev === day.date ? null : day.date)}
+                  >
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-medium text-xs">
@@ -185,6 +191,10 @@ export function WarehouseValueHistory({ currentData, dateRange }: Props) {
                         )}
                       </div>
                     </div>
+
+                    {selectedDate === day.date && day.hasData && (
+                      <DailyChangeBreakdown date={day.date} />
+                    )}
                   </div>
                 );
               })
