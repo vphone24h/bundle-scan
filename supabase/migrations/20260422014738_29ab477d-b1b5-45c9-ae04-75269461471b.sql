@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.backfill_warehouse_snapshots_v2(UUID);
