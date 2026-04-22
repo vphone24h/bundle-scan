@@ -9854,19 +9854,10 @@ export type Database = {
         Returns: boolean
       }
       auto_checkout_expired: { Args: never; Returns: undefined }
-      backfill_warehouse_snapshots_v2:
-        | {
-            Args: { _tid: string }
-            Returns: {
-              error: true
-            } & "Could not choose the best candidate function between: public.backfill_warehouse_snapshots_v2(_tid => text), public.backfill_warehouse_snapshots_v2(_tid => uuid). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
-          }
-        | {
-            Args: { _tid: string }
-            Returns: {
-              error: true
-            } & "Could not choose the best candidate function between: public.backfill_warehouse_snapshots_v2(_tid => text), public.backfill_warehouse_snapshots_v2(_tid => uuid). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
-          }
+      backfill_warehouse_snapshots_v2: {
+        Args: { _tid: string }
+        Returns: number
+      }
       belongs_to_tenant: {
         Args: { _tenant_id: string; _user_id: string }
         Returns: boolean
