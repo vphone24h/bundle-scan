@@ -236,6 +236,35 @@ async function sendZNSWithRetry(
   return { result: lastError, attempts: maxRetries };
 }
 
+// Send CS message by phone number (requires "Gửi tin qua số điện thoại" permission)
+async function sendCSByPhone(
+  accessToken: string,
+  phone: string,
+  messageText: string,
+): Promise<{ success: boolean; result: any }> {
+  const phone84 = normalizePhoneTo84(phone);
+  try {
+    console.log("Sending CS by phone to:", phone84);
+    const res = await fetch("https://openapi.zalo.me/v3.0/oa/message/phone/cs", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        access_token: accessToken,
+      },
+      body: JSON.stringify({
+        phone: phone84,
+        message: { text: messageText },
+      }),
+    });
+    const data = await res.json();
+    console.log("CS by phone result:", JSON.stringify(data));
+    return { success: !data.error || data.error === 0, result: data };
+  } catch (err) {
+    console.error("CS by phone error:", err);
+    return { success: false, result: { error: -1, message: (err as Error).message } };
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
