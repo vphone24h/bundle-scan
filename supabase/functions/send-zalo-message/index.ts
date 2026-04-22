@@ -435,6 +435,7 @@ Deno.serve(async (req) => {
     }
 
     const storeName = settings.store_name || "Cửa hàng";
+    const zaloAppCreds = await resolveZaloAppCredentials(supabaseAdmin, tenant_id);
 
     // Look up ZNS template from zalo_zns_templates table
     const eventType = getEventType(message_type);
@@ -595,7 +596,14 @@ Deno.serve(async (req) => {
         // CS by user_id failed — try CS by phone number first
         if (customer_phone) {
           console.log("CS by user_id failed, trying CS by phone...");
-          const csByPhone = await sendCSByPhone(settings.zalo_access_token, customer_phone, messageText);
+          const csByPhone = await sendCSByPhone(
+            settings.zalo_oa_id,
+            settings.zalo_access_token,
+            zaloAppCreds?.app_secret || "",
+            customer_phone,
+            messageText,
+            znsTemplateId,
+          );
           if (csByPhone.success) {
             if (logId) {
               await supabaseAdmin.from("zalo_message_logs").update({
@@ -665,10 +673,15 @@ Deno.serve(async (req) => {
         }
 
         let friendlyError = zaloResult.message || "Lỗi không xác định";
+        if (customer_phone && !znsTemplateId) {
+          friendlyError = "Khách chưa tương tác OA trong 7 ngày và cửa hàng chưa cấu hình template gửi theo số điện thoại/ZNS.";
+        }
         if (zaloResult.error === -124 || zaloResult.error === -216) {
           friendlyError = "Access Token không hợp lệ hoặc đã hết hạn.";
         } else if (zaloResult.error === -201 || zaloResult.error === -213) {
           friendlyError = "Người nhận chưa tương tác với OA trong 7 ngày qua.";
+        } else if (zaloResult.error === -230 && customer_phone && !znsTemplateId) {
+          friendlyError = "Người nhận chưa tương tác OA trong 7 ngày và chưa có template fallback theo số điện thoại.";
         }
 
         return new Response(
@@ -695,7 +708,14 @@ Deno.serve(async (req) => {
     // No follower found — try CS by phone first, then ZNS
     if (customer_phone && message_type !== "test") {
       console.log("No follower found, trying CS by phone...");
-      const csByPhone = await sendCSByPhone(settings.zalo_access_token, customer_phone, messageText);
+      const csByPhone = await sendCSByPhone(
+        settings.zalo_oa_id,
+        settings.zalo_access_token,
+        zaloAppCreds?.app_secret || "",
+        customer_phone,
+        messageText,
+        znsTemplateId,
+      );
       if (csByPhone.success) {
         if (logId) {
           await supabaseAdmin.from("zalo_message_logs").update({
