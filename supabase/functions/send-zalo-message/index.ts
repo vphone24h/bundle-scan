@@ -163,6 +163,73 @@ async function resolveZaloAppCredentials(
 }
 
 // Get the first follower from OA's follower list (for test mode)
+async function getFollowerByPhone(accessToken: string, phone: string): Promise<{ userId: string | null; error?: string }> {
+  // Phone lookup not supported by Zalo API
+  return { userId: null };
+}
+
+// Try sending CS to multiple followers until one succeeds (for test mode)
+async function trySendCSToRecentFollowers(
+  accessToken: string,
+  messageText: string,
+  maxTry: number = 10,
+): Promise<{ userId: string | null; result: any }> {
+  try {
+    // First get total count
+    const res = await fetch("https://openapi.zalo.me/v3.0/oa/user/getlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", access_token: accessToken },
+      body: JSON.stringify({ offset: 0, count: 1 }),
+    });
+    const rawText = await res.text();
+    let data: any;
+    try { data = JSON.parse(rawText); } catch { data = {}; }
+    if (data.error && data.error !== 0) {
+      return { userId: null, result: data };
+    }
+    const total = data.data?.total || 0;
+    if (total === 0) return { userId: null, result: { error: "no_followers" } };
+
+    // Get the LAST N followers (most recently added = most likely to have interacted recently)
+    const count = Math.min(maxTry, 50);
+    const offset = Math.max(0, total - count);
+    console.log(`Getting followers offset=${offset} count=${count} (total=${total})`);
+    
+    const res2 = await fetch("https://openapi.zalo.me/v3.0/oa/user/getlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", access_token: accessToken },
+      body: JSON.stringify({ offset, count }),
+    });
+    const rawText2 = await res2.text();
+    
+    // Extract all user_ids safely from raw text
+    const userIdMatches = [...rawText2.matchAll(/"user_id"\s*:\s*"(\d+)"/g)];
+    // Reverse so most recent follower is tried first
+    const userIds = userIdMatches.map(m => m[1]).reverse();
+    console.log(`Testing CS to ${userIds.length} recent followers...`);
+
+    for (const uid of userIds) {
+      const csRes = await fetch("https://openapi.zalo.me/v3.0/oa/message/cs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", access_token: accessToken },
+        body: JSON.stringify({
+          recipient: { user_id: uid },
+          message: { text: messageText },
+        }),
+      });
+      const csResult = await csRes.json();
+      if (!csResult.error || csResult.error === 0) {
+        console.log("CS success to follower:", uid);
+        return { userId: uid, result: csResult };
+      }
+      console.log(`CS failed for ${uid}: ${csResult.message}`);
+    }
+    return { userId: null, result: { error: -230, message: "Không có follower nào tương tác OA trong 7 ngày gần đây" } };
+  } catch (e) {
+    return { userId: null, result: { error: -1, message: (e as Error).message } };
+  }
+}
+
 async function getFirstFollower(accessToken: string): Promise<{ userId: string | null; error?: string }> {
   try {
     // v3.0 API requires POST with JSON body
@@ -476,7 +543,7 @@ Deno.serve(async (req) => {
     let recipientUserId = zalo_user_id || null;
 
     if (message_type === "test") {
-      // For test: try to find follower by phone first, then get any follower
+      // For test: try to find follower by phone first via DB, then Zalo API, then get any follower
       if (!recipientUserId && customer_phone) {
         const normalizedPhone = normalizePhoneTo0(customer_phone);
         const { data: follower } = await supabaseAdmin
@@ -489,39 +556,23 @@ Deno.serve(async (req) => {
           recipientUserId = follower.zalo_user_id;
         }
       }
-      if (!recipientUserId) {
-        recipientUserId = await getLatestStoredFollower(supabaseAdmin, tenant_id);
-      }
-      if (!recipientUserId) {
-        const followerResult = await getFirstFollower(settings.zalo_access_token);
-        if (followerResult.userId) {
-          recipientUserId = followerResult.userId;
-        } else if (followerResult.error) {
-          // If there's a specific error (token expired, no followers, etc.), return it
-          if (!(znsTemplateId && customer_phone)) {
-            return new Response(
-              JSON.stringify({
-                error: "Không tìm thấy người theo dõi OA",
-                details: followerResult.error,
-              }),
-              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-          }
-          console.log("Test: follower lookup failed, will try ZNS:", followerResult.error);
-        }
-      }
-      if (!recipientUserId) {
-        if (znsTemplateId && customer_phone) {
-          console.log("Test: no follower found, will try ZNS with phone:", customer_phone);
-        } else {
+      // Try Zalo API to find follower by phone number
+      if (!recipientUserId && customer_phone) {
+        const phoneResult = await getFollowerByPhone(settings.zalo_access_token, customer_phone);
+        if (phoneResult.userId) {
+          recipientUserId = phoneResult.userId;
+          console.log("Test: found follower by phone via Zalo API:", recipientUserId);
+        } else if (phoneResult.error) {
           return new Response(
-            JSON.stringify({
-              error: "Không tìm thấy người theo dõi OA",
-              details: "OA chưa có ai theo dõi hoặc không thể lấy danh sách follower. Hãy dùng Zalo quét QR hoặc tìm OA và nhấn 'Quan tâm'.",
-            }),
+            JSON.stringify({ error: phoneResult.error }),
             { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
+      }
+      // If no specific follower found, try sending to recent followers until one works
+      if (!recipientUserId) {
+        // Will be handled after logId is created — set flag
+        console.log("Test: no specific follower found, will try multiple followers after log creation");
       }
     } else {
       // Find user by phone in zalo_followers table
@@ -571,7 +622,43 @@ Deno.serve(async (req) => {
     const logId = logEntry?.id;
 
     // Strategy: Try CS message first if follower found, otherwise try ZNS
-    if (recipientUserId) {
+    if (!recipientUserId && message_type === "test") {
+      // Try sending to multiple recent followers until one accepts
+      console.log("Test: trying CS to multiple recent followers...");
+      const tryResult = await trySendCSToRecentFollowers(
+        settings.zalo_access_token,
+        messageText,
+        10,
+      );
+      if (tryResult.userId) {
+        if (logId) {
+          await supabaseAdmin.from("zalo_message_logs").update({
+            status: "sent",
+            sent_at: new Date().toISOString(),
+            zalo_response: tryResult.result,
+          }).eq("id", logId);
+        }
+        return new Response(
+          JSON.stringify({ success: true, message: "Test sent successfully" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      // All followers failed
+      if (logId) {
+        await supabaseAdmin.from("zalo_message_logs").update({
+          status: "failed",
+          error_message: tryResult.result?.message || "Không có follower tương tác gần đây",
+          zalo_response: tryResult.result,
+        }).eq("id", logId);
+      }
+      return new Response(
+        JSON.stringify({
+          error: "Gửi test thất bại",
+          details: tryResult.result?.message || "Không có follower nào tương tác OA trong 7 ngày gần đây. Hãy nhắn tin cho OA từ Zalo rồi thử lại.",
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    } else if (recipientUserId) {
       console.log("Sending CS to user_id:", recipientUserId, "type:", typeof recipientUserId, "length:", recipientUserId.length);
       // Send CS message
       const zaloResponse = await fetch(
