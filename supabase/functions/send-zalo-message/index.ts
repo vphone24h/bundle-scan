@@ -105,6 +105,63 @@ function extractUserIdFromRaw(rawText: string): string | null {
   return match?.[1] ?? match?.[2] ?? null;
 }
 
+async function resolveZaloAppCredentials(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  tenantId: string,
+): Promise<{ app_id: string; app_secret: string } | null> {
+  const { data: tenantSettings } = await supabaseAdmin
+    .from("tenant_landing_settings")
+    .select("zalo_app_id, zalo_app_secret")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
+  let appId = tenantSettings?.zalo_app_id || null;
+  let appSecret = tenantSettings?.zalo_app_secret || null;
+  if (appId && appSecret) return { app_id: appId, app_secret: appSecret };
+
+  const { data: tenant } = await supabaseAdmin
+    .from("tenants")
+    .select("company_id")
+    .eq("id", tenantId)
+    .maybeSingle();
+
+  if (tenant?.company_id) {
+    const { data: companyConfig } = await supabaseAdmin
+      .from("payment_config")
+      .select("config_key, config_value")
+      .eq("company_id", tenant.company_id)
+      .in("config_key", ["zalo_app_id", "zalo_app_secret"]);
+
+    for (const item of companyConfig || []) {
+      if (item.config_key === "zalo_app_id" && !appId) appId = item.config_value;
+      if (item.config_key === "zalo_app_secret" && !appSecret) appSecret = item.config_value;
+    }
+  }
+
+  if (appId && appSecret) return { app_id: appId, app_secret: appSecret };
+
+  const { data: platformConfig } = await supabaseAdmin
+    .from("payment_config")
+    .select("config_key, config_value")
+    .is("company_id", null)
+    .in("config_key", ["zalo_app_id", "zalo_app_secret"]);
+
+  for (const item of platformConfig || []) {
+    if (item.config_key === "zalo_app_id" && !appId) appId = item.config_value;
+    if (item.config_key === "zalo_app_secret" && !appSecret) appSecret = item.config_value;
+  }
+
+  if (appId && appSecret) return { app_id: appId, app_secret: appSecret };
+
+  const envAppId = Deno.env.get("ZALO_APP_ID");
+  const envAppSecret = Deno.env.get("ZALO_APP_SECRET");
+  if (envAppId && envAppSecret) {
+    return { app_id: appId || envAppId, app_secret: appSecret || envAppSecret };
+  }
+
+  return null;
+}
+
 // Get the first follower from OA's follower list (for test mode)
 async function getFirstFollower(accessToken: string): Promise<{ userId: string | null; error?: string }> {
   try {
@@ -238,25 +295,55 @@ async function sendZNSWithRetry(
 
 // Send CS message by phone number (requires "Gửi tin qua số điện thoại" permission)
 async function sendCSByPhone(
+  oaId: string,
   accessToken: string,
+  appSecret: string,
   phone: string,
   messageText: string,
+  templateId?: string | null,
 ): Promise<{ success: boolean; result: any }> {
-  const phone84 = normalizePhoneTo84(phone);
+  const phone0 = normalizePhoneTo0(phone);
   try {
-    console.log("Sending CS by phone to:", phone84);
-    const res = await fetch("https://openapi.zalo.me/v3.0/oa/message/phone/cs", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        access_token: accessToken,
-      },
-      body: JSON.stringify({
-        phone: phone84,
-        message: { text: messageText },
+    if (!templateId) {
+      return {
+        success: false,
+        result: {
+          error: "missing_template",
+          message: "Chưa cấu hình template Zalo cho gửi theo số điện thoại.",
+        },
+      };
+    }
+
+    const templateData = JSON.stringify({ content: messageText });
+    const timestamp = Date.now();
+    const mac = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(`${oaId}${templateData}${timestamp}${appSecret}`),
+    ).then((buf) => Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join(""));
+
+    console.log("Sending CS by phone to:", phone0, "with template:", templateId);
+    const body = new URLSearchParams({
+      oaid: oaId,
+      timestamp: String(timestamp),
+      mac,
+      data: JSON.stringify({
+        phone: phone0,
+        templateid: String(templateId),
+        templatedata: { content: messageText },
       }),
     });
-    const data = await res.json();
+
+    const res = await fetch("https://openapi.zaloapp.com/oa/v1/sendmessage/phone/cs", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        access_token: accessToken,
+      },
+      body,
+    });
+    const raw = await res.text();
+    let data: any = {};
+    try { data = JSON.parse(raw); } catch { data = { error: -1, message: raw }; }
     console.log("CS by phone result:", JSON.stringify(data));
     return { success: !data.error || data.error === 0, result: data };
   } catch (err) {
@@ -348,6 +435,7 @@ Deno.serve(async (req) => {
     }
 
     const storeName = settings.store_name || "Cửa hàng";
+    const zaloAppCreds = await resolveZaloAppCredentials(supabaseAdmin, tenant_id);
 
     // Look up ZNS template from zalo_zns_templates table
     const eventType = getEventType(message_type);
@@ -508,7 +596,14 @@ Deno.serve(async (req) => {
         // CS by user_id failed — try CS by phone number first
         if (customer_phone) {
           console.log("CS by user_id failed, trying CS by phone...");
-          const csByPhone = await sendCSByPhone(settings.zalo_access_token, customer_phone, messageText);
+          const csByPhone = await sendCSByPhone(
+            settings.zalo_oa_id,
+            settings.zalo_access_token,
+            zaloAppCreds?.app_secret || "",
+            customer_phone,
+            messageText,
+            znsTemplateId,
+          );
           if (csByPhone.success) {
             if (logId) {
               await supabaseAdmin.from("zalo_message_logs").update({
@@ -578,10 +673,15 @@ Deno.serve(async (req) => {
         }
 
         let friendlyError = zaloResult.message || "Lỗi không xác định";
+        if (customer_phone && !znsTemplateId) {
+          friendlyError = "Khách chưa tương tác OA trong 7 ngày và cửa hàng chưa cấu hình template gửi theo số điện thoại/ZNS.";
+        }
         if (zaloResult.error === -124 || zaloResult.error === -216) {
           friendlyError = "Access Token không hợp lệ hoặc đã hết hạn.";
         } else if (zaloResult.error === -201 || zaloResult.error === -213) {
           friendlyError = "Người nhận chưa tương tác với OA trong 7 ngày qua.";
+        } else if (zaloResult.error === -230 && customer_phone && !znsTemplateId) {
+          friendlyError = "Người nhận chưa tương tác OA trong 7 ngày và chưa có template fallback theo số điện thoại.";
         }
 
         return new Response(
@@ -608,7 +708,14 @@ Deno.serve(async (req) => {
     // No follower found — try CS by phone first, then ZNS
     if (customer_phone && message_type !== "test") {
       console.log("No follower found, trying CS by phone...");
-      const csByPhone = await sendCSByPhone(settings.zalo_access_token, customer_phone, messageText);
+      const csByPhone = await sendCSByPhone(
+        settings.zalo_oa_id,
+        settings.zalo_access_token,
+        zaloAppCreds?.app_secret || "",
+        customer_phone,
+        messageText,
+        znsTemplateId,
+      );
       if (csByPhone.success) {
         if (logId) {
           await supabaseAdmin.from("zalo_message_logs").update({
