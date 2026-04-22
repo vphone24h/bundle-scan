@@ -164,41 +164,56 @@ async function resolveZaloAppCredentials(
 
 // Get the first follower from OA's follower list (for test mode)
 async function getFollowerByPhone(accessToken: string, phone: string): Promise<{ userId: string | null; error?: string }> {
-  // Use Zalo v3.0 listrecentchat to find the most recent user who messaged the OA
+  // Phone lookup not supported by Zalo API
+  return { userId: null };
+}
+
+// Try sending CS to multiple followers until one succeeds (for test mode)
+async function trySendCSToRecentFollowers(
+  accessToken: string,
+  messageText: string,
+  maxTry: number = 10,
+): Promise<{ userId: string | null; result: any }> {
   try {
-    const res = await fetch("https://openapi.zalo.me/v3.0/oa/listrecentchat", {
+    const res = await fetch("https://openapi.zalo.me/v3.0/oa/user/getlist", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        access_token: accessToken,
-      },
-      body: JSON.stringify({ offset: 0, count: 5 }),
+      headers: { "Content-Type": "application/json", access_token: accessToken },
+      body: JSON.stringify({ offset: 0, count: Math.min(maxTry, 50) }),
     });
     const rawText = await res.text();
-    console.log("Zalo listrecentchat raw:", rawText);
     let data: any;
     try { data = JSON.parse(rawText); } catch { data = {}; }
-    
-    if (data.error === -124 || data.error === -216) {
-      return { userId: null, error: "Access Token hết hạn. Vui lòng nhấn 'Gia hạn token'." };
+    if (data.error && data.error !== 0) {
+      return { userId: null, result: data };
     }
-    
-    // Get the most recent chat user_id (first one = most recent interaction)
-    if (data.data && Array.isArray(data.data) && data.data.length > 0) {
-      // Extract user_id from each conversation safely
-      for (const conv of data.data) {
-        const convStr = JSON.stringify(conv);
-        const userId = extractUserIdFromRaw(convStr);
-        if (userId) {
-          console.log("Found recent chat user:", userId);
-          return { userId };
-        }
+    const users = data.data?.users || [];
+    if (users.length === 0) return { userId: null, result: { error: "no_followers" } };
+
+    // Extract all user_ids safely from raw text
+    const userIdMatches = [...rawText.matchAll(/"user_id"\s*:\s*"(\d+)"/g)];
+    const userIds = userIdMatches.map(m => m[1]);
+    console.log(`Testing CS to ${userIds.length} followers...`);
+
+    for (const uid of userIds) {
+      const csRes = await fetch("https://openapi.zalo.me/v3.0/oa/message/cs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", access_token: accessToken },
+        body: JSON.stringify({
+          recipient: { user_id: uid },
+          message: { text: messageText },
+        }),
+      });
+      const csResult = await csRes.json();
+      if (!csResult.error || csResult.error === 0) {
+        console.log("CS success to follower:", uid);
+        return { userId: uid, result: csResult };
       }
+      console.log(`CS failed for ${uid}: ${csResult.message}`);
     }
+    return { userId: null, result: { error: -230, message: "Không có follower nào tương tác OA trong 7 ngày gần đây" } };
   } catch (e) {
-    console.log("listrecentchat failed:", (e as Error).message);
+    return { userId: null, result: { error: -1, message: (e as Error).message } };
   }
-  return { userId: null };
 }
 
 async function getFirstFollower(accessToken: string): Promise<{ userId: string | null; error?: string }> {
@@ -540,39 +555,43 @@ Deno.serve(async (req) => {
           );
         }
       }
+      // If no specific follower found, try sending to recent followers until one works
       if (!recipientUserId) {
-        recipientUserId = await getLatestStoredFollower(supabaseAdmin, tenant_id);
-      }
-      if (!recipientUserId) {
-        const followerResult = await getFirstFollower(settings.zalo_access_token);
-        if (followerResult.userId) {
-          recipientUserId = followerResult.userId;
-        } else if (followerResult.error) {
-          // If there's a specific error (token expired, no followers, etc.), return it
-          if (!(znsTemplateId && customer_phone)) {
-            return new Response(
-              JSON.stringify({
-                error: "Không tìm thấy người theo dõi OA",
-                details: followerResult.error,
-              }),
-              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
+        console.log("Test: trying CS to multiple recent followers...");
+        const tryResult = await trySendCSToRecentFollowers(
+          settings.zalo_access_token,
+          messageText,
+          10,
+        );
+        if (tryResult.userId) {
+          // Already sent successfully inside the function
+          if (logId) {
+            await supabaseAdmin.from("zalo_message_logs").update({
+              status: "sent",
+              sent_at: new Date().toISOString(),
+              zalo_response: tryResult.result,
+            }).eq("id", logId);
           }
-          console.log("Test: follower lookup failed, will try ZNS:", followerResult.error);
-        }
-      }
-      if (!recipientUserId) {
-        if (znsTemplateId && customer_phone) {
-          console.log("Test: no follower found, will try ZNS with phone:", customer_phone);
-        } else {
           return new Response(
-            JSON.stringify({
-              error: "Không tìm thấy người theo dõi OA",
-              details: "OA chưa có ai theo dõi hoặc không thể lấy danh sách follower. Hãy dùng Zalo quét QR hoặc tìm OA và nhấn 'Quan tâm'.",
-            }),
+            JSON.stringify({ success: true, message: "Test sent successfully" }),
             { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
+        // All followers failed
+        if (logId) {
+          await supabaseAdmin.from("zalo_message_logs").update({
+            status: "failed",
+            error_message: tryResult.result?.message || "Không có follower tương tác gần đây",
+            zalo_response: tryResult.result,
+          }).eq("id", logId);
+        }
+        return new Response(
+          JSON.stringify({
+            error: "Gửi test thất bại",
+            details: tryResult.result?.message || "Không có follower nào tương tác OA trong 7 ngày gần đây. Hãy nhắn tin cho OA từ Zalo rồi thử lại.",
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
     } else {
       // Find user by phone in zalo_followers table
