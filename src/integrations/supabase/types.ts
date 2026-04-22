@@ -10028,6 +10028,10 @@ export type Database = {
         }
         Returns: Json
       }
+      get_daily_change_breakdown: {
+        Args: { _date: string; _tid: string }
+        Returns: Json
+      }
       get_dashboard_aggregates: {
         Args: { p_branch_id?: string; p_tenant_id: string }
         Returns: Json
