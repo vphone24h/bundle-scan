@@ -163,6 +163,38 @@ async function resolveZaloAppCredentials(
 }
 
 // Get the first follower from OA's follower list (for test mode)
+async function getFollowerByPhone(accessToken: string, phone: string): Promise<{ userId: string | null; error?: string }> {
+  // Use Zalo v3.0 API to get user_id by phone number
+  const phone0 = normalizePhoneTo0(phone);
+  try {
+    const res = await fetch("https://openapi.zalo.me/v3.0/oa/user/getprofile", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        access_token: accessToken,
+      },
+      body: JSON.stringify({ phone: phone0 }),
+    });
+    const rawText = await res.text();
+    console.log("Zalo getprofile by phone raw:", rawText);
+    let data: any;
+    try { data = JSON.parse(rawText); } catch { data = {}; }
+    
+    if (data.error === -124 || data.error === -216) {
+      return { userId: null, error: "Access Token hết hạn. Vui lòng nhấn 'Gia hạn token'." };
+    }
+    
+    const userId = extractUserIdFromRaw(rawText);
+    if (userId) {
+      console.log("Found follower by phone:", userId);
+      return { userId };
+    }
+  } catch (e) {
+    console.log("getprofile by phone failed:", (e as Error).message);
+  }
+  return { userId: null };
+}
+
 async function getFirstFollower(accessToken: string): Promise<{ userId: string | null; error?: string }> {
   try {
     // v3.0 API requires POST with JSON body
@@ -476,7 +508,7 @@ Deno.serve(async (req) => {
     let recipientUserId = zalo_user_id || null;
 
     if (message_type === "test") {
-      // For test: try to find follower by phone first, then get any follower
+      // For test: try to find follower by phone first via DB, then Zalo API, then get any follower
       if (!recipientUserId && customer_phone) {
         const normalizedPhone = normalizePhoneTo0(customer_phone);
         const { data: follower } = await supabaseAdmin
@@ -487,6 +519,19 @@ Deno.serve(async (req) => {
           .maybeSingle();
         if (follower?.zalo_user_id) {
           recipientUserId = follower.zalo_user_id;
+        }
+      }
+      // Try Zalo API to find follower by phone number
+      if (!recipientUserId && customer_phone) {
+        const phoneResult = await getFollowerByPhone(settings.zalo_access_token, customer_phone);
+        if (phoneResult.userId) {
+          recipientUserId = phoneResult.userId;
+          console.log("Test: found follower by phone via Zalo API:", recipientUserId);
+        } else if (phoneResult.error) {
+          return new Response(
+            JSON.stringify({ error: phoneResult.error }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
         }
       }
       if (!recipientUserId) {
