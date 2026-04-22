@@ -206,8 +206,9 @@ export function useWarehouseValueSnapshots(
       ]);
       toast.success(`Đã khôi phục ${count} ngày dữ liệu lịch sử`);
     },
-    onError: () => {
-      toast.error('Không thể khôi phục dữ liệu lịch sử');
+    onError: (error: Error) => {
+      console.error('Backfill error:', error);
+      toast.error(`Không thể khôi phục: ${error.message}`);
     },
   });
 
