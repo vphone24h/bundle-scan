@@ -189,8 +189,9 @@ export function WarehouseValueChart() {
             <CardTitle className="text-sm">Biểu đồ giá trị toàn kho</CardTitle>
           </CardHeader>
           <CardContent className="p-2 sm:p-4">
-            <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <ComposedChart data={displayData}>
+            <div className="overflow-x-auto -mx-2 sm:-mx-4 px-2 sm:px-4">
+              <ChartContainer config={chartConfig} className="h-[300px]" style={{ minWidth: Math.max(displayData.length * 50, 300) }}>
+              <ComposedChart data={displayData} margin={{ left: 0, right: 16 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
                 <XAxis
                   dataKey="date"
@@ -252,7 +253,8 @@ export function WarehouseValueChart() {
                   activeDot={{ r: 5 }}
                 />
               </ComposedChart>
-            </ChartContainer>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
       )}
