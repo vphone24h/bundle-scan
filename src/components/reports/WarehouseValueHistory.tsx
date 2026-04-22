@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { History, Download, ChevronDown, ChevronUp } from 'lucide-react';
 import { AlertTriangle } from 'lucide-react';
-import { format, eachDayOfInterval, startOfDay, subDays } from 'date-fns';
+import { format, eachDayOfInterval, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { formatNumber } from '@/lib/formatNumber';
 import { exportToExcel } from '@/lib/exportExcel';
@@ -17,16 +19,45 @@ import { DailyChangeBreakdown } from './DailyChangeBreakdown';
 
 interface Props {
   currentData: WarehouseValueData | undefined;
-  dateRange: { from: Date; to: Date };
+}
+
+const DATE_FILTERS = [
+  { value: 'this_week', label: 'Tuần này' },
+  { value: 'this_month', label: 'Tháng này' },
+  { value: 'this_year', label: 'Năm nay' },
+  { value: 'custom', label: 'Tùy chọn' },
+];
+
+function getDateRange(filter: string, customFrom?: string, customTo?: string) {
+  const now = new Date();
+  switch (filter) {
+    case 'this_week':
+      return { from: startOfWeek(now, { weekStartsOn: 1 }), to: endOfDay(now) };
+    case 'this_month':
+      return { from: startOfMonth(now), to: endOfDay(now) };
+    case 'this_year':
+      return { from: startOfYear(now), to: endOfDay(now) };
+    case 'custom':
+      if (customFrom && customTo) {
+        return { from: startOfDay(new Date(customFrom)), to: endOfDay(new Date(customTo)) };
+      }
+      return { from: startOfMonth(now), to: endOfDay(now) };
+    default:
+      return { from: startOfMonth(now), to: endOfDay(now) };
+  }
 }
 
 const ALERT_THRESHOLD = 0.20; // 20%
 
-export function WarehouseValueHistory({ currentData, dateRange }: Props) {
+export function WarehouseValueHistory({ currentData }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [dateFilter, setDateFilter] = useState('this_month');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
   const { data: tenant } = useCurrentTenant();
 
+  const dateRange = useMemo(() => getDateRange(dateFilter, customFrom, customTo), [dateFilter, customFrom, customTo]);
   const fromStr = format(dateRange.from, 'yyyy-MM-dd');
   const toStr = format(dateRange.to, 'yyyy-MM-dd');
 
@@ -147,6 +178,29 @@ export function WarehouseValueHistory({ currentData, dateRange }: Props) {
             <Download className="h-3.5 w-3.5 mr-1.5" />
             Xuất Excel giá trị kho
           </Button>
+
+          <div className="flex flex-wrap gap-2">
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger className="w-[130px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DATE_FILTERS.map((f) => (
+                  <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-[10px] text-muted-foreground self-center">
+              {format(dateRange.from, 'dd/MM')} - {format(dateRange.to, 'dd/MM/yyyy')}
+            </span>
+          </div>
+
+          {dateFilter === 'custom' && (
+            <div className="flex gap-2">
+              <Input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="flex-1 h-8 text-xs" />
+              <Input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="flex-1 h-8 text-xs" />
+            </div>
+          )}
 
           <div className="max-h-[50vh] overflow-y-auto space-y-1.5">
             {dailyData.length === 0 ? (

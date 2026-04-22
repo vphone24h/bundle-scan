@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWarehouseValue, type BranchValue } from '@/hooks/useWarehouseValue';
@@ -13,40 +12,6 @@ import { formatNumber } from '@/lib/formatNumber';
 import { Package, Wallet, Users, Truck, TrendingUp, Building2, EyeOff, BarChart3, Database } from 'lucide-react';
 import { WarehouseValueChart } from './WarehouseValueChart';
 import { WarehouseValueHistory } from './WarehouseValueHistory';
-import {
-  startOfDay, subDays, startOfWeek, startOfMonth, startOfYear,
-  endOfDay, endOfWeek, endOfMonth, format
-} from 'date-fns';
-import { vi } from 'date-fns/locale';
-
-const DATE_FILTERS = [
-  { value: 'today', label: 'Hôm nay' },
-  { value: 'yesterday', label: 'Hôm qua' },
-  { value: 'this_week', label: 'Tuần này' },
-  { value: 'this_month', label: 'Tháng này' },
-  { value: 'this_year', label: 'Năm nay' },
-  { value: 'custom', label: 'Tùy chọn' },
-];
-
-function getDateRange(filter: string) {
-  const now = new Date();
-  switch (filter) {
-    case 'today':
-      return { from: startOfDay(now), to: endOfDay(now) };
-    case 'yesterday': {
-      const y = subDays(now, 1);
-      return { from: startOfDay(y), to: endOfDay(y) };
-    }
-    case 'this_week':
-      return { from: startOfWeek(now, { weekStartsOn: 1 }), to: endOfDay(now) };
-    case 'this_month':
-      return { from: startOfMonth(now), to: endOfDay(now) };
-    case 'this_year':
-      return { from: startOfYear(now), to: endOfDay(now) };
-    default:
-      return { from: startOfDay(now), to: endOfDay(now) };
-  }
-}
 
 function ValueCard({
   label, value, icon: Icon, color, bg, prefix, hidden,
@@ -114,23 +79,8 @@ function BranchRow({ branch, hidden }: { branch: BranchValue; hidden: boolean })
   );
 }
 
-function DateFilterLabel({ filter, customFrom, customTo }: { filter: string; customFrom?: string; customTo?: string }) {
-  if (filter === 'custom' && customFrom && customTo) {
-    return <span className="text-xs text-muted-foreground">Từ {customFrom} đến {customTo}</span>;
-  }
-  const label = DATE_FILTERS.find(f => f.value === filter)?.label || '';
-  const range = getDateRange(filter);
-  const dateStr = filter === 'today' || filter === 'yesterday'
-    ? format(range.from, 'dd/MM/yyyy', { locale: vi })
-    : `${format(range.from, 'dd/MM')} - ${format(range.to, 'dd/MM/yyyy')}`;
-  return <span className="text-xs text-muted-foreground">{dateStr}</span>;
-}
-
 export function WarehouseValueReport() {
   const [selectedBranch, setSelectedBranch] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<string>('today');
-  const [customFrom, setCustomFrom] = useState('');
-  const [customTo, setCustomTo] = useState('');
   const { data: branches } = useBranches();
   const { shouldFilter } = useBranchFilter();
   const { data: permissions } = usePermissions();
@@ -167,17 +117,6 @@ export function WarehouseValueReport() {
       <TabsContent value="data" className="space-y-4">
         {/* Filters row */}
         <div className="flex flex-wrap gap-2">
-          <Select value={dateFilter} onValueChange={setDateFilter}>
-            <SelectTrigger className="w-[130px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DATE_FILTERS.map((f) => (
-                <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
           {!shouldFilter && (
             <Select value={selectedBranch} onValueChange={setSelectedBranch}>
               <SelectTrigger className="flex-1 min-w-[140px]">
@@ -192,15 +131,6 @@ export function WarehouseValueReport() {
             </Select>
           )}
         </div>
-
-        {dateFilter === 'custom' && (
-          <div className="flex gap-2">
-            <Input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="flex-1" />
-            <Input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="flex-1" />
-          </div>
-        )}
-
-        <DateFilterLabel filter={dateFilter} customFrom={customFrom} customTo={customTo} />
 
         {isLoading ? (
           <div className="space-y-3">
@@ -301,7 +231,6 @@ export function WarehouseValueReport() {
             {!valueHidden && (
               <WarehouseValueHistory
                 currentData={data}
-                dateRange={getDateRange(dateFilter)}
               />
             )}
           </>
