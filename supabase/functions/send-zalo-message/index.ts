@@ -236,6 +236,35 @@ async function sendZNSWithRetry(
   return { result: lastError, attempts: maxRetries };
 }
 
+// Send CS message by phone number (requires "Gửi tin qua số điện thoại" permission)
+async function sendCSByPhone(
+  accessToken: string,
+  phone: string,
+  messageText: string,
+): Promise<{ success: boolean; result: any }> {
+  const phone84 = normalizePhoneTo84(phone);
+  try {
+    console.log("Sending CS by phone to:", phone84);
+    const res = await fetch("https://openapi.zalo.me/v3.0/oa/message/phone/cs", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        access_token: accessToken,
+      },
+      body: JSON.stringify({
+        phone: phone84,
+        message: { text: messageText },
+      }),
+    });
+    const data = await res.json();
+    console.log("CS by phone result:", JSON.stringify(data));
+    return { success: !data.error || data.error === 0, result: data };
+  } catch (err) {
+    console.error("CS by phone error:", err);
+    return { success: false, result: { error: -1, message: (err as Error).message } };
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -476,6 +505,27 @@ Deno.serve(async (req) => {
       console.log("Zalo CS result:", JSON.stringify(zaloResult));
 
       if (zaloResult.error && zaloResult.error !== 0) {
+        // CS by user_id failed — try CS by phone number first
+        if (customer_phone) {
+          console.log("CS by user_id failed, trying CS by phone...");
+          const csByPhone = await sendCSByPhone(settings.zalo_access_token, customer_phone, messageText);
+          if (csByPhone.success) {
+            if (logId) {
+              await supabaseAdmin.from("zalo_message_logs").update({
+                status: "sent",
+                sent_at: new Date().toISOString(),
+                message_content: messageText + " [via CS-phone]",
+                zalo_response: csByPhone.result,
+              }).eq("id", logId);
+            }
+            return new Response(
+              JSON.stringify({ success: true, message: "Sent via CS by phone" }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          console.log("CS by phone also failed:", JSON.stringify(csByPhone.result));
+        }
+
         // CS failed, try ZNS if available
         if (znsTemplateId && customer_phone) {
           console.log("CS failed, trying ZNS fallback...");
@@ -555,7 +605,28 @@ Deno.serve(async (req) => {
       );
     }
 
-    // No follower found — try ZNS directly
+    // No follower found — try CS by phone first, then ZNS
+    if (customer_phone && message_type !== "test") {
+      console.log("No follower found, trying CS by phone...");
+      const csByPhone = await sendCSByPhone(settings.zalo_access_token, customer_phone, messageText);
+      if (csByPhone.success) {
+        if (logId) {
+          await supabaseAdmin.from("zalo_message_logs").update({
+            status: "sent",
+            sent_at: new Date().toISOString(),
+            message_content: messageText + " [via CS-phone]",
+            zalo_response: csByPhone.result,
+          }).eq("id", logId);
+        }
+        return new Response(
+          JSON.stringify({ success: true, message: "Sent via CS by phone" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      console.log("CS by phone failed:", JSON.stringify(csByPhone.result));
+    }
+
+    // Try ZNS as last resort
     if (znsTemplateId && customer_phone && message_type !== "test") {
       const { result: znsResult, attempts } = await sendZNSWithRetry(
         settings.zalo_access_token,
