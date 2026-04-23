@@ -107,6 +107,19 @@ export function ProductDetailPage({
 
   const placeOrder = usePlaceLandingOrder();
 
+  // Fetch service packages
+  const { data: productPackages } = usePublicProductPackages(product?.id || null);
+
+  // Auto-select default packages
+  useEffect(() => {
+    if (productPackages && productPackages.length > 0) {
+      const defaults = new Set(productPackages.filter(p => p.is_default).map(p => p.id));
+      setSelectedPackageIds(defaults);
+    } else {
+      setSelectedPackageIds(new Set());
+    }
+  }, [productPackages]);
+
   const [debouncedPhone, setDebouncedPhone] = useState('');
   useEffect(() => {
     const t = setTimeout(() => {
