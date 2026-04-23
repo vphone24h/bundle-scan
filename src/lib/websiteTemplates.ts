@@ -35,7 +35,7 @@ export const WEBSITE_TEMPLATES: WebsiteTemplate[] = [
   // Real Estate & Automotive
   { id: 'realestate_store', name: 'Bất động sản (lọc khu vực, bản đồ, ảnh nhà lớn)', category: 'BĐS & Xe', description: 'Chuyên nghiệp, tìm kiếm theo khu vực', icon: '🏠', tier: 'pro', available: true, defaultColor: '#1e3a5f' },
   { id: 'car_showroom', name: 'Showroom ô tô (ảnh xe full-screen, đăng ký lái thử)', category: 'BĐS & Xe', description: 'Cao cấp, lái thử, so sánh xe', icon: '🚗', tier: 'pro', available: true, defaultColor: '#171717' },
-  { id: 'motorbike_showroom', name: 'Showroom xe máy (ảnh xe nổi bật, bảng giá xe)', category: 'BĐS & Xe', description: 'Năng động, trẻ trung', icon: '🏍️', tier: 'premium', available: true, defaultColor: '#dc2626' },
+  { id: 'motorbike_showroom', name: 'Showroom xe máy (ảnh xe nổi bật, bảng giá xe)', category: 'BĐS & Xe', description: 'Năng động, trẻ trung', icon: '🏍️', tier: 'premium', available: true, defaultColor: '#b91c1c' },
 
   // Home & Construction
   { id: 'furniture_store', name: 'Nội thất (ảnh không gian sống, theo phòng)', category: 'Nhà & Xây dựng', description: 'Tối giản, hình ảnh không gian sống', icon: '🛋️', tier: 'premium', available: true, defaultColor: '#57534e' },
@@ -53,22 +53,22 @@ export const WEBSITE_TEMPLATES: WebsiteTemplate[] = [
   // Services
   { id: 'repair_service', name: 'Dịch vụ sửa chữa (tra cứu đơn, báo giá nhanh)', category: 'Dịch vụ', description: 'Tra cứu đơn, báo giá', icon: '🔧', tier: 'basic', available: true, defaultColor: '#ca8a04' },
   { id: 'training_center', name: 'Trung tâm đào tạo (danh sách khóa học, đăng ký online)', category: 'Dịch vụ', description: 'Khóa học, đăng ký online', icon: '🎓', tier: 'premium', available: true, defaultColor: '#4f46e5' },
-  { id: 'clinic_store', name: 'Phòng khám (đặt lịch khám, giới thiệu bác sĩ)', category: 'Dịch vụ', description: 'Tin cậy, đặt lịch khám', icon: '🏥', tier: 'premium', available: true, defaultColor: '#0891b2' },
+  { id: 'clinic_store', name: 'Phòng khám (đặt lịch khám, giới thiệu bác sĩ)', category: 'Dịch vụ', description: 'Tin cậy, đặt lịch khám', icon: '🏥', tier: 'premium', available: true, defaultColor: '#0e7490' },
   { id: 'pharmacy_store', name: 'Nhà thuốc (tìm thuốc nhanh, danh mục theo bệnh)', category: 'Dịch vụ', description: 'Tìm kiếm thuốc nhanh', icon: '💊', tier: 'basic', available: true, defaultColor: '#16a34a' },
-  { id: 'company_site', name: 'Công ty / Doanh nghiệp (giới thiệu, dịch vụ, liên hệ)', category: 'Dịch vụ', description: 'Corporate, chuyên nghiệp', icon: '🏢', tier: 'premium', available: true, defaultColor: '#1e40af' },
+  { id: 'company_site', name: 'Công ty / Doanh nghiệp (giới thiệu, dịch vụ, liên hệ)', category: 'Dịch vụ', description: 'Corporate, chuyên nghiệp', icon: '🏢', tier: 'premium', available: true, defaultColor: '#1e3a8a' },
 
   // Specialty
   { id: 'baby_store', name: 'Đồ mẹ và bé (màu pastel, lọc theo độ tuổi)', category: 'Chuyên biệt', description: 'Đáng yêu, an toàn', icon: '👶', tier: 'basic', available: true, defaultColor: '#f472b6' },
   { id: 'sports_store', name: 'Đồ thể thao (ảnh năng động, lọc môn thể thao)', category: 'Chuyên biệt', description: 'Năng động, mạnh mẽ', icon: '⚽', tier: 'basic', available: true, defaultColor: '#059669' },
   { id: 'pet_store', name: 'Thú cưng (ảnh cute, danh mục thức ăn/phụ kiện)', category: 'Chuyên biệt', description: 'Dễ thương, thân thiện', icon: '🐾', tier: 'basic', available: true, defaultColor: '#f59e0b' },
   { id: 'farm_store', name: 'Nông sản / Đặc sản (nguồn gốc rõ ràng, ảnh thật)', category: 'Chuyên biệt', description: 'Tự nhiên, sạch, nguồn gốc rõ ràng', icon: '🌾', tier: 'basic', available: true, defaultColor: '#65a30d' },
-  { id: 'landing_page', name: 'Landing Page bán hàng (1 trang dài, tối ưu chốt đơn)', category: 'Chuyên biệt', description: 'Trang đích tối ưu chuyển đổi', icon: '🎯', tier: 'basic', available: true, defaultColor: '#dc2626' },
+  { id: 'landing_page', name: 'Landing Page bán hàng (1 trang dài, tối ưu chốt đơn)', category: 'Chuyên biệt', description: 'Trang đích tối ưu chuyển đổi', icon: '🎯', tier: 'basic', available: true, defaultColor: '#ef4444' },
   { id: 'bakery_store', name: 'Tiệm bánh (gallery bánh kem, đặt bánh sinh nhật)', category: 'Ẩm thực', description: 'Bánh kem nghệ thuật, 12 con giáp', icon: '🎂', tier: 'basic', available: true, defaultColor: '#ec4899' },
-  { id: 'bar_store', name: 'Quán nhậu chill (tone gỗ tối, menu mồi nhậu & bia tháp)', category: 'Ẩm thực', description: 'Tone gỗ tối, vintage, menu mồi nhậu & bia tháp nổi bật ngay trang chủ', icon: '🍺', tier: 'premium', available: true, brandInspiration: 'Đề Pa Coffee – Quán nhậu chill', defaultColor: '#78350f' },
+  { id: 'bar_store', name: 'Quán nhậu chill (tone gỗ tối, menu mồi nhậu & bia tháp)', category: 'Ẩm thực', description: 'Tone gỗ tối, vintage, menu mồi nhậu & bia tháp nổi bật ngay trang chủ', icon: '🍺', tier: 'premium', available: true, brandInspiration: 'Đề Pa Coffee – Quán nhậu chill', defaultColor: '#44403c' },
 
   // Dịch vụ sửa chữa chuyên biệt
-  { id: 'vehicle_repair', name: 'Sửa xe (báo giá nhanh, đặt lịch sửa xe máy/ô tô)', category: 'Dịch vụ', description: 'Sửa xe máy, ô tô, báo giá nhanh', icon: '🏍️', tier: 'basic', available: true, brandInspiration: 'Garage chuyên nghiệp', defaultColor: '#b91c1c' },
-  { id: 'hvac_repair', name: 'Sửa điện lạnh (đặt lịch sửa máy lạnh, tủ lạnh, máy giặt)', category: 'Dịch vụ', description: 'Sửa máy lạnh, tủ lạnh, máy giặt', icon: '❄️', tier: 'basic', available: true, defaultColor: '#0284c7' },
+  { id: 'vehicle_repair', name: 'Sửa xe (báo giá nhanh, đặt lịch sửa xe máy/ô tô)', category: 'Dịch vụ', description: 'Sửa xe máy, ô tô, báo giá nhanh', icon: '🏍️', tier: 'basic', available: true, brandInspiration: 'Garage chuyên nghiệp', defaultColor: '#9f1239' },
+  { id: 'hvac_repair', name: 'Sửa điện lạnh (đặt lịch sửa máy lạnh, tủ lạnh, máy giặt)', category: 'Dịch vụ', description: 'Sửa máy lạnh, tủ lạnh, máy giặt', icon: '❄️', tier: 'basic', available: true, defaultColor: '#0369a1' },
   { id: 'audio_store', name: 'Thiết bị âm thanh (loa, dàn karaoke, ảnh thiết bị lớn)', category: 'Công nghệ', description: 'Loa, dàn karaoke, âm thanh chuyên nghiệp', icon: '🔊', tier: 'premium', available: true, brandInspiration: 'Audio Pro Shop', defaultColor: '#6d28d9' },
   { id: 'karaoke_store', name: 'Karaoke / Phòng hát (đặt phòng online, bảng giá phòng)', category: 'Dịch vụ', description: 'Phòng hát, dàn karaoke, đặt phòng online', icon: '🎤', tier: 'premium', available: true, brandInspiration: 'Karaoke Box', defaultColor: '#9333ea' },
   { id: 'massage_store', name: 'Massage / Xông hơi (gói dịch vụ, đặt lịch thư giãn)', category: 'Thời trang & Làm đẹp', description: 'Massage thư giãn, xông hơi, đặt lịch online', icon: '💆', tier: 'premium', available: true, brandInspiration: 'Luxury Spa & Massage', defaultColor: '#0f766e' },
@@ -77,7 +77,7 @@ export const WEBSITE_TEMPLATES: WebsiteTemplate[] = [
   { id: 'apple_landing', name: 'Apple Style Landing (full-screen banner, tối giản cao cấp)', category: 'Công nghệ', description: 'Phong cách Apple.com – full-screen banners, tối giản, cao cấp', icon: '🍎', tier: 'pro', available: true, brandInspiration: 'Apple.com', defaultColor: '#000000' },
 
   // Bảng giá list (nhập qua Tin tức – mỗi bài 1 bảng giá)
-  { id: 'price_list', name: 'Bảng giá điện thoại (web 1 mặt show hết giá, phù hợp bán sỉ)', category: 'Công nghệ', description: '1 trang chủ duy nhất: banner + địa chỉ/SĐT + bảng giá list theo nhóm. Nội dung bảng giá biên tập trong mục Tin tức.', icon: '📋', tier: 'premium', available: true, brandInspiration: 'taoquangsang', defaultColor: '#0071e3' },
+  { id: 'price_list', name: 'Bảng giá điện thoại (web 1 mặt show hết giá, phù hợp bán sỉ)', category: 'Công nghệ', description: '1 trang chủ duy nhất: banner + địa chỉ/SĐT + bảng giá list theo nhóm. Nội dung bảng giá biên tập trong mục Tin tức.', icon: '📋', tier: 'premium', available: true, brandInspiration: 'taoquangsang', defaultColor: '#1d4ed8' },
 ];
 
 export const TEMPLATE_CATEGORIES = [...new Set(WEBSITE_TEMPLATES.map(t => t.category))];

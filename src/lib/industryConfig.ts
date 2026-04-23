@@ -409,7 +409,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Titan. Siêu mạnh. Siêu nhẹ.',
     heroCta: 'Mua ngay',
     heroGradient: 'linear-gradient(180deg, #fbfbfd 0%, #f5f5f7 100%)',
-    accentColor: '#0071e3',
+    accentColor: '#000000',
     trustBadges: [
       { icon: 'Shield', title: 'Bảo hành 12 tháng', desc: 'Chính hãng Apple' },
       { icon: 'Award', title: '100% chính hãng', desc: 'Nguyên seal, full box' },
@@ -481,7 +481,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Hiệu năng vượt trội. Thiết kế tinh tế.',
     heroCta: 'Khám phá ngay',
     heroGradient: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-    accentColor: '#0071e3',
+    accentColor: '#1e40af',
     trustBadges: [
       { icon: 'Shield', title: 'Bảo hành 24 tháng', desc: 'Chính hãng' },
       { icon: 'Award', title: 'Nguyên seal', desc: 'Full box 100%' },
@@ -503,7 +503,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Nâng tầm trải nghiệm công nghệ của bạn.',
     heroCta: 'Mua ngay',
     heroGradient: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
-    accentColor: '#6366f1',
+    accentColor: '#7c3aed',
     trustBadges: [
       { icon: 'Shield', title: 'Chính hãng', desc: 'Cam kết 100%' },
       { icon: 'Award', title: 'Giá tốt nhất', desc: 'So sánh trước mua' },
@@ -525,7 +525,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Giá tốt nhất – Bảo hành dài hạn.',
     heroCta: 'Xem ưu đãi',
     heroGradient: 'linear-gradient(135deg, #1a1a2e 0%, #e94560 100%)',
-    accentColor: '#e94560',
+    accentColor: '#dc2626',
     trustBadges: [
       { icon: 'Shield', title: 'Bảo hành 24 tháng', desc: 'Tại nhà' },
       { icon: 'Award', title: 'Chính hãng', desc: 'Hóa đơn đầy đủ' },
@@ -549,7 +549,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Phong cách thời thượng – Chất lượng vượt trội.',
     heroCta: 'Khám phá ngay',
     heroGradient: 'linear-gradient(135deg, #2d2d2d 0%, #4a4a4a 50%, #1a1a1a 100%)',
-    accentColor: '#1a1a1a',
+    accentColor: '#18181b',
     trustBadges: [
       { icon: 'Award', title: 'Hàng chính hãng', desc: 'Cam kết 100%' },
       { icon: 'Truck', title: 'Miễn phí ship', desc: 'Đơn từ 500K' },
@@ -571,7 +571,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Bước chân phong cách – Tự tin tỏa sáng.',
     heroCta: 'Mua ngay',
     heroGradient: 'linear-gradient(135deg, #1a1a1a 0%, #434343 100%)',
-    accentColor: '#e63946',
+    accentColor: '#ea580c',
     trustBadges: [
       { icon: 'Award', title: 'Auth 100%', desc: 'Cam kết chính hãng' },
       { icon: 'Truck', title: 'Ship COD', desc: 'Toàn quốc' },
@@ -593,7 +593,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Đẹp tự nhiên – Rạng rỡ mỗi ngày.',
     heroCta: 'Xem ngay',
     heroGradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 50%, #ee9ca7 100%)',
-    accentColor: '#d4577b',
+    accentColor: '#db2777',
     trustBadges: [
       { icon: 'Award', title: 'Auth 100%', desc: 'Nhập khẩu chính hãng' },
       { icon: 'Shield', title: 'An toàn da', desc: 'FDA approved' },
@@ -615,7 +615,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Tận hưởng khoảnh khắc chăm sóc bản thân.',
     heroCta: 'Đặt lịch ngay',
     heroGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    accentColor: '#764ba2',
+    accentColor: '#0d9488',
     trustBadges: [
       { icon: 'Award', title: 'Chuyên gia hàng đầu', desc: 'Tay nghề cao' },
       { icon: 'Shield', title: 'Cam kết an toàn', desc: 'Thiết bị nhập khẩu' },
@@ -637,7 +637,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Phong cách mới – Tự tin hơn mỗi ngày.',
     heroCta: 'Đặt lịch',
     heroGradient: 'linear-gradient(135deg, #232526 0%, #414345 100%)',
-    accentColor: '#c9a96e',
+    accentColor: '#a855f7',
     trustBadges: [
       { icon: 'Award', title: 'Stylist chuyên nghiệp', desc: '10+ năm kinh nghiệm' },
       { icon: 'Star', title: 'Sản phẩm cao cấp', desc: 'Nhập khẩu chính hãng' },
@@ -659,7 +659,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Thời gian là xa xỉ – Phong cách là vĩnh cửu.',
     heroCta: 'Khám phá',
     heroGradient: 'linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%)',
-    accentColor: '#c9a96e',
+    accentColor: '#1c1917',
     trustBadges: [
       { icon: 'Award', title: 'Auth 100%', desc: 'Full box + thẻ' },
       { icon: 'Shield', title: 'BH quốc tế', desc: '2–5 năm' },
@@ -681,7 +681,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Vẻ đẹp vĩnh cửu – Giá trị bền vững.',
     heroCta: 'Khám phá',
     heroGradient: 'linear-gradient(135deg, #1a1a1a 0%, #2d1f3d 50%, #1a1a1a 100%)',
-    accentColor: '#d4af37',
+    accentColor: '#92400e',
     trustBadges: [
       { icon: 'Award', title: 'Chứng nhận GIA', desc: 'Kim cương thiên nhiên' },
       { icon: 'Shield', title: 'Bảo hành trọn đời', desc: 'Đánh bóng miễn phí' },
@@ -705,7 +705,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Hương vị đích thực – Trải nghiệm khó quên.',
     heroCta: 'Đặt bàn',
     heroGradient: 'linear-gradient(135deg, #1a0a00 0%, #8b4513 50%, #2d1810 100%)',
-    accentColor: '#c0392b',
+    accentColor: '#991b1b',
     trustBadges: [
       { icon: 'Award', title: 'Nguyên liệu tươi', desc: 'Nhập hàng ngày' },
       { icon: 'Star', title: '4.9 sao', desc: 'Google Reviews' },
@@ -727,7 +727,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Hương cà phê – Không gian thư giãn.',
     heroCta: 'Xem menu',
     heroGradient: 'linear-gradient(135deg, #3c1810 0%, #6f4e37 50%, #2c1503 100%)',
-    accentColor: '#6f4e37',
+    accentColor: '#78350f',
     trustBadges: [
       { icon: 'Award', title: 'Hạt cà phê chọn lọc', desc: 'Rang xay tại chỗ' },
       { icon: 'Star', title: 'Không gian đẹp', desc: 'Check-in thả ga' },
@@ -749,7 +749,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Mát lạnh – Ngọt ngào – Đủ topping!',
     heroCta: 'Order ngay',
     heroGradient: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fdfbfb 100%)',
-    accentColor: '#e91e8c',
+    accentColor: '#e879f9',
     trustBadges: [
       { icon: 'Award', title: 'Nguyên liệu tươi', desc: 'Không hóa chất' },
       { icon: 'Truck', title: 'Giao nhanh 15p', desc: 'Bán kính 5km' },
@@ -773,7 +773,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Tìm ngôi nhà mơ ước của bạn.',
     heroCta: 'Xem dự án',
     heroGradient: 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)',
-    accentColor: '#2c5364',
+    accentColor: '#1e3a5f',
     trustBadges: [
       { icon: 'Award', title: 'Pháp lý rõ ràng', desc: 'Sổ hồng riêng' },
       { icon: 'Shield', title: 'Tư vấn miễn phí', desc: 'Chuyên gia hàng đầu' },
@@ -795,7 +795,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Đẳng cấp – Sang trọng – An toàn.',
     heroCta: 'Đặt lịch lái thử',
     heroGradient: 'linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #0c0c0c 100%)',
-    accentColor: '#c0392b',
+    accentColor: '#171717',
     trustBadges: [
       { icon: 'Award', title: 'Xe chính hãng', desc: 'Đại lý ủy quyền' },
       { icon: 'Shield', title: 'Bảo hành 5 năm', desc: 'Không giới hạn km' },
@@ -817,7 +817,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Năng động – Mạnh mẽ – Tiết kiệm.',
     heroCta: 'Xem xe',
     heroGradient: 'linear-gradient(135deg, #1a1a2e 0%, #e94560 100%)',
-    accentColor: '#e94560',
+    accentColor: '#b91c1c',
     trustBadges: [
       { icon: 'Award', title: 'Chính hãng', desc: 'Đại lý cấp 1' },
       { icon: 'Shield', title: 'Bảo hành 3 năm', desc: 'Theo hãng' },
@@ -841,7 +841,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Không gian sống – Phong cách riêng bạn.',
     heroCta: 'Khám phá',
     heroGradient: 'linear-gradient(135deg, #2c3e50 0%, #3498db 100%)',
-    accentColor: '#2c3e50',
+    accentColor: '#57534e',
     trustBadges: [
       { icon: 'Award', title: 'Chất lượng cao', desc: 'Nhập khẩu châu Âu' },
       { icon: 'Truck', title: 'Lắp đặt miễn phí', desc: 'Nội thành' },
@@ -863,7 +863,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Chất lượng – Giá gốc – Giao nhanh.',
     heroCta: 'Báo giá ngay',
     heroGradient: 'linear-gradient(135deg, #434343 0%, #000000 100%)',
-    accentColor: '#e67e22',
+    accentColor: '#b45309',
     trustBadges: [
       { icon: 'Award', title: 'Giá gốc', desc: 'Nhà phân phối cấp 1' },
       { icon: 'Truck', title: 'Giao tận công trình', desc: 'Miễn phí nội thành' },
@@ -887,7 +887,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Trải nghiệm lưu trú đẳng cấp.',
     heroCta: 'Đặt phòng',
     heroGradient: 'linear-gradient(135deg, #0f2027 0%, #2c5364 100%)',
-    accentColor: '#2c5364',
+    accentColor: '#7c2d12',
     trustBadges: [
       { icon: 'Star', title: '5 sao', desc: 'Đánh giá cao' },
       { icon: 'Award', title: 'View đẹp', desc: 'Tầm nhìn panorama' },
@@ -911,7 +911,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Mua sắm nhanh – Giá tốt mỗi ngày.',
     heroCta: 'Xem ưu đãi',
     heroGradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-    accentColor: '#11998e',
+    accentColor: '#15803d',
     trustBadges: [
       { icon: 'Award', title: 'Giá tốt nhất', desc: 'Cam kết hoàn tiền' },
       { icon: 'Truck', title: 'Giao nhanh', desc: '30 phút' },
@@ -933,7 +933,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Đa dạng – Giá rẻ – Gần nhà bạn.',
     heroCta: 'Mua sắm',
     heroGradient: 'linear-gradient(135deg, #f5af19 0%, #f12711 100%)',
-    accentColor: '#e67e22',
+    accentColor: '#0891b2',
     trustBadges: [
       { icon: 'Award', title: 'Giá rẻ nhất', desc: 'Khu vực' },
       { icon: 'Truck', title: 'Giao tận nhà', desc: '500m quanh đây' },
@@ -955,7 +955,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Đại lý – Nhà phân phối – Giá tốt nhất.',
     heroCta: 'Xem bảng giá',
     heroGradient: 'linear-gradient(135deg, #141e30 0%, #243b55 100%)',
-    accentColor: '#2980b9',
+    accentColor: '#2563eb',
     trustBadges: [
       { icon: 'Award', title: 'Giá sỉ tốt nhất', desc: 'Chiết khấu cao' },
       { icon: 'Truck', title: 'Ship toàn quốc', desc: 'Số lượng lớn' },
@@ -977,7 +977,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Đa dạng sản phẩm – Giá tốt nhất.',
     heroCta: 'Mua ngay',
     heroGradient: 'linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%)',
-    accentColor: '#ff416c',
+    accentColor: '#e11d48',
     trustBadges: [
       { icon: 'Award', title: 'Hàng chất lượng', desc: 'Cam kết 100%' },
       { icon: 'Truck', title: 'Ship toàn quốc', desc: 'COD miễn phí' },
@@ -1001,7 +1001,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Nhanh chóng – Uy tín – Bảo hành dài.',
     heroCta: 'Báo giá ngay',
     heroGradient: 'linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%)',
-    accentColor: '#4ca1af',
+    accentColor: '#ca8a04',
     trustBadges: [
       { icon: 'Award', title: 'Thợ giỏi', desc: '10+ năm kinh nghiệm' },
       { icon: 'Shield', title: 'Bảo hành 6 tháng', desc: 'Sau sửa chữa' },
@@ -1023,7 +1023,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Nâng cao kỹ năng – Đổi mới sự nghiệp.',
     heroCta: 'Đăng ký ngay',
     heroGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    accentColor: '#667eea',
+    accentColor: '#4f46e5',
     trustBadges: [
       { icon: 'Award', title: 'Giảng viên giỏi', desc: 'Thực chiến' },
       { icon: 'Star', title: 'Chứng chỉ', desc: 'Có giá trị' },
@@ -1045,7 +1045,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Sức khỏe của bạn – Sứ mệnh của chúng tôi.',
     heroCta: 'Đặt lịch khám',
     heroGradient: 'linear-gradient(135deg, #0f4c75 0%, #3282b8 100%)',
-    accentColor: '#0f4c75',
+    accentColor: '#0e7490',
     trustBadges: [
       { icon: 'Award', title: 'Bác sĩ chuyên khoa', desc: 'Giàu kinh nghiệm' },
       { icon: 'Shield', title: 'Trang thiết bị hiện đại', desc: 'Nhập khẩu' },
@@ -1067,7 +1067,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Thuốc chính hãng – Tư vấn miễn phí.',
     heroCta: 'Tìm thuốc',
     heroGradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-    accentColor: '#11998e',
+    accentColor: '#16a34a',
     trustBadges: [
       { icon: 'Shield', title: 'Thuốc chính hãng', desc: 'Đầy đủ giấy phép' },
       { icon: 'Award', title: 'Dược sĩ tư vấn', desc: 'Miễn phí 24/7' },
@@ -1089,7 +1089,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Chuyên nghiệp – Uy tín – Hiệu quả.',
     heroCta: 'Liên hệ ngay',
     heroGradient: 'linear-gradient(135deg, #141e30 0%, #243b55 100%)',
-    accentColor: '#2c3e50',
+    accentColor: '#1e3a8a',
     trustBadges: [
       { icon: 'Award', title: '10+ năm', desc: 'Kinh nghiệm' },
       { icon: 'Star', title: '500+ khách hàng', desc: 'Tin tưởng' },
@@ -1113,7 +1113,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'An toàn – Chất lượng – Yêu thương.',
     heroCta: 'Mua ngay',
     heroGradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-    accentColor: '#e91e63',
+    accentColor: '#f472b6',
     trustBadges: [
       { icon: 'Shield', title: 'An toàn 100%', desc: 'Chứng nhận quốc tế' },
       { icon: 'Award', title: 'Hàng chính hãng', desc: 'Nhập khẩu' },
@@ -1135,7 +1135,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Năng động – Mạnh mẽ – Chiến thắng.',
     heroCta: 'Mua ngay',
     heroGradient: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
-    accentColor: '#e94560',
+    accentColor: '#059669',
     trustBadges: [
       { icon: 'Award', title: 'Auth 100%', desc: 'Nike/Adidas/Puma' },
       { icon: 'Truck', title: 'Ship COD', desc: 'Toàn quốc' },
@@ -1157,7 +1157,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Tất cả cho boss của bạn 🐾',
     heroCta: 'Mua ngay',
     heroGradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-    accentColor: '#e67e22',
+    accentColor: '#f59e0b',
     trustBadges: [
       { icon: 'Shield', title: 'An toàn', desc: 'Sản phẩm kiểm định' },
       { icon: 'Award', title: 'Nhập khẩu', desc: 'Chính hãng' },
@@ -1179,7 +1179,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Từ nông trại đến bàn ăn – 100% tự nhiên.',
     heroCta: 'Đặt hàng',
     heroGradient: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)',
-    accentColor: '#27ae60',
+    accentColor: '#65a30d',
     trustBadges: [
       { icon: 'Award', title: 'Organic', desc: 'Chứng nhận VietGAP' },
       { icon: 'Shield', title: 'Nguồn gốc rõ ràng', desc: 'QR truy xuất' },
@@ -1201,7 +1201,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Ưu đãi đặc biệt – Chỉ hôm nay.',
     heroCta: 'Mua ngay',
     heroGradient: 'linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%)',
-    accentColor: '#ff416c',
+    accentColor: '#ef4444',
     trustBadges: [
       { icon: 'Award', title: 'Chất lượng', desc: 'Cam kết 100%' },
       { icon: 'Truck', title: 'Miễn phí ship', desc: 'Toàn quốc' },
@@ -1225,7 +1225,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Bánh kem 12 con giáp – Đặt bánh theo tuổi, giao tận nơi.',
     heroCta: 'Đặt bánh ngay',
     heroGradient: 'linear-gradient(135deg, #f8b500 0%, #fceabb 100%)',
-    accentColor: '#e67e22',
+    accentColor: '#ec4899',
     trustBadges: [
       { icon: 'Award', title: 'Bánh tươi mỗi ngày', desc: 'Làm trong ngày' },
       { icon: 'Shield', title: 'Nguyên liệu sạch', desc: 'An toàn VSATTP' },
@@ -1247,7 +1247,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Đặc sản Tây Nguyên – Bia tháp – Combo nhóm bạn cực hời.',
     heroCta: 'Xem menu mồi nhậu',
     heroGradient: 'linear-gradient(135deg, #1a0f08 0%, #3b1f0f 45%, #6b3410 100%)',
-    accentColor: '#d97706',
+    accentColor: '#44403c',
     trustBadges: [
       { icon: 'Award', title: 'Mồi tươi mỗi ngày', desc: 'Đặc sản Tây Nguyên' },
       { icon: 'Star', title: 'Bia tháp lạnh', desc: 'Bia hơi & bom bia' },
@@ -1269,7 +1269,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Thợ giỏi – Giá rõ – Bảo hành dài hạn.',
     heroCta: 'Đặt lịch sửa xe',
     heroGradient: 'linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%)',
-    accentColor: '#2980b9',
+    accentColor: '#9f1239',
     trustBadges: [
       { icon: 'Shield', title: 'Bảo hành 6 tháng', desc: 'Mọi dịch vụ sửa chữa' },
       { icon: 'Award', title: 'Thợ chuyên nghiệp', desc: '10+ năm kinh nghiệm' },
@@ -1291,7 +1291,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Máy lạnh – Tủ lạnh – Máy giặt. Sửa tại nhà, bảo hành dài.',
     heroCta: 'Gọi thợ ngay',
     heroGradient: 'linear-gradient(135deg, #00b4db 0%, #0083b0 100%)',
-    accentColor: '#0083b0',
+    accentColor: '#0369a1',
     trustBadges: [
       { icon: 'Shield', title: 'Bảo hành 12 tháng', desc: 'Cam kết bằng văn bản' },
       { icon: 'Award', title: 'Kỹ thuật viên giỏi', desc: 'Được đào tạo bài bản' },
@@ -1313,7 +1313,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Loa – Dàn karaoke – Micro chuyên nghiệp.',
     heroCta: 'Xem sản phẩm',
     heroGradient: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-    accentColor: '#e94560',
+    accentColor: '#6d28d9',
     trustBadges: [
       { icon: 'Shield', title: 'Bảo hành 24 tháng', desc: 'Chính hãng 100%' },
       { icon: 'Award', title: 'Hàng nhập khẩu', desc: 'JBL, Bose, Harman...' },
@@ -1335,7 +1335,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Phòng hát hiện đại – Âm thanh đỉnh cao – Đặt phòng online.',
     heroCta: 'Đặt phòng ngay',
     heroGradient: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
-    accentColor: '#8b5cf6',
+    accentColor: '#9333ea',
     trustBadges: [
       { icon: 'Award', title: 'Âm thanh đỉnh cao', desc: 'Dàn karaoke cao cấp' },
       { icon: 'Shield', title: 'Phòng VIP', desc: 'Cách âm hoàn hảo' },
@@ -1357,7 +1357,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Thư giãn tuyệt đối – Nhân viên xinh tươi – Phục vụ tận tâm.',
     heroCta: 'Đặt lịch ngay',
     heroGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    accentColor: '#764ba2',
+    accentColor: '#0f766e',
     trustBadges: [
       { icon: 'Star', title: 'Nhân viên xinh tươi', desc: 'Phục vụ nhiệt tình' },
       { icon: 'Shield', title: 'Phòng VIP riêng tư', desc: 'Sạch sẽ, thoải mái' },
