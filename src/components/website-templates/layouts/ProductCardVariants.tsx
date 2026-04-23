@@ -48,6 +48,8 @@ function AppleProductCard({ product, onClick, accentColor }: ProductCardProps) {
     <button onClick={onClick} className={`bg-[#f5f5f7] rounded-2xl overflow-hidden text-left group transition-all hover:shadow-lg w-full ${product.is_sold_out ? 'opacity-80' : ''}`}>
       <div className="relative overflow-hidden">
         {product.is_sold_out && <SoldOutOverlay />}
+        <ProductBadges badges={(product as any).badges} />
+        {
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
@@ -85,6 +87,8 @@ function TGDDProductCard({ product, onClick, accentColor }: ProductCardProps) {
   return (
     <button onClick={onClick} className={`bg-white rounded-xl border border-gray-200 overflow-hidden text-left group transition-all hover:shadow-xl hover:border-blue-300 w-full relative ${product.is_sold_out ? 'opacity-80' : ''}`}>
       {product.is_sold_out && <SoldOutOverlay />}
+        <ProductBadges badges={(product as any).badges} />
+        {
       {discount > 0 && (
         <div className="absolute top-0 right-0 z-10 bg-red-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-bl-xl">
           -{discount}%
@@ -131,6 +135,8 @@ function HasakiProductCard({ product, onClick, accentColor }: ProductCardProps) 
     <button onClick={onClick} className={`bg-white rounded-2xl overflow-hidden text-left group transition-all hover:shadow-lg w-full border border-pink-100/50 ${product.is_sold_out ? 'opacity-80' : ''}`}>
       <div className="relative overflow-hidden">
         {product.is_sold_out && <SoldOutOverlay />}
+        <ProductBadges badges={(product as any).badges} />
+        {
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
@@ -175,6 +181,8 @@ function NikeProductCard({ product, onClick, accentColor }: ProductCardProps) {
     <button onClick={onClick} className={`text-left group w-full ${product.is_sold_out ? 'opacity-80' : ''}`}>
       <div className="relative overflow-hidden rounded-xl bg-[#f5f5f5]">
         {product.is_sold_out && <SoldOutOverlay />}
+        <ProductBadges badges={(product as any).badges} />
+        {
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full aspect-[3/4] object-cover group-hover:scale-105 transition-transform duration-700" />
         ) : (
@@ -210,6 +218,8 @@ function LuxuryProductCard({ product, onClick, accentColor }: ProductCardProps) 
     <button onClick={onClick} className={`text-left group w-full ${product.is_sold_out ? 'opacity-80' : ''}`}>
       <div className="relative overflow-hidden bg-[#faf8f5] border border-amber-100/50">
         {product.is_sold_out && <SoldOutOverlay />}
+        <ProductBadges badges={(product as any).badges} />
+        {
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-700" />
         ) : (
@@ -244,6 +254,8 @@ function MinimalProductCard({ product, onClick, accentColor }: ProductCardProps)
     <button onClick={onClick} className={`bg-[#faf9f6] rounded-xl overflow-hidden text-left group transition-all hover:shadow-md w-full border border-stone-200/50 ${product.is_sold_out ? 'opacity-80' : ''}`}>
       <div className="relative overflow-hidden">
         {product.is_sold_out && <SoldOutOverlay />}
+        <ProductBadges badges={(product as any).badges} />
+        {
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
@@ -278,6 +290,8 @@ function ShopeeProductCard({ product, onClick, accentColor }: ProductCardProps) 
   return (
     <button onClick={onClick} className={`bg-white rounded-lg overflow-hidden text-left group transition-all hover:shadow-lg w-full border border-gray-200 relative ${product.is_sold_out ? 'opacity-80' : ''}`}>
       {product.is_sold_out && <SoldOutOverlay />}
+        <ProductBadges badges={(product as any).badges} />
+        {
       {discount > 0 && (
         <div className="absolute top-0 right-0 z-10 bg-gradient-to-br from-orange-500 to-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">
           -{discount}%
@@ -316,6 +330,8 @@ function OrganicProductCard({ product, onClick, accentColor }: ProductCardProps)
     <button onClick={onClick} className={`bg-white rounded-2xl overflow-hidden text-left group transition-all hover:shadow-md w-full border border-green-100 ${product.is_sold_out ? 'opacity-80' : ''}`}>
       <div className="relative overflow-hidden">
         {product.is_sold_out && <SoldOutOverlay />}
+        <ProductBadges badges={(product as any).badges} />
+        {
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
