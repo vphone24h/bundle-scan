@@ -452,19 +452,23 @@ export function LandingProductsTab() {
   // Auto-generate variant price matrix
   const generateVariantPrices = () => {
     const existing = form.variant_prices;
-    const newPrices: VariantPriceEntry[] = [];
+    const newPrices: VariantPriceEntry[] = [...existing];
     
     if (form.variant_options_1.length === 0) return;
     
     for (const opt1 of form.variant_options_1) {
       if (form.variant_options_2.length > 0) {
         for (const opt2 of form.variant_options_2) {
-          const found = existing.find(p => p.option1 === opt1.name && p.option2 === opt2.name);
-          newPrices.push(found || { option1: opt1.name, option2: opt2.name, price: form.price, sale_price: 0, stock: 0 });
+          const alreadyExists = existing.find(p => p.option1 === opt1.name && p.option2 === opt2.name);
+          if (!alreadyExists) {
+            newPrices.push({ option1: opt1.name, option2: opt2.name, price: form.price, sale_price: 0, stock: 0 });
+          }
         }
       } else {
-        const found = existing.find(p => p.option1 === opt1.name && !p.option2);
-        newPrices.push(found || { option1: opt1.name, price: form.price, sale_price: 0, stock: 0 });
+        const alreadyExists = existing.find(p => p.option1 === opt1.name && !p.option2);
+        if (!alreadyExists) {
+          newPrices.push({ option1: opt1.name, price: form.price, sale_price: 0, stock: 0 });
+        }
       }
     }
     setForm(p => ({ ...p, variant_prices: newPrices }));
@@ -951,6 +955,42 @@ export function LandingProductsTab() {
                             </span>
                           </label>
                           {vp.is_sold_out && <Badge variant="destructive" className="text-[9px] px-1.5 py-0 shrink-0">Hết</Badge>}
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            <Button
+                              type="button" variant="ghost" size="icon"
+                              className="h-6 w-6"
+                              disabled={i === 0}
+                              onClick={() => {
+                                const prices = [...form.variant_prices];
+                                [prices[i - 1], prices[i]] = [prices[i], prices[i - 1]];
+                                setForm(p => ({ ...p, variant_prices: prices }));
+                              }}
+                            >
+                              <ChevronUp className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              type="button" variant="ghost" size="icon"
+                              className="h-6 w-6"
+                              disabled={i === form.variant_prices.length - 1}
+                              onClick={() => {
+                                const prices = [...form.variant_prices];
+                                [prices[i], prices[i + 1]] = [prices[i + 1], prices[i]];
+                                setForm(p => ({ ...p, variant_prices: prices }));
+                              }}
+                            >
+                              <ChevronDown className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              type="button" variant="ghost" size="icon"
+                              className="h-6 w-6 text-destructive hover:text-destructive"
+                              onClick={() => {
+                                const prices = form.variant_prices.filter((_, idx) => idx !== i);
+                                setForm(p => ({ ...p, variant_prices: prices }));
+                              }}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <PriceInput
