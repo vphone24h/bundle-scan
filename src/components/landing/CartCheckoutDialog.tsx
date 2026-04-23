@@ -212,12 +212,12 @@ export function CartCheckoutDialog({
                       {item.variant && <p className="text-[10px] text-muted-foreground">{item.variant}</p>}
                       <div className="flex items-center gap-2 mt-1">
                         <div className="flex items-center border rounded-md bg-white">
-                          <button onClick={() => cart.updateQuantity(item.productId, item.variant, item.quantity - 1)}
+                          <button onClick={() => cart.updateQuantity(item.itemKey, item.quantity - 1)}
                             className="p-1 hover:bg-muted transition-colors rounded-l-md">
                             <Minus className="h-3.5 w-3.5 text-muted-foreground" />
                           </button>
                           <span className="px-2.5 text-sm font-medium min-w-[28px] text-center">{item.quantity}</span>
-                          <button onClick={() => cart.updateQuantity(item.productId, item.variant, item.quantity + 1)}
+                          <button onClick={() => cart.updateQuantity(item.itemKey, item.quantity + 1)}
                             className="p-1 hover:bg-muted transition-colors rounded-r-md">
                             <Plus className="h-3.5 w-3.5 text-muted-foreground" />
                           </button>
@@ -227,7 +227,7 @@ export function CartCheckoutDialog({
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
-                      <button onClick={() => cart.removeItem(item.productId, item.variant)}
+                      <button onClick={() => cart.removeItem(item.itemKey)}
                         className="p-1 rounded-full hover:bg-red-50 transition-colors">
                         <Trash2 className="h-3.5 w-3.5 text-red-400 hover:text-red-600" />
                       </button>
