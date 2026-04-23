@@ -1621,6 +1621,12 @@ export default function ExportNewPage() {
                       <span>{t('tours.exportNew.subtotal')}:</span>
                       <span className="font-medium">{subtotalAmount.toLocaleString('vi-VN')}đ</span>
                     </div>
+                    {servicePackageTotal > 0 && (
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>Gói dịch vụ:</span>
+                        <span>+{servicePackageTotal.toLocaleString('vi-VN')}đ</span>
+                      </div>
+                    )}
                     {taxEnabled && effectiveTaxRate > 0 && (
                       <div className="flex justify-between text-sm text-muted-foreground">
                         <span>{t('tours.exportNew.vatLabel', { rate: effectiveTaxRate })}:</span>
