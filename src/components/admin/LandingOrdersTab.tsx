@@ -1005,21 +1005,6 @@ export function LandingOrdersTab() {
                     {allGroupOrders.length === 1 && (
                       <p className="font-bold text-primary">{formatNumber(detailOrder.quantity * detailOrder.product_price)}đ</p>
                     )}
-                  </div>
-                  {/* Package details */}
-                  {detailOrder.selected_packages && (detailOrder.selected_packages as any[]).length > 0 && (
-                    <div className="mt-2 p-2 bg-muted/30 rounded-md space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground">📦 Gói dịch vụ kèm theo:</p>
-                      {(detailOrder.selected_packages as any[]).map((pkg: any, idx: number) => (
-                        <div key={idx} className="flex justify-between text-xs">
-                          <span>• {pkg.name}</span>
-                          <span className="font-medium">{pkg.price > 0 ? `+${formatNumber(pkg.price)}đ` : 'Miễn phí'}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  </>
-                );
                     {/* Package details */}
                     {detailOrder.selected_packages && (detailOrder.selected_packages as any[]).length > 0 && (
                       <div className="mt-2 p-2 bg-muted/30 rounded-md space-y-1">
