@@ -1136,6 +1136,13 @@ export function LandingProductsTab() {
                               const arr = [...packageForm];
                               arr[i] = { ...arr[i], is_default: !!checked };
                               setPackageForm(arr);
+                             }}
+                            onCheckedChange={(checked) => {
+                              const arr = packageForm.map((p, j) => ({
+                                ...p,
+                                is_default: j === i ? !!checked : false,
+                              }));
+                              setPackageForm(arr);
                             }}
                             className="h-3.5 w-3.5"
                           />
