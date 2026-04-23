@@ -2,6 +2,7 @@ import { LandingProduct } from '@/hooks/useLandingProducts';
 import { LayoutStyle } from '@/lib/industryConfig';
 import { formatNumber } from '@/lib/formatNumber';
 import { Package, Star, Zap, ShoppingBag } from 'lucide-react';
+import { PRODUCT_BADGE_OPTIONS } from '@/components/admin/LandingProductsTab';
 
 // Shared sold-out overlay
 function SoldOutOverlay() {
@@ -11,6 +12,27 @@ function SoldOutOverlay() {
         ĐÃ HẾT
       </span>
     </div>
+  );
+}
+
+// Shared badge overlay for product cards
+function ProductBadges({ badges }: { badges?: string[] }) {
+  if (!badges || badges.length === 0) return null;
+  const items = badges.slice(0, 2).map(b => PRODUCT_BADGE_OPTIONS.find(o => o.id === b)).filter(Boolean);
+  if (items.length === 0) return null;
+  return (
+    <>
+      {items[0] && (
+        <div className={`absolute top-2 right-2 z-10 ${items[0]!.color} text-white text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-lg animate-pulse`}>
+          {items[0]!.text}
+        </div>
+      )}
+      {items[1] && (
+        <div className={`absolute top-2 left-2 z-10 ${items[1]!.color} text-white text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-lg animate-pulse`}>
+          {items[1]!.text}
+        </div>
+      )}
+    </>
   );
 }
 
