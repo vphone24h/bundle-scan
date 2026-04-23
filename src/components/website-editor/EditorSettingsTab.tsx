@@ -9,6 +9,7 @@ import { CTAButtonsEditor } from '@/components/admin/ProductDetailSectionManager
 import { NewsPageSectionManager } from '@/components/admin/NewsPageSectionManager';
 import { NavMenuEditor } from '@/components/website-editor/NavMenuEditor';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
+import { BRAND_COLOR_PRESETS, getTemplateById } from '@/lib/websiteTemplates';
 import { VIETNAMESE_BANKS } from '@/lib/vietnameseBanks';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -185,6 +186,10 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
           onSelect={(id) => {
             onChange('website_template', id);
             onChange('custom_nav_items', getFullNavItems(id));
+            const tpl = getTemplateById(id);
+            if (tpl?.defaultColor) {
+              onChange('primary_color', tpl.defaultColor);
+            }
           }}
           editableSettings={{
             custom_trust_badges: (formData as any).custom_trust_badges || null,
@@ -503,12 +508,12 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {['#0071e3', '#0f766e', '#e11d48', '#ea580c', '#7c3aed', '#000000'].map(color => (
+            {BRAND_COLOR_PRESETS.map(color => (
               <button
                 key={color}
                 type="button"
                 onClick={() => onChange('primary_color', color)}
-                className={`h-8 w-8 rounded-full border-2 transition-all ${formData.primary_color === color ? 'border-foreground scale-110' : 'border-transparent'}`}
+                className={`h-6 w-6 rounded-full border-2 transition-all ${formData.primary_color === color ? 'border-foreground scale-110' : 'border-transparent hover:scale-105'}`}
                 style={{ backgroundColor: color }}
               />
             ))}
