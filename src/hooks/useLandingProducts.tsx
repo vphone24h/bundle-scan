@@ -299,7 +299,7 @@ export function usePublicLandingProducts(
       if (!tenantId) return { categories: [], products: [] };
       const [catRes, prodRes] = await Promise.all([
         supabase.from('landing_product_categories' as any).select('*').eq('tenant_id', tenantId).eq('is_hidden', false).order('display_order', { ascending: true }).order('created_at', { ascending: false }),
-        supabase.from('landing_products' as any).select('*').eq('tenant_id', tenantId).eq('is_active', true).order('display_order'),
+        supabase.from('landing_products' as any).select('*').eq('tenant_id', tenantId).eq('is_active', true).order('display_order', { ascending: true }).order('created_at', { ascending: false }),
       ]);
       return {
         categories: (catRes.data || []) as unknown as LandingProductCategory[],
