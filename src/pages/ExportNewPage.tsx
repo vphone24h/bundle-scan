@@ -842,6 +842,17 @@ export default function ExportNewPage() {
       unit: productUnit,
       warranty: itemWarranty || null,
     };
+    // Fetch group_id for service packages if not already available
+    if (selectedProduct.group_id) {
+      newItem.group_id = selectedProduct.group_id;
+    } else if (selectedProduct.id) {
+      // Lazy lookup group_id from products table
+      supabase.from('products').select('group_id').eq('id', selectedProduct.id).maybeSingle().then(({ data }) => {
+        if (data?.group_id) {
+          setCart(prev => prev.map(item => item.tempId === newItem.tempId ? { ...item, group_id: data.group_id } : item));
+        }
+      });
+    }
 
     setCart([...cart, newItem]);
     setSelectedProduct(null);
