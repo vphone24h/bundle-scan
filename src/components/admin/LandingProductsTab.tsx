@@ -385,6 +385,7 @@ export function LandingProductsTab() {
         warranty_content: detail.warranty_content || '',
         package_selection_mode: (detail as any).package_selection_mode || 'multiple',
       });
+      setShowBadges(Array.isArray((detail as any).badges) && (detail as any).badges.length > 0);
       setProductDialog(true);
     } catch (e: any) {
       toast({ title: 'Lỗi tải sản phẩm', description: e.message, variant: 'destructive' });
