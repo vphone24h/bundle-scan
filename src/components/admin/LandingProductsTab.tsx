@@ -349,6 +349,7 @@ export function LandingProductsTab() {
       package_selection_mode: 'multiple',
     });
     setShowBadges(false);
+    setFormBadges([]);
     setProductDialog(true);
   };
 
@@ -388,6 +389,7 @@ export function LandingProductsTab() {
         package_selection_mode: (detail as any).package_selection_mode || 'multiple',
       });
       setShowBadges(Array.isArray((detail as any).badges) && (detail as any).badges.length > 0);
+      setFormBadges(Array.isArray((detail as any).badges) ? (detail as any).badges : []);
       setProductDialog(true);
     } catch (e: any) {
       toast({ title: 'Lỗi tải sản phẩm', description: e.message, variant: 'destructive' });
@@ -515,6 +517,7 @@ export function LandingProductsTab() {
         is_active: form.is_active,
         is_sold_out: form.is_sold_out,
         variants: form.variants,
+        badges: formBadges,
         home_tab_ids: form.home_tab_ids,
         variant_group_1_name: form.variant_group_1_name,
         variant_group_2_name: form.variant_group_2_name,
