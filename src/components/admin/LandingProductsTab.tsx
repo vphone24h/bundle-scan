@@ -1143,7 +1143,6 @@ export function LandingProductsTab() {
                           />
                           <span className="text-xs">Mặc định chọn</span>
                         </label>
-                        </label>
                         <label className="flex items-center gap-1.5 cursor-pointer">
                           <Checkbox
                             checked={pkg.is_active}
