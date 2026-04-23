@@ -299,6 +299,8 @@ export function LandingProductsTab() {
 
   const openAddProduct = () => {
     setEditingProduct(null);
+    setEditingProductId(null);
+    setPackageForm([]);
     setForm({
       name: '', description: '', price: 0, sale_price: null, category_id: '_none_',
       image_url: '', images: [], is_featured: false, is_active: true, is_sold_out: false, variants: [], home_tab_ids: [],
@@ -320,6 +322,7 @@ export function LandingProductsTab() {
       }
 
       setEditingProduct(detail);
+      setEditingProductId(detail.id);
       setForm({
         name: detail.name,
         description: detail.description || '',
