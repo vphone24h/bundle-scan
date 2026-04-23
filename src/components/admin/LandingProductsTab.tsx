@@ -288,6 +288,8 @@ export function LandingProductsTab() {
     warranty_content: '',
     package_selection_mode: 'multiple',
   });
+  // Add badges to form - stored separately to avoid re-init issues
+  const [formBadges, setFormBadges] = useState<string[]>([]);
 
   const [showBadges, setShowBadges] = useState(false);
 
