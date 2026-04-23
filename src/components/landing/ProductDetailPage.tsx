@@ -323,7 +323,6 @@ export function ProductDetailPage({
         product_id: product.id,
         product_name: product.name,
         product_image_url: product.image_url,
-        product_price: displayPrice,
         product_price: orderPrice,
         variant: getVariantLabel(),
         quantity,
