@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { BRAND_COLOR_PRESETS } from '@/lib/websiteTemplates';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCustomDomainArticlePublic, useAppConfig } from '@/hooks/useAppConfig';
 import { useNavigate } from 'react-router-dom';
@@ -1786,6 +1787,17 @@ export function LandingPageSettings() {
                 placeholder="#0f766e"
                 className="max-w-32"
               />
+            </div>
+            <div className="flex gap-1.5 flex-wrap mt-2">
+              {BRAND_COLOR_PRESETS.map(color => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => handleChange('primary_color', color)}
+                  className={`h-6 w-6 rounded-full border-2 transition-all ${formData.primary_color === color ? 'border-foreground scale-110' : 'border-transparent hover:scale-105'}`}
+                  style={{ backgroundColor: color }}
+                />
+              ))}
             </div>
           </div>
 
