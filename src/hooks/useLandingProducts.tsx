@@ -326,3 +326,96 @@ export async function uploadLandingProductImage(file: File, tenantId: string): P
   const { data: publicUrl } = supabase.storage.from('landing-assets').getPublicUrl(data.path);
   return publicUrl.publicUrl;
 }
+
+// ===== SERVICE PACKAGES =====
+
+export interface LandingProductPackage {
+  id: string;
+  product_id: string;
+  tenant_id: string;
+  name: string;
+  price: number;
+  description: string | null;
+  is_default: boolean;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export function useProductPackages(productId: string | null) {
+  return useQuery({
+    queryKey: ['landing-product-packages', productId],
+    queryFn: async () => {
+      if (!productId) return [];
+      const { data, error } = await supabase
+        .from('landing_product_packages' as any)
+        .select('*')
+        .eq('product_id', productId)
+        .order('display_order', { ascending: true });
+      if (error) throw error;
+      return data as unknown as LandingProductPackage[];
+    },
+    enabled: !!productId,
+  });
+}
+
+export function usePublicProductPackages(productId: string | null) {
+  return useQuery({
+    queryKey: ['public-product-packages', productId],
+    queryFn: async () => {
+      if (!productId) return [];
+      const { data, error } = await supabase
+        .from('landing_product_packages' as any)
+        .select('*')
+        .eq('product_id', productId)
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+      if (error) throw error;
+      return data as unknown as LandingProductPackage[];
+    },
+    enabled: !!productId,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useSaveProductPackages() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ productId, tenantId, packages }: {
+      productId: string;
+      tenantId: string;
+      packages: Array<{ id?: string; name: string; price: number; description?: string; is_default?: boolean; is_active?: boolean; display_order?: number }>;
+    }) => {
+      // Delete all existing packages for this product
+      await supabase
+        .from('landing_product_packages' as any)
+        .delete()
+        .eq('product_id', productId);
+
+      if (packages.length === 0) return [];
+
+      const rows = packages.map((pkg, i) => ({
+        product_id: productId,
+        tenant_id: tenantId,
+        name: pkg.name,
+        price: pkg.price,
+        description: pkg.description || null,
+        is_default: pkg.is_default || false,
+        is_active: pkg.is_active !== false,
+        display_order: pkg.display_order ?? i,
+      }));
+
+      const { data, error } = await supabase
+        .from('landing_product_packages' as any)
+        .insert(rows)
+        .select();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['landing-product-packages', vars.productId] });
+      qc.invalidateQueries({ queryKey: ['public-product-packages', vars.productId] });
+    },
+  });
+}
