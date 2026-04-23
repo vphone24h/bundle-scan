@@ -581,6 +581,7 @@ export default function UniversalStoreTemplate({
           relatedProducts={allProducts.filter(p => p.category_id === selectedProduct.category_id && p.id !== selectedProduct.id).slice(0, 10)}
           onProductClick={openProduct}
           storeInfo={{ name: displayStoreName, phone: settings?.store_phone || '', address: settings?.store_address || '', email: settings?.store_email || '' }}
+          storeBranches={branches.map(b => ({ name: b.name, address: b.address, phone: b.phone }))}
           zaloUrl={settings?.zalo_url}
           facebookUrl={settings?.facebook_url}
           paymentConfig={{
