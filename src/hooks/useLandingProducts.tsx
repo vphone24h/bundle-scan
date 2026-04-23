@@ -62,6 +62,7 @@ export interface LandingProduct {
   warranty_title: string;
   warranty_content: string | null;
   package_selection_mode: string;
+  badges: string[];
   created_at: string;
   updated_at: string;
 }
