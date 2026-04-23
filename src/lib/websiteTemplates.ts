@@ -55,7 +55,7 @@ export const WEBSITE_TEMPLATES: WebsiteTemplate[] = [
   { id: 'training_center', name: 'Trung tâm đào tạo (danh sách khóa học, đăng ký online)', category: 'Dịch vụ', description: 'Khóa học, đăng ký online', icon: '🎓', tier: 'premium', available: true, defaultColor: '#4f46e5' },
   { id: 'clinic_store', name: 'Phòng khám (đặt lịch khám, giới thiệu bác sĩ)', category: 'Dịch vụ', description: 'Tin cậy, đặt lịch khám', icon: '🏥', tier: 'premium', available: true, defaultColor: '#0e7490' },
   { id: 'pharmacy_store', name: 'Nhà thuốc (tìm thuốc nhanh, danh mục theo bệnh)', category: 'Dịch vụ', description: 'Tìm kiếm thuốc nhanh', icon: '💊', tier: 'basic', available: true, defaultColor: '#16a34a' },
-  { id: 'company_site', name: 'Công ty / Doanh nghiệp (giới thiệu, dịch vụ, liên hệ)', category: 'Dịch vụ', description: 'Corporate, chuyên nghiệp', icon: '🏢', tier: 'premium', available: true, defaultColor: '#1e40af' },
+  { id: 'company_site', name: 'Công ty / Doanh nghiệp (giới thiệu, dịch vụ, liên hệ)', category: 'Dịch vụ', description: 'Corporate, chuyên nghiệp', icon: '🏢', tier: 'premium', available: true, defaultColor: '#1d4ed8' },
 
   // Specialty
   { id: 'baby_store', name: 'Đồ mẹ và bé (màu pastel, lọc theo độ tuổi)', category: 'Chuyên biệt', description: 'Đáng yêu, an toàn', icon: '👶', tier: 'basic', available: true, defaultColor: '#f472b6' },
@@ -77,7 +77,7 @@ export const WEBSITE_TEMPLATES: WebsiteTemplate[] = [
   { id: 'apple_landing', name: 'Apple Style Landing (full-screen banner, tối giản cao cấp)', category: 'Công nghệ', description: 'Phong cách Apple.com – full-screen banners, tối giản, cao cấp', icon: '🍎', tier: 'pro', available: true, brandInspiration: 'Apple.com', defaultColor: '#000000' },
 
   // Bảng giá list (nhập qua Tin tức – mỗi bài 1 bảng giá)
-  { id: 'price_list', name: 'Bảng giá điện thoại (web 1 mặt show hết giá, phù hợp bán sỉ)', category: 'Công nghệ', description: '1 trang chủ duy nhất: banner + địa chỉ/SĐT + bảng giá list theo nhóm. Nội dung bảng giá biên tập trong mục Tin tức.', icon: '📋', tier: 'premium', available: true, brandInspiration: 'taoquangsang', defaultColor: '#0071e3' },
+  { id: 'price_list', name: 'Bảng giá điện thoại (web 1 mặt show hết giá, phù hợp bán sỉ)', category: 'Công nghệ', description: '1 trang chủ duy nhất: banner + địa chỉ/SĐT + bảng giá list theo nhóm. Nội dung bảng giá biên tập trong mục Tin tức.', icon: '📋', tier: 'premium', available: true, brandInspiration: 'taoquangsang', defaultColor: '#1d4ed8' },
 ];
 
 export const TEMPLATE_CATEGORIES = [...new Set(WEBSITE_TEMPLATES.map(t => t.category))];
