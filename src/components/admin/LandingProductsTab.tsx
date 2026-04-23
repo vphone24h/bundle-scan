@@ -1133,13 +1133,16 @@ export function LandingProductsTab() {
                           <Checkbox
                             checked={pkg.is_default}
                             onCheckedChange={(checked) => {
-                              const arr = [...packageForm];
-                              arr[i] = { ...arr[i], is_default: !!checked };
+                              const arr = packageForm.map((p, j) => ({
+                                ...p,
+                                is_default: j === i ? !!checked : false,
+                              }));
                               setPackageForm(arr);
                             }}
                             className="h-3.5 w-3.5"
                           />
                           <span className="text-xs">Mặc định chọn</span>
+                        </label>
                         </label>
                         <label className="flex items-center gap-1.5 cursor-pointer">
                           <Checkbox
