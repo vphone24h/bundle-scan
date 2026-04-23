@@ -332,8 +332,6 @@ export function useCreateExportReceipt() {
       salesStaffId,
       skipCashBook,
       exportDate,
-      servicePackages,
-      servicePackageTotal,
     }: {
       customerId: string;
       items: ExportReceiptItem[];
@@ -348,15 +346,13 @@ export function useCreateExportReceipt() {
       salesStaffId?: string | null;
       skipCashBook?: boolean;
       exportDate?: string;
-      servicePackages?: { package_id: string; package_name: string; price: number; quantity: number }[];
-      servicePackageTotal?: number;
     }) => {
       if (!items?.length) {
         throw new Error('Không thể tạo phiếu bán rỗng');
       }
 
       // Calculate total amount considering quantity
-      const totalAmount = items.reduce((sum, item) => sum + (item.sale_price * (item.quantity || 1)), 0) + (servicePackageTotal || 0);
+      const totalAmount = items.reduce((sum, item) => sum + (item.sale_price * (item.quantity || 1)), 0);
       const paidAmount = payments
         .filter((p) => p.payment_type !== 'debt')
         .reduce((sum, p) => sum + p.amount, 0);
@@ -441,25 +437,12 @@ export function useCreateExportReceipt() {
             sales_staff_id: salesStaffId || user?.id,
             tenant_id: tenantId,
             ...(exportDate ? { export_date: exportDate } : {}),
-            service_package_total: servicePackageTotal || 0,
           },
         ])
         .select()
         .single();
 
       if (receiptError) throw receiptError;
-
-      // Insert service packages
-      if (servicePackages && servicePackages.length > 0) {
-        const spToInsert = servicePackages.map(sp => ({
-          receipt_id: receipt.id,
-          package_id: sp.package_id,
-          package_name: sp.package_name,
-          price: sp.price,
-          quantity: sp.quantity,
-        }));
-        await supabase.from('export_receipt_service_packages' as any).insert(spToInsert);
-      }
 
       // Insert items with unit and quantity
       const itemsToInsert = items.map(item => ({
@@ -857,7 +840,6 @@ export function useCheckProductForSale() {
           branch_id,
           unit,
           quantity,
-          group_id,
           categories(name),
           branches(name)
         `)
