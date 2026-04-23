@@ -1,0 +1,1 @@
+ALTER TABLE public.landing_products ADD COLUMN IF NOT EXISTS badges jsonb DEFAULT '[]'::jsonb;
