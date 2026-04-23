@@ -70,6 +70,8 @@ import { PriceInput } from '@/components/ui/price-input';
 import { cn } from '@/lib/utils';
 import { normalizeLooseSearchValue } from '@/lib/normalizeSearch';
 import { AutoEmailToggle } from '@/components/shared/AutoEmailToggle';
+import { ServicePackageSelector, type SelectedServicePackage } from '@/components/export/ServicePackageSelector';
+import { supabase as supabaseClient } from '@/integrations/supabase/client';
 
 interface SelectedCustomer {
   id: string;
@@ -93,6 +95,7 @@ interface CartItem extends ExportReceiptItem {
   quantity: number;
   unit: string;
   warranty?: string;
+  group_id?: string | null;
 }
 
 function useExportNewTourSteps(): TourStep[] {
@@ -164,6 +167,14 @@ export default function ExportNewPage() {
   // Auto email toggle
   const [autoEmailEnabled, setAutoEmailEnabled] = useState(true);
   const [autoZaloEnabled, setAutoZaloEnabled] = useState(false);
+
+  // Service packages
+  const [selectedServicePackages, setSelectedServicePackages] = useState<SelectedServicePackage[]>([]);
+  const servicePackageTotal = selectedServicePackages.reduce((sum, sp) => sum + sp.price * sp.quantity, 0);
+
+  // Derive unique group_ids from cart for service package lookup
+  const cartGroupIds = [...new Set(cart.map(i => i.group_id).filter(Boolean))] as string[];
+  const primaryGroupId = cartGroupIds.length > 0 ? cartGroupIds[0] : null;
 
   // Hooks
   const { user } = useAuth();
@@ -872,7 +883,7 @@ export default function ExportNewPage() {
   // Calculate totals
   const subtotalAmount = cart.reduce((sum, item) => sum + (item.sale_price * item.quantity), 0);
   const taxAmount = Math.round(subtotalAmount * effectiveTaxRate / 100);
-  const totalAmount = subtotalAmount + taxAmount;
+  const totalAmount = subtotalAmount + taxAmount + servicePackageTotal;
 
   // Handle proceed to payment
   const handleProceedToPayment = () => {
