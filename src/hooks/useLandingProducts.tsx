@@ -61,6 +61,7 @@ export interface LandingProduct {
   promotion_content: string | null;
   warranty_title: string;
   warranty_content: string | null;
+  package_selection_mode: string;
   created_at: string;
   updated_at: string;
 }
