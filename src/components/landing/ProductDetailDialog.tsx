@@ -295,7 +295,21 @@ export function ProductDetailDialog({
         : usePoints && pointsDiscount > 0
           ? `[Điểm tích lũy: Giảm ${formatNumber(pointsDiscount)}đ]`
           : '';
-      const fullNote = [discountNote, note.trim()].filter(Boolean).join(' ');
+      // Build packages note
+      const selectedPkgs = productPackages?.filter(p => selectedPackageIds.has(p.id)) || [];
+      const packagesNote = selectedPkgs.length > 0
+        ? `[Gói DV: ${selectedPkgs.map(p => `${p.name} (+${formatNumber(p.price)}đ)`).join(', ')}]`
+        : '';
+      const fullNote = [discountNote, packagesNote, note.trim()].filter(Boolean).join(' ');
+
+      // Build selected_packages JSON
+      const selectedPackagesData = selectedPkgs.map(p => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+      }));
+
+      const orderPrice = displayPrice + packagesTotal;
 
       const result = await placeOrder.mutateAsync({
         tenant_id: tenantId,
@@ -303,13 +317,14 @@ export function ProductDetailDialog({
         product_id: product.id,
         product_name: product.name,
         product_image_url: product.image_url,
-        product_price: displayPrice,
+        product_price: orderPrice,
         variant: getVariantLabel(),
         quantity,
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
         customer_address: customerAddress.trim() || undefined,
         note: fullNote || undefined,
+        selected_packages: selectedPackagesData,
       });
       setOrderSuccess(true);
 
