@@ -157,6 +157,7 @@ export function usePlaceLandingOrder() {
       ctv_code?: string;
       ctv_id?: string;
       ctv_name?: string;
+      selected_packages?: Array<{ id: string; name: string; price: number }>;
     }) => {
       // Auto-detect CTV source if not explicitly set
       let finalOrder = { ...order };
