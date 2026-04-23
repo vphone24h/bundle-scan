@@ -251,6 +251,12 @@ export function ProductDetailPage({
   const totalDiscount = selectedVoucherId ? voucherDiscount : (usePoints ? pointsDiscount : 0);
   const displayPrice = Math.max(0, basePrice - totalDiscount);
 
+  // Calculate packages total
+  const packagesTotal = useMemo(() => {
+    if (!productPackages) return 0;
+    return productPackages.filter(p => selectedPackageIds.has(p.id)).reduce((sum, p) => sum + p.price, 0);
+  }, [productPackages, selectedPackageIds]);
+
   const handleSelectLegacyVariant = (i: number) => {
     const newIdx = selectedVariantIndex === i ? null : i;
     setSelectedVariantIndex(newIdx);
