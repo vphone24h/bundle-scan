@@ -1110,7 +1110,16 @@ export function LandingOrdersTab() {
                 {detailOrder.note && (
                   <div>
                     <span className="text-muted-foreground">Ghi chú:</span>
-                    <p className="mt-1 bg-muted/50 rounded p-2 text-sm">{detailOrder.note}</p>
+                    <div className="mt-1 bg-muted/50 rounded p-2 text-sm space-y-1">
+                      {detailOrder.note
+                        .replace(/\] \[/g, ']\n[')
+                        .replace(/\] /g, ']\n')
+                        .split('\n')
+                        .filter(Boolean)
+                        .map((line, i) => (
+                          <p key={i} className="break-words">{line.trim()}</p>
+                        ))}
+                    </div>
                   </div>
                 )}
                 <div className="flex justify-between items-center">
