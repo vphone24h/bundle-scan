@@ -43,6 +43,26 @@ import { PriceInput } from '@/components/ui/price-input';
 import { ImportFromWarehouseDialog } from './ImportFromWarehouseDialog';
 import { ListPagination, paginateArray } from '@/components/ui/list-pagination';
 
+// Badge options for products
+const PRODUCT_BADGE_OPTIONS = [
+  { id: 'new', label: '🆕 Hàng mới', color: 'bg-red-500', text: 'NEW' },
+  { id: 'hot', label: '🔥 Hàng hot', color: 'bg-orange-500', text: 'HOT' },
+  { id: 'trending', label: '📈 Trending', color: 'bg-purple-500', text: 'Trending' },
+  { id: 'popular', label: '👀 Được quan tâm', color: 'bg-blue-500', text: 'Quan tâm' },
+  { id: 'best_choice', label: '👍 Đề xuất', color: 'bg-emerald-500', text: 'Đề xuất' },
+  { id: 'sale', label: '💥 Giảm giá sốc', color: 'bg-red-600', text: 'SALE' },
+  { id: 'deal', label: '💰 Deal hôm nay', color: 'bg-amber-500', text: 'Deal' },
+  { id: 'clearance', label: '📦 Xả kho', color: 'bg-rose-600', text: 'Xả kho' },
+  { id: 'genuine', label: '✅ Chính hãng', color: 'bg-green-600', text: 'Chính hãng' },
+  { id: 'warranty', label: '🛡️ Bảo hành tốt', color: 'bg-teal-500', text: 'BH tốt' },
+  { id: 'quality', label: '⭐ Chất lượng cao', color: 'bg-indigo-500', text: 'CL cao' },
+  { id: 'preorder', label: '🚀 Pre-order', color: 'bg-violet-500', text: 'Pre-order' },
+  { id: 'limited', label: '💎 Limited', color: 'bg-pink-600', text: 'Limited' },
+  { id: 'exclusive', label: '👑 Độc quyền', color: 'bg-yellow-600', text: 'Độc quyền' },
+];
+
+export { PRODUCT_BADGE_OPTIONS };
+
 // Helper: build tree from flat categories
 function buildCategoryTree(categories: LandingProductCategory[]): LandingProductCategory[] {
   const map = new Map<string, LandingProductCategory>();
