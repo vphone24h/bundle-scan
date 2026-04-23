@@ -289,6 +289,8 @@ export function LandingProductsTab() {
     package_selection_mode: 'multiple',
   });
 
+  const [showBadges, setShowBadges] = useState(false);
+
   const handleAddCategory = async () => {
     if (!catName.trim()) return;
     try {
