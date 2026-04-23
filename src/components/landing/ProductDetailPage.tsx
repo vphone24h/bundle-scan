@@ -583,7 +583,7 @@ export function ProductDetailPage({
             ];
             const allSections = (detailSections || defaultSections).filter(s => s.enabled);
             const rightSideIds = new Set(['promotion', 'warranty', 'storeInfo']);
-            return allSections.filter(s => rightSideIds.has(s.id)).map(section => {
+            const rightSections = allSections.filter(s => rightSideIds.has(s.id)).map(section => {
               switch (section.id) {
                 case 'promotion':
                   if (!product.promotion_content) return null;
@@ -625,6 +625,41 @@ export function ProductDetailPage({
                   return null;
               }
             });
+            // Prepend service packages before promotion/warranty sections
+            const packagesSection = productPackages && productPackages.length > 0 ? (
+              <div key="servicePackages" className="border rounded-lg overflow-hidden">
+                <div className="px-3 py-2.5 font-semibold text-sm flex items-center gap-1.5" style={{ backgroundColor: primaryColor, color: 'white' }}>
+                  📦 Gói dịch vụ kèm theo
+                </div>
+                <div className="p-3 space-y-2">
+                  {productPackages.map(pkg => (
+                    <label key={pkg.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={selectedPackageIds.has(pkg.id)}
+                        onChange={() => {
+                          setSelectedPackageIds(prev => {
+                            const next = new Set(prev);
+                            if (next.has(pkg.id)) next.delete(pkg.id);
+                            else next.add(pkg.id);
+                            return next;
+                          });
+                        }}
+                        className="rounded border-input h-4 w-4"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{pkg.name}</p>
+                        {pkg.description && <p className="text-xs text-muted-foreground">{pkg.description}</p>}
+                      </div>
+                      <span className="text-sm font-semibold shrink-0" style={{ color: primaryColor }}>
+                        {pkg.price > 0 ? `+${formatNumber(pkg.price)}đ` : 'Miễn phí'}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null;
+            return [packagesSection, ...rightSections];
           })()}
           </div>{/* /px-4 wrapper */}
           </div>{/* /Right column (desktop) */}
