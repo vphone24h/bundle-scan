@@ -441,12 +441,25 @@ export function useCreateExportReceipt() {
             sales_staff_id: salesStaffId || user?.id,
             tenant_id: tenantId,
             ...(exportDate ? { export_date: exportDate } : {}),
+            service_package_total: servicePackageTotal || 0,
           },
         ])
         .select()
         .single();
 
       if (receiptError) throw receiptError;
+
+      // Insert service packages
+      if (servicePackages && servicePackages.length > 0) {
+        const spToInsert = servicePackages.map(sp => ({
+          receipt_id: receipt.id,
+          package_id: sp.package_id,
+          package_name: sp.package_name,
+          price: sp.price,
+          quantity: sp.quantity,
+        }));
+        await supabase.from('export_receipt_service_packages' as any).insert(spToInsert);
+      }
 
       // Insert items with unit and quantity
       const itemsToInsert = items.map(item => ({
