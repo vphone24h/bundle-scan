@@ -36,6 +36,7 @@ export interface LandingOrder {
   ctv_code: string | null;
   ctv_id: string | null;
   ctv_name: string | null;
+  selected_packages: Array<{ id: string; name: string; price: number }> | null;
   created_at: string;
   updated_at: string;
 }
