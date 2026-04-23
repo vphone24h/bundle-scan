@@ -13,6 +13,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCategories } from '@/hooks/useCategories';
 import { VariantConfigPanel, VariantConfig, VariantLevel } from '@/components/import/VariantConfig';
 import type { Product } from '@/hooks/useProducts';
+import { ServicePackageManager } from '@/components/products/ServicePackageManager';
 
 interface EditTemplateProductDialogProps {
   product: (Product & { isTemplateGroup?: boolean; childProducts?: Product[] }) | null;
@@ -411,6 +412,9 @@ export function EditTemplateProductDialog({ product, open, onOpenChange }: EditT
                 <p className="mt-1">Hiện có: {existingVariantMap.size} | Mới thêm: {Math.max(0, totalCombinations - existingVariantMap.size)}</p>
               </div>
             )}
+
+            {/* Service Packages */}
+            <ServicePackageManager productGroupId={product?.group_id || null} />
           </div>
         )}
 

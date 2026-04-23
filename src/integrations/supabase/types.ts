@@ -3726,6 +3726,51 @@ export type Database = {
           },
         ]
       }
+      export_receipt_service_packages: {
+        Row: {
+          created_at: string
+          id: string
+          package_id: string | null
+          package_name: string
+          price: number
+          quantity: number
+          receipt_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          package_id?: string | null
+          package_name: string
+          price?: number
+          quantity?: number
+          receipt_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          package_id?: string | null
+          package_name?: string
+          price?: number
+          quantity?: number
+          receipt_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_receipt_service_packages_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "product_service_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_receipt_service_packages_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "export_receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       export_receipts: {
         Row: {
           branch_id: string | null
@@ -3746,6 +3791,7 @@ export type Database = {
           points_redeemed: number | null
           repair_order_id: string | null
           sales_staff_id: string | null
+          service_package_total: number | null
           status: string
           tenant_id: string | null
           total_amount: number
@@ -3773,6 +3819,7 @@ export type Database = {
           points_redeemed?: number | null
           repair_order_id?: string | null
           sales_staff_id?: string | null
+          service_package_total?: number | null
           status?: string
           tenant_id?: string | null
           total_amount?: number
@@ -3800,6 +3847,7 @@ export type Database = {
           points_redeemed?: number | null
           repair_order_id?: string | null
           sales_staff_id?: string | null
+          service_package_total?: number | null
           status?: string
           tenant_id?: string | null
           total_amount?: number
@@ -6129,6 +6177,60 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_service_packages: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          product_group_id: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          price?: number
+          product_group_id?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          product_group_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_service_packages_product_group_id_fkey"
+            columns: ["product_group_id"]
+            isOneToOne: false
+            referencedRelation: "product_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_service_packages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]

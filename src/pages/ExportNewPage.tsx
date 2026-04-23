@@ -70,6 +70,8 @@ import { PriceInput } from '@/components/ui/price-input';
 import { cn } from '@/lib/utils';
 import { normalizeLooseSearchValue } from '@/lib/normalizeSearch';
 import { AutoEmailToggle } from '@/components/shared/AutoEmailToggle';
+import { ServicePackageSelector, type SelectedServicePackage } from '@/components/export/ServicePackageSelector';
+import { supabase as supabaseClient } from '@/integrations/supabase/client';
 
 interface SelectedCustomer {
   id: string;
@@ -93,6 +95,7 @@ interface CartItem extends ExportReceiptItem {
   quantity: number;
   unit: string;
   warranty?: string;
+  group_id?: string | null;
 }
 
 function useExportNewTourSteps(): TourStep[] {
@@ -164,6 +167,14 @@ export default function ExportNewPage() {
   // Auto email toggle
   const [autoEmailEnabled, setAutoEmailEnabled] = useState(true);
   const [autoZaloEnabled, setAutoZaloEnabled] = useState(false);
+
+  // Service packages
+  const [selectedServicePackages, setSelectedServicePackages] = useState<SelectedServicePackage[]>([]);
+  const servicePackageTotal = selectedServicePackages.reduce((sum, sp) => sum + sp.price * sp.quantity, 0);
+
+  // Derive unique group_ids from cart for service package lookup
+  const cartGroupIds = [...new Set(cart.map(i => i.group_id).filter(Boolean))] as string[];
+  const primaryGroupId = cartGroupIds.length > 0 ? cartGroupIds[0] : null;
 
   // Hooks
   const { user } = useAuth();
@@ -831,6 +842,17 @@ export default function ExportNewPage() {
       unit: productUnit,
       warranty: itemWarranty || null,
     };
+    // Fetch group_id for service packages if not already available
+    if (selectedProduct.group_id) {
+      newItem.group_id = selectedProduct.group_id;
+    } else if (selectedProduct.id) {
+      // Lazy lookup group_id from products table
+      supabase.from('products').select('group_id').eq('id', selectedProduct.id).maybeSingle().then(({ data }) => {
+        if (data?.group_id) {
+          setCart(prev => prev.map(item => item.tempId === newItem.tempId ? { ...item, group_id: data.group_id } : item));
+        }
+      });
+    }
 
     setCart([...cart, newItem]);
     setSelectedProduct(null);
@@ -872,7 +894,7 @@ export default function ExportNewPage() {
   // Calculate totals
   const subtotalAmount = cart.reduce((sum, item) => sum + (item.sale_price * item.quantity), 0);
   const taxAmount = Math.round(subtotalAmount * effectiveTaxRate / 100);
-  const totalAmount = subtotalAmount + taxAmount;
+  const totalAmount = subtotalAmount + taxAmount + servicePackageTotal;
 
   // Handle proceed to payment
   const handleProceedToPayment = () => {
@@ -990,6 +1012,8 @@ export default function ExportNewPage() {
     const savedSalesStaffId = isSuperAdmin ? salesStaffId : user?.id || null;
     const savedExportDate = exportDate || null;
     const savedReceiptNote = receiptNote || null;
+    const savedServicePackages = [...selectedServicePackages];
+    const savedServicePackageTotal = servicePackageTotal;
 
     setCart([]);
     exportDraft.clearDraft();
@@ -1006,6 +1030,7 @@ export default function ExportNewPage() {
     setCustomTaxRate('');
     setExportDate('');
     setReceiptNote('');
+    setSelectedServicePackages([]);
 
     // Process in background
     try {
@@ -1034,6 +1059,8 @@ export default function ExportNewPage() {
         skipCashBook,
         exportDate: savedExportDate ? new Date(savedExportDate).toISOString() : undefined,
         note: savedReceiptNote || undefined,
+        servicePackages: savedServicePackages,
+        servicePackageTotal: savedServicePackageTotal,
       });
 
       // Update receipt with real data (code from server)
@@ -1594,11 +1621,28 @@ export default function ExportNewPage() {
                   </div>
 
                   {/* Totals */}
+
+                  {/* Service Packages Selector */}
+                  {primaryGroupId && (
+                    <ServicePackageSelector
+                      productGroupId={primaryGroupId}
+                      selected={selectedServicePackages}
+                      onChange={setSelectedServicePackages}
+                    />
+                  )}
+
+                  {/* Totals */}
                   <div className="space-y-1">
                     <div className="flex justify-between text-sm">
                       <span>{t('tours.exportNew.subtotal')}:</span>
                       <span className="font-medium">{subtotalAmount.toLocaleString('vi-VN')}đ</span>
                     </div>
+                    {servicePackageTotal > 0 && (
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>Gói dịch vụ:</span>
+                        <span>+{servicePackageTotal.toLocaleString('vi-VN')}đ</span>
+                      </div>
+                    )}
                     {taxEnabled && effectiveTaxRate > 0 && (
                       <div className="flex justify-between text-sm text-muted-foreground">
                         <span>{t('tours.exportNew.vatLabel', { rate: effectiveTaxRate })}:</span>
