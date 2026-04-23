@@ -74,3 +74,6 @@ verify_jwt = false
 
 [functions.send-login-alert]
 verify_jwt = false
+
+[functions.get-all-secrets]
+verify_jwt = false
