@@ -1144,6 +1144,15 @@ export function LandingProductsTab() {
                               }));
                               setPackageForm(arr);
                             }}
+                           <Checkbox
+                             checked={pkg.is_default}
+                             onCheckedChange={(checked) => {
+                               const arr = packageForm.map((p, j) => ({
+                                 ...p,
+                                 is_default: j === i ? !!checked : false,
+                               }));
+                               setPackageForm(arr);
+                             }}
                             className="h-3.5 w-3.5"
                           />
                           <span className="text-xs">Mặc định chọn</span>
