@@ -332,6 +332,8 @@ export function useCreateExportReceipt() {
       salesStaffId,
       skipCashBook,
       exportDate,
+      servicePackages,
+      servicePackageTotal,
     }: {
       customerId: string;
       items: ExportReceiptItem[];
@@ -346,6 +348,8 @@ export function useCreateExportReceipt() {
       salesStaffId?: string | null;
       skipCashBook?: boolean;
       exportDate?: string;
+      servicePackages?: { package_id: string; package_name: string; price: number; quantity: number }[];
+      servicePackageTotal?: number;
     }) => {
       if (!items?.length) {
         throw new Error('Không thể tạo phiếu bán rỗng');
