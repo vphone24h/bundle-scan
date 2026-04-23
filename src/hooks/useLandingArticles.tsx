@@ -234,7 +234,7 @@ export function usePublicLandingArticles(
 
   // Use prefetched data as initial data so React Query treats it as fresh (no refetch on mount)
   const prefetch = typeof window !== 'undefined' ? (window as any).__STORE_PREFETCH__ : null;
-  const initialData = prefetch?.data && prefetch.tenantId === tenantId
+  const prefetchedData = prefetch?.data && prefetch.tenantId === tenantId
     ? {
         categories: (prefetch.data.articleCategories || []) as unknown as LandingArticleCategory[],
         articles: (prefetch.data.articles || []) as unknown as LandingArticle[],
@@ -255,12 +255,12 @@ export function usePublicLandingArticles(
       };
     },
     enabled: queryEnabled && !!tenantId,
-    initialData,
-    staleTime: 1000 * 60 * 10,
+    placeholderData: prefetchedData,
+    staleTime: 0,
     gcTime: 1000 * 60 * 30,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 }
 
