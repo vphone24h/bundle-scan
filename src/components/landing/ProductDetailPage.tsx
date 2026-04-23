@@ -94,6 +94,7 @@ export function ProductDetailPage({
   const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(null);
   const [usePoints, setUsePoints] = useState(false);
   const [attempted, setAttempted] = useState(false);
+  const [selectedPackageIds, setSelectedPackageIds] = useState<Set<string>>(new Set());
 
   // CTA Dialog states
   const [activeDialog, setActiveDialog] = useState<string | null>(null);
