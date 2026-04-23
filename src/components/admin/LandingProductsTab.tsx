@@ -532,26 +532,26 @@ export function LandingProductsTab() {
     const idx = siblings.findIndex(c => c.id === cat.id);
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= siblings.length) return;
-    const reordered = [...siblings];
-    [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
-    const updates = reordered.map((item, index) => ({
-      id: item.id,
-      display_order: index,
-    }));
-    await reorderCats.mutateAsync(updates);
+    // Only swap 2 items
+    const a = siblings[idx];
+    const b = siblings[swapIdx];
+    await reorderCats.mutateAsync([
+      { id: a.id, display_order: b.display_order },
+      { id: b.id, display_order: a.display_order },
+    ]);
   };
 
   const handleMoveProduct = async (idx: number, direction: 'up' | 'down') => {
     if (!products) return;
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= products.length) return;
-    const reordered = [...products];
-    [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
-    const updates = reordered.map((item, index) => ({
-      id: item.id,
-      display_order: index,
-    }));
-    await reorderProds.mutateAsync(updates);
+    // Only swap 2 items instead of re-indexing all products
+    const a = products[idx];
+    const b = products[swapIdx];
+    await reorderProds.mutateAsync([
+      { id: a.id, display_order: b.display_order },
+      { id: b.id, display_order: a.display_order },
+    ]);
   };
 
   return (

@@ -146,13 +146,11 @@ export function useReorderLandingProductCategories() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (items: { id: string; display_order: number }[]) => {
-      for (const item of items) {
-        const { error } = await supabase
-          .from('landing_product_categories' as any)
-          .update({ display_order: item.display_order })
-          .eq('id', item.id);
-        if (error) throw error;
-      }
+      const { error } = await supabase.rpc('batch_update_display_order' as any, {
+        _table_name: 'landing_product_categories',
+        _items: items.map(i => ({ id: i.id, display_order: i.display_order })),
+      });
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['landing-product-categories'] });
@@ -165,13 +163,11 @@ export function useReorderLandingProducts() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (items: { id: string; display_order: number }[]) => {
-      for (const item of items) {
-        const { error } = await supabase
-          .from('landing_products' as any)
-          .update({ display_order: item.display_order })
-          .eq('id', item.id);
-        if (error) throw error;
-      }
+      const { error } = await supabase.rpc('batch_update_display_order' as any, {
+        _table_name: 'landing_products',
+        _items: items.map(i => ({ id: i.id, display_order: i.display_order })),
+      });
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['landing-products'] });
