@@ -923,10 +923,21 @@ export function ProductDetailPage({
                     </div>
                   </>
                 )}
-                {packagesTotal > 0 && (
-                  <div className="flex justify-between">
-                    <span>Gói dịch vụ:</span>
-                    <span className="font-medium">+{formatNumber(packagesTotal)}đ</span>
+                {productPackages && productPackages.filter(p => selectedPackageIds.has(p.id)).length > 0 && (
+                  <div className="space-y-1 pt-1 border-t border-dashed">
+                    <span className="text-xs font-medium text-muted-foreground">Gói dịch vụ kèm theo:</span>
+                    {productPackages.filter(p => selectedPackageIds.has(p.id)).map(pkg => (
+                      <div key={pkg.id} className="flex justify-between text-sm">
+                        <span className="text-gray-600">• {pkg.name}</span>
+                        <span className="font-medium">{pkg.price > 0 ? `+${formatNumber(pkg.price)}đ` : 'Miễn phí'}</span>
+                      </div>
+                    ))}
+                    {packagesTotal > 0 && (
+                      <div className="flex justify-between text-sm font-medium">
+                        <span>Tổng gói DV:</span>
+                        <span>+{formatNumber(packagesTotal)}đ</span>
+                      </div>
+                    )}
                   </div>
                 )}
                 <div className="flex justify-between font-bold pt-1.5 border-t">
