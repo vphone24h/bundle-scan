@@ -9,6 +9,7 @@ import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, Chevr
 import { formatNumber } from '@/lib/formatNumber';
 import DOMPurify from 'dompurify';
 import { LandingProduct, LandingProductVariant, VariantPriceEntry } from '@/hooks/useLandingProducts';
+import { usePublicProductPackages, LandingProductPackage } from '@/hooks/useLandingProducts';
 import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import { useCustomerPointsPublic } from '@/hooks/useTenantLanding';
