@@ -434,7 +434,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Giá sỉ – Giá lẻ chốt nhanh, hàng có sẵn',
     heroCta: 'Liên hệ ngay',
     heroGradient: 'linear-gradient(135deg, #000000 0%, #1a1a1a 100%)',
-    accentColor: '#1d4ed8',
+    accentColor: '#1e3a8a',
     trustBadges: [
       { icon: 'Shield', title: 'Hàng chính hãng', desc: 'Nguyên seal – Có VAT' },
       { icon: 'Award', title: 'Bảo hành Apple VN', desc: 'Tối đa 12 tháng' },
@@ -1089,7 +1089,7 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     heroSubtitle: 'Chuyên nghiệp – Uy tín – Hiệu quả.',
     heroCta: 'Liên hệ ngay',
     heroGradient: 'linear-gradient(135deg, #141e30 0%, #243b55 100%)',
-    accentColor: '#1d4ed8',
+    accentColor: '#1e3a8a',
     trustBadges: [
       { icon: 'Award', title: '10+ năm', desc: 'Kinh nghiệm' },
       { icon: 'Star', title: '500+ khách hàng', desc: 'Tin tưởng' },
