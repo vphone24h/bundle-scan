@@ -346,6 +346,7 @@ export function LandingProductsTab() {
       warranty_title: 'BẢO HÀNH', warranty_content: '',
       package_selection_mode: 'multiple',
     });
+    setShowBadges(false);
     setProductDialog(true);
   };
 
