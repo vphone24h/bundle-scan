@@ -114,7 +114,6 @@ export function CartCheckoutDialog({
 
       // Generate a shared order code prefix for grouping
       const groupId = `CART-${Date.now()}`;
-      const cartSummary = cart.items.map(i => `${i.productName}${i.variant ? ` (${i.variant})` : ''} x${i.quantity}`).join(', ');
       const fullNote = [
         cart.items.length > 1 ? `[Đơn nhóm: ${cart.items.length} SP]` : '',
         discountNote,
@@ -123,6 +122,10 @@ export function CartCheckoutDialog({
 
       // Place each cart item as a separate order with same note grouping
       for (const item of cart.items) {
+        const itemPackagesNote = item.selectedPackages && item.selectedPackages.length > 0
+          ? `[Gói DV: ${item.selectedPackages.map(pkg => `${pkg.name} (+${formatNumber(pkg.price)}đ)`).join(', ')}]`
+          : '';
+
         await placeOrder.mutateAsync({
           tenant_id: tenantId,
           branch_id: branchId,
@@ -136,7 +139,8 @@ export function CartCheckoutDialog({
           customer_phone: customerPhone.trim(),
           customer_email: customerEmail.trim() || undefined,
           customer_address: customerAddress.trim() || undefined,
-          note: fullNote || undefined,
+          note: [fullNote, itemPackagesNote].filter(Boolean).join(' ') || undefined,
+          selected_packages: item.selectedPackages || undefined,
         });
       }
 
@@ -225,15 +229,33 @@ export function CartCheckoutDialog({
                         <span className="text-xs text-muted-foreground">×</span>
                         <span className="text-xs font-medium" style={{ color: primaryColor }}>{formatNumber(item.price)}đ</span>
                       </div>
+                      {item.selectedPackages && item.selectedPackages.length > 0 && (
+                        <div className="mt-1.5 space-y-1 rounded-md border border-dashed bg-background/70 p-2">
+                          <p className="text-[11px] font-medium text-muted-foreground">Gói dịch vụ kèm theo</p>
+                          {item.selectedPackages.map(pkg => (
+                            <div key={pkg.id} className="flex justify-between text-[11px]">
+                              <span className="text-muted-foreground">• {pkg.name}</span>
+                              <span className="font-medium">{pkg.price > 0 ? `+${formatNumber(pkg.price)}đ` : 'Miễn phí'}</span>
+                            </div>
+                          ))}
+                          <div className="flex justify-between border-t pt-1 text-[11px] font-medium">
+                            <span>Tổng gói DV</span>
+                            <span>{item.packagesTotal && item.packagesTotal > 0 ? `+${formatNumber(item.packagesTotal * item.quantity)}đ` : '0đ'}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
                       <button onClick={() => cart.removeItem(item.itemKey)}
                         className="p-1 rounded-full hover:bg-red-50 transition-colors">
                         <Trash2 className="h-3.5 w-3.5 text-red-400 hover:text-red-600" />
                       </button>
-                      <p className="text-sm font-bold" style={{ color: primaryColor }}>
-                        {formatNumber(item.price * item.quantity)}đ
-                      </p>
+                      <div className="text-right space-y-0.5">
+                        <p className="text-[11px] text-muted-foreground">Tiền máy: {formatNumber(item.basePrice * item.quantity)}đ</p>
+                        <p className="text-sm font-bold" style={{ color: primaryColor }}>
+                          {formatNumber(item.price * item.quantity)}đ
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -328,9 +350,29 @@ export function CartCheckoutDialog({
               {/* Order summary */}
               <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1.5">
                 {cart.items.map((item, i) => (
-                  <div key={i} className="flex justify-between text-muted-foreground">
-                    <span className="truncate max-w-[55%]">{item.productName} x{item.quantity}</span>
-                    <span>{formatNumber(item.price * item.quantity)}đ</span>
+                  <div key={i} className="space-y-1 border-b border-dashed pb-2 last:border-0 last:pb-0">
+                    <div className="flex justify-between text-muted-foreground">
+                      <span className="truncate max-w-[55%]">{item.productName} x{item.quantity}</span>
+                      <span>{formatNumber(item.price * item.quantity)}đ</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Tiền máy</span>
+                      <span>{formatNumber(item.basePrice * item.quantity)}đ</span>
+                    </div>
+                    {item.selectedPackages && item.selectedPackages.length > 0 && (
+                      <>
+                        {item.selectedPackages.map(pkg => (
+                          <div key={pkg.id} className="flex justify-between text-xs text-muted-foreground">
+                            <span>• {pkg.name}</span>
+                            <span>{pkg.price > 0 ? `+${formatNumber(pkg.price * item.quantity)}đ` : 'Miễn phí'}</span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between text-xs font-medium">
+                          <span>Tổng gói DV</span>
+                          <span>{item.packagesTotal && item.packagesTotal > 0 ? `+${formatNumber(item.packagesTotal * item.quantity)}đ` : '0đ'}</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
                 {totalDiscount > 0 && (
@@ -346,7 +388,7 @@ export function CartCheckoutDialog({
                   </>
                 )}
                 <div className="flex justify-between font-bold pt-1.5 border-t">
-                  <span>Tổng cộng:</span>
+                  <span>Tổng thanh toán:</span>
                   <span className="text-lg" style={{ color: primaryColor }}>{formatNumber(finalPrice)}đ</span>
                 </div>
               </div>
