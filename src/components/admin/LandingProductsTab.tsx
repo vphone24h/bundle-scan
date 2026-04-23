@@ -1093,6 +1093,25 @@ export function LandingProductsTab() {
                 Tạo gói dịch vụ/bảo hành bổ sung cho sản phẩm. VD: Gói VIP, +15P massage, Bảo hành mở rộng... Khách có thể chọn khi mua hàng.
               </p>
               {packageForm.length > 0 && (
+                <div className="flex items-center gap-3 p-2 rounded-md bg-muted/30 border">
+                  <span className="text-xs font-medium">Chế độ chọn:</span>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="pkg_mode" value="multiple"
+                      checked={form.package_selection_mode === 'multiple'}
+                      onChange={() => setForm(p => ({ ...p, package_selection_mode: 'multiple' }))}
+                      className="h-3.5 w-3.5" />
+                    <span className="text-xs">Chọn nhiều gói</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="pkg_mode" value="single"
+                      checked={form.package_selection_mode === 'single'}
+                      onChange={() => setForm(p => ({ ...p, package_selection_mode: 'single' }))}
+                      className="h-3.5 w-3.5" />
+                    <span className="text-xs">Chỉ chọn 1 gói</span>
+                  </label>
+                </div>
+              )}
+              {packageForm.length > 0 && (
                 <div className="space-y-2">
                   {packageForm.map((pkg, i) => (
                     <div key={i} className="p-3 rounded-lg border bg-muted/20 space-y-2">
