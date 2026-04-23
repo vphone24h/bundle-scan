@@ -254,6 +254,7 @@ export function ProductDetailDialog({
     setUsePoints(false);
     setDebouncedPhone('');
     setAttempted(false);
+    setSelectedPackageIds(new Set());
   };
 
   const handleClose = (val: boolean) => {
