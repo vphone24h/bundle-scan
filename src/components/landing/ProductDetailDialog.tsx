@@ -506,30 +506,38 @@ export function ProductDetailDialog({
                 📦 Gói dịch vụ kèm theo
               </div>
               <div className="p-3 space-y-2">
-                {productPackages.map(pkg => (
-                  <label key={pkg.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={selectedPackageIds.has(pkg.id)}
-                      onChange={() => {
-                        setSelectedPackageIds(prev => {
-                          const next = new Set(prev);
-                          if (next.has(pkg.id)) next.delete(pkg.id);
-                          else next.add(pkg.id);
-                          return next;
-                        });
-                      }}
-                      className="rounded border-input h-4 w-4"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{pkg.name}</p>
-                      {pkg.description && <p className="text-xs text-muted-foreground">{pkg.description}</p>}
-                    </div>
-                    <span className="text-sm font-semibold shrink-0" style={{ color: primaryColor }}>
-                      +{formatNumber(pkg.price)}đ
-                    </span>
-                  </label>
-                ))}
+                {(() => {
+                  const isSingle = product?.package_selection_mode === 'single';
+                  return productPackages.map(pkg => (
+                    <label key={pkg.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                      <input
+                        type={isSingle ? 'radio' : 'checkbox'}
+                        name={isSingle ? 'pkg_select' : undefined}
+                        checked={selectedPackageIds.has(pkg.id)}
+                        onChange={() => {
+                          if (isSingle) {
+                            setSelectedPackageIds(selectedPackageIds.has(pkg.id) ? new Set() : new Set([pkg.id]));
+                          } else {
+                            setSelectedPackageIds(prev => {
+                              const next = new Set(prev);
+                              if (next.has(pkg.id)) next.delete(pkg.id);
+                              else next.add(pkg.id);
+                              return next;
+                            });
+                          }
+                        }}
+                        className="rounded border-input h-4 w-4"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{pkg.name}</p>
+                        {pkg.description && <p className="text-xs text-muted-foreground">{pkg.description}</p>}
+                      </div>
+                      <span className="text-sm font-semibold shrink-0" style={{ color: primaryColor }}>
+                        {pkg.price > 0 ? `+${formatNumber(pkg.price)}đ` : 'Miễn phí'}
+                      </span>
+                    </label>
+                  ));
+                })()}
               </div>
             </div>
           )}
@@ -745,10 +753,21 @@ export function ProductDetailDialog({
                     </div>
                   </>
                 )}
-                {packagesTotal > 0 && (
-                  <div className="flex justify-between">
-                    <span>Gói dịch vụ:</span>
-                    <span className="font-medium">+{formatNumber(packagesTotal)}đ</span>
+                {productPackages && productPackages.filter(p => selectedPackageIds.has(p.id)).length > 0 && (
+                  <div className="space-y-1 pt-1 border-t border-dashed">
+                    <span className="text-xs font-medium text-muted-foreground">Gói dịch vụ kèm theo:</span>
+                    {productPackages.filter(p => selectedPackageIds.has(p.id)).map(pkg => (
+                      <div key={pkg.id} className="flex justify-between text-sm">
+                        <span className="text-gray-600">• {pkg.name}</span>
+                        <span className="font-medium">{pkg.price > 0 ? `+${formatNumber(pkg.price)}đ` : 'Miễn phí'}</span>
+                      </div>
+                    ))}
+                    {packagesTotal > 0 && (
+                      <div className="flex justify-between text-sm font-medium">
+                        <span>Tổng gói DV:</span>
+                        <span>+{formatNumber(packagesTotal)}đ</span>
+                      </div>
+                    )}
                   </div>
                 )}
                 <div className="flex justify-between font-bold pt-1 border-t">

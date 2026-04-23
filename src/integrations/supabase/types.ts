@@ -5032,6 +5032,7 @@ export type Database = {
           is_featured: boolean | null
           is_sold_out: boolean
           name: string
+          package_selection_mode: string
           price: number | null
           promotion_content: string | null
           promotion_title: string | null
@@ -5060,6 +5061,7 @@ export type Database = {
           is_featured?: boolean | null
           is_sold_out?: boolean
           name: string
+          package_selection_mode?: string
           price?: number | null
           promotion_content?: string | null
           promotion_title?: string | null
@@ -5088,6 +5090,7 @@ export type Database = {
           is_featured?: boolean | null
           is_sold_out?: boolean
           name?: string
+          package_selection_mode?: string
           price?: number | null
           promotion_content?: string | null
           promotion_title?: string | null
