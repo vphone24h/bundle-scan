@@ -172,14 +172,26 @@ export function TemplatePreviewDialog({
 
     {/* Live Website Preview Popup */}
     {livePreviewOpen && currentTenant?.subdomain && (
-      <LiveWebsitePreview storeId={currentTenant.subdomain} onClose={() => setLivePreviewOpen(false)} />
+      <LiveWebsitePreview
+        storeId={currentTenant.subdomain}
+        templateId={template.id}
+        onClose={() => setLivePreviewOpen(false)}
+      />
     )}
   </>);
 }
 
 // === Live Website Preview (full-screen popup with iframe) ===
-function LiveWebsitePreview({ storeId, onClose }: { storeId: string; onClose: () => void }) {
-  const previewUrl = `${window.location.origin}/store/${storeId}`;
+function LiveWebsitePreview({
+  storeId,
+  templateId,
+  onClose,
+}: {
+  storeId: string;
+  templateId: string;
+  onClose: () => void;
+}) {
+  const previewUrl = `${window.location.origin}/store/${storeId}?previewTemplate=${encodeURIComponent(templateId)}`;
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
@@ -193,6 +205,7 @@ function LiveWebsitePreview({ storeId, onClose }: { storeId: string; onClose: ()
         </div>
         {/* Iframe */}
         <iframe
+          key={`${storeId}-${templateId}`}
           src={previewUrl}
           className="flex-1 w-full border-0"
           title="Website Preview"
