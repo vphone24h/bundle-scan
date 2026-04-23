@@ -97,7 +97,7 @@ export function TemplatePreviewDialog({
                 <PaintBucket className="h-3 w-3" /> Chỉnh sửa Website
               </Button>
             )}
-            {currentTenant?.id && (
+            {currentTenant?.subdomain && (
               <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => setLivePreviewOpen(true)}>
                 <Eye className="h-3 w-3" /> Xem mẫu
               </Button>
@@ -171,8 +171,8 @@ export function TemplatePreviewDialog({
     </Dialog>
 
     {/* Live Website Preview Popup */}
-    {livePreviewOpen && currentTenant?.id && (
-      <LiveWebsitePreview storeId={currentTenant.id} onClose={() => setLivePreviewOpen(false)} />
+    {livePreviewOpen && currentTenant?.subdomain && (
+      <LiveWebsitePreview storeId={currentTenant.subdomain} onClose={() => setLivePreviewOpen(false)} />
     )}
   </>);
 }
