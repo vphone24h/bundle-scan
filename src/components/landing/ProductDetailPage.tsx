@@ -1043,8 +1043,15 @@ export function ProductDetailPage({
                       productId: product.id,
                       productName: product.name,
                       productImageUrl: product.image_url,
-                      price: displayPrice,
+                      basePrice: displayPrice,
+                      price: displayPrice + packagesTotal,
                       variant: getVariantLabel(),
+                      selectedPackages: selectedPackages.map(pkg => ({
+                        id: pkg.id,
+                        name: pkg.name,
+                        price: pkg.price,
+                      })),
+                      packagesTotal,
                     });
                     setVariantAttempted(false);
                     toast.success('Đã thêm vào giỏ hàng', { position: 'top-center' });

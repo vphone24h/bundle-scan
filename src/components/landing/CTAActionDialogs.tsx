@@ -913,10 +913,10 @@ export function CartDialog({ open, onClose, primaryColor, tenantId, branches, on
                   </div>
                 </div>
                 <div className="flex items-center gap-2 mt-2">
-                  <button onClick={() => cart.updateQuantity(item.productId, item.variant, item.quantity - 1)} className="h-7 w-7 rounded-md border flex items-center justify-center"><Minus className="h-3 w-3" /></button>
+                  <button onClick={() => cart.updateQuantity(item.itemKey, item.quantity - 1)} className="h-7 w-7 rounded-md border flex items-center justify-center"><Minus className="h-3 w-3" /></button>
                   <span className="text-sm font-medium w-6 text-center">{item.quantity}</span>
-                  <button onClick={() => cart.updateQuantity(item.productId, item.variant, item.quantity + 1)} className="h-7 w-7 rounded-md border flex items-center justify-center"><Plus className="h-3 w-3" /></button>
-                  <button onClick={() => cart.removeItem(item.productId, item.variant)} className="ml-auto h-7 w-7 rounded-md text-destructive flex items-center justify-center"><Trash2 className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => cart.updateQuantity(item.itemKey, item.quantity + 1)} className="h-7 w-7 rounded-md border flex items-center justify-center"><Plus className="h-3 w-3" /></button>
+                  <button onClick={() => cart.removeItem(item.itemKey)} className="ml-auto h-7 w-7 rounded-md text-destructive flex items-center justify-center"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               </div>
             ))}
