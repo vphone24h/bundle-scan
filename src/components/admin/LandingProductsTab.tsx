@@ -322,6 +322,7 @@ export function LandingProductsTab() {
       variant_options_1: [], variant_options_2: [], variant_prices: [],
       promotion_title: 'KHUYẾN MÃI', promotion_content: '',
       warranty_title: 'BẢO HÀNH', warranty_content: '',
+      package_selection_mode: 'multiple',
     });
     setProductDialog(true);
   };
@@ -359,6 +360,7 @@ export function LandingProductsTab() {
         promotion_content: detail.promotion_content || '',
         warranty_title: detail.warranty_title || 'BẢO HÀNH',
         warranty_content: detail.warranty_content || '',
+        package_selection_mode: (detail as any).package_selection_mode || 'multiple',
       });
       setProductDialog(true);
     } catch (e: any) {
@@ -493,6 +495,7 @@ export function LandingProductsTab() {
         promotion_content: form.promotion_content || null,
         warranty_title: form.warranty_title,
         warranty_content: form.warranty_content || null,
+        package_selection_mode: form.package_selection_mode,
       };
       if (editingProduct) {
         await updateProduct.mutateAsync({ id: editingProduct.id, ...payload });
