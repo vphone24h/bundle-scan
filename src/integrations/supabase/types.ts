@@ -4746,6 +4746,7 @@ export type Database = {
           product_name: string
           product_price: number
           quantity: number
+          selected_packages: Json | null
           shipping_carrier: string | null
           status: string
           tenant_id: string
@@ -4784,6 +4785,7 @@ export type Database = {
           product_name: string
           product_price?: number
           quantity?: number
+          selected_packages?: Json | null
           shipping_carrier?: string | null
           status?: string
           tenant_id: string
@@ -4822,6 +4824,7 @@ export type Database = {
           product_name?: string
           product_price?: number
           quantity?: number
+          selected_packages?: Json | null
           shipping_carrier?: string | null
           status?: string
           tenant_id?: string
@@ -4951,6 +4954,63 @@ export type Database = {
           },
           {
             foreignKeyName: "landing_product_categories_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_product_packages: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          price: number
+          product_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          price?: number
+          product_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          price?: number
+          product_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_product_packages_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "landing_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_product_packages_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
