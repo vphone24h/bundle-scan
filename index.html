@@ -331,10 +331,10 @@
           window.__STORE_PREFETCH__.tenantId = tenantId;
           // Fetch settings, products, articles, branches ALL IN PARALLEL
           var settingsP = fetch(supaUrl + '/rest/v1/tenant_landing_settings?tenant_id=eq.' + tenantId + '&is_enabled=eq.true&select=*&limit=1', { headers: getHdrs }).then(function(r) { return r.json(); });
-          var productsP = fetch(supaUrl + '/rest/v1/landing_products?tenant_id=eq.' + tenantId + '&is_active=eq.true&order=display_order&select=*', { headers: getHdrs }).then(function(r) { return r.json(); });
+          var productsP = fetch(supaUrl + '/rest/v1/landing_products?tenant_id=eq.' + tenantId + '&is_active=eq.true&order=display_order.asc,created_at.desc&select=*', { headers: getHdrs }).then(function(r) { return r.json(); });
           var categoriesP = fetch(supaUrl + '/rest/v1/landing_product_categories?tenant_id=eq.' + tenantId + '&is_hidden=eq.false&order=display_order.asc,created_at.desc&select=*', { headers: getHdrs }).then(function(r) { return r.json(); });
-          var articlesP = fetch(supaUrl + '/rest/v1/landing_articles?tenant_id=eq.' + tenantId + '&is_published=eq.true&order=display_order&select=*', { headers: getHdrs }).then(function(r) { return r.json(); });
-          var artCatsP = fetch(supaUrl + '/rest/v1/landing_article_categories?tenant_id=eq.' + tenantId + '&is_visible=eq.true&order=display_order&select=*', { headers: getHdrs }).then(function(r) { return r.json(); });
+          var articlesP = fetch(supaUrl + '/rest/v1/landing_articles?tenant_id=eq.' + tenantId + '&is_published=eq.true&order=display_order.asc,created_at.desc&select=*', { headers: getHdrs }).then(function(r) { return r.json(); });
+          var artCatsP = fetch(supaUrl + '/rest/v1/landing_article_categories?tenant_id=eq.' + tenantId + '&is_visible=eq.true&order=display_order.asc,created_at.desc&select=*', { headers: getHdrs }).then(function(r) { return r.json(); });
           var branchesP = fetch(supaUrl + '/rest/v1/rpc/get_tenant_branches', { method: 'POST', headers: hdrs, body: JSON.stringify({ _tenant_id: tenantId }) }).then(function(r) { return r.json(); });
 
           // Store the promise so React can await it
