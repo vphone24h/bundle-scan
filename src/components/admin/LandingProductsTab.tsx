@@ -503,7 +503,7 @@ export function LandingProductsTab() {
       } else {
         const created = await createProduct.mutateAsync(payload);
         // Save packages for new product
-        if (tenantId && created?.id && packageForm.length > 0) {
+        if (tenantId && (created as any)?.id && packageForm.length > 0) {
           await savePackages.mutateAsync({ productId: (created as any).id, tenantId, packages: packageForm.filter(p => p.name.trim()) });
         }
         toast({ title: 'Đã thêm sản phẩm' });
