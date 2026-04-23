@@ -266,6 +266,7 @@ export function LandingProductsTab() {
     promotion_content: '',
     warranty_title: 'BẢO HÀNH',
     warranty_content: '',
+    package_selection_mode: 'multiple',
   });
 
   const handleAddCategory = async () => {
