@@ -56,12 +56,26 @@ export function ProductDetailDialog({
   const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(null);
   const [usePoints, setUsePoints] = useState(false);
   const [attempted, setAttempted] = useState(false);
+  const [selectedPackageIds, setSelectedPackageIds] = useState<Set<string>>(new Set());
 
   // 2-level variant selections
   const [selectedOption1, setSelectedOption1] = useState<string | null>(null);
   const [selectedOption2, setSelectedOption2] = useState<string | null>(null);
 
   const placeOrder = usePlaceLandingOrder();
+
+  // Fetch service packages for this product
+  const { data: productPackages } = usePublicProductPackages(product?.id || null);
+
+  // Auto-select default packages when product changes
+  useEffect(() => {
+    if (productPackages && productPackages.length > 0) {
+      const defaults = new Set(productPackages.filter(p => p.is_default).map(p => p.id));
+      setSelectedPackageIds(defaults);
+    } else {
+      setSelectedPackageIds(new Set());
+    }
+  }, [productPackages]);
 
   const [debouncedPhone, setDebouncedPhone] = useState('');
   useEffect(() => {
