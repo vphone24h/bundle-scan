@@ -917,9 +917,15 @@ export function ProductDetailPage({
                     </div>
                   </>
                 )}
+                {packagesTotal > 0 && (
+                  <div className="flex justify-between">
+                    <span>Gói dịch vụ:</span>
+                    <span className="font-medium">+{formatNumber(packagesTotal)}đ</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-bold pt-1.5 border-t">
                   <span>Tổng:</span>
-                  <span style={{ color: primaryColor }}>{formatNumber(displayPrice * quantity)}đ</span>
+                  <span style={{ color: primaryColor }}>{formatNumber((displayPrice + packagesTotal) * quantity)}đ</span>
                 </div>
               </div>
 
