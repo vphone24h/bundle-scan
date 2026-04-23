@@ -840,6 +840,7 @@ export function useCheckProductForSale() {
           branch_id,
           unit,
           quantity,
+          group_id,
           categories(name),
           branches(name)
         `)
