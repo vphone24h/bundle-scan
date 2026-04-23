@@ -1117,6 +1117,92 @@ export function LandingProductsTab() {
             </div>
 
             {/* ===== MÔ TẢ ===== */}
+            {/* ===== GÓI DỊCH VỤ / BẢO HÀNH ===== */}
+            <Separator />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold">📦 Gói dịch vụ kèm theo</Label>
+                <Button type="button" variant="outline" size="sm" className="gap-1 h-7 text-xs"
+                  onClick={() => setPackageForm(prev => [...prev, { name: '', price: 0, description: '', is_default: false, is_active: true }])}>
+                  <Plus className="h-3 w-3" /> Thêm gói
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground flex items-start gap-1">
+                <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                Tạo gói dịch vụ/bảo hành bổ sung cho sản phẩm. VD: Gói VIP, +15P massage, Bảo hành mở rộng... Khách có thể chọn khi mua hàng.
+              </p>
+              {packageForm.length > 0 && (
+                <div className="space-y-2">
+                  {packageForm.map((pkg, i) => (
+                    <div key={i} className="p-3 rounded-lg border bg-muted/20 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={pkg.name}
+                          onChange={e => {
+                            const arr = [...packageForm];
+                            arr[i] = { ...arr[i], name: e.target.value };
+                            setPackageForm(arr);
+                          }}
+                          placeholder="Tên gói (VD: Gói VIP 1, +15P massage...)"
+                          className="h-8 text-sm flex-1"
+                        />
+                        <PriceInput
+                          value={pkg.price}
+                          onChange={val => {
+                            const arr = [...packageForm];
+                            arr[i] = { ...arr[i], price: val };
+                            setPackageForm(arr);
+                          }}
+                          className="w-32 h-8 text-sm"
+                          placeholder="Giá"
+                        />
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0"
+                          onClick={() => setPackageForm(prev => prev.filter((_, j) => j !== i))}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <Input
+                        value={pkg.description}
+                        onChange={e => {
+                          const arr = [...packageForm];
+                          arr[i] = { ...arr[i], description: e.target.value };
+                          setPackageForm(arr);
+                        }}
+                        placeholder="Mô tả ngắn (không bắt buộc)"
+                        className="h-7 text-xs"
+                      />
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <Checkbox
+                            checked={pkg.is_default}
+                            onCheckedChange={(checked) => {
+                              const arr = [...packageForm];
+                              arr[i] = { ...arr[i], is_default: !!checked };
+                              setPackageForm(arr);
+                            }}
+                            className="h-3.5 w-3.5"
+                          />
+                          <span className="text-xs">Mặc định chọn</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <Checkbox
+                            checked={pkg.is_active}
+                            onCheckedChange={(checked) => {
+                              const arr = [...packageForm];
+                              arr[i] = { ...arr[i], is_active: !!checked };
+                              setPackageForm(arr);
+                            }}
+                            className="h-3.5 w-3.5"
+                          />
+                          <span className="text-xs">Hiển thị</span>
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <Separator />
             <div className="space-y-2">
               <Label className="text-sm font-semibold">📝 Mô tả sản phẩm</Label>
