@@ -252,6 +252,10 @@ export function ProductDetailPage({
   const displayPrice = Math.max(0, basePrice - totalDiscount);
 
   // Calculate packages total
+  const selectedPackages = useMemo(() => {
+    return (productPackages || []).filter(p => selectedPackageIds.has(p.id));
+  }, [productPackages, selectedPackageIds]);
+
   const packagesTotal = useMemo(() => {
     if (!productPackages) return 0;
     return productPackages.filter(p => selectedPackageIds.has(p.id)).reduce((sum, p) => sum + p.price, 0);
@@ -309,7 +313,7 @@ export function ProductDetailPage({
           : '';
       const fullNote = [discountNote, note.trim()].filter(Boolean).join(' ');
       // Build packages note
-      const selectedPkgs = productPackages?.filter(p => selectedPackageIds.has(p.id)) || [];
+      const selectedPkgs = selectedPackages;
       const packagesNote = selectedPkgs.length > 0
         ? `[Gói DV: ${selectedPkgs.map(p => `${p.name} (+${formatNumber(p.price)}đ)`).join(', ')}]`
         : '';
@@ -923,25 +927,27 @@ export function ProductDetailPage({
                     </div>
                   </>
                 )}
-                {productPackages && productPackages.filter(p => selectedPackageIds.has(p.id)).length > 0 && (
+                <div className="flex justify-between border-t pt-1.5">
+                  <span className="text-gray-500">Tiền máy:</span>
+                  <span className="font-medium">{formatNumber(displayPrice * quantity)}đ</span>
+                </div>
+                {selectedPackages.length > 0 && (
                   <div className="space-y-1 pt-1 border-t border-dashed">
                     <span className="text-xs font-medium text-muted-foreground">Gói dịch vụ kèm theo:</span>
-                    {productPackages.filter(p => selectedPackageIds.has(p.id)).map(pkg => (
+                    {selectedPackages.map(pkg => (
                       <div key={pkg.id} className="flex justify-between text-sm">
                         <span className="text-gray-600">• {pkg.name}</span>
-                        <span className="font-medium">{pkg.price > 0 ? `+${formatNumber(pkg.price)}đ` : 'Miễn phí'}</span>
+                        <span className="font-medium">{pkg.price > 0 ? `+${formatNumber(pkg.price * quantity)}đ` : 'Miễn phí'}</span>
                       </div>
                     ))}
-                    {packagesTotal > 0 && (
-                      <div className="flex justify-between text-sm font-medium">
-                        <span>Tổng gói DV:</span>
-                        <span>+{formatNumber(packagesTotal)}đ</span>
-                      </div>
-                    )}
+                    <div className="flex justify-between text-sm font-medium">
+                      <span>Tổng gói DV:</span>
+                      <span>{packagesTotal > 0 ? `+${formatNumber(packagesTotal * quantity)}đ` : '0đ'}</span>
+                    </div>
                   </div>
                 )}
                 <div className="flex justify-between font-bold pt-1.5 border-t">
-                  <span>Tổng:</span>
+                  <span>Tổng thanh toán:</span>
                   <span style={{ color: primaryColor }}>{formatNumber((displayPrice + packagesTotal) * quantity)}đ</span>
                 </div>
               </div>
