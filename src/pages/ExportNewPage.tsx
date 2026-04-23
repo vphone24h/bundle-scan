@@ -1012,6 +1012,8 @@ export default function ExportNewPage() {
     const savedSalesStaffId = isSuperAdmin ? salesStaffId : user?.id || null;
     const savedExportDate = exportDate || null;
     const savedReceiptNote = receiptNote || null;
+    const savedServicePackages = [...selectedServicePackages];
+    const savedServicePackageTotal = servicePackageTotal;
 
     setCart([]);
     exportDraft.clearDraft();
@@ -1028,6 +1030,7 @@ export default function ExportNewPage() {
     setCustomTaxRate('');
     setExportDate('');
     setReceiptNote('');
+    setSelectedServicePackages([]);
 
     // Process in background
     try {
@@ -1056,6 +1059,8 @@ export default function ExportNewPage() {
         skipCashBook,
         exportDate: savedExportDate ? new Date(savedExportDate).toISOString() : undefined,
         note: savedReceiptNote || undefined,
+        servicePackages: savedServicePackages,
+        servicePackageTotal: savedServicePackageTotal,
       });
 
       // Update receipt with real data (code from server)
