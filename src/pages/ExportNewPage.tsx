@@ -1616,6 +1616,17 @@ export default function ExportNewPage() {
                   </div>
 
                   {/* Totals */}
+
+                  {/* Service Packages Selector */}
+                  {primaryGroupId && (
+                    <ServicePackageSelector
+                      productGroupId={primaryGroupId}
+                      selected={selectedServicePackages}
+                      onChange={setSelectedServicePackages}
+                    />
+                  )}
+
+                  {/* Totals */}
                   <div className="space-y-1">
                     <div className="flex justify-between text-sm">
                       <span>{t('tours.exportNew.subtotal')}:</span>
