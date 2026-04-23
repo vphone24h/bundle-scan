@@ -8,8 +8,9 @@ import { getIndustryConfig, IndustryTrustBadge, LayoutStyle } from '@/lib/indust
 import {
   Check, Shield, Award, Truck, CreditCard, Clock, Star,
   Phone, MessageCircle, Pencil, X, RotateCcw, Zap,
-  Menu, Search, ChevronDown, ShoppingBag, PaintBucket,
+  Menu, Search, ChevronDown, ShoppingBag, PaintBucket, Eye,
 } from 'lucide-react';
+import { useCurrentTenant } from '@/hooks/useTenant';
 
 interface EditableSettings {
   custom_trust_badges?: { icon: string; title: string; desc: string }[] | null;
@@ -51,7 +52,9 @@ export function TemplatePreviewDialog({
   editableSettings, onSettingsChange,
 }: TemplatePreviewDialogProps) {
   const [editMode, setEditMode] = useState(false);
+  const [livePreviewOpen, setLivePreviewOpen] = useState(false);
   const navigate = useNavigate();
+  const { data: currentTenant } = useCurrentTenant();
 
   if (!template) return null;
 
@@ -80,7 +83,7 @@ export function TemplatePreviewDialog({
     updateSetting('custom_trust_badges', current);
   };
 
-  return (
+  return (<>
     <Dialog open={open} onOpenChange={(o) => { if (!o) setEditMode(false); onOpenChange(o); }}>
       <DialogContent className="max-w-md sm:max-w-lg p-0 gap-0 h-[90vh] sm:max-h-[90vh] overflow-hidden flex flex-col [&>button.absolute]:hidden">
         {/* Top bar: close + select + edit */}
@@ -92,6 +95,11 @@ export function TemplatePreviewDialog({
             {isSelected && (
               <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => { onOpenChange(false); navigate('/website-editor'); }}>
                 <PaintBucket className="h-3 w-3" /> Chỉnh sửa Website
+              </Button>
+            )}
+            {currentTenant?.id && (
+              <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => setLivePreviewOpen(true)}>
+                <Eye className="h-3 w-3" /> Xem mẫu
               </Button>
             )}
             <Button size="sm" className="h-8 text-xs px-4" onClick={handleSelect} variant={isSelected ? 'secondary' : 'default'}>
@@ -161,6 +169,37 @@ export function TemplatePreviewDialog({
 
       </DialogContent>
     </Dialog>
+
+    {/* Live Website Preview Popup */}
+    {livePreviewOpen && currentTenant?.id && (
+      <LiveWebsitePreview storeId={currentTenant.id} onClose={() => setLivePreviewOpen(false)} />
+    )}
+  </>);
+}
+
+// === Live Website Preview (full-screen popup with iframe) ===
+function LiveWebsitePreview({ storeId, onClose }: { storeId: string; onClose: () => void }) {
+  const previewUrl = `${window.location.origin}/store/${storeId}`;
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+      <div className="relative w-full h-full max-w-2xl bg-white rounded-xl overflow-hidden shadow-2xl flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/50 shrink-0">
+          <span className="text-xs font-medium text-muted-foreground truncate">Xem trước website thật</span>
+          <Button variant="outline" size="sm" className="h-8 text-xs px-3" onClick={onClose}>
+            <X className="h-3.5 w-3.5 mr-1" /> Đóng
+          </Button>
+        </div>
+        {/* Iframe */}
+        <iframe
+          src={previewUrl}
+          className="flex-1 w-full border-0"
+          title="Website Preview"
+          allow="clipboard-read; clipboard-write"
+        />
+      </div>
+    </div>
   );
 }
 
