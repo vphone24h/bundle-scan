@@ -36,6 +36,7 @@ export interface LandingOrder {
   ctv_code: string | null;
   ctv_id: string | null;
   ctv_name: string | null;
+  selected_packages: Array<{ id: string; name: string; price: number }> | null;
   created_at: string;
   updated_at: string;
 }
@@ -157,6 +158,7 @@ export function usePlaceLandingOrder() {
       ctv_code?: string;
       ctv_id?: string;
       ctv_name?: string;
+      selected_packages?: Array<{ id: string; name: string; price: number }>;
     }) => {
       // Auto-detect CTV source if not explicitly set
       let finalOrder = { ...order };

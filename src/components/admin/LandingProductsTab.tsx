@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from 'react';
+import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import {
   useLandingProductCategories,
   useCreateLandingProductCategory,
@@ -17,6 +17,9 @@ import {
   LandingProductCategory,
   VariantOption,
   VariantPriceEntry,
+  useProductPackages,
+  useSaveProductPackages,
+  LandingProductPackage,
 } from '@/hooks/useLandingProducts';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings } from '@/hooks/useTenantLanding';
@@ -215,11 +218,29 @@ export function LandingProductsTab() {
   const [loadingEditProductId, setLoadingEditProductId] = useState<string | null>(null);
   const [pendingVariantIdx, setPendingVariantIdx] = useState<number | null>(null);
   const [pendingVariantPriceIdx, setPendingVariantPriceIdx] = useState<number | null>(null);
+  // Packages state
+  const [packageForm, setPackageForm] = useState<Array<{ name: string; price: number; description: string; is_default: boolean; is_active: boolean }>>([]);
+  const savePackages = useSaveProductPackages();
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const { data: existingPackages } = useProductPackages(editingProductId);
 
   const categoryTree = useMemo(() => buildCategoryTree(categories || []), [categories]);
   const flatCategories = useMemo(() => flattenCategoriesForSelect(categoryTree), [categoryTree]);
 
   const customProductTabs = (landingSettings as any)?.custom_product_tabs || [];
+
+  // Load packages when editing a product
+  useEffect(() => {
+    if (existingPackages && editingProductId) {
+      setPackageForm(existingPackages.map(p => ({
+        name: p.name,
+        price: p.price,
+        description: p.description || '',
+        is_default: p.is_default,
+        is_active: p.is_active,
+      })));
+    }
+  }, [existingPackages, editingProductId]);
 
   const [form, setForm] = useState({
     name: '',
@@ -291,6 +312,8 @@ export function LandingProductsTab() {
 
   const openAddProduct = () => {
     setEditingProduct(null);
+    setEditingProductId(null);
+    setPackageForm([]);
     setForm({
       name: '', description: '', price: 0, sale_price: null, category_id: '_none_',
       image_url: '', images: [], is_featured: false, is_active: true, is_sold_out: false, variants: [], home_tab_ids: [],
@@ -312,6 +335,7 @@ export function LandingProductsTab() {
       }
 
       setEditingProduct(detail);
+      setEditingProductId(detail.id);
       setForm({
         name: detail.name,
         description: detail.description || '',
@@ -471,9 +495,17 @@ export function LandingProductsTab() {
       };
       if (editingProduct) {
         await updateProduct.mutateAsync({ id: editingProduct.id, ...payload });
+        // Save packages
+        if (tenantId) {
+          await savePackages.mutateAsync({ productId: editingProduct.id, tenantId, packages: packageForm.filter(p => p.name.trim()) });
+        }
         toast({ title: 'Đã cập nhật sản phẩm' });
       } else {
-        await createProduct.mutateAsync(payload);
+        const created = await createProduct.mutateAsync(payload);
+        // Save packages for new product
+        if (tenantId && (created as any)?.id && packageForm.length > 0) {
+          await savePackages.mutateAsync({ productId: (created as any).id, tenantId, packages: packageForm.filter(p => p.name.trim()) });
+        }
         toast({ title: 'Đã thêm sản phẩm' });
       }
       setProductDialog(false);
@@ -1085,6 +1117,92 @@ export function LandingProductsTab() {
             </div>
 
             {/* ===== MÔ TẢ ===== */}
+            {/* ===== GÓI DỊCH VỤ / BẢO HÀNH ===== */}
+            <Separator />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold">📦 Gói dịch vụ kèm theo</Label>
+                <Button type="button" variant="outline" size="sm" className="gap-1 h-7 text-xs"
+                  onClick={() => setPackageForm(prev => [...prev, { name: '', price: 0, description: '', is_default: false, is_active: true }])}>
+                  <Plus className="h-3 w-3" /> Thêm gói
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground flex items-start gap-1">
+                <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                Tạo gói dịch vụ/bảo hành bổ sung cho sản phẩm. VD: Gói VIP, +15P massage, Bảo hành mở rộng... Khách có thể chọn khi mua hàng.
+              </p>
+              {packageForm.length > 0 && (
+                <div className="space-y-2">
+                  {packageForm.map((pkg, i) => (
+                    <div key={i} className="p-3 rounded-lg border bg-muted/20 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={pkg.name}
+                          onChange={e => {
+                            const arr = [...packageForm];
+                            arr[i] = { ...arr[i], name: e.target.value };
+                            setPackageForm(arr);
+                          }}
+                          placeholder="Tên gói (VD: Gói VIP 1, +15P massage...)"
+                          className="h-8 text-sm flex-1"
+                        />
+                        <PriceInput
+                          value={pkg.price}
+                          onChange={val => {
+                            const arr = [...packageForm];
+                            arr[i] = { ...arr[i], price: val };
+                            setPackageForm(arr);
+                          }}
+                          className="w-32 h-8 text-sm"
+                          placeholder="Giá"
+                        />
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0"
+                          onClick={() => setPackageForm(prev => prev.filter((_, j) => j !== i))}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <Input
+                        value={pkg.description}
+                        onChange={e => {
+                          const arr = [...packageForm];
+                          arr[i] = { ...arr[i], description: e.target.value };
+                          setPackageForm(arr);
+                        }}
+                        placeholder="Mô tả ngắn (không bắt buộc)"
+                        className="h-7 text-xs"
+                      />
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <Checkbox
+                            checked={pkg.is_default}
+                            onCheckedChange={(checked) => {
+                              const arr = [...packageForm];
+                              arr[i] = { ...arr[i], is_default: !!checked };
+                              setPackageForm(arr);
+                            }}
+                            className="h-3.5 w-3.5"
+                          />
+                          <span className="text-xs">Mặc định chọn</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <Checkbox
+                            checked={pkg.is_active}
+                            onCheckedChange={(checked) => {
+                              const arr = [...packageForm];
+                              arr[i] = { ...arr[i], is_active: !!checked };
+                              setPackageForm(arr);
+                            }}
+                            className="h-3.5 w-3.5"
+                          />
+                          <span className="text-xs">Hiển thị</span>
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <Separator />
             <div className="space-y-2">
               <Label className="text-sm font-semibold">📝 Mô tả sản phẩm</Label>
