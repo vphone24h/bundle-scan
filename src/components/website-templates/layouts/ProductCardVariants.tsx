@@ -20,15 +20,38 @@ function ProductBadges({ badges }: { badges?: string[] }) {
   if (!badges || badges.length === 0) return null;
   const items = badges.slice(0, 2).map(b => PRODUCT_BADGE_OPTIONS.find(o => o.id === b)).filter(Boolean);
   if (items.length === 0) return null;
+
+  const getBadgeStyle = (opt: typeof PRODUCT_BADGE_OPTIONS[0]) => {
+    const styles: Record<string, string> = {
+      'bg-red-500': 'bg-gradient-to-r from-red-500 to-rose-600 shadow-red-500/40',
+      'bg-orange-500': 'bg-gradient-to-r from-orange-500 to-amber-600 shadow-orange-500/40',
+      'bg-pink-500': 'bg-gradient-to-r from-pink-500 to-rose-500 shadow-pink-500/40',
+      'bg-blue-500': 'bg-gradient-to-r from-blue-500 to-indigo-600 shadow-blue-500/40',
+      'bg-emerald-500': 'bg-gradient-to-r from-emerald-500 to-teal-600 shadow-emerald-500/40',
+      'bg-yellow-500': 'bg-gradient-to-r from-yellow-500 to-amber-500 shadow-yellow-500/40',
+      'bg-violet-500': 'bg-gradient-to-r from-violet-500 to-purple-600 shadow-violet-500/40',
+      'bg-teal-500': 'bg-gradient-to-r from-teal-500 to-cyan-600 shadow-teal-500/40',
+      'bg-amber-600': 'bg-gradient-to-r from-amber-600 to-yellow-700 shadow-amber-600/40',
+      'bg-rose-600': 'bg-gradient-to-r from-rose-600 to-red-700 shadow-rose-600/40',
+      'bg-indigo-500': 'bg-gradient-to-r from-indigo-500 to-blue-600 shadow-indigo-500/40',
+      'bg-cyan-500': 'bg-gradient-to-r from-cyan-500 to-teal-500 shadow-cyan-500/40',
+      'bg-purple-600': 'bg-gradient-to-r from-purple-600 to-violet-700 shadow-purple-600/40',
+      'bg-fuchsia-500': 'bg-gradient-to-r from-fuchsia-500 to-pink-600 shadow-fuchsia-500/40',
+    };
+    return styles[opt.color] || `${opt.color} shadow-black/20`;
+  };
+
   return (
     <>
       {items[0] && (
-        <div className={`absolute top-2 right-2 z-10 ${items[0]!.color} text-white text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-lg animate-pulse`}>
+        <div className={`absolute top-2 right-2 z-10 ${getBadgeStyle(items[0]!)} text-white text-[10px] sm:text-xs font-black tracking-wider px-2.5 py-1 rounded-lg shadow-lg`}
+          style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
           {items[0]!.text}
         </div>
       )}
       {items[1] && (
-        <div className={`absolute top-2 left-2 z-10 ${items[1]!.color} text-white text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-lg animate-pulse`}>
+        <div className={`absolute top-2 left-2 z-10 ${getBadgeStyle(items[1]!)} text-white text-[10px] sm:text-xs font-black tracking-wider px-2.5 py-1 rounded-lg shadow-lg`}
+          style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
           {items[1]!.text}
         </div>
       )}
