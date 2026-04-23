@@ -10,6 +10,7 @@ import { CTAButtonItem, getDefaultCTAButtons } from '@/components/admin/ProductD
 import { formatNumber } from '@/lib/formatNumber';
 import DOMPurify from 'dompurify';
 import { LandingProduct, LandingProductVariant, VariantPriceEntry } from '@/hooks/useLandingProducts';
+import { usePublicProductPackages, LandingProductPackage } from '@/hooks/useLandingProducts';
 import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import { useCustomerPointsPublic } from '@/hooks/useTenantLanding';
@@ -93,6 +94,7 @@ export function ProductDetailPage({
   const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(null);
   const [usePoints, setUsePoints] = useState(false);
   const [attempted, setAttempted] = useState(false);
+  const [selectedPackageIds, setSelectedPackageIds] = useState<Set<string>>(new Set());
 
   // CTA Dialog states
   const [activeDialog, setActiveDialog] = useState<string | null>(null);
@@ -104,6 +106,19 @@ export function ProductDetailPage({
   const [selectedOption2, setSelectedOption2] = useState<string | null>(null);
 
   const placeOrder = usePlaceLandingOrder();
+
+  // Fetch service packages
+  const { data: productPackages } = usePublicProductPackages(product?.id || null);
+
+  // Auto-select default packages
+  useEffect(() => {
+    if (productPackages && productPackages.length > 0) {
+      const defaults = new Set(productPackages.filter(p => p.is_default).map(p => p.id));
+      setSelectedPackageIds(defaults);
+    } else {
+      setSelectedPackageIds(new Set());
+    }
+  }, [productPackages]);
 
   const [debouncedPhone, setDebouncedPhone] = useState('');
   useEffect(() => {
@@ -236,6 +251,12 @@ export function ProductDetailPage({
   const totalDiscount = selectedVoucherId ? voucherDiscount : (usePoints ? pointsDiscount : 0);
   const displayPrice = Math.max(0, basePrice - totalDiscount);
 
+  // Calculate packages total
+  const packagesTotal = useMemo(() => {
+    if (!productPackages) return 0;
+    return productPackages.filter(p => selectedPackageIds.has(p.id)).reduce((sum, p) => sum + p.price, 0);
+  }, [productPackages, selectedPackageIds]);
+
   const handleSelectLegacyVariant = (i: number) => {
     const newIdx = selectedVariantIndex === i ? null : i;
     setSelectedVariantIndex(newIdx);
@@ -287,6 +308,14 @@ export function ProductDetailPage({
           ? `[Điểm tích lũy: Giảm ${formatNumber(pointsDiscount)}đ]`
           : '';
       const fullNote = [discountNote, note.trim()].filter(Boolean).join(' ');
+      // Build packages note
+      const selectedPkgs = productPackages?.filter(p => selectedPackageIds.has(p.id)) || [];
+      const packagesNote = selectedPkgs.length > 0
+        ? `[Gói DV: ${selectedPkgs.map(p => `${p.name} (+${formatNumber(p.price)}đ)`).join(', ')}]`
+        : '';
+      const finalNote = [fullNote, packagesNote].filter(Boolean).join(' ');
+      const orderPrice = displayPrice + packagesTotal;
+      const selectedPackagesData = selectedPkgs.map(p => ({ id: p.id, name: p.name, price: p.price }));
 
       const result = await placeOrder.mutateAsync({
         tenant_id: tenantId,
@@ -294,14 +323,15 @@ export function ProductDetailPage({
         product_id: product.id,
         product_name: product.name,
         product_image_url: product.image_url,
-        product_price: displayPrice,
+        product_price: orderPrice,
         variant: getVariantLabel(),
         quantity,
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
         customer_email: customerEmail.trim() || undefined,
         customer_address: customerAddress.trim() || undefined,
-        note: fullNote || undefined,
+        note: finalNote || undefined,
+        selected_packages: selectedPackagesData,
       });
       setOrderSuccess(true);
 
@@ -562,7 +592,7 @@ export function ProductDetailPage({
             ];
             const allSections = (detailSections || defaultSections).filter(s => s.enabled);
             const rightSideIds = new Set(['promotion', 'warranty', 'storeInfo']);
-            return allSections.filter(s => rightSideIds.has(s.id)).map(section => {
+            const rightSections = allSections.filter(s => rightSideIds.has(s.id)).map(section => {
               switch (section.id) {
                 case 'promotion':
                   if (!product.promotion_content) return null;
@@ -604,6 +634,41 @@ export function ProductDetailPage({
                   return null;
               }
             });
+            // Prepend service packages before promotion/warranty sections
+            const packagesSection = productPackages && productPackages.length > 0 ? (
+              <div key="servicePackages" className="border rounded-lg overflow-hidden">
+                <div className="px-3 py-2.5 font-semibold text-sm flex items-center gap-1.5" style={{ backgroundColor: primaryColor, color: 'white' }}>
+                  📦 Gói dịch vụ kèm theo
+                </div>
+                <div className="p-3 space-y-2">
+                  {productPackages.map(pkg => (
+                    <label key={pkg.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={selectedPackageIds.has(pkg.id)}
+                        onChange={() => {
+                          setSelectedPackageIds(prev => {
+                            const next = new Set(prev);
+                            if (next.has(pkg.id)) next.delete(pkg.id);
+                            else next.add(pkg.id);
+                            return next;
+                          });
+                        }}
+                        className="rounded border-input h-4 w-4"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{pkg.name}</p>
+                        {pkg.description && <p className="text-xs text-muted-foreground">{pkg.description}</p>}
+                      </div>
+                      <span className="text-sm font-semibold shrink-0" style={{ color: primaryColor }}>
+                        {pkg.price > 0 ? `+${formatNumber(pkg.price)}đ` : 'Miễn phí'}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null;
+            return [packagesSection, ...rightSections];
           })()}
           </div>{/* /px-4 wrapper */}
           </div>{/* /Right column (desktop) */}
@@ -852,9 +917,15 @@ export function ProductDetailPage({
                     </div>
                   </>
                 )}
+                {packagesTotal > 0 && (
+                  <div className="flex justify-between">
+                    <span>Gói dịch vụ:</span>
+                    <span className="font-medium">+{formatNumber(packagesTotal)}đ</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-bold pt-1.5 border-t">
                   <span>Tổng:</span>
-                  <span style={{ color: primaryColor }}>{formatNumber(displayPrice * quantity)}đ</span>
+                  <span style={{ color: primaryColor }}>{formatNumber((displayPrice + packagesTotal) * quantity)}đ</span>
                 </div>
               </div>
 
