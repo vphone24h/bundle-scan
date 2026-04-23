@@ -779,6 +779,10 @@ export function LandingProductsTab() {
                           {p.is_sold_out && <Badge variant="destructive" className="text-[9px] px-1.5 py-0">Hết hàng</Badge>}
                           {!p.is_active && <Badge variant="outline" className="text-[10px]">Ẩn</Badge>}
                           {p.is_featured && <Badge variant="default" className="text-[10px]">Nổi bật</Badge>}
+                          {Array.isArray((p as any).badges) && (p as any).badges.map((b: string) => {
+                            const opt = PRODUCT_BADGE_OPTIONS.find(o => o.id === b);
+                            return opt ? <Badge key={b} className={`text-[9px] px-1.5 py-0 text-white ${opt.color}`}>{opt.text}</Badge> : null;
+                          })}
                         </div>
                       </div>
                     </div>
@@ -1378,6 +1382,41 @@ export function LandingProductsTab() {
             <div className="flex items-center justify-between">
               <Label>Hiển thị</Label>
               <Switch checked={form.is_active} onCheckedChange={v => setForm(p => ({ ...p, is_active: v }))} />
+            </div>
+
+            {/* Product Badges */}
+            <div className="space-y-2">
+              <Button type="button" variant="ghost" size="sm" className="w-full justify-between text-sm font-medium px-0"
+                onClick={() => setShowBadges(!showBadges)}>
+                <span>🏷️ Nhãn sản phẩm {formBadges.length > 0 && `(${formBadges.length}/2)`}</span>
+                {showBadges ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+              {showBadges && (
+                <div className="grid grid-cols-2 gap-1.5 p-3 bg-muted/50 rounded-lg">
+                  {PRODUCT_BADGE_OPTIONS.map(opt => {
+                    const isActive = formBadges.includes(opt.id);
+                    const disabled = !isActive && formBadges.length >= 2;
+                    return (
+                      <label key={opt.id} className={`flex items-center gap-2 p-1.5 rounded-md cursor-pointer text-xs transition-colors ${isActive ? 'bg-primary/10 ring-1 ring-primary/30' : disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted'}`}>
+                        <Checkbox
+                          checked={isActive}
+                          disabled={disabled}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              if (formBadges.length < 2) setFormBadges(prev => [...prev, opt.id]);
+                            } else {
+                              setFormBadges(prev => prev.filter(b => b !== opt.id));
+                            }
+                          }}
+                        />
+                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-white text-[10px] font-bold ${opt.color}`}>{opt.text}</span>
+                        <span className="truncate">{opt.label.split(' ').slice(1).join(' ')}</span>
+                      </label>
+                    );
+                  })}
+                  <p className="col-span-2 text-[10px] text-muted-foreground mt-1">Tối đa 2 nhãn. Nhãn sẽ hiển thị trên ảnh sản phẩm ngoài website.</p>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
