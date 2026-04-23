@@ -891,7 +891,6 @@ export function useSearchProductsByName() {
             unit: p.unit,
             quantity: p.quantity,
             categories: p.category_name ? { name: p.category_name } : null,
-            group_id: p.group_id || null,
             branches: p.branch_name ? { name: p.branch_name } : null,
           });
         }
