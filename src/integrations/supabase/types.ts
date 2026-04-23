@@ -10030,6 +10030,10 @@ export type Database = {
         Args: { _tid: string }
         Returns: number
       }
+      batch_update_display_order: {
+        Args: { _items: Json; _table_name: string }
+        Returns: undefined
+      }
       belongs_to_tenant: {
         Args: { _tenant_id: string; _user_id: string }
         Returns: boolean
