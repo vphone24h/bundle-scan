@@ -21,55 +21,64 @@ function ProductBadges({ badges }: { badges?: string[] }) {
   const items = badges.slice(0, 2).map(b => PRODUCT_BADGE_OPTIONS.find(o => o.id === b)).filter(Boolean);
   if (items.length === 0) return null;
 
-  // Starburst badge colors
-  const getBadgeColor = (opt: typeof PRODUCT_BADGE_OPTIONS[0]) => {
-    const colors: Record<string, string> = {
-      'bg-red-500': '#ef4444',
-      'bg-orange-500': '#f97316',
-      'bg-pink-500': '#ec4899',
-      'bg-blue-500': '#3b82f6',
-      'bg-emerald-500': '#10b981',
-      'bg-yellow-500': '#eab308',
-      'bg-violet-500': '#8b5cf6',
-      'bg-teal-500': '#14b8a6',
-      'bg-amber-600': '#d97706',
-      'bg-rose-600': '#e11d48',
-      'bg-indigo-500': '#6366f1',
-      'bg-cyan-500': '#06b6d4',
-      'bg-purple-600': '#9333ea',
-      'bg-fuchsia-500': '#d946ef',
+  const getBadgeGradient = (opt: typeof PRODUCT_BADGE_OPTIONS[0]) => {
+    const gradients: Record<string, string> = {
+      'bg-red-500': 'linear-gradient(135deg, #ff6b6b, #ee5a24)',
+      'bg-orange-500': 'linear-gradient(135deg, #ffa502, #e67e22)',
+      'bg-pink-500': 'linear-gradient(135deg, #fd79a8, #e84393)',
+      'bg-blue-500': 'linear-gradient(135deg, #74b9ff, #0984e3)',
+      'bg-emerald-500': 'linear-gradient(135deg, #55efc4, #00b894)',
+      'bg-yellow-500': 'linear-gradient(135deg, #ffeaa7, #fdcb6e)',
+      'bg-violet-500': 'linear-gradient(135deg, #a29bfe, #6c5ce7)',
+      'bg-teal-500': 'linear-gradient(135deg, #81ecec, #00cec9)',
+      'bg-amber-600': 'linear-gradient(135deg, #f9ca24, #f0932b)',
+      'bg-rose-600': 'linear-gradient(135deg, #fab1a0, #e17055)',
+      'bg-indigo-500': 'linear-gradient(135deg, #a29bfe, #6c5ce7)',
+      'bg-cyan-500': 'linear-gradient(135deg, #81ecec, #00cec9)',
+      'bg-purple-600': 'linear-gradient(135deg, #d63031, #b71540)',
+      'bg-fuchsia-500': 'linear-gradient(135deg, #e056fd, #be2edd)',
     };
-    return colors[opt.color] || '#ef4444';
+    return gradients[opt.color] || 'linear-gradient(135deg, #ff6b6b, #ee5a24)';
   };
 
-  const StarburstBadge = ({ opt, position }: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; position: 'right' | 'left' }) => {
-    const color = getBadgeColor(opt);
-    const posClass = position === 'right' ? 'right-1 top-1 sm:right-2 sm:top-2' : 'left-1 top-1 sm:left-2 sm:top-2';
-    // 12-point starburst
-    const points = Array.from({ length: 24 }, (_, i) => {
-      const angle = (i * 15) * Math.PI / 180;
-      const r = i % 2 === 0 ? 50 : 38;
-      return `${50 + r * Math.cos(angle)},${50 + r * Math.sin(angle)}`;
-    }).join(' ');
-
+  const RibbonBadge = ({ opt, position }: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; position: 'right' | 'left' }) => {
+    const isRight = position === 'right';
     return (
-      <div className={`absolute ${posClass} z-10 animate-badge-pulse`} style={{ width: 44, height: 44 }}>
-        <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
-          <polygon points={points} fill={color} />
-          <text x="50" y="54" textAnchor="middle" dominantBaseline="middle"
-            fill="white" fontSize="22" fontWeight="900" fontFamily="Arial, sans-serif"
-            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
-            {opt.text}
-          </text>
-        </svg>
+      <div
+        className={`absolute top-3 z-10 animate-badge-pulse ${isRight ? '-right-1' : '-left-1'}`}
+        style={{
+          background: getBadgeGradient(opt),
+          color: '#fff',
+          fontSize: 11,
+          fontWeight: 900,
+          letterSpacing: '0.08em',
+          padding: '4px 12px 4px 10px',
+          borderRadius: isRight ? '4px 0 0 4px' : '0 4px 4px 0',
+          boxShadow: '0 3px 10px rgba(0,0,0,0.25)',
+          textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+          lineHeight: 1.2,
+        }}
+      >
+        {opt.text}
+        {/* Ribbon fold */}
+        <span
+          className="absolute"
+          style={{
+            width: 0, height: 0,
+            bottom: -6,
+            [isRight ? 'right' : 'left']: 0,
+            borderLeft: isRight ? '6px solid transparent' : 'none',
+            borderRight: isRight ? 'none' : '6px solid transparent',
+            borderTop: '6px solid rgba(0,0,0,0.3)',
+          }}
+        />
       </div>
     );
   };
-
   return (
     <>
-      {items[0] && <StarburstBadge opt={items[0]!} position="right" />}
-      {items[1] && <StarburstBadge opt={items[1]!} position="left" />}
+      {items[0] && <RibbonBadge opt={items[0]!} position="right" />}
+      {items[1] && <RibbonBadge opt={items[1]!} position="left" />}
     </>
   );
 }
