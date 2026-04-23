@@ -356,7 +356,7 @@ export function useCreateExportReceipt() {
       }
 
       // Calculate total amount considering quantity
-      const totalAmount = items.reduce((sum, item) => sum + (item.sale_price * (item.quantity || 1)), 0);
+      const totalAmount = items.reduce((sum, item) => sum + (item.sale_price * (item.quantity || 1)), 0) + (servicePackageTotal || 0);
       const paidAmount = payments
         .filter((p) => p.payment_type !== 'debt')
         .reduce((sum, p) => sum + p.amount, 0);
