@@ -238,7 +238,7 @@ export function usePublicLandingArticles(
       if (!tenantId) return { categories: [], articles: [] };
       const [catRes, artRes] = await Promise.all([
         supabase.from('landing_article_categories' as any).select('*').eq('tenant_id', tenantId).eq('is_visible', true).order('display_order'),
-        supabase.from('landing_articles' as any).select('*').eq('tenant_id', tenantId).eq('is_published', true).order('display_order'),
+        supabase.from('landing_articles' as any).select('*').eq('tenant_id', tenantId).eq('is_published', true).order('display_order', { ascending: true }).order('created_at', { ascending: false }),
       ]);
       return {
         categories: (catRes.data || []) as unknown as LandingArticleCategory[],
