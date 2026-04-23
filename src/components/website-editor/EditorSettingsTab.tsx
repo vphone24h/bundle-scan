@@ -503,12 +503,15 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {['#0071e3', '#0f766e', '#e11d48', '#ea580c', '#7c3aed', '#000000'].map(color => (
+            {(() => {
+              const { BRAND_COLOR_PRESETS } = require('@/lib/websiteTemplates');
+              return BRAND_COLOR_PRESETS;
+            })().map((color: string) => (
               <button
                 key={color}
                 type="button"
                 onClick={() => onChange('primary_color', color)}
-                className={`h-8 w-8 rounded-full border-2 transition-all ${formData.primary_color === color ? 'border-foreground scale-110' : 'border-transparent'}`}
+                className={`h-6 w-6 rounded-full border-2 transition-all ${formData.primary_color === color ? 'border-foreground scale-110' : 'border-transparent hover:scale-105'}`}
                 style={{ backgroundColor: color }}
               />
             ))}
