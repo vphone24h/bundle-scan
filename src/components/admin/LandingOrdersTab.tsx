@@ -1008,29 +1008,32 @@ export function LandingOrdersTab() {
                         </p>
                       </div>
                     ))}
-                    <div className="mt-2 rounded-md border bg-muted/20 p-3 space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Tiền máy</span>
-                        <span className="font-medium">{formatNumber((detailOrder.product_price - packagesSubtotal) * detailOrder.quantity)}đ</span>
+                    {/* Breakdown like storefront receipt */}
+                    <div className="mt-2 rounded-md border bg-muted/20 p-3 space-y-1.5 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground truncate max-w-[55%]">{detailOrder.product_name}</span>
+                        <span className="font-medium">{formatNumber(detailOrder.product_price * detailOrder.quantity)}đ</span>
                       </div>
-
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Tiền máy</span>
+                        <span className="font-medium text-foreground">{formatNumber((detailOrder.product_price - packagesSubtotal) * detailOrder.quantity)}đ</span>
+                      </div>
                       {detailPackages.length > 0 && (
-                        <div className="space-y-1 border-t border-dashed pt-2">
-                          <p className="text-xs font-medium text-muted-foreground">📦 Gói dịch vụ kèm theo</p>
+                        <>
                           {detailPackages.map((pkg, idx) => (
-                            <div key={`${pkg.id}-${idx}`} className="flex justify-between text-xs">
+                            <div key={`${pkg.id}-${idx}`} className="flex justify-between text-muted-foreground">
                               <span>• {pkg.name}</span>
-                              <span className="font-medium">{pkg.price > 0 ? `+${formatNumber(pkg.price)}đ` : 'Miễn phí'}</span>
+                              <span className="font-medium text-foreground">{pkg.price > 0 ? `+${formatNumber(pkg.price * detailOrder.quantity)}đ` : 'Miễn phí'}</span>
                             </div>
                           ))}
-                          <div className="flex justify-between text-sm font-medium">
+                          <div className="flex justify-between font-medium border-t border-dashed pt-1.5">
                             <span>Tổng gói DV</span>
                             <span>{packagesSubtotal > 0 ? `+${formatNumber(packagesSubtotal * detailOrder.quantity)}đ` : '0đ'}</span>
                           </div>
-                        </div>
+                        </>
                       )}
 
-                      <div className="flex justify-between font-bold text-sm border-t pt-2">
+                      <div className="flex justify-between font-bold border-t pt-2">
                         <span>Tổng thanh toán</span>
                         <span className="text-primary">{formatNumber(detailOrder.product_price * detailOrder.quantity)}đ</span>
                       </div>
