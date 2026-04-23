@@ -635,6 +635,7 @@ export function ProductDetailPage({
               }
             });
             // Prepend service packages before promotion/warranty sections
+            const isSingle = product.package_selection_mode === 'single';
             const packagesSection = productPackages && productPackages.length > 0 ? (
               <div key="servicePackages" className="border rounded-lg overflow-hidden">
                 <div className="px-3 py-2.5 font-semibold text-sm flex items-center gap-1.5" style={{ backgroundColor: primaryColor, color: 'white' }}>
@@ -644,42 +645,23 @@ export function ProductDetailPage({
                   {productPackages.map(pkg => (
                     <label key={pkg.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
                       <input
-                        type="checkbox"
+                        type={isSingle ? 'radio' : 'checkbox'}
+                        name={isSingle ? 'pkg_select' : undefined}
                         checked={selectedPackageIds.has(pkg.id)}
                         onChange={() => {
-                          setSelectedPackageIds(prev => {
-                            const next = new Set(prev);
-                            if (next.has(pkg.id)) next.delete(pkg.id);
-                            else next.add(pkg.id);
-                            return next;
-                          });
+                          if (isSingle) {
+                            setSelectedPackageIds(selectedPackageIds.has(pkg.id) ? new Set() : new Set([pkg.id]));
+                          } else {
+                            setSelectedPackageIds(prev => {
+                              const next = new Set(prev);
+                              if (next.has(pkg.id)) next.delete(pkg.id);
+                              else next.add(pkg.id);
+                              return next;
+                            });
+                          }
                         }}
                         className="rounded border-input h-4 w-4"
                       />
-              {(() => {
-                const isSingle = product.package_selection_mode === 'single';
-                return (
-                  <div className="p-3 space-y-2">
-                    {productPackages.map(pkg => (
-                      <label key={pkg.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
-                        <input
-                          type={isSingle ? 'radio' : 'checkbox'}
-                          name={isSingle ? 'pkg_select' : undefined}
-                          checked={selectedPackageIds.has(pkg.id)}
-                          onChange={() => {
-                            if (isSingle) {
-                              setSelectedPackageIds(selectedPackageIds.has(pkg.id) ? new Set() : new Set([pkg.id]));
-                            } else {
-                              setSelectedPackageIds(prev => {
-                                const next = new Set(prev);
-                                if (next.has(pkg.id)) next.delete(pkg.id);
-                                else next.add(pkg.id);
-                                return next;
-                              });
-                            }
-                          }}
-                          className="rounded border-input h-4 w-4"
-                        />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">{pkg.name}</p>
                         {pkg.description && <p className="text-xs text-muted-foreground">{pkg.description}</p>}
@@ -690,8 +672,6 @@ export function ProductDetailPage({
                     </label>
                   ))}
                 </div>
-                );
-              })()}
               </div>
             ) : null;
             return [packagesSection, ...rightSections];
