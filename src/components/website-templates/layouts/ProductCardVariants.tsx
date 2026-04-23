@@ -89,7 +89,7 @@ function AppleProductCard({ product, onClick, accentColor }: ProductCardProps) {
         ) : (
           <div className="w-full aspect-square bg-[#e8e8ed] flex items-center justify-center"><Package className="h-10 w-10 text-[#86868b]" /></div>
         )}
-        {product.sale_price && (
+        {product.sale_price && !(Array.isArray((product as any).badges) && (product as any).badges.length > 0) && (
           <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
             -{Math.round(((product.price - product.sale_price) / product.price) * 100)}%
           </div>
