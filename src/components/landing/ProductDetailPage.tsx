@@ -56,6 +56,7 @@ interface ProductDetailPageProps {
   recentlyViewedProducts?: LandingProduct[];
   onProductClick?: (p: LandingProduct) => void;
   storeInfo?: { name?: string; phone?: string; address?: string; email?: string } | null;
+  storeBranches?: { name: string; address?: string | null; phone?: string | null }[];
   zaloUrl?: string | null;
   facebookUrl?: string | null;
   paymentConfig?: PaymentConfig | null;
@@ -73,6 +74,7 @@ export function ProductDetailPage({
   recentlyViewedProducts = [],
   onProductClick,
   storeInfo,
+  storeBranches = [],
   zaloUrl,
   facebookUrl,
   paymentConfig,
@@ -621,16 +623,31 @@ export function ProductDetailPage({
                     </div>
                   );
                 case 'storeInfo':
-                  if (!storeInfo) return null;
+                  if (!storeInfo && storeBranches.length === 0) return null;
                   return (
                     <div key="storeInfo" className="border rounded-lg p-3 bg-gray-50 space-y-2">
                       <h3 className="font-bold text-sm flex items-center gap-1.5">📞 Thông tin cửa hàng</h3>
-                      {storeInfo.name && <p className="text-sm font-medium">{storeInfo.name}</p>}
-                      {storeInfo.address && <p className="text-xs text-gray-500">{storeInfo.address}</p>}
-                      {storeInfo.phone && (
+                      {storeInfo?.name && <p className="text-sm font-medium">{storeInfo.name}</p>}
+                      {storeInfo?.address && <p className="text-xs text-gray-500">{storeInfo.address}</p>}
+                      {storeInfo?.phone && (
                         <a href={`tel:${storeInfo.phone}`} className="text-xs font-medium flex items-center gap-1" style={{ color: primaryColor }}>
                           <Phone className="h-3 w-3" /> {storeInfo.phone}
                         </a>
+                      )}
+                      {storeBranches.length > 0 && (
+                        <div className="border-t pt-2 mt-2 space-y-2">
+                          {storeBranches.map((b, i) => (
+                            <div key={i} className="space-y-0.5">
+                              <p className="text-xs font-semibold">{b.name}</p>
+                              {b.address && <p className="text-xs text-gray-500">{b.address}</p>}
+                              {b.phone && (
+                                <a href={`tel:${b.phone}`} className="text-xs font-medium flex items-center gap-1" style={{ color: primaryColor }}>
+                                  <Phone className="h-3 w-3" /> {b.phone}
+                                </a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   );
