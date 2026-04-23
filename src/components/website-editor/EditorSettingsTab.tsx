@@ -9,6 +9,7 @@ import { CTAButtonsEditor } from '@/components/admin/ProductDetailSectionManager
 import { NewsPageSectionManager } from '@/components/admin/NewsPageSectionManager';
 import { NavMenuEditor } from '@/components/website-editor/NavMenuEditor';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
+import { BRAND_COLOR_PRESETS, getTemplateById } from '@/lib/websiteTemplates';
 import { VIETNAMESE_BANKS } from '@/lib/vietnameseBanks';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -503,10 +504,7 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {(() => {
-              const { BRAND_COLOR_PRESETS } = require('@/lib/websiteTemplates');
-              return BRAND_COLOR_PRESETS;
-            })().map((color: string) => (
+            {BRAND_COLOR_PRESETS.map(color => (
               <button
                 key={color}
                 type="button"
