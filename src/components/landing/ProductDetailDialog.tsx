@@ -499,6 +499,41 @@ export function ProductDetailDialog({
           )}
 
           {/* ===== PROMOTION SECTION ===== */}
+          {/* ===== SERVICE PACKAGES ===== */}
+          {productPackages && productPackages.length > 0 && (
+            <div className="border rounded-lg overflow-hidden">
+              <div className="px-3 py-2 font-semibold text-sm flex items-center gap-1.5" style={{ backgroundColor: primaryColor, color: 'white' }}>
+                📦 Gói dịch vụ kèm theo
+              </div>
+              <div className="p-3 space-y-2">
+                {productPackages.map(pkg => (
+                  <label key={pkg.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={selectedPackageIds.has(pkg.id)}
+                      onChange={() => {
+                        setSelectedPackageIds(prev => {
+                          const next = new Set(prev);
+                          if (next.has(pkg.id)) next.delete(pkg.id);
+                          else next.add(pkg.id);
+                          return next;
+                        });
+                      }}
+                      className="rounded border-input h-4 w-4"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{pkg.name}</p>
+                      {pkg.description && <p className="text-xs text-muted-foreground">{pkg.description}</p>}
+                    </div>
+                    <span className="text-sm font-semibold shrink-0" style={{ color: primaryColor }}>
+                      +{formatNumber(pkg.price)}đ
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
           {showPromotionSection && product.promotion_content && (
             <div className="border rounded-lg overflow-hidden">
               <div className="px-3 py-2 font-semibold text-sm flex items-center gap-1.5" style={{ backgroundColor: primaryColor, color: 'white' }}>
