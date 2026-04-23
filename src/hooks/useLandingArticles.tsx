@@ -87,7 +87,10 @@ export function useUpdateLandingArticleCategory() {
         .eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['landing-article-categories'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['landing-article-categories'] });
+      qc.invalidateQueries({ queryKey: ['public-landing-articles'] });
+    },
   });
 }
 
@@ -98,7 +101,10 @@ export function useDeleteLandingArticleCategory() {
       const { error } = await supabase.from('landing_article_categories' as any).delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['landing-article-categories'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['landing-article-categories'] });
+      qc.invalidateQueries({ queryKey: ['public-landing-articles'] });
+    },
   });
 }
 
@@ -114,7 +120,10 @@ export function useBatchUpdateCategoryOrder() {
         if (error) throw error;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['landing-article-categories'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['landing-article-categories'] });
+      qc.invalidateQueries({ queryKey: ['public-landing-articles'] });
+    },
   });
 }
 
@@ -237,7 +246,7 @@ export function usePublicLandingArticles(
     queryFn: async () => {
       if (!tenantId) return { categories: [], articles: [] };
       const [catRes, artRes] = await Promise.all([
-        supabase.from('landing_article_categories' as any).select('*').eq('tenant_id', tenantId).eq('is_visible', true).order('display_order'),
+        supabase.from('landing_article_categories' as any).select('*').eq('tenant_id', tenantId).eq('is_visible', true).order('display_order', { ascending: true }).order('created_at', { ascending: false }),
         supabase.from('landing_articles' as any).select('*').eq('tenant_id', tenantId).eq('is_published', true).order('display_order', { ascending: true }).order('created_at', { ascending: false }),
       ]);
       return {

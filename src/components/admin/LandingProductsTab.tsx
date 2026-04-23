@@ -532,15 +532,12 @@ export function LandingProductsTab() {
     const idx = siblings.findIndex(c => c.id === cat.id);
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= siblings.length) return;
-    const updates = [
-      { id: siblings[idx].id, display_order: siblings[swapIdx].display_order },
-      { id: siblings[swapIdx].id, display_order: siblings[idx].display_order },
-    ];
-    // If both have same display_order, use index-based
-    if (updates[0].display_order === updates[1].display_order) {
-      updates[0].display_order = swapIdx;
-      updates[1].display_order = idx;
-    }
+    const reordered = [...siblings];
+    [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
+    const updates = reordered.map((item, index) => ({
+      id: item.id,
+      display_order: index,
+    }));
     await reorderCats.mutateAsync(updates);
   };
 
@@ -548,14 +545,12 @@ export function LandingProductsTab() {
     if (!products) return;
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= products.length) return;
-    const updates = [
-      { id: products[idx].id, display_order: products[swapIdx].display_order },
-      { id: products[swapIdx].id, display_order: products[idx].display_order },
-    ];
-    if (updates[0].display_order === updates[1].display_order) {
-      updates[0].display_order = swapIdx;
-      updates[1].display_order = idx;
-    }
+    const reordered = [...products];
+    [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
+    const updates = reordered.map((item, index) => ({
+      id: item.id,
+      display_order: index,
+    }));
     await reorderProds.mutateAsync(updates);
   };
 
