@@ -341,8 +341,12 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const settings = landingData?.settings;
   const tenant = landingData?.tenant;
   const tenantId = tenant?.id || resolvedTenantId || null;
-  const storeName = settings?.store_name || tenant?.name || storeId || '';
-  const template = settings?.website_template || 'phone_store';
+  const previewTemplate = searchParams.get('previewTemplate')?.trim() || null;
+  const resolvedSettings = previewTemplate
+    ? { ...settings, website_template: previewTemplate }
+    : settings;
+  const storeName = resolvedSettings?.store_name || tenant?.name || storeId || '';
+  const template = resolvedSettings?.website_template || 'phone_store';
 
   const isStandalone = typeof window !== 'undefined' && (
     window.matchMedia('(display-mode: standalone)').matches ||
@@ -732,8 +736,8 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   if (isWarrantyEntry) {
     return (
       <InstantWarrantyApp
-        accentColor={settings?.primary_color || '#1e3a5f'}
-        settings={settings}
+        accentColor={resolvedSettings?.primary_color || '#1e3a5f'}
+        settings={resolvedSettings}
         showBackButton={!isStandalone && pathInfo?.pageView === 'warranty'}
         storeId={storeId}
         storeName={storeName}
@@ -766,7 +770,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
       <LandingCartProvider>
         <Suspense fallback={templateFallback}>
           <AppleStyleLandingTemplate
-            settings={settings}
+            settings={resolvedSettings}
             tenant={tenant}
             tenantId={tenantId}
             storeId={storeId}
@@ -789,7 +793,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
       <LandingCartProvider>
         <Suspense fallback={templateFallback}>
           <PriceListTemplate
-            settings={settings}
+            settings={resolvedSettings}
             tenant={tenant}
             tenantId={tenantId}
             storeId={storeId}
@@ -811,7 +815,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     <LandingCartProvider>
       <Suspense fallback={templateFallback}>
         <UniversalStoreTemplate
-          settings={settings}
+          settings={resolvedSettings}
           tenant={tenant}
           tenantId={tenantId}
           storeId={storeId}
