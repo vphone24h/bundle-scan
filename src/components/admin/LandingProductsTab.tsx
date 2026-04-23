@@ -218,6 +218,11 @@ export function LandingProductsTab() {
   const [loadingEditProductId, setLoadingEditProductId] = useState<string | null>(null);
   const [pendingVariantIdx, setPendingVariantIdx] = useState<number | null>(null);
   const [pendingVariantPriceIdx, setPendingVariantPriceIdx] = useState<number | null>(null);
+  // Packages state
+  const [packageForm, setPackageForm] = useState<Array<{ name: string; price: number; description: string; is_default: boolean; is_active: boolean }>>([]);
+  const savePackages = useSaveProductPackages();
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const { data: existingPackages } = useProductPackages(editingProductId);
 
   const categoryTree = useMemo(() => buildCategoryTree(categories || []), [categories]);
   const flatCategories = useMemo(() => flattenCategoriesForSelect(categoryTree), [categoryTree]);
