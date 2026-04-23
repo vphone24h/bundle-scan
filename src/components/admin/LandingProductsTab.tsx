@@ -1074,49 +1074,6 @@ export function LandingProductsTab() {
               </div>
             )}
 
-            {/* ===== KHUYẾN MÃI ===== */}
-            <Separator />
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Label className="text-sm font-semibold">🎁 Khung khuyến mãi</Label>
-              </div>
-              <Input
-                value={form.promotion_title}
-                onChange={e => setForm(p => ({ ...p, promotion_title: e.target.value }))}
-                placeholder="KHUYẾN MÃI"
-                className="h-8 text-sm"
-              />
-              <p className="text-[10px] text-muted-foreground">Có thể đổi tên: Ưu đãi hôm nay, Quà tặng kèm, Deal đặc biệt...</p>
-              <RichTextEditor
-                value={form.promotion_content}
-                onChange={v => setForm(p => ({ ...p, promotion_content: v }))}
-                placeholder="Nội dung khuyến mãi..."
-                minHeight="100px"
-              />
-            </div>
-
-            {/* ===== BẢO HÀNH ===== */}
-            <Separator />
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Label className="text-sm font-semibold">🛡️ Khung bảo hành</Label>
-              </div>
-              <Input
-                value={form.warranty_title}
-                onChange={e => setForm(p => ({ ...p, warranty_title: e.target.value }))}
-                placeholder="BẢO HÀNH"
-                className="h-8 text-sm"
-              />
-              <p className="text-[10px] text-muted-foreground">Có thể đổi tên: Chính sách bảo hành, Cam kết cửa hàng, Hậu mãi...</p>
-              <RichTextEditor
-                value={form.warranty_content}
-                onChange={v => setForm(p => ({ ...p, warranty_content: v }))}
-                placeholder="Nội dung bảo hành..."
-                minHeight="100px"
-              />
-            </div>
-
-            {/* ===== MÔ TẢ ===== */}
             {/* ===== GÓI DỊCH VỤ / BẢO HÀNH ===== */}
             <Separator />
             <div className="space-y-3">
@@ -1201,6 +1158,48 @@ export function LandingProductsTab() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* ===== KHUYẾN MÃI ===== */}
+            <Separator />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-semibold">🎁 Khung khuyến mãi</Label>
+              </div>
+              <Input
+                value={form.promotion_title}
+                onChange={e => setForm(p => ({ ...p, promotion_title: e.target.value }))}
+                placeholder="KHUYẾN MÃI"
+                className="h-8 text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">Có thể đổi tên: Ưu đãi hôm nay, Quà tặng kèm, Deal đặc biệt...</p>
+              <RichTextEditor
+                value={form.promotion_content}
+                onChange={v => setForm(p => ({ ...p, promotion_content: v }))}
+                placeholder="Nội dung khuyến mãi..."
+                minHeight="100px"
+              />
+            </div>
+
+            {/* ===== BẢO HÀNH ===== */}
+            <Separator />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-semibold">🛡️ Khung bảo hành</Label>
+              </div>
+              <Input
+                value={form.warranty_title}
+                onChange={e => setForm(p => ({ ...p, warranty_title: e.target.value }))}
+                placeholder="BẢO HÀNH"
+                className="h-8 text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">Có thể đổi tên: Chính sách bảo hành, Cam kết cửa hàng, Hậu mãi...</p>
+              <RichTextEditor
+                value={form.warranty_content}
+                onChange={v => setForm(p => ({ ...p, warranty_content: v }))}
+                placeholder="Nội dung bảo hành..."
+                minHeight="100px"
+              />
             </div>
 
             <Separator />
