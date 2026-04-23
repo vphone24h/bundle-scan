@@ -229,6 +229,19 @@ export function LandingProductsTab() {
 
   const customProductTabs = (landingSettings as any)?.custom_product_tabs || [];
 
+  // Load packages when editing a product
+  useEffect(() => {
+    if (existingPackages && editingProductId) {
+      setPackageForm(existingPackages.map(p => ({
+        name: p.name,
+        price: p.price,
+        description: p.description || '',
+        is_default: p.is_default,
+        is_active: p.is_active,
+      })));
+    }
+  }, [existingPackages, editingProductId]);
+
   const [form, setForm] = useState({
     name: '',
     description: '',
