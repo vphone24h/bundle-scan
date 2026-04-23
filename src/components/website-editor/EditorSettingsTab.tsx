@@ -186,6 +186,10 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
           onSelect={(id) => {
             onChange('website_template', id);
             onChange('custom_nav_items', getFullNavItems(id));
+            const tpl = getTemplateById(id);
+            if (tpl?.defaultColor) {
+              onChange('primary_color', tpl.defaultColor);
+            }
           }}
           editableSettings={{
             custom_trust_badges: (formData as any).custom_trust_badges || null,
