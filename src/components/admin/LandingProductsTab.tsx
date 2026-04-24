@@ -793,24 +793,33 @@ export function LandingProductsTab() {
                           ) : (
                             <span>{formatNumber(p.price)}đ</span>
                           )}
-                          {p.is_sold_out && <Badge variant="destructive" className="text-[9px] px-1.5 py-0">Hết hàng</Badge>}
-                          {!p.is_active && <Badge variant="outline" className="text-[10px]">Ẩn</Badge>}
-                          {p.is_featured && <Badge variant="default" className="text-[10px]">Nổi bật</Badge>}
-                          {Array.isArray((p as any).badges) && (p as any).badges.map((b: string) => {
-                            const opt = PRODUCT_BADGE_OPTIONS.find(o => o.id === b);
-                            return opt ? <Badge key={b} className={`text-[9px] px-1.5 py-0 text-white ${opt.color}`}>{opt.text}</Badge> : null;
-                          })}
-                          {(p as any).student_discount_text && (
-                            <Badge className="text-[9px] px-1.5 py-0 text-white bg-red-600 hover:bg-red-600">
-                              🎓 {((p as any).student_discount_label || 'HSSV').toUpperCase()}: {((p as any).student_discount_text || '').toUpperCase()}
-                            </Badge>
-                          )}
-                          {(p as any).installment_down_payment > 0 && (
-                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-red-300 text-red-600">
-                              💳 Trả trước {formatNumber((p as any).installment_down_payment)}đ
-                            </Badge>
-                          )}
                         </div>
+                        {/* Badges row — hiển thị tất cả nhãn rõ ràng để dễ quản lý */}
+                        {(p.is_sold_out || !p.is_active || p.is_featured || (Array.isArray((p as any).badges) && (p as any).badges.length > 0) || (p as any).student_discount_text || (p as any).installment_down_payment > 0) && (
+                          <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                            {p.is_sold_out && <Badge variant="destructive" className="text-[10px] px-1.5 py-0.5 font-bold">Hết hàng</Badge>}
+                            {!p.is_active && <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">Ẩn</Badge>}
+                            {p.is_featured && <Badge className="text-[10px] px-1.5 py-0.5 bg-blue-500 hover:bg-blue-500 text-white font-bold">⭐ Nổi bật</Badge>}
+                            {Array.isArray((p as any).badges) && (p as any).badges.map((b: string) => {
+                              const opt = PRODUCT_BADGE_OPTIONS.find(o => o.id === b);
+                              return opt ? (
+                                <Badge key={b} className={`text-[10px] px-1.5 py-0.5 text-white font-bold ${opt.color} hover:${opt.color}`}>
+                                  {opt.text}
+                                </Badge>
+                              ) : null;
+                            })}
+                            {(p as any).student_discount_text && (
+                              <Badge className="text-[10px] px-1.5 py-0.5 text-white bg-red-600 hover:bg-red-600 font-bold">
+                                🎓 {((p as any).student_discount_label || 'HSSV').toUpperCase()}: {((p as any).student_discount_text || '').toUpperCase()}
+                              </Badge>
+                            )}
+                            {(p as any).installment_down_payment > 0 && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-red-300 text-red-600 font-medium">
+                                💳 Trả trước {formatNumber((p as any).installment_down_payment)}đ
+                              </Badge>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 justify-end">
