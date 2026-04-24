@@ -295,65 +295,99 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
   };
 
   // === LUXURY (Royal Luxe) BADGE ===
-  // Thiết kế: con dấu tròn răng cưa (vàng đồng) + ribbon chữ nhật phẳng có viền vàng,
-  // đầu đối diện medallion có đuôi cờ đuôi nheo (notch tam giác). Khớp ảnh tham khảo.
+  // Thiết kế: huy chương tròn răng cưa nhỏ đều (gear-edge) màu vàng kim với chữ cái serif
+  // ở giữa, ghép với ribbon chữ nhật bo góc nhẹ, viền vàng mảnh, gradient nền sậm sang trọng.
+  // Khớp y hệt ảnh tham chiếu (medallion + tablet ribbon).
   const LuxuryBadge = ({ opt, corner }: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; corner: Corner }) => {
     const [, highlight] = splitLabel(opt.id, opt.text);
     const baseColor = getBadgeGradient(opt);
     const isRight = corner === 'tr' || corner === 'br';
-    // Ribbon: gradient sậm theo màu nhãn để có chiều sâu
-    const ribbonBg = `linear-gradient(180deg, ${baseColor} 0%, rgba(0,0,0,0.35) 100%), ${baseColor}`;
-    // Notch (đuôi cờ) ngược phía medallion
-    const notchClip = isRight
-      // medallion bên phải -> notch bên trái
-      ? 'polygon(8px 0, 100% 0, 100% 100%, 8px 100%, 0 50%)'
-      // medallion bên trái -> notch bên phải
-      : 'polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%)';
+    const isBottom = corner === 'bl' || corner === 'br';
+    // Subtitle mặc định cho một số nhãn 2 dòng (như mẫu "CHÍNH HÃNG / ĐẢM BẢO")
+    const SUBTITLE_MAP: Record<string, string> = {
+      genuine: 'ĐẢM BẢO',
+      quality: 'CAO CẤP',
+      premium: 'CAO CẤP',
+      warranty: 'CHÍNH HÃNG',
+      exclusive: 'PHIÊN BẢN',
+      limited: 'SỐ LƯỢNG',
+    };
+    const subtitle = SUBTITLE_MAP[opt.id];
+
+    // Gradient nền sậm sang trọng theo màu nhãn (giữ tone gốc nhưng deep + bóng)
+    const ribbonBg = `linear-gradient(180deg, ${baseColor} 0%, rgba(0,0,0,0.55) 100%), ${baseColor}`;
+
+    // Răng cưa nhỏ đều (~20 răng) cho viền medallion
+    const TOOTH_COUNT = 22;
+    const teethStops: string[] = [];
+    const step = 360 / TOOTH_COUNT;
+    for (let i = 0; i < TOOTH_COUNT; i++) {
+      const a = i * step;
+      teethStops.push(`#fde68a ${a}deg ${a + step / 2}deg`);
+      teethStops.push(`#b45309 ${a + step / 2}deg ${a + step}deg`);
+    }
+    const teethGradient = `conic-gradient(${teethStops.join(', ')})`;
+
+    const SEAL_SIZE = 32;
+
     const seal = (
       <div
         className="relative flex items-center justify-center shrink-0"
         style={{
-          width: 28,
-          height: 28,
-          // Răng cưa = nhiều hình tam giác quanh viền (dùng conic-gradient cho hiệu ứng răng)
-          background:
-            'radial-gradient(circle at 35% 30%, #fde68a 0%, #f59e0b 55%, #92400e 100%)',
-          // Răng cưa giả lập bằng conic-gradient ở viền ngoài
-          borderRadius: '50%',
-          boxShadow:
-            '0 0 0 1px #78350f, 0 0 0 2.5px #fbbf24, 0 0 0 3.5px #92400e, inset 0 0 4px rgba(0,0,0,0.35)',
-          [isRight ? 'marginLeft' : 'marginRight']: -5,
+          width: SEAL_SIZE,
+          height: SEAL_SIZE,
+          [isRight ? 'marginLeft' : 'marginRight']: -8,
           zIndex: 2,
         } as any}
       >
-        {/* Răng cưa overlay */}
+        {/* Răng cưa ngoài cùng */}
         <span
           aria-hidden
           style={{
             position: 'absolute',
-            inset: -2,
+            inset: 0,
+            borderRadius: '50%',
+            background: teethGradient,
+            WebkitMask: 'radial-gradient(circle, transparent 62%, #000 64%, #000 100%)',
+            mask: 'radial-gradient(circle, transparent 62%, #000 64%, #000 100%)',
+            filter: 'drop-shadow(0 0 0.5px rgba(0,0,0,0.6))',
+          }}
+        />
+        {/* Mặt huy chương (đĩa kim loại bóng) */}
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: 3,
             borderRadius: '50%',
             background:
-              'conic-gradient(#fbbf24 0deg 8deg, transparent 8deg 22.5deg, #fbbf24 22.5deg 30.5deg, transparent 30.5deg 45deg, #fbbf24 45deg 53deg, transparent 53deg 67.5deg, #fbbf24 67.5deg 75.5deg, transparent 75.5deg 90deg, #fbbf24 90deg 98deg, transparent 98deg 112.5deg, #fbbf24 112.5deg 120.5deg, transparent 120.5deg 135deg, #fbbf24 135deg 143deg, transparent 143deg 157.5deg, #fbbf24 157.5deg 165.5deg, transparent 165.5deg 180deg, #fbbf24 180deg 188deg, transparent 188deg 202.5deg, #fbbf24 202.5deg 210.5deg, transparent 210.5deg 225deg, #fbbf24 225deg 233deg, transparent 233deg 247.5deg, #fbbf24 247.5deg 255.5deg, transparent 255.5deg 270deg, #fbbf24 270deg 278deg, transparent 278deg 292.5deg, #fbbf24 292.5deg 300.5deg, transparent 300.5deg 315deg, #fbbf24 315deg 323deg, transparent 323deg 337.5deg, #fbbf24 337.5deg 345.5deg, transparent 345.5deg 360deg)',
-            // Mask để chỉ giữ phần vành ngoài (vành ~3px)
-            WebkitMask:
-              'radial-gradient(circle, transparent 56%, #000 60%, #000 78%, transparent 82%)',
-            mask:
-              'radial-gradient(circle, transparent 56%, #000 60%, #000 78%, transparent 82%)',
-            zIndex: 1,
-          } as any}
+              'radial-gradient(circle at 32% 28%, #fef3c7 0%, #fbbf24 38%, #b45309 92%)',
+            boxShadow:
+              'inset 0 0 0 1px #78350f, inset 0 -2px 3px rgba(0,0,0,0.35), inset 0 2px 3px rgba(255,255,255,0.45)',
+          }}
+        />
+        {/* Vòng tròn nội điểm chấm (tùy chọn — tăng chi tiết) */}
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: 5,
+            borderRadius: '50%',
+            border: '0.5px dashed rgba(120,53,15,0.55)',
+          }}
         />
         {/* Chữ cái trong huy chương */}
         <span
           style={{
             position: 'relative',
             zIndex: 2,
-            fontSize: 14,
+            fontSize: 15,
             fontWeight: 900,
-            color: '#fde68a',
-            fontFamily: 'Georgia, "Times New Roman", serif',
+            color: '#3f1d04',
+            fontFamily: '"Playfair Display", Georgia, "Times New Roman", serif',
             fontStyle: 'italic',
-            textShadow: '0 1px 1px rgba(0,0,0,0.55)',
+            textShadow:
+              '0 1px 0 rgba(255,255,255,0.55), 0 -1px 0 rgba(0,0,0,0.25)',
             lineHeight: 1,
           }}
         >
@@ -361,38 +395,57 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
         </span>
       </div>
     );
+
     const ribbon = (
       <div
         style={{
           position: 'relative',
           background: ribbonBg,
           color: '#fff7ed',
-          padding: isRight ? '5px 10px 5px 16px' : '5px 16px 5px 10px',
-          fontSize: 10.5,
+          padding: subtitle
+            ? (isRight ? '4px 10px 4px 18px' : '4px 18px 4px 10px')
+            : (isRight ? '6px 10px 6px 18px' : '6px 18px 6px 10px'),
+          fontSize: subtitle ? 10 : 11,
           fontWeight: 800,
-          letterSpacing: '0.06em',
+          letterSpacing: '0.08em',
           whiteSpace: 'nowrap',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          lineHeight: 1.15,
+          justifyContent: 'center',
+          lineHeight: 1.1,
           textTransform: 'uppercase',
-          textShadow: '0 1px 1px rgba(0,0,0,0.55)',
+          textShadow: '0 1px 1px rgba(0,0,0,0.6)',
           fontFamily: '"Playfair Display", Georgia, serif',
-          clipPath: notchClip,
-          // Viền vàng giả lập bằng outline + inset shadow (clip-path không cho border)
+          borderRadius: 4,
+          // Viền vàng kim loại + highlight + đáy tối tạo chiều sâu
           boxShadow:
-            'inset 0 0 0 1px #fbbf24, inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.25)',
+            'inset 0 0 0 1.2px #fbbf24, inset 0 0 0 2px rgba(120,53,15,0.6), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.3)',
         }}
       >
-        {highlight}
+        <span>{highlight}</span>
+        {subtitle && (
+          <span
+            style={{
+              fontSize: 8.5,
+              letterSpacing: '0.12em',
+              fontWeight: 700,
+              opacity: 0.95,
+              marginTop: 1,
+            }}
+          >
+            {subtitle}
+          </span>
+        )}
       </div>
     );
+
     return (
       <div className={`absolute z-10 animate-badge-pulse ${cornerClass(corner)}`}>
         <div
-          className="flex items-stretch select-none"
+          className="flex items-center select-none"
           style={{
-            filter: 'drop-shadow(0 3px 5px rgba(0,0,0,0.35))',
+            filter: 'drop-shadow(0 3px 5px rgba(0,0,0,0.4))',
             flexDirection: isRight ? 'row-reverse' : 'row',
           }}
         >
