@@ -351,6 +351,7 @@ export function LandingProductsTab() {
       promotion_title: 'KHUYẾN MÃI', promotion_content: '',
       warranty_title: 'BẢO HÀNH', warranty_content: '',
       package_selection_mode: 'multiple',
+      student_discount_label: 'HỌC SINH SINH VIÊN', student_discount_text: '', installment_down_payment: null,
     });
     setShowBadges(false);
     setFormBadges([]);
@@ -391,6 +392,9 @@ export function LandingProductsTab() {
         warranty_title: detail.warranty_title || 'BẢO HÀNH',
         warranty_content: detail.warranty_content || '',
         package_selection_mode: (detail as any).package_selection_mode || 'multiple',
+        student_discount_label: (detail as any).student_discount_label || 'HỌC SINH SINH VIÊN',
+        student_discount_text: (detail as any).student_discount_text || '',
+        installment_down_payment: (detail as any).installment_down_payment ?? null,
       });
       setShowBadges(Array.isArray((detail as any).badges) && (detail as any).badges.length > 0);
       setFormBadges(Array.isArray((detail as any).badges) ? (detail as any).badges : []);
@@ -533,6 +537,9 @@ export function LandingProductsTab() {
         warranty_title: form.warranty_title,
         warranty_content: form.warranty_content || null,
         package_selection_mode: form.package_selection_mode,
+        student_discount_label: form.student_discount_label || null,
+        student_discount_text: form.student_discount_text || null,
+        installment_down_payment: form.installment_down_payment,
       };
       if (editingProduct) {
         await updateProduct.mutateAsync({ id: editingProduct.id, ...payload });
