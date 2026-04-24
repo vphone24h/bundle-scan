@@ -112,6 +112,13 @@ export function ProductDetailPage({
 
   const placeOrder = usePlaceLandingOrder();
 
+  // Khi đổi sang sản phẩm khác (vd: bấm vào sản phẩm gợi ý), cuộn lên đầu trang
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [product?.id]);
+
   // Fetch service packages (grouped). Falls back gracefully to legacy flat list.
   const { data: packageGroups } = usePublicProductPackageGroups(product?.id || null);
   const { data: productPackages } = usePublicProductPackages(product?.id || null);
