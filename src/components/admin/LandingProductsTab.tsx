@@ -1306,49 +1306,6 @@ export function LandingProductsTab() {
               />
             </div>
 
-            {/* ===== ƯU ĐÃI HS-SV ===== */}
-            <Separator />
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">🎓 Nhãn ưu đãi HS-SV (hiện trên thẻ sản phẩm)</Label>
-              <p className="text-[10px] text-muted-foreground">
-                Nhãn đỏ hiển thị ngay vị trí "BEST SELLER" — viết hoa cho đẹp. Để trống nội dung nếu không hiển thị.
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-xs">Tiêu đề (chữ trắng trên nền đỏ)</Label>
-                  <Input
-                    value={form.student_discount_label}
-                    onChange={e => setForm(p => ({ ...p, student_discount_label: e.target.value }))}
-                    placeholder="HỌC SINH SINH VIÊN"
-                    className="h-8 text-sm uppercase"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Nội dung giảm</Label>
-                  <Input
-                    value={form.student_discount_text}
-                    onChange={e => setForm(p => ({ ...p, student_discount_text: e.target.value }))}
-                    placeholder="VD: GIẢM ĐẾN 100.000Đ hoặc GIẢM 5%"
-                    className="h-8 text-sm uppercase"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* ===== TRẢ GÓP ===== */}
-            <Separator />
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">💳 Trả góp - Trả trước</Label>
-              <p className="text-[10px] text-muted-foreground">
-                Nhập số tiền trả trước. Hiển thị bên dưới giá: "Hoặc trả trước XXX,000đ". Để 0 nếu không hiển thị.
-              </p>
-              <PriceInput
-                value={form.installment_down_payment ?? 0}
-                onChange={v => setForm(p => ({ ...p, installment_down_payment: v || null }))}
-                placeholder="VD: 600000"
-              />
-            </div>
-
             <Separator />
             <div className="space-y-2">
               <Label className="text-sm font-semibold">📝 Mô tả sản phẩm</Label>
@@ -1423,6 +1380,49 @@ export function LandingProductsTab() {
                   </label>
                 ))}
               </div>
+            </div>
+
+            {/* ===== ƯU ĐÃI HS-SV ===== */}
+            <Separator />
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">🎓 Nhãn ưu đãi HS-SV (hiện trên thẻ sản phẩm)</Label>
+              <p className="text-[10px] text-muted-foreground">
+                Nhãn đỏ hiển thị ngay vị trí "BEST SELLER" — viết hoa cho đẹp. Để trống nội dung nếu không hiển thị.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Tiêu đề (chữ trắng trên nền đỏ)</Label>
+                  <Input
+                    value={form.student_discount_label}
+                    onChange={e => setForm(p => ({ ...p, student_discount_label: e.target.value }))}
+                    placeholder="HỌC SINH SINH VIÊN"
+                    className="h-8 text-sm uppercase"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Nội dung giảm</Label>
+                  <Input
+                    value={form.student_discount_text}
+                    onChange={e => setForm(p => ({ ...p, student_discount_text: e.target.value }))}
+                    placeholder="VD: GIẢM ĐẾN 100.000Đ hoặc GIẢM 5%"
+                    className="h-8 text-sm uppercase"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ===== TRẢ GÓP ===== */}
+            <Separator />
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">💳 Trả góp - Trả trước</Label>
+              <p className="text-[10px] text-muted-foreground">
+                Nhập số tiền trả trước. Hiển thị bên dưới giá: "Hoặc trả trước XXX,000đ". Để 0 nếu không hiển thị.
+              </p>
+              <PriceInput
+                value={form.installment_down_payment ?? 0}
+                onChange={v => setForm(p => ({ ...p, installment_down_payment: v || null }))}
+                placeholder="VD: 600000"
+              />
             </div>
 
             <div className="flex items-center justify-between">
