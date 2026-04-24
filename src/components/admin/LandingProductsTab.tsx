@@ -1717,14 +1717,14 @@ export function LandingProductsTab() {
             <div className="space-y-2">
               <Button type="button" variant="ghost" size="sm" className="w-full justify-between text-sm font-medium px-0"
                 onClick={() => setShowBadges(!showBadges)}>
-                <span>🏷️ Nhãn sản phẩm {formBadges.length > 0 && `(${formBadges.length}/2)`}</span>
+                <span>🏷️ Nhãn sản phẩm {formBadges.length > 0 && `(${formBadges.length}/3)`}</span>
                 {showBadges ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </Button>
               {showBadges && (
                 <div className="grid grid-cols-2 gap-1.5 p-3 bg-muted/50 rounded-lg">
                   {PRODUCT_BADGE_OPTIONS.map(opt => {
                     const isActive = formBadges.includes(opt.id);
-                    const disabled = !isActive && formBadges.length >= 2;
+                    const disabled = !isActive && formBadges.length >= 3;
                     return (
                       <label key={opt.id} className={`flex items-center gap-2 p-1.5 rounded-md cursor-pointer text-xs transition-colors ${isActive ? 'bg-primary/10 ring-1 ring-primary/30' : disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted'}`}>
                         <Checkbox
@@ -1732,7 +1732,7 @@ export function LandingProductsTab() {
                           disabled={disabled}
                           onCheckedChange={(checked) => {
                             if (checked) {
-                              if (formBadges.length < 2) setFormBadges(prev => [...prev, opt.id]);
+                              if (formBadges.length < 3) setFormBadges(prev => [...prev, opt.id]);
                             } else {
                               setFormBadges(prev => prev.filter(b => b !== opt.id));
                             }
@@ -1743,7 +1743,7 @@ export function LandingProductsTab() {
                       </label>
                     );
                   })}
-                  <p className="col-span-2 text-[10px] text-muted-foreground mt-1">Tối đa 2 nhãn. Nhãn sẽ hiển thị trên ảnh sản phẩm ngoài website.</p>
+                  <p className="col-span-2 text-[10px] text-muted-foreground mt-1">Tối đa 3 nhãn. Mỗi nhãn hiển thị ở 1 góc khác nhau trên ảnh, không chồng lên nhau.</p>
                 </div>
               )}
             </div>
