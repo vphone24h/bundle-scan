@@ -844,10 +844,12 @@ export function ProductDetailPage({
                             </div>
                           ))}
                         </div>
-                        <div className={`hidden lg:grid ${getProductGridClass(layoutStyle)}`}>
+                        <div className={`hidden lg:block`}>
+                          <div className={getProductGridClass(layoutStyle)}>
                           {relatedProducts.slice(0, 10).map(rp => (
                             <LayoutProductCard key={rp.id} layoutStyle={layoutStyle} product={rp} onClick={() => onProductClick?.(rp)} accentColor={primaryColor} />
                           ))}
+                          </div>
                         </div>
                       </div>
                     );
@@ -897,10 +899,12 @@ export function ProductDetailPage({
                             </div>
                           ))}
                         </div>
-                        <div className={`hidden lg:grid ${getProductGridClass(layoutStyle)}`}>
+                        <div className={`hidden lg:block`}>
+                          <div className={getProductGridClass(layoutStyle)}>
                           {recentlyViewedProducts.slice(0, 10).map(rp => (
                             <LayoutProductCard key={rp.id} layoutStyle={layoutStyle} product={rp} onClick={() => onProductClick?.(rp)} accentColor={primaryColor} />
                           ))}
+                          </div>
                         </div>
                       </div>
                     );
