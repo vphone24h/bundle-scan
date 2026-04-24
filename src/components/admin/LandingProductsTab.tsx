@@ -1771,35 +1771,56 @@ export function LandingProductsTab() {
                           'bottom-1.5 right-1.5';
                         if (badgeStyle === 'luxury') {
                           const isRight = corner === 'tr' || corner === 'br';
+                          const DEEP: Record<string, { dark: string; mid: string }> = {
+                            new: { dark: '#5b1216', mid: '#8a1a23' },
+                            best_seller: { dark: '#0b2545', mid: '#16386b' },
+                            top_1: { dark: '#0b2545', mid: '#16386b' },
+                            many_buy: { dark: '#0b2545', mid: '#16386b' },
+                            genuine: { dark: '#0c3d2c', mid: '#125e43' },
+                            warranty: { dark: '#0c3d2c', mid: '#125e43' },
+                            quality: { dark: '#0c3d2c', mid: '#125e43' },
+                            premium: { dark: '#0c3d2c', mid: '#125e43' },
+                            hot: { dark: '#5b1216', mid: '#8a1a23' },
+                            sale: { dark: '#5b1216', mid: '#8a1a23' },
+                          };
+                          const tone = DEEP[id] || { dark: '#1f1f1f', mid: '#3a3a3a' };
                           return (
                             <div key={id} className={`absolute ${cornerCls} flex items-center animate-pulse`} style={{ flexDirection: isRight ? 'row-reverse' : 'row', filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.35))' }}>
-                              {/* Medallion răng cưa nhỏ */}
+                              {/* Medallion sò vàng, mặt cùng tone với ribbon */}
                               <span style={{
                                 position: 'relative',
-                                width: 20, height: 20, borderRadius: '50%',
-                                background: 'radial-gradient(circle at 32% 28%, #fef3c7 0%, #fbbf24 38%, #b45309 92%)',
-                                boxShadow: 'inset 0 0 0 1px #78350f, 0 0 0 1px #b45309, 0 0 0 2px #fde68a, 0 0 0 2.5px #92400e',
+                                width: 22, height: 22, borderRadius: '50%',
+                                background: `radial-gradient(circle at 35% 30%, ${tone.mid} 0%, ${tone.dark} 80%)`,
+                                boxShadow: `inset 0 0 0 1px #fbbf24, 0 0 0 1.5px #fde68a, 0 0 0 2px #a16207`,
                                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: 10, fontWeight: 900, color: '#3f1d04',
-                                fontFamily: '"Playfair Display", Georgia, serif', fontStyle: 'italic',
-                                [isRight ? 'marginLeft' : 'marginRight']: -5, zIndex: 2,
-                                textShadow: '0 1px 0 rgba(255,255,255,0.5)',
+                                fontSize: 11, fontWeight: 700, color: '#fde68a',
+                                fontFamily: '"Playfair Display", Georgia, serif',
+                                [isRight ? 'marginLeft' : 'marginRight']: -6, zIndex: 3,
+                                textShadow: '0 1px 0 rgba(0,0,0,0.6)',
                               } as any}>
                                 {opt.text.charAt(0).toUpperCase()}
                               </span>
-                              {/* Ribbon chữ nhật bo góc, viền vàng */}
+                              {/* Ribbon: plate bạc/trắng bao ngoài + dải đậm + viền vàng */}
                               <span style={{
-                                padding: isRight ? '2px 6px 2px 10px' : '2px 10px 2px 6px',
-                                fontSize: 7.5, fontWeight: 800, color: '#fff7ed',
-                                textTransform: 'uppercase', letterSpacing: '0.07em',
-                                borderRadius: 3,
-                                boxShadow: 'inset 0 0 0 1px #fbbf24, inset 0 0 0 1.5px rgba(120,53,15,0.55), inset 0 -1px 0 rgba(0,0,0,0.35)',
-                                textShadow: '0 1px 1px rgba(0,0,0,0.6)',
-                                display: 'inline-flex', alignItems: 'center',
-                                fontFamily: '"Playfair Display", Georgia, serif',
-                                backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.5) 100%)',
-                              }} className={opt.color}>
-                                {opt.text.toUpperCase()}
+                                background: 'linear-gradient(180deg, #ffffff 0%, #e5e7eb 55%, #cbd5e1 100%)',
+                                padding: 2,
+                                borderRadius: 4,
+                                display: 'inline-flex',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.25)',
+                              }}>
+                                <span style={{
+                                  background: `linear-gradient(180deg, ${tone.mid} 0%, ${tone.dark} 100%)`,
+                                  padding: isRight ? '2px 7px 2px 10px' : '2px 10px 2px 7px',
+                                  fontSize: 8, fontWeight: 700, color: '#fde68a',
+                                  textTransform: 'uppercase', letterSpacing: '0.06em',
+                                  borderRadius: 3,
+                                  boxShadow: 'inset 0 0 0 1px #fbbf24, inset 0 -1px 1px rgba(0,0,0,0.35)',
+                                  textShadow: '0 1px 1px rgba(0,0,0,0.6)',
+                                  display: 'inline-flex', alignItems: 'center',
+                                  fontFamily: '"Playfair Display", Georgia, serif',
+                                }}>
+                                  {opt.text.toUpperCase()}
+                                </span>
                               </span>
                             </div>
                           );
