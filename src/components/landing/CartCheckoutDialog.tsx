@@ -123,7 +123,22 @@ export function CartCheckoutDialog({
       // Place each cart item as a separate order with same note grouping
       for (const item of cart.items) {
         const itemPackagesNote = item.selectedPackages && item.selectedPackages.length > 0
-          ? `[Gói DV: ${item.selectedPackages.map(pkg => `${pkg.name} (+${formatNumber(pkg.price)}đ)`).join(', ')}]`
+          ? (() => {
+              const groupMap = new Map<string, typeof item.selectedPackages>();
+              item.selectedPackages.forEach(pkg => {
+                const gName = pkg.groupName || 'Gói DV';
+                const arr = groupMap.get(gName) || [];
+                arr.push(pkg);
+                groupMap.set(gName, arr);
+              });
+              return Array.from(groupMap.entries())
+                .map(([gName, pkgs]) =>
+                  `[${gName}: ${pkgs.map(pkg => {
+                    const pq = pkg.quantity || 1;
+                    return `${pkg.name}${pq > 1 ? ` ×${pq}` : ''} (+${formatNumber(pkg.price * pq)}đ)`;
+                  }).join(', ')}]`
+                ).join(' ');
+            })()
           : '';
 
         await placeOrder.mutateAsync({
