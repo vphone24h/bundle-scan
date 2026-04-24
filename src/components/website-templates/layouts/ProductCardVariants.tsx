@@ -314,21 +314,48 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
     };
     const subtitle = SUBTITLE_MAP[opt.id];
 
-    // Gradient nền sậm sang trọng theo màu nhãn (giữ tone gốc nhưng deep + bóng)
-    const ribbonBg = `linear-gradient(180deg, ${baseColor} 0%, rgba(0,0,0,0.55) 100%), ${baseColor}`;
+    // === Map màu đậm cho từng nhãn (theo mẫu IMG_2468/2469) ===
+    // - Hàng mới / NEW → đỏ rượu vang đậm
+    // - Bán chạy → xanh navy
+    // - Chính hãng / Bảo hành → xanh lá đậm
+    // - Còn lại fallback theo baseColor
+    const DEEP_COLOR_MAP: Record<string, { dark: string; mid: string }> = {
+      new:           { dark: '#5b1216', mid: '#8a1a23' }, // wine red
+      new_today:     { dark: '#5b1216', mid: '#8a1a23' },
+      just_updated:  { dark: '#5b1216', mid: '#8a1a23' },
+      new_version:   { dark: '#5b1216', mid: '#8a1a23' },
+      preorder:      { dark: '#5b1216', mid: '#8a1a23' },
+      trending:      { dark: '#5b1216', mid: '#8a1a23' },
+      best_seller:   { dark: '#0b2545', mid: '#16386b' }, // navy
+      top_1:         { dark: '#0b2545', mid: '#16386b' },
+      many_buy:      { dark: '#0b2545', mid: '#16386b' },
+      hot:           { dark: '#5b1216', mid: '#8a1a23' },
+      sale:          { dark: '#5b1216', mid: '#8a1a23' },
+      deal:          { dark: '#5b1216', mid: '#8a1a23' },
+      genuine:       { dark: '#0c3d2c', mid: '#125e43' }, // forest green
+      warranty:      { dark: '#0c3d2c', mid: '#125e43' },
+      quality:       { dark: '#0c3d2c', mid: '#125e43' },
+      premium:       { dark: '#0c3d2c', mid: '#125e43' },
+      premium_en:    { dark: '#0c3d2c', mid: '#125e43' },
+      flagship:      { dark: '#0c3d2c', mid: '#125e43' },
+    };
+    const tone = DEEP_COLOR_MAP[opt.id] || { dark: '#1f1f1f', mid: '#3a3a3a' };
 
-    // Răng cưa nhỏ đều (~20 răng) cho viền medallion
-    const TOOTH_COUNT = 22;
-    const teethStops: string[] = [];
+    // Nền dải màu đậm bên trong viền vàng
+    const ribbonInner = `linear-gradient(180deg, ${tone.mid} 0%, ${tone.dark} 100%)`;
+
+    // Răng sò (scallop) — răng to và mềm như mẫu (16 răng)
+    const TOOTH_COUNT = 16;
+    const scallopStops: string[] = [];
     const step = 360 / TOOTH_COUNT;
     for (let i = 0; i < TOOTH_COUNT; i++) {
       const a = i * step;
-      teethStops.push(`#fde68a ${a}deg ${a + step / 2}deg`);
-      teethStops.push(`#b45309 ${a + step / 2}deg ${a + step}deg`);
+      scallopStops.push(`#fde68a ${a}deg ${a + step / 2}deg`);
+      scallopStops.push(`#a16207 ${a + step / 2}deg ${a + step}deg`);
     }
-    const teethGradient = `conic-gradient(${teethStops.join(', ')})`;
+    const scallopGradient = `conic-gradient(${scallopStops.join(', ')})`;
 
-    const SEAL_SIZE = 32;
+    const SEAL_SIZE = 38;
 
     const seal = (
       <div
@@ -336,58 +363,56 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
         style={{
           width: SEAL_SIZE,
           height: SEAL_SIZE,
-          [isRight ? 'marginLeft' : 'marginRight']: -8,
-          zIndex: 2,
+          [isRight ? 'marginLeft' : 'marginRight']: -10,
+          zIndex: 3,
         } as any}
       >
-        {/* Răng cưa ngoài cùng */}
+        {/* Vành răng sò vàng */}
         <span
           aria-hidden
           style={{
             position: 'absolute',
             inset: 0,
             borderRadius: '50%',
-            background: teethGradient,
-            WebkitMask: 'radial-gradient(circle, transparent 62%, #000 64%, #000 100%)',
-            mask: 'radial-gradient(circle, transparent 62%, #000 64%, #000 100%)',
-            filter: 'drop-shadow(0 0 0.5px rgba(0,0,0,0.6))',
+            background: scallopGradient,
+            WebkitMask: 'radial-gradient(circle, #000 72%, transparent 74%)',
+            mask: 'radial-gradient(circle, #000 72%, transparent 74%)',
+            filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.45))',
           }}
         />
-        {/* Mặt huy chương (đĩa kim loại bóng) */}
+        {/* Mặt huy chương — nền đậm cùng tone với ribbon */}
         <span
           aria-hidden
           style={{
             position: 'absolute',
-            inset: 3,
+            inset: 4.5,
             borderRadius: '50%',
-            background:
-              'radial-gradient(circle at 32% 28%, #fef3c7 0%, #fbbf24 38%, #b45309 92%)',
+            background: `radial-gradient(circle at 35% 30%, ${tone.mid} 0%, ${tone.dark} 80%)`,
             boxShadow:
-              'inset 0 0 0 1px #78350f, inset 0 -2px 3px rgba(0,0,0,0.35), inset 0 2px 3px rgba(255,255,255,0.45)',
+              'inset 0 0 0 1px #fbbf24, inset 0 -2px 3px rgba(0,0,0,0.5), inset 0 2px 3px rgba(255,255,255,0.15)',
           }}
         />
-        {/* Vòng tròn nội điểm chấm (tùy chọn — tăng chi tiết) */}
+        {/* Vòng chấm bi vàng quanh chữ */}
         <span
           aria-hidden
           style={{
             position: 'absolute',
-            inset: 5,
+            inset: 7,
             borderRadius: '50%',
-            border: '0.5px dashed rgba(120,53,15,0.55)',
+            border: '0.6px dotted rgba(251,191,36,0.85)',
           }}
         />
-        {/* Chữ cái trong huy chương */}
+        {/* Chữ cái serif vàng ở giữa */}
         <span
           style={{
             position: 'relative',
             zIndex: 2,
-            fontSize: 15,
-            fontWeight: 900,
-            color: '#3f1d04',
+            fontSize: 18,
+            fontWeight: 700,
+            color: '#fde68a',
             fontFamily: '"Playfair Display", Georgia, "Times New Roman", serif',
-            fontStyle: 'italic',
             textShadow:
-              '0 1px 0 rgba(255,255,255,0.55), 0 -1px 0 rgba(0,0,0,0.25)',
+              '0 1px 0 rgba(0,0,0,0.6), 0 0 4px rgba(251,191,36,0.35)',
             lineHeight: 1,
           }}
         >
@@ -396,47 +421,60 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
       </div>
     );
 
+    // Ribbon: lớp ngoài là plate trắng/bạc kim loại, lớp trong là dải màu đậm + viền vàng
     const ribbon = (
       <div
         style={{
           position: 'relative',
-          background: ribbonBg,
-          color: '#fff7ed',
-          padding: subtitle
-            ? (isRight ? '4px 10px 4px 18px' : '4px 18px 4px 10px')
-            : (isRight ? '6px 10px 6px 18px' : '6px 18px 6px 10px'),
-          fontSize: subtitle ? 10 : 11,
-          fontWeight: 800,
-          letterSpacing: '0.08em',
-          whiteSpace: 'nowrap',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          lineHeight: 1.1,
-          textTransform: 'uppercase',
-          textShadow: '0 1px 1px rgba(0,0,0,0.6)',
-          fontFamily: '"Playfair Display", Georgia, serif',
-          borderRadius: 4,
-          // Viền vàng kim loại + highlight + đáy tối tạo chiều sâu
+          // Lớp nền bạc/trắng kim loại (như mẫu)
+          background:
+            'linear-gradient(180deg, #ffffff 0%, #e5e7eb 55%, #cbd5e1 100%)',
+          padding: 3,
+          borderRadius: 6,
           boxShadow:
-            'inset 0 0 0 1.2px #fbbf24, inset 0 0 0 2px rgba(120,53,15,0.6), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.3)',
+            '0 1px 2px rgba(0,0,0,0.25), inset 0 0 0 0.5px rgba(0,0,0,0.15)',
         }}
       >
-        <span>{highlight}</span>
-        {subtitle && (
-          <span
-            style={{
-              fontSize: 8.5,
-              letterSpacing: '0.12em',
-              fontWeight: 700,
-              opacity: 0.95,
-              marginTop: 1,
-            }}
-          >
-            {subtitle}
-          </span>
-        )}
+        <div
+          style={{
+            background: ribbonInner,
+            color: '#fde68a',
+            padding: subtitle
+              ? (isRight ? '3px 10px 3px 16px' : '3px 16px 3px 10px')
+              : (isRight ? '5px 12px 5px 18px' : '5px 18px 5px 12px'),
+            fontSize: subtitle ? 10 : 11.5,
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            whiteSpace: 'nowrap',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            lineHeight: 1.1,
+            textTransform: 'uppercase',
+            textShadow: '0 1px 1px rgba(0,0,0,0.55)',
+            fontFamily: '"Playfair Display", Georgia, serif',
+            borderRadius: 4,
+            // Viền vàng mảnh + highlight trên + bóng đáy
+            boxShadow:
+              'inset 0 0 0 1px #fbbf24, inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 2px rgba(0,0,0,0.35)',
+          }}
+        >
+          <span>{highlight}</span>
+          {subtitle && (
+            <span
+              style={{
+                fontSize: 9,
+                letterSpacing: '0.14em',
+                fontWeight: 600,
+                opacity: 0.95,
+                marginTop: 1,
+              }}
+            >
+              {subtitle}
+            </span>
+          )}
+        </div>
       </div>
     );
 
@@ -445,7 +483,7 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
         <div
           className="flex items-center select-none"
           style={{
-            filter: 'drop-shadow(0 3px 5px rgba(0,0,0,0.4))',
+            filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.4))',
             flexDirection: isRight ? 'row-reverse' : 'row',
           }}
         >
