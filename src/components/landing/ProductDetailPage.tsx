@@ -1028,17 +1028,28 @@ export function ProductDetailPage({
                   <span className="text-gray-500">Tiền máy:</span>
                   <span className="font-medium">{formatNumber(displayPrice * quantity)}đ</span>
                 </div>
-                {selectedPackages.length > 0 && (
-                  <div className="space-y-1 pt-1 border-t border-dashed">
-                    <span className="text-xs font-medium text-muted-foreground">Gói dịch vụ kèm theo:</span>
-                    {selectedPackages.map(pkg => (
-                      <div key={pkg.id} className="flex justify-between text-sm">
-                        <span className="text-gray-600">• {pkg.name}</span>
-                        <span className="font-medium">{pkg.price > 0 ? `+${formatNumber(pkg.price * quantity)}đ` : 'Miễn phí'}</span>
-                      </div>
-                    ))}
-                    <div className="flex justify-between text-sm font-medium">
-                      <span>Tổng gói DV:</span>
+                {selectedPackagesByGroup.length > 0 && (
+                  <div className="space-y-2 pt-1.5 border-t border-dashed">
+                    {selectedPackagesByGroup.map(([groupName, pkgs]) => {
+                      const groupSubtotal = pkgs.reduce((s, p) => s + p.price * p.quantity, 0);
+                      return (
+                        <div key={groupName} className="space-y-1">
+                          <span className="text-xs font-semibold text-muted-foreground">{groupName}:</span>
+                          {pkgs.map(pkg => (
+                            <div key={pkg.id} className="flex justify-between text-sm">
+                              <span className="text-gray-600">• {pkg.name}{pkg.quantity > 1 ? ` × ${pkg.quantity}` : ''}</span>
+                              <span className="font-medium">{pkg.price > 0 ? `+${formatNumber(pkg.price * pkg.quantity * quantity)}đ` : 'Miễn phí'}</span>
+                            </div>
+                          ))}
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Tổng {groupName}:</span>
+                            <span>{groupSubtotal > 0 ? `+${formatNumber(groupSubtotal * quantity)}đ` : '0đ'}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="flex justify-between text-sm font-semibold border-t pt-1">
+                      <span>Tổng dịch vụ kèm theo:</span>
                       <span>{packagesTotal > 0 ? `+${formatNumber(packagesTotal * quantity)}đ` : '0đ'}</span>
                     </div>
                   </div>
