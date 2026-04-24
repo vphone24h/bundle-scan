@@ -303,7 +303,7 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
     const baseColor = getBadgeGradient(opt);
     const isRight = corner === 'tr' || corner === 'br';
     const isBottom = corner === 'bl' || corner === 'br';
-    // Subtitle mặc định cho một số nhãn 2 dòng (như mẫu "CHÍNH HÃNG / ĐẢM BẢO")
+    // Subtitle 2-dòng (ví dụ: CHÍNH HÃNG / ĐẢM BẢO)
     const SUBTITLE_MAP: Record<string, string> = {
       genuine: 'ĐẢM BẢO',
       quality: 'CAO CẤP',
@@ -314,48 +314,50 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
     };
     const subtitle = SUBTITLE_MAP[opt.id];
 
-    // === Map màu đậm cho từng nhãn (theo mẫu IMG_2468/2469) ===
-    // - Hàng mới / NEW → đỏ rượu vang đậm
-    // - Bán chạy → xanh navy
-    // - Chính hãng / Bảo hành → xanh lá đậm
-    // - Còn lại fallback theo baseColor
-    const DEEP_COLOR_MAP: Record<string, { dark: string; mid: string }> = {
-      new:           { dark: '#5b1216', mid: '#8a1a23' }, // wine red
-      new_today:     { dark: '#5b1216', mid: '#8a1a23' },
-      just_updated:  { dark: '#5b1216', mid: '#8a1a23' },
-      new_version:   { dark: '#5b1216', mid: '#8a1a23' },
-      preorder:      { dark: '#5b1216', mid: '#8a1a23' },
-      trending:      { dark: '#5b1216', mid: '#8a1a23' },
-      best_seller:   { dark: '#0b2545', mid: '#16386b' }, // navy
-      top_1:         { dark: '#0b2545', mid: '#16386b' },
-      many_buy:      { dark: '#0b2545', mid: '#16386b' },
-      hot:           { dark: '#5b1216', mid: '#8a1a23' },
-      sale:          { dark: '#5b1216', mid: '#8a1a23' },
-      deal:          { dark: '#5b1216', mid: '#8a1a23' },
-      genuine:       { dark: '#0c3d2c', mid: '#125e43' }, // forest green
-      warranty:      { dark: '#0c3d2c', mid: '#125e43' },
-      quality:       { dark: '#0c3d2c', mid: '#125e43' },
-      premium:       { dark: '#0c3d2c', mid: '#125e43' },
-      premium_en:    { dark: '#0c3d2c', mid: '#125e43' },
-      flagship:      { dark: '#0c3d2c', mid: '#125e43' },
+    // === Bảng màu chuẩn theo spec ===
+    // - HÀNG MỚI (đỏ rượu vang): #7A0F1A → #C62828
+    // - SẢN PHẨM BÁN CHẠY (xanh navy → xanh sáng): #1E3A8A → #3B82F6
+    // - CHÍNH HÃNG (xanh lá): #166534 → #22C55E
+    type Tone = { from: string; to: string; sealFrom: string; sealTo: string };
+    const TONE_MAP: Record<string, Tone> = {
+      // Wine red
+      new:          { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
+      new_today:    { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
+      just_updated: { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
+      new_version:  { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
+      preorder:     { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
+      trending:     { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
+      hot:          { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
+      sale:         { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
+      deal:         { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
+      // Navy blue
+      best_seller:  { from: '#3B82F6', to: '#1E3A8A', sealFrom: '#2563EB', sealTo: '#172554' },
+      top_1:        { from: '#3B82F6', to: '#1E3A8A', sealFrom: '#2563EB', sealTo: '#172554' },
+      many_buy:     { from: '#3B82F6', to: '#1E3A8A', sealFrom: '#2563EB', sealTo: '#172554' },
+      // Forest green
+      genuine:      { from: '#22C55E', to: '#166534', sealFrom: '#15803D', sealTo: '#0B3F1F' },
+      warranty:     { from: '#22C55E', to: '#166534', sealFrom: '#15803D', sealTo: '#0B3F1F' },
+      quality:      { from: '#22C55E', to: '#166534', sealFrom: '#15803D', sealTo: '#0B3F1F' },
+      premium:      { from: '#22C55E', to: '#166534', sealFrom: '#15803D', sealTo: '#0B3F1F' },
+      premium_en:   { from: '#22C55E', to: '#166534', sealFrom: '#15803D', sealTo: '#0B3F1F' },
+      flagship:     { from: '#22C55E', to: '#166534', sealFrom: '#15803D', sealTo: '#0B3F1F' },
     };
-    const tone = DEEP_COLOR_MAP[opt.id] || { dark: '#1f1f1f', mid: '#3a3a3a' };
+    const tone: Tone = TONE_MAP[opt.id] || {
+      from: baseColor, to: baseColor, sealFrom: baseColor, sealTo: baseColor,
+    };
 
-    // Nền dải màu đậm bên trong viền vàng
-    const ribbonInner = `linear-gradient(180deg, ${tone.mid} 0%, ${tone.dark} 100%)`;
-
-    // Răng sò (scallop) — răng to và mềm như mẫu (16 răng)
-    const TOOTH_COUNT = 16;
-    const scallopStops: string[] = [];
+    // Răng cưa nhỏ đều quanh medallion (sun-burst, 22 răng)
+    const TOOTH_COUNT = 22;
+    const teethStops: string[] = [];
     const step = 360 / TOOTH_COUNT;
     for (let i = 0; i < TOOTH_COUNT; i++) {
       const a = i * step;
-      scallopStops.push(`#fde68a ${a}deg ${a + step / 2}deg`);
-      scallopStops.push(`#a16207 ${a + step / 2}deg ${a + step}deg`);
+      teethStops.push(`#fde68a ${a}deg ${a + step * 0.5}deg`);
+      teethStops.push(`#92400e ${a + step * 0.5}deg ${a + step}deg`);
     }
-    const scallopGradient = `conic-gradient(${scallopStops.join(', ')})`;
+    const teethGradient = `conic-gradient(${teethStops.join(', ')})`;
 
-    const SEAL_SIZE = 38;
+    const SEAL_SIZE = 40;
 
     const seal = (
       <div
@@ -363,56 +365,57 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
         style={{
           width: SEAL_SIZE,
           height: SEAL_SIZE,
-          [isRight ? 'marginLeft' : 'marginRight']: -10,
+          [isRight ? 'marginLeft' : 'marginRight']: -12,
           zIndex: 3,
         } as any}
       >
-        {/* Vành răng sò vàng */}
+        {/* Vành răng cưa vàng (sun-burst) */}
         <span
           aria-hidden
           style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: '50%',
-            background: scallopGradient,
-            WebkitMask: 'radial-gradient(circle, #000 72%, transparent 74%)',
-            mask: 'radial-gradient(circle, #000 72%, transparent 74%)',
-            filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.45))',
+            position: 'absolute', inset: 0, borderRadius: '50%',
+            background: teethGradient,
+            WebkitMask: 'radial-gradient(circle, #000 70%, transparent 72%)',
+            mask: 'radial-gradient(circle, #000 70%, transparent 72%)',
+            filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.5))',
           }}
         />
-        {/* Mặt huy chương — nền đậm cùng tone với ribbon */}
+        {/* Vành vàng kim ngoài cùng (smooth) */}
         <span
           aria-hidden
           style={{
-            position: 'absolute',
-            inset: 4.5,
-            borderRadius: '50%',
-            background: `radial-gradient(circle at 35% 30%, ${tone.mid} 0%, ${tone.dark} 80%)`,
+            position: 'absolute', inset: 4, borderRadius: '50%',
+            background:
+              'conic-gradient(from 90deg, #fef3c7, #fbbf24, #92400e, #fbbf24, #fde68a, #92400e, #fbbf24, #fef3c7)',
+            boxShadow: 'inset 0 0 0 0.5px rgba(0,0,0,0.4)',
+          }}
+        />
+        {/* Mặt huy chương — gradient cùng tone */}
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute', inset: 6, borderRadius: '50%',
+            background: `radial-gradient(circle at 32% 28%, ${tone.sealFrom} 0%, ${tone.sealTo} 85%)`,
             boxShadow:
-              'inset 0 0 0 1px #fbbf24, inset 0 -2px 3px rgba(0,0,0,0.5), inset 0 2px 3px rgba(255,255,255,0.15)',
+              'inset 0 0 0 1px #fbbf24, inset 0 -2px 4px rgba(0,0,0,0.55), inset 0 2px 3px rgba(255,255,255,0.18)',
           }}
         />
-        {/* Vòng chấm bi vàng quanh chữ */}
+        {/* Vòng chấm bi vàng */}
         <span
           aria-hidden
           style={{
-            position: 'absolute',
-            inset: 7,
-            borderRadius: '50%',
-            border: '0.6px dotted rgba(251,191,36,0.85)',
+            position: 'absolute', inset: 9, borderRadius: '50%',
+            border: '0.7px dotted rgba(253,230,138,0.9)',
           }}
         />
-        {/* Chữ cái serif vàng ở giữa */}
+        {/* Chữ cái serif vàng */}
         <span
           style={{
-            position: 'relative',
-            zIndex: 2,
-            fontSize: 18,
-            fontWeight: 700,
+            position: 'relative', zIndex: 2,
+            fontSize: 18, fontWeight: 700,
             color: '#fde68a',
             fontFamily: '"Playfair Display", Georgia, "Times New Roman", serif',
-            textShadow:
-              '0 1px 0 rgba(0,0,0,0.6), 0 0 4px rgba(251,191,36,0.35)',
+            textShadow: '0 1px 0 rgba(0,0,0,0.7), 0 0 5px rgba(251,191,36,0.5)',
             lineHeight: 1,
           }}
         >
@@ -421,69 +424,81 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
       </div>
     );
 
-    // Ribbon: lớp ngoài là plate trắng/bạc kim loại, lớp trong là dải màu đậm + viền vàng
+    // Ribbon: gradient màu sâu + viền vàng kim 2 lớp + shine sweep
     const ribbon = (
       <div
         style={{
           position: 'relative',
-          // Lớp nền bạc/trắng kim loại (như mẫu)
-          background:
-            'linear-gradient(180deg, #ffffff 0%, #e5e7eb 55%, #cbd5e1 100%)',
-          padding: 3,
-          borderRadius: 6,
-          boxShadow:
-            '0 1px 2px rgba(0,0,0,0.25), inset 0 0 0 0.5px rgba(0,0,0,0.15)',
+          background: `linear-gradient(135deg, ${tone.from} 0%, ${tone.to} 100%)`,
+          color: '#ffffff',
+          padding: subtitle
+            ? (isRight ? '4px 12px 4px 18px' : '4px 18px 4px 12px')
+            : (isRight ? '6px 14px 6px 20px' : '6px 20px 6px 14px'),
+          borderRadius: 7,
+          fontSize: subtitle ? 10 : 11.5,
+          fontWeight: 800,
+          letterSpacing: '0.06em',
+          whiteSpace: 'nowrap',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          lineHeight: 1.1,
+          textTransform: 'uppercase',
+          textShadow: '0 1px 1.5px rgba(0,0,0,0.55)',
+          fontFamily: '"Playfair Display", Georgia, serif',
+          overflow: 'hidden',
+          // 2 lớp viền vàng + glass highlight trên + bóng tối dưới
+          boxShadow: [
+            'inset 0 0 0 1px #fbbf24',
+            'inset 0 0 0 2px rgba(146,64,14,0.55)',
+            'inset 0 1px 0 rgba(255,255,255,0.28)',
+            'inset 0 -3px 4px rgba(0,0,0,0.35)',
+            '0 2px 4px rgba(0,0,0,0.25)',
+          ].join(', '),
         }}
       >
-        <div
+        {/* Glass highlight phía trên */}
+        <span
+          aria-hidden
           style={{
-            background: ribbonInner,
-            color: '#fde68a',
-            padding: subtitle
-              ? (isRight ? '3px 10px 3px 16px' : '3px 16px 3px 10px')
-              : (isRight ? '5px 12px 5px 18px' : '5px 18px 5px 12px'),
-            fontSize: subtitle ? 10 : 11.5,
-            fontWeight: 700,
-            letterSpacing: '0.06em',
-            whiteSpace: 'nowrap',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            lineHeight: 1.1,
-            textTransform: 'uppercase',
-            textShadow: '0 1px 1px rgba(0,0,0,0.55)',
-            fontFamily: '"Playfair Display", Georgia, serif',
-            borderRadius: 4,
-            // Viền vàng mảnh + highlight trên + bóng đáy
-            boxShadow:
-              'inset 0 0 0 1px #fbbf24, inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 2px rgba(0,0,0,0.35)',
+            position: 'absolute', top: 0, left: 0, right: 0, height: '45%',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 100%)',
+            pointerEvents: 'none',
           }}
-        >
-          <span>{highlight}</span>
-          {subtitle && (
-            <span
-              style={{
-                fontSize: 9,
-                letterSpacing: '0.14em',
-                fontWeight: 600,
-                opacity: 0.95,
-                marginTop: 1,
-              }}
-            >
-              {subtitle}
-            </span>
-          )}
-        </div>
+        />
+        {/* Shine sweep */}
+        <span
+          aria-hidden
+          className="luxury-shine"
+          style={{
+            position: 'absolute', top: 0, bottom: 0, width: '40%',
+            background: 'linear-gradient(110deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%)',
+            pointerEvents: 'none',
+            transform: 'skewX(-20deg)',
+          }}
+        />
+        <span style={{ position: 'relative', zIndex: 1 }}>{highlight}</span>
+        {subtitle && (
+          <span
+            style={{
+              position: 'relative', zIndex: 1,
+              fontSize: 9, letterSpacing: '0.14em', fontWeight: 600,
+              opacity: 0.95, marginTop: 1,
+            }}
+          >
+            {subtitle}
+          </span>
+        )}
       </div>
     );
 
     return (
-      <div className={`absolute z-10 animate-badge-pulse ${cornerClass(corner)}`}>
+      <div className={`absolute z-10 ${cornerClass(corner)}`}>
         <div
           className="flex items-center select-none"
           style={{
-            filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.4))',
+            filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.35))',
             flexDirection: isRight ? 'row-reverse' : 'row',
           }}
         >

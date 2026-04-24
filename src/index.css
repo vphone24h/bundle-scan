@@ -382,6 +382,18 @@ html, body, #root {
   color: hsl(var(--destructive)) !important;
 }
 
+/* ===== Royal Luxe badge — shine sweep ===== */
+@keyframes luxury-shine-sweep {
+  0%   { left: -50%; opacity: 0; }
+  20%  { opacity: 1; }
+  60%  { opacity: 1; }
+  100% { left: 120%; opacity: 0; }
+}
+.luxury-shine {
+  left: -50%;
+  animation: luxury-shine-sweep 3.2s ease-in-out infinite;
+}
+
 /* ===== Rich Text Editor Tables (đồng bộ editor & website) ===== */
 .rte-table {
   border-collapse: collapse;
