@@ -213,6 +213,9 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
   type Corner = 'tl' | 'tr' | 'bl' | 'br';
   type Variant = 'pill' | 'flame';
   const BADGE_LAYOUT = BADGE_POSITION_MAP;
+  const activeCorners = new Set(items.map(opt => BADGE_LAYOUT[opt!.id]?.corner).filter(Boolean) as Corner[]);
+  const hasTopPair = activeCorners.has('tl') && activeCorners.has('tr');
+  const hasBottomPair = activeCorners.has('bl') && activeCorners.has('br');
 
   const cornerClass = (c: Corner) => {
     switch (c) {
@@ -388,7 +391,7 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
 
     if (NEW_BADGE_IDS.has(opt.id)) {
       return (
-        <div className={`absolute z-10 ${cornerClass(corner)}`}>
+        <div className="absolute z-10" style={getLuxuryCornerStyle(corner)}>
           <div
             className="flex items-center select-none"
             style={{
@@ -516,7 +519,7 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
 
     if (BEST_SELLER_BADGE_IDS.has(opt.id)) {
       return (
-        <div className={`absolute z-10 ${cornerClass(corner)}`}>
+        <div className="absolute z-10" style={getLuxuryCornerStyle(corner)}>
           <div
             className="select-none"
             style={{
@@ -728,7 +731,7 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
     );
 
     return (
-      <div className={`absolute z-10 ${cornerClass(corner)}`}>
+      <div className="absolute z-10" style={getLuxuryCornerStyle(corner)}>
         <div
           className="flex items-center select-none"
           style={{
