@@ -1772,29 +1772,32 @@ export function LandingProductsTab() {
                         if (badgeStyle === 'luxury') {
                           const isRight = corner === 'tr' || corner === 'br';
                           return (
-                            <div key={id} className={`absolute ${cornerCls} flex items-stretch animate-pulse`} style={{ flexDirection: isRight ? 'row-reverse' : 'row', filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))' }}>
+                            <div key={id} className={`absolute ${cornerCls} flex items-center animate-pulse`} style={{ flexDirection: isRight ? 'row-reverse' : 'row', filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.35))' }}>
+                              {/* Medallion răng cưa nhỏ */}
                               <span style={{
-                                width: 16, height: 16, borderRadius: '50%',
-                                background: 'radial-gradient(circle at 35% 30%, #fde68a 0%, #f59e0b 55%, #92400e 100%)',
-                                boxShadow: '0 0 0 1px #78350f, 0 0 0 1.5px #fbbf24',
+                                position: 'relative',
+                                width: 20, height: 20, borderRadius: '50%',
+                                background: 'radial-gradient(circle at 32% 28%, #fef3c7 0%, #fbbf24 38%, #b45309 92%)',
+                                boxShadow: 'inset 0 0 0 1px #78350f, 0 0 0 1px #b45309, 0 0 0 2px #fde68a, 0 0 0 2.5px #92400e',
                                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: 9, fontWeight: 900, color: '#fde68a',
-                                fontFamily: 'Georgia, serif', fontStyle: 'italic',
-                                [isRight ? 'marginLeft' : 'marginRight']: -3, zIndex: 2,
+                                fontSize: 10, fontWeight: 900, color: '#3f1d04',
+                                fontFamily: '"Playfair Display", Georgia, serif', fontStyle: 'italic',
+                                [isRight ? 'marginLeft' : 'marginRight']: -5, zIndex: 2,
+                                textShadow: '0 1px 0 rgba(255,255,255,0.5)',
                               } as any}>
                                 {opt.text.charAt(0).toUpperCase()}
                               </span>
+                              {/* Ribbon chữ nhật bo góc, viền vàng */}
                               <span style={{
-                                background: opt.id ? undefined : '#064e3b',
-                                padding: isRight ? '2px 6px 2px 9px' : '2px 9px 2px 6px',
-                                fontSize: 7, fontWeight: 800, color: '#fff7ed',
-                                textTransform: 'uppercase', letterSpacing: '0.05em',
-                                clipPath: isRight
-                                  ? 'polygon(5px 0, 100% 0, 100% 100%, 5px 100%, 0 50%)'
-                                  : 'polygon(0 0, calc(100% - 5px) 0, 100% 50%, calc(100% - 5px) 100%, 0 100%)',
-                                boxShadow: 'inset 0 0 0 1px #fbbf24',
-                                textShadow: '0 1px 1px rgba(0,0,0,0.5)',
+                                padding: isRight ? '2px 6px 2px 10px' : '2px 10px 2px 6px',
+                                fontSize: 7.5, fontWeight: 800, color: '#fff7ed',
+                                textTransform: 'uppercase', letterSpacing: '0.07em',
+                                borderRadius: 3,
+                                boxShadow: 'inset 0 0 0 1px #fbbf24, inset 0 0 0 1.5px rgba(120,53,15,0.55), inset 0 -1px 0 rgba(0,0,0,0.35)',
+                                textShadow: '0 1px 1px rgba(0,0,0,0.6)',
                                 display: 'inline-flex', alignItems: 'center',
+                                fontFamily: '"Playfair Display", Georgia, serif',
+                                backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.5) 100%)',
                               }} className={opt.color}>
                                 {opt.text.toUpperCase()}
                               </span>
