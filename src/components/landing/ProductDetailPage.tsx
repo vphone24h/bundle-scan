@@ -9,6 +9,7 @@ import { PaymentFlowDialog } from '@/components/landing/PaymentFlowDialog';
 import { CTAButtonItem, getDefaultCTAButtons } from '@/components/admin/ProductDetailSectionManager';
 import { formatNumber } from '@/lib/formatNumber';
 import DOMPurify from 'dompurify';
+import { sanitizeRichHtml } from '@/lib/sanitizeRichHtml';
 import { LandingProduct, LandingProductVariant, VariantPriceEntry } from '@/hooks/useLandingProducts';
 import { usePublicProductPackages, LandingProductPackage } from '@/hooks/useLandingProducts';
 import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
