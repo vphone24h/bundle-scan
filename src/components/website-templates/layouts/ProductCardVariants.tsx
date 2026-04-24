@@ -3,6 +3,7 @@ import { LayoutStyle } from '@/lib/industryConfig';
 import { formatNumber } from '@/lib/formatNumber';
 import { Package, Star, Zap, ShoppingBag } from 'lucide-react';
 import { PRODUCT_BADGE_OPTIONS } from '@/components/admin/LandingProductsTab';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // === FIXED BADGE POSITION MAP ===
 // Mỗi nhãn được gán cố định 1 trong 4 góc để đảm bảo nhất quán giữa admin & website,
@@ -140,6 +141,7 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
   const items = badges.slice(0, 3).map(b => PRODUCT_BADGE_OPTIONS.find(o => o.id === b)).filter(Boolean);
   if (items.length === 0) return null;
   const badgeStyle: 'simple' | 'luxury' = style === 'luxury' ? 'luxury' : 'simple';
+  const isMobile = useIsMobile();
 
   const getBadgeGradient = (opt: typeof PRODUCT_BADGE_OPTIONS[0]) => {
     // Đồng bộ với bảng màu Tailwind để khớp với preview admin
@@ -218,6 +220,28 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
       case 'tr': return 'top-2 right-2';
       case 'bl': return 'bottom-2 left-2';
       case 'br': return 'bottom-2 right-2';
+    }
+  };
+
+  const getLuxuryCornerStyle = (corner: Corner) => {
+    if (!isMobile) {
+      switch (corner) {
+        case 'tl': return { top: 8, left: 8 };
+        case 'tr': return { top: 8, right: 8 };
+        case 'bl': return { bottom: 8, left: 8 };
+        case 'br': return { bottom: 8, right: 8 };
+      }
+    }
+
+    switch (corner) {
+      case 'tl':
+        return { top: hasTopPair ? 30 : 6, left: 4, transform: 'scale(0.84)', transformOrigin: 'top left' };
+      case 'tr':
+        return { top: 5, right: 4, transform: 'scale(0.84)', transformOrigin: 'top right' };
+      case 'bl':
+        return { bottom: hasBottomPair ? 28 : 5, left: 4, transform: 'scale(0.84)', transformOrigin: 'bottom left' };
+      case 'br':
+        return { bottom: 5, right: 4, transform: 'scale(0.84)', transformOrigin: 'bottom right' };
     }
   };
 
