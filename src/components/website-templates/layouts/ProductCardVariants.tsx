@@ -62,12 +62,40 @@ export function ProductBadges({ badges }: { badges?: string[] }) {
     return map[id] || ['', text.toUpperCase()];
   };
 
-  const PillBadge = ({ opt, position }: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; position: 'right' | 'left' }) => {
-    const isRight = position === 'right';
+  // Each badge has its own corner + visual style so multiple badges never overlap
+  type Corner = 'tl' | 'tr' | 'bl' | 'br';
+  type Variant = 'pill' | 'flame';
+  const BADGE_LAYOUT: Record<string, { corner: Corner; variant: Variant }> = {
+    new:        { corner: 'tl', variant: 'pill' },
+    hot:        { corner: 'tr', variant: 'flame' },
+    sale:       { corner: 'bl', variant: 'flame' },
+    deal:       { corner: 'bl', variant: 'flame' },
+    clearance:  { corner: 'bl', variant: 'flame' },
+    trending:   { corner: 'tr', variant: 'pill' },
+    popular:    { corner: 'br', variant: 'pill' },
+    best_choice:{ corner: 'br', variant: 'pill' },
+    genuine:    { corner: 'tl', variant: 'pill' },
+    warranty:   { corner: 'br', variant: 'pill' },
+    quality:    { corner: 'br', variant: 'pill' },
+    preorder:   { corner: 'tr', variant: 'pill' },
+    limited:    { corner: 'bl', variant: 'flame' },
+    exclusive:  { corner: 'tl', variant: 'pill' },
+  };
+
+  const cornerClass = (c: Corner) => {
+    switch (c) {
+      case 'tl': return 'top-2 left-2';
+      case 'tr': return 'top-2 right-2';
+      case 'bl': return 'bottom-2 left-2';
+      case 'br': return 'bottom-2 right-2';
+    }
+  };
+
+  const PillBadge = ({ opt, corner }: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; corner: Corner }) => {
     const [prefix, highlight] = splitLabel(opt.id, opt.text);
     return (
       <div
-        className={`absolute top-2 z-10 animate-badge-pulse flex items-center gap-1 ${isRight ? 'right-2' : 'left-2'}`}
+        className={`absolute z-10 animate-badge-pulse flex items-center gap-1 ${cornerClass(corner)}`}
         style={{
           background: getBadgeGradient(opt),
           color: '#fff',
@@ -86,12 +114,72 @@ export function ProductBadges({ badges }: { badges?: string[] }) {
       </div>
     );
   };
-  return (
-    <>
-      {items[0] && <PillBadge opt={items[0]!} position="left" />}
-      {items[1] && <PillBadge opt={items[1]!} position="right" />}
-    </>
-  );
+
+  // "Flame" badge — slanted pill with a flame tail, like the "Giá Rẻ" reference
+  const FlameBadge = ({ opt, corner }: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; corner: Corner }) => {
+    const [, highlight] = splitLabel(opt.id, opt.text);
+    const baseColor = getBadgeGradient(opt);
+    const isRight = corner === 'tr' || corner === 'br';
+    return (
+      <div
+        className={`absolute z-10 animate-badge-pulse ${cornerClass(corner)}`}
+        style={{ transform: isRight ? 'rotate(8deg)' : 'rotate(-8deg)' }}
+      >
+        <div
+          style={{
+            position: 'relative',
+            background: `linear-gradient(135deg, #fbbf24 0%, ${baseColor} 55%, #b91c1c 100%)`,
+            color: '#fff',
+            padding: '4px 12px',
+            borderRadius: '999px',
+            boxShadow: '0 3px 8px rgba(220,38,38,0.35)',
+            fontSize: 12,
+            fontWeight: 900,
+            fontStyle: 'italic',
+            letterSpacing: '0.04em',
+            textShadow: '0 1px 2px rgba(0,0,0,0.25)',
+            whiteSpace: 'nowrap',
+            lineHeight: 1.1,
+          }}
+        >
+          {highlight}
+          {/* Flame tail */}
+          <span
+            style={{
+              position: 'absolute',
+              top: '50%',
+              [isRight ? 'left' : 'right']: -6,
+              transform: 'translateY(-50%)',
+              width: 0,
+              height: 0,
+              borderTop: '8px solid transparent',
+              borderBottom: '8px solid transparent',
+              [isRight ? 'borderRight' : 'borderLeft']: `10px solid #fbbf24`,
+              filter: 'drop-shadow(0 1px 2px rgba(220,38,38,0.4))',
+            } as any}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  const renderBadge = (opt: typeof PRODUCT_BADGE_OPTIONS[0], idx: number) => {
+    const layout = BADGE_LAYOUT[opt.id] || { corner: (idx === 0 ? 'tl' : 'tr') as Corner, variant: 'pill' as Variant };
+    // If both badges land in the same corner, push the second to the opposite vertical
+    let corner = layout.corner;
+    if (idx === 1 && items[0]) {
+      const first = BADGE_LAYOUT[items[0]!.id]?.corner;
+      if (first === corner) {
+        const flip: Record<Corner, Corner> = { tl: 'br', tr: 'bl', bl: 'tr', br: 'tl' };
+        corner = flip[corner];
+      }
+    }
+    return layout.variant === 'flame'
+      ? <FlameBadge key={opt.id} opt={opt} corner={corner} />
+      : <PillBadge key={opt.id} opt={opt} corner={corner} />;
+  };
+
+  return <>{items.map((opt, i) => renderBadge(opt!, i))}</>;
 }
 
 interface ProductCardProps {
