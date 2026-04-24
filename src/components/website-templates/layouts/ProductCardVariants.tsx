@@ -41,32 +41,55 @@ export function ProductBadges({ badges }: { badges?: string[] }) {
     return gradients[opt.color] || '#dc2626';
   };
 
-  const RibbonBadge = ({ opt, position }: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; position: 'right' | 'left' }) => {
+  // Split label into [prefix, highlight] to emphasize one keyword like "Giảm 4%"
+  const splitLabel = (id: string, text: string): [string, string] => {
+    const map: Record<string, [string, string]> = {
+      new: ['Hàng', 'NEW'],
+      hot: ['Đang', 'HOT'],
+      trending: ['', 'TRENDING'],
+      popular: ['Được', 'QUAN TÂM'],
+      best_choice: ['', 'ĐỀ XUẤT'],
+      sale: ['', 'SALE'],
+      deal: ['Deal', 'HÔM NAY'],
+      clearance: ['', 'XẢ KHO'],
+      genuine: ['', 'CHÍNH HÃNG'],
+      warranty: ['Bảo hành', 'TỐT'],
+      quality: ['Chất lượng', 'CAO'],
+      preorder: ['', 'PRE-ORDER'],
+      limited: ['', 'LIMITED'],
+      exclusive: ['', 'ĐỘC QUYỀN'],
+    };
+    return map[id] || ['', text.toUpperCase()];
+  };
+
+  const PillBadge = ({ opt, position }: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; position: 'right' | 'left' }) => {
     const isRight = position === 'right';
+    const [prefix, highlight] = splitLabel(opt.id, opt.text);
     return (
       <div
-        className={`absolute top-2.5 z-10 animate-badge-pulse ${isRight ? 'right-0' : 'left-0'}`}
+        className={`absolute top-2 z-10 animate-badge-pulse flex items-center gap-1 ${isRight ? 'right-2' : 'left-2'}`}
         style={{
           background: getBadgeGradient(opt),
           color: '#fff',
-          fontSize: 10,
-          fontWeight: 900,
-          letterSpacing: '0.08em',
-          padding: '3px 8px',
-          borderRadius: '3px',
-          boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-          textShadow: '0 1px 1px rgba(0,0,0,0.2)',
-          lineHeight: 1.2,
+          padding: '4px 10px',
+          borderRadius: '999px',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.18)',
+          lineHeight: 1.1,
+          letterSpacing: '0.02em',
+          whiteSpace: 'nowrap',
         }}
       >
-        {opt.text}
+        {prefix && (
+          <span style={{ fontSize: 10, fontWeight: 700, opacity: 0.95 }}>{prefix}</span>
+        )}
+        <span style={{ fontSize: 11, fontWeight: 900 }}>{highlight}</span>
       </div>
     );
   };
   return (
     <>
-      {items[0] && <RibbonBadge opt={items[0]!} position="right" />}
-      {items[1] && <RibbonBadge opt={items[1]!} position="left" />}
+      {items[0] && <PillBadge opt={items[0]!} position="left" />}
+      {items[1] && <PillBadge opt={items[1]!} position="right" />}
     </>
   );
 }
