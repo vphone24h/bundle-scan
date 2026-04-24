@@ -15,6 +15,7 @@ import { TenantLandingSettings, useWarrantyLookup, useCustomerPointsPublic, Warr
 import { LandingProduct, LandingProductCategory } from '@/hooks/useLandingProducts';
 import { LandingArticle, LandingArticleCategory } from '@/hooks/useLandingArticles';
 import { PRODUCT_BADGE_OPTIONS } from '@/components/admin/LandingProductsTab';
+import { BADGE_POSITION_MAP } from '@/components/website-templates/layouts/ProductCardVariants';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import { ProductDetailPage } from '@/components/landing/ProductDetailPage';
 import { FloatingCartButton } from '@/components/landing/FloatingCartButton';
