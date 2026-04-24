@@ -19,7 +19,8 @@ import { useLandingCart } from '@/hooks/useLandingCart';
 import { ContactFormDialog, BookingDialog, HotelBookingDialog, TrackOrderDialog, CheckWarrantyDialog, WriteReviewDialog, SupportDialog, CartDialog, PromotionInfoDialog, JoinMemberDialog } from '@/components/landing/CTAActionDialogs';
 import { toast } from 'sonner';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
-import { ProductBadges } from '@/components/website-templates/layouts/ProductCardVariants';
+import { ProductBadges, LayoutProductCard, getProductGridClass } from '@/components/website-templates/layouts/ProductCardVariants';
+import type { LayoutStyle } from '@/lib/industryConfig';
 
 interface BranchOption {
   id: string;
@@ -54,6 +55,7 @@ interface ProductDetailPageProps {
   detailSections?: ProductDetailSectionConfig[] | null;
   ctaButtons?: CTAButtonItem[] | null;
   websiteTemplate?: string | null;
+  layoutStyle?: LayoutStyle;
   relatedProducts?: LandingProduct[];
   recentlyViewedProducts?: LandingProduct[];
   onProductClick?: (p: LandingProduct) => void;
@@ -72,6 +74,7 @@ export function ProductDetailPage({
   detailSections,
   ctaButtons,
   websiteTemplate,
+  layoutStyle,
   relatedProducts = [],
   recentlyViewedProducts = [],
   onProductClick,
