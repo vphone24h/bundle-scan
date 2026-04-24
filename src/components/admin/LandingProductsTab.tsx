@@ -824,42 +824,6 @@ export function LandingProductsTab() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 justify-end">
-                      {/* Quick badge toggle */}
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" size="sm" className="h-8 text-xs px-2 shrink-0 gap-1" title="Gắn nhãn nhanh">
-                            <Tag className="h-3.5 w-3.5" />
-                            Nhãn
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-64 p-2" align="end">
-                          <div className="text-xs font-semibold mb-2 px-1">Chọn nhãn hiển thị</div>
-                          <div className="max-h-72 overflow-y-auto space-y-0.5">
-                            {PRODUCT_BADGE_OPTIONS.map((opt) => {
-                              const current: string[] = Array.isArray((p as any).badges) ? (p as any).badges : [];
-                              const checked = current.includes(opt.id);
-                              return (
-                                <button
-                                  key={opt.id}
-                                  type="button"
-                                  className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded hover:bg-muted text-left text-xs"
-                                  onClick={async () => {
-                                    const next = checked ? current.filter(x => x !== opt.id) : [...current, opt.id];
-                                    await updateProduct.mutateAsync({ id: p.id, badges: next } as any);
-                                    toast({ title: checked ? `Đã bỏ nhãn ${opt.text}` : `Đã thêm nhãn ${opt.text}` });
-                                  }}
-                                >
-                                  <span className="flex items-center gap-2">
-                                    <Badge className={cn('text-[10px] px-1.5 py-0.5 text-white font-bold', opt.color)}>{opt.text}</Badge>
-                                    <span className="text-muted-foreground">{opt.label}</span>
-                                  </span>
-                                  {checked && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
                       <Button
                         variant={p.is_sold_out ? "destructive" : "outline"}
                         size="sm"
