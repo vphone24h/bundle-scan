@@ -60,8 +60,11 @@ export function StudentDiscountBadge({ label, text }: { label?: string | null; t
 export function InstallmentLine({ amount }: { amount?: number | null }) {
   if (!amount || amount <= 0) return null;
   return (
-    <p className="text-xs text-gray-600 mt-1">
-      Hoặc trả trước <span className="font-semibold text-red-600">{formatNumber(amount)}đ</span>
+    <p className="text-[11px] sm:text-xs text-gray-600 mt-1 leading-tight">
+      Hoặc trả trước{' '}
+      <span className="font-semibold text-red-600 whitespace-nowrap">
+        {formatNumber(amount)}đ
+      </span>
     </p>
   );
 }
