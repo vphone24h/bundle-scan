@@ -346,6 +346,29 @@ export interface LandingProductPackage {
   display_order: number;
   created_at: string;
   updated_at: string;
+  group_id?: string | null;
+  image_url?: string | null;
+  allow_quantity?: boolean;
+}
+
+export interface LandingPackageGroup {
+  id: string;
+  product_id: string;
+  tenant_id: string;
+  name: string;
+  selection_mode: 'single' | 'multiple';
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PackageGroupWithItems {
+  id: string; // group id (or '_legacy_' for legacy ungrouped)
+  name: string;
+  selection_mode: 'single' | 'multiple';
+  display_order: number;
+  items: LandingProductPackage[];
+  isLegacy?: boolean;
 }
 
 export function useProductPackages(productId: string | null) {
@@ -419,6 +442,185 @@ export function useSaveProductPackages() {
       return data;
     },
     onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['landing-product-packages', vars.productId] });
+      qc.invalidateQueries({ queryKey: ['public-product-packages', vars.productId] });
+    },
+  });
+}
+
+// ===== Package Groups (multi-group support) =====
+
+/** Admin: get groups + items grouped together. */
+export function useProductPackageGroups(productId: string | null) {
+  return useQuery({
+    queryKey: ['landing-package-groups', productId],
+    queryFn: async (): Promise<PackageGroupWithItems[]> => {
+      if (!productId) return [];
+      const [groupsRes, itemsRes] = await Promise.all([
+        supabase
+          .from('landing_product_package_groups' as any)
+          .select('*')
+          .eq('product_id', productId)
+          .order('display_order', { ascending: true }),
+        supabase
+          .from('landing_product_packages' as any)
+          .select('*')
+          .eq('product_id', productId)
+          .order('display_order', { ascending: true }),
+      ]);
+      if (groupsRes.error) throw groupsRes.error;
+      if (itemsRes.error) throw itemsRes.error;
+      const groups = (groupsRes.data as any[]) || [];
+      const items = (itemsRes.data as any[]) || [];
+      const grouped: PackageGroupWithItems[] = groups.map(g => ({
+        id: g.id,
+        name: g.name,
+        selection_mode: g.selection_mode,
+        display_order: g.display_order,
+        items: items.filter(it => it.group_id === g.id) as LandingProductPackage[],
+      }));
+      const orphans = items.filter(it => !it.group_id) as LandingProductPackage[];
+      if (orphans.length > 0) {
+        // Wrap legacy un-grouped packages so admin can migrate / continue editing
+        grouped.unshift({
+          id: '_legacy_',
+          name: 'Gói dịch vụ kèm theo',
+          selection_mode: 'multiple',
+          display_order: -1,
+          items: orphans,
+          isLegacy: true,
+        });
+      }
+      return grouped;
+    },
+    enabled: !!productId,
+  });
+}
+
+/** Public: same as above but only active items. */
+export function usePublicProductPackageGroups(productId: string | null) {
+  return useQuery({
+    queryKey: ['public-package-groups', productId],
+    queryFn: async (): Promise<PackageGroupWithItems[]> => {
+      if (!productId) return [];
+      const [groupsRes, itemsRes] = await Promise.all([
+        supabase
+          .from('landing_product_package_groups' as any)
+          .select('*')
+          .eq('product_id', productId)
+          .order('display_order', { ascending: true }),
+        supabase
+          .from('landing_product_packages' as any)
+          .select('*')
+          .eq('product_id', productId)
+          .eq('is_active', true)
+          .order('display_order', { ascending: true }),
+      ]);
+      if (groupsRes.error) throw groupsRes.error;
+      if (itemsRes.error) throw itemsRes.error;
+      const groups = (groupsRes.data as any[]) || [];
+      const items = (itemsRes.data as any[]) || [];
+      const grouped: PackageGroupWithItems[] = groups.map(g => ({
+        id: g.id,
+        name: g.name,
+        selection_mode: g.selection_mode,
+        display_order: g.display_order,
+        items: items.filter(it => it.group_id === g.id) as LandingProductPackage[],
+      })).filter(g => g.items.length > 0);
+      const orphans = items.filter(it => !it.group_id) as LandingProductPackage[];
+      if (orphans.length > 0) {
+        grouped.unshift({
+          id: '_legacy_',
+          name: 'Gói dịch vụ kèm theo',
+          selection_mode: 'multiple',
+          display_order: -1,
+          items: orphans,
+          isLegacy: true,
+        });
+      }
+      return grouped;
+    },
+    enabled: !!productId,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/** Save groups + their items in a single mutation. Replaces all existing data. */
+export function useSavePackageGroups() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ productId, tenantId, groups }: {
+      productId: string;
+      tenantId: string;
+      groups: Array<{
+        name: string;
+        selection_mode: 'single' | 'multiple';
+        items: Array<{
+          name: string;
+          price: number;
+          description?: string | null;
+          image_url?: string | null;
+          is_default?: boolean;
+          is_active?: boolean;
+          allow_quantity?: boolean;
+        }>;
+      }>;
+    }) => {
+      // Wipe everything for this product (cascade-friendly: delete items first)
+      await supabase.from('landing_product_packages' as any).delete().eq('product_id', productId);
+      await supabase.from('landing_product_package_groups' as any).delete().eq('product_id', productId);
+
+      const cleanedGroups = groups
+        .map(g => ({ ...g, items: g.items.filter(it => it.name.trim()) }))
+        .filter(g => g.name.trim() && g.items.length > 0);
+
+      if (cleanedGroups.length === 0) return [];
+
+      // Insert groups
+      const groupRows = cleanedGroups.map((g, i) => ({
+        product_id: productId,
+        tenant_id: tenantId,
+        name: g.name.trim(),
+        selection_mode: g.selection_mode,
+        display_order: i,
+      }));
+      const { data: insertedGroups, error: gErr } = await supabase
+        .from('landing_product_package_groups' as any)
+        .insert(groupRows)
+        .select();
+      if (gErr) throw gErr;
+
+      // Insert items linked to corresponding groups
+      const itemRows: any[] = [];
+      cleanedGroups.forEach((g, gi) => {
+        const grp = (insertedGroups as any[])[gi];
+        g.items.forEach((it, ii) => {
+          itemRows.push({
+            product_id: productId,
+            tenant_id: tenantId,
+            group_id: grp.id,
+            name: it.name.trim(),
+            price: it.price || 0,
+            description: it.description?.trim() || null,
+            image_url: it.image_url?.trim() || null,
+            is_default: !!it.is_default,
+            is_active: it.is_active !== false,
+            allow_quantity: !!it.allow_quantity,
+            display_order: ii,
+          });
+        });
+      });
+      if (itemRows.length > 0) {
+        const { error: iErr } = await supabase
+          .from('landing_product_packages' as any)
+          .insert(itemRows);
+        if (iErr) throw iErr;
+      }
+      return insertedGroups;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['landing-package-groups', vars.productId] });
+      qc.invalidateQueries({ queryKey: ['public-package-groups', vars.productId] });
       qc.invalidateQueries({ queryKey: ['landing-product-packages', vars.productId] });
       qc.invalidateQueries({ queryKey: ['public-product-packages', vars.productId] });
     },

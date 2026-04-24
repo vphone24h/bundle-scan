@@ -17,9 +17,10 @@ import {
   LandingProductCategory,
   VariantOption,
   VariantPriceEntry,
-  useProductPackages,
-  useSaveProductPackages,
+  useProductPackageGroups,
+  useSavePackageGroups,
   LandingProductPackage,
+  PackageGroupWithItems,
 } from '@/hooks/useLandingProducts';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings } from '@/hooks/useTenantLanding';
@@ -240,29 +241,54 @@ export function LandingProductsTab() {
   const [loadingEditProductId, setLoadingEditProductId] = useState<string | null>(null);
   const [pendingVariantIdx, setPendingVariantIdx] = useState<number | null>(null);
   const [pendingVariantPriceIdx, setPendingVariantPriceIdx] = useState<number | null>(null);
-  // Packages state
-  const [packageForm, setPackageForm] = useState<Array<{ name: string; price: number; description: string; is_default: boolean; is_active: boolean }>>([]);
-  const savePackages = useSaveProductPackages();
+  // Multi-group packages state
+  type PkgItemForm = {
+    name: string;
+    price: number;
+    description: string;
+    image_url: string;
+    is_default: boolean;
+    is_active: boolean;
+    allow_quantity: boolean;
+  };
+  type PkgGroupForm = {
+    name: string;
+    selection_mode: 'single' | 'multiple';
+    items: PkgItemForm[];
+  };
+  const [groupsForm, setGroupsForm] = useState<PkgGroupForm[]>([]);
+  const savePackageGroups = useSavePackageGroups();
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
-  const { data: existingPackages } = useProductPackages(editingProductId);
+  const { data: existingGroups } = useProductPackageGroups(editingProductId);
+  const [pendingPkgImage, setPendingPkgImage] = useState<{ groupIdx: number; itemIdx: number } | null>(null);
+  const pkgImageRef = useRef<HTMLInputElement>(null);
 
   const categoryTree = useMemo(() => buildCategoryTree(categories || []), [categories]);
   const flatCategories = useMemo(() => flattenCategoriesForSelect(categoryTree), [categoryTree]);
 
   const customProductTabs = (landingSettings as any)?.custom_product_tabs || [];
 
-  // Load packages when editing a product
+  // Load groups when editing a product
   useEffect(() => {
-    if (existingPackages && editingProductId) {
-      setPackageForm(existingPackages.map(p => ({
-        name: p.name,
-        price: p.price,
-        description: p.description || '',
-        is_default: p.is_default,
-        is_active: p.is_active,
+    if (existingGroups && editingProductId) {
+      setGroupsForm(existingGroups.map(g => ({
+        // Migrate legacy: use saved package_selection_mode for ungrouped batch
+        name: g.isLegacy ? 'Gói bảo hành' : g.name,
+        selection_mode: g.isLegacy
+          ? ((form.package_selection_mode as 'single' | 'multiple') || 'multiple')
+          : g.selection_mode,
+        items: g.items.map(p => ({
+          name: p.name,
+          price: p.price,
+          description: p.description || '',
+          image_url: p.image_url || '',
+          is_default: p.is_default,
+          is_active: p.is_active,
+          allow_quantity: !!p.allow_quantity,
+        })),
       })));
     }
-  }, [existingPackages, editingProductId]);
+  }, [existingGroups, editingProductId]);
 
   const [form, setForm] = useState({
     name: '',
@@ -345,7 +371,7 @@ export function LandingProductsTab() {
   const openAddProduct = () => {
     setEditingProduct(null);
     setEditingProductId(null);
-    setPackageForm([]);
+    setGroupsForm([]);
     setForm({
       name: '', description: '', price: 0, sale_price: null, category_id: '_none_',
       image_url: '', images: [], is_featured: false, is_active: true, is_sold_out: false, variants: [], home_tab_ids: [],
@@ -549,17 +575,17 @@ export function LandingProductsTab() {
       };
       if (editingProduct) {
         await updateProduct.mutateAsync({ id: editingProduct.id, ...payload });
-        // Save packages
+        // Save package groups
         if (tenantId) {
-          await savePackages.mutateAsync({ productId: editingProduct.id, tenantId, packages: packageForm.filter(p => p.name.trim()) });
+          await savePackageGroups.mutateAsync({ productId: editingProduct.id, tenantId, groups: groupsForm });
         }
         toast({ title: 'Đã cập nhật sản phẩm' });
         // Giữ popup mở khi cập nhật — chỉ đóng khi user nhấn nút X hoặc Huỷ
       } else {
         const created = await createProduct.mutateAsync(payload);
-        // Save packages for new product
-        if (tenantId && (created as any)?.id && packageForm.length > 0) {
-          await savePackages.mutateAsync({ productId: (created as any).id, tenantId, packages: packageForm.filter(p => p.name.trim()) });
+        // Save package groups for new product
+        if (tenantId && (created as any)?.id && groupsForm.length > 0) {
+          await savePackageGroups.mutateAsync({ productId: (created as any).id, tenantId, groups: groupsForm });
         }
         toast({ title: 'Đã thêm sản phẩm' });
         setProductDialog(false);
@@ -1224,105 +1250,157 @@ export function LandingProductsTab() {
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-semibold">📦 Gói dịch vụ kèm theo</Label>
                 <Button type="button" variant="outline" size="sm" className="gap-1 h-7 text-xs"
-                  onClick={() => setPackageForm(prev => [...prev, { name: '', price: 0, description: '', is_default: false, is_active: true }])}>
-                  <Plus className="h-3 w-3" /> Thêm gói
+                  onClick={() => setGroupsForm(prev => [...prev, {
+                    name: prev.length === 0 ? 'Gói bảo hành' : `Nhóm ${prev.length + 1}`,
+                    selection_mode: 'single',
+                    items: [],
+                  }])}>
+                  <FolderPlus className="h-3 w-3" /> Thêm nhóm
                 </Button>
               </div>
               <p className="text-[10px] text-muted-foreground flex items-start gap-1">
                 <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                Tạo gói dịch vụ/bảo hành bổ sung cho sản phẩm. VD: Gói VIP, +15P massage, Bảo hành mở rộng... Khách có thể chọn khi mua hàng.
+                Tạo nhiều nhóm tuỳ ngành: <b>Gói bảo hành</b>, <b>Phụ kiện đi kèm</b>, <b>Sim/Cốp</b>... Mỗi nhóm có thể chọn 1 hoặc nhiều mục. Bill sẽ liệt kê chi tiết theo từng nhóm.
               </p>
-              {packageForm.length > 0 && (
-                <div className="flex items-center gap-3 p-2 rounded-md bg-muted/30 border">
-                  <span className="text-xs font-medium">Chế độ chọn:</span>
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input type="radio" name="pkg_mode" value="multiple"
-                      checked={form.package_selection_mode === 'multiple'}
-                      onChange={() => setForm(p => ({ ...p, package_selection_mode: 'multiple' }))}
-                      className="h-3.5 w-3.5" />
-                    <span className="text-xs">Chọn nhiều gói</span>
-                  </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input type="radio" name="pkg_mode" value="single"
-                      checked={form.package_selection_mode === 'single'}
-                      onChange={() => setForm(p => ({ ...p, package_selection_mode: 'single' }))}
-                      className="h-3.5 w-3.5" />
-                    <span className="text-xs">Chỉ chọn 1 gói</span>
-                  </label>
-                </div>
-              )}
-              {packageForm.length > 0 && (
-                <div className="space-y-2">
-                  {packageForm.map((pkg, i) => (
-                    <div key={i} className="p-3 rounded-lg border bg-muted/20 space-y-2">
-                      <div className="flex items-center gap-2">
+              {/* Hidden file input for package item images */}
+              <input
+                ref={pkgImageRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !pendingPkgImage) return;
+                  const url = await handleUploadImage(file);
+                  if (url) {
+                    const { groupIdx, itemIdx } = pendingPkgImage;
+                    setGroupsForm(prev => prev.map((g, gi) => gi !== groupIdx ? g : {
+                      ...g,
+                      items: g.items.map((it, ii) => ii !== itemIdx ? it : { ...it, image_url: url }),
+                    }));
+                  }
+                  setPendingPkgImage(null);
+                  if (pkgImageRef.current) pkgImageRef.current.value = '';
+                }}
+              />
+              {groupsForm.map((group, gi) => (
+                <div key={gi} className="rounded-lg border bg-muted/10 p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={group.name}
+                      onChange={e => setGroupsForm(prev => prev.map((g, idx) => idx === gi ? { ...g, name: e.target.value } : g))}
+                      placeholder="Tên nhóm (VD: Gói bảo hành, Phụ kiện đi kèm...)"
+                      className="h-8 text-sm font-semibold flex-1"
+                    />
+                    <Select
+                      value={group.selection_mode}
+                      onValueChange={(v) => setGroupsForm(prev => prev.map((g, idx) => idx === gi ? { ...g, selection_mode: v as 'single' | 'multiple' } : g))}
+                    >
+                      <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="single">Chỉ chọn 1</SelectItem>
+                        <SelectItem value="multiple">Chọn nhiều</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0"
+                      onClick={() => setGroupsForm(prev => prev.filter((_, idx) => idx !== gi))}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <div className="space-y-2 pl-2 border-l-2 border-dashed">
+                    {group.items.map((item, ii) => (
+                      <div key={ii} className="p-2 rounded-md border bg-background space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          {item.image_url ? (
+                            <button type="button" className="relative h-9 w-9 shrink-0 rounded border overflow-hidden"
+                              onClick={() => { setPendingPkgImage({ groupIdx: gi, itemIdx: ii }); pkgImageRef.current?.click(); }}>
+                              <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                            </button>
+                          ) : (
+                            <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0"
+                              onClick={() => { setPendingPkgImage({ groupIdx: gi, itemIdx: ii }); pkgImageRef.current?.click(); }}>
+                              <ImagePlus className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                          <Input
+                            value={item.name}
+                            onChange={e => setGroupsForm(prev => prev.map((g, idx) => idx === gi ? {
+                              ...g, items: g.items.map((it, j) => j === ii ? { ...it, name: e.target.value } : it),
+                            } : g))}
+                            placeholder="Tên mục (VD: VIP 13 tháng, Ốp lưng silicon...)"
+                            className="h-8 text-sm flex-1"
+                          />
+                          <PriceInput
+                            value={item.price}
+                            onChange={val => setGroupsForm(prev => prev.map((g, idx) => idx === gi ? {
+                              ...g, items: g.items.map((it, j) => j === ii ? { ...it, price: val } : it),
+                            } : g))}
+                            className="w-28 h-8 text-sm"
+                            placeholder="Giá"
+                          />
+                          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0"
+                            onClick={() => setGroupsForm(prev => prev.map((g, idx) => idx === gi ? {
+                              ...g, items: g.items.filter((_, j) => j !== ii),
+                            } : g))}>
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                         <Input
-                          value={pkg.name}
-                          onChange={e => {
-                            const arr = [...packageForm];
-                            arr[i] = { ...arr[i], name: e.target.value };
-                            setPackageForm(arr);
-                          }}
-                          placeholder="Tên gói (VD: Gói VIP 1, +15P massage...)"
-                          className="h-8 text-sm flex-1"
+                          value={item.description}
+                          onChange={e => setGroupsForm(prev => prev.map((g, idx) => idx === gi ? {
+                            ...g, items: g.items.map((it, j) => j === ii ? { ...it, description: e.target.value } : it),
+                          } : g))}
+                          placeholder="Mô tả ngắn (không bắt buộc)"
+                          className="h-7 text-xs"
                         />
-                        <PriceInput
-                          value={pkg.price}
-                          onChange={val => {
-                            const arr = [...packageForm];
-                            arr[i] = { ...arr[i], price: val };
-                            setPackageForm(arr);
-                          }}
-                          className="w-32 h-8 text-sm"
-                          placeholder="Giá"
-                        />
-                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0"
-                          onClick={() => setPackageForm(prev => prev.filter((_, j) => j !== i))}>
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <Checkbox
+                              checked={item.is_default}
+                              onCheckedChange={(checked) => setGroupsForm(prev => prev.map((g, idx) => idx === gi ? {
+                                ...g,
+                                items: g.items.map((it, j) => ({
+                                  ...it,
+                                  // For single-select groups, only one default
+                                  is_default: j === ii ? !!checked : (g.selection_mode === 'single' ? false : it.is_default),
+                                })),
+                              } : g))}
+                              className="h-3.5 w-3.5"
+                            />
+                            <span className="text-xs">Mặc định chọn</span>
+                          </label>
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <Checkbox
+                              checked={item.is_active}
+                              onCheckedChange={(checked) => setGroupsForm(prev => prev.map((g, idx) => idx === gi ? {
+                                ...g, items: g.items.map((it, j) => j === ii ? { ...it, is_active: !!checked } : it),
+                              } : g))}
+                              className="h-3.5 w-3.5"
+                            />
+                            <span className="text-xs">Hiển thị</span>
+                          </label>
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <Checkbox
+                              checked={item.allow_quantity}
+                              onCheckedChange={(checked) => setGroupsForm(prev => prev.map((g, idx) => idx === gi ? {
+                                ...g, items: g.items.map((it, j) => j === ii ? { ...it, allow_quantity: !!checked } : it),
+                              } : g))}
+                              className="h-3.5 w-3.5"
+                            />
+                            <span className="text-xs">Cho chọn số lượng</span>
+                          </label>
+                        </div>
                       </div>
-                      <Input
-                        value={pkg.description}
-                        onChange={e => {
-                          const arr = [...packageForm];
-                          arr[i] = { ...arr[i], description: e.target.value };
-                          setPackageForm(arr);
-                        }}
-                        placeholder="Mô tả ngắn (không bắt buộc)"
-                        className="h-7 text-xs"
-                      />
-                      <div className="flex items-center gap-4">
-                        <label className="flex items-center gap-1.5 cursor-pointer">
-                          <Checkbox
-                            checked={pkg.is_default}
-                            onCheckedChange={(checked) => {
-                              const arr = packageForm.map((p, j) => ({
-                                ...p,
-                                is_default: j === i ? !!checked : false,
-                              }));
-                              setPackageForm(arr);
-                            }}
-                            className="h-3.5 w-3.5"
-                          />
-                          <span className="text-xs">Mặc định chọn</span>
-                        </label>
-                        <label className="flex items-center gap-1.5 cursor-pointer">
-                          <Checkbox
-                            checked={pkg.is_active}
-                            onCheckedChange={(checked) => {
-                              const arr = [...packageForm];
-                              arr[i] = { ...arr[i], is_active: !!checked };
-                              setPackageForm(arr);
-                            }}
-                            className="h-3.5 w-3.5"
-                          />
-                          <span className="text-xs">Hiển thị</span>
-                        </label>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                    <Button type="button" variant="outline" size="sm" className="gap-1 h-7 text-xs w-full"
+                      onClick={() => setGroupsForm(prev => prev.map((g, idx) => idx === gi ? {
+                        ...g, items: [...g.items, { name: '', price: 0, description: '', image_url: '', is_default: false, is_active: true, allow_quantity: false }],
+                      } : g))}>
+                      <Plus className="h-3 w-3" /> Thêm mục vào nhóm
+                    </Button>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
 
             {/* ===== KHUYẾN MÃI ===== */}
