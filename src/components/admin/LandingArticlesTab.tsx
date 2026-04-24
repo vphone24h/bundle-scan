@@ -165,6 +165,7 @@ export function LandingArticlesTab() {
   const [form, setForm] = useState({
     title: '', summary: '', content: '', category_id: '_none_',
     thumbnail_url: '', is_published: false, is_featured: false, is_featured_home: false,
+    seo_description: '',
   });
 
   const tree = useMemo(() => buildArticleCategoryTree(categories), [categories]);
