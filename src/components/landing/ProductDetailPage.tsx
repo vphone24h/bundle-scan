@@ -1164,6 +1164,8 @@ export function ProductDetailPage({
                         id: pkg.id,
                         name: pkg.name,
                         price: pkg.price,
+                        groupName: pkg.groupName,
+                        quantity: pkg.quantity,
                       })),
                       packagesTotal,
                     });
