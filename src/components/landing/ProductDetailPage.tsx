@@ -697,47 +697,85 @@ export function ProductDetailPage({
                   return null;
               }
             });
-            // Prepend service packages before promotion/warranty sections
-            const isSingle = product.package_selection_mode === 'single';
-            const packagesSection = productPackages && productPackages.length > 0 ? (
-              <div key="servicePackages" className="border rounded-lg overflow-hidden">
-                <div className="px-3 py-2.5 font-semibold text-sm flex items-center gap-1.5" style={{ backgroundColor: primaryColor, color: 'white' }}>
-                  📦 Gói dịch vụ kèm theo
+            // Prepend service package GROUPS (each group rendered independently)
+            const groupsToRender = (packageGroups && packageGroups.length > 0)
+              ? packageGroups
+              : ((productPackages && productPackages.length > 0)
+                  ? [{
+                      id: '_legacy_',
+                      name: 'Gói dịch vụ kèm theo',
+                      selection_mode: (product.package_selection_mode === 'single' ? 'single' : 'multiple') as 'single' | 'multiple',
+                      display_order: 0,
+                      items: productPackages,
+                      isLegacy: true,
+                    } as PackageGroupWithItems]
+                  : []);
+
+            const packageGroupSections = groupsToRender.map(group => {
+              const isSingle = group.selection_mode === 'single';
+              return (
+                <div key={`pkg-group-${group.id}`} className="border rounded-lg overflow-hidden">
+                  <div className="px-3 py-2.5 font-semibold text-sm flex items-center gap-1.5" style={{ backgroundColor: primaryColor, color: 'white' }}>
+                    📦 {group.name}
+                    {isSingle && <span className="text-[10px] font-normal opacity-80 ml-1">(chọn 1)</span>}
+                  </div>
+                  <div className="p-3 space-y-2">
+                    {group.items.map(pkg => {
+                      const isChecked = selectedPackageIds.has(pkg.id);
+                      const itemQty = packageQuantities[pkg.id] || 1;
+                      return (
+                        <label key={pkg.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                          <input
+                            type={isSingle ? 'radio' : 'checkbox'}
+                            name={isSingle ? `pkg_select_${group.id}` : undefined}
+                            checked={isChecked}
+                            onChange={() => {
+                              if (isSingle) {
+                                // Deselect previous in same group, then select this
+                                setSelectedPackageIds(prev => {
+                                  const next = new Set(prev);
+                                  group.items.forEach(it => next.delete(it.id));
+                                  if (!isChecked) next.add(pkg.id);
+                                  return next;
+                                });
+                              } else {
+                                setSelectedPackageIds(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(pkg.id)) next.delete(pkg.id);
+                                  else next.add(pkg.id);
+                                  return next;
+                                });
+                              }
+                            }}
+                            className="rounded border-input h-4 w-4 mt-0.5"
+                          />
+                          {pkg.image_url && (
+                            <img src={pkg.image_url} alt={pkg.name} className="h-10 w-10 rounded object-cover shrink-0 border" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">{pkg.name}</p>
+                            {pkg.description && <p className="text-xs text-muted-foreground">{pkg.description}</p>}
+                            {pkg.allow_quantity && isChecked && (
+                              <div className="flex items-center gap-1.5 mt-1.5" onClick={e => e.preventDefault()}>
+                                <button type="button" className="h-7 w-7 rounded border text-sm hover:bg-muted"
+                                  onClick={() => setPackageQuantities(prev => ({ ...prev, [pkg.id]: Math.max(1, (prev[pkg.id] || 1) - 1) }))}>−</button>
+                                <span className="text-sm font-medium min-w-[24px] text-center">{itemQty}</span>
+                                <button type="button" className="h-7 w-7 rounded border text-sm hover:bg-muted"
+                                  onClick={() => setPackageQuantities(prev => ({ ...prev, [pkg.id]: (prev[pkg.id] || 1) + 1 }))}>+</button>
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-sm font-semibold shrink-0" style={{ color: primaryColor }}>
+                            {pkg.price > 0 ? `+${formatNumber(pkg.price)}đ` : 'Miễn phí'}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="p-3 space-y-2">
-                  {productPackages.map(pkg => (
-                    <label key={pkg.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
-                      <input
-                        type={isSingle ? 'radio' : 'checkbox'}
-                        name={isSingle ? 'pkg_select' : undefined}
-                        checked={selectedPackageIds.has(pkg.id)}
-                        onChange={() => {
-                          if (isSingle) {
-                            setSelectedPackageIds(selectedPackageIds.has(pkg.id) ? new Set() : new Set([pkg.id]));
-                          } else {
-                            setSelectedPackageIds(prev => {
-                              const next = new Set(prev);
-                              if (next.has(pkg.id)) next.delete(pkg.id);
-                              else next.add(pkg.id);
-                              return next;
-                            });
-                          }
-                        }}
-                        className="rounded border-input h-4 w-4"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{pkg.name}</p>
-                        {pkg.description && <p className="text-xs text-muted-foreground">{pkg.description}</p>}
-                      </div>
-                      <span className="text-sm font-semibold shrink-0" style={{ color: primaryColor }}>
-                        {pkg.price > 0 ? `+${formatNumber(pkg.price)}đ` : 'Miễn phí'}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null;
-            return [packagesSection, ...rightSections];
+              );
+            });
+            return [...packageGroupSections, ...rightSections];
           })()}
           </div>{/* /px-4 wrapper */}
           </div>{/* /Right column (desktop) */}
