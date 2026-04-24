@@ -357,7 +357,13 @@ export function ProductDetailPage({
         : '';
       const finalNote = [fullNote, packagesNote].filter(Boolean).join(' ');
       const orderPrice = displayPrice + packagesTotal;
-      const selectedPackagesData = selectedPkgs.map(p => ({ id: p.id, name: p.name, price: p.price }));
+      const selectedPackagesData = selectedPkgs.map(p => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        groupName: p.groupName,
+        quantity: p.quantity,
+      }));
 
       const result = await placeOrder.mutateAsync({
         tenant_id: tenantId,
