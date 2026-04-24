@@ -346,6 +346,29 @@ export interface LandingProductPackage {
   display_order: number;
   created_at: string;
   updated_at: string;
+  group_id?: string | null;
+  image_url?: string | null;
+  allow_quantity?: boolean;
+}
+
+export interface LandingPackageGroup {
+  id: string;
+  product_id: string;
+  tenant_id: string;
+  name: string;
+  selection_mode: 'single' | 'multiple';
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PackageGroupWithItems {
+  id: string; // group id (or '_legacy_' for legacy ungrouped)
+  name: string;
+  selection_mode: 'single' | 'multiple';
+  display_order: number;
+  items: LandingProductPackage[];
+  isLegacy?: boolean;
 }
 
 export function useProductPackages(productId: string | null) {
