@@ -16,7 +16,7 @@ function SoldOutOverlay() {
 }
 
 // Shared badge overlay for product cards
-function ProductBadges({ badges }: { badges?: string[] }) {
+export function ProductBadges({ badges }: { badges?: string[] }) {
   if (!badges || badges.length === 0) return null;
   const items = badges.slice(0, 2).map(b => PRODUCT_BADGE_OPTIONS.find(o => o.id === b)).filter(Boolean);
   if (items.length === 0) return null;

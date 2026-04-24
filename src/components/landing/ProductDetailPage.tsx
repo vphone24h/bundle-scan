@@ -18,6 +18,7 @@ import { useLandingCart } from '@/hooks/useLandingCart';
 import { ContactFormDialog, BookingDialog, HotelBookingDialog, TrackOrderDialog, CheckWarrantyDialog, WriteReviewDialog, SupportDialog, CartDialog, PromotionInfoDialog, JoinMemberDialog } from '@/components/landing/CTAActionDialogs';
 import { toast } from 'sonner';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
+import { ProductBadges } from '@/components/website-templates/layouts/ProductCardVariants';
 
 interface BranchOption {
   id: string;
@@ -435,6 +436,9 @@ export function ProductDetailPage({
           <div className="lg:sticky lg:top-20 lg:self-start">
         {allImages.length > 0 ? (
           <div className="relative bg-gray-50 lg:rounded-xl lg:overflow-hidden lg:border">
+            {currentImageIndex === 0 && (
+              <ProductBadges badges={(product as any).badges} />
+            )}
             <img
               src={allImages[currentImageIndex]}
               alt={product.name}
