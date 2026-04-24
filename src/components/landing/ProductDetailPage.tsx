@@ -18,6 +18,7 @@ import { useLandingCart } from '@/hooks/useLandingCart';
 import { ContactFormDialog, BookingDialog, HotelBookingDialog, TrackOrderDialog, CheckWarrantyDialog, WriteReviewDialog, SupportDialog, CartDialog, PromotionInfoDialog, JoinMemberDialog } from '@/components/landing/CTAActionDialogs';
 import { toast } from 'sonner';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
+import { ProductBadges } from '@/components/website-templates/layouts/ProductCardVariants';
 
 interface BranchOption {
   id: string;
