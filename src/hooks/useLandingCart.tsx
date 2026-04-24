@@ -9,7 +9,7 @@ export interface CartItem {
   basePrice: number;
   price: number;
   variant?: string;
-  selectedPackages?: Array<{ id: string; name: string; price: number }>;
+  selectedPackages?: Array<{ id: string; name: string; price: number; groupName?: string; quantity?: number }>;
   packagesTotal?: number;
   quantity: number;
 }
@@ -19,10 +19,10 @@ const CART_STORAGE_KEY = 'landing_cart_items';
 function buildCartItemKey(item: {
   productId: string;
   variant?: string;
-  selectedPackages?: Array<{ id: string; name: string; price: number }>;
+  selectedPackages?: Array<{ id: string; name: string; price: number; groupName?: string; quantity?: number }>;
 }) {
   const packagesKey = (item.selectedPackages || [])
-    .map(pkg => pkg.id)
+    .map(pkg => `${pkg.id}:${pkg.quantity || 1}`)
     .sort()
     .join(',');
 
