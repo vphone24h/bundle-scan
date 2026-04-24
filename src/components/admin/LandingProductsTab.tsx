@@ -287,6 +287,10 @@ export function LandingProductsTab() {
     warranty_title: 'BẢO HÀNH',
     warranty_content: '',
     package_selection_mode: 'multiple',
+    // Promotional
+    student_discount_label: 'HỌC SINH SINH VIÊN',
+    student_discount_text: '',
+    installment_down_payment: null as number | null,
   });
   // Add badges to form - stored separately to avoid re-init issues
   const [formBadges, setFormBadges] = useState<string[]>([]);

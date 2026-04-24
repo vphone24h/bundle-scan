@@ -63,6 +63,10 @@ export interface LandingProduct {
   warranty_content: string | null;
   package_selection_mode: string;
   badges: string[];
+  // Promotional fields
+  student_discount_label?: string | null;
+  student_discount_text?: string | null;
+  installment_down_payment?: number | null;
   created_at: string;
   updated_at: string;
 }
