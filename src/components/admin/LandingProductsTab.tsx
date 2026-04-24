@@ -45,6 +45,7 @@ import { ImportFromWarehouseDialog } from './ImportFromWarehouseDialog';
 import { ListPagination, paginateArray } from '@/components/ui/list-pagination';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { supabase } from '@/integrations/supabase/client';
 
 // Badge options for products
 const PRODUCT_BADGE_OPTIONS = [
@@ -1249,14 +1250,67 @@ export function LandingProductsTab() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-semibold">📦 Gói dịch vụ kèm theo</Label>
-                <Button type="button" variant="outline" size="sm" className="gap-1 h-7 text-xs"
-                  onClick={() => setGroupsForm(prev => [...prev, {
-                    name: prev.length === 0 ? 'Gói bảo hành' : `Nhóm ${prev.length + 1}`,
-                    selection_mode: 'single',
-                    items: [],
-                  }])}>
-                  <FolderPlus className="h-3 w-3" /> Thêm nhóm
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px] gap-1"
+                    onClick={async () => {
+                      const source = (products || []).find((p: any) => p.id !== editingProductId);
+                      if (!source) {
+                        toast({ title: 'Chưa có sản phẩm nguồn', description: 'Cần ít nhất 1 sản phẩm khác để đồng bộ.', variant: 'destructive' });
+                        return;
+                      }
+                      try {
+                        const [groupsRes, itemsRes] = await Promise.all([
+                          supabase.from('landing_product_package_groups' as any).select('*').eq('product_id', (source as any).id).order('display_order', { ascending: true }),
+                          supabase.from('landing_product_packages' as any).select('*').eq('product_id', (source as any).id).order('display_order', { ascending: true }),
+                        ]);
+                        if (groupsRes.error) throw groupsRes.error;
+                        if (itemsRes.error) throw itemsRes.error;
+                        const srcGroups = (groupsRes.data as any[]) || [];
+                        const srcItems = (itemsRes.data as any[]) || [];
+                        const mapItem = (p: any): PkgItemForm => ({
+                          name: p.name || '',
+                          price: Number(p.price) || 0,
+                          description: p.description || '',
+                          image_url: p.image_url || '',
+                          is_default: !!p.is_default,
+                          is_active: p.is_active !== false,
+                          allow_quantity: !!p.allow_quantity,
+                        });
+                        const grouped: PkgGroupForm[] = srcGroups.map(g => ({
+                          name: g.name,
+                          selection_mode: (g.selection_mode === 'single' ? 'single' : 'multiple'),
+                          items: srcItems.filter(it => it.group_id === g.id).map(mapItem),
+                        }));
+                        const orphans = srcItems.filter(it => !it.group_id).map(mapItem);
+                        if (orphans.length > 0) {
+                          grouped.unshift({ name: 'Gói bảo hành', selection_mode: 'multiple', items: orphans });
+                        }
+                        if (grouped.length === 0) {
+                          toast({ title: 'Sản phẩm nguồn chưa có gói', description: `"${(source as any).name}" chưa cấu hình gói dịch vụ.`, variant: 'destructive' });
+                          return;
+                        }
+                        setGroupsForm(grouped);
+                        toast({ title: '✅ Đã đồng bộ', description: `Copy ${grouped.length} nhóm từ "${(source as any).name}" (kèm hình ảnh).` });
+                      } catch (err: any) {
+                        toast({ title: 'Lỗi đồng bộ', description: err.message || String(err), variant: 'destructive' });
+                      }
+                    }}
+                  >
+                    🔄 Đồng bộ hệ thống
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="gap-1 h-7 text-xs"
+                    onClick={() => setGroupsForm(prev => [...prev, {
+                      name: prev.length === 0 ? 'Gói bảo hành' : `Nhóm ${prev.length + 1}`,
+                      selection_mode: 'single',
+                      items: [],
+                    }])}>
+                    <FolderPlus className="h-3 w-3" /> Thêm nhóm
+                  </Button>
+                </div>
               </div>
               <p className="text-[10px] text-muted-foreground flex items-start gap-1">
                 <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
