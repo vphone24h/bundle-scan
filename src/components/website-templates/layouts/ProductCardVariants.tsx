@@ -293,21 +293,17 @@ export function ProductBadges({ badges }: { badges?: string[] }) {
     );
   };
 
-  // Assign non-overlapping corners. Try preferred corner first; if taken, pick next free corner.
-  // Fallback order ensures spread: top-right, top-left, bottom-left, bottom-right.
+  // Each badge has a FIXED corner (BADGE_POSITION_MAP). Nếu admin lỡ chọn 2 nhãn cùng góc,
+  // chỉ giữ nhãn đầu tiên ở góc đó để không trồng lên nhau.
   const fallbackOrder: Corner[] = ['tr', 'tl', 'bl', 'br'];
   const usedCorners = new Set<Corner>();
   const assignments: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; corner: Corner; variant: Variant }[] = [];
 
   items.forEach((opt, idx) => {
     const layout = BADGE_LAYOUT[opt!.id] || { corner: fallbackOrder[idx] as Corner, variant: 'pill' as Variant };
-    let corner = layout.corner;
-    if (usedCorners.has(corner)) {
-      const free = fallbackOrder.find(c => !usedCorners.has(c));
-      if (free) corner = free;
-    }
-    usedCorners.add(corner);
-    assignments.push({ opt: opt!, corner, variant: layout.variant });
+    if (usedCorners.has(layout.corner)) return; // skip duplicates per corner
+    usedCorners.add(layout.corner);
+    assignments.push({ opt: opt!, corner: layout.corner, variant: layout.variant });
   });
 
   return (
