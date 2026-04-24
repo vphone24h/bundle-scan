@@ -4,6 +4,71 @@ import { formatNumber } from '@/lib/formatNumber';
 import { Package, Star, Zap, ShoppingBag } from 'lucide-react';
 import { PRODUCT_BADGE_OPTIONS } from '@/components/admin/LandingProductsTab';
 
+// === FIXED BADGE POSITION MAP ===
+// Mỗi nhãn được gán cố định 1 trong 4 góc để đảm bảo nhất quán giữa admin & website,
+// và để chặn việc chọn 2 nhãn cùng góc (trồng lên nhau).
+export type BadgeCorner = 'tl' | 'tr' | 'bl' | 'br';
+export type BadgeVariant = 'pill' | 'flame';
+export const BADGE_POSITION_MAP: Record<string, { corner: BadgeCorner; variant: BadgeVariant }> = {
+  // === TOP-LEFT (tl): Hàng mới / Mới về / Phiên bản ===
+  new:            { corner: 'tl', variant: 'pill' },
+  new_today:      { corner: 'tl', variant: 'pill' },
+  just_updated:   { corner: 'tl', variant: 'pill' },
+  new_version:    { corner: 'tl', variant: 'pill' },
+  preorder:       { corner: 'tl', variant: 'pill' },
+  trending:       { corner: 'tl', variant: 'pill' },
+
+  // === TOP-RIGHT (tr): Hot / Sale / Deal / FOMO ===
+  hot:            { corner: 'tr', variant: 'flame' },
+  sale:           { corner: 'tr', variant: 'flame' },
+  deal:           { corner: 'tr', variant: 'flame' },
+  clearance:      { corner: 'tr', variant: 'flame' },
+  hot_deal:       { corner: 'tr', variant: 'flame' },
+  shock_deal:     { corner: 'tr', variant: 'flame' },
+  flash_sale:     { corner: 'tr', variant: 'flame' },
+  almost_sold:    { corner: 'tr', variant: 'flame' },
+  few_left:       { corner: 'tr', variant: 'flame' },
+  today_hot:      { corner: 'tr', variant: 'flame' },
+  limited_deal:   { corner: 'tr', variant: 'flame' },
+  price_up_soon:  { corner: 'tr', variant: 'flame' },
+  best_seller:    { corner: 'tr', variant: 'pill' },
+  top_1:          { corner: 'tr', variant: 'pill' },
+  many_buy:       { corner: 'tr', variant: 'pill' },
+
+  // === BOTTOM-RIGHT (br): Cao cấp / Chất lượng / Bảo hành / Chính hãng ===
+  genuine:        { corner: 'br', variant: 'pill' },
+  warranty:       { corner: 'br', variant: 'pill' },
+  quality:        { corner: 'br', variant: 'pill' },
+  premium:        { corner: 'br', variant: 'pill' },
+  premium_en:     { corner: 'br', variant: 'pill' },
+  flagship:       { corner: 'br', variant: 'pill' },
+  super_product:  { corner: 'br', variant: 'pill' },
+  must_own:       { corner: 'br', variant: 'pill' },
+  top_tier:       { corner: 'br', variant: 'pill' },
+  exclusive:      { corner: 'br', variant: 'pill' },
+  limited:        { corner: 'br', variant: 'pill' },
+  rare:           { corner: 'br', variant: 'pill' },
+  unique:         { corner: 'br', variant: 'pill' },
+  limited_stock:  { corner: 'br', variant: 'pill' },
+
+  // === BOTTOM-LEFT (bl): Giá / Ưu đãi / Đánh giá / Đề xuất ===
+  popular:        { corner: 'bl', variant: 'pill' },
+  best_choice:    { corner: 'bl', variant: 'pill' },
+  good_price:     { corner: 'bl', variant: 'pill' },
+  worth_buy:      { corner: 'bl', variant: 'pill' },
+  worth_money:    { corner: 'bl', variant: 'pill' },
+  high_rated:     { corner: 'bl', variant: 'pill' },
+  good_review:    { corner: 'bl', variant: 'pill' },
+  customer_pick:  { corner: 'bl', variant: 'pill' },
+  staff_pick:     { corner: 'bl', variant: 'pill' },
+  best_price:     { corner: 'bl', variant: 'pill' },
+  internal_price: { corner: 'bl', variant: 'pill' },
+  wholesale_price:{ corner: 'bl', variant: 'pill' },
+  combo_save:     { corner: 'bl', variant: 'pill' },
+  free_gift:      { corner: 'bl', variant: 'pill' },
+  special_offer:  { corner: 'bl', variant: 'pill' },
+};
+
 // Shared sold-out overlay
 function SoldOutOverlay() {
   return (
@@ -144,22 +209,7 @@ export function ProductBadges({ badges }: { badges?: string[] }) {
   // Each badge has its own corner + visual style so multiple badges never overlap
   type Corner = 'tl' | 'tr' | 'bl' | 'br';
   type Variant = 'pill' | 'flame';
-  const BADGE_LAYOUT: Record<string, { corner: Corner; variant: Variant }> = {
-    new:        { corner: 'tl', variant: 'pill' },
-    hot:        { corner: 'tr', variant: 'flame' },
-    sale:       { corner: 'bl', variant: 'flame' },
-    deal:       { corner: 'bl', variant: 'flame' },
-    clearance:  { corner: 'bl', variant: 'flame' },
-    trending:   { corner: 'tr', variant: 'pill' },
-    popular:    { corner: 'br', variant: 'pill' },
-    best_choice:{ corner: 'br', variant: 'pill' },
-    genuine:    { corner: 'tl', variant: 'pill' },
-    warranty:   { corner: 'br', variant: 'pill' },
-    quality:    { corner: 'br', variant: 'pill' },
-    preorder:   { corner: 'tr', variant: 'pill' },
-    limited:    { corner: 'bl', variant: 'flame' },
-    exclusive:  { corner: 'tl', variant: 'pill' },
-  };
+  const BADGE_LAYOUT = BADGE_POSITION_MAP;
 
   const cornerClass = (c: Corner) => {
     switch (c) {
@@ -243,21 +293,17 @@ export function ProductBadges({ badges }: { badges?: string[] }) {
     );
   };
 
-  // Assign non-overlapping corners. Try preferred corner first; if taken, pick next free corner.
-  // Fallback order ensures spread: top-right, top-left, bottom-left, bottom-right.
+  // Each badge has a FIXED corner (BADGE_POSITION_MAP). Nếu admin lỡ chọn 2 nhãn cùng góc,
+  // chỉ giữ nhãn đầu tiên ở góc đó để không trồng lên nhau.
   const fallbackOrder: Corner[] = ['tr', 'tl', 'bl', 'br'];
   const usedCorners = new Set<Corner>();
   const assignments: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; corner: Corner; variant: Variant }[] = [];
 
   items.forEach((opt, idx) => {
     const layout = BADGE_LAYOUT[opt!.id] || { corner: fallbackOrder[idx] as Corner, variant: 'pill' as Variant };
-    let corner = layout.corner;
-    if (usedCorners.has(corner)) {
-      const free = fallbackOrder.find(c => !usedCorners.has(c));
-      if (free) corner = free;
-    }
-    usedCorners.add(corner);
-    assignments.push({ opt: opt!, corner, variant: layout.variant });
+    if (usedCorners.has(layout.corner)) return; // skip duplicates per corner
+    usedCorners.add(layout.corner);
+    assignments.push({ opt: opt!, corner: layout.corner, variant: layout.variant });
   });
 
   return (

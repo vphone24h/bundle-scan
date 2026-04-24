@@ -15,6 +15,7 @@ import { TenantLandingSettings, useWarrantyLookup, useCustomerPointsPublic, Warr
 import { LandingProduct, LandingProductCategory } from '@/hooks/useLandingProducts';
 import { LandingArticle, LandingArticleCategory } from '@/hooks/useLandingArticles';
 import { PRODUCT_BADGE_OPTIONS } from '@/components/admin/LandingProductsTab';
+import { BADGE_POSITION_MAP } from '@/components/website-templates/layouts/ProductCardVariants';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import { ProductDetailPage } from '@/components/landing/ProductDetailPage';
 import { FloatingCartButton } from '@/components/landing/FloatingCartButton';
@@ -310,13 +311,22 @@ function AppleProductCard({ product, onClick, accentColor }: { product: LandingP
             <span className="bg-white/90 text-red-600 font-bold text-xs sm:text-sm px-3 py-1.5 rounded-full shadow-md tracking-wide">ĐÃ HẾT</span>
           </div>
         )}
-        {Array.isArray((product as any).badges) && ((product as any).badges as string[]).slice(0, 3).map((b: string, i: number) => {
-          const opt = PRODUCT_BADGE_OPTIONS.find(o => o.id === b);
-          if (!opt) return null;
-          // 3 góc khác nhau, không chồng nhau: tr → tl → bl
-          const cornerCls = i === 0 ? 'top-2 right-2' : i === 1 ? 'top-2 left-2' : 'bottom-2 left-2';
-          return <div key={b} className={`absolute ${cornerCls} z-10 ${opt.color} text-white text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-lg animate-pulse`}>{opt.text}</div>;
-        })}
+        {(() => {
+          const arr = Array.isArray((product as any).badges) ? ((product as any).badges as string[]) : [];
+          if (arr.length === 0) return null;
+          const cornerMap: Record<string, string> = {
+            tl: 'top-2 left-2', tr: 'top-2 right-2', bl: 'bottom-2 left-2', br: 'bottom-2 right-2',
+          };
+          const used = new Set<string>();
+          return arr.slice(0, 3).map((b) => {
+            const opt = PRODUCT_BADGE_OPTIONS.find(o => o.id === b);
+            if (!opt) return null;
+            const corner = BADGE_POSITION_MAP[b]?.corner || 'tr';
+            if (used.has(corner)) return null; // tránh chồng góc
+            used.add(corner);
+            return <div key={b} className={`absolute ${cornerMap[corner]} z-10 ${opt.color} text-white text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-lg animate-pulse`}>{opt.text}</div>;
+          });
+        })()}
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105" />
         ) : (
