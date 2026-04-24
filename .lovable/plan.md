@@ -1,42 +1,197 @@
+# Kế hoạch Migrate dữ liệu từ Lovable Cloud → Server Self-host
 
+Mục tiêu: chuyển toàn bộ backend (DB Postgres + Auth + Storage + Edge Functions) hiện đang chạy trên Lovable Cloud (Supabase managed) sang một **Supabase self-host** trên VPS riêng, **giữ nguyên 100% dữ liệu**, **không gián đoạn dịch vụ quá 30 phút**, và frontend chỉ cần đổi `VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY`.
 
-## Thiết kế lại nhãn sản phẩm theo phong cách "Giảm 4%" / "Trả góp 0%"
+---
 
-Áp dụng phong cách nhãn từ ảnh tham khảo (CellphoneS): **viên thuốc bo tròn 2 đầu, nền màu đặc, chữ trắng đậm, có một từ được nhấn mạnh** — cho nhãn New / Hot / Trending... trên website.
+## Phase 0 — Chuẩn bị (1–2 ngày)
 
-### Thay đổi hình ảnh (chỉ 1 file: `ProductCardVariants.tsx` → component `ProductBadges`)
+### 0.1 Inventory hệ thống hiện tại
+- [ ] Liệt kê toàn bộ bảng (~200+ tables trong `public`), enum, function, trigger, RLS policy → export schema.
+- [ ] Liệt kê tất cả **Edge Functions** đang dùng (xem `supabase/config.toml`): `register-tenant`, `manage-tenant`, `send-*`, `cross-platform-restore-v3`, `zalo-oauth-callback`, `security-password`, `run-automations`, `daily-backup`...
+- [ ] Liệt kê **Storage buckets** đang sử dụng (avatars, products, email-assets, backups...).
+- [ ] Liệt kê **Secrets** (xem qua `secrets--fetch_secrets`): SMTP, Zalo, VAPID, LOVABLE_API_KEY, CLOUDFLARE...
+- [ ] Liệt kê **pg_cron jobs** (daily-backup 23:59 ICT, run-automations, auto_checkout_expired...).
+- [ ] Đo dung lượng DB hiện tại (`SELECT pg_database_size('postgres')`) và Storage.
 
-**Bỏ kiểu "ribbon" hiện tại**, thay bằng **pill (viên thuốc)**:
+### 0.2 Chọn hạ tầng VPS
+| Hạng mục | Khuyến nghị |
+|---|---|
+| VPS | Hetzner CCX23 / DigitalOcean 4vCPU-8GB / Vultr HF | 
+| OS | Ubuntu 22.04 LTS |
+| RAM | ≥ 8GB (Postgres + Kong + GoTrue + Realtime + Storage) |
+| Disk | ≥ 100GB SSD NVMe (DB + Storage bucket + backups) |
+| Backup | Block storage / S3-compatible (Backblaze B2, Wasabi) |
+| Domain | `api.vkho.vn` (REST), `studio.vkho.vn` (Studio UI) |
 
-- Hình dạng: `border-radius: 999px` (bo tròn cả 2 đầu, không dính mép ảnh nữa).
-- Vị trí: cách mép ảnh `top: 8px`, `left: 8px` cho nhãn 1 và `right: 8px` cho nhãn 2 (đứng độc lập, không dán vào cạnh).
-- Kích thước: padding `4px 10px`, font-size `11px`, font-weight `800`, letter-spacing nhẹ.
-- Đổ bóng: `box-shadow: 0 2px 6px rgba(0,0,0,0.18)` → nổi khỏi ảnh nền.
-- Màu nền đặc (không gradient rối mắt), giữ bảng màu đặc trưng cho từng loại:
-  - New → đỏ `#dc2626`
-  - Hot → cam `#ea580c`
-  - Trending → tím `#7c3aed`
-  - Best choice → xanh dương `#2563eb`
-  - Sale/Deal → hồng `#db2777`
-  - Chính hãng → xanh lá `#16a34a`
-  - Limited → đen `#111827`
-  - … (giữ nguyên map sẵn có)
-- **Nhấn mạnh 1 từ khóa** giống "Giảm **4%**": tách label thành 2 phần, ví dụ:
-  - "Hàng **NEW**", "Đang **HOT**", "**TRENDING**", "**BEST** choice", "**SALE**", "**LIMITED**"...
-  - Phần nhấn: `font-weight: 900`, hơi to hơn 1px; phần còn lại nhẹ hơn (`font-weight: 700`, opacity 0.95).
-- Hiệu ứng: giữ `animate-badge-pulse` nhưng giảm cường độ (scale 1 → 1.04) để mượt, không giật.
+### 0.3 Cài Supabase self-host
+- [ ] Clone `https://github.com/supabase/supabase` → `docker/`.
+- [ ] Copy `.env.example` → `.env`, sinh `JWT_SECRET`, `ANON_KEY`, `SERVICE_ROLE_KEY`, `POSTGRES_PASSWORD` mới.
+- [ ] Cấu hình SMTP (giữ giống Lovable Cloud để không vỡ luồng email).
+- [ ] `docker compose up -d` → verify Studio chạy ok.
+- [ ] Đặt **Caddy/Nginx** reverse proxy + Let's Encrypt cho `api.vkho.vn` → Kong (port 8000).
 
-### Vị trí & xử lý chồng chéo
+---
 
-- Nhãn "% giảm" tự động (ribbon góc phải) đã được ẩn khi có badge thủ công → giữ nguyên logic này.
-- Trong **trang chi tiết sản phẩm**: pill mới sẽ tự động đẹp hơn (component dùng chung), vẫn chỉ hiện ở ảnh đầu tiên.
+## Phase 1 — Migrate Schema (0.5 ngày)
 
-### Kết quả mong đợi
-
+### 1.1 Dump schema từ Lovable Cloud
+```bash
+# Cần xin Supabase connection string trực tiếp (Settings → Database)
+pg_dump \
+  --host=db.rodpbhesrwykmpywiiyd.supabase.co \
+  --port=5432 --username=postgres \
+  --schema-only \
+  --no-owner --no-privileges \
+  --schema=public --schema=auth --schema=storage \
+  > schema.sql
 ```
-[● Hàng NEW]              [● Đang HOT ●]
-   ─────── ảnh sản phẩm ───────
+
+### 1.2 Apply schema lên server mới
+- [ ] Strip các phần thuộc về Supabase managed (extensions đã có sẵn trong image).
+- [ ] `psql -h selfhost -f schema.sql`.
+- [ ] Verify số bảng/function/policy khớp 100% bằng query so sánh:
+  ```sql
+  SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY 1;
+  ```
+
+---
+
+## Phase 2 — Migrate Data (1 ngày, chạy đêm)
+
+### 2.1 Chiến lược: **dump-restore + delta sync**
+- **Window 1 (T-24h)**: dump toàn bộ data ban đầu (read-only snapshot, app vẫn hoạt động trên Cloud).
+- **Window 2 (cutover, ~30 phút)**: bật maintenance mode → dump delta → restore → switch DNS.
+
+### 2.2 Dump data
+```bash
+pg_dump \
+  --data-only --disable-triggers \
+  --schema=public --schema=auth --schema=storage \
+  -h db.rodpbhesrwykmpywiiyd.supabase.co \
+  -U postgres -Fc -f data.dump
 ```
 
-Pill bo tròn nổi, chữ in đậm có điểm nhấn — đồng nhất phong cách với badge "Giảm %" / "Trả góp 0%" trong ảnh tham khảo, nhưng vẫn giữ màu sắc thương hiệu cho từng loại nhãn.
+### 2.3 Restore
+```bash
+pg_restore --data-only --disable-triggers \
+  -h selfhost -U postgres -d postgres data.dump
+# sau đó re-enable triggers + ANALYZE
+psql -c "ANALYZE;"
+```
 
+### 2.4 Reset sequences
+```sql
+SELECT setval(pg_get_serial_sequence(quote_ident(t)||'.'||quote_ident(c), c),
+  COALESCE((SELECT MAX(...))) FROM ...;
+```
+
+### 2.5 Verify dữ liệu
+- [ ] So sánh `COUNT(*)` của 20 bảng quan trọng nhất (`tenants`, `products`, `sale_receipts`, `import_receipts`, `cash_book`, `attendance_records`, `user_roles`, `profiles`, `auth.users`...).
+- [ ] So sánh `MAX(created_at)` để chắc chắn không miss record nào.
+- [ ] Kiểm tra integrity: foreign keys, RLS active.
+
+---
+
+## Phase 3 — Migrate Auth (0.5 ngày)
+
+- [ ] Auth users đã được dump cùng schema `auth` ở Phase 2 → password hashes (`bcrypt`) chuyển nguyên vẹn → user **không cần đổi mật khẩu**.
+- [ ] Cấu hình lại providers: Email (giữ confirm), Google OAuth (đổi redirect URL về `https://api.vkho.vn/auth/v1/callback` + cập nhật trong Google Cloud Console).
+- [ ] Migrate **JWT secret**: ⚠️ JWT_SECRET mới ≠ cũ → **tất cả session hiện tại sẽ bị logout** → thông báo trước cho khách hàng.
+- [ ] Cập nhật `Site URL` và `Redirect URLs` trong GoTrue config khớp với các domain đang dùng (vkho.vn, *.vkho.vn, custom domains).
+
+---
+
+## Phase 4 — Migrate Storage (0.5 ngày)
+
+### 4.1 Tải toàn bộ files
+```bash
+# dùng supabase CLI hoặc rclone
+rclone copy supabase:bucket-name ./storage-backup/bucket-name
+```
+
+### 4.2 Upload lên self-host
+```bash
+rclone copy ./storage-backup selfhost:storage --transfers=8
+```
+Hoặc dùng script Node.js gọi `storage.from(bucket).upload()` cho từng object để giữ metadata.
+
+### 4.3 Cấu hình bucket policies (đã được dump cùng schema `storage`).
+
+---
+
+## Phase 5 — Migrate Edge Functions (0.5 ngày)
+
+- [ ] Toàn bộ source đã có trong repo (`supabase/functions/*`) → push lên self-host:
+  ```bash
+  supabase functions deploy --project-ref selfhost <function-name>
+  ```
+- [ ] Re-add **Secrets** (toàn bộ list từ 0.1) qua Supabase CLI: `supabase secrets set KEY=...`.
+- [ ] Re-create **pg_cron jobs** trỏ tới URL mới (`https://api.vkho.vn/functions/v1/...`).
+- [ ] Test từng function quan trọng: register-tenant, send-order-email, send-zalo-message, daily-backup, cross-platform-restore-v3.
+
+---
+
+## Phase 6 — Cutover (~30 phút, đêm chủ nhật)
+
+| Time | Bước |
+|---|---|
+| T-30m | Bật maintenance banner ("Bảo trì hệ thống đến HH:MM") |
+| T-25m | Stop pg_cron jobs trên Cloud |
+| T-20m | Dump delta data (dữ liệu sinh ra từ Phase 2 → giờ) |
+| T-10m | Restore delta vào self-host |
+| T-5m | Update `VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY` trong Lovable project + rebuild frontend |
+| T-2m | Smoke test: login, tạo phiếu bán, xem báo cáo, gửi email |
+| T-0 | Tắt maintenance, monitor logs |
+
+⚠️ **Lưu ý**: file `src/integrations/supabase/client.ts` được Lovable auto-generate từ env. Sau cutover, env mới được apply thì client tự trỏ về self-host.
+
+---
+
+## Phase 7 — Hậu kiểm (3–7 ngày)
+
+- [ ] Monitor pg log, edge function log, error rate.
+- [ ] Verify backup tự động hoạt động (daily-backup 23:59).
+- [ ] Test scenario edge: payment notification, attendance check-in, push notification, Zalo OA.
+- [ ] Theo dõi performance: `pg_stat_statements`, slow query log.
+- [ ] Sau 7 ngày ổn định → **giữ Cloud project ở trạng thái paused** thêm 30 ngày làm rollback fallback.
+
+---
+
+## Rủi ro & Mitigation
+
+| Rủi ro | Mức độ | Mitigation |
+|---|---|---|
+| Mất dữ liệu khi dump | Cao | Dump 2 lần (Phase 2 + delta), verify count |
+| JWT secret đổi → user logout | Trung | Thông báo trước 24h, gửi email |
+| Edge functions secret thiếu | Trung | Checklist đầy đủ ở Phase 0.1, test ở Phase 5 |
+| pg_cron không chạy | Trung | Verify ngay sau cutover, có alert |
+| Storage URL public bị break | Cao | Giữ path identical, đổi domain qua proxy |
+| Custom domain (depadian.com, …) | Cao | Giữ nguyên DNS A record trỏ về VPS, Caddy multi-domain |
+| VPS down | Cao | Snapshot daily + offsite backup S3 |
+
+---
+
+## Chi phí ước tính
+
+| Hạng mục | $/tháng |
+|---|---|
+| VPS Hetzner CCX23 (4vCPU, 16GB) | ~30 |
+| Block storage 100GB | ~5 |
+| Backup S3 (B2) 200GB | ~3 |
+| Cloudflare (DNS + SSL) | 0 |
+| **Tổng** | **~38** |
+
+So với Lovable Cloud usage hiện tại → tiết kiệm đáng kể khi quy mô lớn, nhưng phải tự vận hành (monitor, patch, backup).
+
+---
+
+## Checklist Go/No-Go trước cutover
+
+- [ ] Schema khớp 100%
+- [ ] Data count khớp ≥ 99.99% (trừ delta)
+- [ ] Auth login test pass
+- [ ] Edge functions test pass (≥ 10 functions chính)
+- [ ] Storage files accessible
+- [ ] Backup job chạy được
+- [ ] Rollback plan: nếu fail → đổi env về Cloud trong < 5 phút
