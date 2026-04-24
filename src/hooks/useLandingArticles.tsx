@@ -27,6 +27,7 @@ export interface LandingArticle {
   is_featured: boolean;
   is_featured_home: boolean;
   display_order: number;
+  seo_description?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -130,7 +131,7 @@ export function useBatchUpdateCategoryOrder() {
 const LANDING_ARTICLE_LIST_SELECT = `
   id, tenant_id, category_id, title, slug, summary,
   thumbnail_url, is_published, is_featured, is_featured_home,
-  display_order, created_at, updated_at
+  display_order, seo_description, created_at, updated_at
 `;
 
 export function useLandingArticles(tenantId?: string | null) {

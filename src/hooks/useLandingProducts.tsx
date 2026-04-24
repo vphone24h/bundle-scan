@@ -67,6 +67,8 @@ export interface LandingProduct {
   student_discount_label?: string | null;
   student_discount_text?: string | null;
   installment_down_payment?: number | null;
+  // SEO
+  seo_description?: string | null;
   created_at: string;
   updated_at: string;
 }
