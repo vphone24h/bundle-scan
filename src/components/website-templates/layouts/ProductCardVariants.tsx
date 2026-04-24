@@ -135,10 +135,11 @@ export function InstallmentLine({ amount }: { amount?: number | null }) {
 }
 
 // Shared badge overlay for product cards
-export function ProductBadges({ badges }: { badges?: string[] }) {
+export function ProductBadges({ badges, style }: { badges?: string[]; style?: 'simple' | 'luxury' | string }) {
   if (!badges || badges.length === 0) return null;
   const items = badges.slice(0, 3).map(b => PRODUCT_BADGE_OPTIONS.find(o => o.id === b)).filter(Boolean);
   if (items.length === 0) return null;
+  const badgeStyle: 'simple' | 'luxury' = style === 'luxury' ? 'luxury' : 'simple';
 
   const getBadgeGradient = (opt: typeof PRODUCT_BADGE_OPTIONS[0]) => {
     // Đồng bộ với bảng màu Tailwind để khớp với preview admin
@@ -293,6 +294,82 @@ export function ProductBadges({ badges }: { badges?: string[] }) {
     );
   };
 
+  // === LUXURY (Royal Luxe) BADGE ===
+  // Inspired by ornate emerald + gold ribbons with a medallion seal.
+  // Used for both pill & flame slots when style === 'luxury'.
+  const LuxuryBadge = ({ opt, corner }: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; corner: Corner }) => {
+    const [, highlight] = splitLabel(opt.id, opt.text);
+    const baseColor = getBadgeGradient(opt);
+    // Build a deep, jewel-tone gradient from the badge color
+    const ribbonBg = `linear-gradient(135deg, ${baseColor} 0%, rgba(0,0,0,0.55) 50%, ${baseColor} 100%)`;
+    const isRight = corner === 'tr' || corner === 'br';
+    return (
+      <div className={`absolute z-10 animate-badge-pulse ${cornerClass(corner)}`}>
+        <div
+          className="flex items-stretch select-none"
+          style={{
+            filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.35))',
+            flexDirection: isRight ? 'row-reverse' : 'row',
+          }}
+        >
+          {/* Medallion seal */}
+          <div
+            className="relative flex items-center justify-center"
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle at 30% 30%, #fde68a 0%, #f59e0b 45%, #b45309 100%)',
+              border: '1.5px solid #92400e',
+              boxShadow: 'inset 0 0 4px rgba(0,0,0,0.3), 0 0 0 1px #fcd34d',
+              [isRight ? 'marginLeft' : 'marginRight']: -6,
+              zIndex: 2,
+            } as any}
+          >
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 900,
+                color: '#7c2d12',
+                fontFamily: 'Georgia, "Times New Roman", serif',
+                fontStyle: 'italic',
+                textShadow: '0 1px 0 rgba(255,255,255,0.4)',
+                lineHeight: 1,
+              }}
+            >
+              {(opt.text || 'V').trim().charAt(0).toUpperCase()}
+            </span>
+          </div>
+          {/* Ribbon body */}
+          <div
+            style={{
+              background: ribbonBg,
+              color: '#fff7ed',
+              padding: '5px 12px 5px 14px',
+              fontSize: 10.5,
+              fontWeight: 900,
+              letterSpacing: '0.06em',
+              border: '1px solid #fcd34d',
+              [isRight ? 'borderRight' : 'borderLeft']: 'none',
+              borderRadius: isRight ? '4px 0 0 4px' : '0 4px 4px 0',
+              clipPath: isRight
+                ? 'polygon(8px 0, 100% 0, 100% 100%, 8px 100%, 0 50%)'
+                : 'polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%)',
+              textShadow: '0 1px 1px rgba(0,0,0,0.5)',
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              lineHeight: 1.15,
+              textTransform: 'uppercase',
+            }}
+          >
+            {highlight}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Each badge has a FIXED corner (BADGE_POSITION_MAP). Nếu admin lỡ chọn 2 nhãn cùng góc,
   // chỉ giữ nhãn đầu tiên ở góc đó để không trồng lên nhau.
   const fallbackOrder: Corner[] = ['tr', 'tl', 'bl', 'br'];
@@ -309,7 +386,9 @@ export function ProductBadges({ badges }: { badges?: string[] }) {
   return (
     <>
       {assignments.map(({ opt, corner, variant }) =>
-        variant === 'flame'
+        badgeStyle === 'luxury'
+          ? <LuxuryBadge key={opt.id} opt={opt} corner={corner} />
+          : variant === 'flame'
           ? <FlameBadge key={opt.id} opt={opt} corner={corner} />
           : <PillBadge key={opt.id} opt={opt} corner={corner} />,
       )}
