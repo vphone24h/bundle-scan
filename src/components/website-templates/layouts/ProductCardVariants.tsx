@@ -295,76 +295,109 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
   };
 
   // === LUXURY (Royal Luxe) BADGE ===
-  // Inspired by ornate emerald + gold ribbons with a medallion seal.
-  // Used for both pill & flame slots when style === 'luxury'.
+  // Thiết kế: con dấu tròn răng cưa (vàng đồng) + ribbon chữ nhật phẳng có viền vàng,
+  // đầu đối diện medallion có đuôi cờ đuôi nheo (notch tam giác). Khớp ảnh tham khảo.
   const LuxuryBadge = ({ opt, corner }: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; corner: Corner }) => {
     const [, highlight] = splitLabel(opt.id, opt.text);
     const baseColor = getBadgeGradient(opt);
-    // Build a deep, jewel-tone gradient from the badge color
-    const ribbonBg = `linear-gradient(135deg, ${baseColor} 0%, rgba(0,0,0,0.55) 50%, ${baseColor} 100%)`;
     const isRight = corner === 'tr' || corner === 'br';
+    // Ribbon: gradient sậm theo màu nhãn để có chiều sâu
+    const ribbonBg = `linear-gradient(180deg, ${baseColor} 0%, rgba(0,0,0,0.35) 100%), ${baseColor}`;
+    // Notch (đuôi cờ) ngược phía medallion
+    const notchClip = isRight
+      // medallion bên phải -> notch bên trái
+      ? 'polygon(8px 0, 100% 0, 100% 100%, 8px 100%, 0 50%)'
+      // medallion bên trái -> notch bên phải
+      : 'polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%)';
+    const seal = (
+      <div
+        className="relative flex items-center justify-center shrink-0"
+        style={{
+          width: 28,
+          height: 28,
+          // Răng cưa = nhiều hình tam giác quanh viền (dùng conic-gradient cho hiệu ứng răng)
+          background:
+            'radial-gradient(circle at 35% 30%, #fde68a 0%, #f59e0b 55%, #92400e 100%)',
+          // Răng cưa giả lập bằng conic-gradient ở viền ngoài
+          borderRadius: '50%',
+          boxShadow:
+            '0 0 0 1px #78350f, 0 0 0 2.5px #fbbf24, 0 0 0 3.5px #92400e, inset 0 0 4px rgba(0,0,0,0.35)',
+          [isRight ? 'marginLeft' : 'marginRight']: -5,
+          zIndex: 2,
+        } as any}
+      >
+        {/* Răng cưa overlay */}
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: -2,
+            borderRadius: '50%',
+            background:
+              'conic-gradient(#fbbf24 0deg 8deg, transparent 8deg 22.5deg, #fbbf24 22.5deg 30.5deg, transparent 30.5deg 45deg, #fbbf24 45deg 53deg, transparent 53deg 67.5deg, #fbbf24 67.5deg 75.5deg, transparent 75.5deg 90deg, #fbbf24 90deg 98deg, transparent 98deg 112.5deg, #fbbf24 112.5deg 120.5deg, transparent 120.5deg 135deg, #fbbf24 135deg 143deg, transparent 143deg 157.5deg, #fbbf24 157.5deg 165.5deg, transparent 165.5deg 180deg, #fbbf24 180deg 188deg, transparent 188deg 202.5deg, #fbbf24 202.5deg 210.5deg, transparent 210.5deg 225deg, #fbbf24 225deg 233deg, transparent 233deg 247.5deg, #fbbf24 247.5deg 255.5deg, transparent 255.5deg 270deg, #fbbf24 270deg 278deg, transparent 278deg 292.5deg, #fbbf24 292.5deg 300.5deg, transparent 300.5deg 315deg, #fbbf24 315deg 323deg, transparent 323deg 337.5deg, #fbbf24 337.5deg 345.5deg, transparent 345.5deg 360deg)',
+            // Mask để chỉ giữ phần vành ngoài (vành ~3px)
+            WebkitMask:
+              'radial-gradient(circle, transparent 56%, #000 60%, #000 78%, transparent 82%)',
+            mask:
+              'radial-gradient(circle, transparent 56%, #000 60%, #000 78%, transparent 82%)',
+            zIndex: 1,
+          } as any}
+        />
+        {/* Chữ cái trong huy chương */}
+        <span
+          style={{
+            position: 'relative',
+            zIndex: 2,
+            fontSize: 14,
+            fontWeight: 900,
+            color: '#fde68a',
+            fontFamily: 'Georgia, "Times New Roman", serif',
+            fontStyle: 'italic',
+            textShadow: '0 1px 1px rgba(0,0,0,0.55)',
+            lineHeight: 1,
+          }}
+        >
+          {(opt.text || 'V').trim().charAt(0).toUpperCase()}
+        </span>
+      </div>
+    );
+    const ribbon = (
+      <div
+        style={{
+          position: 'relative',
+          background: ribbonBg,
+          color: '#fff7ed',
+          padding: isRight ? '5px 10px 5px 16px' : '5px 16px 5px 10px',
+          fontSize: 10.5,
+          fontWeight: 800,
+          letterSpacing: '0.06em',
+          whiteSpace: 'nowrap',
+          display: 'flex',
+          alignItems: 'center',
+          lineHeight: 1.15,
+          textTransform: 'uppercase',
+          textShadow: '0 1px 1px rgba(0,0,0,0.55)',
+          fontFamily: '"Playfair Display", Georgia, serif',
+          clipPath: notchClip,
+          // Viền vàng giả lập bằng outline + inset shadow (clip-path không cho border)
+          boxShadow:
+            'inset 0 0 0 1px #fbbf24, inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.25)',
+        }}
+      >
+        {highlight}
+      </div>
+    );
     return (
       <div className={`absolute z-10 animate-badge-pulse ${cornerClass(corner)}`}>
         <div
           className="flex items-stretch select-none"
           style={{
-            filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.35))',
+            filter: 'drop-shadow(0 3px 5px rgba(0,0,0,0.35))',
             flexDirection: isRight ? 'row-reverse' : 'row',
           }}
         >
-          {/* Medallion seal */}
-          <div
-            className="relative flex items-center justify-center"
-            style={{
-              width: 26,
-              height: 26,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle at 30% 30%, #fde68a 0%, #f59e0b 45%, #b45309 100%)',
-              border: '1.5px solid #92400e',
-              boxShadow: 'inset 0 0 4px rgba(0,0,0,0.3), 0 0 0 1px #fcd34d',
-              [isRight ? 'marginLeft' : 'marginRight']: -6,
-              zIndex: 2,
-            } as any}
-          >
-            <span
-              style={{
-                fontSize: 13,
-                fontWeight: 900,
-                color: '#7c2d12',
-                fontFamily: 'Georgia, "Times New Roman", serif',
-                fontStyle: 'italic',
-                textShadow: '0 1px 0 rgba(255,255,255,0.4)',
-                lineHeight: 1,
-              }}
-            >
-              {(opt.text || 'V').trim().charAt(0).toUpperCase()}
-            </span>
-          </div>
-          {/* Ribbon body */}
-          <div
-            style={{
-              background: ribbonBg,
-              color: '#fff7ed',
-              padding: '5px 12px 5px 14px',
-              fontSize: 10.5,
-              fontWeight: 900,
-              letterSpacing: '0.06em',
-              border: '1px solid #fcd34d',
-              [isRight ? 'borderRight' : 'borderLeft']: 'none',
-              borderRadius: isRight ? '4px 0 0 4px' : '0 4px 4px 0',
-              clipPath: isRight
-                ? 'polygon(8px 0, 100% 0, 100% 100%, 8px 100%, 0 50%)'
-                : 'polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%)',
-              textShadow: '0 1px 1px rgba(0,0,0,0.5)',
-              whiteSpace: 'nowrap',
-              display: 'flex',
-              alignItems: 'center',
-              lineHeight: 1.15,
-              textTransform: 'uppercase',
-            }}
-          >
-            {highlight}
-          </div>
+          {seal}
+          {ribbon}
         </div>
       </div>
     );

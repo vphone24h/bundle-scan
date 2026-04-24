@@ -1770,19 +1770,35 @@ export function LandingProductsTab() {
                           corner === 'bl' ? 'bottom-1.5 left-1.5' :
                           'bottom-1.5 right-1.5';
                         if (badgeStyle === 'luxury') {
+                          const isRight = corner === 'tr' || corner === 'br';
                           return (
-                            <span
-                              key={id}
-                              className={`absolute ${cornerCls} inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm shadow-md animate-pulse text-[8px] font-extrabold text-yellow-50`}
-                              style={{
-                                background: 'linear-gradient(135deg, #064e3b 0%, #047857 50%, #064e3b 100%)',
-                                border: '1px solid #facc15',
-                                textShadow: '0 1px 1px rgba(0,0,0,0.4)',
-                              }}
-                            >
-                              <span className="inline-block w-2.5 h-2.5 rounded-full bg-yellow-400 border border-yellow-600" />
-                              {opt.text.toUpperCase()}
-                            </span>
+                            <div key={id} className={`absolute ${cornerCls} flex items-stretch animate-pulse`} style={{ flexDirection: isRight ? 'row-reverse' : 'row', filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))' }}>
+                              <span style={{
+                                width: 16, height: 16, borderRadius: '50%',
+                                background: 'radial-gradient(circle at 35% 30%, #fde68a 0%, #f59e0b 55%, #92400e 100%)',
+                                boxShadow: '0 0 0 1px #78350f, 0 0 0 1.5px #fbbf24',
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: 9, fontWeight: 900, color: '#fde68a',
+                                fontFamily: 'Georgia, serif', fontStyle: 'italic',
+                                [isRight ? 'marginLeft' : 'marginRight']: -3, zIndex: 2,
+                              } as any}>
+                                {opt.text.charAt(0).toUpperCase()}
+                              </span>
+                              <span style={{
+                                background: opt.id ? undefined : '#064e3b',
+                                padding: isRight ? '2px 6px 2px 9px' : '2px 9px 2px 6px',
+                                fontSize: 7, fontWeight: 800, color: '#fff7ed',
+                                textTransform: 'uppercase', letterSpacing: '0.05em',
+                                clipPath: isRight
+                                  ? 'polygon(5px 0, 100% 0, 100% 100%, 5px 100%, 0 50%)'
+                                  : 'polygon(0 0, calc(100% - 5px) 0, 100% 50%, calc(100% - 5px) 100%, 0 100%)',
+                                boxShadow: 'inset 0 0 0 1px #fbbf24',
+                                textShadow: '0 1px 1px rgba(0,0,0,0.5)',
+                                display: 'inline-flex', alignItems: 'center',
+                              }} className={opt.color}>
+                                {opt.text.toUpperCase()}
+                              </span>
+                            </div>
                           );
                         }
                         return (
