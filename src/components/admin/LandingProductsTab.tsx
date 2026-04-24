@@ -898,6 +898,40 @@ export function LandingProductsTab() {
               </div>
             </div>
 
+            {/* ===== MÔ TẢ SEO ===== */}
+            <div className="space-y-2">
+              <Label className="flex items-center justify-between">
+                <span>Mô tả SEO (Google search)</span>
+                <span className={cn(
+                  'text-xs font-normal',
+                  (form.seo_description?.length || 0) > 160 ? 'text-destructive' : 'text-muted-foreground'
+                )}>
+                  {form.seo_description?.length || 0}/160
+                </span>
+              </Label>
+              <textarea
+                value={form.seo_description}
+                onChange={e => setForm(p => ({ ...p, seo_description: e.target.value }))}
+                placeholder="VD: iPhone 17 Pro Max chính hãng VN/A, trả góp 0% lãi, bảo hành 12 tháng. Giao hàng nhanh toàn quốc."
+                rows={2}
+                className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              {(form.name || form.seo_description) && (
+                <div className="rounded-md border bg-muted/30 p-3 space-y-0.5">
+                  <p className="text-[10px] uppercase text-muted-foreground tracking-wide mb-1">🔍 Xem trước trên Google</p>
+                  <p className="text-[11px] text-green-700 dark:text-green-500 truncate">
+                    {typeof window !== 'undefined' ? window.location.host : 'website.vn'} › san-pham
+                  </p>
+                  <p className="text-base text-blue-700 dark:text-blue-400 font-medium leading-snug line-clamp-1">
+                    {form.name || 'Tên sản phẩm'}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-snug line-clamp-2">
+                    {form.seo_description || form.description || 'Mô tả SEO sẽ hiển thị ở đây...'}
+                  </p>
+                </div>
+              )}
+            </div>
+
             {/* ===== BIẾN THỂ 2 CẤP ===== */}
             <Separator />
             <div className="space-y-3">
