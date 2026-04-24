@@ -295,15 +295,17 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
   };
 
   // === LUXURY (Royal Luxe) BADGE ===
-  // Thiết kế: huy chương tròn răng cưa nhỏ đều (gear-edge) màu vàng kim với chữ cái serif
-  // ở giữa, ghép với ribbon chữ nhật bo góc nhẹ, viền vàng mảnh, gradient nền sậm sang trọng.
-  // Khớp y hệt ảnh tham chiếu (medallion + tablet ribbon).
+  // Thiết kế theo ảnh mẫu:
+  // - HÀNG MỚI: seal tròn chữ N + ribbon đỏ kéo dài sang phải, đầu phải cắt xéo.
+  // - SẢN PHẨM BÁN CHẠY: ribbon xanh nghiêng hiện đại, đầu phải cắt xéo.
+  // - Các nhãn trust còn lại: huy hiệu + ribbon nhỏ.
   const LuxuryBadge = ({ opt, corner }: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; corner: Corner }) => {
     const [, highlight] = splitLabel(opt.id, opt.text);
     const baseColor = getBadgeGradient(opt);
     const isRight = corner === 'tr' || corner === 'br';
-    const isBottom = corner === 'bl' || corner === 'br';
-    // Subtitle 2-dòng (ví dụ: CHÍNH HÃNG / ĐẢM BẢO)
+    const NEW_BADGE_IDS = new Set(['new', 'new_today', 'just_updated', 'new_version', 'preorder', 'trending']);
+    const BEST_SELLER_BADGE_IDS = new Set(['best_seller', 'top_1', 'many_buy']);
+
     const SUBTITLE_MAP: Record<string, string> = {
       genuine: 'ĐẢM BẢO',
       quality: 'CAO CẤP',
@@ -314,13 +316,8 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
     };
     const subtitle = SUBTITLE_MAP[opt.id];
 
-    // === Bảng màu chuẩn theo spec ===
-    // - HÀNG MỚI (đỏ rượu vang): #7A0F1A → #C62828
-    // - SẢN PHẨM BÁN CHẠY (xanh navy → xanh sáng): #1E3A8A → #3B82F6
-    // - CHÍNH HÃNG (xanh lá): #166534 → #22C55E
     type Tone = { from: string; to: string; sealFrom: string; sealTo: string };
     const TONE_MAP: Record<string, Tone> = {
-      // Wine red
       new:          { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
       new_today:    { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
       just_updated: { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
@@ -330,11 +327,9 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
       hot:          { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
       sale:         { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
       deal:         { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
-      // Navy blue
       best_seller:  { from: '#3B82F6', to: '#1E3A8A', sealFrom: '#2563EB', sealTo: '#172554' },
       top_1:        { from: '#3B82F6', to: '#1E3A8A', sealFrom: '#2563EB', sealTo: '#172554' },
       many_buy:     { from: '#3B82F6', to: '#1E3A8A', sealFrom: '#2563EB', sealTo: '#172554' },
-      // Forest green
       genuine:      { from: '#22C55E', to: '#166534', sealFrom: '#15803D', sealTo: '#0B3F1F' },
       warranty:     { from: '#22C55E', to: '#166534', sealFrom: '#15803D', sealTo: '#0B3F1F' },
       quality:      { from: '#22C55E', to: '#166534', sealFrom: '#15803D', sealTo: '#0B3F1F' },
@@ -345,17 +340,233 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
     const tone: Tone = TONE_MAP[opt.id] || {
       from: baseColor, to: baseColor, sealFrom: baseColor, sealTo: baseColor,
     };
+    const displayText = NEW_BADGE_IDS.has(opt.id)
+      ? 'HÀNG MỚI'
+      : BEST_SELLER_BADGE_IDS.has(opt.id)
+      ? 'SẢN PHẨM BÁN CHẠY'
+      : highlight;
+    const sealLetter = NEW_BADGE_IDS.has(opt.id)
+      ? 'N'
+      : opt.id === 'genuine' || opt.id === 'warranty'
+      ? 'H'
+      : displayText.trim().charAt(0).toUpperCase();
 
-    // Răng cưa nhỏ đều quanh medallion (sun-burst, 22 răng)
-    const TOOTH_COUNT = 22;
-    const teethStops: string[] = [];
-    const step = 360 / TOOTH_COUNT;
-    for (let i = 0; i < TOOTH_COUNT; i++) {
-      const a = i * step;
-      teethStops.push(`#fde68a ${a}deg ${a + step * 0.5}deg`);
-      teethStops.push(`#92400e ${a + step * 0.5}deg ${a + step}deg`);
+    const makeSealGradient = (count: number) => {
+      const stops: string[] = [];
+      const step = 360 / count;
+      for (let i = 0; i < count; i++) {
+        const start = i * step;
+        stops.push(`#fef3c7 ${start}deg ${start + step * 0.48}deg`);
+        stops.push(`#8b5a16 ${start + step * 0.48}deg ${start + step}deg`);
+      }
+      return `conic-gradient(${stops.join(', ')})`;
+    };
+
+    if (NEW_BADGE_IDS.has(opt.id)) {
+      return (
+        <div className={`absolute z-10 ${cornerClass(corner)}`}>
+          <div
+            className="flex items-center select-none"
+            style={{
+              filter: 'drop-shadow(0 8px 12px rgba(60, 8, 15, 0.38))',
+            }}
+          >
+            <div
+              className="relative flex items-center justify-center shrink-0"
+              style={{
+                width: 46,
+                height: 46,
+                marginRight: -10,
+                zIndex: 2,
+              }}
+            >
+              <span
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: '50%',
+                  background: makeSealGradient(18),
+                  boxShadow: '0 3px 7px rgba(0,0,0,0.28)',
+                }}
+              />
+              <span
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  inset: 3,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(145deg, #fde7a8 0%, #a96d20 45%, #f8d37a 72%, #855018 100%)',
+                  boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.55), inset 0 -2px 3px rgba(88,46,8,0.45)',
+                }}
+              />
+              <span
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  inset: 7,
+                  borderRadius: '50%',
+                  background: `radial-gradient(circle at 30% 25%, ${tone.from} 0%, ${tone.sealFrom} 42%, ${tone.sealTo} 100%)`,
+                  boxShadow: 'inset 0 0 0 1px rgba(255,235,186,0.6), inset 0 2px 4px rgba(255,255,255,0.18), inset 0 -4px 5px rgba(0,0,0,0.3)',
+                }}
+              />
+              <span
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  inset: 10,
+                  borderRadius: '50%',
+                  border: '1px solid rgba(253, 230, 138, 0.7)',
+                }}
+              />
+              <span
+                style={{
+                  position: 'relative',
+                  zIndex: 1,
+                  fontSize: 24,
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  color: '#f7dfab',
+                  fontFamily: '"Playfair Display", Georgia, "Times New Roman", serif',
+                  textShadow: '0 1px 0 rgba(72,22,12,0.9), 0 0 6px rgba(255,228,179,0.35)',
+                }}
+              >
+                {sealLetter}
+              </span>
+            </div>
+
+            <div
+              style={{
+                position: 'relative',
+                padding: 2,
+                borderRadius: 999,
+                background: 'linear-gradient(180deg, #fef3c7 0%, #f3cf76 28%, #9a6520 100%)',
+                clipPath: 'polygon(0 0, calc(100% - 22px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%)',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.35)',
+              }}
+            >
+              <div
+                style={{
+                  position: 'relative',
+                  minWidth: 118,
+                  padding: '7px 28px 7px 20px',
+                  borderRadius: 999,
+                  clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%)',
+                  background: `linear-gradient(90deg, ${tone.to} 0%, ${tone.from} 54%, #7f1120 100%)`,
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -3px 6px rgba(61,10,17,0.35), inset 0 0 0 1px rgba(251,191,36,0.7)',
+                  overflow: 'hidden',
+                }}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    position: 'absolute',
+                    inset: '0 0 auto 0',
+                    height: '46%',
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 100%)',
+                  }}
+                />
+                <span
+                  style={{
+                    position: 'relative',
+                    zIndex: 1,
+                    display: 'block',
+                    color: '#fff8e7',
+                    fontSize: 12.5,
+                    fontWeight: 800,
+                    letterSpacing: '0.04em',
+                    lineHeight: 1,
+                    whiteSpace: 'nowrap',
+                    textTransform: 'uppercase',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.45)',
+                  }}
+                >
+                  {displayText}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
     }
-    const teethGradient = `conic-gradient(${teethStops.join(', ')})`;
+
+    if (BEST_SELLER_BADGE_IDS.has(opt.id)) {
+      return (
+        <div className={`absolute z-10 ${cornerClass(corner)}`}>
+          <div
+            className="select-none"
+            style={{
+              filter: 'drop-shadow(0 8px 12px rgba(20, 44, 99, 0.28))',
+            }}
+          >
+            <div
+              style={{
+                position: 'relative',
+                padding: 2,
+                borderRadius: 8,
+                background: 'linear-gradient(180deg, #f8fafc 0%, #cbd5e1 100%)',
+                clipPath: 'polygon(4% 0, 100% 0, 100% 72%, 93% 100%, 0 100%, 5% 45%)',
+                transform: 'skewX(-12deg)',
+              }}
+            >
+              <div
+                style={{
+                  position: 'relative',
+                  minWidth: 146,
+                  padding: '7px 20px 7px 18px',
+                  borderRadius: 7,
+                  background: `linear-gradient(90deg, ${tone.to} 0%, #1d4ed8 42%, ${tone.from} 100%)`,
+                  clipPath: 'polygon(4% 0, 100% 0, 100% 70%, 94% 100%, 0 100%, 5% 46%)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -3px 5px rgba(8,26,76,0.32), 0 2px 4px rgba(0,0,0,0.12)',
+                  overflow: 'hidden',
+                }}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    position: 'absolute',
+                    inset: '0 0 auto 0',
+                    height: '44%',
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 100%)',
+                  }}
+                />
+                <span
+                  aria-hidden
+                  style={{
+                    position: 'absolute',
+                    right: 6,
+                    bottom: -1,
+                    width: 14,
+                    height: 14,
+                    background: '#1e3a8a',
+                    clipPath: 'polygon(0 0, 100% 0, 0 100%)',
+                    boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.12)',
+                  }}
+                />
+                <span
+                  style={{
+                    position: 'relative',
+                    zIndex: 1,
+                    display: 'block',
+                    transform: 'skewX(12deg)',
+                    color: '#ffffff',
+                    fontSize: 10,
+                    fontWeight: 800,
+                    letterSpacing: '0.03em',
+                    lineHeight: 1,
+                    whiteSpace: 'nowrap',
+                    textTransform: 'uppercase',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.38)',
+                  }}
+                >
+                  {displayText}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     const SEAL_SIZE = 40;
 
@@ -374,7 +585,7 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
           aria-hidden
           style={{
             position: 'absolute', inset: 0, borderRadius: '50%',
-            background: teethGradient,
+              background: makeSealGradient(22),
             WebkitMask: 'radial-gradient(circle, #000 70%, transparent 72%)',
             mask: 'radial-gradient(circle, #000 70%, transparent 72%)',
             filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.5))',
@@ -419,12 +630,11 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
             lineHeight: 1,
           }}
         >
-          {(opt.text || 'V').trim().charAt(0).toUpperCase()}
+          {sealLetter}
         </span>
       </div>
     );
 
-    // Ribbon: gradient màu sâu + viền vàng kim 2 lớp + shine sweep
     const ribbon = (
       <div
         style={{
@@ -478,7 +688,7 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
             transform: 'skewX(-20deg)',
           }}
         />
-        <span style={{ position: 'relative', zIndex: 1 }}>{highlight}</span>
+        <span style={{ position: 'relative', zIndex: 1 }}>{displayText}</span>
         {subtitle && (
           <span
             style={{
