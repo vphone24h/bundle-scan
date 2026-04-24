@@ -11,7 +11,7 @@ import { formatNumber } from '@/lib/formatNumber';
 import DOMPurify from 'dompurify';
 import { sanitizeRichHtml } from '@/lib/sanitizeRichHtml';
 import { LandingProduct, LandingProductVariant, VariantPriceEntry } from '@/hooks/useLandingProducts';
-import { usePublicProductPackages, LandingProductPackage } from '@/hooks/useLandingProducts';
+import { usePublicProductPackages, usePublicProductPackageGroups, LandingProductPackage, PackageGroupWithItems } from '@/hooks/useLandingProducts';
 import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import { useCustomerPointsPublic } from '@/hooks/useTenantLanding';
@@ -99,6 +99,7 @@ export function ProductDetailPage({
   const [usePoints, setUsePoints] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const [selectedPackageIds, setSelectedPackageIds] = useState<Set<string>>(new Set());
+  const [packageQuantities, setPackageQuantities] = useState<Record<string, number>>({});
 
   // CTA Dialog states
   const [activeDialog, setActiveDialog] = useState<string | null>(null);
@@ -111,18 +112,32 @@ export function ProductDetailPage({
 
   const placeOrder = usePlaceLandingOrder();
 
-  // Fetch service packages
+  // Fetch service packages (grouped). Falls back gracefully to legacy flat list.
+  const { data: packageGroups } = usePublicProductPackageGroups(product?.id || null);
   const { data: productPackages } = usePublicProductPackages(product?.id || null);
+
+  // Flatten groups → all items with attached groupName for easy lookup
+  const allPackageItems = useMemo(() => {
+    const list: Array<LandingProductPackage & { _groupName: string; _groupId: string }> = [];
+    (packageGroups || []).forEach(g => {
+      g.items.forEach(it => list.push({ ...it, _groupName: g.name, _groupId: g.id }));
+    });
+    return list;
+  }, [packageGroups]);
 
   // Auto-select default packages
   useEffect(() => {
-    if (productPackages && productPackages.length > 0) {
-      const defaults = new Set(productPackages.filter(p => p.is_default).map(p => p.id));
+    if (allPackageItems.length > 0) {
+      const defaults = new Set(allPackageItems.filter(p => p.is_default).map(p => p.id));
       setSelectedPackageIds(defaults);
+      const qtys: Record<string, number> = {};
+      allPackageItems.forEach(it => { if (it.allow_quantity) qtys[it.id] = 1; });
+      setPackageQuantities(qtys);
     } else {
       setSelectedPackageIds(new Set());
+      setPackageQuantities({});
     }
-  }, [productPackages]);
+  }, [allPackageItems]);
 
   const [debouncedPhone, setDebouncedPhone] = useState('');
   useEffect(() => {
@@ -255,15 +270,34 @@ export function ProductDetailPage({
   const totalDiscount = selectedVoucherId ? voucherDiscount : (usePoints ? pointsDiscount : 0);
   const displayPrice = Math.max(0, basePrice - totalDiscount);
 
-  // Calculate packages total
+  // Calculate packages total — supports per-item quantity & group attribution
   const selectedPackages = useMemo(() => {
-    return (productPackages || []).filter(p => selectedPackageIds.has(p.id));
-  }, [productPackages, selectedPackageIds]);
+    return allPackageItems
+      .filter(p => selectedPackageIds.has(p.id))
+      .map(p => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        groupName: p._groupName,
+        quantity: p.allow_quantity ? Math.max(1, packageQuantities[p.id] || 1) : 1,
+      }));
+  }, [allPackageItems, selectedPackageIds, packageQuantities]);
 
-  const packagesTotal = useMemo(() => {
-    if (!productPackages) return 0;
-    return productPackages.filter(p => selectedPackageIds.has(p.id)).reduce((sum, p) => sum + p.price, 0);
-  }, [productPackages, selectedPackageIds]);
+  const packagesTotal = useMemo(
+    () => selectedPackages.reduce((sum, p) => sum + p.price * p.quantity, 0),
+    [selectedPackages]
+  );
+
+  // Group selected packages by groupName for bill display
+  const selectedPackagesByGroup = useMemo(() => {
+    const map = new Map<string, typeof selectedPackages>();
+    selectedPackages.forEach(p => {
+      const arr = map.get(p.groupName) || [];
+      arr.push(p);
+      map.set(p.groupName, arr);
+    });
+    return Array.from(map.entries());
+  }, [selectedPackages]);
 
   const handleSelectLegacyVariant = (i: number) => {
     const newIdx = selectedVariantIndex === i ? null : i;
@@ -319,11 +353,21 @@ export function ProductDetailPage({
       // Build packages note
       const selectedPkgs = selectedPackages;
       const packagesNote = selectedPkgs.length > 0
-        ? `[Gói DV: ${selectedPkgs.map(p => `${p.name} (+${formatNumber(p.price)}đ)`).join(', ')}]`
+        ? selectedPackagesByGroup
+            .map(([gName, pkgs]) =>
+              `[${gName}: ${pkgs.map(p => `${p.name}${p.quantity > 1 ? ` ×${p.quantity}` : ''} (+${formatNumber(p.price * p.quantity)}đ)`).join(', ')}]`
+            )
+            .join(' ')
         : '';
       const finalNote = [fullNote, packagesNote].filter(Boolean).join(' ');
       const orderPrice = displayPrice + packagesTotal;
-      const selectedPackagesData = selectedPkgs.map(p => ({ id: p.id, name: p.name, price: p.price }));
+      const selectedPackagesData = selectedPkgs.map(p => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        groupName: p.groupName,
+        quantity: p.quantity,
+      }));
 
       const result = await placeOrder.mutateAsync({
         tenant_id: tenantId,
@@ -663,47 +707,85 @@ export function ProductDetailPage({
                   return null;
               }
             });
-            // Prepend service packages before promotion/warranty sections
-            const isSingle = product.package_selection_mode === 'single';
-            const packagesSection = productPackages && productPackages.length > 0 ? (
-              <div key="servicePackages" className="border rounded-lg overflow-hidden">
-                <div className="px-3 py-2.5 font-semibold text-sm flex items-center gap-1.5" style={{ backgroundColor: primaryColor, color: 'white' }}>
-                  📦 Gói dịch vụ kèm theo
+            // Prepend service package GROUPS (each group rendered independently)
+            const groupsToRender = (packageGroups && packageGroups.length > 0)
+              ? packageGroups
+              : ((productPackages && productPackages.length > 0)
+                  ? [{
+                      id: '_legacy_',
+                      name: 'Gói dịch vụ kèm theo',
+                      selection_mode: (product.package_selection_mode === 'single' ? 'single' : 'multiple') as 'single' | 'multiple',
+                      display_order: 0,
+                      items: productPackages,
+                      isLegacy: true,
+                    } as PackageGroupWithItems]
+                  : []);
+
+            const packageGroupSections = groupsToRender.map(group => {
+              const isSingle = group.selection_mode === 'single';
+              return (
+                <div key={`pkg-group-${group.id}`} className="border rounded-lg overflow-hidden">
+                  <div className="px-3 py-2.5 font-semibold text-sm flex items-center gap-1.5" style={{ backgroundColor: primaryColor, color: 'white' }}>
+                    📦 {group.name}
+                    {isSingle && <span className="text-[10px] font-normal opacity-80 ml-1">(chọn 1)</span>}
+                  </div>
+                  <div className="p-3 space-y-2">
+                    {group.items.map(pkg => {
+                      const isChecked = selectedPackageIds.has(pkg.id);
+                      const itemQty = packageQuantities[pkg.id] || 1;
+                      return (
+                        <label key={pkg.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                          <input
+                            type={isSingle ? 'radio' : 'checkbox'}
+                            name={isSingle ? `pkg_select_${group.id}` : undefined}
+                            checked={isChecked}
+                            onChange={() => {
+                              if (isSingle) {
+                                // Deselect previous in same group, then select this
+                                setSelectedPackageIds(prev => {
+                                  const next = new Set(prev);
+                                  group.items.forEach(it => next.delete(it.id));
+                                  if (!isChecked) next.add(pkg.id);
+                                  return next;
+                                });
+                              } else {
+                                setSelectedPackageIds(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(pkg.id)) next.delete(pkg.id);
+                                  else next.add(pkg.id);
+                                  return next;
+                                });
+                              }
+                            }}
+                            className="rounded border-input h-4 w-4 mt-0.5"
+                          />
+                          {pkg.image_url && (
+                            <img src={pkg.image_url} alt={pkg.name} className="h-10 w-10 rounded object-cover shrink-0 border" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">{pkg.name}</p>
+                            {pkg.description && <p className="text-xs text-muted-foreground">{pkg.description}</p>}
+                            {pkg.allow_quantity && isChecked && (
+                              <div className="flex items-center gap-1.5 mt-1.5" onClick={e => e.preventDefault()}>
+                                <button type="button" className="h-7 w-7 rounded border text-sm hover:bg-muted"
+                                  onClick={() => setPackageQuantities(prev => ({ ...prev, [pkg.id]: Math.max(1, (prev[pkg.id] || 1) - 1) }))}>−</button>
+                                <span className="text-sm font-medium min-w-[24px] text-center">{itemQty}</span>
+                                <button type="button" className="h-7 w-7 rounded border text-sm hover:bg-muted"
+                                  onClick={() => setPackageQuantities(prev => ({ ...prev, [pkg.id]: (prev[pkg.id] || 1) + 1 }))}>+</button>
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-sm font-semibold shrink-0" style={{ color: primaryColor }}>
+                            {pkg.price > 0 ? `+${formatNumber(pkg.price)}đ` : 'Miễn phí'}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="p-3 space-y-2">
-                  {productPackages.map(pkg => (
-                    <label key={pkg.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
-                      <input
-                        type={isSingle ? 'radio' : 'checkbox'}
-                        name={isSingle ? 'pkg_select' : undefined}
-                        checked={selectedPackageIds.has(pkg.id)}
-                        onChange={() => {
-                          if (isSingle) {
-                            setSelectedPackageIds(selectedPackageIds.has(pkg.id) ? new Set() : new Set([pkg.id]));
-                          } else {
-                            setSelectedPackageIds(prev => {
-                              const next = new Set(prev);
-                              if (next.has(pkg.id)) next.delete(pkg.id);
-                              else next.add(pkg.id);
-                              return next;
-                            });
-                          }
-                        }}
-                        className="rounded border-input h-4 w-4"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{pkg.name}</p>
-                        {pkg.description && <p className="text-xs text-muted-foreground">{pkg.description}</p>}
-                      </div>
-                      <span className="text-sm font-semibold shrink-0" style={{ color: primaryColor }}>
-                        {pkg.price > 0 ? `+${formatNumber(pkg.price)}đ` : 'Miễn phí'}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : null;
-            return [packagesSection, ...rightSections];
+              );
+            });
+            return [...packageGroupSections, ...rightSections];
           })()}
           </div>{/* /px-4 wrapper */}
           </div>{/* /Right column (desktop) */}
@@ -956,17 +1038,28 @@ export function ProductDetailPage({
                   <span className="text-gray-500">Tiền máy:</span>
                   <span className="font-medium">{formatNumber(displayPrice * quantity)}đ</span>
                 </div>
-                {selectedPackages.length > 0 && (
-                  <div className="space-y-1 pt-1 border-t border-dashed">
-                    <span className="text-xs font-medium text-muted-foreground">Gói dịch vụ kèm theo:</span>
-                    {selectedPackages.map(pkg => (
-                      <div key={pkg.id} className="flex justify-between text-sm">
-                        <span className="text-gray-600">• {pkg.name}</span>
-                        <span className="font-medium">{pkg.price > 0 ? `+${formatNumber(pkg.price * quantity)}đ` : 'Miễn phí'}</span>
-                      </div>
-                    ))}
-                    <div className="flex justify-between text-sm font-medium">
-                      <span>Tổng gói DV:</span>
+                {selectedPackagesByGroup.length > 0 && (
+                  <div className="space-y-2 pt-1.5 border-t border-dashed">
+                    {selectedPackagesByGroup.map(([groupName, pkgs]) => {
+                      const groupSubtotal = pkgs.reduce((s, p) => s + p.price * p.quantity, 0);
+                      return (
+                        <div key={groupName} className="space-y-1">
+                          <span className="text-xs font-semibold text-muted-foreground">{groupName}:</span>
+                          {pkgs.map(pkg => (
+                            <div key={pkg.id} className="flex justify-between text-sm">
+                              <span className="text-gray-600">• {pkg.name}{pkg.quantity > 1 ? ` × ${pkg.quantity}` : ''}</span>
+                              <span className="font-medium">{pkg.price > 0 ? `+${formatNumber(pkg.price * pkg.quantity * quantity)}đ` : 'Miễn phí'}</span>
+                            </div>
+                          ))}
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Tổng {groupName}:</span>
+                            <span>{groupSubtotal > 0 ? `+${formatNumber(groupSubtotal * quantity)}đ` : '0đ'}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="flex justify-between text-sm font-semibold border-t pt-1">
+                      <span>Tổng dịch vụ kèm theo:</span>
                       <span>{packagesTotal > 0 ? `+${formatNumber(packagesTotal * quantity)}đ` : '0đ'}</span>
                     </div>
                   </div>
@@ -1075,6 +1168,8 @@ export function ProductDetailPage({
                         id: pkg.id,
                         name: pkg.name,
                         price: pkg.price,
+                        groupName: pkg.groupName,
+                        quantity: pkg.quantity,
                       })),
                       packagesTotal,
                     });
