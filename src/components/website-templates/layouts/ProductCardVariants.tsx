@@ -262,6 +262,11 @@ function AppleProductCard({ product, onClick, accentColor }: ProductCardProps) {
       </div>
       <div className="p-3 sm:p-4">
         <p className="font-medium text-xs sm:text-sm line-clamp-2 min-h-[2rem] leading-tight">{product.name}</p>
+        {(product as any).student_discount_text && (
+          <div className="mt-2">
+            <StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} />
+          </div>
+        )}
         <div className="mt-2">
           {product.sale_price ? (
             <div className="space-y-0.5">
@@ -271,6 +276,7 @@ function AppleProductCard({ product, onClick, accentColor }: ProductCardProps) {
           ) : (
             <p className="font-bold text-sm text-[#1d1d1f]">{formatNumber(product.price)}đ</p>
           )}
+          <InstallmentLine amount={(product as any).installment_down_payment} />
         </div>
       </div>
     </button>
@@ -303,6 +309,9 @@ function TGDDProductCard({ product, onClick, accentColor }: ProductCardProps) {
           {[1,2,3,4,5].map(i => <Star key={i} className="h-3 w-3 text-yellow-400 fill-yellow-400" />)}
           <span className="text-[10px] text-gray-400 ml-1">(99+)</span>
         </div>
+        {(product as any).student_discount_text && (
+          <StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} />
+        )}
         <div>
           {product.sale_price ? (
             <>
@@ -312,6 +321,7 @@ function TGDDProductCard({ product, onClick, accentColor }: ProductCardProps) {
           ) : (
             <p className="font-extrabold text-sm text-blue-700">{formatNumber(product.price)}đ</p>
           )}
+          <InstallmentLine amount={(product as any).installment_down_payment} />
         </div>
         {/* Promo labels */}
         <div className="flex flex-wrap gap-1">
@@ -348,6 +358,9 @@ function HasakiProductCard({ product, onClick, accentColor }: ProductCardProps) 
           {[1,2,3,4,5].map(i => <Star key={i} className="h-3 w-3 text-amber-400 fill-amber-400" />)}
           <span className="text-[10px] text-gray-400 ml-1">({Math.floor(Math.random() * 200) + 50})</span>
         </div>
+        {(product as any).student_discount_text && (
+          <StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} />
+        )}
         <div>
           {product.sale_price ? (
             <div className="flex items-baseline gap-2">
@@ -357,6 +370,7 @@ function HasakiProductCard({ product, onClick, accentColor }: ProductCardProps) 
           ) : (
             <p className="font-bold text-sm text-gray-900">{formatNumber(product.price)}đ</p>
           )}
+          <InstallmentLine amount={(product as any).installment_down_payment} />
         </div>
         {/* Deal tag */}
         {product.sale_price && (
@@ -390,6 +404,9 @@ function NikeProductCard({ product, onClick, accentColor }: ProductCardProps) {
       </div>
       <div className="pt-3 space-y-1">
         <p className="font-semibold text-sm line-clamp-1">{product.name}</p>
+        {(product as any).student_discount_text && (
+          <StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} />
+        )}
         <div className="flex items-baseline gap-2">
           {product.sale_price ? (
             <>
@@ -400,6 +417,7 @@ function NikeProductCard({ product, onClick, accentColor }: ProductCardProps) {
             <p className="font-bold text-sm">{formatNumber(product.price)}đ</p>
           )}
         </div>
+        <InstallmentLine amount={(product as any).installment_down_payment} />
       </div>
     </button>
   );
@@ -425,6 +443,9 @@ function LuxuryProductCard({ product, onClick, accentColor }: ProductCardProps) 
       </div>
       <div className="pt-3 space-y-1 text-center">
         <p className="font-light text-sm tracking-wide line-clamp-2" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>{product.name}</p>
+        {(product as any).student_discount_text && (
+          <div className="flex justify-center"><StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} /></div>
+        )}
         <div>
           {product.sale_price ? (
             <div className="space-y-0.5">
@@ -434,6 +455,7 @@ function LuxuryProductCard({ product, onClick, accentColor }: ProductCardProps) 
           ) : (
             <p className="font-semibold text-sm text-gray-900">{formatNumber(product.price)}đ</p>
           )}
+          <InstallmentLine amount={(product as any).installment_down_payment} />
         </div>
       </div>
     </button>
@@ -460,6 +482,9 @@ function MinimalProductCard({ product, onClick, accentColor }: ProductCardProps)
       </div>
       <div className="p-3">
         <p className="font-medium text-xs line-clamp-2 min-h-[2rem] leading-tight text-stone-700">{product.name}</p>
+        {(product as any).student_discount_text && (
+          <div className="mt-1.5"><StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} /></div>
+        )}
         <div className="mt-2">
           {product.sale_price ? (
             <div className="space-y-0.5">
@@ -469,6 +494,7 @@ function MinimalProductCard({ product, onClick, accentColor }: ProductCardProps)
           ) : (
             <p className="font-semibold text-sm text-stone-800">{formatNumber(product.price)}đ</p>
           )}
+          <InstallmentLine amount={(product as any).installment_down_payment} />
         </div>
       </div>
     </button>
@@ -496,6 +522,9 @@ function ShopeeProductCard({ product, onClick, accentColor }: ProductCardProps) 
       </div>
       <div className="p-2.5 space-y-1">
         <p className="font-medium text-xs line-clamp-2 min-h-[2rem] text-gray-800">{product.name}</p>
+        {(product as any).student_discount_text && (
+          <StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} />
+        )}
         <div>
           {product.sale_price ? (
             <>
@@ -505,6 +534,7 @@ function ShopeeProductCard({ product, onClick, accentColor }: ProductCardProps) 
           ) : (
             <p className="font-bold text-sm text-orange-600">{formatNumber(product.price)}đ</p>
           )}
+          <InstallmentLine amount={(product as any).installment_down_payment} />
         </div>
         <div className="flex items-center gap-1">
           <span className="text-[9px] bg-red-50 text-red-500 font-medium px-1.5 py-0.5 rounded border border-red-100">🔥 Bán chạy</span>
@@ -534,6 +564,9 @@ function OrganicProductCard({ product, onClick, accentColor }: ProductCardProps)
       </div>
       <div className="p-3">
         <p className="font-medium text-xs line-clamp-2 min-h-[2rem] leading-tight text-green-900">{product.name}</p>
+        {(product as any).student_discount_text && (
+          <div className="mt-1.5"><StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} /></div>
+        )}
         <div className="mt-2">
           {product.sale_price ? (
             <div className="space-y-0.5">
@@ -543,6 +576,7 @@ function OrganicProductCard({ product, onClick, accentColor }: ProductCardProps)
           ) : (
             <p className="font-bold text-sm text-green-800">{formatNumber(product.price)}đ</p>
           )}
+          <InstallmentLine amount={(product as any).installment_down_payment} />
         </div>
       </div>
     </button>
