@@ -583,26 +583,27 @@ export function LandingProductsTab() {
     const idx = siblings.findIndex(c => c.id === cat.id);
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= siblings.length) return;
-    // Only swap 2 items
-    const a = siblings[idx];
-    const b = siblings[swapIdx];
-    await reorderCats.mutateAsync([
-      { id: a.id, display_order: b.display_order },
-      { id: b.id, display_order: a.display_order },
-    ]);
+    // Build new order, then renumber to ensure unique sequential display_order
+    // (fixes case where many siblings share display_order = 0 and a simple swap is a no-op)
+    const reordered = [...siblings];
+    const [moved] = reordered.splice(idx, 1);
+    reordered.splice(swapIdx, 0, moved);
+    await reorderCats.mutateAsync(
+      reordered.map((c, i) => ({ id: c.id, display_order: i }))
+    );
   };
 
   const handleMoveProduct = async (idx: number, direction: 'up' | 'down') => {
     if (!products) return;
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= products.length) return;
-    // Only swap 2 items instead of re-indexing all products
-    const a = products[idx];
-    const b = products[swapIdx];
-    await reorderProds.mutateAsync([
-      { id: a.id, display_order: b.display_order },
-      { id: b.id, display_order: a.display_order },
-    ]);
+    // Renumber all to guarantee a real change even when display_order ties exist
+    const reordered = [...products];
+    const [moved] = reordered.splice(idx, 1);
+    reordered.splice(swapIdx, 0, moved);
+    await reorderProds.mutateAsync(
+      reordered.map((p, i) => ({ id: p.id, display_order: i }))
+    );
   };
 
   return (
