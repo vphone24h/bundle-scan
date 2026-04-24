@@ -1408,10 +1408,25 @@ export function LandingProductsTab() {
                       <div key={ii} className="p-2 rounded-md border bg-background space-y-1.5">
                         <div className="flex items-center gap-2">
                           {item.image_url ? (
-                            <button type="button" className="relative h-9 w-9 shrink-0 rounded border overflow-hidden"
-                              onClick={() => { setPendingPkgImage({ groupIdx: gi, itemIdx: ii }); pkgImageRef.current?.click(); }}>
-                              <img src={item.image_url} alt="" className="w-full h-full object-cover" />
-                            </button>
+                            <div className="relative h-9 w-9 shrink-0">
+                              <button type="button" className="h-9 w-9 rounded border overflow-hidden block"
+                                onClick={() => { setPendingPkgImage({ groupIdx: gi, itemIdx: ii }); pkgImageRef.current?.click(); }}>
+                                <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                              </button>
+                              <button
+                                type="button"
+                                title="Xoá ảnh"
+                                className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setGroupsForm(prev => prev.map((g, idx) => idx === gi ? {
+                                    ...g, items: g.items.map((it, j) => j === ii ? { ...it, image_url: '' } : it),
+                                  } : g));
+                                }}
+                              >
+                                <X className="h-2.5 w-2.5" />
+                              </button>
+                            </div>
                           ) : (
                             <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0"
                               onClick={() => { setPendingPkgImage({ groupIdx: gi, itemIdx: ii }); pkgImageRef.current?.click(); }}>
