@@ -1,4 +1,196 @@
-# Kế hoạch Migrate dữ liệu từ Lovable Cloud → Server Self-host
+# Plan Migrate Lovable Cloud → Self-host (APPROVED)
+
+> Phiên bản đã duyệt — context: 8F42B1C3-5D9E-4A7B-B2E1-9C3F4D5A6E7B
+> Downtime mục tiêu: **< 30 phút** | Chiến lược: **Snapshot + Delta sync + DNS swap**
+
+## ✅ Đánh giá secrets (file `all_env_secrets.json` từ function `get-all-secrets`)
+
+### Có sẵn — đủ cho self-host:
+| Loại | Secrets | Trạng thái |
+|---|---|---|
+| Supabase core (auto) | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL`, `SUPABASE_JWT_SECRET` | ✅ (sẽ thay bằng key self-host) |
+| Email SMTP | `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_USER_2`, `SMTP_PASSWORD_2` | ✅ |
+| Zalo OA | `ZALO_APP_ID`, `ZALO_APP_SECRET` | ✅ |
+| Cloudflare | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID` | ✅ |
+| Lovable AI | `LOVABLE_API_KEY` | ⚠️ Mất khi rời Lovable — cần thay |
+
+### ❌ Cần bổ sung trước cutover:
+- `OPENAI_API_KEY` hoặc `GEMINI_API_KEY` (thay `LOVABLE_API_KEY`)
+- `JWT_SECRET` mới sinh cho self-host (sẽ logout toàn bộ user — gửi mail báo trước 24h)
+- `VAPID_*` đã có trong DB table `push_vapid_keys` → giữ nguyên
+
+**Kết luận**: secrets đủ ~95%. Chỉ thiếu 1 key AI thay thế.
+
+---
+
+## 📅 Timeline tổng thể
+
+```
+Day -7  ──── Setup VPS + Supabase self-host + smoke test
+Day -3  ──── Snapshot lần 1 (full dump + restore + verify)
+Day -1  ──── Test cutover trên staging domain
+Day  0  ──── Cutover thật (đêm CN, 23:00–23:30 ICT)
+Day +7  ──── Pause Cloud project (rollback fallback 30 ngày)
+```
+
+---
+
+## Phase 0 — Hạ tầng (2 ngày)
+
+**VPS**: Hetzner CCX23 (4 vCPU dedicated, 16GB RAM, 160GB NVMe) — ~30€/tháng.
+
+**Stack**:
+```
+Ubuntu 22.04 → Docker → supabase/docker (compose)
+              ↓
+Caddy reverse proxy + Let's Encrypt
+  ├─ api.vkho.vn        → Kong :8000
+  ├─ studio.vkho.vn     → Studio :3000 (basic-auth)
+  └─ *.vkho.vn          → Cloudflare DNS (giữ nguyên)
+```
+
+**Backup**: Backblaze B2 (~$0.005/GB) cho daily pg_dump + storage snapshot.
+
+---
+
+## Phase 1 — Migrate Schema + Data (snapshot lần 1)
+
+**1.1** Lấy connection string Postgres từ Lovable Cloud → Settings → Database
+(host: `db.rodpbhesrwykmpywiiyd.supabase.co:5432`).
+
+**1.2** Dump full (~30 phút):
+```bash
+pg_dump -h db.rodpbhesrwykmpywiiyd.supabase.co -U postgres \
+  --schema=public --schema=auth --schema=storage \
+  --no-owner --no-privileges -Fc -f full.dump
+```
+
+**1.3** Restore vào self-host:
+```bash
+pg_restore -h localhost -U postgres -d postgres \
+  --disable-triggers --no-owner --no-privileges full.dump
+psql -c "ANALYZE;"
+# Reset toàn bộ sequences về MAX(id)+1
+```
+
+**1.4** Verify bằng `scripts/verify-migration.sh` (so sánh COUNT 50 bảng + MAX(created_at) + auth.users count).
+
+---
+
+## Phase 2 — Migrate Storage
+
+```bash
+rclone copy supabase-cloud:bucket-name ./storage/ --transfers=16
+rclone copy ./storage/ supabase-self:bucket-name
+```
+Bucket policies đi kèm dump schema `storage` → tự động restore.
+
+---
+
+## Phase 3 — Edge Functions + Secrets
+
+**3.1** Deploy 65 functions:
+```bash
+for fn in supabase/functions/*/; do
+  supabase functions deploy "$(basename $fn)" --project-ref <self-host> --no-verify-jwt
+done
+```
+
+**3.2** Import secrets từ `all_env_secrets.json` (lọc bỏ `SUPABASE_*`):
+```bash
+jq -r '.env_secrets | to_entries[]
+  | select(.key | startswith("SUPABASE_") | not)
+  | "\(.key)=\(.value)"' all_env_secrets.json \
+  | xargs -I {} supabase secrets set {} --project-ref <self-host>
+```
+
+**3.3** Bổ sung AI key: `supabase secrets set OPENAI_API_KEY=sk-...`
+
+**3.4** Re-create pg_cron jobs trỏ về `https://api.vkho.vn/functions/v1/...`:
+- `daily-backup` (23:59 ICT)
+- `auto_checkout_expired` (5 phút/lần)
+- `run-automations`, `run-email-automations` (15 phút/lần)
+
+---
+
+## Phase 4 — Cutover (30 phút, đêm CN)
+
+| Time | Action |
+|---|---|
+| 23:00 | Bật maintenance banner |
+| 23:02 | Pause pg_cron Cloud + dừng webhook Zalo |
+| 23:05 | **Delta dump** 10 bảng nóng (`scripts/delta-dump.sh`) |
+| 23:15 | Restore delta + reset sequences |
+| 23:20 | Verify (COUNT, login test, tạo phiếu test) |
+| 23:25 | Đổi env Lovable: `VITE_SUPABASE_URL=https://api.vkho.vn` + `VITE_SUPABASE_PUBLISHABLE_KEY=<anon mới>` |
+| 23:28 | Update Google OAuth redirect → `https://api.vkho.vn/auth/v1/callback` |
+| 23:30 | Tắt maintenance, monitor 1 giờ |
+
+**⚠️ Side-effects**:
+- Toàn bộ user logout (JWT_SECRET mới) — gửi email báo trước 24h
+- Custom domains giữ nguyên DNS frontend → user không cảm nhận
+
+---
+
+## Phase 5 — Hậu kiểm (7 ngày)
+
+- [ ] Daily backup chạy được (verify trên B2)
+- [ ] Smoke test 10 functions critical
+- [ ] Báo cáo Dashboard chính xác
+- [ ] Push notification + Zalo OA hoạt động
+- [ ] `pg_stat_statements` không có query > 1s
+- [ ] Sau 7 ngày → pause Cloud project (giữ 30 ngày rollback)
+
+---
+
+## 🔧 Scripts đã build sẵn
+
+- `scripts/verify-migration.sh` — so sánh COUNT 50 bảng Cloud ↔ Self-host
+- `scripts/delta-dump.sh` — dump rows mới từ snapshot time cho 10 bảng nóng
+- `scripts/rollback.sh` — 1 lệnh đổi env về Cloud nếu cutover fail
+
+---
+
+## 💰 Chi phí vận hành
+
+| Hạng mục | $/tháng |
+|---|---|
+| Hetzner CCX23 | ~32 |
+| Block storage 160GB | ~6 |
+| Backblaze B2 backup 200GB | ~3 |
+| Cloudflare DNS | 0 |
+| **Tổng** | **~41** |
+
+---
+
+## ⚠️ Rủi ro & Mitigation
+
+| Rủi ro | Mitigation |
+|---|---|
+| Mất AI (LOVABLE_API_KEY) | Đăng ký OpenAI/Gemini key trước cutover |
+| Sequence chưa reset → duplicate ID | Script auto reset sau restore |
+| Storage URL public break | Giữ path identical, proxy qua Caddy |
+| pg_cron không chạy | Verify ngay sau cutover + alert Telegram |
+| VPS down | Snapshot daily + offsite B2 |
+
+---
+
+## ✅ Checklist Go/No-Go trước cutover
+
+- [ ] Schema khớp 100%
+- [ ] Data count khớp ≥ 99.99% (trừ delta)
+- [ ] Auth login test pass
+- [ ] ≥10 edge functions critical pass
+- [ ] Storage files accessible
+- [ ] Daily backup job chạy được
+- [ ] OpenAI/Gemini key đã set
+- [ ] Rollback script test thành công
+
+---
+
+# 📜 Phụ lục: Plan chi tiết ban đầu (giữ tham khảo)
+
+## Mục tiêu
 
 Mục tiêu: chuyển toàn bộ backend (DB Postgres + Auth + Storage + Edge Functions) hiện đang chạy trên Lovable Cloud (Supabase managed) sang một **Supabase self-host** trên VPS riêng, **giữ nguyên 100% dữ liệu**, **không gián đoạn dịch vụ quá 30 phút**, và frontend chỉ cần đổi `VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY`.
 
