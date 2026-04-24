@@ -865,12 +865,82 @@ export function RichTextEditor({
 
         <div className="w-px h-5 bg-border mx-1" />
 
-        <ToolbarButton onClick={() => execCommand('insertUnorderedList')} title="Danh sách">
-          <List className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton onClick={() => execCommand('insertOrderedList')} title="Danh sách số">
-          <ListOrdered className="h-4 w-4" />
-        </ToolbarButton>
+        {/* Bullet list with style dropdown */}
+        <div className="flex items-center">
+          <ToolbarButton onClick={() => { saveSelection(); execCommand('insertUnorderedList'); }} title="Danh sách dấu chấm">
+            <List className="h-4 w-4" />
+          </ToolbarButton>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="p-0.5 rounded hover:bg-muted transition-colors"
+                title="Chọn kiểu đầu dòng"
+                onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
+              >
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-44 p-1" align="start">
+              <div className="grid grid-cols-1 gap-0.5">
+                {[
+                  { label: '● Chấm tròn đặc', val: 'disc' },
+                  { label: '○ Chấm tròn rỗng', val: 'circle' },
+                  { label: '■ Hình vuông', val: 'square' },
+                  { label: '— Không dấu', val: 'none' },
+                ].map((opt) => (
+                  <button
+                    key={opt.val}
+                    type="button"
+                    onClick={() => applyListStyle(false, opt.val)}
+                    className="text-left text-sm px-2 py-1.5 rounded hover:bg-muted"
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Ordered list with style dropdown */}
+        <div className="flex items-center">
+          <ToolbarButton onClick={() => { saveSelection(); execCommand('insertOrderedList'); }} title="Danh sách số">
+            <ListOrdered className="h-4 w-4" />
+          </ToolbarButton>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="p-0.5 rounded hover:bg-muted transition-colors"
+                title="Chọn kiểu số thứ tự"
+                onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
+              >
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-44 p-1" align="start">
+              <div className="grid grid-cols-1 gap-0.5">
+                {[
+                  { label: '1. 2. 3.', val: 'decimal' },
+                  { label: 'a. b. c.', val: 'lower-alpha' },
+                  { label: 'A. B. C.', val: 'upper-alpha' },
+                  { label: 'i. ii. iii.', val: 'lower-roman' },
+                  { label: 'I. II. III.', val: 'upper-roman' },
+                ].map((opt) => (
+                  <button
+                    key={opt.val}
+                    type="button"
+                    onClick={() => applyListStyle(true, opt.val)}
+                    className="text-left text-sm px-2 py-1.5 rounded hover:bg-muted"
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
         <ToolbarButton onClick={() => execCommand('formatBlock', '<h3>')} title="Tiêu đề">
           <Heading2 className="h-4 w-4" />
         </ToolbarButton>
