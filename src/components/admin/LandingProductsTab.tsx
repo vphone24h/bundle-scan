@@ -291,6 +291,7 @@ export function LandingProductsTab() {
     student_discount_label: 'HỌC SINH SINH VIÊN',
     student_discount_text: '',
     installment_down_payment: null as number | null,
+    seo_description: '',
   });
   // Add badges to form - stored separately to avoid re-init issues
   const [formBadges, setFormBadges] = useState<string[]>([]);
@@ -352,6 +353,7 @@ export function LandingProductsTab() {
       warranty_title: 'BẢO HÀNH', warranty_content: '',
       package_selection_mode: 'multiple',
       student_discount_label: 'HỌC SINH SINH VIÊN', student_discount_text: '', installment_down_payment: null,
+      seo_description: '',
     });
     setShowBadges(false);
     setFormBadges([]);
@@ -395,6 +397,7 @@ export function LandingProductsTab() {
         student_discount_label: (detail as any).student_discount_label || 'HỌC SINH SINH VIÊN',
         student_discount_text: (detail as any).student_discount_text || '',
         installment_down_payment: (detail as any).installment_down_payment ?? null,
+        seo_description: (detail as any).seo_description || '',
       });
       setShowBadges(Array.isArray((detail as any).badges) && (detail as any).badges.length > 0);
       setFormBadges(Array.isArray((detail as any).badges) ? (detail as any).badges : []);
@@ -540,6 +543,7 @@ export function LandingProductsTab() {
         student_discount_label: form.student_discount_label || null,
         student_discount_text: form.student_discount_text || null,
         installment_down_payment: form.installment_down_payment,
+        seo_description: form.seo_description?.trim() || null,
       };
       if (editingProduct) {
         await updateProduct.mutateAsync({ id: editingProduct.id, ...payload });
