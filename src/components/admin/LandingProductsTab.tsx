@@ -63,6 +63,48 @@ const PRODUCT_BADGE_OPTIONS = [
   { id: 'preorder', label: '🚀 Pre-order', color: 'bg-violet-500', text: 'Pre-order' },
   { id: 'limited', label: '💎 Limited', color: 'bg-pink-600', text: 'Limited' },
   { id: 'exclusive', label: '👑 Độc quyền', color: 'bg-yellow-600', text: 'Độc quyền' },
+  // === Bán cực mạnh ===
+  { id: 'best_seller', label: '🏆 Bán chạy nhất', color: 'bg-red-700', text: 'Best Seller' },
+  { id: 'top_1', label: '🥇 Top 1 bán chạy', color: 'bg-yellow-500', text: 'TOP 1' },
+  { id: 'hot_deal', label: '🔥 Hot Deal', color: 'bg-orange-600', text: 'Hot Deal' },
+  { id: 'shock_deal', label: '⚡ Deal sốc', color: 'bg-red-500', text: 'Deal sốc' },
+  { id: 'good_price', label: '💵 Giá hời', color: 'bg-green-500', text: 'Giá hời' },
+  { id: 'worth_buy', label: '👌 Đáng mua', color: 'bg-emerald-600', text: 'Đáng mua' },
+  { id: 'many_buy', label: '🛒 Mua nhiều', color: 'bg-blue-600', text: 'Mua nhiều' },
+  // === FOMO ===
+  { id: 'almost_sold', label: '⏳ Sắp hết hàng', color: 'bg-orange-700', text: 'Sắp hết' },
+  { id: 'few_left', label: '📉 Chỉ còn vài cái', color: 'bg-red-600', text: 'Còn ít' },
+  { id: 'today_hot', label: '🌟 Bán chạy hôm nay', color: 'bg-amber-600', text: 'Hot hôm nay' },
+  { id: 'limited_deal', label: '🎯 Deal giới hạn', color: 'bg-rose-700', text: 'Deal giới hạn' },
+  { id: 'flash_sale', label: '⚡ Flash Sale 24h', color: 'bg-red-600', text: 'Flash Sale' },
+  { id: 'price_up_soon', label: '📈 Sắp tăng giá', color: 'bg-orange-600', text: 'Sắp tăng giá' },
+  // === Cao cấp ===
+  { id: 'premium', label: '💎 Cao cấp', color: 'bg-slate-800', text: 'Cao cấp' },
+  { id: 'premium_en', label: '✨ Premium', color: 'bg-zinc-800', text: 'Premium' },
+  { id: 'flagship', label: '🚩 Flagship', color: 'bg-neutral-900', text: 'Flagship' },
+  { id: 'super_product', label: '🌠 Siêu phẩm', color: 'bg-purple-700', text: 'Siêu phẩm' },
+  { id: 'must_own', label: '🎖️ Đáng sở hữu', color: 'bg-indigo-700', text: 'Đáng sở hữu' },
+  { id: 'top_tier', label: '🏔️ Đỉnh cao', color: 'bg-cyan-700', text: 'Đỉnh cao' },
+  // === Hỗ trợ quyết định ===
+  { id: 'high_rated', label: '⭐ Được đánh giá cao', color: 'bg-yellow-600', text: 'Đánh giá cao' },
+  { id: 'good_review', label: '📝 Review tốt', color: 'bg-lime-600', text: 'Review tốt' },
+  { id: 'customer_pick', label: '❤️ Khách chọn nhiều', color: 'bg-pink-500', text: 'Khách chọn' },
+  { id: 'staff_pick', label: '👨‍💼 Nhân viên khuyên dùng', color: 'bg-sky-600', text: 'NV khuyên dùng' },
+  { id: 'worth_money', label: '💯 Đáng tiền', color: 'bg-teal-600', text: 'Đáng tiền' },
+  // === Marketing nâng cao ===
+  { id: 'new_today', label: '📅 Mới về hôm nay', color: 'bg-fuchsia-600', text: 'Mới hôm nay' },
+  { id: 'just_updated', label: '🔄 Vừa cập nhật', color: 'bg-cyan-600', text: 'Vừa cập nhật' },
+  { id: 'rare', label: '🦄 Hàng hiếm', color: 'bg-violet-700', text: 'Hàng hiếm' },
+  { id: 'limited_stock', label: '📦 Limited stock', color: 'bg-rose-600', text: 'Limited stock' },
+  { id: 'unique', label: '🌈 Độc lạ', color: 'bg-pink-700', text: 'Độc lạ' },
+  { id: 'new_version', label: '🆕 Phiên bản mới', color: 'bg-blue-700', text: 'Bản mới' },
+  // === Giá & ưu đãi ===
+  { id: 'best_price', label: '💲 Giá tốt nhất', color: 'bg-green-700', text: 'Giá tốt nhất' },
+  { id: 'internal_price', label: '🔒 Giá nội bộ', color: 'bg-zinc-700', text: 'Giá nội bộ' },
+  { id: 'wholesale_price', label: '📊 Giá sỉ', color: 'bg-emerald-700', text: 'Giá sỉ' },
+  { id: 'combo_save', label: '🎁 Combo tiết kiệm', color: 'bg-amber-700', text: 'Combo' },
+  { id: 'free_gift', label: '🎀 Tặng kèm', color: 'bg-pink-600', text: 'Tặng kèm' },
+  { id: 'special_offer', label: '🎊 Ưu đãi riêng', color: 'bg-fuchsia-700', text: 'Ưu đãi riêng' },
 ];
 
 export { PRODUCT_BADGE_OPTIONS };
