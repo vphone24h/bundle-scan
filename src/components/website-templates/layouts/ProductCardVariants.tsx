@@ -207,7 +207,8 @@ export function ProductBadges({ badges }: { badges?: string[] }) {
         <div
           style={{
             position: 'relative',
-            background: `linear-gradient(135deg, #fbbf24 0%, ${baseColor} 55%, #b91c1c 100%)`,
+            // Dùng đúng màu của nhãn để đồng bộ với preview admin (không pha cam-đỏ cố định)
+            background: baseColor,
             color: '#fff',
             padding: '4px 12px',
             borderRadius: '999px',
@@ -233,8 +234,8 @@ export function ProductBadges({ badges }: { badges?: string[] }) {
               height: 0,
               borderTop: '8px solid transparent',
               borderBottom: '8px solid transparent',
-              [isRight ? 'borderRight' : 'borderLeft']: `10px solid #fbbf24`,
-              filter: 'drop-shadow(0 1px 2px rgba(220,38,38,0.4))',
+            [isRight ? 'borderRight' : 'borderLeft']: `10px solid ${baseColor}`,
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))',
             } as any}
           />
         </div>
