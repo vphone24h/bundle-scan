@@ -5029,6 +5029,7 @@ export type Database = {
           id: string
           image_url: string | null
           images: Json | null
+          installment_down_payment: number | null
           is_active: boolean | null
           is_featured: boolean | null
           is_sold_out: boolean
@@ -5038,6 +5039,8 @@ export type Database = {
           promotion_content: string | null
           promotion_title: string | null
           sale_price: number | null
+          student_discount_label: string | null
+          student_discount_text: string | null
           tenant_id: string
           updated_at: string
           variant_group_1_name: string | null
@@ -5059,6 +5062,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           images?: Json | null
+          installment_down_payment?: number | null
           is_active?: boolean | null
           is_featured?: boolean | null
           is_sold_out?: boolean
@@ -5068,6 +5072,8 @@ export type Database = {
           promotion_content?: string | null
           promotion_title?: string | null
           sale_price?: number | null
+          student_discount_label?: string | null
+          student_discount_text?: string | null
           tenant_id: string
           updated_at?: string
           variant_group_1_name?: string | null
@@ -5089,6 +5095,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           images?: Json | null
+          installment_down_payment?: number | null
           is_active?: boolean | null
           is_featured?: boolean | null
           is_sold_out?: boolean
@@ -5098,6 +5105,8 @@ export type Database = {
           promotion_content?: string | null
           promotion_title?: string | null
           sale_price?: number | null
+          student_discount_label?: string | null
+          student_discount_text?: string | null
           tenant_id?: string
           updated_at?: string
           variant_group_1_name?: string | null
