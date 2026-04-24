@@ -1722,7 +1722,33 @@ export function LandingProductsTab() {
                 {showBadges ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </Button>
               {showBadges && (
-                <div className="grid grid-cols-2 gap-1.5 p-3 bg-muted/50 rounded-lg">
+                <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
+                  {/* Khung preview vị trí nhãn */}
+                  <div>
+                    <p className="text-[10px] font-medium text-muted-foreground mb-1.5">👁️ Xem trước vị trí nhãn trên ảnh sản phẩm:</p>
+                    <div className="relative w-full aspect-[4/3] max-h-40 mx-auto rounded-lg border-2 border-dashed border-border bg-gradient-to-br from-background to-muted overflow-hidden">
+                      <div className="absolute inset-0 flex items-center justify-center text-[10px] text-muted-foreground/60">
+                        <ImagePlus className="h-6 w-6 opacity-40" />
+                      </div>
+                      {formBadges.map(id => {
+                        const opt = PRODUCT_BADGE_OPTIONS.find(o => o.id === id);
+                        const corner = BADGE_POSITION_MAP[id]?.corner;
+                        if (!opt || !corner) return null;
+                        const cornerCls =
+                          corner === 'tl' ? 'top-1.5 left-1.5' :
+                          corner === 'tr' ? 'top-1.5 right-1.5' :
+                          corner === 'bl' ? 'bottom-1.5 left-1.5' :
+                          'bottom-1.5 right-1.5';
+                        return (
+                          <span key={id} className={`absolute ${cornerCls} ${opt.color} text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-md animate-pulse`}>
+                            {opt.text}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1.5">
                   {(() => {
                     const cornerLabel: Record<string, string> = {
                       tl: '↖ Trên-Trái', tr: '↗ Trên-Phải', bl: '↙ Dưới-Trái', br: '↘ Dưới-Phải',
@@ -1763,9 +1789,10 @@ export function LandingProductsTab() {
                       );
                     });
                   })()}
-                  <p className="col-span-2 text-[10px] text-muted-foreground mt-1">
+                    <p className="col-span-2 text-[10px] text-muted-foreground mt-1">
                     Tối đa 3 nhãn. Mỗi nhãn có vị trí cố định (↖↗↙↘). Không thể chọn 2 nhãn cùng góc để tránh chồng lên nhau.
-                  </p>
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
