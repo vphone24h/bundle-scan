@@ -4964,12 +4964,63 @@ export type Database = {
           },
         ]
       }
+      landing_product_package_groups: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+          product_id: string
+          selection_mode: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+          product_id: string
+          selection_mode?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+          product_id?: string
+          selection_mode?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_product_package_groups_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "landing_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_product_package_groups_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       landing_product_packages: {
         Row: {
+          allow_quantity: boolean
           created_at: string
           description: string | null
           display_order: number
+          group_id: string | null
           id: string
+          image_url: string | null
           is_active: boolean
           is_default: boolean
           name: string
@@ -4979,10 +5030,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allow_quantity?: boolean
           created_at?: string
           description?: string | null
           display_order?: number
+          group_id?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           is_default?: boolean
           name: string
@@ -4992,10 +5046,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allow_quantity?: boolean
           created_at?: string
           description?: string | null
           display_order?: number
+          group_id?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           is_default?: boolean
           name?: string
@@ -5005,6 +5062,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "landing_product_packages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "landing_product_package_groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "landing_product_packages_product_id_fkey"
             columns: ["product_id"]
