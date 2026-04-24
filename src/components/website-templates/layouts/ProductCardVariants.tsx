@@ -72,7 +72,7 @@ export function InstallmentLine({ amount }: { amount?: number | null }) {
 // Shared badge overlay for product cards
 export function ProductBadges({ badges }: { badges?: string[] }) {
   if (!badges || badges.length === 0) return null;
-  const items = badges.slice(0, 2).map(b => PRODUCT_BADGE_OPTIONS.find(o => o.id === b)).filter(Boolean);
+  const items = badges.slice(0, 3).map(b => PRODUCT_BADGE_OPTIONS.find(o => o.id === b)).filter(Boolean);
   if (items.length === 0) return null;
 
   const getBadgeGradient = (opt: typeof PRODUCT_BADGE_OPTIONS[0]) => {
@@ -217,23 +217,32 @@ export function ProductBadges({ badges }: { badges?: string[] }) {
     );
   };
 
-  const renderBadge = (opt: typeof PRODUCT_BADGE_OPTIONS[0], idx: number) => {
-    const layout = BADGE_LAYOUT[opt.id] || { corner: (idx === 0 ? 'tl' : 'tr') as Corner, variant: 'pill' as Variant };
-    // If both badges land in the same corner, push the second to the opposite vertical
-    let corner = layout.corner;
-    if (idx === 1 && items[0]) {
-      const first = BADGE_LAYOUT[items[0]!.id]?.corner;
-      if (first === corner) {
-        const flip: Record<Corner, Corner> = { tl: 'br', tr: 'bl', bl: 'tr', br: 'tl' };
-        corner = flip[corner];
-      }
-    }
-    return layout.variant === 'flame'
-      ? <FlameBadge key={opt.id} opt={opt} corner={corner} />
-      : <PillBadge key={opt.id} opt={opt} corner={corner} />;
-  };
+  // Assign non-overlapping corners. Try preferred corner first; if taken, pick next free corner.
+  // Fallback order ensures spread: top-right, top-left, bottom-left, bottom-right.
+  const fallbackOrder: Corner[] = ['tr', 'tl', 'bl', 'br'];
+  const usedCorners = new Set<Corner>();
+  const assignments: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; corner: Corner; variant: Variant }[] = [];
 
-  return <>{items.map((opt, i) => renderBadge(opt!, i))}</>;
+  items.forEach((opt, idx) => {
+    const layout = BADGE_LAYOUT[opt!.id] || { corner: fallbackOrder[idx] as Corner, variant: 'pill' as Variant };
+    let corner = layout.corner;
+    if (usedCorners.has(corner)) {
+      const free = fallbackOrder.find(c => !usedCorners.has(c));
+      if (free) corner = free;
+    }
+    usedCorners.add(corner);
+    assignments.push({ opt: opt!, corner, variant: layout.variant });
+  });
+
+  return (
+    <>
+      {assignments.map(({ opt, corner, variant }) =>
+        variant === 'flame'
+          ? <FlameBadge key={opt.id} opt={opt} corner={corner} />
+          : <PillBadge key={opt.id} opt={opt} corner={corner} />,
+      )}
+    </>
+  );
 }
 
 interface ProductCardProps {
