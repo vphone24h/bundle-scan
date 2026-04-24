@@ -230,22 +230,22 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
   const getLuxuryCornerStyle = (corner: Corner) => {
     if (!isMobile) {
       switch (corner) {
-        case 'tl': return { top: 8, left: 8 };
-        case 'tr': return { top: 8, right: 8 };
-        case 'bl': return { bottom: 8, left: 8 };
-        case 'br': return { bottom: 8, right: 8 };
+        case 'tl': return { top: 8, left: 8, transform: 'scale(0.5)', transformOrigin: 'top left' };
+        case 'tr': return { top: 8, right: 8, transform: 'scale(0.5)', transformOrigin: 'top right' };
+        case 'bl': return { bottom: 8, left: 8, transform: 'scale(0.5)', transformOrigin: 'bottom left' };
+        case 'br': return { bottom: 8, right: 8, transform: 'scale(0.5)', transformOrigin: 'bottom right' };
       }
     }
 
     switch (corner) {
       case 'tl':
-        return { top: hasTopPair ? 30 : 6, left: 4, transform: 'scale(0.84)', transformOrigin: 'top left' };
+        return { top: 6, left: 4, transform: 'scale(0.42)', transformOrigin: 'top left' };
       case 'tr':
-        return { top: 5, right: 4, transform: 'scale(0.84)', transformOrigin: 'top right' };
+        return { top: 5, right: 4, transform: 'scale(0.42)', transformOrigin: 'top right' };
       case 'bl':
-        return { bottom: hasBottomPair ? 28 : 5, left: 4, transform: 'scale(0.84)', transformOrigin: 'bottom left' };
+        return { bottom: 5, left: 4, transform: 'scale(0.42)', transformOrigin: 'bottom left' };
       case 'br':
-        return { bottom: 5, right: 4, transform: 'scale(0.84)', transformOrigin: 'bottom right' };
+        return { bottom: 5, right: 4, transform: 'scale(0.42)', transformOrigin: 'bottom right' };
     }
   };
 
