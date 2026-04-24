@@ -9,6 +9,7 @@ import { PaymentFlowDialog } from '@/components/landing/PaymentFlowDialog';
 import { CTAButtonItem, getDefaultCTAButtons } from '@/components/admin/ProductDetailSectionManager';
 import { formatNumber } from '@/lib/formatNumber';
 import DOMPurify from 'dompurify';
+import { sanitizeRichHtml } from '@/lib/sanitizeRichHtml';
 import { LandingProduct, LandingProductVariant, VariantPriceEntry } from '@/hooks/useLandingProducts';
 import { usePublicProductPackages, LandingProductPackage } from '@/hooks/useLandingProducts';
 import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
@@ -611,8 +612,8 @@ export function ProductDetailPage({
                       <div className="px-3 py-2.5 font-semibold text-sm flex items-center gap-1.5" style={{ backgroundColor: primaryColor, color: 'white' }}>
                         🎁 {promotionTitle}
                       </div>
-                      <div className="p-3 text-sm prose prose-sm max-w-none"
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.promotion_content) }} />
+                      <div className="p-3 text-sm prose prose-sm max-w-none rte-content"
+                        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.promotion_content) }} />
                     </div>
                   );
                 case 'warranty':
@@ -622,8 +623,8 @@ export function ProductDetailPage({
                       <div className="px-3 py-2.5 font-semibold text-sm flex items-center gap-1.5 bg-gray-100">
                         <Shield className="h-4 w-4" /> {warrantyTitle}
                       </div>
-                      <div className="p-3 text-sm prose prose-sm max-w-none"
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.warranty_content) }} />
+                      <div className="p-3 text-sm prose prose-sm max-w-none rte-content"
+                        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.warranty_content) }} />
                     </div>
                   );
                 case 'storeInfo':
@@ -734,8 +735,8 @@ export function ProductDetailPage({
                       <div className="px-3 py-2.5 font-semibold text-sm bg-gray-100">
                         📝 MÔ TẢ SẢN PHẨM
                       </div>
-                      <div className="p-3 text-sm prose prose-sm max-w-none lg:prose-base lg:p-5"
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.description) }} />
+                      <div className="p-3 text-sm prose prose-sm max-w-none lg:prose-base lg:p-5 rte-content"
+                        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.description) }} />
                     </div>
                   );
                 case 'relatedProducts':

@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import DOMPurify from 'dompurify';
+import { sanitizeRichHtml } from '@/lib/sanitizeRichHtml';
 import { SetURLSearchParams, useLocation } from 'react-router-dom';
 import { QueryClient } from '@tanstack/react-query';
 import { buildProductPath, buildProductDetailPath, buildArticlePath, buildPagePath, extractProductIdFromPath, detectPageFromPath } from '@/lib/slugify';
@@ -1236,8 +1237,8 @@ export default function AppleStyleLandingTemplate({
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">{selectedArticle.title}</h1>
               <p className="text-xs text-[#86868b] mb-8">{format(new Date(selectedArticle.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}</p>
               {selectedArticle.content && (
-                <div className="prose prose-sm max-w-none [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-2xl [&_a]:underline" style={{ '--tw-prose-links': accentColor } as any}
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedArticle.content) }} />
+                <div className="prose prose-sm max-w-none rte-content [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-2xl [&_a]:underline" style={{ '--tw-prose-links': accentColor } as any}
+                  dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(selectedArticle.content) }} />
               )}
             </article>
           </div>
