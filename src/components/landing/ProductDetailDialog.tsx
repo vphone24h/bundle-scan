@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Gift, Star, Ticket, Link2, CreditCard, Shield, Search } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import DOMPurify from 'dompurify';
+import { sanitizeRichHtml } from '@/lib/sanitizeRichHtml';
 import { LandingProduct, LandingProductVariant, VariantPriceEntry } from '@/hooks/useLandingProducts';
 import { usePublicProductPackages, LandingProductPackage } from '@/hooks/useLandingProducts';
 import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
