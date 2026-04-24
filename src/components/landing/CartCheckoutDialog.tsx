@@ -229,21 +229,38 @@ export function CartCheckoutDialog({
                         <span className="text-xs text-muted-foreground">×</span>
                         <span className="text-xs font-medium" style={{ color: primaryColor }}>{formatNumber(item.price)}đ</span>
                       </div>
-                      {item.selectedPackages && item.selectedPackages.length > 0 && (
-                        <div className="mt-1.5 space-y-1 rounded-md border border-dashed bg-background/70 p-2">
-                          <p className="text-[11px] font-medium text-muted-foreground">Gói dịch vụ kèm theo</p>
-                          {item.selectedPackages.map(pkg => (
-                            <div key={pkg.id} className="flex justify-between text-[11px]">
-                              <span className="text-muted-foreground">• {pkg.name}</span>
-                              <span className="font-medium">{pkg.price > 0 ? `+${formatNumber(pkg.price)}đ` : 'Miễn phí'}</span>
+                      {item.selectedPackages && item.selectedPackages.length > 0 && (() => {
+                        const groupMap = new Map<string, typeof item.selectedPackages>();
+                        item.selectedPackages.forEach(pkg => {
+                          const gName = pkg.groupName || 'Gói dịch vụ kèm theo';
+                          const arr = groupMap.get(gName) || [];
+                          arr.push(pkg);
+                          groupMap.set(gName, arr);
+                        });
+                        const groups = Array.from(groupMap.entries());
+                        return (
+                          <div className="mt-1.5 space-y-1.5 rounded-md border border-dashed bg-background/70 p-2">
+                            {groups.map(([gName, pkgs]) => (
+                              <div key={gName} className="space-y-0.5">
+                                <p className="text-[11px] font-semibold text-muted-foreground">{gName}</p>
+                                {pkgs.map(pkg => {
+                                  const pq = pkg.quantity || 1;
+                                  return (
+                                    <div key={pkg.id} className="flex justify-between text-[11px]">
+                                      <span className="text-muted-foreground">• {pkg.name}{pq > 1 ? ` × ${pq}` : ''}</span>
+                                      <span className="font-medium">{pkg.price > 0 ? `+${formatNumber(pkg.price * pq)}đ` : 'Miễn phí'}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ))}
+                            <div className="flex justify-between border-t pt-1 text-[11px] font-medium">
+                              <span>Tổng dịch vụ kèm theo</span>
+                              <span>{item.packagesTotal && item.packagesTotal > 0 ? `+${formatNumber(item.packagesTotal * item.quantity)}đ` : '0đ'}</span>
                             </div>
-                          ))}
-                          <div className="flex justify-between border-t pt-1 text-[11px] font-medium">
-                            <span>Tổng gói DV</span>
-                            <span>{item.packagesTotal && item.packagesTotal > 0 ? `+${formatNumber(item.packagesTotal * item.quantity)}đ` : '0đ'}</span>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
                       <button onClick={() => cart.removeItem(item.itemKey)}
