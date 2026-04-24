@@ -4618,6 +4618,7 @@ export type Database = {
           is_featured: boolean | null
           is_featured_home: boolean
           is_published: boolean | null
+          seo_description: string | null
           slug: string | null
           summary: string | null
           tenant_id: string
@@ -4634,6 +4635,7 @@ export type Database = {
           is_featured?: boolean | null
           is_featured_home?: boolean
           is_published?: boolean | null
+          seo_description?: string | null
           slug?: string | null
           summary?: string | null
           tenant_id: string
@@ -4650,6 +4652,7 @@ export type Database = {
           is_featured?: boolean | null
           is_featured_home?: boolean
           is_published?: boolean | null
+          seo_description?: string | null
           slug?: string | null
           summary?: string | null
           tenant_id?: string
@@ -5039,6 +5042,7 @@ export type Database = {
           promotion_content: string | null
           promotion_title: string | null
           sale_price: number | null
+          seo_description: string | null
           student_discount_label: string | null
           student_discount_text: string | null
           tenant_id: string
@@ -5072,6 +5076,7 @@ export type Database = {
           promotion_content?: string | null
           promotion_title?: string | null
           sale_price?: number | null
+          seo_description?: string | null
           student_discount_label?: string | null
           student_discount_text?: string | null
           tenant_id: string
@@ -5105,6 +5110,7 @@ export type Database = {
           promotion_content?: string | null
           promotion_title?: string | null
           sale_price?: number | null
+          seo_description?: string | null
           student_discount_label?: string | null
           student_discount_text?: string | null
           tenant_id?: string
