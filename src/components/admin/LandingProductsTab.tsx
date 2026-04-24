@@ -1771,56 +1771,48 @@ export function LandingProductsTab() {
                           'bottom-1.5 right-1.5';
                         if (badgeStyle === 'luxury') {
                           const isRight = corner === 'tr' || corner === 'br';
-                          const DEEP: Record<string, { dark: string; mid: string }> = {
-                            new: { dark: '#5b1216', mid: '#8a1a23' },
-                            best_seller: { dark: '#0b2545', mid: '#16386b' },
-                            top_1: { dark: '#0b2545', mid: '#16386b' },
-                            many_buy: { dark: '#0b2545', mid: '#16386b' },
-                            genuine: { dark: '#0c3d2c', mid: '#125e43' },
-                            warranty: { dark: '#0c3d2c', mid: '#125e43' },
-                            quality: { dark: '#0c3d2c', mid: '#125e43' },
-                            premium: { dark: '#0c3d2c', mid: '#125e43' },
-                            hot: { dark: '#5b1216', mid: '#8a1a23' },
-                            sale: { dark: '#5b1216', mid: '#8a1a23' },
+                          const TONE: Record<string, { from: string; to: string; sealFrom: string; sealTo: string }> = {
+                            new:         { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
+                            hot:         { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
+                            sale:        { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
+                            best_seller: { from: '#3B82F6', to: '#1E3A8A', sealFrom: '#2563EB', sealTo: '#172554' },
+                            top_1:       { from: '#3B82F6', to: '#1E3A8A', sealFrom: '#2563EB', sealTo: '#172554' },
+                            many_buy:    { from: '#3B82F6', to: '#1E3A8A', sealFrom: '#2563EB', sealTo: '#172554' },
+                            genuine:     { from: '#22C55E', to: '#166534', sealFrom: '#15803D', sealTo: '#0B3F1F' },
+                            warranty:    { from: '#22C55E', to: '#166534', sealFrom: '#15803D', sealTo: '#0B3F1F' },
+                            quality:     { from: '#22C55E', to: '#166534', sealFrom: '#15803D', sealTo: '#0B3F1F' },
+                            premium:     { from: '#22C55E', to: '#166534', sealFrom: '#15803D', sealTo: '#0B3F1F' },
                           };
-                          const tone = DEEP[id] || { dark: '#1f1f1f', mid: '#3a3a3a' };
+                          const tone = TONE[id] || { from: '#1f1f1f', to: '#3a3a3a', sealFrom: '#2a2a2a', sealTo: '#111' };
                           return (
-                            <div key={id} className={`absolute ${cornerCls} flex items-center animate-pulse`} style={{ flexDirection: isRight ? 'row-reverse' : 'row', filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.35))' }}>
-                              {/* Medallion sò vàng, mặt cùng tone với ribbon */}
+                            <div key={id} className={`absolute ${cornerCls} flex items-center`} style={{ flexDirection: isRight ? 'row-reverse' : 'row', filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.4))' }}>
+                              {/* Medallion */}
                               <span style={{
-                                position: 'relative',
-                                width: 22, height: 22, borderRadius: '50%',
-                                background: `radial-gradient(circle at 35% 30%, ${tone.mid} 0%, ${tone.dark} 80%)`,
-                                boxShadow: `inset 0 0 0 1px #fbbf24, 0 0 0 1.5px #fde68a, 0 0 0 2px #a16207`,
+                                position: 'relative', width: 22, height: 22, borderRadius: '50%',
+                                background: `radial-gradient(circle at 32% 28%, ${tone.sealFrom} 0%, ${tone.sealTo} 85%)`,
+                                boxShadow: 'inset 0 0 0 1px #fbbf24, 0 0 0 1px #fde68a, 0 0 0 1.6px #92400e',
                                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                                 fontSize: 11, fontWeight: 700, color: '#fde68a',
                                 fontFamily: '"Playfair Display", Georgia, serif',
-                                [isRight ? 'marginLeft' : 'marginRight']: -6, zIndex: 3,
-                                textShadow: '0 1px 0 rgba(0,0,0,0.6)',
+                                [isRight ? 'marginLeft' : 'marginRight']: -7, zIndex: 3,
+                                textShadow: '0 1px 0 rgba(0,0,0,0.7)',
                               } as any}>
                                 {opt.text.charAt(0).toUpperCase()}
                               </span>
-                              {/* Ribbon: plate bạc/trắng bao ngoài + dải đậm + viền vàng */}
+                              {/* Ribbon */}
                               <span style={{
-                                background: 'linear-gradient(180deg, #ffffff 0%, #e5e7eb 55%, #cbd5e1 100%)',
-                                padding: 2,
-                                borderRadius: 4,
-                                display: 'inline-flex',
-                                boxShadow: '0 1px 2px rgba(0,0,0,0.25)',
+                                position: 'relative',
+                                background: `linear-gradient(135deg, ${tone.from} 0%, ${tone.to} 100%)`,
+                                padding: isRight ? '3px 8px 3px 12px' : '3px 12px 3px 8px',
+                                fontSize: 8.5, fontWeight: 800, color: '#fff',
+                                textTransform: 'uppercase', letterSpacing: '0.06em',
+                                borderRadius: 5,
+                                boxShadow: 'inset 0 0 0 1px #fbbf24, inset 0 0 0 1.6px rgba(146,64,14,0.5), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 1px rgba(0,0,0,0.4)',
+                                textShadow: '0 1px 1px rgba(0,0,0,0.55)',
+                                display: 'inline-flex', alignItems: 'center',
+                                fontFamily: '"Playfair Display", Georgia, serif',
                               }}>
-                                <span style={{
-                                  background: `linear-gradient(180deg, ${tone.mid} 0%, ${tone.dark} 100%)`,
-                                  padding: isRight ? '2px 7px 2px 10px' : '2px 10px 2px 7px',
-                                  fontSize: 8, fontWeight: 700, color: '#fde68a',
-                                  textTransform: 'uppercase', letterSpacing: '0.06em',
-                                  borderRadius: 3,
-                                  boxShadow: 'inset 0 0 0 1px #fbbf24, inset 0 -1px 1px rgba(0,0,0,0.35)',
-                                  textShadow: '0 1px 1px rgba(0,0,0,0.6)',
-                                  display: 'inline-flex', alignItems: 'center',
-                                  fontFamily: '"Playfair Display", Georgia, serif',
-                                }}>
-                                  {opt.text.toUpperCase()}
-                                </span>
+                                {opt.text.toUpperCase()}
                               </span>
                             </div>
                           );
