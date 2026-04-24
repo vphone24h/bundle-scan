@@ -17,9 +17,10 @@ import {
   LandingProductCategory,
   VariantOption,
   VariantPriceEntry,
-  useProductPackages,
-  useSaveProductPackages,
+  useProductPackageGroups,
+  useSavePackageGroups,
   LandingProductPackage,
+  PackageGroupWithItems,
 } from '@/hooks/useLandingProducts';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings } from '@/hooks/useTenantLanding';
@@ -240,29 +241,54 @@ export function LandingProductsTab() {
   const [loadingEditProductId, setLoadingEditProductId] = useState<string | null>(null);
   const [pendingVariantIdx, setPendingVariantIdx] = useState<number | null>(null);
   const [pendingVariantPriceIdx, setPendingVariantPriceIdx] = useState<number | null>(null);
-  // Packages state
-  const [packageForm, setPackageForm] = useState<Array<{ name: string; price: number; description: string; is_default: boolean; is_active: boolean }>>([]);
-  const savePackages = useSaveProductPackages();
+  // Multi-group packages state
+  type PkgItemForm = {
+    name: string;
+    price: number;
+    description: string;
+    image_url: string;
+    is_default: boolean;
+    is_active: boolean;
+    allow_quantity: boolean;
+  };
+  type PkgGroupForm = {
+    name: string;
+    selection_mode: 'single' | 'multiple';
+    items: PkgItemForm[];
+  };
+  const [groupsForm, setGroupsForm] = useState<PkgGroupForm[]>([]);
+  const savePackageGroups = useSavePackageGroups();
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
-  const { data: existingPackages } = useProductPackages(editingProductId);
+  const { data: existingGroups } = useProductPackageGroups(editingProductId);
+  const [pendingPkgImage, setPendingPkgImage] = useState<{ groupIdx: number; itemIdx: number } | null>(null);
+  const pkgImageRef = useRef<HTMLInputElement>(null);
 
   const categoryTree = useMemo(() => buildCategoryTree(categories || []), [categories]);
   const flatCategories = useMemo(() => flattenCategoriesForSelect(categoryTree), [categoryTree]);
 
   const customProductTabs = (landingSettings as any)?.custom_product_tabs || [];
 
-  // Load packages when editing a product
+  // Load groups when editing a product
   useEffect(() => {
-    if (existingPackages && editingProductId) {
-      setPackageForm(existingPackages.map(p => ({
-        name: p.name,
-        price: p.price,
-        description: p.description || '',
-        is_default: p.is_default,
-        is_active: p.is_active,
+    if (existingGroups && editingProductId) {
+      setGroupsForm(existingGroups.map(g => ({
+        // Migrate legacy: use saved package_selection_mode for ungrouped batch
+        name: g.isLegacy ? 'Gói bảo hành' : g.name,
+        selection_mode: g.isLegacy
+          ? ((form.package_selection_mode as 'single' | 'multiple') || 'multiple')
+          : g.selection_mode,
+        items: g.items.map(p => ({
+          name: p.name,
+          price: p.price,
+          description: p.description || '',
+          image_url: p.image_url || '',
+          is_default: p.is_default,
+          is_active: p.is_active,
+          allow_quantity: !!p.allow_quantity,
+        })),
       })));
     }
-  }, [existingPackages, editingProductId]);
+  }, [existingGroups, editingProductId]);
 
   const [form, setForm] = useState({
     name: '',
