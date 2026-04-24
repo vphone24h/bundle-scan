@@ -483,3 +483,33 @@ html, body, #root {
 .rich-text-content i, .rich-text-content em { font-style: italic; }
 .rich-text-content u { text-decoration: underline; }
 .rich-text-content p { margin: 4px 0; }
+
+/* ===== Đồng bộ hiển thị danh sách (bullet/numbered) Editor & Website ===== */
+.rte-content ul,
+.prose ul,
+[contenteditable="true"] ul {
+  list-style: disc outside;
+  padding-left: 1.5rem;
+  margin: 8px 0;
+}
+.rte-content ol,
+.prose ol,
+[contenteditable="true"] ol {
+  list-style: decimal outside;
+  padding-left: 1.5rem;
+  margin: 8px 0;
+}
+.rte-content li,
+.prose li,
+[contenteditable="true"] li {
+  margin: 2px 0;
+}
+/* Tôn trọng list-style-type inline (disc/circle/square/lower-alpha…) do toolbar gán */
+.rte-content ul[style*="list-style-type"],
+.rte-content ol[style*="list-style-type"],
+.prose ul[style*="list-style-type"],
+.prose ol[style*="list-style-type"],
+[contenteditable="true"] ul[style*="list-style-type"],
+[contenteditable="true"] ol[style*="list-style-type"] {
+  list-style-position: outside;
+}
