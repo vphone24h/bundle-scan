@@ -371,7 +371,7 @@ export function LandingProductsTab() {
   const openAddProduct = () => {
     setEditingProduct(null);
     setEditingProductId(null);
-    setPackageForm([]);
+    setGroupsForm([]);
     setForm({
       name: '', description: '', price: 0, sale_price: null, category_id: '_none_',
       image_url: '', images: [], is_featured: false, is_active: true, is_sold_out: false, variants: [], home_tab_ids: [],
