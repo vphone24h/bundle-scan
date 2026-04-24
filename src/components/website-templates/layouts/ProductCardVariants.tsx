@@ -630,7 +630,7 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
             lineHeight: 1,
           }}
         >
-          {(opt.text || 'V').trim().charAt(0).toUpperCase()}
+          {sealLetter}
         </span>
       </div>
     );
@@ -688,7 +688,7 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
             transform: 'skewX(-20deg)',
           }}
         />
-        <span style={{ position: 'relative', zIndex: 1 }}>{highlight}</span>
+        <span style={{ position: 'relative', zIndex: 1 }}>{displayText}</span>
         {subtitle && (
           <span
             style={{
