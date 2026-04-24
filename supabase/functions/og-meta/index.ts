@@ -129,7 +129,15 @@ const buildSeoDescription = (
   store: string,
   price?: number | null,
   originalDesc?: string | null,
+  seoDesc?: string | null,
 ): string => {
+  // 1. Highest priority: explicit SEO description set by the user
+  if (seoDesc && seoDesc.trim().length > 0) {
+    const clean = stripHtml(seoDesc).trim();
+    if (clean.length > 0) {
+      return clean.length <= 160 ? clean : clean.substring(0, 157) + "...";
+    }
+  }
   const cleanDesc = originalDesc ? stripHtml(originalDesc) : "";
   if (cleanDesc && cleanDesc.length > 30) {
     if (price && !cleanDesc.includes(formatPrice(price))) {
@@ -219,7 +227,7 @@ Deno.serve(async (req) => {
     } else {
       const { data: row } = await supabase
         .from("landing_products")
-        .select("id, name, description, image_url, price, sale_price")
+        .select("id, name, description, seo_description, image_url, price, sale_price")
         .eq("tenant_id", tenantId)
         .eq("id", id)
         .maybeSingle();
@@ -229,7 +237,7 @@ Deno.serve(async (req) => {
     if (data) {
       const price = data.sale_price || data.price;
       title = buildSeoTitle(data.name, storeName, price);
-      description = buildSeoDescription(data.name, storeName, price, data.description);
+      description = buildSeoDescription(data.name, storeName, price, data.description, data.seo_description);
       imageUrl = data.image_url || storeLogoUrl || "";
 
       // Product JSON-LD
@@ -278,7 +286,7 @@ Deno.serve(async (req) => {
     } else {
       const { data: row } = await supabase
         .from("landing_articles")
-        .select("id, title, summary, thumbnail_url, content, created_at")
+        .select("id, title, summary, seo_description, thumbnail_url, content, created_at")
         .eq("tenant_id", tenantId)
         .eq("id", id)
         .maybeSingle();
@@ -290,7 +298,11 @@ Deno.serve(async (req) => {
       const artSuffix = storeName ? ` | ${storeName}` : "";
       const artTitle = `${data.title}${artSuffix}`;
       title = artTitle.length <= 60 ? artTitle : data.title.substring(0, 57) + "...";
-      description = data.summary || (storeName ? `Đọc bài viết tại ${storeName}` : "");
+      // Priority: seo_description > summary > fallback
+      const rawDesc = (data.seo_description && data.seo_description.trim())
+        || (data.summary && data.summary.trim())
+        || (storeName ? `Đọc bài viết tại ${storeName}` : "");
+      description = stripHtml(rawDesc);
       if (description.length > 160) description = description.substring(0, 157) + "...";
       imageUrl = data.thumbnail_url || storeLogoUrl || "";
 
