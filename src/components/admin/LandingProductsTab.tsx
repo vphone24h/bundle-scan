@@ -1385,9 +1385,34 @@ export function LandingProductsTab() {
             {/* ===== ƯU ĐÃI HS-SV ===== */}
             <Separator />
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">🎓 Nhãn ưu đãi HS-SV (hiện trên thẻ sản phẩm)</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-sm font-semibold">🎓 Nhãn ưu đãi HS-SV (hiện trên thẻ sản phẩm)</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px] gap-1"
+                  onClick={() => {
+                    const source = (products || []).find((p: any) =>
+                      p.id !== editingProductId && (p.student_discount_text || p.student_discount_label)
+                    ) || (products || []).find((p: any) => p.id !== editingProductId);
+                    if (!source) {
+                      toast({ title: 'Chưa có sản phẩm nguồn', description: 'Cần ít nhất 1 sản phẩm khác đã cấu hình nhãn HS-SV.', variant: 'destructive' });
+                      return;
+                    }
+                    setForm(p => ({
+                      ...p,
+                      student_discount_label: (source as any).student_discount_label || 'HỌC SINH SINH VIÊN',
+                      student_discount_text: (source as any).student_discount_text || '',
+                    }));
+                    toast({ title: '✅ Đã đồng bộ', description: `Copy nhãn HS-SV từ "${(source as any).name}".` });
+                  }}
+                >
+                  🔄 Đồng bộ hệ thống
+                </Button>
+              </div>
               <p className="text-[10px] text-muted-foreground">
-                Nhãn đỏ hiển thị ngay vị trí "BEST SELLER" — viết hoa cho đẹp. Để trống nội dung nếu không hiển thị.
+                Nhãn đỏ hiển thị ngay vị trí "BEST SELLER" — viết hoa cho đẹp. Để trống nội dung nếu không hiển thị. Nút "Đồng bộ" sẽ copy nhãn từ sản phẩm đầu tiên đã cấu hình.
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
