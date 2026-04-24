@@ -15,6 +15,57 @@ function SoldOutOverlay() {
   );
 }
 
+// === STUDENT DISCOUNT BADGE ===
+// Tem đỏ kiểu "BEST SELLER" — nền đỏ, chữ trắng in hoa, bo góc nhẹ, có mũi tên ribbon bên phải
+export function StudentDiscountBadge({ label, text }: { label?: string | null; text?: string | null }) {
+  if (!text || !text.trim()) return null;
+  const title = (label || 'HỌC SINH SINH VIÊN').toUpperCase();
+  const content = text.toUpperCase();
+  return (
+    <div className="inline-flex items-stretch text-[10px] sm:text-[11px] font-extrabold text-white shadow-md select-none">
+      {/* Khối tiêu đề (đỏ đậm) */}
+      <div
+        className="px-2.5 py-1 rounded-l-md flex items-center"
+        style={{ background: '#dc2626', lineHeight: 1.05 }}
+      >
+        <span className="whitespace-pre-line text-center" style={{ letterSpacing: '0.02em' }}>
+          {title.split(' ').slice(0, 2).join(' ')}
+          {title.split(' ').length > 2 ? '\n' + title.split(' ').slice(2).join(' ') : ''}
+        </span>
+      </div>
+      {/* Khối nội dung (đỏ tươi) + ribbon đuôi tam giác */}
+      <div className="relative flex items-center px-2.5 py-1" style={{ background: '#ef4444' }}>
+        <span style={{ letterSpacing: '0.02em' }}>{content}</span>
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute',
+            right: -8,
+            top: 0,
+            bottom: 0,
+            width: 0,
+            height: 0,
+            borderTop: '13px solid transparent',
+            borderBottom: '13px solid transparent',
+            borderLeft: '8px solid #ef4444',
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// === INSTALLMENT LINE ===
+// Dòng "Hoặc trả trước XXX,000đ" hiển thị bên dưới giá
+export function InstallmentLine({ amount }: { amount?: number | null }) {
+  if (!amount || amount <= 0) return null;
+  return (
+    <p className="text-xs text-gray-600 mt-1">
+      Hoặc trả trước <span className="font-semibold text-red-600">{formatNumber(amount)}đ</span>
+    </p>
+  );
+}
+
 // Shared badge overlay for product cards
 export function ProductBadges({ badges }: { badges?: string[] }) {
   if (!badges || badges.length === 0) return null;
