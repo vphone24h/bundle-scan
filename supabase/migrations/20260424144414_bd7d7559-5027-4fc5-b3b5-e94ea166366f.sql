@@ -1,0 +1,1 @@
+ALTER TABLE public.landing_products ADD COLUMN IF NOT EXISTS badge_style text NOT NULL DEFAULT 'simple';
