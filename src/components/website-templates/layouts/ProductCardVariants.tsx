@@ -76,21 +76,46 @@ export function ProductBadges({ badges }: { badges?: string[] }) {
   if (items.length === 0) return null;
 
   const getBadgeGradient = (opt: typeof PRODUCT_BADGE_OPTIONS[0]) => {
+    // Đồng bộ với bảng màu Tailwind để khớp với preview admin
     const gradients: Record<string, string> = {
-      'bg-red-500': '#dc2626',
-      'bg-orange-500': '#ea580c',
-      'bg-pink-500': '#db2777',
-      'bg-blue-500': '#2563eb',
-      'bg-emerald-500': '#059669',
-      'bg-yellow-500': '#ca8a04',
-      'bg-violet-500': '#7c3aed',
-      'bg-teal-500': '#0d9488',
-      'bg-amber-600': '#d97706',
-      'bg-rose-600': '#e11d48',
-      'bg-indigo-500': '#4f46e5',
-      'bg-cyan-500': '#0891b2',
-      'bg-purple-600': '#9333ea',
-      'bg-fuchsia-500': '#c026d3',
+      // red
+      'bg-red-500': '#ef4444', 'bg-red-600': '#dc2626', 'bg-red-700': '#b91c1c',
+      // orange
+      'bg-orange-500': '#f97316', 'bg-orange-600': '#ea580c', 'bg-orange-700': '#c2410c',
+      // amber
+      'bg-amber-500': '#f59e0b', 'bg-amber-600': '#d97706', 'bg-amber-700': '#b45309',
+      // yellow
+      'bg-yellow-500': '#eab308', 'bg-yellow-600': '#ca8a04', 'bg-yellow-700': '#a16207',
+      // lime
+      'bg-lime-500': '#84cc16', 'bg-lime-600': '#65a30d', 'bg-lime-700': '#4d7c0f',
+      // green
+      'bg-green-500': '#22c55e', 'bg-green-600': '#16a34a', 'bg-green-700': '#15803d',
+      // emerald
+      'bg-emerald-500': '#10b981', 'bg-emerald-600': '#059669', 'bg-emerald-700': '#047857',
+      // teal
+      'bg-teal-500': '#14b8a6', 'bg-teal-600': '#0d9488', 'bg-teal-700': '#0f766e',
+      // cyan
+      'bg-cyan-500': '#06b6d4', 'bg-cyan-600': '#0891b2', 'bg-cyan-700': '#0e7490',
+      // sky
+      'bg-sky-500': '#0ea5e9', 'bg-sky-600': '#0284c7', 'bg-sky-700': '#0369a1',
+      // blue
+      'bg-blue-500': '#3b82f6', 'bg-blue-600': '#2563eb', 'bg-blue-700': '#1d4ed8',
+      // indigo
+      'bg-indigo-500': '#6366f1', 'bg-indigo-600': '#4f46e5', 'bg-indigo-700': '#4338ca',
+      // violet
+      'bg-violet-500': '#8b5cf6', 'bg-violet-600': '#7c3aed', 'bg-violet-700': '#6d28d9',
+      // purple
+      'bg-purple-500': '#a855f7', 'bg-purple-600': '#9333ea', 'bg-purple-700': '#7e22ce',
+      // fuchsia
+      'bg-fuchsia-500': '#d946ef', 'bg-fuchsia-600': '#c026d3', 'bg-fuchsia-700': '#a21caf',
+      // pink
+      'bg-pink-500': '#ec4899', 'bg-pink-600': '#db2777', 'bg-pink-700': '#be185d',
+      // rose
+      'bg-rose-500': '#f43f5e', 'bg-rose-600': '#e11d48', 'bg-rose-700': '#be123c',
+      // slate / zinc / neutral (dark premium)
+      'bg-slate-700': '#334155', 'bg-slate-800': '#1e293b', 'bg-slate-900': '#0f172a',
+      'bg-zinc-700': '#3f3f46', 'bg-zinc-800': '#27272a', 'bg-zinc-900': '#18181b',
+      'bg-neutral-700': '#404040', 'bg-neutral-800': '#262626', 'bg-neutral-900': '#171717',
     };
     return gradients[opt.color] || '#dc2626';
   };
@@ -182,7 +207,8 @@ export function ProductBadges({ badges }: { badges?: string[] }) {
         <div
           style={{
             position: 'relative',
-            background: `linear-gradient(135deg, #fbbf24 0%, ${baseColor} 55%, #b91c1c 100%)`,
+            // Dùng đúng màu của nhãn để đồng bộ với preview admin (không pha cam-đỏ cố định)
+            background: baseColor,
             color: '#fff',
             padding: '4px 12px',
             borderRadius: '999px',
@@ -208,8 +234,8 @@ export function ProductBadges({ badges }: { badges?: string[] }) {
               height: 0,
               borderTop: '8px solid transparent',
               borderBottom: '8px solid transparent',
-              [isRight ? 'borderRight' : 'borderLeft']: `10px solid #fbbf24`,
-              filter: 'drop-shadow(0 1px 2px rgba(220,38,38,0.4))',
+            [isRight ? 'borderRight' : 'borderLeft']: `10px solid ${baseColor}`,
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))',
             } as any}
           />
         </div>
