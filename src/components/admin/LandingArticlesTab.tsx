@@ -273,7 +273,7 @@ export function LandingArticlesTab() {
   // ─── Article CRUD ───
   const openAddArticle = () => {
     setEditingArticle(null);
-    setForm({ title: '', summary: '', content: '', category_id: '_none_', thumbnail_url: '', is_published: false, is_featured: false, is_featured_home: false });
+    setForm({ title: '', summary: '', content: '', category_id: '_none_', thumbnail_url: '', is_published: false, is_featured: false, is_featured_home: false, seo_description: '' });
     setArticleDialog(true);
   };
 
@@ -296,6 +296,7 @@ export function LandingArticlesTab() {
         is_published: detail.is_published,
         is_featured: detail.is_featured,
         is_featured_home: detail.is_featured_home,
+        seo_description: (detail as any).seo_description || '',
       });
       setArticleDialog(true);
     } catch (e: any) {
@@ -329,6 +330,7 @@ export function LandingArticlesTab() {
         is_published: form.is_published,
         is_featured: form.is_featured,
         is_featured_home: form.is_featured_home,
+        seo_description: form.seo_description?.trim() || null,
       };
       if (editingArticle) {
         await updateArticle.mutateAsync({ id: editingArticle.id, ...payload });
