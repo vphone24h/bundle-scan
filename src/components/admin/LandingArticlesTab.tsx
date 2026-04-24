@@ -579,6 +579,39 @@ export function LandingArticlesTab() {
               <Input value={form.summary} onChange={e => setForm(p => ({ ...p, summary: e.target.value }))} placeholder="Tóm tắt ngắn..." />
             </div>
             <div className="space-y-2">
+              <Label className="flex items-center justify-between">
+                <span>Mô tả SEO (Google search)</span>
+                <span className={cn(
+                  'text-xs font-normal',
+                  (form.seo_description?.length || 0) > 160 ? 'text-destructive' : 'text-muted-foreground'
+                )}>
+                  {form.seo_description?.length || 0}/160
+                </span>
+              </Label>
+              <textarea
+                value={form.seo_description}
+                onChange={e => setForm(p => ({ ...p, seo_description: e.target.value }))}
+                placeholder="Mô tả ngắn gọn nội dung bài viết, hiển thị trên Google tìm kiếm. Tối ưu 120-160 ký tự."
+                rows={2}
+                className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              {/* Google preview */}
+              {(form.title || form.seo_description) && (
+                <div className="rounded-md border bg-muted/30 p-3 space-y-0.5">
+                  <p className="text-[10px] uppercase text-muted-foreground tracking-wide mb-1">🔍 Xem trước trên Google</p>
+                  <p className="text-[11px] text-green-700 dark:text-green-500 truncate">
+                    {typeof window !== 'undefined' ? window.location.host : 'website.vn'} › tin-tuc
+                  </p>
+                  <p className="text-base text-blue-700 dark:text-blue-400 font-medium leading-snug line-clamp-1">
+                    {form.title || 'Tiêu đề bài viết'}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-snug line-clamp-2">
+                    {form.seo_description || form.summary || 'Mô tả SEO sẽ hiển thị ở đây...'}
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
               <Label>Ảnh đại diện</Label>
               <input ref={fileRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
               {form.thumbnail_url ? (
