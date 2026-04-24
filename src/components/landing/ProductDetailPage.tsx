@@ -353,7 +353,11 @@ export function ProductDetailPage({
       // Build packages note
       const selectedPkgs = selectedPackages;
       const packagesNote = selectedPkgs.length > 0
-        ? `[Gói DV: ${selectedPkgs.map(p => `${p.name} (+${formatNumber(p.price)}đ)`).join(', ')}]`
+        ? selectedPackagesByGroup
+            .map(([gName, pkgs]) =>
+              `[${gName}: ${pkgs.map(p => `${p.name}${p.quantity > 1 ? ` ×${p.quantity}` : ''} (+${formatNumber(p.price * p.quantity)}đ)`).join(', ')}]`
+            )
+            .join(' ')
         : '';
       const finalNote = [fullNote, packagesNote].filter(Boolean).join(' ');
       const orderPrice = displayPrice + packagesTotal;
