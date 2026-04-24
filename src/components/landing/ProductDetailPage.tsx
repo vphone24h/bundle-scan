@@ -99,6 +99,7 @@ export function ProductDetailPage({
   const [usePoints, setUsePoints] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const [selectedPackageIds, setSelectedPackageIds] = useState<Set<string>>(new Set());
+  const [packageQuantities, setPackageQuantities] = useState<Record<string, number>>({});
 
   // CTA Dialog states
   const [activeDialog, setActiveDialog] = useState<string | null>(null);
@@ -111,18 +112,32 @@ export function ProductDetailPage({
 
   const placeOrder = usePlaceLandingOrder();
 
-  // Fetch service packages
+  // Fetch service packages (grouped). Falls back gracefully to legacy flat list.
+  const { data: packageGroups } = usePublicProductPackageGroups(product?.id || null);
   const { data: productPackages } = usePublicProductPackages(product?.id || null);
+
+  // Flatten groups → all items with attached groupName for easy lookup
+  const allPackageItems = useMemo(() => {
+    const list: Array<LandingProductPackage & { _groupName: string; _groupId: string }> = [];
+    (packageGroups || []).forEach(g => {
+      g.items.forEach(it => list.push({ ...it, _groupName: g.name, _groupId: g.id }));
+    });
+    return list;
+  }, [packageGroups]);
 
   // Auto-select default packages
   useEffect(() => {
-    if (productPackages && productPackages.length > 0) {
-      const defaults = new Set(productPackages.filter(p => p.is_default).map(p => p.id));
+    if (allPackageItems.length > 0) {
+      const defaults = new Set(allPackageItems.filter(p => p.is_default).map(p => p.id));
       setSelectedPackageIds(defaults);
+      const qtys: Record<string, number> = {};
+      allPackageItems.forEach(it => { if (it.allow_quantity) qtys[it.id] = 1; });
+      setPackageQuantities(qtys);
     } else {
       setSelectedPackageIds(new Set());
+      setPackageQuantities({});
     }
-  }, [productPackages]);
+  }, [allPackageItems]);
 
   const [debouncedPhone, setDebouncedPhone] = useState('');
   useEffect(() => {
