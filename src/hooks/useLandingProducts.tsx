@@ -63,6 +63,7 @@ export interface LandingProduct {
   warranty_content: string | null;
   package_selection_mode: string;
   badges: string[];
+  badge_style?: 'simple' | 'luxury' | string;
   // Promotional fields
   student_discount_label?: string | null;
   student_discount_text?: string | null;
@@ -186,7 +187,7 @@ export function useReorderLandingProducts() {
 const LANDING_PRODUCT_LIST_SELECT = `
   id, tenant_id, category_id, name, price, sale_price,
   image_url, images, is_featured, is_active, is_sold_out,
-  display_order, badges, created_at, updated_at,
+  display_order, badges, badge_style, created_at, updated_at,
   student_discount_label, student_discount_text, installment_down_payment
 `;
 
