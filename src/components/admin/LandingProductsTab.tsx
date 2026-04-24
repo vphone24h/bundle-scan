@@ -42,6 +42,7 @@ import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { PriceInput } from '@/components/ui/price-input';
 import { ImportFromWarehouseDialog } from './ImportFromWarehouseDialog';
 import { ListPagination, paginateArray } from '@/components/ui/list-pagination';
+import { cn } from '@/lib/utils';
 
 // Badge options for products
 const PRODUCT_BADGE_OPTIONS = [
@@ -291,6 +292,7 @@ export function LandingProductsTab() {
     student_discount_label: 'HỌC SINH SINH VIÊN',
     student_discount_text: '',
     installment_down_payment: null as number | null,
+    seo_description: '',
   });
   // Add badges to form - stored separately to avoid re-init issues
   const [formBadges, setFormBadges] = useState<string[]>([]);
@@ -352,6 +354,7 @@ export function LandingProductsTab() {
       warranty_title: 'BẢO HÀNH', warranty_content: '',
       package_selection_mode: 'multiple',
       student_discount_label: 'HỌC SINH SINH VIÊN', student_discount_text: '', installment_down_payment: null,
+      seo_description: '',
     });
     setShowBadges(false);
     setFormBadges([]);
@@ -395,6 +398,7 @@ export function LandingProductsTab() {
         student_discount_label: (detail as any).student_discount_label || 'HỌC SINH SINH VIÊN',
         student_discount_text: (detail as any).student_discount_text || '',
         installment_down_payment: (detail as any).installment_down_payment ?? null,
+        seo_description: (detail as any).seo_description || '',
       });
       setShowBadges(Array.isArray((detail as any).badges) && (detail as any).badges.length > 0);
       setFormBadges(Array.isArray((detail as any).badges) ? (detail as any).badges : []);
@@ -540,6 +544,7 @@ export function LandingProductsTab() {
         student_discount_label: form.student_discount_label || null,
         student_discount_text: form.student_discount_text || null,
         installment_down_payment: form.installment_down_payment,
+        seo_description: form.seo_description?.trim() || null,
       };
       if (editingProduct) {
         await updateProduct.mutateAsync({ id: editingProduct.id, ...payload });
@@ -892,6 +897,40 @@ export function LandingProductsTab() {
                 <Label>Giá khuyến mãi</Label>
                 <PriceInput value={form.sale_price ?? 0} onChange={v => setForm(p => ({ ...p, sale_price: v || null }))} placeholder="Để trống nếu không" />
               </div>
+            </div>
+
+            {/* ===== MÔ TẢ SEO ===== */}
+            <div className="space-y-2">
+              <Label className="flex items-center justify-between">
+                <span>Mô tả SEO (Google search)</span>
+                <span className={cn(
+                  'text-xs font-normal',
+                  (form.seo_description?.length || 0) > 160 ? 'text-destructive' : 'text-muted-foreground'
+                )}>
+                  {form.seo_description?.length || 0}/160
+                </span>
+              </Label>
+              <textarea
+                value={form.seo_description}
+                onChange={e => setForm(p => ({ ...p, seo_description: e.target.value }))}
+                placeholder="VD: iPhone 17 Pro Max chính hãng VN/A, trả góp 0% lãi, bảo hành 12 tháng. Giao hàng nhanh toàn quốc."
+                rows={2}
+                className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              {(form.name || form.seo_description) && (
+                <div className="rounded-md border bg-muted/30 p-3 space-y-0.5">
+                  <p className="text-[10px] uppercase text-muted-foreground tracking-wide mb-1">🔍 Xem trước trên Google</p>
+                  <p className="text-[11px] text-green-700 dark:text-green-500 truncate">
+                    {typeof window !== 'undefined' ? window.location.host : 'website.vn'} › san-pham
+                  </p>
+                  <p className="text-base text-blue-700 dark:text-blue-400 font-medium leading-snug line-clamp-1">
+                    {form.name || 'Tên sản phẩm'}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-snug line-clamp-2">
+                    {form.seo_description || form.description || 'Mô tả SEO sẽ hiển thị ở đây...'}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* ===== BIẾN THỂ 2 CẤP ===== */}

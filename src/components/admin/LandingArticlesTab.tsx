@@ -165,6 +165,7 @@ export function LandingArticlesTab() {
   const [form, setForm] = useState({
     title: '', summary: '', content: '', category_id: '_none_',
     thumbnail_url: '', is_published: false, is_featured: false, is_featured_home: false,
+    seo_description: '',
   });
 
   const tree = useMemo(() => buildArticleCategoryTree(categories), [categories]);
@@ -272,7 +273,7 @@ export function LandingArticlesTab() {
   // ─── Article CRUD ───
   const openAddArticle = () => {
     setEditingArticle(null);
-    setForm({ title: '', summary: '', content: '', category_id: '_none_', thumbnail_url: '', is_published: false, is_featured: false, is_featured_home: false });
+    setForm({ title: '', summary: '', content: '', category_id: '_none_', thumbnail_url: '', is_published: false, is_featured: false, is_featured_home: false, seo_description: '' });
     setArticleDialog(true);
   };
 
@@ -295,6 +296,7 @@ export function LandingArticlesTab() {
         is_published: detail.is_published,
         is_featured: detail.is_featured,
         is_featured_home: detail.is_featured_home,
+        seo_description: (detail as any).seo_description || '',
       });
       setArticleDialog(true);
     } catch (e: any) {
@@ -328,6 +330,7 @@ export function LandingArticlesTab() {
         is_published: form.is_published,
         is_featured: form.is_featured,
         is_featured_home: form.is_featured_home,
+        seo_description: form.seo_description?.trim() || null,
       };
       if (editingArticle) {
         await updateArticle.mutateAsync({ id: editingArticle.id, ...payload });
@@ -574,6 +577,39 @@ export function LandingArticlesTab() {
             <div className="space-y-2">
               <Label>Tóm tắt</Label>
               <Input value={form.summary} onChange={e => setForm(p => ({ ...p, summary: e.target.value }))} placeholder="Tóm tắt ngắn..." />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center justify-between">
+                <span>Mô tả SEO (Google search)</span>
+                <span className={cn(
+                  'text-xs font-normal',
+                  (form.seo_description?.length || 0) > 160 ? 'text-destructive' : 'text-muted-foreground'
+                )}>
+                  {form.seo_description?.length || 0}/160
+                </span>
+              </Label>
+              <textarea
+                value={form.seo_description}
+                onChange={e => setForm(p => ({ ...p, seo_description: e.target.value }))}
+                placeholder="Mô tả ngắn gọn nội dung bài viết, hiển thị trên Google tìm kiếm. Tối ưu 120-160 ký tự."
+                rows={2}
+                className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              {/* Google preview */}
+              {(form.title || form.seo_description) && (
+                <div className="rounded-md border bg-muted/30 p-3 space-y-0.5">
+                  <p className="text-[10px] uppercase text-muted-foreground tracking-wide mb-1">🔍 Xem trước trên Google</p>
+                  <p className="text-[11px] text-green-700 dark:text-green-500 truncate">
+                    {typeof window !== 'undefined' ? window.location.host : 'website.vn'} › tin-tuc
+                  </p>
+                  <p className="text-base text-blue-700 dark:text-blue-400 font-medium leading-snug line-clamp-1">
+                    {form.title || 'Tiêu đề bài viết'}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-snug line-clamp-2">
+                    {form.seo_description || form.summary || 'Mô tả SEO sẽ hiển thị ở đây...'}
+                  </p>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Ảnh đại diện</Label>

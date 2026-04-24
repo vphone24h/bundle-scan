@@ -532,7 +532,11 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
         if (seoTitle.length > 60) seoTitle = prod.name.substring(0, 57) + '...';
         
         let seoDesc = prod.description || '';
-        if (!seoDesc || seoDesc.length < 30) {
+        // Ưu tiên seo_description do user nhập tay
+        const customSeo = (prod as any).seo_description?.trim();
+        if (customSeo) {
+          seoDesc = customSeo;
+        } else if (!seoDesc || seoDesc.length < 30) {
           seoDesc = `Mua ${prod.name}${price ? ` giá ${formatP(price)}đ` : ''}${storeName ? ` tại ${storeName}` : ''}. Giao hàng nhanh, bảo hành chính hãng.`;
         } else if (price && !seoDesc.includes(formatP(price))) {
           seoDesc = `${formatP(price)}đ - ${seoDesc}`;
@@ -548,7 +552,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
         const suffix = storeName ? ` | ${storeName}` : '';
         let artTitle = `${art.title}${suffix}`;
         if (artTitle.length > 60) artTitle = art.title.substring(0, 57) + '...';
-        const artDesc = art.summary || (storeName ? `Đọc bài viết tại ${storeName}` : '');
+        const artDesc = (art as any).seo_description?.trim() || art.summary || (storeName ? `Đọc bài viết tại ${storeName}` : '');
         return { title: artTitle, desc: artDesc.length > 160 ? artDesc.substring(0, 157) + '...' : artDesc, image: art.thumbnail_url || settings?.store_logo_url };
       }
     }
