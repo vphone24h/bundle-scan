@@ -468,12 +468,29 @@ export function RichTextEditor({
   }, [getCurrentCell, onChange]);
 
 
-  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    void 0;
-    return _handleImageUpload(e);
-  }, []);
+  const applyListStyle = useCallback((ordered: boolean, listStyleType: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
+    restoreSelection();
+    // Đảm bảo vùng chọn nằm trong list đúng loại
+    document.execCommand(ordered ? 'insertOrderedList' : 'insertUnorderedList');
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      let node: Node | null = sel.getRangeAt(0).startContainer;
+      while (node && node !== editor) {
+        if (node instanceof HTMLElement && (node.tagName === 'UL' || node.tagName === 'OL')) {
+          (node as HTMLElement).style.listStyleType = listStyleType;
+          break;
+        }
+        node = node.parentNode;
+      }
+    }
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
+    saveSelection();
+  }, [onChange, restoreSelection, saveSelection]);
 
-  const _handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
