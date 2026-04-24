@@ -335,11 +335,12 @@ export function LandingArticlesTab() {
       if (editingArticle) {
         await updateArticle.mutateAsync({ id: editingArticle.id, ...payload });
         toast({ title: 'Đã cập nhật bài viết' });
+        // Giữ popup mở khi cập nhật — chỉ đóng khi user nhấn nút X hoặc Huỷ
       } else {
         await createArticle.mutateAsync(payload);
         toast({ title: 'Đã thêm bài viết' });
+        setArticleDialog(false);
       }
-      setArticleDialog(false);
     } catch (e: any) {
       toast({ title: 'Lỗi', description: e.message, variant: 'destructive' });
     }

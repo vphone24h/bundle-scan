@@ -553,6 +553,7 @@ export function LandingProductsTab() {
           await savePackages.mutateAsync({ productId: editingProduct.id, tenantId, packages: packageForm.filter(p => p.name.trim()) });
         }
         toast({ title: 'Đã cập nhật sản phẩm' });
+        // Giữ popup mở khi cập nhật — chỉ đóng khi user nhấn nút X hoặc Huỷ
       } else {
         const created = await createProduct.mutateAsync(payload);
         // Save packages for new product
@@ -560,8 +561,8 @@ export function LandingProductsTab() {
           await savePackages.mutateAsync({ productId: (created as any).id, tenantId, packages: packageForm.filter(p => p.name.trim()) });
         }
         toast({ title: 'Đã thêm sản phẩm' });
+        setProductDialog(false);
       }
-      setProductDialog(false);
     } catch (e: any) {
       toast({ title: 'Lỗi', description: e.message, variant: 'destructive' });
     }
