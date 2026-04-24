@@ -1723,28 +1723,49 @@ export function LandingProductsTab() {
               </Button>
               {showBadges && (
                 <div className="grid grid-cols-2 gap-1.5 p-3 bg-muted/50 rounded-lg">
-                  {PRODUCT_BADGE_OPTIONS.map(opt => {
-                    const isActive = formBadges.includes(opt.id);
-                    const disabled = !isActive && formBadges.length >= 3;
-                    return (
-                      <label key={opt.id} className={`flex items-center gap-2 p-1.5 rounded-md cursor-pointer text-xs transition-colors ${isActive ? 'bg-primary/10 ring-1 ring-primary/30' : disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted'}`}>
-                        <Checkbox
-                          checked={isActive}
-                          disabled={disabled}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              if (formBadges.length < 3) setFormBadges(prev => [...prev, opt.id]);
-                            } else {
-                              setFormBadges(prev => prev.filter(b => b !== opt.id));
-                            }
-                          }}
-                        />
-                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-white text-[10px] font-bold ${opt.color}`}>{opt.text}</span>
-                        <span className="truncate">{opt.label.split(' ').slice(1).join(' ')}</span>
-                      </label>
-                    );
-                  })}
-                  <p className="col-span-2 text-[10px] text-muted-foreground mt-1">Tối đa 3 nhãn. Mỗi nhãn hiển thị ở 1 góc khác nhau trên ảnh, không chồng lên nhau.</p>
+                  {(() => {
+                    const cornerLabel: Record<string, string> = {
+                      tl: '↖ Trên-Trái', tr: '↗ Trên-Phải', bl: '↙ Dưới-Trái', br: '↘ Dưới-Phải',
+                    };
+                    // Tính các góc đã được chiếm bởi nhãn đang chọn
+                    const usedCorners = new Set<string>();
+                    formBadges.forEach(id => {
+                      const c = BADGE_POSITION_MAP[id]?.corner;
+                      if (c) usedCorners.add(c);
+                    });
+                    return PRODUCT_BADGE_OPTIONS.map(opt => {
+                      const isActive = formBadges.includes(opt.id);
+                      const corner = BADGE_POSITION_MAP[opt.id]?.corner;
+                      const cornerTaken = !isActive && corner ? usedCorners.has(corner) : false;
+                      const limitReached = !isActive && formBadges.length >= 3;
+                      const disabled = limitReached || cornerTaken;
+                      return (
+                        <label key={opt.id} className={`flex items-center gap-2 p-1.5 rounded-md cursor-pointer text-xs transition-colors ${isActive ? 'bg-primary/10 ring-1 ring-primary/30' : disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted'}`}
+                          title={cornerTaken ? `Góc ${cornerLabel[corner!]} đã được chọn bởi nhãn khác` : limitReached ? 'Tối đa 3 nhãn' : ''}
+                        >
+                          <Checkbox
+                            checked={isActive}
+                            disabled={disabled}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                if (formBadges.length < 3 && !cornerTaken) setFormBadges(prev => [...prev, opt.id]);
+                              } else {
+                                setFormBadges(prev => prev.filter(b => b !== opt.id));
+                              }
+                            }}
+                          />
+                          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-white text-[10px] font-bold ${opt.color}`}>{opt.text}</span>
+                          <span className="truncate flex-1">{opt.label.split(' ').slice(1).join(' ')}</span>
+                          {corner && (
+                            <span className="text-[9px] text-muted-foreground whitespace-nowrap">{cornerLabel[corner].split(' ')[0]}</span>
+                          )}
+                        </label>
+                      );
+                    });
+                  })()}
+                  <p className="col-span-2 text-[10px] text-muted-foreground mt-1">
+                    Tối đa 3 nhãn. Mỗi nhãn có vị trí cố định (↖↗↙↘). Không thể chọn 2 nhãn cùng góc để tránh chồng lên nhau.
+                  </p>
                 </div>
               )}
             </div>
