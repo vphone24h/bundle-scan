@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { PullToRefresh } from '@/components/layout/PullToRefresh';
 import DOMPurify from 'dompurify';
+import { sanitizeRichHtml } from '@/lib/sanitizeRichHtml';
 import { SetURLSearchParams, useLocation } from 'react-router-dom';
 import { buildProductPath, buildProductDetailPath, buildArticlePath, buildPagePath, extractProductIdFromPath, detectPageFromPath } from '@/lib/slugify';
 import { buildMetaShareUrl } from '@/lib/shareMetaUrl';
@@ -1658,9 +1659,9 @@ export default function UniversalStoreTemplate({
               <p className="text-xs text-[#86868b] mb-8">{format(new Date(selectedArticle.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}</p>
               {selectedArticle.content && (
                 <div
-                  className="prose prose-sm max-w-none [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-2xl [&_a]:underline"
+                  className="prose prose-sm max-w-none rte-content [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-2xl [&_a]:underline"
                   style={{ '--tw-prose-links': accentColor } as any}
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedArticle.content) }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(selectedArticle.content) }}
                 />
               )}
             </article>
