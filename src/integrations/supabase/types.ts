@@ -10119,6 +10119,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          seo_description: string
           summary: string
           thumbnail_url: string
           title: string
@@ -10133,6 +10134,7 @@ export type Database = {
           name: string
           price: number
           sale_price: number
+          seo_description: string
         }[]
       }
       generate_affiliate_code: { Args: never; Returns: string }
