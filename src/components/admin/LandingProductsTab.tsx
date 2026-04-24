@@ -367,6 +367,7 @@ export function LandingProductsTab() {
   });
   // Add badges to form - stored separately to avoid re-init issues
   const [formBadges, setFormBadges] = useState<string[]>([]);
+  const [badgeStyle, setBadgeStyle] = useState<'simple' | 'luxury'>('simple');
 
   const [showBadges, setShowBadges] = useState(false);
 
@@ -429,6 +430,7 @@ export function LandingProductsTab() {
     });
     setShowBadges(false);
     setFormBadges([]);
+    setBadgeStyle('simple');
     setProductDialog(true);
   };
 
@@ -473,6 +475,7 @@ export function LandingProductsTab() {
       });
       setShowBadges(Array.isArray((detail as any).badges) && (detail as any).badges.length > 0);
       setFormBadges(Array.isArray((detail as any).badges) ? (detail as any).badges : []);
+      setBadgeStyle(((detail as any).badge_style === 'luxury' ? 'luxury' : 'simple'));
       setProductDialog(true);
     } catch (e: any) {
       toast({ title: 'Lỗi tải sản phẩm', description: e.message, variant: 'destructive' });
@@ -601,6 +604,7 @@ export function LandingProductsTab() {
         is_sold_out: form.is_sold_out,
         variants: form.variants,
         badges: formBadges,
+        badge_style: badgeStyle,
         home_tab_ids: form.home_tab_ids,
         variant_group_1_name: form.variant_group_1_name,
         variant_group_2_name: form.variant_group_2_name,
@@ -1723,6 +1727,32 @@ export function LandingProductsTab() {
               </Button>
               {showBadges && (
                 <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
+                  {/* Chọn phong cách nhãn */}
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-semibold flex items-center gap-1.5">
+                      🎨 Phong cách nhãn
+                    </Label>
+                    <Select value={badgeStyle} onValueChange={(v) => setBadgeStyle(v as 'simple' | 'luxury')}>
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="simple">
+                          <div className="flex flex-col items-start">
+                            <span className="font-medium">✨ Đơn giản (Simple)</span>
+                            <span className="text-[10px] text-muted-foreground">Pill / Flame phẳng — gọn gàng, hiện đại</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="luxury">
+                          <div className="flex flex-col items-start">
+                            <span className="font-medium">👑 Sang trọng (Royal Luxe)</span>
+                            <span className="text-[10px] text-muted-foreground">Ribbon + huy hiệu vàng, gradient cao cấp</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   {/* Khung preview vị trí nhãn */}
                   <div>
                     <p className="text-[10px] font-medium text-muted-foreground mb-1.5">👁️ Xem trước vị trí nhãn trên ảnh sản phẩm:</p>
@@ -1739,6 +1769,22 @@ export function LandingProductsTab() {
                           corner === 'tr' ? 'top-1.5 right-1.5' :
                           corner === 'bl' ? 'bottom-1.5 left-1.5' :
                           'bottom-1.5 right-1.5';
+                        if (badgeStyle === 'luxury') {
+                          return (
+                            <span
+                              key={id}
+                              className={`absolute ${cornerCls} inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm shadow-md animate-pulse text-[8px] font-extrabold text-yellow-50`}
+                              style={{
+                                background: 'linear-gradient(135deg, #064e3b 0%, #047857 50%, #064e3b 100%)',
+                                border: '1px solid #facc15',
+                                textShadow: '0 1px 1px rgba(0,0,0,0.4)',
+                              }}
+                            >
+                              <span className="inline-block w-2.5 h-2.5 rounded-full bg-yellow-400 border border-yellow-600" />
+                              {opt.text.toUpperCase()}
+                            </span>
+                          );
+                        }
                         return (
                           <span key={id} className={`absolute ${cornerCls} ${opt.color} text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-md animate-pulse`}>
                             {opt.text}

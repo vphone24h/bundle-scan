@@ -5087,6 +5087,7 @@ export type Database = {
       }
       landing_products: {
         Row: {
+          badge_style: string
           badges: Json | null
           category_id: string | null
           created_at: string
@@ -5121,6 +5122,7 @@ export type Database = {
           warranty_title: string | null
         }
         Insert: {
+          badge_style?: string
           badges?: Json | null
           category_id?: string | null
           created_at?: string
@@ -5155,6 +5157,7 @@ export type Database = {
           warranty_title?: string | null
         }
         Update: {
+          badge_style?: string
           badges?: Json | null
           category_id?: string | null
           created_at?: string

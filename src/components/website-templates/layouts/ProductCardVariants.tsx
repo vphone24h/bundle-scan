@@ -135,10 +135,11 @@ export function InstallmentLine({ amount }: { amount?: number | null }) {
 }
 
 // Shared badge overlay for product cards
-export function ProductBadges({ badges }: { badges?: string[] }) {
+export function ProductBadges({ badges, style }: { badges?: string[]; style?: 'simple' | 'luxury' | string }) {
   if (!badges || badges.length === 0) return null;
   const items = badges.slice(0, 3).map(b => PRODUCT_BADGE_OPTIONS.find(o => o.id === b)).filter(Boolean);
   if (items.length === 0) return null;
+  const badgeStyle: 'simple' | 'luxury' = style === 'luxury' ? 'luxury' : 'simple';
 
   const getBadgeGradient = (opt: typeof PRODUCT_BADGE_OPTIONS[0]) => {
     // Đồng bộ với bảng màu Tailwind để khớp với preview admin
@@ -293,6 +294,82 @@ export function ProductBadges({ badges }: { badges?: string[] }) {
     );
   };
 
+  // === LUXURY (Royal Luxe) BADGE ===
+  // Inspired by ornate emerald + gold ribbons with a medallion seal.
+  // Used for both pill & flame slots when style === 'luxury'.
+  const LuxuryBadge = ({ opt, corner }: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; corner: Corner }) => {
+    const [, highlight] = splitLabel(opt.id, opt.text);
+    const baseColor = getBadgeGradient(opt);
+    // Build a deep, jewel-tone gradient from the badge color
+    const ribbonBg = `linear-gradient(135deg, ${baseColor} 0%, rgba(0,0,0,0.55) 50%, ${baseColor} 100%)`;
+    const isRight = corner === 'tr' || corner === 'br';
+    return (
+      <div className={`absolute z-10 animate-badge-pulse ${cornerClass(corner)}`}>
+        <div
+          className="flex items-stretch select-none"
+          style={{
+            filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.35))',
+            flexDirection: isRight ? 'row-reverse' : 'row',
+          }}
+        >
+          {/* Medallion seal */}
+          <div
+            className="relative flex items-center justify-center"
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle at 30% 30%, #fde68a 0%, #f59e0b 45%, #b45309 100%)',
+              border: '1.5px solid #92400e',
+              boxShadow: 'inset 0 0 4px rgba(0,0,0,0.3), 0 0 0 1px #fcd34d',
+              [isRight ? 'marginLeft' : 'marginRight']: -6,
+              zIndex: 2,
+            } as any}
+          >
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 900,
+                color: '#7c2d12',
+                fontFamily: 'Georgia, "Times New Roman", serif',
+                fontStyle: 'italic',
+                textShadow: '0 1px 0 rgba(255,255,255,0.4)',
+                lineHeight: 1,
+              }}
+            >
+              {(opt.text || 'V').trim().charAt(0).toUpperCase()}
+            </span>
+          </div>
+          {/* Ribbon body */}
+          <div
+            style={{
+              background: ribbonBg,
+              color: '#fff7ed',
+              padding: '5px 12px 5px 14px',
+              fontSize: 10.5,
+              fontWeight: 900,
+              letterSpacing: '0.06em',
+              border: '1px solid #fcd34d',
+              [isRight ? 'borderRight' : 'borderLeft']: 'none',
+              borderRadius: isRight ? '4px 0 0 4px' : '0 4px 4px 0',
+              clipPath: isRight
+                ? 'polygon(8px 0, 100% 0, 100% 100%, 8px 100%, 0 50%)'
+                : 'polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%)',
+              textShadow: '0 1px 1px rgba(0,0,0,0.5)',
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              lineHeight: 1.15,
+              textTransform: 'uppercase',
+            }}
+          >
+            {highlight}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Each badge has a FIXED corner (BADGE_POSITION_MAP). Nếu admin lỡ chọn 2 nhãn cùng góc,
   // chỉ giữ nhãn đầu tiên ở góc đó để không trồng lên nhau.
   const fallbackOrder: Corner[] = ['tr', 'tl', 'bl', 'br'];
@@ -309,7 +386,9 @@ export function ProductBadges({ badges }: { badges?: string[] }) {
   return (
     <>
       {assignments.map(({ opt, corner, variant }) =>
-        variant === 'flame'
+        badgeStyle === 'luxury'
+          ? <LuxuryBadge key={opt.id} opt={opt} corner={corner} />
+          : variant === 'flame'
           ? <FlameBadge key={opt.id} opt={opt} corner={corner} />
           : <PillBadge key={opt.id} opt={opt} corner={corner} />,
       )}
@@ -329,7 +408,7 @@ function AppleProductCard({ product, onClick, accentColor }: ProductCardProps) {
     <button onClick={onClick} className={`bg-[#f5f5f7] rounded-2xl overflow-hidden text-left group transition-all hover:shadow-lg w-full ${product.is_sold_out ? 'opacity-80' : ''}`}>
       <div className="relative overflow-hidden">
         {product.is_sold_out && <SoldOutOverlay />}
-        <ProductBadges badges={(product as any).badges} />
+        <ProductBadges badges={(product as any).badges} style={(product as any).badge_style} />
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
@@ -373,7 +452,7 @@ function TGDDProductCard({ product, onClick, accentColor }: ProductCardProps) {
   return (
     <button onClick={onClick} className={`bg-white rounded-xl border border-gray-200 overflow-hidden text-left group transition-all hover:shadow-xl hover:border-blue-300 w-full relative ${product.is_sold_out ? 'opacity-80' : ''}`}>
       {product.is_sold_out && <SoldOutOverlay />}
-        <ProductBadges badges={(product as any).badges} />
+        <ProductBadges badges={(product as any).badges} style={(product as any).badge_style} />
       {discount > 0 && (
         <div className="absolute top-0 right-0 z-10 bg-red-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-bl-xl">
           -{discount}%
@@ -424,7 +503,7 @@ function HasakiProductCard({ product, onClick, accentColor }: ProductCardProps) 
     <button onClick={onClick} className={`bg-white rounded-2xl overflow-hidden text-left group transition-all hover:shadow-lg w-full border border-pink-100/50 ${product.is_sold_out ? 'opacity-80' : ''}`}>
       <div className="relative overflow-hidden">
         {product.is_sold_out && <SoldOutOverlay />}
-        <ProductBadges badges={(product as any).badges} />
+        <ProductBadges badges={(product as any).badges} style={(product as any).badge_style} />
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
@@ -473,7 +552,7 @@ function NikeProductCard({ product, onClick, accentColor }: ProductCardProps) {
     <button onClick={onClick} className={`text-left group w-full ${product.is_sold_out ? 'opacity-80' : ''}`}>
       <div className="relative overflow-hidden rounded-xl bg-[#f5f5f5]">
         {product.is_sold_out && <SoldOutOverlay />}
-        <ProductBadges badges={(product as any).badges} />
+        <ProductBadges badges={(product as any).badges} style={(product as any).badge_style} />
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full aspect-[3/4] object-cover group-hover:scale-105 transition-transform duration-700" />
         ) : (
@@ -513,7 +592,7 @@ function LuxuryProductCard({ product, onClick, accentColor }: ProductCardProps) 
     <button onClick={onClick} className={`text-left group w-full ${product.is_sold_out ? 'opacity-80' : ''}`}>
       <div className="relative overflow-hidden bg-[#faf8f5] border border-amber-100/50">
         {product.is_sold_out && <SoldOutOverlay />}
-        <ProductBadges badges={(product as any).badges} />
+        <ProductBadges badges={(product as any).badges} style={(product as any).badge_style} />
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-700" />
         ) : (
@@ -552,7 +631,7 @@ function MinimalProductCard({ product, onClick, accentColor }: ProductCardProps)
     <button onClick={onClick} className={`bg-[#faf9f6] rounded-xl overflow-hidden text-left group transition-all hover:shadow-md w-full border border-stone-200/50 ${product.is_sold_out ? 'opacity-80' : ''}`}>
       <div className="relative overflow-hidden">
         {product.is_sold_out && <SoldOutOverlay />}
-        <ProductBadges badges={(product as any).badges} />
+        <ProductBadges badges={(product as any).badges} style={(product as any).badge_style} />
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
@@ -591,7 +670,7 @@ function ShopeeProductCard({ product, onClick, accentColor }: ProductCardProps) 
   return (
     <button onClick={onClick} className={`bg-white rounded-lg overflow-hidden text-left group transition-all hover:shadow-lg w-full border border-gray-200 relative ${product.is_sold_out ? 'opacity-80' : ''}`}>
       {product.is_sold_out && <SoldOutOverlay />}
-        <ProductBadges badges={(product as any).badges} />
+        <ProductBadges badges={(product as any).badges} style={(product as any).badge_style} />
       {discount > 0 && (
         <div className="absolute top-0 right-0 z-10 bg-gradient-to-br from-orange-500 to-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">
           -{discount}%
@@ -634,7 +713,7 @@ function OrganicProductCard({ product, onClick, accentColor }: ProductCardProps)
     <button onClick={onClick} className={`bg-white rounded-2xl overflow-hidden text-left group transition-all hover:shadow-md w-full border border-green-100 ${product.is_sold_out ? 'opacity-80' : ''}`}>
       <div className="relative overflow-hidden">
         {product.is_sold_out && <SoldOutOverlay />}
-        <ProductBadges badges={(product as any).badges} />
+        <ProductBadges badges={(product as any).badges} style={(product as any).badge_style} />
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (

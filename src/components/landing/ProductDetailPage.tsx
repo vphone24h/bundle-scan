@@ -492,7 +492,7 @@ export function ProductDetailPage({
         {allImages.length > 0 ? (
           <div className="relative bg-gray-50 lg:rounded-xl lg:overflow-hidden lg:border">
             {currentImageIndex === 0 && (
-              <ProductBadges badges={(product as any).badges} />
+              <ProductBadges badges={(product as any).badges} style={(product as any).badge_style} />
             )}
             <img
               src={allImages[currentImageIndex]}
