@@ -632,14 +632,17 @@ export function ProductDetailPage({
                     <div key="storeInfo" className="border rounded-lg p-3 bg-gray-50 space-y-2">
                       <h3 className="font-bold text-sm flex items-center gap-1.5">📞 Thông tin cửa hàng</h3>
                       {storeInfo?.name && <p className="text-sm font-medium">{storeInfo.name}</p>}
-                      {storeInfo?.address && <p className="text-xs text-gray-500">{storeInfo.address}</p>}
-                      {storeInfo?.phone && (
+                      {/* Khi không có chi nhánh, mới hiển thị địa chỉ/SĐT từ cấu hình chung để tránh trùng lặp */}
+                      {storeBranches.length === 0 && storeInfo?.address && (
+                        <p className="text-xs text-gray-500">{storeInfo.address}</p>
+                      )}
+                      {storeBranches.length === 0 && storeInfo?.phone && (
                         <a href={`tel:${storeInfo.phone}`} className="text-xs font-medium flex items-center gap-1" style={{ color: primaryColor }}>
                           <Phone className="h-3 w-3" /> {storeInfo.phone}
                         </a>
                       )}
                       {storeBranches.length > 0 && (
-                        <div className="border-t pt-2 mt-2 space-y-2">
+                        <div className="space-y-2">
                           {storeBranches.map((b, i) => (
                             <div key={i} className="space-y-0.5">
                               <p className="text-xs font-semibold">{b.name}</p>
