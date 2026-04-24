@@ -270,15 +270,34 @@ export function ProductDetailPage({
   const totalDiscount = selectedVoucherId ? voucherDiscount : (usePoints ? pointsDiscount : 0);
   const displayPrice = Math.max(0, basePrice - totalDiscount);
 
-  // Calculate packages total
+  // Calculate packages total — supports per-item quantity & group attribution
   const selectedPackages = useMemo(() => {
-    return (productPackages || []).filter(p => selectedPackageIds.has(p.id));
-  }, [productPackages, selectedPackageIds]);
+    return allPackageItems
+      .filter(p => selectedPackageIds.has(p.id))
+      .map(p => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        groupName: p._groupName,
+        quantity: p.allow_quantity ? Math.max(1, packageQuantities[p.id] || 1) : 1,
+      }));
+  }, [allPackageItems, selectedPackageIds, packageQuantities]);
 
-  const packagesTotal = useMemo(() => {
-    if (!productPackages) return 0;
-    return productPackages.filter(p => selectedPackageIds.has(p.id)).reduce((sum, p) => sum + p.price, 0);
-  }, [productPackages, selectedPackageIds]);
+  const packagesTotal = useMemo(
+    () => selectedPackages.reduce((sum, p) => sum + p.price * p.quantity, 0),
+    [selectedPackages]
+  );
+
+  // Group selected packages by groupName for bill display
+  const selectedPackagesByGroup = useMemo(() => {
+    const map = new Map<string, typeof selectedPackages>();
+    selectedPackages.forEach(p => {
+      const arr = map.get(p.groupName) || [];
+      arr.push(p);
+      map.set(p.groupName, arr);
+    });
+    return Array.from(map.entries());
+  }, [selectedPackages]);
 
   const handleSelectLegacyVariant = (i: number) => {
     const newIdx = selectedVariantIndex === i ? null : i;
