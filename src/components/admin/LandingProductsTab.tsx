@@ -575,17 +575,17 @@ export function LandingProductsTab() {
       };
       if (editingProduct) {
         await updateProduct.mutateAsync({ id: editingProduct.id, ...payload });
-        // Save packages
+        // Save package groups
         if (tenantId) {
-          await savePackages.mutateAsync({ productId: editingProduct.id, tenantId, packages: packageForm.filter(p => p.name.trim()) });
+          await savePackageGroups.mutateAsync({ productId: editingProduct.id, tenantId, groups: groupsForm });
         }
         toast({ title: 'Đã cập nhật sản phẩm' });
         // Giữ popup mở khi cập nhật — chỉ đóng khi user nhấn nút X hoặc Huỷ
       } else {
         const created = await createProduct.mutateAsync(payload);
-        // Save packages for new product
-        if (tenantId && (created as any)?.id && packageForm.length > 0) {
-          await savePackages.mutateAsync({ productId: (created as any).id, tenantId, packages: packageForm.filter(p => p.name.trim()) });
+        // Save package groups for new product
+        if (tenantId && (created as any)?.id && groupsForm.length > 0) {
+          await savePackageGroups.mutateAsync({ productId: (created as any).id, tenantId, groups: groupsForm });
         }
         toast({ title: 'Đã thêm sản phẩm' });
         setProductDialog(false);
