@@ -19,7 +19,8 @@ import { useLandingCart } from '@/hooks/useLandingCart';
 import { ContactFormDialog, BookingDialog, HotelBookingDialog, TrackOrderDialog, CheckWarrantyDialog, WriteReviewDialog, SupportDialog, CartDialog, PromotionInfoDialog, JoinMemberDialog } from '@/components/landing/CTAActionDialogs';
 import { toast } from 'sonner';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
-import { ProductBadges } from '@/components/website-templates/layouts/ProductCardVariants';
+import { ProductBadges, LayoutProductCard, getProductGridClass } from '@/components/website-templates/layouts/ProductCardVariants';
+import type { LayoutStyle } from '@/lib/industryConfig';
 
 interface BranchOption {
   id: string;
@@ -54,6 +55,7 @@ interface ProductDetailPageProps {
   detailSections?: ProductDetailSectionConfig[] | null;
   ctaButtons?: CTAButtonItem[] | null;
   websiteTemplate?: string | null;
+  layoutStyle?: LayoutStyle;
   relatedProducts?: LandingProduct[];
   recentlyViewedProducts?: LandingProduct[];
   onProductClick?: (p: LandingProduct) => void;
@@ -72,6 +74,7 @@ export function ProductDetailPage({
   detailSections,
   ctaButtons,
   websiteTemplate,
+  layoutStyle,
   relatedProducts = [],
   recentlyViewedProducts = [],
   onProductClick,
@@ -830,6 +833,27 @@ export function ProductDetailPage({
                   );
                 case 'relatedProducts':
                   if (relatedProducts.length === 0) return null;
+                  if (layoutStyle) {
+                    return (
+                      <div key="relatedProducts" id="related-products" data-section="relatedProducts">
+                        <h3 className="font-bold text-base mb-3 lg:text-xl">📦 Sản phẩm liên quan</h3>
+                        <div className="lg:hidden flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+                          {relatedProducts.slice(0, 10).map(rp => (
+                            <div key={rp.id} className="min-w-[160px] max-w-[180px] shrink-0">
+                              <LayoutProductCard layoutStyle={layoutStyle} product={rp} onClick={() => onProductClick?.(rp)} accentColor={primaryColor} />
+                            </div>
+                          ))}
+                        </div>
+                        <div className={`hidden lg:block`}>
+                          <div className={getProductGridClass(layoutStyle)}>
+                          {relatedProducts.slice(0, 10).map(rp => (
+                            <LayoutProductCard key={rp.id} layoutStyle={layoutStyle} product={rp} onClick={() => onProductClick?.(rp)} accentColor={primaryColor} />
+                          ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
                   return (
                     <div key="relatedProducts" id="related-products" data-section="relatedProducts">
                       <h3 className="font-bold text-base mb-3 lg:text-xl">📦 Sản phẩm liên quan</h3>
@@ -864,6 +888,27 @@ export function ProductDetailPage({
                   );
                 case 'recentlyViewed':
                   if (recentlyViewedProducts.length === 0) return null;
+                  if (layoutStyle) {
+                    return (
+                      <div key="recentlyViewed">
+                        <h3 className="font-bold text-base mb-3 lg:text-xl">👁️ Đã xem gần đây</h3>
+                        <div className="lg:hidden flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+                          {recentlyViewedProducts.slice(0, 10).map(rp => (
+                            <div key={rp.id} className="min-w-[160px] max-w-[180px] shrink-0">
+                              <LayoutProductCard layoutStyle={layoutStyle} product={rp} onClick={() => onProductClick?.(rp)} accentColor={primaryColor} />
+                            </div>
+                          ))}
+                        </div>
+                        <div className={`hidden lg:block`}>
+                          <div className={getProductGridClass(layoutStyle)}>
+                          {recentlyViewedProducts.slice(0, 10).map(rp => (
+                            <LayoutProductCard key={rp.id} layoutStyle={layoutStyle} product={rp} onClick={() => onProductClick?.(rp)} accentColor={primaryColor} />
+                          ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
                   return (
                     <div key="recentlyViewed">
                       <h3 className="font-bold text-base mb-3 lg:text-xl">👁️ Đã xem gần đây</h3>
