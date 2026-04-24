@@ -833,6 +833,25 @@ export function ProductDetailPage({
                   );
                 case 'relatedProducts':
                   if (relatedProducts.length === 0) return null;
+                  if (layoutStyle) {
+                    return (
+                      <div key="relatedProducts" id="related-products" data-section="relatedProducts">
+                        <h3 className="font-bold text-base mb-3 lg:text-xl">📦 Sản phẩm liên quan</h3>
+                        <div className="lg:hidden flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+                          {relatedProducts.slice(0, 10).map(rp => (
+                            <div key={rp.id} className="min-w-[160px] max-w-[180px] shrink-0">
+                              <LayoutProductCard layoutStyle={layoutStyle} product={rp} onClick={() => onProductClick?.(rp)} accentColor={primaryColor} />
+                            </div>
+                          ))}
+                        </div>
+                        <div className={`hidden lg:grid ${getProductGridClass(layoutStyle)}`}>
+                          {relatedProducts.slice(0, 10).map(rp => (
+                            <LayoutProductCard key={rp.id} layoutStyle={layoutStyle} product={rp} onClick={() => onProductClick?.(rp)} accentColor={primaryColor} />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
                   return (
                     <div key="relatedProducts" id="related-products" data-section="relatedProducts">
                       <h3 className="font-bold text-base mb-3 lg:text-xl">📦 Sản phẩm liên quan</h3>
@@ -867,6 +886,25 @@ export function ProductDetailPage({
                   );
                 case 'recentlyViewed':
                   if (recentlyViewedProducts.length === 0) return null;
+                  if (layoutStyle) {
+                    return (
+                      <div key="recentlyViewed">
+                        <h3 className="font-bold text-base mb-3 lg:text-xl">👁️ Đã xem gần đây</h3>
+                        <div className="lg:hidden flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+                          {recentlyViewedProducts.slice(0, 10).map(rp => (
+                            <div key={rp.id} className="min-w-[160px] max-w-[180px] shrink-0">
+                              <LayoutProductCard layoutStyle={layoutStyle} product={rp} onClick={() => onProductClick?.(rp)} accentColor={primaryColor} />
+                            </div>
+                          ))}
+                        </div>
+                        <div className={`hidden lg:grid ${getProductGridClass(layoutStyle)}`}>
+                          {recentlyViewedProducts.slice(0, 10).map(rp => (
+                            <LayoutProductCard key={rp.id} layoutStyle={layoutStyle} product={rp} onClick={() => onProductClick?.(rp)} accentColor={primaryColor} />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
                   return (
                     <div key="recentlyViewed">
                       <h3 className="font-bold text-base mb-3 lg:text-xl">👁️ Đã xem gần đây</h3>
