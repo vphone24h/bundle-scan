@@ -34,7 +34,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, ChevronUp, Folder, FolderOpen, Pencil, Eye, EyeOff, ArrowUp, ArrowDown, CalendarDays } from 'lucide-react';
+import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, ChevronUp, Folder, FolderOpen, Pencil, Eye, EyeOff, ArrowUp, ArrowDown, CalendarDays, Tag, Check } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { BlockedDatesCalendar } from './BlockedDatesCalendar';
 import { Separator } from '@/components/ui/separator';
@@ -43,6 +43,7 @@ import { PriceInput } from '@/components/ui/price-input';
 import { ImportFromWarehouseDialog } from './ImportFromWarehouseDialog';
 import { ListPagination, paginateArray } from '@/components/ui/list-pagination';
 import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // Badge options for products
 const PRODUCT_BADGE_OPTIONS = [
