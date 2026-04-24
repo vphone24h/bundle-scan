@@ -219,10 +219,11 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
 
   const cornerClass = (c: Corner) => {
     switch (c) {
-      case 'tl': return 'top-2 left-2';
-      case 'tr': return 'top-2 right-2';
-      case 'bl': return 'bottom-2 left-2';
-      case 'br': return 'bottom-2 right-2';
+      // Simple style: hug the image edge (flush), only outer side will be rounded
+      case 'tl': return 'top-3 left-0';
+      case 'tr': return 'top-3 right-0';
+      case 'bl': return 'bottom-3 left-0';
+      case 'br': return 'bottom-3 right-0';
     }
   };
 
@@ -250,15 +251,22 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
 
   const PillBadge = ({ opt, corner }: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; corner: Corner }) => {
     const [prefix, highlight] = splitLabel(opt.id, opt.text);
+    const isLeft = corner === 'tl' || corner === 'bl';
+    // Flush against the card edge: square corners on the edge side, rounded on the outer side
+    const borderRadius = isLeft
+      ? '0 999px 999px 0'
+      : '999px 0 0 999px';
     return (
       <div
         className={`absolute z-10 animate-badge-pulse flex items-center gap-1 ${cornerClass(corner)}`}
         style={{
           background: getBadgeGradient(opt),
           color: '#fff',
-          padding: '4px 10px',
-          borderRadius: '999px',
-          boxShadow: '0 2px 6px rgba(0,0,0,0.18)',
+          padding: isLeft ? '5px 14px 5px 10px' : '5px 10px 5px 14px',
+          borderRadius,
+          boxShadow: isLeft
+            ? '2px 3px 8px rgba(0,0,0,0.22)'
+            : '-2px 3px 8px rgba(0,0,0,0.22)',
           lineHeight: 1.1,
           letterSpacing: '0.02em',
           whiteSpace: 'nowrap',
