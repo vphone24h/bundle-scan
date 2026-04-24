@@ -144,22 +144,7 @@ export function ProductBadges({ badges }: { badges?: string[] }) {
   // Each badge has its own corner + visual style so multiple badges never overlap
   type Corner = 'tl' | 'tr' | 'bl' | 'br';
   type Variant = 'pill' | 'flame';
-  const BADGE_LAYOUT: Record<string, { corner: Corner; variant: Variant }> = {
-    new:        { corner: 'tl', variant: 'pill' },
-    hot:        { corner: 'tr', variant: 'flame' },
-    sale:       { corner: 'bl', variant: 'flame' },
-    deal:       { corner: 'bl', variant: 'flame' },
-    clearance:  { corner: 'bl', variant: 'flame' },
-    trending:   { corner: 'tr', variant: 'pill' },
-    popular:    { corner: 'br', variant: 'pill' },
-    best_choice:{ corner: 'br', variant: 'pill' },
-    genuine:    { corner: 'tl', variant: 'pill' },
-    warranty:   { corner: 'br', variant: 'pill' },
-    quality:    { corner: 'br', variant: 'pill' },
-    preorder:   { corner: 'tr', variant: 'pill' },
-    limited:    { corner: 'bl', variant: 'flame' },
-    exclusive:  { corner: 'tl', variant: 'pill' },
-  };
+  const BADGE_LAYOUT = BADGE_POSITION_MAP;
 
   const cornerClass = (c: Corner) => {
     switch (c) {
