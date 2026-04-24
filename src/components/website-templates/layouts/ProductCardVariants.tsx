@@ -37,7 +37,6 @@ export const BADGE_POSITION_MAP: Record<string, { corner: BadgeCorner; variant: 
 
   // === BOTTOM-RIGHT (br): Cao cấp / Chất lượng / Bảo hành / Chính hãng ===
   genuine:        { corner: 'br', variant: 'pill' },
-  warranty:       { corner: 'br', variant: 'pill' },
   quality:        { corner: 'br', variant: 'pill' },
   premium:        { corner: 'br', variant: 'pill' },
   premium_en:     { corner: 'br', variant: 'pill' },
@@ -67,6 +66,7 @@ export const BADGE_POSITION_MAP: Record<string, { corner: BadgeCorner; variant: 
   combo_save:     { corner: 'bl', variant: 'pill' },
   free_gift:      { corner: 'bl', variant: 'pill' },
   special_offer:  { corner: 'bl', variant: 'pill' },
+  warranty:       { corner: 'bl', variant: 'pill' },
 };
 
 // Shared sold-out overlay
