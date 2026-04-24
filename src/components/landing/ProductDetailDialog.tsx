@@ -551,8 +551,8 @@ export function ProductDetailDialog({
               <div className="px-3 py-2 font-semibold text-sm flex items-center gap-1.5" style={{ backgroundColor: primaryColor, color: 'white' }}>
                 🎁 {promotionTitle}
               </div>
-              <div className="p-3 text-sm prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.promotion_content) }} />
+              <div className="p-3 text-sm prose prose-sm max-w-none rte-content"
+                dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.promotion_content) }} />
             </div>
           )}
 
@@ -562,8 +562,8 @@ export function ProductDetailDialog({
               <div className="px-3 py-2 font-semibold text-sm flex items-center gap-1.5 bg-muted">
                 <Shield className="h-4 w-4" /> {warrantyTitle}
               </div>
-              <div className="p-3 text-sm prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.warranty_content) }} />
+              <div className="p-3 text-sm prose prose-sm max-w-none rte-content"
+                dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.warranty_content) }} />
             </div>
           )}
 
@@ -573,8 +573,8 @@ export function ProductDetailDialog({
               <div className="px-3 py-2 font-semibold text-sm bg-muted">
                 📝 MÔ TẢ SẢN PHẨM
               </div>
-              <div className="p-3 text-sm prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.description) }} />
+              <div className="p-3 text-sm prose prose-sm max-w-none rte-content"
+                dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.description) }} />
             </div>
           )}
 
