@@ -63,7 +63,7 @@ export interface LandingProduct {
   warranty_content: string | null;
   package_selection_mode: string;
   badges: string[];
-  badge_style?: 'simple' | 'luxury' | string;
+  badge_style?: 'simple' | 'luxury' | 'modern' | string;
   // Promotional fields
   student_discount_label?: string | null;
   student_discount_text?: string | null;
