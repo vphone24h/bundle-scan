@@ -406,10 +406,11 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
     placeholderData: cachedPlaceholder ?? undefined,
     retry: (failureCount, error) => isRetryableLandingError(error) && failureCount < 5,
     retryDelay: (attempt) => Math.min(800 * 2 ** attempt, 6000),
-    staleTime: 1000 * 60 * 2,
+    staleTime: 0,
     gcTime: 1000 * 60 * 10,
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
   });
 }
 
@@ -456,6 +457,19 @@ export function useUpdateTenantLandingSettings() {
       queryClient.invalidateQueries({ queryKey: ['tenant-landing-settings'] });
       // Clear public landing localStorage cache so website reflects changes immediately
       clearAllPublicLandingCache();
+      if (typeof window !== 'undefined') {
+        try {
+          const sessionKeys = Object.keys(window.sessionStorage).filter(
+            (key) => key.startsWith('__store_prefetch_v1__:')
+          );
+          sessionKeys.forEach((key) => window.sessionStorage.removeItem(key));
+        } catch {
+          // Ignore storage errors
+        }
+      }
+      queryClient.removeQueries({ queryKey: ['public-landing-settings'] });
+      queryClient.removeQueries({ queryKey: ['public-landing-products'] });
+      queryClient.removeQueries({ queryKey: ['public-landing-articles'] });
     },
   });
 }
