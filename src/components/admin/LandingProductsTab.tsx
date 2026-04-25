@@ -1738,13 +1738,24 @@ export function LandingProductsTab() {
 
             {/* Product Badges */}
             <div className="space-y-2">
-              <Button type="button" variant="ghost" size="sm" className="w-full justify-between text-sm font-medium px-0"
-                onClick={() => setShowBadges(!showBadges)}>
-                <span>🏷️ Nhãn sản phẩm {formBadges.length > 0 && `(${formBadges.length}/3)`}</span>
-                {showBadges ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full justify-between text-sm font-medium border-primary/40 bg-primary/5 hover:bg-primary/10 text-primary"
+                onClick={handleToggleBadges}
+                aria-expanded={showBadges}
+              >
+                <span className="flex items-center gap-2">
+                  🏷️ Nhãn sản phẩm {formBadges.length > 0 && `(${formBadges.length}/3)`}
+                  {!showBadges && (
+                    <span className="text-[10px] font-normal text-muted-foreground">— nhấn để mở</span>
+                  )}
+                </span>
+                {showBadges ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4 animate-pulse" />}
               </Button>
               {showBadges && (
-                <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
+                <div ref={badgesPanelRef} className="space-y-3 p-3 bg-muted/50 rounded-lg scroll-mt-4">
                   {/* Chọn phong cách nhãn */}
                   <div className="space-y-1.5">
                     <Label className="text-[11px] font-semibold flex items-center gap-1.5">
