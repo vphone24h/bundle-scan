@@ -114,6 +114,12 @@ function preloadAdminPages() {
 
 const NON_PERSISTED_QUERY_ROOTS = new Set(['report-stats', 'dashboard-stats']);
 
+function shouldPersistQueryRoot(rootKey: string) {
+  if (!rootKey) return false;
+  if (rootKey.startsWith('public-')) return false;
+  return !NON_PERSISTED_QUERY_ROOTS.has(rootKey);
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -214,11 +220,11 @@ const App = () => (
     persistOptions={{
       persister,
       maxAge: 1000 * 60 * 60 * 24,
-      buster: 'v8-report-cache-fix',
+      buster: 'v9-public-sync-fix',
       dehydrateOptions: {
         shouldDehydrateQuery: (query) => {
           const rootKey = Array.isArray(query.queryKey) ? query.queryKey[0] : query.queryKey;
-          return !NON_PERSISTED_QUERY_ROOTS.has(String(rootKey));
+          return shouldPersistQueryRoot(String(rootKey));
         },
       },
     }}
