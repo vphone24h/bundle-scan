@@ -198,7 +198,11 @@
             if (cached && (Date.now() - cached.savedAt) < CACHE_TTL && cached.payload) {
               hadFreshCache = true;
               window.__STORE_PREFETCH__ = Object.assign({}, cached.payload, { fromCache: true });
-              window.__STORE_PREFETCH__.dataPromise = Promise.resolve(cached.payload.data);
+              // Do NOT seed dataPromise with cached data — admin updates would not show
+              // until cache TTL (5 min) expired. The fresh fetchStoreData() below will
+              // assign a real dataPromise that React awaits via the fast-path.
+              // Keep `data` for synchronous branding (logo/title) only; React hook is
+              // patched to ignore prefetch.data when fromCache=true.
               if (cached.payload.companyCheckResolved !== undefined) {
                 window.__STORE_PREFETCH__.companyCheckPromise = Promise.resolve(!!cached.payload.isCompanyDomain);
               }
