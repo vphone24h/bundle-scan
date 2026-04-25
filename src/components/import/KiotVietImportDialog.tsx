@@ -120,6 +120,7 @@ export function KiotVietImportDialog({
       // Auto-detect columns by header name
       const colTenHang = findColumnIndex(headers, 'Tên hàng');
       const colThuongHieu = findColumnIndex(headers, 'Thương hiệu');
+      const colNhomHang = findColumnIndex(headers, 'Nhóm hàng', 'Nhóm');
       const colGiaVon = findColumnIndex(headers, 'Giá vốn');
       const colGiaBan = findColumnIndex(headers, 'Giá bán');
       const colTonKho = findColumnIndex(headers, 'Tồn kho');
@@ -146,7 +147,19 @@ export function KiotVietImportDialog({
         const productName = tenHang;
         const sku = maHang || tenHang;
         
-        const categoryName = colThuongHieu >= 0 ? String(row[colThuongHieu] || '').trim() : '';
+        // Danh mục lấy từ cột "Nhóm hàng" (KiotViet 3 cấp: A>>B>>C → lấy cấp cuối).
+        // Fallback sang "Thương hiệu" nếu không có Nhóm hàng.
+        let categoryName = '';
+        if (colNhomHang >= 0) {
+          const raw = String(row[colNhomHang] || '').trim();
+          if (raw) {
+            const parts = raw.split(/>>|>|\/|\\|\|/).map(s => s.trim()).filter(Boolean);
+            categoryName = parts.length > 0 ? parts[parts.length - 1] : raw;
+          }
+        }
+        if (!categoryName && colThuongHieu >= 0) {
+          categoryName = String(row[colThuongHieu] || '').trim();
+        }
         const importPrice = colGiaVon >= 0 ? (Number(row[colGiaVon]) || 0) : 0;
         const rawSalePrice = colGiaBan >= 0 ? (Number(row[colGiaBan]) || 0) : 0;
         const stockQty = colTonKho >= 0 ? (Number(row[colTonKho]) || 0) : 1;
