@@ -10721,6 +10721,15 @@ export type Database = {
         Returns: Json
       }
       resolve_tenant_by_domain: { Args: { _domain: string }; Returns: string }
+      resolve_tenant_by_domain_full: {
+        Args: { _domain: string }
+        Returns: {
+          id: string
+          name: string
+          status: string
+          subdomain: string
+        }[]
+      }
       search_customers_for_sale: {
         Args: { _limit?: number; _query: string }
         Returns: {
