@@ -241,6 +241,7 @@ export function usePublicLandingArticles(
         articles: (prefetch.data.articles || []) as unknown as LandingArticle[],
       }
     : undefined;
+  const shouldUsePrefetchedPlaceholder = !prefetch?.fromCache;
 
   return useQuery({
     queryKey: ['public-landing-articles', tenantId],
@@ -256,7 +257,7 @@ export function usePublicLandingArticles(
       };
     },
     enabled: queryEnabled && !!tenantId,
-    placeholderData: prefetchedData,
+    placeholderData: shouldUsePrefetchedPlaceholder ? prefetchedData : undefined,
     staleTime: 0,
     gcTime: 1000 * 60 * 30,
     refetchOnMount: 'always',
