@@ -370,6 +370,18 @@ export function LandingProductsTab() {
   const [badgeStyle, setBadgeStyle] = useState<'simple' | 'luxury' | 'modern'>('simple');
 
   const [showBadges, setShowBadges] = useState(false);
+  const badgesPanelRef = useRef<HTMLDivElement>(null);
+
+  const handleToggleBadges = () => {
+    const next = !showBadges;
+    setShowBadges(next);
+    if (next) {
+      // Auto-scroll panel into view so users see the content opens up
+      setTimeout(() => {
+        badgesPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 80);
+    }
+  };
 
   const handleAddCategory = async () => {
     if (!catName.trim()) return;
