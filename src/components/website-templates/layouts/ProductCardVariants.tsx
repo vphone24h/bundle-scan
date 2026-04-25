@@ -756,61 +756,99 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
   };
 
   // === MODERN BADGE ===
-  // Phong cách hiện đại: chip bo tròn nhẹ, gradient mềm, viền sáng mảnh,
-  // chữ uppercase tracking rộng, chấm tròn nhỏ phía trước như status dot.
+  // Phong cách hiện đại 3D Ribbon: nhãn ribbon có góc gập (fold tail),
+  // gradient bóng (highlight phía trên), chữ trắng in đậm với shadow,
+  // đổ bóng mềm dưới ribbon — y như sticker 3D thương mại điện tử.
   const ModernBadge = ({ opt, corner }: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; corner: Corner }) => {
     const [, highlight] = splitLabel(opt.id, opt.text);
     const baseColor = getBadgeGradient(opt);
-    // Tạo gradient từ màu chính sang sắc tối hơn 18%
-    const darken = (hex: string, amt = 0.18) => {
+    const shift = (hex: string, amt: number) => {
       const h = hex.replace('#', '');
       const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
-      const r = Math.max(0, Math.round(((n >> 16) & 255) * (1 - amt)));
-      const g = Math.max(0, Math.round(((n >> 8) & 255) * (1 - amt)));
-      const b = Math.max(0, Math.round((n & 255) * (1 - amt)));
+      const adj = (c: number) =>
+        amt >= 0
+          ? Math.min(255, Math.round(c + (255 - c) * amt))
+          : Math.max(0, Math.round(c * (1 + amt)));
+      const r = adj((n >> 16) & 255);
+      const g = adj((n >> 8) & 255);
+      const b = adj(n & 255);
       return `rgb(${r}, ${g}, ${b})`;
     };
-    const gradient = `linear-gradient(135deg, ${baseColor} 0%, ${darken(baseColor, 0.22)} 100%)`;
+    const lighter = shift(baseColor, 0.28);
+    const darker = shift(baseColor, -0.28);
+    const deeper = shift(baseColor, -0.5);
+    // Gradient 3D: highlight trên cùng -> base -> tối dưới
+    const gradient = `linear-gradient(180deg, ${lighter} 0%, ${baseColor} 45%, ${darker} 100%)`;
+    const isRight = corner === 'tr' || corner === 'br';
     return (
       <div
         className={`absolute z-10 ${cornerClass(corner)}`}
         style={{
-          top: corner === 'tl' || corner === 'tr' ? 10 : undefined,
-          bottom: corner === 'bl' || corner === 'br' ? 10 : undefined,
-          left: corner === 'tl' || corner === 'bl' ? 8 : undefined,
-          right: corner === 'tr' || corner === 'br' ? 8 : undefined,
+          top: corner === 'tl' || corner === 'tr' ? 8 : undefined,
+          bottom: corner === 'bl' || corner === 'br' ? 8 : undefined,
+          left: corner === 'tl' || corner === 'bl' ? 0 : undefined,
+          right: corner === 'tr' || corner === 'br' ? 0 : undefined,
+          filter: 'drop-shadow(0 6px 8px rgba(0,0,0,0.28))',
         }}
       >
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: '4px 10px',
-            borderRadius: 8,
-            background: gradient,
-            color: '#fff',
-            fontSize: 10.5,
-            fontWeight: 800,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            whiteSpace: 'nowrap',
-            lineHeight: 1.1,
-            boxShadow: `0 4px 10px -2px ${baseColor}66, 0 1px 2px rgba(0,0,0,0.15)`,
-            border: '1px solid rgba(255,255,255,0.35)',
-            backdropFilter: 'blur(4px)',
-          }}
-        >
-          <span
+        <div style={{ position: 'relative', display: 'inline-block', transform: isRight ? 'scaleX(-1)' : 'none' }}>
+          {/* Thân ribbon với góc cắt chéo (clip-path) */}
+          <div
             style={{
-              width: 5,
-              height: 5,
-              borderRadius: '50%',
-              background: '#fff',
-              boxShadow: '0 0 6px rgba(255,255,255,0.9)',
+              position: 'relative',
+              padding: '5px 16px 5px 10px',
+              background: gradient,
+              clipPath: 'polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%)',
+              borderRadius: '4px 0 0 4px',
+              minHeight: 22,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            {/* Highlight bóng phía trên */}
+            <span
+              style={{
+                position: 'absolute',
+                top: 1,
+                left: 4,
+                right: 14,
+                height: '38%',
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 100%)',
+                borderRadius: '4px 4px 50% 50% / 4px 4px 100% 100%',
+                pointerEvents: 'none',
+              }}
+            />
+            <span
+              style={{
+                position: 'relative',
+                color: '#fff',
+                fontSize: 11,
+                fontWeight: 900,
+                fontStyle: 'italic',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
+                lineHeight: 1,
+                textShadow: '0 1px 2px rgba(0,0,0,0.35), 0 0 1px rgba(0,0,0,0.4)',
+                transform: isRight ? 'scaleX(-1)' : 'none',
+                display: 'inline-block',
+              }}
+            >
+              {highlight}
+            </span>
+          </div>
+          {/* Đuôi ribbon gập phía dưới (fold tail) */}
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              bottom: -5,
+              width: 8,
+              height: 6,
+              background: deeper,
+              clipPath: 'polygon(0 0, 100% 0, 100% 100%)',
             }}
           />
-          {highlight}
         </div>
       </div>
     );
