@@ -64,6 +64,13 @@ function findColumnIndex(headers: any[], ...keywords: string[]): number {
   return -1;
 }
 
+function splitKiotVietImeis(value: unknown): string[] {
+  return String(value || '')
+    .split(/[|｜\n\r]+/)
+    .map((item) => item.trim())
+    .filter((item) => item && item !== '0');
+}
+
 export function KiotVietImportDialog({
   open, onOpenChange, categories, suppliers = [], branches = [], onImportMultiple, checkIMEI, batchCheckIMEI,
 }: KiotVietImportDialogProps) {
@@ -130,7 +137,7 @@ export function KiotVietImportDialog({
 
       const rows = jsonData.slice(1).filter(row => row.some(cell => cell !== undefined && cell !== ''));
 
-      const parsed: KVParsedRow[] = (rows.map((row) => {
+      const parsed: KVParsedRow[] = (rows.flatMap((row) => {
         const errors: string[] = [];
 
         const tenHang = String(row[colTenHang] || '').trim();
@@ -143,8 +150,8 @@ export function KiotVietImportDialog({
         const importPrice = colGiaVon >= 0 ? (Number(row[colGiaVon]) || 0) : 0;
         const rawSalePrice = colGiaBan >= 0 ? (Number(row[colGiaBan]) || 0) : 0;
         const stockQty = colTonKho >= 0 ? (Number(row[colTonKho]) || 0) : 1;
-        const imeiRaw = colSerial >= 0 ? String(row[colSerial] || '').trim() : '';
-        const imei = imeiRaw && imeiRaw !== '0' ? imeiRaw : undefined;
+        const imeiList = colSerial >= 0 ? splitKiotVietImeis(row[colSerial]) : [];
+        const hasImeis = imeiList.length > 0;
         const note = colGhiChu >= 0 ? String(row[colGhiChu] || '').trim() : '';
         const branchName = colViTri >= 0 ? String(row[colViTri] || '').trim() : '';
         
@@ -161,16 +168,13 @@ export function KiotVietImportDialog({
         // Auto sale price
         let salePrice = rawSalePrice > 0 ? rawSalePrice : undefined;
         if (!salePrice && importPrice > 0) {
-          salePrice = imei ? importPrice + 2000000 : importPrice * 2;
+          salePrice = hasImeis ? importPrice + 2000000 : importPrice * 2;
         }
 
         // Skip products with 0 stock (unless has IMEI)
-        if (!imei && stockQty <= 0) {
-          return null; // Will be filtered out
+        if (!hasImeis && stockQty <= 0) {
+          return [];
         }
-
-        // Quantity: for IMEI products always 1, otherwise use stock qty (min 1)
-        const quantity = imei ? 1 : Math.max(stockQty, 1);
 
         // Validate
         if (!productName) errors.push('Thiếu tên hàng');
@@ -186,16 +190,28 @@ export function KiotVietImportDialog({
           // Don't error if category not found - will create or skip
         }
 
-        return {
-          imei, productName, sku, importPrice, salePrice, importDate,
+        const buildRow = (imei?: string, quantity = 1): KVParsedRow => ({
+          imei,
+          productName,
+          sku,
+          importPrice,
+          salePrice,
+          importDate,
           branchName: branchName || undefined,
           categoryName: categoryName || 'Chưa phân loại',
-          categoryId, quantity,
+          categoryId,
+          quantity,
           note: note || undefined,
           isValid: errors.length === 0,
-          errors,
-        };
-      })).filter(Boolean) as KVParsedRow[];
+          errors: [...errors],
+        });
+
+        if (hasImeis) {
+          return imeiList.map((imei) => buildRow(imei, 1));
+        }
+
+        return [buildRow(undefined, Math.max(stockQty, 1))];
+      })) as KVParsedRow[];
 
       setParsedRows(parsed);
 
