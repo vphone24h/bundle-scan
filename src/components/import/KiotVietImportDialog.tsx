@@ -460,7 +460,7 @@ export function KiotVietImportDialog({
                 <p className="font-medium text-foreground">Ánh xạ cột tự động:</p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-muted-foreground">
                   <span>Tên hàng → Tên SP & SKU</span>
-                  <span>Thương hiệu → Danh mục</span>
+                  <span>Nhóm hàng → Danh mục</span>
                   <span>Giá vốn → Giá nhập</span>
                   <span>Tồn kho → Số lượng</span>
                   <span>Serial/IMEI → IMEI</span>
