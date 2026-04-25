@@ -367,7 +367,7 @@ export function LandingProductsTab() {
   });
   // Add badges to form - stored separately to avoid re-init issues
   const [formBadges, setFormBadges] = useState<string[]>([]);
-  const [badgeStyle, setBadgeStyle] = useState<'simple' | 'luxury'>('simple');
+  const [badgeStyle, setBadgeStyle] = useState<'simple' | 'luxury' | 'modern'>('simple');
 
   const [showBadges, setShowBadges] = useState(false);
 
@@ -475,7 +475,13 @@ export function LandingProductsTab() {
       });
       setShowBadges(Array.isArray((detail as any).badges) && (detail as any).badges.length > 0);
       setFormBadges(Array.isArray((detail as any).badges) ? (detail as any).badges : []);
-      setBadgeStyle(((detail as any).badge_style === 'luxury' ? 'luxury' : 'simple'));
+      setBadgeStyle(
+        (detail as any).badge_style === 'luxury'
+          ? 'luxury'
+          : (detail as any).badge_style === 'modern'
+          ? 'modern'
+          : 'simple',
+      );
       setProductDialog(true);
     } catch (e: any) {
       toast({ title: 'Lỗi tải sản phẩm', description: e.message, variant: 'destructive' });
@@ -1732,7 +1738,7 @@ export function LandingProductsTab() {
                     <Label className="text-[11px] font-semibold flex items-center gap-1.5">
                       🎨 Phong cách nhãn
                     </Label>
-                    <Select value={badgeStyle} onValueChange={(v) => setBadgeStyle(v as 'simple' | 'luxury')}>
+                    <Select value={badgeStyle} onValueChange={(v) => setBadgeStyle(v as 'simple' | 'luxury' | 'modern')}>
                       <SelectTrigger className="h-9 text-xs">
                         <SelectValue />
                       </SelectTrigger>
@@ -1741,6 +1747,12 @@ export function LandingProductsTab() {
                           <div className="flex flex-col items-start">
                             <span className="font-medium">✨ Đơn giản (Simple)</span>
                             <span className="text-[10px] text-muted-foreground">Pill / Flame phẳng — gọn gàng, hiện đại</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="modern">
+                          <div className="flex flex-col items-start">
+                            <span className="font-medium">⚡ Hiện đại (Modern)</span>
+                            <span className="text-[10px] text-muted-foreground">Chip bo nhẹ, gradient mềm, chấm sáng — phong cách tech</span>
                           </div>
                         </SelectItem>
                         <SelectItem value="luxury">
