@@ -1908,6 +1908,21 @@ export function LandingProductsTab() {
                             </div>
                           );
                         }
+                        if (badgeStyle === 'modern') {
+                          return (
+                            <span
+                              key={id}
+                              className={`absolute ${cornerCls} ${opt.color} text-white text-[8.5px] font-extrabold px-1.5 py-0.5 rounded-md shadow-md inline-flex items-center gap-1`}
+                              style={{
+                                letterSpacing: '0.06em',
+                                border: '1px solid rgba(255,255,255,0.4)',
+                              }}
+                            >
+                              <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#fff' }} />
+                              {opt.text.toUpperCase()}
+                            </span>
+                          );
+                        }
                         return (
                           <span key={id} className={`absolute ${cornerCls} ${opt.color} text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-md animate-pulse`}>
                             {opt.text}
