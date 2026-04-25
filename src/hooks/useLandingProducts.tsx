@@ -297,6 +297,7 @@ export function usePublicLandingProducts(
         products: (prefetch.data.products || []) as unknown as LandingProduct[],
       }
     : undefined;
+  const shouldUsePrefetchedPlaceholder = !prefetch?.fromCache;
 
   return useQuery({
     queryKey: ['public-landing-products', tenantId],
@@ -312,7 +313,7 @@ export function usePublicLandingProducts(
       };
     },
     enabled: queryEnabled && !!tenantId,
-    placeholderData: prefetchedData,
+    placeholderData: shouldUsePrefetchedPlaceholder ? prefetchedData : undefined,
     staleTime: 0,
     gcTime: 1000 * 60 * 30,
     refetchOnMount: 'always',
