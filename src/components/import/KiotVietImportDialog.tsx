@@ -11,6 +11,8 @@ import { FileSpreadsheet, Upload, AlertCircle, CheckCircle2, Loader2 } from 'luc
 import { toast } from '@/hooks/use-toast';
 import { ImportReceiptItem } from '@/types/warehouse';
 import { formatCurrencyWithSpaces } from '@/lib/formatNumber';
+import { useCreateCategory } from '@/hooks/useCategories';
+import { supabase } from '@/integrations/supabase/client';
 
 interface KiotVietImportDialogProps {
   open: boolean;
@@ -74,6 +76,7 @@ function splitKiotVietImeis(value: unknown): string[] {
 export function KiotVietImportDialog({
   open, onOpenChange, categories, suppliers = [], branches = [], onImportMultiple, checkIMEI, batchCheckIMEI,
 }: KiotVietImportDialogProps) {
+  const createCategory = useCreateCategory();
   const [parsedRows, setParsedRows] = useState<KVParsedRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
@@ -307,12 +310,48 @@ export function KiotVietImportDialog({
     }));
   }, [parsedRows]);
 
-  const handleImport = () => {
+  const handleImport = async () => {
     const validRows = parsedRows.filter(r => r.isValid);
     if (validRows.length === 0) {
       toast({ title: 'Không có dữ liệu hợp lệ', variant: 'destructive' });
       return;
     }
+
+    // Auto-create missing categories from "Nhóm hàng" column
+    const existingByName = new Map(categories.map(c => [c.name.toLowerCase(), c.id]));
+    const missingNames = Array.from(new Set(
+      validRows
+        .map(r => r.categoryName)
+        .filter(n => n && n !== 'Chưa phân loại' && !existingByName.has(n.toLowerCase()))
+    ));
+
+    if (missingNames.length > 0) {
+      try {
+        for (const name of missingNames) {
+          const created = await createCategory.mutateAsync({ name });
+          existingByName.set(name.toLowerCase(), created.id);
+        }
+        toast({
+          title: 'Đã tạo danh mục mới',
+          description: `${missingNames.length} danh mục: ${missingNames.join(', ')}`,
+        });
+      } catch (err: any) {
+        toast({
+          title: 'Lỗi tạo danh mục',
+          description: err?.message || 'Không thể tạo danh mục mới',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    // Re-map categoryId for all rows using the updated map
+    validRows.forEach(r => {
+      if (r.categoryName) {
+        const id = existingByName.get(r.categoryName.toLowerCase());
+        if (id) r.categoryId = id;
+      }
+    });
 
     // Group all valid rows into one group (no supplier from KiotViet)
     const groups = branchGroups.map(group => {
