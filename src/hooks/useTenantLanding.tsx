@@ -264,6 +264,32 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
         return prefetchedResult;
       }
 
+      // FAST PATH: Inline prefetch is in-flight. Await its dataPromise instead of
+      // duplicating the same RPC calls — this removes a round-trip on slow networks
+      // (the main cause of "trang treo một lúc" on custom domains).
+      if (prefetch?.dataPromise && (prefetch.tenant || prefetch.tenantId)) {
+        try {
+          const data = await prefetch.dataPromise;
+          if (data?.settings) {
+            const tenantInfo = prefetch.tenant || {
+              id: prefetch.tenantId,
+              name: data.settings.store_name || '',
+              subdomain: prefetch.storeId || '',
+              status: 'active',
+            };
+            const result: PublicLandingResolvedData = {
+              tenant: tenantInfo,
+              settings: data.settings as unknown as TenantLandingSettings,
+              branches: (data.branches || []) as BranchInfo[],
+            };
+            persistPublicLandingData(subdomain, tenantIdFromDomain, result);
+            return result;
+          }
+        } catch {
+          // fall through to normal resolution
+        }
+      }
+
       let tenantInfo: { id: string; name: string; subdomain: string; status: string } | null = null;
 
       // IMPORTANT: prioritize tenantIdFromDomain over subdomain.
