@@ -755,6 +755,67 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
     );
   };
 
+  // === MODERN BADGE ===
+  // Phong cách hiện đại: chip bo tròn nhẹ, gradient mềm, viền sáng mảnh,
+  // chữ uppercase tracking rộng, chấm tròn nhỏ phía trước như status dot.
+  const ModernBadge = ({ opt, corner }: { opt: typeof PRODUCT_BADGE_OPTIONS[0]; corner: Corner }) => {
+    const [, highlight] = splitLabel(opt.id, opt.text);
+    const baseColor = getBadgeGradient(opt);
+    // Tạo gradient từ màu chính sang sắc tối hơn 18%
+    const darken = (hex: string, amt = 0.18) => {
+      const h = hex.replace('#', '');
+      const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+      const r = Math.max(0, Math.round(((n >> 16) & 255) * (1 - amt)));
+      const g = Math.max(0, Math.round(((n >> 8) & 255) * (1 - amt)));
+      const b = Math.max(0, Math.round((n & 255) * (1 - amt)));
+      return `rgb(${r}, ${g}, ${b})`;
+    };
+    const gradient = `linear-gradient(135deg, ${baseColor} 0%, ${darken(baseColor, 0.22)} 100%)`;
+    return (
+      <div
+        className={`absolute z-10 ${cornerClass(corner)}`}
+        style={{
+          top: corner === 'tl' || corner === 'tr' ? 10 : undefined,
+          bottom: corner === 'bl' || corner === 'br' ? 10 : undefined,
+          left: corner === 'tl' || corner === 'bl' ? 8 : undefined,
+          right: corner === 'tr' || corner === 'br' ? 8 : undefined,
+        }}
+      >
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '4px 10px',
+            borderRadius: 8,
+            background: gradient,
+            color: '#fff',
+            fontSize: 10.5,
+            fontWeight: 800,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            whiteSpace: 'nowrap',
+            lineHeight: 1.1,
+            boxShadow: `0 4px 10px -2px ${baseColor}66, 0 1px 2px rgba(0,0,0,0.15)`,
+            border: '1px solid rgba(255,255,255,0.35)',
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          <span
+            style={{
+              width: 5,
+              height: 5,
+              borderRadius: '50%',
+              background: '#fff',
+              boxShadow: '0 0 6px rgba(255,255,255,0.9)',
+            }}
+          />
+          {highlight}
+        </div>
+      </div>
+    );
+  };
+
   // Each badge has a FIXED corner (BADGE_POSITION_MAP). Nếu admin lỡ chọn 2 nhãn cùng góc,
   // chỉ giữ nhãn đầu tiên ở góc đó để không trồng lên nhau.
   const fallbackOrder: Corner[] = ['tr', 'tl', 'bl', 'br'];
