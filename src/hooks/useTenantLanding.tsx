@@ -246,7 +246,15 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
       // so warranty-first app can render immediately.
       const prefetch = (window as any).__STORE_PREFETCH__;
       const prefetchedData = prefetch?.data;
-      if (prefetchedData?.settings && (prefetch.tenant || prefetch.tenantId)) {
+      // IMPORTANT: when prefetch.data came from sessionStorage (fromCache),
+      // it can be stale (up to 5 min old). In that case, await the in-flight
+      // dataPromise (fresh network fetch) before resolving so admin updates
+      // appear on the very next reload — no need to fully exit the app.
+      if (
+        prefetchedData?.settings &&
+        (prefetch.tenant || prefetch.tenantId) &&
+        !prefetch.fromCache
+      ) {
         const tenantInfo = prefetch.tenant || {
           id: prefetch.tenantId,
           name: prefetchedData.settings.store_name || '',
