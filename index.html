@@ -428,28 +428,19 @@
 
         var resolvePromise;
         if (isSubdomain && !h.endsWith('.vkho.vn')) {
-          // Custom domain: resolve via custom_domains table.
-          // Then fetch full tenant info so React hooks can hydrate instantly
-          // without an extra round-trip (was the main cause of the long blank skeleton).
-          resolvePromise = fetch(supaUrl + '/rest/v1/rpc/resolve_tenant_by_domain', {
+          // Custom domain: resolve full tenant info in 1 round-trip (was 2).
+          // This removes the main blocking round-trip that caused long blank skeleton.
+          resolvePromise = fetch(supaUrl + '/rest/v1/rpc/resolve_tenant_by_domain_full', {
             method: 'POST', headers: hdrs,
             body: JSON.stringify({ _domain: h })
-          }).then(function(r) { return r.json(); }).then(function(tenantId) {
-            if (!tenantId) return null;
-            // Hydrate tenant info in parallel with store data fetch
-            fetch(supaUrl + '/rest/v1/rpc/lookup_tenant_by_id', {
-              method: 'POST', headers: hdrs,
-              body: JSON.stringify({ _tenant_id: tenantId })
-            }).then(function(r) { return r.json(); }).then(function(data) {
-              var tenant = Array.isArray(data) ? data[0] : data;
-              if (tenant) {
-                setTitle(tenant.name);
-                window.__STORE_PREFETCH__.tenant = tenant;
-                window.__STORE_PREFETCH__.tenantId = tenantId;
-                try { if (window.__STORE_PREFETCH_PERSIST__) window.__STORE_PREFETCH_PERSIST__(); } catch(e){}
-              }
-            }).catch(function(){});
-            return tenantId;
+          }).then(function(r) { return r.json(); }).then(function(data) {
+            var tenant = Array.isArray(data) ? data[0] : data;
+            if (!tenant || !tenant.id) return null;
+            setTitle(tenant.name);
+            window.__STORE_PREFETCH__.tenant = tenant;
+            window.__STORE_PREFETCH__.tenantId = tenant.id;
+            try { if (window.__STORE_PREFETCH_PERSIST__) window.__STORE_PREFETCH_PERSIST__(); } catch(e){}
+            return tenant.id;
           });
         } else {
           resolvePromise = fetch(supaUrl + '/rest/v1/rpc/lookup_tenant_by_subdomain', {
