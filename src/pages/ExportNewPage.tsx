@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -60,6 +60,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { ExportPaymentDialog } from '@/components/export/ExportPaymentDialog';
 import { OrderLimitDialog } from '@/components/export/OrderLimitDialog';
 import { useOrderLimitCheck } from '@/hooks/useOrderLimitCheck';
+import { useActiveDepositsByProducts, useApplyDepositsToReceipt } from '@/hooks/useProductDeposits';
+import { HandCoins } from 'lucide-react';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { BarcodeScannerInput } from '@/components/export/BarcodeScannerInput';
 import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombobox';
@@ -131,6 +133,21 @@ export default function ExportNewPage() {
   // Cart
   const exportDraft = useDraftCart<CartItem>('export_draft_cart');
   const [cart, setCart] = useState<CartItem[]>([]);
+  const cartProductIds = useMemo(
+    () => Array.from(new Set(cart.map(c => c.product_id).filter(Boolean) as string[])),
+    [cart]
+  );
+  const { data: cartActiveDeposits = [] } = useActiveDepositsByProducts(cartProductIds);
+  const depositsByProductId = useMemo(() => {
+    const m = new Map<string, typeof cartActiveDeposits>();
+    cartActiveDeposits.forEach(d => {
+      const arr = m.get(d.product_id) || [];
+      arr.push(d);
+      m.set(d.product_id, arr);
+    });
+    return m;
+  }, [cartActiveDeposits]);
+  const applyDeposits = useApplyDepositsToReceipt();
   // Ref to track product IDs being processed (prevents race condition on fast scans)
   const pendingProductIdsRef = useRef<Set<string>>(new Set());
   // Tax state
@@ -1036,6 +1053,44 @@ export default function ExportNewPage() {
         note: savedReceiptNote || undefined,
       });
 
+      // Áp dụng cọc khách: nếu cart có SP đã cọc và SĐT khớp → đánh dấu cọc applied + ghi expense vào sổ quỹ
+      let depositMsg = '';
+      try {
+        const cartProdIds = new Set(savedCart.map(i => i.product_id));
+        const phoneNorm = (savedCustomerPhone || '').replace(/\s/g, '');
+        const matchedDeposits = cartActiveDeposits.filter(d =>
+          cartProdIds.has(d.product_id) &&
+          d.customer_phone && d.customer_phone.replace(/\s/g, '') === phoneNorm
+        );
+        if (matchedDeposits.length > 0) {
+          await applyDeposits.mutateAsync({
+            deposit_ids: matchedDeposits.map(d => d.id),
+            receipt_id: receipt.id,
+          });
+          // Cash book offset entries
+          const { data: { user: u2 } } = await supabase.auth.getUser();
+          const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+          const totalDep = matchedDeposits.reduce((s, d) => s + Number(d.deposit_amount), 0);
+          await supabase.from('cash_book').insert(matchedDeposits.map(d => ({
+            type: 'expense' as const,
+            category: 'Áp dụng cọc',
+            description: `Cọc ${d.customer_name} áp dụng cho phiếu xuất ${receipt.code}`,
+            amount: Number(d.deposit_amount),
+            payment_source: d.payment_source,
+            is_business_accounting: false,
+            branch_id: branchId,
+            reference_id: receipt.id,
+            reference_type: 'export_receipt_deposit_applied',
+            created_by: u2?.id,
+            tenant_id: tenantId,
+            recipient_name: d.customer_name,
+          })));
+          depositMsg = `. Đã áp dụng ${matchedDeposits.length} cọc (${formatNumber(totalDep)}đ)`;
+        }
+      } catch (e) {
+        console.warn('Apply deposits failed:', e);
+      }
+
       // Update receipt with real data (code from server)
       setCreatedReceipt(prev => ({
         ...prev,
@@ -1049,6 +1104,7 @@ export default function ExportNewPage() {
       }));
 
       let successMessage = t('pages.exportNew.receiptCreated', { code: receipt.code });
+      if (depositMsg) successMessage += depositMsg;
       if (receipt.points_earned > 0) {
         successMessage += receipt.points_pending 
           ? `. ${t('pages.exportNew.pointsPending', { points: receipt.points_earned })}`
@@ -1473,6 +1529,28 @@ export default function ExportNewPage() {
                           <div className="text-xs text-muted-foreground md:hidden">
                             {item.imei || item.sku}
                           </div>
+                          {(depositsByProductId.get(item.product_id)?.length || 0) > 0 && (
+                            <div className="mt-1 space-y-0.5">
+                              {depositsByProductId.get(item.product_id)!.map(d => {
+                                const isMatchedCustomer = !!customerPhone && !!d.customer_phone &&
+                                  customerPhone.replace(/\s/g, '') === d.customer_phone.replace(/\s/g, '');
+                                return (
+                                  <div key={d.id} className={cn(
+                                    "text-xs flex items-center gap-1 px-1.5 py-0.5 rounded",
+                                    isMatchedCustomer ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
+                                  )}>
+                                    <HandCoins className="h-3 w-3 flex-shrink-0" />
+                                    <span className="font-medium">
+                                      Đã có người cọc: {d.customer_name}
+                                      {d.customer_phone ? ` (${d.customer_phone})` : ''}
+                                      {' - '}{formatNumber(Number(d.deposit_amount))}đ
+                                      {isMatchedCustomer ? ' ✓ sẽ tự trừ vào tổng' : ''}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           {item.imei || item.sku}
