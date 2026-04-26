@@ -1507,6 +1507,30 @@ export default function ImportHistoryPage() {
                               <Button variant="outline" size="sm" onClick={() => handleReturnProduct(product)} className="h-7 text-xs">
                                 <RotateCcw className="mr-1 h-3 w-3" /> Trả
                               </Button>
+                              {depositMap.get(product.id) ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+                                  onClick={() => {
+                                    const dep = depositMap.get(product.id)!;
+                                    handleCancelDeposit(dep.id, dep.customer_name);
+                                  }}
+                                  title="Hủy cọc (không hoàn tiền sổ quỹ)"
+                                >
+                                  <X className="h-3 w-3" /> Hủy cọc
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs gap-1 border-amber-400 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                                  onClick={() => setDepositProduct(product)}
+                                  title="Khách đặt cọc giữ máy"
+                                >
+                                  <HandCoins className="h-3 w-3" /> Cọc
+                                </Button>
+                              )}
                               {product.imei && (
                                 <>
                                   {warrantyMarkedIds.has(product.id) ? (
