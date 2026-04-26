@@ -1959,6 +1959,19 @@ export default function ImportHistoryPage() {
           onSuccess={() => setSelectedProductIds(new Set())}
         />
       )}
+      {/* Product Deposit Dialog */}
+      <ProductDepositDialog
+        open={!!depositProduct}
+        onClose={() => setDepositProduct(null)}
+        product={depositProduct ? {
+          id: depositProduct.id,
+          name: depositProduct.name,
+          sku: depositProduct.sku,
+          imei: depositProduct.imei,
+          branch_id: depositProduct.branch_id,
+        } : null}
+        suggestedPrice={depositProduct?.sale_price ? Number(depositProduct.sale_price) : undefined}
+      />
       <OnboardingTourOverlay
         steps={(receipts?.length ?? 0) > 0 ? receiptTour : receiptTourInfo}
         isActive={activeTour === 'receipt-tab' || (manualTourActive && activeTab === 'receipts')}
