@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const ADMIN_LAST_ROUTE_KEY = 'vkho_admin_last_route_v1';
+const SESSION_OPENED_KEY = 'vkho_session_opened_v1';
+const DEFAULT_HOME_ROUTE = '/export/new';
 
 // Routes that should NOT be saved/restored
 const EXCLUDED_ROUTES = ['/auth', '/register', '/forgot-password', '/reset-password', '/forgot-store-id', '/admin'];
@@ -31,11 +33,21 @@ export function AdminRouteRestorer() {
     }
   }, [location.pathname, location.search]);
 
-  // Restore route on initial mount (only if navigating to "/")
+  // On cold-start (new session), always go to the default sales page.
+  // On in-session reloads / SPA navigations, restore the last route as before.
   useEffect(() => {
     if (location.pathname !== '/') return;
 
     try {
+      const isFreshSession = !sessionStorage.getItem(SESSION_OPENED_KEY);
+      sessionStorage.setItem(SESSION_OPENED_KEY, '1');
+
+      if (isFreshSession) {
+        // Cold start (app re-opened): default to sales page
+        navigate(DEFAULT_HOME_ROUTE, { replace: true });
+        return;
+      }
+
       const raw = localStorage.getItem(ADMIN_LAST_ROUTE_KEY);
       if (!raw) return;
 
@@ -63,6 +75,10 @@ export function AdminRouteRestorer() {
  */
 export function readAdminLastRoute(): string | null {
   try {
+    // Cold start → preloader should match the default sales page, not the last route
+    if (typeof sessionStorage !== 'undefined' && !sessionStorage.getItem(SESSION_OPENED_KEY)) {
+      return DEFAULT_HOME_ROUTE;
+    }
     const raw = localStorage.getItem(ADMIN_LAST_ROUTE_KEY);
     if (!raw) return null;
     const saved = JSON.parse(raw);
