@@ -66,6 +66,8 @@ import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombob
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { formatNumber, parseFormattedNumber, formatInputNumber } from '@/lib/formatNumber';
+import { useDepositMap, useCancelProductDeposit } from '@/hooks/useProductDeposits';
+import { BadgeDollarSign, AlertTriangle as AlertTriangleIcon } from 'lucide-react';
 import { PriceInput } from '@/components/ui/price-input';
 import { cn } from '@/lib/utils';
 import { normalizeLooseSearchValue } from '@/lib/normalizeSearch';
