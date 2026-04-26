@@ -119,8 +119,6 @@ const allNavItems: NavItem[] = [
     children: [
       { title: 'Bán Hàng', titleKey: 'sidebar.sell', href: '/export/new', permission: 'canCreateExportReceipt' },
       { title: 'Lịch sử Bán hàng', titleKey: 'sidebar.exportHistory', href: '/export/history', permission: 'canViewExportHistory' },
-      { title: 'Đặt hàng trước (Cọc)', href: '/preorder/new', permission: 'canCreateExportReceipt' },
-      { title: 'Lịch sử đặt hàng', href: '/preorder/history', permission: 'canViewExportHistory' },
       { title: 'Mẫu in hóa đơn', titleKey: 'sidebar.invoiceTemplate', href: '/export/template', permission: 'canManageInvoiceTemplates' },
       { title: 'Hoá đơn điện tử', titleKey: 'sidebar.eInvoice', href: '/einvoice', permission: 'canManageInvoiceTemplates', hideInSecretMode: true },
       { title: 'Mức Thuế 2026', titleKey: 'sidebar.taxPolicy', href: '/export/tax-policy', hideInSecretMode: true },

@@ -34,8 +34,6 @@ const ImportNewPage = lazy(() => import("./pages/ImportNewPage"));
 const ImportHistoryPage = lazy(() => import("./pages/ImportHistoryPage"));
 const ExportNewPage = lazy(() => import("./pages/ExportNewPage"));
 const ExportHistoryPage = lazy(() => import("./pages/ExportHistoryPage"));
-const PreorderNewPage = lazy(() => import("./pages/PreorderNewPage"));
-const PreorderHistoryPage = lazy(() => import("./pages/PreorderHistoryPage"));
 const InvoiceTemplatePage = lazy(() => import("./pages/InvoiceTemplatePage"));
 const CustomPrintDesignerPage = lazy(() => import("./pages/CustomPrintDesignerPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
@@ -269,8 +267,6 @@ const App = () => (
                 <Route path="/import/transfer" element={<GuardedRoute><StockTransferPage /></GuardedRoute>} />
                 <Route path="/export/new" element={<GuardedRoute><ExportNewPage /></GuardedRoute>} />
                 <Route path="/export/history" element={<GuardedRoute><ExportHistoryPage /></GuardedRoute>} />
-                <Route path="/preorder/new" element={<GuardedRoute><PreorderNewPage /></GuardedRoute>} />
-                <Route path="/preorder/history" element={<GuardedRoute><PreorderHistoryPage /></GuardedRoute>} />
                 <Route path="/export/template" element={<GuardedRoute><InvoiceTemplatePage /></GuardedRoute>} />
                 <Route path="/export/template/designer/:id" element={<GuardedRoute><CustomPrintDesignerPage /></GuardedRoute>} />
                 <Route path="/reports" element={<GuardedRoute><ReportsPage /></GuardedRoute>} />
