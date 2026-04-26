@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Banknote, CreditCard, Wallet, FileText, Star, Gift, Ticket, Tag } from 'lucide-react';
+import { BadgeDollarSign } from 'lucide-react';
 import { formatNumber, formatInputNumber, parseFormattedNumber } from '@/lib/formatNumber';
 import type { ExportPayment } from '@/hooks/useExportReceipts';
 import { useVoucherTemplates, VoucherTemplate, CustomerVoucher } from '@/hooks/useVouchers';
@@ -45,6 +46,10 @@ interface ExportPaymentDialogProps {
   pointSettings?: PointSettings | null;
   hasCustomer?: boolean;
   customerVouchers?: CustomerVoucher[];
+  /** Tổng tiền cọc khớp khách hàng hiện tại đã đóng trước - sẽ trừ vào số phải thanh toán */
+  depositDiscount?: number;
+  /** Mô tả ngắn về cọc (vd: "iPhone14 - KH Vũ") để hiển thị */
+  depositLabel?: string;
 }
 
 const builtInPaymentTypes = [
@@ -71,6 +76,8 @@ export function ExportPaymentDialog({
   pointSettings,
   hasCustomer,
   customerVouchers = [],
+  depositDiscount = 0,
+  depositLabel,
 }: ExportPaymentDialogProps) {
   const { data: voucherTemplates } = useVoucherTemplates();
   const activeTemplates = (voucherTemplates || []).filter(t => t.is_active);
@@ -150,14 +157,14 @@ export function ExportPaymentDialog({
     Math.ceil(actualPointsDiscount / pointSettings.redeem_value * pointSettings.redeem_points) : 0;
 
   // Adjusted total after points + voucher discount
-  const adjustedTotal = totalAmount - actualPointsDiscount - voucherDiscount;
+  const adjustedTotal = Math.max(0, totalAmount - actualPointsDiscount - voucherDiscount - (depositDiscount || 0));
 
   // Reset when dialog opens
   useEffect(() => {
     if (open) {
       setSelectedTypes(['cash']);
       setAmounts({
-        cash: totalAmount.toString(),
+        cash: Math.max(0, totalAmount - (depositDiscount || 0)).toString(),
         bank_card: '',
         e_wallet: '',
         debt: '',
@@ -169,7 +176,7 @@ export function ExportPaymentDialog({
       setAddToCashBook(true);
       setAppliedVoucherIds([]);
     }
-  }, [open, totalAmount]);
+  }, [open, totalAmount, depositDiscount]);
 
   // Update cash amount when points/voucher discount changes
   useEffect(() => {
@@ -271,7 +278,13 @@ export function ExportPaymentDialog({
                 Giảm voucher: -{formatNumber(voucherDiscount)}đ
               </div>
             )}
-            {(actualPointsDiscount > 0 || voucherDiscount > 0) && (
+            {depositDiscount > 0 && (
+              <div className="text-sm text-green-600 mt-1 flex items-center justify-center gap-1">
+                <BadgeDollarSign className="h-3.5 w-3.5" />
+                Trừ tiền cọc{depositLabel ? ` (${depositLabel})` : ''}: -{formatNumber(depositDiscount)}đ
+              </div>
+            )}
+            {(actualPointsDiscount > 0 || voucherDiscount > 0 || depositDiscount > 0) && (
               <div className="text-lg font-semibold mt-1">
                 Còn lại: {formatNumber(Math.max(0, adjustedTotal))}đ
               </div>
