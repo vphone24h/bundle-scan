@@ -23,6 +23,7 @@ import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/Onboard
 import { useOnboardingTour, useResetAllTours } from '@/hooks/useOnboardingTour';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
+import { SupportHotlineButton } from '@/components/shared/SupportHotlineButton';
 
 const dashboardTourSteps: TourStep[] = [
   {
@@ -194,6 +195,7 @@ const Index = () => {
         helpText={t('pages.dashboard.helpText')}
         actions={
           <div className="flex items-center gap-2 flex-wrap">
+            <SupportHotlineButton />
             {statsFetching && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
