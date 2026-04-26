@@ -1104,6 +1104,7 @@ export default function ExportNewPage() {
       }));
 
       let successMessage = t('pages.exportNew.receiptCreated', { code: receipt.code });
+      if (depositMsg) successMessage += depositMsg;
       if (receipt.points_earned > 0) {
         successMessage += receipt.points_pending 
           ? `. ${t('pages.exportNew.pointsPending', { points: receipt.points_earned })}`
