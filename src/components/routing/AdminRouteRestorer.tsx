@@ -3,7 +3,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 const ADMIN_LAST_ROUTE_KEY = 'vkho_admin_last_route_v1';
 const SESSION_OPENED_KEY = 'vkho_session_opened_v1';
+const LAST_ACTIVE_AT_KEY = 'vkho_last_active_at_v1';
 const DEFAULT_HOME_ROUTE = '/export/new';
+// If app was inactive (hidden) longer than this, treat next open as a fresh session
+const FRESH_SESSION_IDLE_MS = 1000 * 60 * 30; // 30 minutes
 
 // Routes that should NOT be saved/restored
 const EXCLUDED_ROUTES = ['/auth', '/register', '/forgot-password', '/reset-password', '/forgot-store-id', '/admin'];
@@ -33,13 +36,56 @@ export function AdminRouteRestorer() {
     }
   }, [location.pathname, location.search]);
 
+  // Track last-active timestamp so we can detect long idle periods
+  // (e.g. app sent to background on mobile) and treat the next open
+  // as a fresh session that lands on the sales page.
+  useEffect(() => {
+    const stamp = () => {
+      try { localStorage.setItem(LAST_ACTIVE_AT_KEY, String(Date.now())); } catch {}
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        stamp();
+      } else if (document.visibilityState === 'visible') {
+        try {
+          const raw = localStorage.getItem(LAST_ACTIVE_AT_KEY);
+          const last = raw ? Number(raw) : 0;
+          if (last && Date.now() - last > FRESH_SESSION_IDLE_MS) {
+            // Mark next mount as fresh session
+            sessionStorage.removeItem(SESSION_OPENED_KEY);
+            navigate(DEFAULT_HOME_ROUTE, { replace: true });
+            sessionStorage.setItem(SESSION_OPENED_KEY, '1');
+          }
+        } catch {}
+      }
+    };
+    stamp();
+    const interval = setInterval(stamp, 60_000);
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', stamp);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', stamp);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // On cold-start (new session), always go to the default sales page.
   // On in-session reloads / SPA navigations, restore the last route as before.
   useEffect(() => {
     if (location.pathname !== '/') return;
 
     try {
-      const isFreshSession = !sessionStorage.getItem(SESSION_OPENED_KEY);
+      let isFreshSession = !sessionStorage.getItem(SESSION_OPENED_KEY);
+      // Even if sessionStorage survived (iOS PWA background), treat long idle as fresh
+      if (!isFreshSession) {
+        const raw = localStorage.getItem(LAST_ACTIVE_AT_KEY);
+        const last = raw ? Number(raw) : 0;
+        if (last && Date.now() - last > FRESH_SESSION_IDLE_MS) {
+          isFreshSession = true;
+        }
+      }
       sessionStorage.setItem(SESSION_OPENED_KEY, '1');
 
       if (isFreshSession) {
@@ -79,6 +125,14 @@ export function readAdminLastRoute(): string | null {
     if (typeof sessionStorage !== 'undefined' && !sessionStorage.getItem(SESSION_OPENED_KEY)) {
       return DEFAULT_HOME_ROUTE;
     }
+    // Long-idle resume → also treat as default sales page
+    try {
+      const raw = localStorage.getItem(LAST_ACTIVE_AT_KEY);
+      const last = raw ? Number(raw) : 0;
+      if (last && Date.now() - last > FRESH_SESSION_IDLE_MS) {
+        return DEFAULT_HOME_ROUTE;
+      }
+    } catch {}
     const raw = localStorage.getItem(ADMIN_LAST_ROUTE_KEY);
     if (!raw) return null;
     const saved = JSON.parse(raw);
