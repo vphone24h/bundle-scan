@@ -283,6 +283,23 @@ export default function ImportHistoryPage() {
 
   const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
   const { data: receiptDetails, isLoading: detailsLoading } = useImportReceiptDetails(selectedReceiptId);
+
+  // Deposit dialog state + active deposits lookup for current receipt detail
+  const [depositTarget, setDepositTarget] = useState<{ id: string; name: string; imei?: string | null; branch_id?: string | null } | null>(null);
+  const detailProductIds = useMemo(
+    () => (receiptDetails?.productImports || []).map((it: any) => it.products?.id).filter(Boolean) as string[],
+    [receiptDetails]
+  );
+  const { data: activeDeposits = [] } = useActiveDepositsByProducts(detailProductIds);
+  const depositsByProduct = useMemo(() => {
+    const m = new Map<string, typeof activeDeposits>();
+    activeDeposits.forEach(d => {
+      const arr = m.get(d.product_id) || [];
+      arr.push(d);
+      m.set(d.product_id, arr);
+    });
+    return m;
+  }, [activeDeposits]);
   
   // Track products marked for warranty (for instant UI update)
   const [warrantyMarkedIds, setWarrantyMarkedIds] = useState<Set<string>>(new Set());
