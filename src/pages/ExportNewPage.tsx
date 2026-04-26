@@ -1557,6 +1557,15 @@ export default function ExportNewPage() {
                           {(() => {
                             const dep = depositMap.get(item.product_id);
                             if (!dep) return null;
+                            // Cảnh báo cọc:
+                            // - Sản phẩm có IMEI: luôn cảnh báo (vì 1 IMEI = 1 sản phẩm cụ thể).
+                            // - Sản phẩm không IMEI: chỉ cảnh báo khi tổng số cọc >= tồn kho
+                            //   (kho còn nhiều thì bán cho khách khác không ảnh hưởng người cọc).
+                            if (!item.imei) {
+                              const stock = productStockMap.get(item.product_id) ?? 0;
+                              const totalDeposited = totalQtyByProduct.get(item.product_id) || 0;
+                              if (stock > 0 && totalDeposited < stock) return null;
+                            }
                             const matchCustomer = !!(
                               (selectedCustomer?.id && dep.customer_id && selectedCustomer.id === dep.customer_id) ||
                               (customerPhone && dep.customer_phone && customerPhone.replace(/\D/g, '') === dep.customer_phone.replace(/\D/g, ''))
