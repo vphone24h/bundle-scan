@@ -81,25 +81,108 @@ export function KiotVietImportDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [validationProgress, setValidationProgress] = useState(0);
-  const [guideStep, setGuideStep] = useState(0); // 0 = showing guide, -1 = done/upload mode
+  const [guideStep, setGuideStep] = useState(0); // 0..N = guide step, -1 = done/upload mode
+  const [guidePhase, setGuidePhase] = useState<1 | 2>(1); // 1 = file SP, 2 = file Nhập hàng (NCC)
+  // Supplier maps from "Nhập hàng" file (file 2)
+  const [supplierByImei, setSupplierByImei] = useState<Map<string, string>>(new Map());
+  const [supplierByName, setSupplierByName] = useState<Map<string, string>>(new Map());
+  const [supplierFileName, setSupplierFileName] = useState<string>('');
+  const [supplierFileCount, setSupplierFileCount] = useState<number>(0);
+  const [isLoadingSupplier, setIsLoadingSupplier] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const supplierFileInputRef = useRef<HTMLInputElement>(null);
 
   // Reset guide when dialog opens
   const handleOpenChange = (open: boolean) => {
     if (open) {
       setGuideStep(0);
+      setGuidePhase(1);
       setParsedRows([]);
+      setSupplierByImei(new Map());
+      setSupplierByName(new Map());
+      setSupplierFileName('');
+      setSupplierFileCount(0);
     }
     onOpenChange(open);
   };
 
-  const guideSteps = [
+  const guideStepsFile1 = [
     { step: 1, title: 'Đăng nhập KiotViet', desc: 'Truy cập trang quản lý KiotViet trên máy tính (điện thoại không xuất được file). Vào kiotviet.vn và đăng nhập.' },
     { step: 2, title: 'Vào tab Hàng Hóa', desc: 'Trên thanh menu bên trái, chọn mục "Hàng hóa".' },
     { step: 3, title: 'Danh sách hàng hóa', desc: 'Mở trang "Danh sách hàng hóa" để xem toàn bộ sản phẩm.' },
     { step: 4, title: 'Xuất file Excel', desc: 'Nhấn nút "Xuất file" ở góc phải để tải file Excel chứa danh sách sản phẩm.' },
     { step: 5, title: 'Tải lên VKHO', desc: 'Dùng file Excel vừa tải về, nhấn nút bên dưới để upload lên hệ thống VKHO.' },
   ];
+
+  const guideStepsFile2 = [
+    { step: 1, title: 'Vào KiotViet', desc: 'Đăng nhập KiotViet trên máy tính (kiotviet.vn).' },
+    { step: 2, title: 'Vào tab Giao Dịch → Mua hàng', desc: 'Trên menu, chọn "Giao dịch" rồi chọn mục "Mua hàng".' },
+    { step: 3, title: 'Mở Nhập hàng', desc: 'Chọn mục "Nhập hàng" để xem toàn bộ phiếu nhập đã thực hiện.' },
+    { step: 4, title: 'Chọn mốc thời gian', desc: 'Chọn khoảng thời gian bao trùm toàn bộ thời gian bạn đã hoạt động trên KiotViet (ví dụ "Toàn thời gian"), sau đó nhấn "Xuất file".' },
+    { step: 5, title: 'Tải file lên VKHO', desc: 'Dùng file Excel "Danh sách chi tiết nhập hàng" vừa tải về, nhấn nút bên dưới để upload — VKHO sẽ ghép Nhà cung cấp theo IMEI / tên sản phẩm.' },
+  ];
+
+  const guideSteps = guidePhase === 1 ? guideStepsFile1 : guideStepsFile2;
+
+  const handleSupplierFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsLoadingSupplier(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+      if (data.length < 2) {
+        toast({ title: 'File NCC trống', variant: 'destructive' });
+        return;
+      }
+      const headers = data[0];
+      const colNcc = findColumnIndex(headers, 'Tên nhà cung cấp', 'Nhà cung cấp');
+      const colTen = findColumnIndex(headers, 'Tên hàng');
+      const colImei = findColumnIndex(headers, 'Serial/IMEI', 'Serial', 'IMEI');
+      if (colNcc < 0 || colTen < 0) {
+        toast({
+          title: 'File không đúng định dạng',
+          description: 'Cần có cột "Tên nhà cung cấp" và "Tên hàng". Vui lòng xuất từ Mua hàng → Nhập hàng.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      const mapImei = new Map<string, string>();
+      const mapName = new Map<string, string>();
+      let count = 0;
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        if (!row) continue;
+        const ncc = String(row[colNcc] || '').trim();
+        if (!ncc) continue;
+        const ten = String(row[colTen] || '').trim();
+        const imeis = colImei >= 0 ? splitKiotVietImeis(row[colImei]) : [];
+        if (imeis.length > 0) {
+          imeis.forEach(im => { if (!mapImei.has(im)) mapImei.set(im, ncc); });
+          count += imeis.length;
+        } else if (ten) {
+          // SP không IMEI: fallback theo tên hàng (lấy NCC gần nhất theo thứ tự file - mới nhất)
+          if (!mapName.has(ten.toLowerCase())) mapName.set(ten.toLowerCase(), ncc);
+          count++;
+        }
+      }
+      setSupplierByImei(mapImei);
+      setSupplierByName(mapName);
+      setSupplierFileName(file.name);
+      setSupplierFileCount(count);
+      toast({
+        title: 'Đã đọc file Nhà cung cấp',
+        description: `${mapImei.size} IMEI + ${mapName.size} tên SP có NCC`,
+      });
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Lỗi đọc file NCC', variant: 'destructive' });
+    } finally {
+      setIsLoadingSupplier(false);
+    }
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
