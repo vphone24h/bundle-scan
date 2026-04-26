@@ -184,19 +184,39 @@ export function useCreatePreorder() {
         }
       }
 
-      // 4. Tạo công nợ khách hàng (cửa hàng nợ khách số tiền cọc)
-      // Quy ước: customer debt > 0 = khách nợ mình; ở đây mình nợ khách nên ghi payment_type='payment' để giảm
-      // Tuy nhiên hệ thống dùng debt_payments với 'addition' để tăng nợ KH (KH nợ thêm).
-      // Mình nợ khách = công nợ ÂM trên customer side.
-      // Pattern hệ thống: dùng payment_type='payment' với amount = deposit (giảm nợ KH = tạo dư có cho KH)
+      // 4. Ghi nhận công nợ khi nhận cọc
+      // Bản chất: mình NHẬN tiền cọc -> mình ĐANG NỢ khách 1 khoản (tới khi giao hàng).
+      // - Nếu nguồn tiền là cash/bank/e_wallet: tạo 1 lệnh "payment" để giảm nợ KH = deposit
+      //   (nợ KH âm = mình nợ khách).
+      // - Nếu nguồn tiền là 'debt' (KH dùng tiền mình đang nợ KH, hoặc trừ vào nợ cũ):
+      //   tạo 2 lệnh đối ứng cho rõ lịch sử:
+      //     (a) addition +deposit  -> "KH dùng nợ cũ để cọc" (giảm số mình đang nợ KH / tăng nợ KH)
+      //     (b) payment  -deposit  -> "Nhận cọc, mình nợ lại KH" (giảm nợ KH)
+      //   Ròng = 0 nhưng người dùng thấy 2 dòng rõ ràng trong lịch sử công nợ.
       if (input.customer_id && input.deposit_amount > 0) {
+        const isDebtSource = input.deposit_payment_source === 'debt';
+        if (isDebtSource) {
+          // Lệnh 1: KH dùng nợ cũ để đặt cọc -> tăng nợ KH (giảm dư có/ tăng dư nợ)
+          await supabase.from('debt_payments').insert([{
+            entity_type: 'customer',
+            entity_id: input.customer_id,
+            payment_type: 'addition',
+            amount: input.deposit_amount,
+            payment_source: 'preorder_deposit_offset',
+            description: `Cọc phiếu ${code} - KH dùng công nợ để đặt cọc`,
+            branch_id: input.branch_id,
+            created_by: user.id,
+            tenant_id: tenantId,
+          } as any]);
+        }
+        // Lệnh chính: nhận cọc -> mình nợ lại KH (giảm nợ KH = dư có)
         await supabase.from('debt_payments').insert([{
           entity_type: 'customer',
           entity_id: input.customer_id,
           payment_type: 'payment',
           amount: input.deposit_amount,
           payment_source: input.deposit_payment_source || 'preorder_deposit',
-          description: `Nhận cọc đặt hàng ${code}`,
+          description: `Nhận cọc phiếu ${code} - Cửa hàng nợ lại khách số tiền cọc`,
           branch_id: input.branch_id,
           created_by: user.id,
           tenant_id: tenantId,
