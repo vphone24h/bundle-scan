@@ -1682,19 +1682,31 @@ export default function ExportNewPage() {
                     <Calendar className="h-3.5 w-3.5" />
                     Ngày giờ xuất hàng
                   </Label>
-                  <div className="relative">
+                  <div
+                    className="relative"
+                    onClick={() => {
+                      const el = document.getElementById('export-datetime-input') as HTMLInputElement | null;
+                      if (!el) return;
+                      try {
+                        // Open native picker immediately (no perceived delay)
+                        (el as any).showPicker?.();
+                        el.focus();
+                      } catch {
+                        el.focus();
+                        el.click();
+                      }
+                    }}
+                  >
                     <input
-                      ref={(el) => {
-                        // Store ref for programmatic showPicker
-                        if (el) (el as any).__exportDateRef = true;
-                      }}
+                      id="export-datetime-input"
                       type="datetime-local"
                       value={exportDate}
                       onChange={(e) => setExportDate(e.target.value)}
-                      className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
-                      style={{ WebkitAppearance: 'none' }}
+                      className="sr-only"
+                      tabIndex={-1}
+                      aria-hidden="true"
                     />
-                    <div className="flex items-center justify-between h-9 px-3 rounded-md border border-input bg-background text-sm cursor-pointer">
+                    <div className="flex items-center justify-between h-9 px-3 rounded-md border border-input bg-background text-sm cursor-pointer hover:bg-accent/50 transition-colors">
                       <span className={cn(!exportDate && 'text-muted-foreground')}>
                         {exportDate
                           ? new Date(exportDate).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
