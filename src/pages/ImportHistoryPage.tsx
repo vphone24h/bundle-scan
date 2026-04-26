@@ -75,6 +75,9 @@ import { TransferStockDialog } from '@/components/import/TransferStockDialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
+import { ProductDepositDialog } from '@/components/deposit/ProductDepositDialog';
+import { useActiveDepositsByProducts } from '@/hooks/useProductDeposits';
+import { HandCoins } from 'lucide-react';
 
 const useImportHistoryConstants = () => {
   const { t } = useTranslation();
