@@ -133,6 +133,21 @@ export default function ExportNewPage() {
   // Cart
   const exportDraft = useDraftCart<CartItem>('export_draft_cart');
   const [cart, setCart] = useState<CartItem[]>([]);
+  const cartProductIds = useMemo(
+    () => Array.from(new Set(cart.map(c => c.product_id).filter(Boolean) as string[])),
+    [cart]
+  );
+  const { data: cartActiveDeposits = [] } = useActiveDepositsByProducts(cartProductIds);
+  const depositsByProductId = useMemo(() => {
+    const m = new Map<string, typeof cartActiveDeposits>();
+    cartActiveDeposits.forEach(d => {
+      const arr = m.get(d.product_id) || [];
+      arr.push(d);
+      m.set(d.product_id, arr);
+    });
+    return m;
+  }, [cartActiveDeposits]);
+  const applyDeposits = useApplyDepositsToReceipt();
   // Ref to track product IDs being processed (prevents race condition on fast scans)
   const pendingProductIdsRef = useRef<Set<string>>(new Set());
   // Tax state
