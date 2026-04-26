@@ -1054,6 +1054,7 @@ export default function ExportNewPage() {
       });
 
       // Áp dụng cọc khách: nếu cart có SP đã cọc và SĐT khớp → đánh dấu cọc applied + ghi expense vào sổ quỹ
+      let depositMsg = '';
       try {
         const cartProdIds = new Set(savedCart.map(i => i.product_id));
         const phoneNorm = (savedCustomerPhone || '').replace(/\s/g, '');
@@ -1084,7 +1085,7 @@ export default function ExportNewPage() {
             tenant_id: tenantId,
             recipient_name: d.customer_name,
           })));
-          successMessage = (successMessage || '') + `. Đã áp dụng ${matchedDeposits.length} cọc (${formatNumber(totalDep)}đ)`;
+          depositMsg = `. Đã áp dụng ${matchedDeposits.length} cọc (${formatNumber(totalDep)}đ)`;
         }
       } catch (e) {
         console.warn('Apply deposits failed:', e);
