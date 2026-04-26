@@ -102,12 +102,18 @@ type ProductSuggestion = {
 
 const DEFAULT_VARIANT_LABELS = ['Biến thể 1', 'Biến thể 2', 'Biến thể 3'] as const;
 const IMPORTABLE_PRODUCT_STATUSES = new Set<Product['status']>(['in_stock', 'template']);
+const DEFAULT_KIOTVIET_SUPPLIER_NAME = 'KiotViet Import';
 
 function normalizeSuggestionText(value: string) {
   return normalizeProductSearchQuery(String(value || ''))
     .toLowerCase()
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function normalizeImportedSupplierName(value?: string | null) {
+  const normalized = String(value || '').replace(/\s+/g, ' ').trim();
+  return normalized || DEFAULT_KIOTVIET_SUPPLIER_NAME;
 }
 
 function escapeRegExp(value: string) {
