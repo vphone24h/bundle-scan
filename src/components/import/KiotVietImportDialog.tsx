@@ -120,8 +120,9 @@ export function KiotVietImportDialog({
     { step: 1, title: 'Vào KiotViet', desc: 'Đăng nhập KiotViet trên máy tính (kiotviet.vn).' },
     { step: 2, title: 'Vào tab Mua hàng', desc: 'Trên menu KiotViet, nhấn vào mục "Mua hàng" (nằm kế bên nút "Hàng hóa").' },
     { step: 3, title: 'Mở Nhập hàng', desc: 'Chọn mục "Nhập hàng" để xem toàn bộ phiếu nhập đã thực hiện.' },
-    { step: 4, title: 'Chọn mốc thời gian', desc: 'Chọn khoảng thời gian bao trùm toàn bộ thời gian bạn đã hoạt động trên KiotViet (ví dụ "Toàn thời gian"), sau đó nhấn "Xuất file".' },
-    { step: 5, title: 'Tải file lên VKHO', desc: 'Dùng file Excel "Danh sách chi tiết nhập hàng" vừa tải về, nhấn nút bên dưới để upload — VKHO sẽ ghép Nhà cung cấp theo IMEI / tên sản phẩm.' },
+    { step: 4, title: 'Chọn mốc thời gian', desc: 'Chọn khoảng thời gian bao trùm toàn bộ thời gian bạn đã hoạt động trên KiotViet (ví dụ "Toàn thời gian").' },
+    { step: 5, title: 'Chọn xuất theo chi tiết', desc: 'Trong tuỳ chọn xuất file, chọn "Xuất theo chi tiết" rồi nhấn "Xuất file" để tải file Excel về máy.' },
+    { step: 6, title: 'Tải file lên VKHO', desc: 'Dùng file Excel "Danh sách chi tiết nhập hàng" vừa tải về, nhấn nút bên dưới để upload — VKHO sẽ ghép Nhà cung cấp theo IMEI / tên sản phẩm.' },
   ];
 
   const guideSteps = guidePhase === 1 ? guideStepsFile1 : guideStepsFile2;
