@@ -66,7 +66,7 @@ import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombob
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { formatNumber, parseFormattedNumber, formatInputNumber } from '@/lib/formatNumber';
-import { useDepositMap, useCancelProductDeposit } from '@/hooks/useProductDeposits';
+import { useDepositMap, useCancelProductDeposit, useApplyProductDeposits } from '@/hooks/useProductDeposits';
 import { BadgeDollarSign, AlertTriangle as AlertTriangleIcon } from 'lucide-react';
 import { PriceInput } from '@/components/ui/price-input';
 import { cn } from '@/lib/utils';
@@ -136,6 +136,7 @@ export default function ExportNewPage() {
   // Deposits map for cart products
   const { map: depositMap } = useDepositMap();
   const cancelDeposit = useCancelProductDeposit();
+  const applyDeposits = useApplyProductDeposits();
   // Ref to track product IDs being processed (prevents race condition on fast scans)
   const pendingProductIdsRef = useRef<Set<string>>(new Set());
   // Tax state
