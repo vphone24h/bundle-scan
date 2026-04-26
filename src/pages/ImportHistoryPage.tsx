@@ -1675,6 +1675,7 @@ export default function ImportHistoryPage() {
                           {canViewImportHistoryPrice && <th className="text-right p-3 font-medium">Đơn giá</th>}
                           {canViewImportHistoryPrice && <th className="text-right p-3 font-medium">Thành tiền</th>}
                           <th className="text-center p-3 font-medium">Trạng thái</th>
+                          <th className="text-center p-3 font-medium">Cọc</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">
@@ -1726,6 +1727,26 @@ export default function ImportHistoryPage() {
                                   ? 'Bảo hành'
                                   : 'Đã trả'}
                               </Badge>
+                            </td>
+                            <td className="p-3 text-center">
+                              {item.products?.status === 'in_stock' ? (
+                                <div className="flex flex-col items-center gap-1">
+                                  {(depositsByProduct.get(item.products?.id)?.length || 0) > 0 && (
+                                    <Badge variant="outline" className="border-warning text-warning bg-warning/10 text-xs">
+                                      <HandCoins className="h-3 w-3 mr-1" /> Đã cọc
+                                    </Badge>
+                                  )}
+                                  <Button size="sm" variant="outline" className="h-7 text-xs"
+                                    onClick={() => setDepositTarget({
+                                      id: item.products.id,
+                                      name: item.products.name,
+                                      imei: item.products.imei,
+                                      branch_id: item.products.branch_id || receiptDetails?.receipt?.branch_id,
+                                    })}>
+                                    <HandCoins className="h-3 w-3 mr-1" /> Cọc
+                                  </Button>
+                                </div>
+                              ) : <span className="text-muted-foreground text-xs">-</span>}
                             </td>
                           </tr>
                         ))}
