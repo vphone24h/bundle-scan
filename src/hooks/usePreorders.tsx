@@ -545,7 +545,7 @@ export function useCompletePreorder() {
             payment_type: 'payment',
             amount: additional,
             payment_source: 'preorder_complete_debt_offset',
-            description: `Hoàn thành phiếu cọc ${r.code} - Trừ ${formatVND(additional)} vào công nợ KH (đơn ${exportCode})`,
+            description: `Hoàn thành phiếu cọc ${r.code} - Trừ ${additional.toLocaleString('vi-VN')}đ vào công nợ KH (đơn ${exportCode})`,
             branch_id: r.branch_id,
             created_by: user.id,
             tenant_id: tenantId,
