@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -134,11 +135,41 @@ export default function ExportNewPage() {
   const exportDraft = useDraftCart<CartItem>('export_draft_cart');
   const [cart, setCart] = useState<CartItem[]>([]);
   // Deposits map for cart products
-  const { map: depositMap } = useDepositMap();
+  const { map: depositMap, byProduct: depositsByProduct, totalQtyByProduct } = useDepositMap();
   const cancelDeposit = useCancelProductDeposit();
   const applyDeposits = useApplyProductDeposits();
   // Ref to track product IDs being processed (prevents race condition on fast scans)
   const pendingProductIdsRef = useRef<Set<string>>(new Set());
+
+  // Fetch stock for non-IMEI products in cart that have active deposits.
+  // Used to decide whether to show the "đã có người cọc" warning:
+  // only show when totalDeposited >= stock (else stock is enough for everyone).
+  const nonImeiDepositedProductIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const item of cart) {
+      if (!item.imei && depositsByProduct.has(item.product_id)) {
+        ids.add(item.product_id);
+      }
+    }
+    return Array.from(ids);
+  }, [cart, depositsByProduct]);
+
+  const { data: productStockMap = new Map<string, number>() } = useQuery({
+    queryKey: ['products-stock-for-deposit', nonImeiDepositedProductIds.sort().join(',')],
+    queryFn: async () => {
+      const m = new Map<string, number>();
+      if (nonImeiDepositedProductIds.length === 0) return m;
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, quantity')
+        .in('id', nonImeiDepositedProductIds);
+      if (error) return m;
+      for (const p of data || []) m.set((p as any).id, Number((p as any).quantity || 0));
+      return m;
+    },
+    enabled: nonImeiDepositedProductIds.length > 0,
+    staleTime: 30 * 1000,
+  });
   // Tax state
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [taxRate, setTaxRate] = useState<number | null>(null);
@@ -885,20 +916,22 @@ export default function ExportNewPage() {
     const result: { id: string; amount: number; productName: string; customerName: string }[] = [];
     const seen = new Set<string>();
     for (const item of cart) {
-      const dep = depositMap.get(item.product_id);
-      if (!dep || seen.has(dep.id)) continue;
-      const matchCustomer = !!(
-        (selectedCustomer?.id && dep.customer_id && selectedCustomer.id === dep.customer_id) ||
-        (customerPhone && dep.customer_phone && customerPhone.replace(/\D/g, '') === dep.customer_phone.replace(/\D/g, ''))
-      );
-      if (matchCustomer) {
-        seen.add(dep.id);
-        result.push({
-          id: dep.id,
-          amount: Number(dep.deposit_amount) || 0,
-          productName: item.product_name,
-          customerName: dep.customer_name,
-        });
+      const deps = depositsByProduct.get(item.product_id) || [];
+      for (const dep of deps) {
+        if (seen.has(dep.id)) continue;
+        const matchCustomer = !!(
+          (selectedCustomer?.id && dep.customer_id && selectedCustomer.id === dep.customer_id) ||
+          (customerPhone && dep.customer_phone && customerPhone.replace(/\D/g, '') === dep.customer_phone.replace(/\D/g, ''))
+        );
+        if (matchCustomer) {
+          seen.add(dep.id);
+          result.push({
+            id: dep.id,
+            amount: Number(dep.deposit_amount) || 0,
+            productName: item.product_name,
+            customerName: dep.customer_name,
+          });
+        }
       }
     }
     return result;
@@ -1526,6 +1559,15 @@ export default function ExportNewPage() {
                           {(() => {
                             const dep = depositMap.get(item.product_id);
                             if (!dep) return null;
+                            // Cảnh báo cọc:
+                            // - Sản phẩm có IMEI: luôn cảnh báo (vì 1 IMEI = 1 sản phẩm cụ thể).
+                            // - Sản phẩm không IMEI: chỉ cảnh báo khi tổng số cọc >= tồn kho
+                            //   (kho còn nhiều thì bán cho khách khác không ảnh hưởng người cọc).
+                            if (!item.imei) {
+                              const stock = productStockMap.get(item.product_id) ?? 0;
+                              const totalDeposited = totalQtyByProduct.get(item.product_id) || 0;
+                              if (stock > 0 && totalDeposited < stock) return null;
+                            }
                             const matchCustomer = !!(
                               (selectedCustomer?.id && dep.customer_id && selectedCustomer.id === dep.customer_id) ||
                               (customerPhone && dep.customer_phone && customerPhone.replace(/\D/g, '') === dep.customer_phone.replace(/\D/g, ''))

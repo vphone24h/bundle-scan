@@ -11,6 +11,7 @@ export interface ProductDeposit {
   customer_name: string;
   customer_phone: string | null;
   deposit_amount: number;
+  quantity: number;
   payment_source: string;
   note: string | null;
   status: 'active' | 'applied' | 'cancelled';
@@ -56,10 +57,19 @@ export function useActiveDeposits() {
 export function useDepositMap() {
   const { data: deposits = [], ...rest } = useActiveDeposits();
   const map = new Map<string, ProductDeposit>();
+  const byProduct = new Map<string, ProductDeposit[]>();
+  const totalQtyByProduct = new Map<string, number>();
   for (const d of deposits) {
     if (!map.has(d.product_id)) map.set(d.product_id, d);
+    const arr = byProduct.get(d.product_id) || [];
+    arr.push(d);
+    byProduct.set(d.product_id, arr);
+    totalQtyByProduct.set(
+      d.product_id,
+      (totalQtyByProduct.get(d.product_id) || 0) + (Number(d.quantity) || 1)
+    );
   }
-  return { map, deposits, ...rest };
+  return { map, byProduct, totalQtyByProduct, deposits, ...rest };
 }
 
 /**
@@ -79,12 +89,14 @@ export function useCreateProductDeposit() {
       customerName: string;
       customerPhone?: string | null;
       depositAmount: number;
+      quantity?: number;
       paymentSource: string; // cash | bank_card | e_wallet | custom-id
       paymentSourceLabel?: string;
       note?: string | null;
     }) => {
       if (!tenant?.id) throw new Error('Không tìm thấy tenant');
       if (input.depositAmount <= 0) throw new Error('Số tiền cọc phải lớn hơn 0');
+      const qty = Math.max(1, Number(input.quantity || 1));
 
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -99,15 +111,37 @@ export function useCreateProductDeposit() {
         createdByName = profile?.display_name || user.email || null;
       }
 
-      // Kiểm tra đã có deposit active cho sản phẩm chưa
-      const { data: existing } = await supabase
+      // Kiểm tra: với sản phẩm có IMEI -> chỉ cho 1 deposit active.
+      // Với sản phẩm không IMEI -> chặn nếu tổng số lượng cọc vượt tồn kho.
+      const { data: prod } = await supabase
+        .from('products')
+        .select('imei, quantity')
+        .eq('id', input.productId)
+        .maybeSingle();
+      const stockQty = Number((prod as any)?.quantity || 0);
+      const hasImei = !!(prod as any)?.imei;
+
+      const { data: activeList } = await supabase
         .from('product_deposits' as any)
-        .select('id')
+        .select('id, quantity')
         .eq('tenant_id', tenant.id)
         .eq('product_id', input.productId)
-        .eq('status', 'active')
-        .maybeSingle();
-      if (existing) throw new Error('Sản phẩm này đã có khách cọc. Vui lòng hủy cọc cũ trước.');
+        .eq('status', 'active');
+      const totalDeposited = (activeList || []).reduce(
+        (s: number, r: any) => s + (Number(r.quantity) || 1),
+        0
+      );
+      if (hasImei) {
+        if ((activeList || []).length > 0) {
+          throw new Error('Sản phẩm này đã có khách cọc. Vui lòng hủy cọc cũ trước.');
+        }
+      } else {
+        if (stockQty > 0 && totalDeposited + qty > stockQty) {
+          throw new Error(
+            `Tồn kho ${stockQty}, đã cọc ${totalDeposited}. Không thể cọc thêm ${qty}.`
+          );
+        }
+      }
 
       // 1) Ghi sổ quỹ trước (income)
       const skuPart = input.productSku ? ` (${input.productSku})` : '';
@@ -116,7 +150,7 @@ export function useCreateProductDeposit() {
         .insert([{
           type: 'income' as const,
           category: 'Tiền cọc khách hàng',
-          description: `Khách ${input.customerName} cọc sản phẩm: ${input.productName}${skuPart}`,
+          description: `Khách ${input.customerName} cọc ${qty > 1 ? `${qty} × ` : ''}sản phẩm: ${input.productName}${skuPart}`,
           amount: input.depositAmount,
           payment_source: input.paymentSource,
           is_business_accounting: false,
@@ -143,6 +177,7 @@ export function useCreateProductDeposit() {
           customer_name: input.customerName,
           customer_phone: input.customerPhone || null,
           deposit_amount: input.depositAmount,
+          quantity: qty,
           payment_source: input.paymentSource,
           note: input.note || null,
           status: 'active',

@@ -1969,6 +1969,7 @@ export default function ImportHistoryPage() {
           sku: depositProduct.sku,
           imei: depositProduct.imei,
           branch_id: depositProduct.branch_id,
+          stock_quantity: (depositProduct as any).quantity ?? null,
         } : null}
         suggestedPrice={depositProduct?.sale_price ? Number(depositProduct.sale_price) : undefined}
       />

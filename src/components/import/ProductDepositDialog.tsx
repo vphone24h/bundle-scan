@@ -11,11 +11,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Banknote, CreditCard, Wallet, Loader2 } from 'lucide-react';
+import { Banknote, CreditCard, Wallet, Loader2, Minus, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombobox';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
-import { useCreateProductDeposit } from '@/hooks/useProductDeposits';
+import { useCreateProductDeposit, useDepositMap } from '@/hooks/useProductDeposits';
 import { formatNumber } from '@/lib/formatNumber';
 import { toast } from 'sonner';
 
@@ -28,6 +28,7 @@ interface ProductDepositDialogProps {
     sku: string;
     imei?: string | null;
     branch_id?: string | null;
+    stock_quantity?: number | null;
   } | null;
   suggestedPrice?: number;
 }
@@ -43,6 +44,11 @@ interface CustomerLite {
 export function ProductDepositDialog({ open, onClose, product, suggestedPrice }: ProductDepositDialogProps) {
   const { data: customSources = [] } = useCustomPaymentSources();
   const createDeposit = useCreateProductDeposit();
+  const { totalQtyByProduct } = useDepositMap();
+  const hasImei = !!product?.imei;
+  const stockQty = Number(product?.stock_quantity || 0);
+  const alreadyDeposited = product ? (totalQtyByProduct.get(product.id) || 0) : 0;
+  const remainingStock = Math.max(0, stockQty - alreadyDeposited);
 
   const paymentOptions = useMemo(() => {
     const builtIn = [
@@ -67,6 +73,7 @@ export function ProductDepositDialog({ open, onClose, product, suggestedPrice }:
   const [depositAmountStr, setDepositAmountStr] = useState('');
   const [paymentSource, setPaymentSource] = useState<string>('cash');
   const [note, setNote] = useState('');
+  const [quantity, setQuantity] = useState<number>(1);
 
   useEffect(() => {
     if (open) {
@@ -78,6 +85,7 @@ export function ProductDepositDialog({ open, onClose, product, suggestedPrice }:
       setDepositAmountStr('');
       setPaymentSource('cash');
       setNote('');
+      setQuantity(1);
     }
   }, [open]);
 
@@ -96,6 +104,10 @@ export function ProductDepositDialog({ open, onClose, product, suggestedPrice }:
     }
     if (depositAmount <= 0) {
       toast.error('Vui lòng nhập số tiền cọc');
+      return;
+    }
+    if (!hasImei && stockQty > 0 && quantity > remainingStock) {
+      toast.error(`Chỉ còn ${remainingStock} sản phẩm có thể cọc (tồn ${stockQty}, đã cọc ${alreadyDeposited})`);
       return;
     }
 
@@ -147,6 +159,7 @@ export function ProductDepositDialog({ open, onClose, product, suggestedPrice }:
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim() || null,
         depositAmount,
+        quantity: hasImei ? 1 : quantity,
         paymentSource,
         note: note.trim() || null,
       });
@@ -209,6 +222,50 @@ export function ProductDepositDialog({ open, onClose, product, suggestedPrice }:
               </p>
             )}
           </div>
+
+          {/* Quantity (only for non-IMEI) */}
+          {!hasImei && (
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Số lượng cọc *</Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  disabled={quantity <= 1}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <Input
+                  type="number"
+                  min={1}
+                  max={remainingStock || undefined}
+                  value={quantity}
+                  onChange={(e) => {
+                    const v = Math.max(1, Number(e.target.value) || 1);
+                    setQuantity(remainingStock > 0 ? Math.min(v, remainingStock) : v);
+                  }}
+                  className="w-20 text-center font-medium"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={() => setQuantity((q) => (remainingStock > 0 ? Math.min(remainingStock, q + 1) : q + 1))}
+                  disabled={remainingStock > 0 && quantity >= remainingStock}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+                <span className="text-xs text-muted-foreground ml-2">
+                  Tồn kho: <span className="font-medium text-foreground">{stockQty}</span>
+                  {alreadyDeposited > 0 && <> · Đã cọc: <span className="font-medium text-amber-600">{alreadyDeposited}</span></>}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Payment source */}
           <div>

@@ -6397,6 +6397,7 @@ export type Database = {
           note: string | null
           payment_source: string
           product_id: string
+          quantity: number
           refund_cash_book_id: string | null
           refunded_at: string | null
           status: string
@@ -6419,6 +6420,7 @@ export type Database = {
           note?: string | null
           payment_source?: string
           product_id: string
+          quantity?: number
           refund_cash_book_id?: string | null
           refunded_at?: string | null
           status?: string
@@ -6441,6 +6443,7 @@ export type Database = {
           note?: string | null
           payment_source?: string
           product_id?: string
+          quantity?: number
           refund_cash_book_id?: string | null
           refunded_at?: string | null
           status?: string
