@@ -6380,6 +6380,75 @@ export type Database = {
         }
         Relationships: []
       }
+      product_deposits: {
+        Row: {
+          applied_at: string | null
+          applied_receipt_id: string | null
+          branch_id: string | null
+          cash_book_id: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          customer_id: string | null
+          customer_name: string
+          customer_phone: string | null
+          deposit_amount: number
+          id: string
+          note: string | null
+          payment_source: string
+          product_id: string
+          refund_cash_book_id: string | null
+          refunded_at: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_receipt_id?: string | null
+          branch_id?: string | null
+          cash_book_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          customer_id?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          deposit_amount?: number
+          id?: string
+          note?: string | null
+          payment_source?: string
+          product_id: string
+          refund_cash_book_id?: string | null
+          refunded_at?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          applied_receipt_id?: string | null
+          branch_id?: string | null
+          cash_book_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          customer_id?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          deposit_amount?: number
+          id?: string
+          note?: string | null
+          payment_source?: string
+          product_id?: string
+          refund_cash_book_id?: string | null
+          refunded_at?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_groups: {
         Row: {
           category_id: string | null
