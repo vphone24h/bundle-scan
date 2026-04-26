@@ -916,20 +916,22 @@ export default function ExportNewPage() {
     const result: { id: string; amount: number; productName: string; customerName: string }[] = [];
     const seen = new Set<string>();
     for (const item of cart) {
-      const dep = depositMap.get(item.product_id);
-      if (!dep || seen.has(dep.id)) continue;
-      const matchCustomer = !!(
-        (selectedCustomer?.id && dep.customer_id && selectedCustomer.id === dep.customer_id) ||
-        (customerPhone && dep.customer_phone && customerPhone.replace(/\D/g, '') === dep.customer_phone.replace(/\D/g, ''))
-      );
-      if (matchCustomer) {
-        seen.add(dep.id);
-        result.push({
-          id: dep.id,
-          amount: Number(dep.deposit_amount) || 0,
-          productName: item.product_name,
-          customerName: dep.customer_name,
-        });
+      const deps = depositsByProduct.get(item.product_id) || [];
+      for (const dep of deps) {
+        if (seen.has(dep.id)) continue;
+        const matchCustomer = !!(
+          (selectedCustomer?.id && dep.customer_id && selectedCustomer.id === dep.customer_id) ||
+          (customerPhone && dep.customer_phone && customerPhone.replace(/\D/g, '') === dep.customer_phone.replace(/\D/g, ''))
+        );
+        if (matchCustomer) {
+          seen.add(dep.id);
+          result.push({
+            id: dep.id,
+            amount: Number(dep.deposit_amount) || 0,
+            productName: item.product_name,
+            customerName: dep.customer_name,
+          });
+        }
       }
     }
     return result;
