@@ -81,25 +81,108 @@ export function KiotVietImportDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [validationProgress, setValidationProgress] = useState(0);
-  const [guideStep, setGuideStep] = useState(0); // 0 = showing guide, -1 = done/upload mode
+  const [guideStep, setGuideStep] = useState(0); // 0..N = guide step, -1 = done/upload mode
+  const [guidePhase, setGuidePhase] = useState<1 | 2>(1); // 1 = file SP, 2 = file Nhập hàng (NCC)
+  // Supplier maps from "Nhập hàng" file (file 2)
+  const [supplierByImei, setSupplierByImei] = useState<Map<string, string>>(new Map());
+  const [supplierByName, setSupplierByName] = useState<Map<string, string>>(new Map());
+  const [supplierFileName, setSupplierFileName] = useState<string>('');
+  const [supplierFileCount, setSupplierFileCount] = useState<number>(0);
+  const [isLoadingSupplier, setIsLoadingSupplier] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const supplierFileInputRef = useRef<HTMLInputElement>(null);
 
   // Reset guide when dialog opens
   const handleOpenChange = (open: boolean) => {
     if (open) {
       setGuideStep(0);
+      setGuidePhase(1);
       setParsedRows([]);
+      setSupplierByImei(new Map());
+      setSupplierByName(new Map());
+      setSupplierFileName('');
+      setSupplierFileCount(0);
     }
     onOpenChange(open);
   };
 
-  const guideSteps = [
+  const guideStepsFile1 = [
     { step: 1, title: 'Đăng nhập KiotViet', desc: 'Truy cập trang quản lý KiotViet trên máy tính (điện thoại không xuất được file). Vào kiotviet.vn và đăng nhập.' },
     { step: 2, title: 'Vào tab Hàng Hóa', desc: 'Trên thanh menu bên trái, chọn mục "Hàng hóa".' },
     { step: 3, title: 'Danh sách hàng hóa', desc: 'Mở trang "Danh sách hàng hóa" để xem toàn bộ sản phẩm.' },
     { step: 4, title: 'Xuất file Excel', desc: 'Nhấn nút "Xuất file" ở góc phải để tải file Excel chứa danh sách sản phẩm.' },
     { step: 5, title: 'Tải lên VKHO', desc: 'Dùng file Excel vừa tải về, nhấn nút bên dưới để upload lên hệ thống VKHO.' },
   ];
+
+  const guideStepsFile2 = [
+    { step: 1, title: 'Vào KiotViet', desc: 'Đăng nhập KiotViet trên máy tính (kiotviet.vn).' },
+    { step: 2, title: 'Vào tab Giao Dịch → Mua hàng', desc: 'Trên menu, chọn "Giao dịch" rồi chọn mục "Mua hàng".' },
+    { step: 3, title: 'Mở Nhập hàng', desc: 'Chọn mục "Nhập hàng" để xem toàn bộ phiếu nhập đã thực hiện.' },
+    { step: 4, title: 'Chọn mốc thời gian', desc: 'Chọn khoảng thời gian bao trùm toàn bộ thời gian bạn đã hoạt động trên KiotViet (ví dụ "Toàn thời gian"), sau đó nhấn "Xuất file".' },
+    { step: 5, title: 'Tải file lên VKHO', desc: 'Dùng file Excel "Danh sách chi tiết nhập hàng" vừa tải về, nhấn nút bên dưới để upload — VKHO sẽ ghép Nhà cung cấp theo IMEI / tên sản phẩm.' },
+  ];
+
+  const guideSteps = guidePhase === 1 ? guideStepsFile1 : guideStepsFile2;
+
+  const handleSupplierFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsLoadingSupplier(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+      if (data.length < 2) {
+        toast({ title: 'File NCC trống', variant: 'destructive' });
+        return;
+      }
+      const headers = data[0];
+      const colNcc = findColumnIndex(headers, 'Tên nhà cung cấp', 'Nhà cung cấp');
+      const colTen = findColumnIndex(headers, 'Tên hàng');
+      const colImei = findColumnIndex(headers, 'Serial/IMEI', 'Serial', 'IMEI');
+      if (colNcc < 0 || colTen < 0) {
+        toast({
+          title: 'File không đúng định dạng',
+          description: 'Cần có cột "Tên nhà cung cấp" và "Tên hàng". Vui lòng xuất từ Mua hàng → Nhập hàng.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      const mapImei = new Map<string, string>();
+      const mapName = new Map<string, string>();
+      let count = 0;
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        if (!row) continue;
+        const ncc = String(row[colNcc] || '').trim();
+        if (!ncc) continue;
+        const ten = String(row[colTen] || '').trim();
+        const imeis = colImei >= 0 ? splitKiotVietImeis(row[colImei]) : [];
+        if (imeis.length > 0) {
+          imeis.forEach(im => { if (!mapImei.has(im)) mapImei.set(im, ncc); });
+          count += imeis.length;
+        } else if (ten) {
+          // SP không IMEI: fallback theo tên hàng (lấy NCC gần nhất theo thứ tự file - mới nhất)
+          if (!mapName.has(ten.toLowerCase())) mapName.set(ten.toLowerCase(), ncc);
+          count++;
+        }
+      }
+      setSupplierByImei(mapImei);
+      setSupplierByName(mapName);
+      setSupplierFileName(file.name);
+      setSupplierFileCount(count);
+      toast({
+        title: 'Đã đọc file Nhà cung cấp',
+        description: `${mapImei.size} IMEI + ${mapName.size} tên SP có NCC`,
+      });
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Lỗi đọc file NCC', variant: 'destructive' });
+    } finally {
+      setIsLoadingSupplier(false);
+    }
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -293,22 +376,44 @@ export function KiotVietImportDialog({
     }
   };
 
-  // Group by branch (Vị trí)
+  // Resolve supplier name for a row from supplier maps (file 2)
+  const resolveSupplier = (row: KVParsedRow): string => {
+    if (row.imei && supplierByImei.has(row.imei)) return supplierByImei.get(row.imei)!;
+    const byName = supplierByName.get(row.productName.toLowerCase());
+    if (byName) return byName;
+    return 'KiotViet Import';
+  };
+
+  // Group by (supplier + branch)
   const branchGroups = useMemo(() => {
     const validRows = parsedRows.filter(r => r.isValid);
-    const groupMap = new Map<string, KVParsedRow[]>();
+    const groupMap = new Map<string, { supplierName: string; branchName: string; rows: KVParsedRow[] }>();
     validRows.forEach(row => {
-      const key = row.branchName || 'Không xác định';
-      if (!groupMap.has(key)) groupMap.set(key, []);
-      groupMap.get(key)!.push(row);
+      const supplierName = resolveSupplier(row);
+      const branchName = row.branchName || 'Không xác định';
+      const key = `${supplierName}|||${branchName}`;
+      if (!groupMap.has(key)) groupMap.set(key, { supplierName, branchName, rows: [] });
+      groupMap.get(key)!.rows.push(row);
     });
-    return Array.from(groupMap.entries()).map(([branchName, rows]) => ({
-      branchName,
-      rows,
-      validCount: rows.length,
-      totalAmount: rows.reduce((sum, r) => sum + r.importPrice * r.quantity, 0),
+    return Array.from(groupMap.values()).map(g => ({
+      supplierName: g.supplierName,
+      branchName: g.branchName,
+      rows: g.rows,
+      validCount: g.rows.length,
+      totalAmount: g.rows.reduce((sum, r) => sum + r.importPrice * r.quantity, 0),
     }));
-  }, [parsedRows]);
+  }, [parsedRows, supplierByImei, supplierByName]);
+
+  // Stats: how many rows matched a supplier from file 2
+  const supplierMatchStats = useMemo(() => {
+    const valid = parsedRows.filter(r => r.isValid);
+    let matched = 0;
+    valid.forEach(r => {
+      if (r.imei && supplierByImei.has(r.imei)) matched++;
+      else if (supplierByName.has(r.productName.toLowerCase())) matched++;
+    });
+    return { matched, total: valid.length };
+  }, [parsedRows, supplierByImei, supplierByName]);
 
   const handleImport = async () => {
     const validRows = parsedRows.filter(r => r.isValid);
@@ -353,7 +458,7 @@ export function KiotVietImportDialog({
       }
     });
 
-    // Group all valid rows into one group (no supplier from KiotViet)
+    // Group all valid rows by supplier + branch
     const groups = branchGroups.map(group => {
       const items: ImportReceiptItem[] = group.rows.map((row, index) => ({
         id: String(Date.now() + index + Math.random()),
@@ -366,26 +471,28 @@ export function KiotVietImportDialog({
         salePrice: row.salePrice,
         quantity: row.quantity,
         supplierId: '',
-        supplierName: 'KiotViet Import',
+        supplierName: group.supplierName,
         note: row.note,
       }));
 
       return {
         items,
-        supplierName: 'KiotViet Import',
+        supplierName: group.supplierName,
         branchName: group.branchName !== 'Không xác định' ? group.branchName : undefined,
-        isNewSupplier: !suppliers.some(s => s.name.toLowerCase() === 'kiotviet import'),
+        isNewSupplier: !suppliers.some(s => s.name.toLowerCase() === group.supplierName.toLowerCase()),
       };
     });
 
-    // Deduplicate isNewSupplier - only mark first group as new
-    let markedNew = false;
+    // Deduplicate isNewSupplier per supplier name (only first occurrence creates)
+    const seenNew = new Set<string>();
     const deduped = groups.map(g => {
-      if (g.isNewSupplier && !markedNew) {
-        markedNew = true;
+      if (g.isNewSupplier) {
+        const key = g.supplierName.toLowerCase();
+        if (seenNew.has(key)) return { ...g, isNewSupplier: false };
+        seenNew.add(key);
         return g;
       }
-      return { ...g, isNewSupplier: false };
+      return g;
     });
 
     onImportMultiple(deduped);
@@ -423,7 +530,9 @@ export function KiotVietImportDialog({
             Nhập hàng từ KiotViet
           </DialogTitle>
           <DialogDescription>
-            {guideStep >= 0 ? 'Làm theo hướng dẫn bên dưới để xuất file từ KiotViet' : 'Tải lên file xuất từ KiotViet để tự động chuyển đổi sang VKHO'}
+            {guideStep >= 0
+              ? `Hướng dẫn ${guidePhase === 1 ? 'File 1: Danh sách sản phẩm' : 'File 2: Nhập hàng (Nhà cung cấp)'} — cần đủ 2 file để khôi phục đúng NCC`
+              : 'Tải lên 2 file xuất từ KiotViet (SP + Nhập hàng) để chuyển đổi sang VKHO kèm Nhà cung cấp'}
           </DialogDescription>
         </DialogHeader>
 
@@ -431,6 +540,33 @@ export function KiotVietImportDialog({
           {/* Step-by-step guide */}
           {guideStep >= 0 && (
             <div className="space-y-3">
+              {/* Phase tabs */}
+              <div className="flex gap-2 border-b pb-2">
+                <button
+                  onClick={() => { setGuidePhase(1); setGuideStep(0); }}
+                  className={`flex-1 text-xs font-medium px-3 py-2 rounded-t border-b-2 transition-colors ${
+                    guidePhase === 1 ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  📦 File 1: Danh sách SP
+                </button>
+                <button
+                  onClick={() => { setGuidePhase(2); setGuideStep(0); }}
+                  className={`flex-1 text-xs font-medium px-3 py-2 rounded-t border-b-2 transition-colors ${
+                    guidePhase === 2 ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  🏷️ File 2: Nhập hàng (NCC)
+                </button>
+              </div>
+
+              {guidePhase === 2 && (
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg p-3 text-xs text-amber-900 dark:text-amber-200">
+                  <p className="font-medium mb-1">⚠️ Quan trọng</p>
+                  <p>Phải nhập đủ <b>cả 2 file</b> mới khôi phục đúng Nhà cung cấp cho từng sản phẩm. Nếu chỉ nhập File 1, các sản phẩm sẽ thiếu NCC (gộp về "KiotViet Import").</p>
+                </div>
+              )}
+
               {guideSteps.map((s, idx) => (
                 <div
                   key={s.step}
@@ -510,7 +646,7 @@ export function KiotVietImportDialog({
               </div>
 
               <div className="form-field">
-                <Label htmlFor="kvFile">Chọn file KiotViet (.xlsx)</Label>
+                <Label htmlFor="kvFile">📦 File 1 — Danh sách sản phẩm (.xlsx) <span className="text-destructive">*</span></Label>
                 <Input
                   ref={fileInputRef}
                   id="kvFile"
@@ -520,6 +656,47 @@ export function KiotVietImportDialog({
                   className="cursor-pointer"
                 />
               </div>
+
+              <div className="form-field">
+                <Label htmlFor="kvSupplierFile" className="flex items-center gap-2">
+                  🏷️ File 2 — Nhập hàng (chứa Nhà cung cấp) (.xlsx)
+                  {supplierFileName && (
+                    <span className="text-xs text-green-600 font-normal">✓ {supplierFileName}</span>
+                  )}
+                </Label>
+                <Input
+                  ref={supplierFileInputRef}
+                  id="kvSupplierFile"
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleSupplierFileChange}
+                  className="cursor-pointer"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Xuất từ KiotViet: <b>Giao dịch → Mua hàng → Nhập hàng</b>, chọn mốc thời gian rồi <b>Xuất file</b>.
+                  Hệ thống sẽ ghép NCC theo IMEI / tên SP. Nếu bỏ qua, các SP sẽ gộp về "KiotViet Import".
+                </p>
+                {isLoadingSupplier && (
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Đang đọc file NCC...
+                  </p>
+                )}
+              </div>
+
+              {!supplierFileName && parsedRows.length > 0 && (
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg p-3 text-xs text-amber-900 dark:text-amber-200">
+                  ⚠️ Bạn chưa tải <b>File 2 (Nhập hàng)</b>. Toàn bộ sản phẩm sẽ bị thiếu thông tin Nhà cung cấp và gộp về một NCC mặc định "KiotViet Import". Khuyến nghị tải đủ 2 file.
+                </div>
+              )}
+
+              {supplierFileName && parsedRows.length > 0 && (
+                <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 rounded-lg p-3 text-xs text-emerald-900 dark:text-emerald-200">
+                  ✓ Đã ghép NCC: <b>{supplierMatchStats.matched}/{supplierMatchStats.total}</b> sản phẩm có nhà cung cấp từ File 2.
+                  {supplierMatchStats.matched < supplierMatchStats.total && (
+                    <span> ({supplierMatchStats.total - supplierMatchStats.matched} SP không khớp sẽ gộp về "KiotViet Import")</span>
+                  )}
+                </div>
+              )}
 
               {isLoading && (
                 <div className="flex items-center justify-center py-8">
@@ -558,7 +735,7 @@ export function KiotVietImportDialog({
                     {branchGroups.length > 1 && (
                       <div className="flex items-center gap-1 text-primary font-medium">
                         <FileSpreadsheet className="h-4 w-4" />
-                        <span>Sẽ tạo {branchGroups.length} phiếu (theo vị trí)</span>
+                        <span>Sẽ tạo {branchGroups.length} phiếu (theo NCC + vị trí)</span>
                       </div>
                     )}
                   </div>
@@ -572,13 +749,13 @@ export function KiotVietImportDialog({
 
                   {branchGroups.length > 1 && (
                     <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                      <p className="text-sm font-medium">Phân nhóm theo vị trí:</p>
+                      <p className="text-sm font-medium">Phân nhóm theo NCC + vị trí:</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {branchGroups.map((group, idx) => (
                           <div key={idx} className="bg-card border rounded p-2 text-sm">
-                            <div className="font-medium">{group.branchName}</div>
+                            <div className="font-medium truncate">{group.supplierName}</div>
                             <div className="text-muted-foreground text-xs">
-                              {group.validCount} SP • {formatCurrencyWithSpaces(group.totalAmount)}
+                              {group.branchName} • {group.validCount} SP • {formatCurrencyWithSpaces(group.totalAmount)}
                             </div>
                           </div>
                         ))}
