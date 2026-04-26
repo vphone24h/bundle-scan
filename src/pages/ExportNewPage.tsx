@@ -1026,6 +1026,8 @@ export default function ExportNewPage() {
     const savedSalesStaffId = isSuperAdmin ? salesStaffId : user?.id || null;
     const savedExportDate = exportDate || null;
     const savedReceiptNote = receiptNote || null;
+    const savedAppliedDepositIds = appliedDeposits.map(d => d.id);
+    const savedDepositDiscount = depositDiscount;
 
     setCart([]);
     exportDraft.clearDraft();
