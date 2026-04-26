@@ -66,6 +66,8 @@ import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombob
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { formatNumber, parseFormattedNumber, formatInputNumber } from '@/lib/formatNumber';
+import { useDepositMap, useCancelProductDeposit } from '@/hooks/useProductDeposits';
+import { BadgeDollarSign, AlertTriangle as AlertTriangleIcon } from 'lucide-react';
 import { PriceInput } from '@/components/ui/price-input';
 import { cn } from '@/lib/utils';
 import { normalizeLooseSearchValue } from '@/lib/normalizeSearch';
@@ -131,6 +133,9 @@ export default function ExportNewPage() {
   // Cart
   const exportDraft = useDraftCart<CartItem>('export_draft_cart');
   const [cart, setCart] = useState<CartItem[]>([]);
+  // Deposits map for cart products
+  const { map: depositMap } = useDepositMap();
+  const cancelDeposit = useCancelProductDeposit();
   // Ref to track product IDs being processed (prevents race condition on fast scans)
   const pendingProductIdsRef = useRef<Set<string>>(new Set());
   // Tax state
@@ -1473,6 +1478,33 @@ export default function ExportNewPage() {
                           <div className="text-xs text-muted-foreground md:hidden">
                             {item.imei || item.sku}
                           </div>
+                          {(() => {
+                            const dep = depositMap.get(item.product_id);
+                            if (!dep) return null;
+                            const matchCustomer = !!(
+                              (selectedCustomer?.id && dep.customer_id && selectedCustomer.id === dep.customer_id) ||
+                              (customerPhone && dep.customer_phone && customerPhone.replace(/\D/g, '') === dep.customer_phone.replace(/\D/g, ''))
+                            );
+                            return (
+                              <div className={cn(
+                                "mt-1 inline-flex items-start gap-1.5 px-2 py-1 rounded text-xs font-medium",
+                                matchCustomer
+                                  ? "bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-300"
+                                  : "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300"
+                              )}>
+                                <BadgeDollarSign className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                                <div className="flex-1">
+                                  <div>
+                                    {matchCustomer ? '✓ Khách đã cọc' : '⚠️ Đã có người cọc'}: <span className="font-semibold">{formatNumber(Number(dep.deposit_amount))}đ</span>
+                                  </div>
+                                  <div className="text-[11px] opacity-90">
+                                    KH: {dep.customer_name}{dep.customer_phone ? ` · ${dep.customer_phone}` : ''}
+                                    {dep.note ? ` · ${dep.note}` : ''}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           {item.imei || item.sku}

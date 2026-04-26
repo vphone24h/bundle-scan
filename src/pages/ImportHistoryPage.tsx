@@ -51,7 +51,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote, Trash2, Settings2, AlertTriangle, Wrench, ArrowRightLeft, CheckSquare, Square, PlayCircle, Plus } from 'lucide-react';
+import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote, Trash2, Settings2, AlertTriangle, Wrench, ArrowRightLeft, CheckSquare, Square, PlayCircle, Plus, HandCoins, BadgeDollarSign } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { ScrollableTableWrapper } from '@/components/ui/scrollable-table-wrapper';
@@ -75,6 +75,9 @@ import { TransferStockDialog } from '@/components/import/TransferStockDialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
+import { ProductDepositDialog } from '@/components/import/ProductDepositDialog';
+import { useDepositMap, useCancelProductDeposit } from '@/hooks/useProductDeposits';
+import { formatNumber } from '@/lib/formatNumber';
 
 const useImportHistoryConstants = () => {
   const { t } = useTranslation();
@@ -297,6 +300,19 @@ export default function ImportHistoryPage() {
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const [adjustProduct, setAdjustProduct] = useState<Product | null>(null);
+  const [depositProduct, setDepositProduct] = useState<Product | null>(null);
+  const { map: depositMap } = useDepositMap();
+  const cancelDeposit = useCancelProductDeposit();
+
+  const handleCancelDeposit = useCallback(async (depositId: string, customerName: string) => {
+    if (!confirm(`Hủy cọc của khách "${customerName}"? Tiền cọc sẽ KHÔNG được hoàn lại sổ quỹ (coi như khách mất cọc).`)) return;
+    try {
+      await cancelDeposit.mutateAsync(depositId);
+      toast({ title: 'Đã hủy cọc', description: 'Tiền cọc giữ nguyên trong sổ quỹ.' });
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err?.message || 'Không thể hủy cọc', variant: 'destructive' });
+    }
+  }, [cancelDeposit]);
 
   // Multi-select for stock transfer
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
@@ -1224,6 +1240,15 @@ export default function ImportHistoryPage() {
                           <div className="font-medium text-sm">{product.name}</div>
                           <div className="text-xs text-muted-foreground">SKU: {product.sku}</div>
                           {product.imei && <div className="text-xs text-muted-foreground font-mono">IMEI: {product.imei}</div>}
+                          {(() => {
+                            const dep = depositMap.get(product.id);
+                            return dep ? (
+                              <div className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-[10px] font-medium">
+                                <BadgeDollarSign className="h-3 w-3" />
+                                Đã cọc {formatNumber(Number(dep.deposit_amount))}đ — {dep.customer_name}
+                              </div>
+                            ) : null;
+                          })()}
                         </div>
                       </div>
                       <Badge className={cn(statusClass, 'text-xs flex-shrink-0')}>{statusLabel}</Badge>
@@ -1278,6 +1303,29 @@ export default function ImportHistoryPage() {
                         <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleReturnProduct(product)}>
                           <RotateCcw className="mr-1 h-3 w-3" /> Trả
                         </Button>
+                        {depositMap.get(product.id) ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+                            onClick={() => {
+                              const dep = depositMap.get(product.id)!;
+                              handleCancelDeposit(dep.id, dep.customer_name);
+                            }}
+                          >
+                            <X className="h-3 w-3" /> Hủy cọc
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs gap-1 border-amber-400 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                            onClick={() => setDepositProduct(product)}
+                            title="Khách đặt cọc giữ máy"
+                          >
+                            <HandCoins className="h-3 w-3" /> Cọc
+                          </Button>
+                        )}
                         {product.imei && (
                           warrantyMarkedIds.has(product.id) ? (
                             <span className="text-xs text-destructive opacity-60 font-medium self-center">Đã BH</span>
@@ -1371,7 +1419,18 @@ export default function ImportHistoryPage() {
                           )}
                         </td>
                       )}
-                      <td className="font-medium">{product.name}</td>
+                      <td className="font-medium">
+                        {product.name}
+                        {(() => {
+                          const dep = depositMap.get(product.id);
+                          return dep ? (
+                            <div className="mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-[10px] font-medium">
+                              <BadgeDollarSign className="h-3 w-3" />
+                              Đã cọc {formatNumber(Number(dep.deposit_amount))}đ — {dep.customer_name}
+                            </div>
+                          ) : null;
+                        })()}
+                      </td>
                       <td className="text-muted-foreground">{product.sku}</td>
                       <td className="font-mono text-sm">{product.imei || '-'}</td>
                       <td>{product.categories?.name || '-'}</td>
@@ -1448,6 +1507,30 @@ export default function ImportHistoryPage() {
                               <Button variant="outline" size="sm" onClick={() => handleReturnProduct(product)} className="h-7 text-xs">
                                 <RotateCcw className="mr-1 h-3 w-3" /> Trả
                               </Button>
+                              {depositMap.get(product.id) ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+                                  onClick={() => {
+                                    const dep = depositMap.get(product.id)!;
+                                    handleCancelDeposit(dep.id, dep.customer_name);
+                                  }}
+                                  title="Hủy cọc (không hoàn tiền sổ quỹ)"
+                                >
+                                  <X className="h-3 w-3" /> Hủy cọc
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs gap-1 border-amber-400 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                                  onClick={() => setDepositProduct(product)}
+                                  title="Khách đặt cọc giữ máy"
+                                >
+                                  <HandCoins className="h-3 w-3" /> Cọc
+                                </Button>
+                              )}
                               {product.imei && (
                                 <>
                                   {warrantyMarkedIds.has(product.id) ? (
@@ -1876,6 +1959,19 @@ export default function ImportHistoryPage() {
           onSuccess={() => setSelectedProductIds(new Set())}
         />
       )}
+      {/* Product Deposit Dialog */}
+      <ProductDepositDialog
+        open={!!depositProduct}
+        onClose={() => setDepositProduct(null)}
+        product={depositProduct ? {
+          id: depositProduct.id,
+          name: depositProduct.name,
+          sku: depositProduct.sku,
+          imei: depositProduct.imei,
+          branch_id: depositProduct.branch_id,
+        } : null}
+        suggestedPrice={depositProduct?.sale_price ? Number(depositProduct.sale_price) : undefined}
+      />
       <OnboardingTourOverlay
         steps={(receipts?.length ?? 0) > 0 ? receiptTour : receiptTourInfo}
         isActive={activeTour === 'receipt-tab' || (manualTourActive && activeTab === 'receipts')}
