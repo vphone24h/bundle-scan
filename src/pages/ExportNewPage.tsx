@@ -1086,6 +1086,18 @@ export default function ExportNewPage() {
         tax_amount: savedTaxEnabled ? savedTaxAmount : 0,
       }));
 
+      // Đánh dấu các deposit đã được áp dụng vào phiếu này
+      if (savedAppliedDepositIds.length > 0 && receipt?.id) {
+        try {
+          await applyDeposits.mutateAsync({
+            depositIds: savedAppliedDepositIds,
+            receiptId: receipt.id,
+          });
+        } catch (err) {
+          console.warn('Apply deposits failed:', err);
+        }
+      }
+
       let successMessage = t('pages.exportNew.receiptCreated', { code: receipt.code });
       if (receipt.points_earned > 0) {
         successMessage += receipt.points_pending 
