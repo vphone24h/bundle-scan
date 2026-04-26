@@ -530,7 +530,9 @@ export function KiotVietImportDialog({
             Nhập hàng từ KiotViet
           </DialogTitle>
           <DialogDescription>
-            {guideStep >= 0 ? 'Làm theo hướng dẫn bên dưới để xuất file từ KiotViet' : 'Tải lên file xuất từ KiotViet để tự động chuyển đổi sang VKHO'}
+            {guideStep >= 0
+              ? `Hướng dẫn ${guidePhase === 1 ? 'File 1: Danh sách sản phẩm' : 'File 2: Nhập hàng (Nhà cung cấp)'} — cần đủ 2 file để khôi phục đúng NCC`
+              : 'Tải lên 2 file xuất từ KiotViet (SP + Nhập hàng) để chuyển đổi sang VKHO kèm Nhà cung cấp'}
           </DialogDescription>
         </DialogHeader>
 
@@ -538,6 +540,33 @@ export function KiotVietImportDialog({
           {/* Step-by-step guide */}
           {guideStep >= 0 && (
             <div className="space-y-3">
+              {/* Phase tabs */}
+              <div className="flex gap-2 border-b pb-2">
+                <button
+                  onClick={() => { setGuidePhase(1); setGuideStep(0); }}
+                  className={`flex-1 text-xs font-medium px-3 py-2 rounded-t border-b-2 transition-colors ${
+                    guidePhase === 1 ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  📦 File 1: Danh sách SP
+                </button>
+                <button
+                  onClick={() => { setGuidePhase(2); setGuideStep(0); }}
+                  className={`flex-1 text-xs font-medium px-3 py-2 rounded-t border-b-2 transition-colors ${
+                    guidePhase === 2 ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  🏷️ File 2: Nhập hàng (NCC)
+                </button>
+              </div>
+
+              {guidePhase === 2 && (
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg p-3 text-xs text-amber-900 dark:text-amber-200">
+                  <p className="font-medium mb-1">⚠️ Quan trọng</p>
+                  <p>Phải nhập đủ <b>cả 2 file</b> mới khôi phục đúng Nhà cung cấp cho từng sản phẩm. Nếu chỉ nhập File 1, các sản phẩm sẽ thiếu NCC (gộp về "KiotViet Import").</p>
+                </div>
+              )}
+
               {guideSteps.map((s, idx) => (
                 <div
                   key={s.step}
@@ -617,7 +646,7 @@ export function KiotVietImportDialog({
               </div>
 
               <div className="form-field">
-                <Label htmlFor="kvFile">Chọn file KiotViet (.xlsx)</Label>
+                <Label htmlFor="kvFile">📦 File 1 — Danh sách sản phẩm (.xlsx) <span className="text-destructive">*</span></Label>
                 <Input
                   ref={fileInputRef}
                   id="kvFile"
@@ -627,6 +656,47 @@ export function KiotVietImportDialog({
                   className="cursor-pointer"
                 />
               </div>
+
+              <div className="form-field">
+                <Label htmlFor="kvSupplierFile" className="flex items-center gap-2">
+                  🏷️ File 2 — Nhập hàng (chứa Nhà cung cấp) (.xlsx)
+                  {supplierFileName && (
+                    <span className="text-xs text-green-600 font-normal">✓ {supplierFileName}</span>
+                  )}
+                </Label>
+                <Input
+                  ref={supplierFileInputRef}
+                  id="kvSupplierFile"
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleSupplierFileChange}
+                  className="cursor-pointer"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Xuất từ KiotViet: <b>Giao dịch → Mua hàng → Nhập hàng</b>, chọn mốc thời gian rồi <b>Xuất file</b>.
+                  Hệ thống sẽ ghép NCC theo IMEI / tên SP. Nếu bỏ qua, các SP sẽ gộp về "KiotViet Import".
+                </p>
+                {isLoadingSupplier && (
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Đang đọc file NCC...
+                  </p>
+                )}
+              </div>
+
+              {!supplierFileName && parsedRows.length > 0 && (
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg p-3 text-xs text-amber-900 dark:text-amber-200">
+                  ⚠️ Bạn chưa tải <b>File 2 (Nhập hàng)</b>. Toàn bộ sản phẩm sẽ bị thiếu thông tin Nhà cung cấp và gộp về một NCC mặc định "KiotViet Import". Khuyến nghị tải đủ 2 file.
+                </div>
+              )}
+
+              {supplierFileName && parsedRows.length > 0 && (
+                <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 rounded-lg p-3 text-xs text-emerald-900 dark:text-emerald-200">
+                  ✓ Đã ghép NCC: <b>{supplierMatchStats.matched}/{supplierMatchStats.total}</b> sản phẩm có nhà cung cấp từ File 2.
+                  {supplierMatchStats.matched < supplierMatchStats.total && (
+                    <span> ({supplierMatchStats.total - supplierMatchStats.matched} SP không khớp sẽ gộp về "KiotViet Import")</span>
+                  )}
+                </div>
+              )}
 
               {isLoading && (
                 <div className="flex items-center justify-center py-8">
@@ -665,7 +735,7 @@ export function KiotVietImportDialog({
                     {branchGroups.length > 1 && (
                       <div className="flex items-center gap-1 text-primary font-medium">
                         <FileSpreadsheet className="h-4 w-4" />
-                        <span>Sẽ tạo {branchGroups.length} phiếu (theo vị trí)</span>
+                        <span>Sẽ tạo {branchGroups.length} phiếu (theo NCC + vị trí)</span>
                       </div>
                     )}
                   </div>
@@ -679,13 +749,13 @@ export function KiotVietImportDialog({
 
                   {branchGroups.length > 1 && (
                     <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                      <p className="text-sm font-medium">Phân nhóm theo vị trí:</p>
+                      <p className="text-sm font-medium">Phân nhóm theo NCC + vị trí:</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {branchGroups.map((group, idx) => (
                           <div key={idx} className="bg-card border rounded p-2 text-sm">
-                            <div className="font-medium">{group.branchName}</div>
+                            <div className="font-medium truncate">{group.supplierName}</div>
                             <div className="text-muted-foreground text-xs">
-                              {group.validCount} SP • {formatCurrencyWithSpaces(group.totalAmount)}
+                              {group.branchName} • {group.validCount} SP • {formatCurrencyWithSpaces(group.totalAmount)}
                             </div>
                           </div>
                         ))}
