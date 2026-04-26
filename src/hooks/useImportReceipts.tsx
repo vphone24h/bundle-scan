@@ -249,9 +249,10 @@ export function useCreateImportReceipt() {
       const tenantId = await getCurrentTenantId();
       if (!tenantId) throw new Error('Không tìm thấy tenant');
 
-      // Generate receipt code
+      // Generate receipt code with millisecond + random suffix to avoid collisions
+      // when multiple import receipts are created in the same second.
       const now = new Date();
-      const code = `PN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+      const code = `PN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}${String(now.getMilliseconds()).padStart(3, '0')}${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
 
       // Calculate total considering quantity
       const totalAmount = products.reduce((sum, p) => sum + p.import_price * p.quantity, 0);
