@@ -880,6 +880,36 @@ export default function ExportNewPage() {
   const taxAmount = Math.round(subtotalAmount * effectiveTaxRate / 100);
   const totalAmount = subtotalAmount + taxAmount;
 
+  // Tính các deposit khớp khách hàng hiện tại trong giỏ -> sẽ trừ vào số phải thanh toán
+  const appliedDeposits = (() => {
+    const result: { id: string; amount: number; productName: string; customerName: string }[] = [];
+    const seen = new Set<string>();
+    for (const item of cart) {
+      const dep = depositMap.get(item.product_id);
+      if (!dep || seen.has(dep.id)) continue;
+      const matchCustomer = !!(
+        (selectedCustomer?.id && dep.customer_id && selectedCustomer.id === dep.customer_id) ||
+        (customerPhone && dep.customer_phone && customerPhone.replace(/\D/g, '') === dep.customer_phone.replace(/\D/g, ''))
+      );
+      if (matchCustomer) {
+        seen.add(dep.id);
+        result.push({
+          id: dep.id,
+          amount: Number(dep.deposit_amount) || 0,
+          productName: item.product_name,
+          customerName: dep.customer_name,
+        });
+      }
+    }
+    return result;
+  })();
+  const depositDiscount = appliedDeposits.reduce((s, d) => s + d.amount, 0);
+  const depositLabel = appliedDeposits.length === 1
+    ? `KH ${appliedDeposits[0].customerName}`
+    : appliedDeposits.length > 1
+    ? `${appliedDeposits.length} sản phẩm`
+    : undefined;
+
   // Handle proceed to payment
   const handleProceedToPayment = () => {
     // Check order limit first
