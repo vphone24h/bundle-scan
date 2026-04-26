@@ -103,6 +103,10 @@ export default function PreorderNewPage() {
   };
 
   const addProductToCart = (product: any) => {
+    // Auto chọn chi nhánh theo sản phẩm đầu tiên (nếu chưa chọn)
+    if (!branchId && product?.branch_id) {
+      setBranchId(product.branch_id);
+    }
     setItems(prev => [...prev, {
       product_id: product.id,
       product_name: product.name,
