@@ -1637,6 +1637,25 @@ export default function ImportHistoryPage() {
                           <span className="font-medium">{formatCurrency(Number(item.import_price) * item.quantity)}</span>
                         )}
                       </div>
+                      {item.products?.status === 'in_stock' && (
+                        <div className="pt-2 border-t flex items-center justify-between gap-2">
+                          {(depositsByProduct.get(item.products?.id)?.length || 0) > 0 ? (
+                            <Badge variant="outline" className="border-warning text-warning bg-warning/10 text-xs">
+                              <HandCoins className="h-3 w-3 mr-1" />
+                              Đã có {depositsByProduct.get(item.products?.id)!.length} cọc
+                            </Badge>
+                          ) : <span className="text-xs text-muted-foreground">Chưa có cọc</span>}
+                          <Button size="sm" variant="outline" className="h-7 text-xs"
+                            onClick={() => setDepositTarget({
+                              id: item.products.id,
+                              name: item.products.name,
+                              imei: item.products.imei,
+                              branch_id: item.products.branch_id || receiptDetails?.receipt?.branch_id,
+                            })}>
+                            <HandCoins className="h-3 w-3 mr-1" /> Khách cọc
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
