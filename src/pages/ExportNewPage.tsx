@@ -133,6 +133,9 @@ export default function ExportNewPage() {
   // Cart
   const exportDraft = useDraftCart<CartItem>('export_draft_cart');
   const [cart, setCart] = useState<CartItem[]>([]);
+  // Deposits map for cart products
+  const { map: depositMap } = useDepositMap();
+  const cancelDeposit = useCancelProductDeposit();
   // Ref to track product IDs being processed (prevents race condition on fast scans)
   const pendingProductIdsRef = useRef<Set<string>>(new Set());
   // Tax state
