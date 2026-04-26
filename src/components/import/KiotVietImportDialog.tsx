@@ -13,6 +13,8 @@ import { ImportReceiptItem } from '@/types/warehouse';
 import { formatCurrencyWithSpaces } from '@/lib/formatNumber';
 import { useCreateCategory } from '@/hooks/useCategories';
 import { supabase } from '@/integrations/supabase/client';
+import kiotvietGuideFile1 from '@/assets/kiotviet-guide-file1.png';
+import kiotvietGuideFile2 from '@/assets/kiotviet-guide-file2.jpeg';
 
 interface KiotVietImportDialogProps {
   open: boolean;
@@ -566,6 +568,18 @@ export function KiotVietImportDialog({
                   <p>Phải nhập đủ <b>cả 2 file</b> mới khôi phục đúng Nhà cung cấp cho từng sản phẩm. Nếu chỉ nhập File 1, các sản phẩm sẽ thiếu NCC (gộp về "KiotViet Import").</p>
                 </div>
               )}
+
+              {/* Visual reference screenshot */}
+              <div className="rounded-lg border bg-muted/30 p-2">
+                <p className="text-[11px] text-muted-foreground mb-1.5 text-center">
+                  📸 Ảnh minh hoạ: vị trí nút <b>{guidePhase === 1 ? '"Hàng hóa"' : '"Mua hàng"'}</b> trên KiotViet
+                </p>
+                <img
+                  src={guidePhase === 1 ? kiotvietGuideFile1 : kiotvietGuideFile2}
+                  alt={guidePhase === 1 ? 'Hướng dẫn vào tab Hàng hóa trên KiotViet' : 'Hướng dẫn vào tab Mua hàng trên KiotViet'}
+                  className="w-full max-h-56 object-contain rounded-md bg-background"
+                />
+              </div>
 
               {guideSteps.map((s, idx) => (
                 <div
