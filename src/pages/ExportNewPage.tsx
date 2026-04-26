@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -60,6 +60,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { ExportPaymentDialog } from '@/components/export/ExportPaymentDialog';
 import { OrderLimitDialog } from '@/components/export/OrderLimitDialog';
 import { useOrderLimitCheck } from '@/hooks/useOrderLimitCheck';
+import { useActiveDepositsByProducts, useApplyDepositsToReceipt } from '@/hooks/useProductDeposits';
+import { HandCoins } from 'lucide-react';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { BarcodeScannerInput } from '@/components/export/BarcodeScannerInput';
 import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombobox';
