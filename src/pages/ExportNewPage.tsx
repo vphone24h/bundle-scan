@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -134,7 +135,7 @@ export default function ExportNewPage() {
   const exportDraft = useDraftCart<CartItem>('export_draft_cart');
   const [cart, setCart] = useState<CartItem[]>([]);
   // Deposits map for cart products
-  const { map: depositMap } = useDepositMap();
+  const { map: depositMap, byProduct: depositsByProduct, totalQtyByProduct } = useDepositMap();
   const cancelDeposit = useCancelProductDeposit();
   const applyDeposits = useApplyProductDeposits();
   // Ref to track product IDs being processed (prevents race condition on fast scans)
