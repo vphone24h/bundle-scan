@@ -1950,6 +1950,16 @@ export default function ImportHistoryPage() {
         onSkip={() => { setActiveTour(null); setManualTourActive(false); if ((products?.length ?? 0) > 0) { completeProductTour(); completeTour(); } }}
         tourKey="import_product_tab"
       />
+      {depositTarget && (
+        <ProductDepositDialog
+          open={!!depositTarget}
+          onOpenChange={(v) => { if (!v) setDepositTarget(null); }}
+          productId={depositTarget.id}
+          productName={depositTarget.name}
+          productImei={depositTarget.imei}
+          branchId={depositTarget.branch_id}
+        />
+      )}
     </MainLayout>
   );
 }
