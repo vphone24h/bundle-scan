@@ -44,6 +44,52 @@ async function generatePreorderCode(): Promise<string> {
 }
 
 /**
+ * Đảm bảo có 1 nhà cung cấp tương ứng với khách hàng (cùng phone trong cùng tenant).
+ * Nếu chưa có thì tự tạo NCC mới với name+phone của KH.
+ * Trả về supplier_id, hoặc null nếu không xác định được.
+ */
+async function ensureSupplierForCustomer(customerId: string, tenantId: string): Promise<string | null> {
+  const { data: cust } = await supabase
+    .from('customers')
+    .select('name, phone')
+    .eq('id', customerId)
+    .maybeSingle();
+  if (!cust) return null;
+  const name = (cust as any).name || 'Khách đặt cọc';
+  const phone = (cust as any).phone || '';
+
+  // Tìm theo phone trong tenant (nếu có phone)
+  if (phone) {
+    const { data: existing } = await supabase
+      .from('suppliers')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('phone', phone)
+      .limit(1)
+      .maybeSingle();
+    if (existing && (existing as any).id) return (existing as any).id;
+  } else {
+    const { data: existing } = await supabase
+      .from('suppliers')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('name', name)
+      .limit(1)
+      .maybeSingle();
+    if (existing && (existing as any).id) return (existing as any).id;
+  }
+
+  // Tạo mới
+  const { data: created, error } = await supabase
+    .from('suppliers')
+    .insert([{ name, phone: phone || '', tenant_id: tenantId, note: 'Tự tạo từ phiếu cọc khách hàng' } as any])
+    .select('id')
+    .single();
+  if (error || !created) return null;
+  return (created as any).id;
+}
+
+/**
  * Lấy danh sách phiếu cọc
  */
 export function usePreorders(filters?: { status?: string; search?: string }) {
@@ -184,43 +230,46 @@ export function useCreatePreorder() {
         }
       }
 
-      // 4. Ghi nhận công nợ khi nhận cọc
-      // Bản chất: mình NHẬN tiền cọc -> mình ĐANG NỢ khách 1 khoản (tới khi giao hàng).
-      // - Nếu nguồn tiền là cash/bank/e_wallet: tạo 1 lệnh "payment" để giảm nợ KH = deposit
-      //   (nợ KH âm = mình nợ khách).
-      // - Nếu nguồn tiền là 'debt' (KH dùng tiền mình đang nợ KH, hoặc trừ vào nợ cũ):
-      //   tạo 2 lệnh đối ứng cho rõ lịch sử:
-      //     (a) addition +deposit  -> "KH dùng nợ cũ để cọc" (giảm số mình đang nợ KH / tăng nợ KH)
-      //     (b) payment  -deposit  -> "Nhận cọc, mình nợ lại KH" (giảm nợ KH)
-      //   Ròng = 0 nhưng người dùng thấy 2 dòng rõ ràng trong lịch sử công nợ.
+      // 4. Ghi nhận công nợ khi nhận cọc - vào TAB NHÀ CUNG CẤP
+      // Bản chất: nhận cọc = mình ĐANG NỢ khách (giống nợ NCC tới khi giao hàng).
+      // Map khách hàng sang 1 NCC tương ứng (tự tạo nếu chưa có).
+      // - Nguồn cash/bank/ví: tạo 1 lệnh "addition" tăng nợ NCC = deposit (mình nợ NCC tăng).
+      // - Nguồn 'debt' (KH có nợ cũ - mình đối trừ): tạo 2 lệnh đối ứng tại tab NCC:
+      //     (1) payment +deposit -> "NCC dùng tiền nợ để cọc" (giảm nợ NCC)
+      //     (2) addition +deposit -> "Mình nhận cọc -> nợ lại NCC" (tăng nợ NCC)
+      //   Ròng = 0 nhưng lịch sử thấy rõ 2 dòng.
+      let supplierIdForDeposit: string | null = null;
       if (input.customer_id && input.deposit_amount > 0) {
-        const isDebtSource = input.deposit_payment_source === 'debt';
-        if (isDebtSource) {
-          // Lệnh 1: KH dùng nợ cũ để đặt cọc -> tăng nợ KH (giảm dư có/ tăng dư nợ)
+        supplierIdForDeposit = await ensureSupplierForCustomer(input.customer_id, tenantId);
+        if (supplierIdForDeposit) {
+          const isDebtSource = input.deposit_payment_source === 'debt';
+          if (isDebtSource) {
+            // Lệnh 1: NCC dùng tiền nợ để cọc -> giảm nợ NCC
+            await supabase.from('debt_payments').insert([{
+              entity_type: 'supplier',
+              entity_id: supplierIdForDeposit,
+              payment_type: 'payment',
+              amount: input.deposit_amount,
+              payment_source: 'preorder_deposit_offset',
+              description: `Cọc phiếu ${code} - NCC dùng tiền nợ để đặt cọc`,
+              branch_id: input.branch_id,
+              created_by: user.id,
+              tenant_id: tenantId,
+            } as any]);
+          }
+          // Lệnh chính: nhận cọc -> mình nợ NCC (tăng nợ NCC)
           await supabase.from('debt_payments').insert([{
-            entity_type: 'customer',
-            entity_id: input.customer_id,
+            entity_type: 'supplier',
+            entity_id: supplierIdForDeposit,
             payment_type: 'addition',
             amount: input.deposit_amount,
-            payment_source: 'preorder_deposit_offset',
-            description: `Cọc phiếu ${code} - KH dùng công nợ để đặt cọc`,
+            payment_source: input.deposit_payment_source || 'preorder_deposit',
+            description: `Nhận cọc phiếu ${code} - Cửa hàng nợ lại NCC số tiền cọc`,
             branch_id: input.branch_id,
             created_by: user.id,
             tenant_id: tenantId,
           } as any]);
         }
-        // Lệnh chính: nhận cọc -> mình nợ lại KH (giảm nợ KH = dư có)
-        await supabase.from('debt_payments').insert([{
-          entity_type: 'customer',
-          entity_id: input.customer_id,
-          payment_type: 'payment',
-          amount: input.deposit_amount,
-          payment_source: input.deposit_payment_source || 'preorder_deposit',
-          description: `Nhận cọc phiếu ${code} - Cửa hàng nợ lại khách số tiền cọc`,
-          branch_id: input.branch_id,
-          created_by: user.id,
-          tenant_id: tenantId,
-        } as any]);
       }
 
       // 5. Ghi sổ quỹ (nếu có nguồn tiền cụ thể, không phải 'debt')
