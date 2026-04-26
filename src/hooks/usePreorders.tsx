@@ -325,8 +325,11 @@ export function useCancelPreorder() {
         .delete().eq('preorder_id', params.preorderId);
 
       // 3. Bù trừ công nợ khách (đảo lại lệnh đã tạo khi cọc)
-      // Trước đó đã tạo: payment giảm nợ KH = deposit
-      // Khi hủy: tạo addition tăng nợ KH = deposit (đóng dư có)
+      // Lúc cọc: payment -deposit (mình nợ KH).
+      // Khi hủy: addition +deposit để cân bằng dư có. Ròng phần cọc = 0.
+      // (Nếu lúc cọc dùng nguồn 'debt' đã có thêm 1 dòng addition +deposit "KH dùng nợ" -
+      //  dòng đó được trả lại bằng dòng payment -deposit "trả lại nợ cho KH" dưới đây nếu refund>0,
+      //  hoặc giữ nguyên nếu kept_amount>0 vì KH coi như mất nợ.)
       if (r.customer_id && deposit > 0) {
         await supabase.from('debt_payments').insert([{
           entity_type: 'customer',
@@ -334,11 +337,27 @@ export function useCancelPreorder() {
           payment_type: 'addition',
           amount: deposit,
           payment_source: 'preorder_cancel',
-          description: `Hủy phiếu cọc ${r.code} - Bù trừ công nợ`,
+          description: `Hủy phiếu cọc ${r.code} - Bù trừ tiền cọc đã nhận`,
           branch_id: r.branch_id,
           created_by: user.id,
           tenant_id: tenantId,
         } as any]);
+
+        // Nếu lúc cọc dùng nguồn 'debt' (đã tạo addition +deposit) và bây giờ hoàn trả tiền cho KH:
+        // tạo thêm payment -refundAmount để trả lại đúng phần đã trừ vào nợ cũ.
+        if (r.deposit_payment_source === 'debt' && refundAmount > 0) {
+          await supabase.from('debt_payments').insert([{
+            entity_type: 'customer',
+            entity_id: r.customer_id,
+            payment_type: 'payment',
+            amount: refundAmount,
+            payment_source: 'preorder_cancel_debt_refund',
+            description: `Hủy phiếu cọc ${r.code} - Trả lại công nợ đã trừ khi cọc`,
+            branch_id: r.branch_id,
+            created_by: user.id,
+            tenant_id: tenantId,
+          } as any]);
+        }
       }
 
       // 4. Ghi sổ quỹ - chi tiền hoàn cọc (nếu có)
