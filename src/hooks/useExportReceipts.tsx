@@ -824,6 +824,16 @@ export function useReturnProduct() {
 export function useCheckProductForSale() {
   return useMutation({
     mutationFn: async (imei: string) => {
+      // Chặn sản phẩm đang được giữ chỗ trong phiếu cọc (preorder)
+      const { data: reserved } = await supabase
+        .from('preorder_imei_reservations' as any)
+        .select('imei')
+        .eq('imei', imei)
+        .limit(1);
+      if (reserved && reserved.length > 0) {
+        return null;
+      }
+
       // When a product is imported -> returned -> re-imported, multiple records
       // share the same IMEI. We must pick the one currently in_stock first.
       const { data, error } = await supabase
@@ -897,7 +907,18 @@ export function useSearchProductsByName() {
         if (mergedResults.length >= 15) break;
       }
 
-      return mergedResults.slice(0, 15);
+      // Loại trừ các sản phẩm IMEI đang được giữ chỗ trong phiếu cọc
+      const imeisToCheck = mergedResults.map(r => r.imei).filter(Boolean);
+      let reservedSet = new Set<string>();
+      if (imeisToCheck.length > 0) {
+        const { data: reserved } = await supabase
+          .from('preorder_imei_reservations' as any)
+          .select('imei')
+          .in('imei', imeisToCheck);
+        reservedSet = new Set((reserved || []).map((r: any) => r.imei));
+      }
+      const filtered = mergedResults.filter(r => !r.imei || !reservedSet.has(r.imei));
+      return filtered.slice(0, 15);
     },
   });
 }

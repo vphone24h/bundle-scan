@@ -6205,6 +6205,181 @@ export type Database = {
           },
         ]
       }
+      preorder_imei_reservations: {
+        Row: {
+          branch_id: string | null
+          created_at: string
+          id: string
+          imei: string
+          preorder_id: string
+          product_id: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          branch_id?: string | null
+          created_at?: string
+          id?: string
+          imei: string
+          preorder_id: string
+          product_id?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          branch_id?: string | null
+          created_at?: string
+          id?: string
+          imei?: string
+          preorder_id?: string
+          product_id?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preorder_imei_reservations_preorder_id_fkey"
+            columns: ["preorder_id"]
+            isOneToOne: false
+            referencedRelation: "preorder_receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      preorder_receipt_items: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          id: string
+          imei: string | null
+          note: string | null
+          preorder_id: string
+          product_id: string | null
+          product_name: string
+          quantity: number | null
+          sale_price: number
+          sku: string
+          unit: string | null
+          warranty: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          imei?: string | null
+          note?: string | null
+          preorder_id: string
+          product_id?: string | null
+          product_name: string
+          quantity?: number | null
+          sale_price?: number
+          sku: string
+          unit?: string | null
+          warranty?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          imei?: string | null
+          note?: string | null
+          preorder_id?: string
+          product_id?: string | null
+          product_name?: string
+          quantity?: number | null
+          sale_price?: number
+          sku?: string
+          unit?: string | null
+          warranty?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preorder_receipt_items_preorder_id_fkey"
+            columns: ["preorder_id"]
+            isOneToOne: false
+            referencedRelation: "preorder_receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      preorder_receipts: {
+        Row: {
+          branch_id: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          code: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          deposit_amount: number
+          deposit_payment_source: string | null
+          export_receipt_id: string | null
+          id: string
+          kept_amount: number | null
+          note: string | null
+          preorder_date: string
+          refund_amount: number | null
+          refund_payment_source: string | null
+          remaining_amount: number
+          sales_staff_id: string | null
+          status: string
+          tenant_id: string | null
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          branch_id?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          code: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          deposit_amount?: number
+          deposit_payment_source?: string | null
+          export_receipt_id?: string | null
+          id?: string
+          kept_amount?: number | null
+          note?: string | null
+          preorder_date?: string
+          refund_amount?: number | null
+          refund_payment_source?: string | null
+          remaining_amount?: number
+          sales_staff_id?: string | null
+          status?: string
+          tenant_id?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          code?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          deposit_amount?: number
+          deposit_payment_source?: string | null
+          export_receipt_id?: string | null
+          id?: string
+          kept_amount?: number | null
+          note?: string | null
+          preorder_date?: string
+          refund_amount?: number | null
+          refund_payment_source?: string | null
+          remaining_amount?: number
+          sales_staff_id?: string | null
+          status?: string
+          tenant_id?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_groups: {
         Row: {
           category_id: string | null
