@@ -184,19 +184,39 @@ export function useCreatePreorder() {
         }
       }
 
-      // 4. Tạo công nợ khách hàng (cửa hàng nợ khách số tiền cọc)
-      // Quy ước: customer debt > 0 = khách nợ mình; ở đây mình nợ khách nên ghi payment_type='payment' để giảm
-      // Tuy nhiên hệ thống dùng debt_payments với 'addition' để tăng nợ KH (KH nợ thêm).
-      // Mình nợ khách = công nợ ÂM trên customer side.
-      // Pattern hệ thống: dùng payment_type='payment' với amount = deposit (giảm nợ KH = tạo dư có cho KH)
+      // 4. Ghi nhận công nợ khi nhận cọc
+      // Bản chất: mình NHẬN tiền cọc -> mình ĐANG NỢ khách 1 khoản (tới khi giao hàng).
+      // - Nếu nguồn tiền là cash/bank/e_wallet: tạo 1 lệnh "payment" để giảm nợ KH = deposit
+      //   (nợ KH âm = mình nợ khách).
+      // - Nếu nguồn tiền là 'debt' (KH dùng tiền mình đang nợ KH, hoặc trừ vào nợ cũ):
+      //   tạo 2 lệnh đối ứng cho rõ lịch sử:
+      //     (a) addition +deposit  -> "KH dùng nợ cũ để cọc" (giảm số mình đang nợ KH / tăng nợ KH)
+      //     (b) payment  -deposit  -> "Nhận cọc, mình nợ lại KH" (giảm nợ KH)
+      //   Ròng = 0 nhưng người dùng thấy 2 dòng rõ ràng trong lịch sử công nợ.
       if (input.customer_id && input.deposit_amount > 0) {
+        const isDebtSource = input.deposit_payment_source === 'debt';
+        if (isDebtSource) {
+          // Lệnh 1: KH dùng nợ cũ để đặt cọc -> tăng nợ KH (giảm dư có/ tăng dư nợ)
+          await supabase.from('debt_payments').insert([{
+            entity_type: 'customer',
+            entity_id: input.customer_id,
+            payment_type: 'addition',
+            amount: input.deposit_amount,
+            payment_source: 'preorder_deposit_offset',
+            description: `Cọc phiếu ${code} - KH dùng công nợ để đặt cọc`,
+            branch_id: input.branch_id,
+            created_by: user.id,
+            tenant_id: tenantId,
+          } as any]);
+        }
+        // Lệnh chính: nhận cọc -> mình nợ lại KH (giảm nợ KH = dư có)
         await supabase.from('debt_payments').insert([{
           entity_type: 'customer',
           entity_id: input.customer_id,
           payment_type: 'payment',
           amount: input.deposit_amount,
           payment_source: input.deposit_payment_source || 'preorder_deposit',
-          description: `Nhận cọc đặt hàng ${code}`,
+          description: `Nhận cọc phiếu ${code} - Cửa hàng nợ lại khách số tiền cọc`,
           branch_id: input.branch_id,
           created_by: user.id,
           tenant_id: tenantId,
@@ -305,8 +325,11 @@ export function useCancelPreorder() {
         .delete().eq('preorder_id', params.preorderId);
 
       // 3. Bù trừ công nợ khách (đảo lại lệnh đã tạo khi cọc)
-      // Trước đó đã tạo: payment giảm nợ KH = deposit
-      // Khi hủy: tạo addition tăng nợ KH = deposit (đóng dư có)
+      // Lúc cọc: payment -deposit (mình nợ KH).
+      // Khi hủy: addition +deposit để cân bằng dư có. Ròng phần cọc = 0.
+      // (Nếu lúc cọc dùng nguồn 'debt' đã có thêm 1 dòng addition +deposit "KH dùng nợ" -
+      //  dòng đó được trả lại bằng dòng payment -deposit "trả lại nợ cho KH" dưới đây nếu refund>0,
+      //  hoặc giữ nguyên nếu kept_amount>0 vì KH coi như mất nợ.)
       if (r.customer_id && deposit > 0) {
         await supabase.from('debt_payments').insert([{
           entity_type: 'customer',
@@ -314,11 +337,27 @@ export function useCancelPreorder() {
           payment_type: 'addition',
           amount: deposit,
           payment_source: 'preorder_cancel',
-          description: `Hủy phiếu cọc ${r.code} - Bù trừ công nợ`,
+          description: `Hủy phiếu cọc ${r.code} - Bù trừ tiền cọc đã nhận`,
           branch_id: r.branch_id,
           created_by: user.id,
           tenant_id: tenantId,
         } as any]);
+
+        // Nếu lúc cọc dùng nguồn 'debt' (đã tạo addition +deposit) và bây giờ hoàn trả tiền cho KH:
+        // tạo thêm payment -refundAmount để trả lại đúng phần đã trừ vào nợ cũ.
+        if (r.deposit_payment_source === 'debt' && refundAmount > 0) {
+          await supabase.from('debt_payments').insert([{
+            entity_type: 'customer',
+            entity_id: r.customer_id,
+            payment_type: 'payment',
+            amount: refundAmount,
+            payment_source: 'preorder_cancel_debt_refund',
+            description: `Hủy phiếu cọc ${r.code} - Trả lại công nợ đã trừ khi cọc`,
+            branch_id: r.branch_id,
+            created_by: user.id,
+            tenant_id: tenantId,
+          } as any]);
+        }
       }
 
       // 4. Ghi sổ quỹ - chi tiền hoàn cọc (nếu có)
@@ -400,8 +439,12 @@ export function useCompletePreorder() {
       const totalAmount = Number(r.total_amount) || 0;
       const deposit = Number(r.deposit_amount) || 0;
       const additional = params.additional_payment;
+      const isDebtSource = params.payment_source === 'debt';
+      // Nếu chọn 'debt': phần additional được hạch toán là KH trả nợ (cấn vào nợ cũ),
+      // coi như đã thanh toán đủ -> debt_amount của export_receipt = 0.
+      // Nếu nguồn tiền cụ thể (cash/bank/...): phần thiếu so với tổng đơn ghi vào công nợ.
       const totalPaid = deposit + additional;
-      const debtAmount = Math.max(0, totalAmount - totalPaid);
+      const debtAmount = isDebtSource ? 0 : Math.max(0, totalAmount - totalPaid);
 
       // 1. Tạo export_receipt với tổng tiền đầy đủ
       const exportCode = `XH${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 100).toString().padStart(2, '0')}`;
@@ -491,19 +534,37 @@ export function useCompletePreorder() {
         } as any]);
       }
 
-      // 7. Nếu chọn 'debt' và còn nợ -> tạo công nợ KH
-      if (params.payment_source === 'debt' && debtAmount > 0 && r.customer_id) {
-        await supabase.from('debt_payments').insert([{
-          entity_type: 'customer',
-          entity_id: r.customer_id,
-          payment_type: 'addition',
-          amount: debtAmount,
-          payment_source: 'export_receipt',
-          description: `Nợ từ đơn ${exportCode} (hoàn thành cọc)`,
-          branch_id: r.branch_id,
-          created_by: user.id,
-          tenant_id: tenantId,
-        } as any]);
+      // 7. Xử lý phần thanh toán thêm khi chọn nguồn 'debt' (trừ vào công nợ KH)
+      // - Nếu additional > 0: KH "trả nợ" bằng cách dùng giá trị hàng -> payment +additional (giảm nợ KH)
+      // - Nếu phần còn thiếu (totalAmount - deposit - additional) > 0: ghi tăng nợ KH
+      if (isDebtSource && r.customer_id) {
+        if (additional > 0) {
+          await supabase.from('debt_payments').insert([{
+            entity_type: 'customer',
+            entity_id: r.customer_id,
+            payment_type: 'payment',
+            amount: additional,
+            payment_source: 'preorder_complete_debt_offset',
+            description: `Hoàn thành phiếu cọc ${r.code} - Trừ ${additional.toLocaleString('vi-VN')}đ vào công nợ KH (đơn ${exportCode})`,
+            branch_id: r.branch_id,
+            created_by: user.id,
+            tenant_id: tenantId,
+          } as any]);
+        }
+        const stillOwed = Math.max(0, totalAmount - deposit - additional);
+        if (stillOwed > 0) {
+          await supabase.from('debt_payments').insert([{
+            entity_type: 'customer',
+            entity_id: r.customer_id,
+            payment_type: 'addition',
+            amount: stillOwed,
+            payment_source: 'export_receipt',
+            description: `Công nợ phát sinh từ đơn ${exportCode} (hoàn thành cọc)`,
+            branch_id: r.branch_id,
+            created_by: user.id,
+            tenant_id: tenantId,
+          } as any]);
+        }
       }
 
       return { exportReceiptId, exportCode };
