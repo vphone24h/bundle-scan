@@ -1086,19 +1086,83 @@ export default function ImportNewPage() {
   };
 
   const handleExcelImportMultiple = async (groups: { items: ImportReceiptItem[]; supplierName: string; branchName?: string; isNewSupplier: boolean }[]) => {
-    // Collect new supplier names
-    const newSupplierNames = groups.filter(g => g.isNewSupplier).map(g => g.supplierName);
-    
-    // Auto-create new suppliers first
-    if (newSupplierNames.length > 0) {
+    const normalizedGroups = groups.map((group) => {
+      const supplierName = normalizeImportedSupplierName(group.supplierName);
+      return {
+        ...group,
+        supplierName,
+        items: group.items.map((item) => ({
+          ...item,
+          supplierName,
+        })),
+      };
+    });
+
+    const branchNameToId = new Map(
+      (branches || []).map((branch) => [branch.name.toLowerCase().trim(), branch.id])
+    );
+
+    const supplierLookup = new Map<string, string>();
+    (suppliers || []).forEach((supplier) => {
+      supplierLookup.set(supplier.name.toLowerCase().trim(), supplier.id);
+    });
+
+    const supplierCreateQueue = new Map<string, string | null>();
+    normalizedGroups.forEach((group) => {
+      const supplierName = normalizeImportedSupplierName(group.supplierName);
+      const supplierKey = supplierName.toLowerCase();
+      if (supplierLookup.has(supplierKey) || supplierCreateQueue.has(supplierKey)) return;
+
+      const branchIdForSupplier = group.branchName
+        ? branchNameToId.get(group.branchName.toLowerCase().trim()) || selectedBranchId || null
+        : selectedBranchId || null;
+
+      supplierCreateQueue.set(supplierKey, branchIdForSupplier);
+    });
+
+    if (supplierCreateQueue.size > 0) {
       try {
-        for (const name of newSupplierNames) {
-          await createSupplier.mutateAsync({ name, branch_id: selectedBranchId || null });
+        const createdSupplierNames: string[] = [];
+        for (const [supplierKey, branchIdForSupplier] of supplierCreateQueue) {
+          const supplierName = normalizedGroups.find(
+            (group) => group.supplierName.toLowerCase() === supplierKey
+          )?.supplierName || DEFAULT_KIOTVIET_SUPPLIER_NAME;
+
+          try {
+            const createdSupplier = await createSupplier.mutateAsync({
+              name: supplierName,
+              branch_id: branchIdForSupplier,
+            });
+            if (createdSupplier?.id) {
+              supplierLookup.set(supplierKey, createdSupplier.id);
+              createdSupplierNames.push(supplierName);
+            }
+          } catch (error: any) {
+            const { data: existingSuppliers, error: supplierQueryError } = await supabase
+              .from('suppliers')
+              .select('id, name')
+              .ilike('name', supplierName);
+
+            if (supplierQueryError) throw supplierQueryError;
+
+            const matchedSupplier = existingSuppliers?.find(
+              (supplier) => supplier.name.toLowerCase().trim() === supplierKey
+            );
+
+            if (!matchedSupplier) {
+              throw error;
+            }
+
+            supplierLookup.set(supplierKey, matchedSupplier.id);
+          }
         }
-        toast({
-          title: t('tours.importNew.createdNewSuppliers'),
-          description: t('tours.importNew.autoCreatedSuppliers', { count: newSupplierNames.length, names: newSupplierNames.join(', ') }),
-        });
+
+        if (createdSupplierNames.length > 0) {
+          toast({
+            title: t('tours.importNew.createdNewSuppliers'),
+            description: t('tours.importNew.autoCreatedSuppliers', { count: createdSupplierNames.length, names: createdSupplierNames.join(', ') }),
+          });
+        }
       } catch (error: any) {
         console.error('Error creating suppliers:', error);
         toast({
@@ -1111,25 +1175,23 @@ export default function ImportNewPage() {
     }
     
     // If only one group, add to cart normally
-    if (groups.length === 1) {
-      setCart(prev => [...prev, ...groups[0].items]);
+    if (normalizedGroups.length === 1) {
+      setCart(prev => [...prev, ...normalizedGroups[0].items]);
       
       // Auto-select supplier
-      if (groups[0].supplierName && groups[0].supplierName !== 'Không có NCC') {
+      if (normalizedGroups[0].supplierName) {
         setTimeout(() => {
-          const matchedSupplier = suppliers?.find(
-            s => s.name.toLowerCase() === groups[0].supplierName.toLowerCase()
-          );
-          if (matchedSupplier) {
-            setSelectedSupplierId(matchedSupplier.id);
+          const supplierId = supplierLookup.get(normalizedGroups[0].supplierName.toLowerCase());
+          if (supplierId) {
+            setSelectedSupplierId(supplierId);
           }
         }, 500);
       }
       
       // Auto-select branch
-      if (groups[0].branchName && branches) {
+      if (normalizedGroups[0].branchName && branches) {
         const matchedBranch = branches.find(
-          b => b.name.toLowerCase() === groups[0].branchName!.toLowerCase()
+          b => b.name.toLowerCase() === normalizedGroups[0].branchName!.toLowerCase()
         );
         if (matchedBranch) {
           setSelectedBranchId(matchedBranch.id);
@@ -1146,21 +1208,25 @@ export default function ImportNewPage() {
     // Wait for suppliers to be available after creation
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    for (const group of groups) {
+    for (const group of normalizedGroups) {
       try {
         // Find supplier ID (either existing or newly created)
-        let supplierId: string | null = null;
-      if (group.supplierName && group.supplierName !== t('tours.importNew.noSupplierNCC')) {
-          // Re-query suppliers to get fresh data
-          const { data: freshSuppliers } = await supabase
+        let supplierId: string | null = supplierLookup.get(group.supplierName.toLowerCase()) || null;
+
+        if (!supplierId) {
+          const { data: freshSuppliers, error: freshSuppliersError } = await supabase
             .from('suppliers')
             .select('id, name')
             .ilike('name', group.supplierName);
-          
+
+          if (freshSuppliersError) throw freshSuppliersError;
+
           const matchedSupplier = freshSuppliers?.find(
-            s => s.name.toLowerCase() === group.supplierName.toLowerCase()
+            supplier => supplier.name.toLowerCase().trim() === group.supplierName.toLowerCase().trim()
           );
+
           supplierId = matchedSupplier?.id || null;
+          if (supplierId) supplierLookup.set(group.supplierName.toLowerCase(), supplierId);
         }
         
         // Find branch ID
