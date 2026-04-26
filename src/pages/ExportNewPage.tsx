@@ -1878,6 +1878,8 @@ export default function ExportNewPage() {
         } : null}
         hasCustomer={!!customerPhone}
         customerVouchers={customerVouchers}
+        depositDiscount={depositDiscount}
+        depositLabel={depositLabel}
       />
 
       {/* Invoice Print Dialog */}
