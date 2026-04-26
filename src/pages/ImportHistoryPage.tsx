@@ -1419,7 +1419,18 @@ export default function ImportHistoryPage() {
                           )}
                         </td>
                       )}
-                      <td className="font-medium">{product.name}</td>
+                      <td className="font-medium">
+                        {product.name}
+                        {(() => {
+                          const dep = depositMap.get(product.id);
+                          return dep ? (
+                            <div className="mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-[10px] font-medium">
+                              <BadgeDollarSign className="h-3 w-3" />
+                              Đã cọc {formatNumber(Number(dep.deposit_amount))}đ — {dep.customer_name}
+                            </div>
+                          ) : null;
+                        })()}
+                      </td>
                       <td className="text-muted-foreground">{product.sku}</td>
                       <td className="font-mono text-sm">{product.imei || '-'}</td>
                       <td>{product.categories?.name || '-'}</td>
