@@ -1490,6 +1490,28 @@ export default function ExportNewPage() {
                           <div className="text-xs text-muted-foreground md:hidden">
                             {item.imei || item.sku}
                           </div>
+                          {(depositsByProductId.get(item.product_id)?.length || 0) > 0 && (
+                            <div className="mt-1 space-y-0.5">
+                              {depositsByProductId.get(item.product_id)!.map(d => {
+                                const isMatchedCustomer = !!customerPhone && !!d.customer_phone &&
+                                  customerPhone.replace(/\s/g, '') === d.customer_phone.replace(/\s/g, '');
+                                return (
+                                  <div key={d.id} className={cn(
+                                    "text-xs flex items-center gap-1 px-1.5 py-0.5 rounded",
+                                    isMatchedCustomer ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
+                                  )}>
+                                    <HandCoins className="h-3 w-3 flex-shrink-0" />
+                                    <span className="font-medium">
+                                      Đã có người cọc: {d.customer_name}
+                                      {d.customer_phone ? ` (${d.customer_phone})` : ''}
+                                      {' - '}{formatNumber(Number(d.deposit_amount))}đ
+                                      {isMatchedCustomer ? ' ✓ sẽ tự trừ vào tổng' : ''}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           {item.imei || item.sku}
