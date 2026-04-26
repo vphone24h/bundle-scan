@@ -116,7 +116,7 @@ export function KiotVietImportDialog({
 
   const guideStepsFile2 = [
     { step: 1, title: 'Vào KiotViet', desc: 'Đăng nhập KiotViet trên máy tính (kiotviet.vn).' },
-    { step: 2, title: 'Vào tab Giao Dịch → Mua hàng', desc: 'Trên menu, chọn "Giao dịch" rồi chọn mục "Mua hàng".' },
+    { step: 2, title: 'Vào tab Mua hàng', desc: 'Trên menu KiotViet, nhấn vào mục "Mua hàng" (nằm kế bên nút "Hàng hóa").' },
     { step: 3, title: 'Mở Nhập hàng', desc: 'Chọn mục "Nhập hàng" để xem toàn bộ phiếu nhập đã thực hiện.' },
     { step: 4, title: 'Chọn mốc thời gian', desc: 'Chọn khoảng thời gian bao trùm toàn bộ thời gian bạn đã hoạt động trên KiotViet (ví dụ "Toàn thời gian"), sau đó nhấn "Xuất file".' },
     { step: 5, title: 'Tải file lên VKHO', desc: 'Dùng file Excel "Danh sách chi tiết nhập hàng" vừa tải về, nhấn nút bên dưới để upload — VKHO sẽ ghép Nhà cung cấp theo IMEI / tên sản phẩm.' },
@@ -673,7 +673,7 @@ export function KiotVietImportDialog({
                   className="cursor-pointer"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Xuất từ KiotViet: <b>Giao dịch → Mua hàng → Nhập hàng</b>, chọn mốc thời gian rồi <b>Xuất file</b>.
+                  Xuất từ KiotViet: <b>Mua hàng → Nhập hàng</b>, chọn mốc thời gian rồi <b>Xuất file</b>.
                   Hệ thống sẽ ghép NCC theo IMEI / tên SP. Nếu bỏ qua, các SP sẽ gộp về "KiotViet Import".
                 </p>
                 {isLoadingSupplier && (
