@@ -44,6 +44,52 @@ async function generatePreorderCode(): Promise<string> {
 }
 
 /**
+ * Đảm bảo có 1 nhà cung cấp tương ứng với khách hàng (cùng phone trong cùng tenant).
+ * Nếu chưa có thì tự tạo NCC mới với name+phone của KH.
+ * Trả về supplier_id, hoặc null nếu không xác định được.
+ */
+async function ensureSupplierForCustomer(customerId: string, tenantId: string): Promise<string | null> {
+  const { data: cust } = await supabase
+    .from('customers')
+    .select('name, phone')
+    .eq('id', customerId)
+    .maybeSingle();
+  if (!cust) return null;
+  const name = (cust as any).name || 'Khách đặt cọc';
+  const phone = (cust as any).phone || '';
+
+  // Tìm theo phone trong tenant (nếu có phone)
+  if (phone) {
+    const { data: existing } = await supabase
+      .from('suppliers')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('phone', phone)
+      .limit(1)
+      .maybeSingle();
+    if (existing && (existing as any).id) return (existing as any).id;
+  } else {
+    const { data: existing } = await supabase
+      .from('suppliers')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('name', name)
+      .limit(1)
+      .maybeSingle();
+    if (existing && (existing as any).id) return (existing as any).id;
+  }
+
+  // Tạo mới
+  const { data: created, error } = await supabase
+    .from('suppliers')
+    .insert([{ name, phone: phone || '', tenant_id: tenantId, note: 'Tự tạo từ phiếu cọc khách hàng' } as any])
+    .select('id')
+    .single();
+  if (error || !created) return null;
+  return (created as any).id;
+}
+
+/**
  * Lấy danh sách phiếu cọc
  */
 export function usePreorders(filters?: { status?: string; search?: string }) {
