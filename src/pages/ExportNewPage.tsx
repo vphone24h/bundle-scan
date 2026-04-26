@@ -140,6 +140,36 @@ export default function ExportNewPage() {
   const applyDeposits = useApplyProductDeposits();
   // Ref to track product IDs being processed (prevents race condition on fast scans)
   const pendingProductIdsRef = useRef<Set<string>>(new Set());
+
+  // Fetch stock for non-IMEI products in cart that have active deposits.
+  // Used to decide whether to show the "đã có người cọc" warning:
+  // only show when totalDeposited >= stock (else stock is enough for everyone).
+  const nonImeiDepositedProductIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const item of cart) {
+      if (!item.imei && depositsByProduct.has(item.product_id)) {
+        ids.add(item.product_id);
+      }
+    }
+    return Array.from(ids);
+  }, [cart, depositsByProduct]);
+
+  const { data: productStockMap = new Map<string, number>() } = useQuery({
+    queryKey: ['products-stock-for-deposit', nonImeiDepositedProductIds.sort().join(',')],
+    queryFn: async () => {
+      const m = new Map<string, number>();
+      if (nonImeiDepositedProductIds.length === 0) return m;
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, quantity')
+        .in('id', nonImeiDepositedProductIds);
+      if (error) return m;
+      for (const p of data || []) m.set((p as any).id, Number((p as any).quantity || 0));
+      return m;
+    },
+    enabled: nonImeiDepositedProductIds.length > 0,
+    staleTime: 30 * 1000,
+  });
   // Tax state
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [taxRate, setTaxRate] = useState<number | null>(null);
