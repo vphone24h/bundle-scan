@@ -43,12 +43,35 @@ export function ScrollableTableWrapper({ children, className }: ScrollableTableW
   };
 
   const buttonBase =
-    'absolute z-10 flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground shadow-lg cursor-pointer transition-transform hover:scale-110 active:scale-95';
+    'absolute z-20 flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground shadow-lg cursor-pointer transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100';
 
   const positions = ['top-[20%]', 'top-1/2', 'top-[80%]'];
 
   return (
     <div className={cn('relative', className)}>
+      {/* Always-visible scroll buttons at the top corners (works on desktop too) */}
+      <button
+        type="button"
+        onClick={() => scroll('left')}
+        disabled={!canScrollLeft}
+        className={cn(buttonBase, 'top-2 left-2')}
+        aria-label="Cuộn sang trái"
+        title="Cuộn sang trái"
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </button>
+      <button
+        type="button"
+        onClick={() => scroll('right')}
+        disabled={!canScrollRight}
+        className={cn(buttonBase, 'top-2 right-2')}
+        aria-label="Cuộn sang phải"
+        title="Cuộn sang phải"
+      >
+        <ChevronRight className="h-5 w-5" />
+      </button>
+
+      {/* Floating side buttons (mid-height) only when scrollable */}
       {canScrollLeft && positions.map((pos) => (
         <button
           key={`left-${pos}`}
