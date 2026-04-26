@@ -1240,6 +1240,15 @@ export default function ImportHistoryPage() {
                           <div className="font-medium text-sm">{product.name}</div>
                           <div className="text-xs text-muted-foreground">SKU: {product.sku}</div>
                           {product.imei && <div className="text-xs text-muted-foreground font-mono">IMEI: {product.imei}</div>}
+                          {(() => {
+                            const dep = depositMap.get(product.id);
+                            return dep ? (
+                              <div className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-[10px] font-medium">
+                                <BadgeDollarSign className="h-3 w-3" />
+                                Đã cọc {formatNumber(Number(dep.deposit_amount))}đ — {dep.customer_name}
+                              </div>
+                            ) : null;
+                          })()}
                         </div>
                       </div>
                       <Badge className={cn(statusClass, 'text-xs flex-shrink-0')}>{statusLabel}</Badge>
