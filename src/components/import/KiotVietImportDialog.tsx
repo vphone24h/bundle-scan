@@ -376,22 +376,44 @@ export function KiotVietImportDialog({
     }
   };
 
-  // Group by branch (Vị trí)
+  // Resolve supplier name for a row from supplier maps (file 2)
+  const resolveSupplier = (row: KVParsedRow): string => {
+    if (row.imei && supplierByImei.has(row.imei)) return supplierByImei.get(row.imei)!;
+    const byName = supplierByName.get(row.productName.toLowerCase());
+    if (byName) return byName;
+    return 'KiotViet Import';
+  };
+
+  // Group by (supplier + branch)
   const branchGroups = useMemo(() => {
     const validRows = parsedRows.filter(r => r.isValid);
-    const groupMap = new Map<string, KVParsedRow[]>();
+    const groupMap = new Map<string, { supplierName: string; branchName: string; rows: KVParsedRow[] }>();
     validRows.forEach(row => {
-      const key = row.branchName || 'Không xác định';
-      if (!groupMap.has(key)) groupMap.set(key, []);
-      groupMap.get(key)!.push(row);
+      const supplierName = resolveSupplier(row);
+      const branchName = row.branchName || 'Không xác định';
+      const key = `${supplierName}|||${branchName}`;
+      if (!groupMap.has(key)) groupMap.set(key, { supplierName, branchName, rows: [] });
+      groupMap.get(key)!.rows.push(row);
     });
-    return Array.from(groupMap.entries()).map(([branchName, rows]) => ({
-      branchName,
-      rows,
-      validCount: rows.length,
-      totalAmount: rows.reduce((sum, r) => sum + r.importPrice * r.quantity, 0),
+    return Array.from(groupMap.values()).map(g => ({
+      supplierName: g.supplierName,
+      branchName: g.branchName,
+      rows: g.rows,
+      validCount: g.rows.length,
+      totalAmount: g.rows.reduce((sum, r) => sum + r.importPrice * r.quantity, 0),
     }));
-  }, [parsedRows]);
+  }, [parsedRows, supplierByImei, supplierByName]);
+
+  // Stats: how many rows matched a supplier from file 2
+  const supplierMatchStats = useMemo(() => {
+    const valid = parsedRows.filter(r => r.isValid);
+    let matched = 0;
+    valid.forEach(r => {
+      if (r.imei && supplierByImei.has(r.imei)) matched++;
+      else if (supplierByName.has(r.productName.toLowerCase())) matched++;
+    });
+    return { matched, total: valid.length };
+  }, [parsedRows, supplierByImei, supplierByName]);
 
   const handleImport = async () => {
     const validRows = parsedRows.filter(r => r.isValid);
@@ -436,7 +458,7 @@ export function KiotVietImportDialog({
       }
     });
 
-    // Group all valid rows into one group (no supplier from KiotViet)
+    // Group all valid rows by supplier + branch
     const groups = branchGroups.map(group => {
       const items: ImportReceiptItem[] = group.rows.map((row, index) => ({
         id: String(Date.now() + index + Math.random()),
@@ -449,26 +471,28 @@ export function KiotVietImportDialog({
         salePrice: row.salePrice,
         quantity: row.quantity,
         supplierId: '',
-        supplierName: 'KiotViet Import',
+        supplierName: group.supplierName,
         note: row.note,
       }));
 
       return {
         items,
-        supplierName: 'KiotViet Import',
+        supplierName: group.supplierName,
         branchName: group.branchName !== 'Không xác định' ? group.branchName : undefined,
-        isNewSupplier: !suppliers.some(s => s.name.toLowerCase() === 'kiotviet import'),
+        isNewSupplier: !suppliers.some(s => s.name.toLowerCase() === group.supplierName.toLowerCase()),
       };
     });
 
-    // Deduplicate isNewSupplier - only mark first group as new
-    let markedNew = false;
+    // Deduplicate isNewSupplier per supplier name (only first occurrence creates)
+    const seenNew = new Set<string>();
     const deduped = groups.map(g => {
-      if (g.isNewSupplier && !markedNew) {
-        markedNew = true;
+      if (g.isNewSupplier) {
+        const key = g.supplierName.toLowerCase();
+        if (seenNew.has(key)) return { ...g, isNewSupplier: false };
+        seenNew.add(key);
         return g;
       }
-      return { ...g, isNewSupplier: false };
+      return g;
     });
 
     onImportMultiple(deduped);
