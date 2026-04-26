@@ -192,3 +192,30 @@ export function useCancelProductDeposit() {
     },
   });
 }
+
+/**
+ * Đánh dấu các deposit đã được áp dụng vào 1 phiếu xuất.
+ * Gọi sau khi tạo phiếu xuất thành công.
+ */
+export function useApplyProductDeposits() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: { depositIds: string[]; receiptId: string }) => {
+      if (!input.depositIds.length) return [] as string[];
+      const { error } = await supabase
+        .from('product_deposits' as any)
+        .update({
+          status: 'applied',
+          applied_receipt_id: input.receiptId,
+          applied_at: new Date().toISOString(),
+        })
+        .in('id', input.depositIds);
+      if (error) throw error;
+      return input.depositIds;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['product-deposits'] });
+    },
+  });
+}
