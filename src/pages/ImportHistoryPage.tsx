@@ -300,6 +300,19 @@ export default function ImportHistoryPage() {
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const [adjustProduct, setAdjustProduct] = useState<Product | null>(null);
+  const [depositProduct, setDepositProduct] = useState<Product | null>(null);
+  const { map: depositMap } = useDepositMap();
+  const cancelDeposit = useCancelProductDeposit();
+
+  const handleCancelDeposit = useCallback(async (depositId: string, customerName: string) => {
+    if (!confirm(`Hủy cọc của khách "${customerName}"? Tiền cọc sẽ KHÔNG được hoàn lại sổ quỹ (coi như khách mất cọc).`)) return;
+    try {
+      await cancelDeposit.mutateAsync(depositId);
+      toast({ title: 'Đã hủy cọc', description: 'Tiền cọc giữ nguyên trong sổ quỹ.' });
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err?.message || 'Không thể hủy cọc', variant: 'destructive' });
+    }
+  }, [cancelDeposit]);
 
   // Multi-select for stock transfer
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
