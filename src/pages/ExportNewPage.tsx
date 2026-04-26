@@ -1053,6 +1053,43 @@ export default function ExportNewPage() {
         note: savedReceiptNote || undefined,
       });
 
+      // Áp dụng cọc khách: nếu cart có SP đã cọc và SĐT khớp → đánh dấu cọc applied + ghi expense vào sổ quỹ
+      try {
+        const cartProdIds = new Set(savedCart.map(i => i.product_id));
+        const phoneNorm = (savedCustomerPhone || '').replace(/\s/g, '');
+        const matchedDeposits = cartActiveDeposits.filter(d =>
+          cartProdIds.has(d.product_id) &&
+          d.customer_phone && d.customer_phone.replace(/\s/g, '') === phoneNorm
+        );
+        if (matchedDeposits.length > 0) {
+          await applyDeposits.mutateAsync({
+            deposit_ids: matchedDeposits.map(d => d.id),
+            receipt_id: receipt.id,
+          });
+          // Cash book offset entries
+          const { data: { user: u2 } } = await supabase.auth.getUser();
+          const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+          const totalDep = matchedDeposits.reduce((s, d) => s + Number(d.deposit_amount), 0);
+          await supabase.from('cash_book').insert(matchedDeposits.map(d => ({
+            type: 'expense' as const,
+            category: 'Áp dụng cọc',
+            description: `Cọc ${d.customer_name} áp dụng cho phiếu xuất ${receipt.code}`,
+            amount: Number(d.deposit_amount),
+            payment_source: d.payment_source,
+            is_business_accounting: false,
+            branch_id: branchId,
+            reference_id: receipt.id,
+            reference_type: 'export_receipt_deposit_applied',
+            created_by: u2?.id,
+            tenant_id: tenantId,
+            recipient_name: d.customer_name,
+          })));
+          successMessage = (successMessage || '') + `. Đã áp dụng ${matchedDeposits.length} cọc (${formatNumber(totalDep)}đ)`;
+        }
+      } catch (e) {
+        console.warn('Apply deposits failed:', e);
+      }
+
       // Update receipt with real data (code from server)
       setCreatedReceipt(prev => ({
         ...prev,
