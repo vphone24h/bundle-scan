@@ -66,7 +66,7 @@ import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombob
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { formatNumber, parseFormattedNumber, formatInputNumber } from '@/lib/formatNumber';
-import { useDepositMap, useCancelProductDeposit } from '@/hooks/useProductDeposits';
+import { useDepositMap, useCancelProductDeposit, useApplyProductDeposits } from '@/hooks/useProductDeposits';
 import { BadgeDollarSign, AlertTriangle as AlertTriangleIcon } from 'lucide-react';
 import { PriceInput } from '@/components/ui/price-input';
 import { cn } from '@/lib/utils';
@@ -136,6 +136,7 @@ export default function ExportNewPage() {
   // Deposits map for cart products
   const { map: depositMap } = useDepositMap();
   const cancelDeposit = useCancelProductDeposit();
+  const applyDeposits = useApplyProductDeposits();
   // Ref to track product IDs being processed (prevents race condition on fast scans)
   const pendingProductIdsRef = useRef<Set<string>>(new Set());
   // Tax state
@@ -879,6 +880,36 @@ export default function ExportNewPage() {
   const taxAmount = Math.round(subtotalAmount * effectiveTaxRate / 100);
   const totalAmount = subtotalAmount + taxAmount;
 
+  // Tính các deposit khớp khách hàng hiện tại trong giỏ -> sẽ trừ vào số phải thanh toán
+  const appliedDeposits = (() => {
+    const result: { id: string; amount: number; productName: string; customerName: string }[] = [];
+    const seen = new Set<string>();
+    for (const item of cart) {
+      const dep = depositMap.get(item.product_id);
+      if (!dep || seen.has(dep.id)) continue;
+      const matchCustomer = !!(
+        (selectedCustomer?.id && dep.customer_id && selectedCustomer.id === dep.customer_id) ||
+        (customerPhone && dep.customer_phone && customerPhone.replace(/\D/g, '') === dep.customer_phone.replace(/\D/g, ''))
+      );
+      if (matchCustomer) {
+        seen.add(dep.id);
+        result.push({
+          id: dep.id,
+          amount: Number(dep.deposit_amount) || 0,
+          productName: item.product_name,
+          customerName: dep.customer_name,
+        });
+      }
+    }
+    return result;
+  })();
+  const depositDiscount = appliedDeposits.reduce((s, d) => s + d.amount, 0);
+  const depositLabel = appliedDeposits.length === 1
+    ? `KH ${appliedDeposits[0].customerName}`
+    : appliedDeposits.length > 1
+    ? `${appliedDeposits.length} sản phẩm`
+    : undefined;
+
   // Handle proceed to payment
   const handleProceedToPayment = () => {
     // Check order limit first
@@ -995,6 +1026,8 @@ export default function ExportNewPage() {
     const savedSalesStaffId = isSuperAdmin ? salesStaffId : user?.id || null;
     const savedExportDate = exportDate || null;
     const savedReceiptNote = receiptNote || null;
+    const savedAppliedDepositIds = appliedDeposits.map(d => d.id);
+    const savedDepositDiscount = depositDiscount;
 
     setCart([]);
     exportDraft.clearDraft();
@@ -1052,6 +1085,18 @@ export default function ExportNewPage() {
         tax_rate: savedTaxEnabled ? savedEffectiveTaxRate : 0,
         tax_amount: savedTaxEnabled ? savedTaxAmount : 0,
       }));
+
+      // Đánh dấu các deposit đã được áp dụng vào phiếu này
+      if (savedAppliedDepositIds.length > 0 && receipt?.id) {
+        try {
+          await applyDeposits.mutateAsync({
+            depositIds: savedAppliedDepositIds,
+            receiptId: receipt.id,
+          });
+        } catch (err) {
+          console.warn('Apply deposits failed:', err);
+        }
+      }
 
       let successMessage = t('pages.exportNew.receiptCreated', { code: receipt.code });
       if (receipt.points_earned > 0) {
@@ -1847,6 +1892,8 @@ export default function ExportNewPage() {
         } : null}
         hasCustomer={!!customerPhone}
         customerVouchers={customerVouchers}
+        depositDiscount={depositDiscount}
+        depositLabel={depositLabel}
       />
 
       {/* Invoice Print Dialog */}
