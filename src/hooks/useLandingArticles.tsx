@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { sortCategoriesByTree } from './useLandingProducts';
 
 export interface LandingArticleCategory {
   id: string;
@@ -8,6 +9,8 @@ export interface LandingArticleCategory {
   image_url: string | null;
   parent_id: string | null;
   is_visible: boolean;
+  hidden_from_home: boolean;
+  hidden_from_articles_page: boolean;
   display_order: number;
   created_at: string;
   updated_at: string;
@@ -81,7 +84,7 @@ export function useCreateLandingArticleCategory() {
 export function useUpdateLandingArticleCategory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; name?: string; image_url?: string | null; parent_id?: string | null; is_visible?: boolean; display_order?: number }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; image_url?: string | null; parent_id?: string | null; is_visible?: boolean; hidden_from_home?: boolean; hidden_from_articles_page?: boolean; display_order?: number }) => {
       const { error } = await supabase
         .from('landing_article_categories' as any)
         .update(updates)
@@ -265,11 +268,13 @@ export function usePublicLandingArticles(
     queryFn: async () => {
       if (!tenantId) return { categories: [], articles: [] };
       const [catRes, artRes] = await Promise.all([
-        supabase.from('landing_article_categories' as any).select('*').eq('tenant_id', tenantId).eq('is_visible', true).order('display_order', { ascending: true }).order('created_at', { ascending: false }),
+        supabase.from('landing_article_categories' as any).select('*').eq('tenant_id', tenantId).order('display_order', { ascending: true }).order('created_at', { ascending: false }),
         supabase.from('landing_articles' as any).select('*').eq('tenant_id', tenantId).eq('is_published', true).order('display_order', { ascending: true }).order('created_at', { ascending: false }),
       ]);
+      const rawCats = (catRes.data || []) as unknown as LandingArticleCategory[];
+      const sortedCats = sortCategoriesByTree(rawCats);
       return {
-        categories: (catRes.data || []) as unknown as LandingArticleCategory[],
+        categories: sortedCats,
         articles: (artRes.data || []) as unknown as LandingArticle[],
       };
     },

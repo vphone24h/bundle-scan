@@ -1164,7 +1164,7 @@ export default function UniversalStoreTemplate({
                                 <ShoppingBag className="h-6 w-6 text-[#d2d2d7]" />
                               </div>
                             </button>
-                            {productsData.categories.map((cat, idx) => (
+                            {productsData.categories.filter((c: any) => !c.hidden_from_home).map((cat, idx) => (
                               <ScrollReveal key={cat.id} animation="fade-up" delay={idx * 80}>
                                 <button
                                   onClick={() => setSelectedCategoryId(selectedCategoryId === cat.id ? null : cat.id)}
@@ -1205,7 +1205,7 @@ export default function UniversalStoreTemplate({
                         >
                           Tất cả
                         </button>
-                        {productsData.categories.map(cat => (
+                        {productsData.categories.filter((c: any) => !c.hidden_from_products_page).map(cat => (
                           <button
                             key={cat.id}
                             onClick={() => setSelectedCategoryId(cat.id)}
@@ -1378,7 +1378,7 @@ export default function UniversalStoreTemplate({
               ];
               const newsSections = ((settings as any)?.custom_news_page_sections || defaultNewsSections).filter((s: any) => s.enabled);
               const allArticles = articlesData?.articles || [];
-              const articleCategories = (articlesData?.categories || []).filter((c: any) => c.is_visible !== false);
+              const articleCategories = (articlesData?.categories || []).filter((c: any) => c.is_visible !== false && !c.hidden_from_articles_page);
               const filteredAllArticles = selectedArticleCategoryId
                 ? allArticles.filter(a => a.category_id === selectedArticleCategoryId)
                 : allArticles;

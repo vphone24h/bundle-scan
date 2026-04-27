@@ -36,7 +36,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, ChevronUp, Folder, FolderOpen, Pencil, Eye, EyeOff, ArrowUp, ArrowDown, CalendarDays, Tag, Check } from 'lucide-react';
+import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, ChevronUp, Folder, FolderOpen, Pencil, Eye, EyeOff, ArrowUp, ArrowDown, CalendarDays, Tag, Check, Home, List } from 'lucide-react';
 import { SortableList, SortableItem, DragHandle } from '@/components/shared/SortableList';
 import { formatNumber } from '@/lib/formatNumber';
 import { BlockedDatesCalendar } from './BlockedDatesCalendar';
@@ -140,7 +140,7 @@ function flattenCategoriesForSelect(categories: LandingProductCategory[], level 
 }
 // Category tree node component
 function CategoryTreeNode({
-  categories, level, onEdit, onAddChild, onDelete, onUploadImage, onRemoveImage, uploadingCatId, onToggleHidden, onReorderSiblings,
+  categories, level, onEdit, onAddChild, onDelete, onUploadImage, onRemoveImage, uploadingCatId, onToggleHome, onTogglePage, onReorderSiblings,
 }: {
   categories: LandingProductCategory[];
   level: number;
@@ -150,7 +150,8 @@ function CategoryTreeNode({
   onUploadImage: (catId: string) => void;
   onRemoveImage: (catId: string) => void;
   uploadingCatId: string | null;
-  onToggleHidden: (cat: LandingProductCategory) => void;
+  onToggleHome: (cat: LandingProductCategory) => void;
+  onTogglePage: (cat: LandingProductCategory) => void;
   onReorderSiblings: (siblings: LandingProductCategory[]) => void;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -163,6 +164,9 @@ function CategoryTreeNode({
       {(cat, idx) => {
         const hasChildren = cat.children && cat.children.length > 0;
         const isExpanded = expanded[cat.id] !== false; // default expanded
+        const hiddenHome = (cat as any).hidden_from_home === true;
+        const hiddenPage = (cat as any).hidden_from_products_page === true;
+        const fullyHidden = hiddenHome && hiddenPage;
         return (
           <SortableItem key={cat.id} id={cat.id}>
             {({ dragHandleProps }) => (
@@ -189,18 +193,31 @@ function CategoryTreeNode({
                 )}
               </button>
               <div className="min-w-[80px] flex-1">
-                <p className={`font-medium text-sm break-words ${cat.is_hidden ? 'text-muted-foreground line-through' : ''}`}>{cat.name}</p>
-                {hasChildren && <p className="text-[10px] text-muted-foreground">{cat.children!.length} danh mục con</p>}
+                <p className={`font-medium text-sm break-words ${fullyHidden ? 'text-muted-foreground line-through' : ''}`}>{cat.name}</p>
+                <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                  {hasChildren && <p className="text-[10px] text-muted-foreground">{cat.children!.length} danh mục con</p>}
+                  {hiddenHome && <span className="text-[10px] px-1 rounded bg-muted text-muted-foreground">Ẩn trang chủ</span>}
+                  {hiddenPage && <span className="text-[10px] px-1 rounded bg-muted text-muted-foreground">Ẩn trang sản phẩm</span>}
+                </div>
               </div>
               <div className="flex items-center gap-0.5 shrink-0">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`h-7 w-7 ${cat.is_hidden ? 'text-muted-foreground' : 'text-primary'}`}
-                  onClick={() => onToggleHidden(cat)}
-                  title={cat.is_hidden ? 'Hiện danh mục trên website' : 'Ẩn danh mục trên website'}
+                  className={`h-7 w-7 ${hiddenHome ? 'text-muted-foreground' : 'text-primary'}`}
+                  onClick={() => onToggleHome(cat)}
+                  title={hiddenHome ? 'Hiện trên trang chủ' : 'Ẩn khỏi trang chủ'}
                 >
-                  {cat.is_hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  <Home className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-7 w-7 ${hiddenPage ? 'text-muted-foreground' : 'text-primary'}`}
+                  onClick={() => onTogglePage(cat)}
+                  title={hiddenPage ? 'Hiện ở trang sản phẩm' : 'Ẩn khỏi trang sản phẩm'}
+                >
+                  <List className="h-3.5 w-3.5" />
                 </Button>
                 <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onAddChild(cat.id)} title="Thêm danh mục con">
@@ -230,7 +247,8 @@ function CategoryTreeNode({
                 onUploadImage={onUploadImage}
                 onRemoveImage={onRemoveImage}
                 uploadingCatId={uploadingCatId}
-                onToggleHidden={onToggleHidden}
+                onToggleHome={onToggleHome}
+                onTogglePage={onTogglePage}
                 onReorderSiblings={onReorderSiblings}
               />
             )}
@@ -794,9 +812,15 @@ export function LandingProductsTab() {
                 onUploadImage={(catId) => { setPendingCatId(catId); catImageRef.current?.click(); }}
                 onRemoveImage={async (catId) => { await updateCat.mutateAsync({ id: catId, image_url: null }); toast({ title: 'Đã xóa ảnh bìa' }); }}
                 uploadingCatId={uploadingCatId}
-                onToggleHidden={async (cat) => {
-                  await updateCat.mutateAsync({ id: cat.id, is_hidden: !cat.is_hidden } as any);
-                  toast({ title: cat.is_hidden ? 'Đã hiện danh mục' : 'Đã ẩn danh mục' });
+                onToggleHome={async (cat) => {
+                  const next = !(cat as any).hidden_from_home;
+                  await updateCat.mutateAsync({ id: cat.id, hidden_from_home: next } as any);
+                  toast({ title: next ? 'Đã ẩn khỏi trang chủ' : 'Đã hiện trên trang chủ' });
+                }}
+                onTogglePage={async (cat) => {
+                  const next = !(cat as any).hidden_from_products_page;
+                  await updateCat.mutateAsync({ id: cat.id, hidden_from_products_page: next } as any);
+                  toast({ title: next ? 'Đã ẩn khỏi trang sản phẩm' : 'Đã hiện ở trang sản phẩm' });
                 }}
                 onReorderSiblings={handleReorderCatSiblings}
               />
