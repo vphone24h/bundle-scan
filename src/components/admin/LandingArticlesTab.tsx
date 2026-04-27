@@ -392,6 +392,18 @@ export function LandingArticlesTab() {
     [articles, articlePage]
   );
 
+  const handleReorderArticlesPage = async (pageItems: LandingArticle[]) => {
+    if (!articles || !pageItems) return;
+    const startIdx = (articlePage - 1) * ARTICLE_PAGE_SIZE;
+    const reordered = [...articles];
+    pageItems.forEach((a, i) => {
+      reordered[startIdx + i] = a;
+    });
+    await reorderArticles.mutateAsync(
+      reordered.map((a, i) => ({ id: a.id, display_order: i }))
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Danh mục bài viết */}
