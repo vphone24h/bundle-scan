@@ -489,7 +489,7 @@ export function LandingArticlesTab() {
                 onReorder={handleReorderArticlesPage}
                 className="space-y-2"
               >
-                {pagedArticles.map(a => (
+                {(a) => (
                   <SortableItem key={a.id} id={a.id}>
                     {({ dragHandleProps }) => (
                       <div className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
@@ -530,7 +530,7 @@ export function LandingArticlesTab() {
                       </div>
                     )}
                   </SortableItem>
-                ))}
+                )}
               </SortableList>
               <ListPagination
                 currentPage={articlePage}
