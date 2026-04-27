@@ -143,6 +143,7 @@ export default function UniversalStoreTemplate({
   const [selectedProduct, setSelectedProduct] = useState<LandingProduct | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [articleSearchQuery, setArticleSearchQuery] = useState('');
   const [productFilterTag, setProductFilterTag] = useState<string | null>(null);
   const [showInstallmentCalc, setShowInstallmentCalc] = useState(false);
   const [ctvAuthOpen, setCtvAuthOpen] = useState(false);
