@@ -46,19 +46,23 @@ const LazyRichTextEditor = lazy(() =>
 
 // ─── Category Tree Node ───
 function CategoryNode({
-  category, level, onEdit, onDelete, onAddChild, onToggleVisible, onReorderSiblings, dragHandleProps,
+  category, level, onEdit, onDelete, onAddChild, onToggleHome, onTogglePage, onReorderSiblings, dragHandleProps,
 }: {
   category: LandingArticleCategory;
   level: number;
   onEdit: (c: LandingArticleCategory) => void;
   onDelete: (c: LandingArticleCategory) => void;
   onAddChild: (parentId: string) => void;
-  onToggleVisible: (c: LandingArticleCategory) => void;
+  onToggleHome: (c: LandingArticleCategory) => void;
+  onTogglePage: (c: LandingArticleCategory) => void;
   onReorderSiblings: (parentId: string | null, siblings: LandingArticleCategory[]) => void;
   dragHandleProps: Record<string, unknown>;
 }) {
   const [expanded, setExpanded] = useState(true);
   const hasChildren = category.children && category.children.length > 0;
+  const hiddenHome = (category as any).hidden_from_home === true;
+  const hiddenPage = (category as any).hidden_from_articles_page === true;
+  const fullyHidden = hiddenHome && hiddenPage;
 
   return (
     <div>
@@ -82,14 +86,34 @@ function CategoryNode({
           )
         )}
 
-        <span className={cn('flex-1 font-medium text-sm truncate', !category.is_visible && 'text-muted-foreground line-through')}>{category.name}</span>
+        <span className={cn('flex-1 font-medium text-sm truncate', fullyHidden && 'text-muted-foreground line-through')}>{category.name}</span>
 
-        {!category.is_visible && <Badge variant="outline" className="text-[10px] shrink-0">Ẩn</Badge>}
+        {hiddenHome && !hiddenPage && <Badge variant="outline" className="text-[10px] shrink-0">Ẩn trang chủ</Badge>}
+        {hiddenPage && !hiddenHome && <Badge variant="outline" className="text-[10px] shrink-0">Ẩn trang tin tức</Badge>}
+        {fullyHidden && <Badge variant="outline" className="text-[10px] shrink-0">Ẩn</Badge>}
+
+        <div className="flex items-center gap-0.5 shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn('h-7 w-7', hiddenHome ? 'text-muted-foreground' : 'text-primary')}
+            onClick={() => onToggleHome(category)}
+            title={hiddenHome ? 'Hiện trên trang chủ' : 'Ẩn khỏi trang chủ'}
+          >
+            <Home className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn('h-7 w-7', hiddenPage ? 'text-muted-foreground' : 'text-primary')}
+            onClick={() => onTogglePage(category)}
+            title={hiddenPage ? 'Hiện ở trang tin tức' : 'Ẩn khỏi trang tin tức'}
+          >
+            <List className="h-3.5 w-3.5" />
+          </Button>
+        </div>
 
         <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity shrink-0">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onToggleVisible(category)} title={category.is_visible ? 'Ẩn danh mục' : 'Hiện danh mục'}>
-            {category.is_visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
-          </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onAddChild(category.id)}>
             <Plus className="h-3.5 w-3.5" />
           </Button>
@@ -116,7 +140,8 @@ function CategoryNode({
                   onEdit={onEdit}
                   onDelete={onDelete}
                   onAddChild={onAddChild}
-                  onToggleVisible={onToggleVisible}
+                  onToggleHome={onToggleHome}
+                  onTogglePage={onTogglePage}
                   onReorderSiblings={onReorderSiblings}
                   dragHandleProps={childHandle}
                 />
