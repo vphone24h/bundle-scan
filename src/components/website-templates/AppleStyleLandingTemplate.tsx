@@ -818,7 +818,7 @@ export default function AppleStyleLandingTemplate({
             )}
 
             {/* === CATEGORY BANNERS – each full screen, stacked vertically like Apple.com === */}
-            {categories.map((cat, idx) => {
+            {categories.filter((c: any) => !c.hidden_from_home).map((cat, idx) => {
               const palette = categoryPalettes[idx % categoryPalettes.length];
               const catProducts = getProductsForCategory(cat.id);
               const isDark = palette.bg === 'bg-[#1d1d1f]' || palette.bg === 'bg-black';
