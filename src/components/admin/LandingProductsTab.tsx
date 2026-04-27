@@ -140,7 +140,7 @@ function flattenCategoriesForSelect(categories: LandingProductCategory[], level 
 }
 // Category tree node component
 function CategoryTreeNode({
-  categories, level, onEdit, onAddChild, onDelete, onUploadImage, onRemoveImage, uploadingCatId, onToggleHidden, onMoveUp, onMoveDown,
+  categories, level, onEdit, onAddChild, onDelete, onUploadImage, onRemoveImage, uploadingCatId, onToggleHidden, onReorderSiblings,
 }: {
   categories: LandingProductCategory[];
   level: number;
@@ -151,21 +151,24 @@ function CategoryTreeNode({
   onRemoveImage: (catId: string) => void;
   uploadingCatId: string | null;
   onToggleHidden: (cat: LandingProductCategory) => void;
-  onMoveUp: (cat: LandingProductCategory, siblings: LandingProductCategory[]) => void;
-  onMoveDown: (cat: LandingProductCategory, siblings: LandingProductCategory[]) => void;
+  onReorderSiblings: (siblings: LandingProductCategory[]) => void;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   return (
-    <>
-      {categories.map((cat, idx) => {
+    <SortableList<LandingProductCategory>
+      items={categories}
+      onReorder={onReorderSiblings}
+    >
+      {(cat, idx) => {
         const hasChildren = cat.children && cat.children.length > 0;
         const isExpanded = expanded[cat.id] !== false; // default expanded
-        const isFirst = idx === 0;
-        const isLast = idx === categories.length - 1;
         return (
-          <div key={cat.id}>
+          <SortableItem key={cat.id} id={cat.id}>
+            {({ dragHandleProps }) => (
+            <div>
             <div className={`flex flex-wrap items-center gap-1.5 py-2 px-2 rounded-lg hover:bg-muted/50 group ${level > 0 ? 'ml-5' : ''}`}>
+              <DragHandle dragHandleProps={dragHandleProps} className="h-7 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-grab active:cursor-grabbing touch-none shrink-0" />
               <button
                 onClick={() => setExpanded(prev => ({ ...prev, [cat.id]: !isExpanded }))}
                 className={`h-6 w-6 flex items-center justify-center rounded hover:bg-muted shrink-0 ${!hasChildren ? 'invisible' : ''}`}
@@ -190,13 +193,6 @@ function CategoryTreeNode({
                 {hasChildren && <p className="text-[10px] text-muted-foreground">{cat.children!.length} danh mục con</p>}
               </div>
               <div className="flex items-center gap-0.5 shrink-0">
-                {/* Move up/down */}
-                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isFirst} onClick={() => onMoveUp(cat, categories)} title="Di chuyển lên">
-                  <ArrowUp className="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isLast} onClick={() => onMoveDown(cat, categories)} title="Di chuyển xuống">
-                  <ArrowDown className="h-3.5 w-3.5" />
-                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -235,14 +231,15 @@ function CategoryTreeNode({
                 onRemoveImage={onRemoveImage}
                 uploadingCatId={uploadingCatId}
                 onToggleHidden={onToggleHidden}
-                onMoveUp={onMoveUp}
-                onMoveDown={onMoveDown}
+                onReorderSiblings={onReorderSiblings}
               />
             )}
-          </div>
+            </div>
+            )}
+          </SortableItem>
         );
-      })}
-    </>
+      }}
+    </SortableList>
   );
 }
 
