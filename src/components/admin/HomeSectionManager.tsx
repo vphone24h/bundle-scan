@@ -187,7 +187,7 @@ export function HomeSectionManager({ templateId, customSections, onChange, custo
         )}
       </div>
 
-      <SortableList items={currentItems as any} onReorder={(next) => handleReorder(next as HomeSectionItem[])} className="space-y-1.5">
+      <SortableList<HomeSectionItem & { id: string }> items={currentItems as (HomeSectionItem & { id: string })[]} onReorder={(next) => handleReorder(next)} className="space-y-1.5">
         {(item, i) => {
           const meta = getSectionMeta(item.id, customProductTabs);
           const isHero = item.id === 'hero';
