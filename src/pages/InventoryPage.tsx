@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Download, Package, ClipboardList, FileUp, AlertTriangle, Wrench, ExternalLink, PlayCircle } from 'lucide-react';
 import { differenceInDays, format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
+import { useCurrentTenant } from '@/hooks/useTenant';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
@@ -49,6 +51,28 @@ export default function InventoryPage() {
     search: '', categoryId: '', branchId: '', productType: 'all', stockStatus: 'all', oldStockDays: null, stockSort: 'none',
   });
 
+  const { data: currentTenant } = useCurrentTenant();
+  const searchTrimmed = filters.search.trim();
+  const isImeiSearch = /^\d{4,}$/.test(searchTrimmed);
+
+  // Lookup product IDs by IMEI when search looks like an IMEI fragment
+  const { data: imeiProductIds } = useQuery({
+    queryKey: ['inventory-imei-search', currentTenant?.id, searchTrimmed],
+    queryFn: async () => {
+      if (!currentTenant?.id || !isImeiSearch) return new Set<string>();
+      const { data, error } = await supabase
+        .from('products')
+        .select('id')
+        .eq('tenant_id', currentTenant.id)
+        .ilike('imei', `%${searchTrimmed}%`)
+        .limit(500);
+      if (error) throw error;
+      return new Set((data || []).map((r: any) => r.id));
+    },
+    enabled: !!currentTenant?.id && isImeiSearch,
+    staleTime: 30 * 1000,
+  });
+
   const filteredInventory = useMemo(() => {
     if (!inventory) return [] as InventoryItem[];
     const filtered = inventory.filter((item) => {
@@ -56,7 +80,8 @@ export default function InventoryPage() {
         const searchLower = filters.search.toLowerCase();
         const matchesName = item.productName.toLowerCase().includes(searchLower);
         const matchesSku = item.sku.toLowerCase().includes(searchLower);
-        if (!matchesName && !matchesSku) return false;
+        const matchesImei = isImeiSearch && imeiProductIds?.has(item.productId);
+        if (!matchesName && !matchesSku && !matchesImei) return false;
       }
       if (filters.categoryId && item.categoryId !== filters.categoryId) return false;
       if (filters.branchId && item.branchId !== filters.branchId) return false;
@@ -75,7 +100,7 @@ export default function InventoryPage() {
     if (filters.stockSort === 'stock_high') filtered.sort((a, b) => b.stock - a.stock);
     else if (filters.stockSort === 'stock_low') filtered.sort((a, b) => a.stock - b.stock);
     return filtered;
-  }, [inventory, filters]);
+  }, [inventory, filters, isImeiSearch, imeiProductIds]);
 
   const pagination = usePagination(filteredInventory, { storageKey: 'inventory-list' });
 
