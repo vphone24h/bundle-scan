@@ -48,8 +48,8 @@ const INDUSTRIES = [
 ];
 
 const REVENUE_TIERS = [
-  { value: 'under_500m', label: 'Dưới 500 triệu', exempt: true, note: '' },
-  { value: '500m_3b', label: 'Từ 500tr đến dưới 3 tỷ', exempt: false, note: 'TNCN 15%' },
+  { value: 'under_500m', label: 'Dưới 1 tỷ', exempt: true, note: '' },
+  { value: '500m_3b', label: 'Từ 1 tỷ đến dưới 3 tỷ', exempt: false, note: 'TNCN 15%' },
   { value: '3b_50b', label: 'Từ 3 tỷ đến dưới 50 tỷ', exempt: false, note: 'TNCN 17%' },
   { value: 'over_50b', label: 'Trên 50 tỷ', exempt: false, note: 'TNCN 20%' },
 ];
@@ -219,7 +219,7 @@ function TaxResultDisplay({ taxResult, selectedIndustry, effectiveTaxMethod, rev
         <CardContent className="pt-6 text-center">
           <CheckCircle2 className="h-10 w-10 text-emerald-500 mx-auto mb-2" />
           <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">Không phải đóng thuế</p>
-          <p className="text-sm text-muted-foreground mt-1">Doanh thu dưới 500 triệu/năm được miễn thuế</p>
+          <p className="text-sm text-muted-foreground mt-1">Doanh thu dưới 1 tỷ/năm được miễn thuế</p>
         </CardContent>
       </Card>
     );
@@ -716,7 +716,7 @@ function TaxReportManual() {
     if (revenueNum <= 0) return;
     // Estimate annual revenue (quarter * 4)
     const annualEstimate = revenueNum * 4;
-    if (annualEstimate < 500_000_000) setRevenueTier('under_500m');
+    if (annualEstimate < 1_000_000_000) setRevenueTier('under_500m');
     else if (annualEstimate < 3_000_000_000) setRevenueTier('500m_3b');
     else if (annualEstimate < 50_000_000_000) setRevenueTier('3b_50b');
     else setRevenueTier('over_50b');
