@@ -1663,6 +1663,10 @@ export function LandingProductsTab() {
                 onChange={v => setForm(p => ({ ...p, description: v }))}
                 placeholder="Mô tả chi tiết sản phẩm..."
                 minHeight="150px"
+                onUpload={async (file) => {
+                  const url = await handleUploadImage(file);
+                  return url || '';
+                }}
               />
             </div>
 
