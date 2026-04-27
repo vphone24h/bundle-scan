@@ -31,7 +31,7 @@ import { toast } from '@/hooks/use-toast';
 import {
   Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, FileText,
   ChevronDown, ChevronRight, Eye, EyeOff, FolderOpen, Folder,
-  Image as ImageIcon, Home, Star, ArrowUp, ArrowDown,
+  Image as ImageIcon, Home, Star, ArrowUp, ArrowDown, List,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
