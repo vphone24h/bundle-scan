@@ -688,6 +688,31 @@ export function LandingProductsTab() {
     );
   };
 
+  const handleMoveProductAcrossPage = async (
+    productId: string,
+    direction: 'prev' | 'next'
+  ) => {
+    if (!products) return;
+    const currIdx = products.findIndex(p => p.id === productId);
+    if (currIdx < 0) return;
+    const reordered = [...products];
+    const [item] = reordered.splice(currIdx, 1);
+    if (direction === 'next') {
+      // Insert as the first item of the next page
+      const targetIdx = Math.min(productPage * PRODUCT_PAGE_SIZE, reordered.length);
+      reordered.splice(targetIdx, 0, item);
+      setProductPage(productPage + 1);
+    } else {
+      // Insert as the last item of the previous page
+      const targetIdx = Math.max((productPage - 1) * PRODUCT_PAGE_SIZE - 1, 0);
+      reordered.splice(targetIdx, 0, item);
+      setProductPage(Math.max(productPage - 1, 1));
+    }
+    await reorderProds.mutateAsync(
+      reordered.map((p, i) => ({ id: p.id, display_order: i }))
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Hidden input for category cover image */}
@@ -848,12 +873,30 @@ export function LandingProductsTab() {
                 onReorder={handleReorderProductsPage}
                 className="space-y-2"
               >
-                {(p) => (
+                {(p, idx) => {
+                  const pageItemsCount = Math.min(PRODUCT_PAGE_SIZE, products.length - (productPage - 1) * PRODUCT_PAGE_SIZE);
+                  const totalPages = Math.ceil(products.length / PRODUCT_PAGE_SIZE);
+                  const isFirst = idx === 0;
+                  const isLast = idx === pageItemsCount - 1;
+                  const hasPrev = productPage > 1;
+                  const hasNext = productPage < totalPages;
+                  return (
                   <SortableItem key={p.id} id={p.id}>
                     {({ dragHandleProps }) => (
                   <div className="flex flex-col gap-2 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-2">
                       <DragHandle dragHandleProps={dragHandleProps} />
+                      {isFirst && hasPrev && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-7 w-7 shrink-0"
+                          title="Chuyển lên trang trước"
+                          onClick={() => handleMoveProductAcrossPage(p.id, 'prev')}
+                        >
+                          <ArrowUp className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                       {p.image_url ? (
                         <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-lg object-cover border shrink-0" />
                       ) : (
@@ -902,6 +945,18 @@ export function LandingProductsTab() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 justify-end">
+                      {isLast && hasNext && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs px-2 shrink-0 gap-1"
+                          title="Chuyển xuống trang sau"
+                          onClick={() => handleMoveProductAcrossPage(p.id, 'next')}
+                        >
+                          <ArrowDown className="h-3.5 w-3.5" />
+                          Trang sau
+                        </Button>
+                      )}
                       <Button
                         variant={p.is_sold_out ? "destructive" : "outline"}
                         size="sm"
@@ -934,7 +989,8 @@ export function LandingProductsTab() {
                   </div>
                     )}
                   </SortableItem>
-                )}
+                  );
+                }}
               </SortableList>
               <ListPagination
                 currentPage={productPage}
