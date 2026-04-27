@@ -313,9 +313,41 @@ export function RichTextEditor({
     const target = e.target as HTMLElement;
     const isCol = target.classList.contains('rte-col-resize');
     const isRow = target.classList.contains('rte-row-resize');
-    if (!isCol && !isRow) return;
+    const isImgHandle = target.classList.contains('rte-img-handle');
+    if (!isCol && !isRow && !isImgHandle) return;
     e.preventDefault();
     e.stopPropagation();
+
+    if (isImgHandle) {
+      const img = (target as any)._targetImg as HTMLImageElement | undefined;
+      if (!img) return;
+      const corner = target.dataset.corner || 'br';
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startW = img.offsetWidth;
+      const startH = img.offsetHeight;
+      const ratio = startW > 0 ? startH / startW : 1;
+      const onMove = (ev: MouseEvent) => {
+        let dx = ev.clientX - startX;
+        if (corner.includes('l')) dx = -dx;
+        const newW = Math.max(40, startW + dx);
+        const newH = Math.max(40, newW * ratio);
+        img.style.width = `${newW}px`;
+        img.style.height = `${newH}px`;
+        img.style.maxWidth = 'none';
+        positionImageOverlayRef.current?.(img);
+      };
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        isInternalUpdate.current = true;
+        onChange(getCleanHTML());
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      return;
+    }
+
     target.classList.add('active');
 
     const cell = target.closest('th, td') as HTMLTableCellElement | null;
