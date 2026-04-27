@@ -688,6 +688,31 @@ export function LandingProductsTab() {
     );
   };
 
+  const handleMoveProductAcrossPage = async (
+    productId: string,
+    direction: 'prev' | 'next'
+  ) => {
+    if (!products) return;
+    const currIdx = products.findIndex(p => p.id === productId);
+    if (currIdx < 0) return;
+    const reordered = [...products];
+    const [item] = reordered.splice(currIdx, 1);
+    if (direction === 'next') {
+      // Insert as the first item of the next page
+      const targetIdx = Math.min(productPage * PRODUCT_PAGE_SIZE, reordered.length);
+      reordered.splice(targetIdx, 0, item);
+      setProductPage(productPage + 1);
+    } else {
+      // Insert as the last item of the previous page
+      const targetIdx = Math.max((productPage - 1) * PRODUCT_PAGE_SIZE - 1, 0);
+      reordered.splice(targetIdx, 0, item);
+      setProductPage(Math.max(productPage - 1, 1));
+    }
+    await reorderProds.mutateAsync(
+      reordered.map((p, i) => ({ id: p.id, display_order: i }))
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Hidden input for category cover image */}
