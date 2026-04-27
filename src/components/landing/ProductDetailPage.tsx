@@ -113,6 +113,7 @@ export function ProductDetailPage({
 
   const [selectedOption1, setSelectedOption1] = useState<string | null>(null);
   const [selectedOption2, setSelectedOption2] = useState<string | null>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const placeOrder = usePlaceLandingOrder();
 
