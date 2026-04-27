@@ -1998,7 +1998,110 @@ export function LandingProductsTab() {
                 </div>
               )}
             </div>
+
+            {/* Hiển thị trên trang chủ */}
+            <Separator />
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">📍 Hiển thị trên trang chủ</Label>
+              <div className="space-y-1.5">
+                {[
+                  { id: 'flashSale', icon: '⚡', name: 'Flash Sale' },
+                  { id: 'combo', icon: '🎁', name: 'Combo ưu đãi' },
+                ].map(section => (
+                  <label key={section.id} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={form.home_tab_ids.includes(section.id)}
+                      onCheckedChange={(checked) => {
+                        setForm(p => ({
+                          ...p,
+                          home_tab_ids: checked ? [...p.home_tab_ids, section.id] : p.home_tab_ids.filter(id => id !== section.id)
+                        }));
+                      }}
+                    />
+                    <span className="text-sm">{section.icon} {section.name}</span>
+                  </label>
+                ))}
+                {customProductTabs.map((tab: any) => (
+                  <label key={tab.id} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={form.home_tab_ids.includes(tab.id)}
+                      onCheckedChange={(checked) => {
+                        setForm(p => ({
+                          ...p,
+                          home_tab_ids: checked ? [...p.home_tab_ids, tab.id] : p.home_tab_ids.filter((id: string) => id !== tab.id)
+                        }));
+                      }}
+                    />
+                    <span className="text-sm">{tab.icon || '📦'} {tab.name}</span>
+                  </label>
+                ))}
+              </div>
             </div>
+
+            {/* Ưu đãi HS-SV */}
+            <Separator />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-sm font-semibold">🎓 Nhãn ưu đãi HS-SV</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px] gap-1"
+                  onClick={() => {
+                    const source = (products || []).find((p: any) =>
+                      p.id !== editingProductId && (p.student_discount_text || p.student_discount_label)
+                    ) || (products || []).find((p: any) => p.id !== editingProductId);
+                    if (!source) {
+                      toast({ title: 'Chưa có sản phẩm nguồn', description: 'Cần ít nhất 1 sản phẩm khác đã cấu hình nhãn HS-SV.', variant: 'destructive' });
+                      return;
+                    }
+                    setForm(p => ({
+                      ...p,
+                      student_discount_label: (source as any).student_discount_label || 'HỌC SINH SINH VIÊN',
+                      student_discount_text: (source as any).student_discount_text || '',
+                    }));
+                    toast({ title: '✅ Đã đồng bộ', description: `Copy nhãn HS-SV từ "${(source as any).name}".` });
+                  }}
+                >
+                  🔄 Đồng bộ
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Tiêu đề</Label>
+                  <Input
+                    value={form.student_discount_label}
+                    onChange={e => setForm(p => ({ ...p, student_discount_label: e.target.value }))}
+                    placeholder="HỌC SINH SINH VIÊN"
+                    className="h-8 text-sm uppercase"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Nội dung giảm</Label>
+                  <Input
+                    value={form.student_discount_text}
+                    onChange={e => setForm(p => ({ ...p, student_discount_text: e.target.value }))}
+                    placeholder="VD: GIẢM 100.000Đ"
+                    className="h-8 text-sm uppercase"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Trả góp */}
+            <Separator />
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">💳 Trả góp - Trả trước</Label>
+              <p className="text-[10px] text-muted-foreground">Hiển thị "Hoặc trả trước XXX,000đ". Để 0 nếu không hiển thị.</p>
+              <PriceInput
+                value={form.installment_down_payment ?? 0}
+                onChange={v => setForm(p => ({ ...p, installment_down_payment: v || null }))}
+                placeholder="VD: 600000"
+              />
+            </div>
+            </div>
+            {/* ===== /CỘT PHẢI ===== */}
             </div>
           </div>
           {/* Footer sticky */}
