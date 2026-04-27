@@ -843,21 +843,17 @@ export function LandingProductsTab() {
             <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
           ) : products && products.length > 0 ? (
             <>
-              <div className="space-y-2">
-                {paginateArray(products, productPage, PRODUCT_PAGE_SIZE).map((p) => {
-                  const idx = products.indexOf(p);
-                  return (
-                  <div key={p.id} className="flex flex-col gap-2 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+              <SortableList<typeof products[number]>
+                items={paginateArray(products, productPage, PRODUCT_PAGE_SIZE)}
+                onReorder={handleReorderProductsPage}
+                className="space-y-2"
+              >
+                {(p) => (
+                  <SortableItem key={p.id} id={p.id}>
+                    {({ dragHandleProps }) => (
+                  <div className="flex flex-col gap-2 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-2">
-                      {/* Move up/down */}
-                      <div className="flex flex-col gap-0.5 shrink-0">
-                        <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === 0 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'up')}>
-                          <ArrowUp className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === products.length - 1 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'down')}>
-                          <ArrowDown className="h-3 w-3" />
-                        </Button>
-                      </div>
+                      <DragHandle dragHandleProps={dragHandleProps} />
                       {p.image_url ? (
                         <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-lg object-cover border shrink-0" />
                       ) : (
