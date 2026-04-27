@@ -1066,136 +1066,9 @@ export function LandingProductsTab() {
           </div>
           {/* Body */}
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
-            <div className="mx-auto w-full max-w-7xl grid gap-4 lg:gap-6 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)_320px]">
-            {/* ===== CỘT TRÁI (sidebar) ===== */}
-            <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start order-2 lg:order-1">
-              {/* Hiển thị trên trang chủ */}
-              <div className="rounded-lg border bg-card p-3 space-y-2">
-                <Label className="text-sm font-semibold">📍 Hiển thị trên trang chủ</Label>
-                <div className="space-y-1.5">
-                  {[
-                    { id: 'flashSale', icon: '⚡', name: 'Flash Sale' },
-                    { id: 'combo', icon: '🎁', name: 'Combo ưu đãi' },
-                  ].map(section => (
-                    <label key={section.id} className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox
-                        checked={form.home_tab_ids.includes(section.id)}
-                        onCheckedChange={(checked) => {
-                          setForm(p => ({
-                            ...p,
-                            home_tab_ids: checked ? [...p.home_tab_ids, section.id] : p.home_tab_ids.filter(id => id !== section.id)
-                          }));
-                        }}
-                      />
-                      <span className="text-sm">{section.icon} {section.name}</span>
-                    </label>
-                  ))}
-                  {customProductTabs.map((tab: any) => (
-                    <label key={tab.id} className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox
-                        checked={form.home_tab_ids.includes(tab.id)}
-                        onCheckedChange={(checked) => {
-                          setForm(p => ({
-                            ...p,
-                            home_tab_ids: checked ? [...p.home_tab_ids, tab.id] : p.home_tab_ids.filter((id: string) => id !== tab.id)
-                          }));
-                        }}
-                      />
-                      <span className="text-sm">{tab.icon || '📦'} {tab.name}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Ưu đãi HS-SV */}
-              <div className="rounded-lg border bg-card p-3 space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <Label className="text-sm font-semibold">🎓 Nhãn ưu đãi HS-SV</Label>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-[11px] gap-1"
-                    onClick={() => {
-                      const source = (products || []).find((p: any) =>
-                        p.id !== editingProductId && (p.student_discount_text || p.student_discount_label)
-                      ) || (products || []).find((p: any) => p.id !== editingProductId);
-                      if (!source) {
-                        toast({ title: 'Chưa có sản phẩm nguồn', description: 'Cần ít nhất 1 sản phẩm khác đã cấu hình nhãn HS-SV.', variant: 'destructive' });
-                        return;
-                      }
-                      setForm(p => ({
-                        ...p,
-                        student_discount_label: (source as any).student_discount_label || 'HỌC SINH SINH VIÊN',
-                        student_discount_text: (source as any).student_discount_text || '',
-                      }));
-                      toast({ title: '✅ Đã đồng bộ', description: `Copy nhãn HS-SV từ "${(source as any).name}".` });
-                    }}
-                  >
-                    🔄
-                  </Button>
-                </div>
-                <p className="text-[10px] text-muted-foreground">
-                  Hiện ngay vị trí "BEST SELLER". Để trống nếu không hiển thị.
-                </p>
-                <div className="space-y-2">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Tiêu đề</Label>
-                    <Input
-                      value={form.student_discount_label}
-                      onChange={e => setForm(p => ({ ...p, student_discount_label: e.target.value }))}
-                      placeholder="HỌC SINH SINH VIÊN"
-                      className="h-8 text-sm uppercase"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Nội dung giảm</Label>
-                    <Input
-                      value={form.student_discount_text}
-                      onChange={e => setForm(p => ({ ...p, student_discount_text: e.target.value }))}
-                      placeholder="VD: GIẢM 100.000Đ"
-                      className="h-8 text-sm uppercase"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Trả góp */}
-              <div className="rounded-lg border bg-card p-3 space-y-2">
-                <Label className="text-sm font-semibold">💳 Trả góp - Trả trước</Label>
-                <p className="text-[10px] text-muted-foreground">
-                  Hiển thị "Hoặc trả trước XXX,000đ". Để 0 nếu không hiển thị.
-                </p>
-                <PriceInput
-                  value={form.installment_down_payment ?? 0}
-                  onChange={v => setForm(p => ({ ...p, installment_down_payment: v || null }))}
-                  placeholder="VD: 600000"
-                />
-              </div>
-
-              {/* Nhãn sản phẩm — chỉ giữ nút mở, panel chi tiết vẫn nằm bên cột phải */}
-              <div className="rounded-lg border bg-card p-3 space-y-2">
-                <Label className="text-sm font-semibold flex items-center gap-1.5">🏷️ Nhãn sản phẩm</Label>
-                <p className="text-[10px] text-muted-foreground">
-                  {formBadges.length > 0 ? `Đang chọn ${formBadges.length}/3 nhãn.` : 'Chưa chọn nhãn nào.'}
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full h-8 text-xs"
-                  onClick={() => {
-                    if (!showBadges) handleToggleBadges();
-                    setTimeout(() => badgesPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
-                  }}
-                >
-                  {showBadges ? '↓ Cuộn tới khu chọn nhãn' : '+ Mở khu chọn nhãn'}
-                </Button>
-              </div>
-            </aside>
-
-            {/* ===== CỘT GIỮA (form chính) ===== */}
-            <div className="space-y-4 min-w-0 order-1 lg:order-2">
+            <div className="mx-auto w-full max-w-[1600px] grid gap-4 lg:gap-6 lg:grid-cols-3">
+            {/* ===== CỘT TRÁI: Thông tin chính → Biến thể → Gói dịch vụ ===== */}
+            <div className="space-y-4 min-w-0">
             <div className="space-y-2">
               <Label>Tên sản phẩm *</Label>
               <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="iPhone 17 Pro Max..." />
@@ -1758,9 +1631,12 @@ export function LandingProductsTab() {
                 </div>
               ))}
             </div>
+            </div>
+            {/* ===== /CỘT TRÁI ===== */}
 
+            {/* ===== CỘT GIỮA: Khuyến mãi / Bảo hành / Mô tả ===== */}
+            <div className="space-y-4 min-w-0">
             {/* ===== KHUYẾN MÃI ===== */}
-            <Separator />
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Label className="text-sm font-semibold">🎁 Khung khuyến mãi</Label>
@@ -1811,9 +1687,12 @@ export function LandingProductsTab() {
                 minHeight="150px"
               />
             </div>
+            </div>
+            {/* ===== /CỘT GIỮA ===== */}
 
+            {/* ===== CỘT PHẢI: Hình ảnh / Trạng thái / Nhãn / Hiển thị trang chủ / HSSV / Trả góp ===== */}
+            <div className="space-y-4 min-w-0">
             {/* Multiple images */}
-            <Separator />
             <div className="space-y-2">
               <Label>Hình ảnh sản phẩm (ảnh đầu tiên = ảnh chính)</Label>
               {form.images.length > 0 && (
@@ -2119,7 +1998,110 @@ export function LandingProductsTab() {
                 </div>
               )}
             </div>
+
+            {/* Hiển thị trên trang chủ */}
+            <Separator />
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">📍 Hiển thị trên trang chủ</Label>
+              <div className="space-y-1.5">
+                {[
+                  { id: 'flashSale', icon: '⚡', name: 'Flash Sale' },
+                  { id: 'combo', icon: '🎁', name: 'Combo ưu đãi' },
+                ].map(section => (
+                  <label key={section.id} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={form.home_tab_ids.includes(section.id)}
+                      onCheckedChange={(checked) => {
+                        setForm(p => ({
+                          ...p,
+                          home_tab_ids: checked ? [...p.home_tab_ids, section.id] : p.home_tab_ids.filter(id => id !== section.id)
+                        }));
+                      }}
+                    />
+                    <span className="text-sm">{section.icon} {section.name}</span>
+                  </label>
+                ))}
+                {customProductTabs.map((tab: any) => (
+                  <label key={tab.id} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={form.home_tab_ids.includes(tab.id)}
+                      onCheckedChange={(checked) => {
+                        setForm(p => ({
+                          ...p,
+                          home_tab_ids: checked ? [...p.home_tab_ids, tab.id] : p.home_tab_ids.filter((id: string) => id !== tab.id)
+                        }));
+                      }}
+                    />
+                    <span className="text-sm">{tab.icon || '📦'} {tab.name}</span>
+                  </label>
+                ))}
+              </div>
             </div>
+
+            {/* Ưu đãi HS-SV */}
+            <Separator />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-sm font-semibold">🎓 Nhãn ưu đãi HS-SV</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px] gap-1"
+                  onClick={() => {
+                    const source = (products || []).find((p: any) =>
+                      p.id !== editingProductId && (p.student_discount_text || p.student_discount_label)
+                    ) || (products || []).find((p: any) => p.id !== editingProductId);
+                    if (!source) {
+                      toast({ title: 'Chưa có sản phẩm nguồn', description: 'Cần ít nhất 1 sản phẩm khác đã cấu hình nhãn HS-SV.', variant: 'destructive' });
+                      return;
+                    }
+                    setForm(p => ({
+                      ...p,
+                      student_discount_label: (source as any).student_discount_label || 'HỌC SINH SINH VIÊN',
+                      student_discount_text: (source as any).student_discount_text || '',
+                    }));
+                    toast({ title: '✅ Đã đồng bộ', description: `Copy nhãn HS-SV từ "${(source as any).name}".` });
+                  }}
+                >
+                  🔄 Đồng bộ
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Tiêu đề</Label>
+                  <Input
+                    value={form.student_discount_label}
+                    onChange={e => setForm(p => ({ ...p, student_discount_label: e.target.value }))}
+                    placeholder="HỌC SINH SINH VIÊN"
+                    className="h-8 text-sm uppercase"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Nội dung giảm</Label>
+                  <Input
+                    value={form.student_discount_text}
+                    onChange={e => setForm(p => ({ ...p, student_discount_text: e.target.value }))}
+                    placeholder="VD: GIẢM 100.000Đ"
+                    className="h-8 text-sm uppercase"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Trả góp */}
+            <Separator />
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">💳 Trả góp - Trả trước</Label>
+              <p className="text-[10px] text-muted-foreground">Hiển thị "Hoặc trả trước XXX,000đ". Để 0 nếu không hiển thị.</p>
+              <PriceInput
+                value={form.installment_down_payment ?? 0}
+                onChange={v => setForm(p => ({ ...p, installment_down_payment: v || null }))}
+                placeholder="VD: 600000"
+              />
+            </div>
+            </div>
+            {/* ===== /CỘT PHẢI ===== */}
             </div>
           </div>
           {/* Footer sticky */}
