@@ -1056,13 +1056,7 @@ export function LandingProductsTab() {
                 {editingProduct ? 'Sửa sản phẩm' : 'Thêm sản phẩm mới'}
               </h2>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setProductDialog(false)}>Huỷ</Button>
-              <Button size="sm" onClick={handleSaveProduct} disabled={!form.name.trim() || createProduct.isPending || updateProduct.isPending}>
-                {(createProduct.isPending || updateProduct.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingProduct ? 'Cập nhật' : 'Thêm'}
-              </Button>
-            </div>
+            {/* Nút Huỷ/Cập nhật chỉ giữ ở footer dưới */}
           </div>
           {/* Body */}
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
