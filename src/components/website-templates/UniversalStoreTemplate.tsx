@@ -1380,9 +1380,22 @@ export default function UniversalStoreTemplate({
               const newsSections = ((settings as any)?.custom_news_page_sections || defaultNewsSections).filter((s: any) => s.enabled);
               const allArticles = articlesData?.articles || [];
               const articleCategories = (articlesData?.categories || []).filter((c: any) => c.is_visible !== false && !c.hidden_from_articles_page);
-              const filteredAllArticles = selectedArticleCategoryId
+              const normalizeText = (s: string) => (s || '')
+                .toString()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .trim();
+              const articleQ = normalizeText(articleSearchQuery);
+              const byCategory = selectedArticleCategoryId
                 ? allArticles.filter(a => a.category_id === selectedArticleCategoryId)
                 : allArticles;
+              const filteredAllArticles = articleQ
+                ? byCategory.filter((a: any) => {
+                    const hay = normalizeText([a.title, a.excerpt, a.content].filter(Boolean).join(' '));
+                    return hay.includes(articleQ);
+                  })
+                : byCategory;
               const featuredOnes = filteredAllArticles.filter(a => a.is_featured);
               const regularOnes = filteredAllArticles.filter(a => !a.is_featured);
 
@@ -1406,6 +1419,8 @@ export default function UniversalStoreTemplate({
                             <Input
                               placeholder={`Tìm kiếm bài viết...`}
                               className="h-11 rounded-xl border-black/10 bg-[#f5f5f7]"
+                              value={articleSearchQuery}
+                              onChange={(e) => setArticleSearchQuery(e.target.value)}
                             />
                           </div>
                         );
