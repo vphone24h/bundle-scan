@@ -274,7 +274,7 @@ export function PaymentFlowDialog({
 
   return (
     <Dialog open={open} onOpenChange={v => !v && handleClose()}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0">
+      <DialogContent className="max-w-md sm:max-w-xl md:max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden p-0">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b px-4 py-3 flex items-center gap-3">
           {step !== 'method' && !orderPlaced && (
