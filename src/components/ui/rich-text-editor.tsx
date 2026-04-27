@@ -1142,6 +1142,42 @@ export function RichTextEditor({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Delete/Backspace: xoá ảnh đang được chọn (resizingImg)
+  useEffect(() => {
+    if (!resizingImg) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      const target = e.target as HTMLElement | null;
+      // Nếu user đang gõ trong input/textarea/contenteditable khác thì bỏ qua
+      if (target) {
+        const tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      }
+      e.preventDefault();
+      const img = resizingImg;
+      const row = img.closest('.rte-image-row') as HTMLElement | null;
+      const parent = img.parentElement;
+      img.remove();
+      // Dọn row rỗng hoặc block cha rỗng
+      if (row && row.querySelectorAll('img').length === 0) {
+        row.remove();
+      } else if (parent && parent !== editorRef.current && parent.querySelectorAll('img').length === 0 && !parent.textContent?.trim()) {
+        // <p>, <figure>, <div> chỉ chứa ảnh đó → xoá luôn
+        parent.remove();
+      }
+      setResizingImg(null);
+      if (editorRef.current) {
+        // Nếu editor rỗng hoàn toàn, đảm bảo còn 1 dòng trống để gõ tiếp
+        if (!editorRef.current.innerHTML.trim()) {
+          editorRef.current.innerHTML = '<p><br/></p>';
+        }
+        onChange(editorRef.current.innerHTML);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [resizingImg, onChange]);
+
   // Set initial content
   const handleRef = useCallback((el: HTMLDivElement | null) => {
     if (el) {
