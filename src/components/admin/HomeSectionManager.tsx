@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronUp, ChevronDown, RotateCcw, Sparkles, Plus, Pencil, Trash2, X, Package, ArrowLeftRight, ArrowDownUp } from 'lucide-react';
+import { ChevronDown, RotateCcw, Sparkles, Plus, Pencil, Trash2, X, Package, ArrowLeftRight, ArrowDownUp } from 'lucide-react';
 import { HomeSection, getIndustryConfig, SYSTEM_PAGES } from '@/lib/industryConfig';
+import { SortableList, SortableItem, DragHandle } from '@/components/shared/SortableList';
 
 export interface HomeSectionItem {
   id: HomeSection | string; // string for custom tab IDs like "productTab_xxx"
@@ -116,18 +117,8 @@ export function HomeSectionManager({ templateId, customSections, onChange, custo
     onChange(updated);
   };
 
-  const handleMoveUp = (index: number) => {
-    if (index <= 0) return;
-    const updated = [...currentItems];
-    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
-    onChange(updated);
-  };
-
-  const handleMoveDown = (index: number) => {
-    if (index >= currentItems.length - 1) return;
-    const updated = [...currentItems];
-    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
-    onChange(updated);
+  const handleReorder = (next: HomeSectionItem[]) => {
+    onChange(next);
   };
 
   const handleReset = () => onChange(null);
@@ -196,8 +187,8 @@ export function HomeSectionManager({ templateId, customSections, onChange, custo
         )}
       </div>
 
-      <div className="space-y-1.5">
-        {currentItems.map((item, i) => {
+      <SortableList<HomeSectionItem & { id: string }> items={currentItems as (HomeSectionItem & { id: string })[]} onReorder={(next) => handleReorder(next)} className="space-y-1.5">
+        {(item, i) => {
           const meta = getSectionMeta(item.id, customProductTabs);
           const isHero = item.id === 'hero';
           const isCustom = isCustomTab(item.id);
@@ -205,23 +196,14 @@ export function HomeSectionManager({ templateId, customSections, onChange, custo
           const isEditing = editingTabId === item.id;
 
           return (
-            <div key={item.id} className="space-y-0">
+            <SortableItem key={item.id} id={item.id} className="space-y-0">
+              {({ dragHandleProps }) => (<>
               <div
                 className={`flex items-center gap-2 rounded-lg border p-2.5 transition-all ${
                   item.enabled ? 'bg-background' : 'bg-muted/40 opacity-60'
                 }`}
               >
-                {/* Move buttons */}
-                <div className="flex flex-col gap-0.5 shrink-0">
-                  <button type="button" onClick={() => handleMoveUp(i)} disabled={i === 0}
-                    className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
-                    <ChevronUp className="h-3 w-3" />
-                  </button>
-                  <button type="button" onClick={() => handleMoveDown(i)} disabled={i === currentItems.length - 1}
-                    className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
-                    <ChevronDown className="h-3 w-3" />
-                  </button>
-                </div>
+                <DragHandle dragHandleProps={dragHandleProps} />
 
                 {/* Icon */}
                 <span className="text-lg shrink-0">{meta.icon}</span>
@@ -358,10 +340,11 @@ export function HomeSectionManager({ templateId, customSections, onChange, custo
                   })}
                 </div>
               )}
-            </div>
+              </>)}
+            </SortableItem>
           );
-        })}
-      </div>
+        }}
+      </SortableList>
 
       {/* Add Layout Button */}
       {!showAddMenu ? (

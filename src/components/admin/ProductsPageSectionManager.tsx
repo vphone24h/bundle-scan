@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronUp, ChevronDown, RotateCcw, Plus, Pencil, Trash2, X, Package, ArrowLeftRight, ArrowDownUp } from 'lucide-react';
+import { RotateCcw, Plus, Pencil, Trash2, X, Package, ArrowLeftRight, ArrowDownUp } from 'lucide-react';
 import { CustomProductTab } from '@/components/admin/HomeSectionManager';
 import { SYSTEM_PAGES } from '@/lib/industryConfig';
+import { SortableList, SortableItem, DragHandle } from '@/components/shared/SortableList';
 
 export interface ProductsPageSectionItem {
   id: string;
@@ -91,20 +92,6 @@ export function ProductsPageSectionManager({ customSections, onChange, customPro
     onChange(updated);
   };
 
-  const handleMoveUp = (index: number) => {
-    if (index <= 0) return;
-    const updated = [...currentItems];
-    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
-    onChange(updated);
-  };
-
-  const handleMoveDown = (index: number) => {
-    if (index >= currentItems.length - 1) return;
-    const updated = [...currentItems];
-    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
-    onChange(updated);
-  };
-
   const handleReset = () => onChange(null);
 
   const isCustomTab = (id: string) => id.startsWith('ppTab_');
@@ -156,30 +143,22 @@ export function ProductsPageSectionManager({ customSections, onChange, customPro
         )}
       </div>
 
-      <div className="space-y-1.5">
-        {currentItems.map((item, i) => {
+      <SortableList<ProductsPageSectionItem> items={currentItems} onReorder={onChange} className="space-y-1.5">
+        {(item, i) => {
           const meta = getSectionMeta(item.id, customProductTabs);
           const isCustom = isCustomTab(item.id);
           const isLayout = isLayoutSection(item.id);
           const isEditing = editingTabId === item.id;
 
           return (
-            <div
-              key={item.id}
+            <SortableItem key={item.id} id={item.id}>
+              {({ dragHandleProps }) => (
+              <div
               className={`flex items-center gap-2 rounded-lg border p-2.5 transition-all ${
                 item.enabled ? 'bg-background' : 'bg-muted/40 opacity-60'
               }`}
             >
-              <div className="flex flex-col gap-0.5 shrink-0">
-                <button type="button" onClick={() => handleMoveUp(i)} disabled={i === 0}
-                  className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
-                  <ChevronUp className="h-3 w-3" />
-                </button>
-                <button type="button" onClick={() => handleMoveDown(i)} disabled={i === currentItems.length - 1}
-                  className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
-                  <ChevronDown className="h-3 w-3" />
-                </button>
-              </div>
+              <DragHandle dragHandleProps={dragHandleProps} />
 
               <span className="text-lg shrink-0">{meta.icon}</span>
 
@@ -261,9 +240,11 @@ export function ProductsPageSectionManager({ customSections, onChange, customPro
 
               <Switch checked={item.enabled} onCheckedChange={() => handleToggle(i)} className="shrink-0" />
             </div>
+              )}
+            </SortableItem>
           );
-        })}
-      </div>
+        }}
+      </SortableList>
 
       {!showAddMenu ? (
         <Button
