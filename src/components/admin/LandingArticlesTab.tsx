@@ -14,6 +14,7 @@ import {
   getLandingArticleById,
   LandingArticle,
   LandingArticleCategory,
+  useReorderLandingArticles,
 } from '@/hooks/useLandingArticles';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings } from '@/hooks/useTenantLanding';
@@ -143,6 +144,7 @@ export function LandingArticlesTab() {
   const createArticle = useCreateLandingArticle();
   const updateArticle = useUpdateLandingArticle();
   const deleteArticle = useDeleteLandingArticle();
+  const reorderArticles = useReorderLandingArticles();
 
   // Category dialog
   const [catDialog, setCatDialog] = useState(false);
@@ -390,6 +392,18 @@ export function LandingArticlesTab() {
     [articles, articlePage]
   );
 
+  const handleReorderArticlesPage = async (pageItems: LandingArticle[]) => {
+    if (!articles || !pageItems) return;
+    const startIdx = (articlePage - 1) * ARTICLE_PAGE_SIZE;
+    const reordered = [...articles];
+    pageItems.forEach((a, i) => {
+      reordered[startIdx + i] = a;
+    });
+    await reorderArticles.mutateAsync(
+      reordered.map((a, i) => ({ id: a.id, display_order: i }))
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Danh mục bài viết */}
@@ -470,9 +484,19 @@ export function LandingArticlesTab() {
             <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
           ) : articles && articles.length > 0 ? (
             <>
-              <div className="space-y-2">
-                {pagedArticles.map(a => (
-                  <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+              <SortableList<LandingArticle>
+                items={pagedArticles}
+                onReorder={handleReorderArticlesPage}
+                className="space-y-2"
+              >
+                {(a) => (
+                  <SortableItem key={a.id} id={a.id}>
+                    {({ dragHandleProps }) => (
+                      <div className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+                        <DragHandle
+                          dragHandleProps={dragHandleProps}
+                          className="h-8 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-grab active:cursor-grabbing touch-none shrink-0"
+                        />
                     {a.thumbnail_url ? (
                       <img src={a.thumbnail_url} alt={a.title} className="h-12 w-16 rounded-lg object-cover border shrink-0" />
                     ) : (
@@ -503,9 +527,11 @@ export function LandingArticlesTab() {
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                  </div>
-                ))}
-              </div>
+                      </div>
+                    )}
+                  </SortableItem>
+                )}
+              </SortableList>
               <ListPagination
                 currentPage={articlePage}
                 totalItems={articles.length}

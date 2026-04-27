@@ -128,6 +128,23 @@ export function useBatchUpdateCategoryOrder() {
   });
 }
 
+export function useReorderLandingArticles() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (items: { id: string; display_order: number }[]) => {
+      const { error } = await supabase.rpc('batch_update_display_order' as any, {
+        _table_name: 'landing_articles',
+        _items: items.map(i => ({ id: i.id, display_order: i.display_order })),
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['landing-articles'] });
+      qc.invalidateQueries({ queryKey: ['public-landing-articles'] });
+    },
+  });
+}
+
 const LANDING_ARTICLE_LIST_SELECT = `
   id, tenant_id, category_id, title, slug, summary,
   thumbnail_url, is_published, is_featured, is_featured_home,
