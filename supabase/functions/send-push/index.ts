@@ -134,7 +134,7 @@ async function encryptPayload(
 
   const subscriberKey = await crypto.subtle.importKey(
     'raw',
-    subscriberPublicKey,
+    subscriberPublicKey as BufferSource,
     { name: 'ECDH', namedCurve: 'P-256' },
     false,
     []
@@ -154,7 +154,7 @@ async function encryptPayload(
   const ikm = await crypto.subtle.importKey('raw', sharedSecret, { name: 'HKDF' }, false, ['deriveBits']);
   
   const keyMaterial = await crypto.subtle.deriveBits(
-    { name: 'HKDF', hash: 'SHA-256', salt: subscriberAuth, info: authInfo },
+    { name: 'HKDF', hash: 'SHA-256', salt: subscriberAuth as BufferSource, info: authInfo as BufferSource },
     ikm,
     256
   );
@@ -168,7 +168,7 @@ async function encryptPayload(
   );
   
   const cekBits = await crypto.subtle.deriveBits(
-    { name: 'HKDF', hash: 'SHA-256', salt: salt, info: cekInfo },
+    { name: 'HKDF', hash: 'SHA-256', salt: salt as BufferSource, info: cekInfo as BufferSource },
     prk,
     128
   );
@@ -180,7 +180,7 @@ async function encryptPayload(
   );
   
   const nonceBits = await crypto.subtle.deriveBits(
-    { name: 'HKDF', hash: 'SHA-256', salt: salt, info: nonceInfo },
+    { name: 'HKDF', hash: 'SHA-256', salt: salt as BufferSource, info: nonceInfo as BufferSource },
     prk,
     96
   );
@@ -192,7 +192,7 @@ async function encryptPayload(
     await crypto.subtle.encrypt(
       { name: 'AES-GCM', iv: new Uint8Array(nonceBits), tagLength: 128 },
       cek,
-      paddedPayload
+      paddedPayload as BufferSource
     )
   );
 

@@ -106,7 +106,7 @@ function extractUserIdFromRaw(rawText: string): string | null {
 }
 
 async function resolveZaloAppCredentials(
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: any,
   tenantId: string,
 ): Promise<{ app_id: string; app_secret: string } | null> {
   const { data: tenantSettings } = await supabaseAdmin
@@ -276,7 +276,7 @@ async function getFirstFollower(accessToken: string): Promise<{ userId: string |
 }
 
 async function getLatestStoredFollower(
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: any,
   tenantId: string,
 ): Promise<string | null> {
   try {

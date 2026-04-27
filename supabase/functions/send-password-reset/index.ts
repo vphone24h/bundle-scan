@@ -25,7 +25,7 @@ interface SmtpConfig {
   password: string;
   fromEmail: string;
   fromName: string;
-  source: 'company' | 'global';
+  source: 'company' | 'global' | 'global-db' | 'global-env';
   companyName?: string;
 }
 
