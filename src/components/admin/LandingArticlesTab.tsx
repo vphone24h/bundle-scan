@@ -14,6 +14,7 @@ import {
   getLandingArticleById,
   LandingArticle,
   LandingArticleCategory,
+  useReorderLandingArticles,
 } from '@/hooks/useLandingArticles';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings } from '@/hooks/useTenantLanding';
@@ -143,6 +144,7 @@ export function LandingArticlesTab() {
   const createArticle = useCreateLandingArticle();
   const updateArticle = useUpdateLandingArticle();
   const deleteArticle = useDeleteLandingArticle();
+  const reorderArticles = useReorderLandingArticles();
 
   // Category dialog
   const [catDialog, setCatDialog] = useState(false);
