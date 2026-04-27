@@ -457,7 +457,7 @@ export function ProductDetailPage({
     <div className="min-h-screen bg-white flex flex-col">
       {/* Sticky header with back button */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b safe-area-top">
-        <div className="flex items-center gap-3 px-3 py-2.5">
+        <div className="flex items-center gap-3 px-3 py-2.5 lg:max-w-7xl lg:mx-auto lg:px-6 w-full">
           <button
             onClick={onBack}
             className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors shrink-0"
