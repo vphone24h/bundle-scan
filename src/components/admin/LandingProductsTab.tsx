@@ -1043,13 +1043,30 @@ export function LandingProductsTab() {
       <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleMultiImageUpload} className="hidden" />
       <input ref={variantFileRef} type="file" accept="image/*" onChange={handleVariantImageUpload} className="hidden" />
 
-      {/* Dialog thêm/sửa sản phẩm */}
-      <Dialog open={productDialog} onOpenChange={setProductDialog}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>{editingProduct ? 'Sửa sản phẩm' : 'Thêm sản phẩm mới'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 overflow-y-auto pr-1 flex-1">
+      {/* Trang Thêm/Sửa sản phẩm (full-screen, không dùng popup) */}
+      {productDialog && (
+        <div className="fixed inset-0 z-50 bg-background flex flex-col">
+          {/* Header */}
+          <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b bg-background/95 backdrop-blur px-4 sm:px-6 py-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <Button variant="ghost" size="sm" onClick={() => setProductDialog(false)} className="gap-1">
+                ← Quay lại
+              </Button>
+              <h2 className="text-base sm:text-lg font-semibold truncate">
+                {editingProduct ? 'Sửa sản phẩm' : 'Thêm sản phẩm mới'}
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setProductDialog(false)}>Huỷ</Button>
+              <Button size="sm" onClick={handleSaveProduct} disabled={!form.name.trim() || createProduct.isPending || updateProduct.isPending}>
+                {(createProduct.isPending || updateProduct.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {editingProduct ? 'Cập nhật' : 'Thêm'}
+              </Button>
+            </div>
+          </div>
+          {/* Body */}
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
+            <div className="mx-auto w-full max-w-3xl space-y-4">
             <div className="space-y-2">
               <Label>Tên sản phẩm *</Label>
               <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="iPhone 17 Pro Max..." />
