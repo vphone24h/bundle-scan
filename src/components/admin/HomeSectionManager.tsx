@@ -197,7 +197,7 @@ export function HomeSectionManager({ templateId, customSections, onChange, custo
 
           return (
             <SortableItem key={item.id} id={item.id} className="space-y-0">
-              {({ dragHandleProps }) => (
+              {({ dragHandleProps }) => (<>
               <div
                 className={`flex items-center gap-2 rounded-lg border p-2.5 transition-all ${
                   item.enabled ? 'bg-background' : 'bg-muted/40 opacity-60'
@@ -340,10 +340,11 @@ export function HomeSectionManager({ templateId, customSections, onChange, custo
                   })}
                 </div>
               )}
-            </div>
+              </>)}
+            </SortableItem>
           );
-        })}
-      </div>
+        }}
+      </SortableList>
 
       {/* Add Layout Button */}
       {!showAddMenu ? (
