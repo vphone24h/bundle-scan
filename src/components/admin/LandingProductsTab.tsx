@@ -675,14 +675,14 @@ export function LandingProductsTab() {
     );
   };
 
-  const handleMoveProduct = async (idx: number, direction: 'up' | 'down') => {
-    if (!products) return;
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= products.length) return;
-    // Renumber all to guarantee a real change even when display_order ties exist
+  const handleReorderProductsPage = async (pageItems: typeof products) => {
+    if (!products || !pageItems) return;
+    const startIdx = (productPage - 1) * PRODUCT_PAGE_SIZE;
     const reordered = [...products];
-    const [moved] = reordered.splice(idx, 1);
-    reordered.splice(swapIdx, 0, moved);
+    // Replace the slice for the current page with the new ordering
+    pageItems.forEach((p, i) => {
+      reordered[startIdx + i] = p;
+    });
     await reorderProds.mutateAsync(
       reordered.map((p, i) => ({ id: p.id, display_order: i }))
     );
