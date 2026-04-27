@@ -509,6 +509,12 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   // Preload apple template if needed + preload IP for warranty lookup
   useEffect(() => {
     if (template === 'apple_landing') appleImport();
+    else if (template === 'price_list') {
+      // priceListImport is the lazy import; trigger eagerly
+      try { (priceListImport as any)?.(); } catch {}
+    } else {
+      universalImport();
+    }
     preloadClientIp();
   }, [template]);
 
