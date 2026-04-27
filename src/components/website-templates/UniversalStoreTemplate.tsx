@@ -563,6 +563,21 @@ export default function UniversalStoreTemplate({
   if (selectedProduct) {
     return (
       <>
+        <LayoutHeader
+          layoutStyle={config.layoutStyle}
+          storeName={displayStoreName}
+          logoUrl={settings?.store_logo_url}
+          accentColor={accentColor}
+          mobileMenuOpen={mobileMenuOpen}
+          onToggleMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+          onNavigateHome={() => { setSelectedProduct(null); navigateTo('home'); }}
+          onOpenSearch={() => { setSelectedProduct(null); navigateTo('products'); setTimeout(() => document.getElementById('product-search-input')?.focus(), 100); }}
+          navItems={navItems}
+          onNavClick={(item) => { setSelectedProduct(null); handleNavClick(item); }}
+          isNavActive={isNavActive}
+          onCloseMenu={() => setMobileMenuOpen(false)}
+          menuPosition={(settings as any)?.menu_position || 'left'}
+        />
         <ProductDetailPage
           product={selectedProduct}
           onBack={() => {
