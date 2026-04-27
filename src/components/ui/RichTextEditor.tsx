@@ -15,6 +15,7 @@ interface RichTextEditorProps {
   placeholder?: string;
   className?: string;
   minHeight?: string;
+  onUpload?: (file: File) => Promise<string>;
 }
 
 const COLORS = [
@@ -28,6 +29,7 @@ export function RichTextEditor({
   placeholder = 'Nhập nội dung...',
   className,
   minHeight = '120px',
+  onUpload,
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const savedSelectionRef = useRef<Range | null>(null);
@@ -39,6 +41,8 @@ export function RichTextEditor({
   const [videoUrl, setVideoUrl] = useState('');
   const [tablePopoverOpen, setTablePopoverOpen] = useState(false);
   const [tableHover, setTableHover] = useState({ rows: 0, cols: 0 });
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const imageFileRef = useRef<HTMLInputElement>(null);
   const isInternalUpdate = useRef(false);
 
   // Sync external value only on first mount or when value changes externally
@@ -130,8 +134,34 @@ export function RichTextEditor({
   const handleInsertImage = () => {
     if (imageUrl.trim()) {
       restoreSelection();
-      exec('insertHTML', `<img src="${imageUrl.trim()}" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0" />`);
+      exec('insertHTML', `<img src="${imageUrl.trim()}" class="rte-img" style="max-width:100%;height:auto;border-radius:8px;margin:8px 4px" />`);
       setImageUrl('');
+      setImagePopoverOpen(false);
+    }
+  };
+
+  const handleUploadImageFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !onUpload) return;
+    setUploadingImages(true);
+    try {
+      const urls: string[] = [];
+      for (const file of Array.from(files)) {
+        try {
+          const url = await onUpload(file);
+          if (url) urls.push(url);
+        } catch (e) { /* skip */ }
+      }
+      if (urls.length > 0) {
+        const inner = urls
+          .map(u => `<img src="${u}" class="rte-img" style="display:inline-block;max-width:32%;height:auto;border-radius:8px;margin:4px;vertical-align:top" />`)
+          .join('');
+        const html = `<div class="rte-image-row" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">${inner}</div><p><br></p>`;
+        restoreSelection();
+        exec('insertHTML', html);
+      }
+    } finally {
+      setUploadingImages(false);
+      if (imageFileRef.current) imageFileRef.current.value = '';
       setImagePopoverOpen(false);
     }
   };
@@ -417,9 +447,34 @@ export function RichTextEditor({
               <Image className="h-3.5 w-3.5" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-64 p-2" align="start">
-            <Input value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="URL ảnh..." className="text-sm mb-2" onKeyDown={e => e.key === 'Enter' && handleInsertImage()} />
-            <Button size="sm" className="w-full" onClick={handleInsertImage}>Chèn ảnh</Button>
+          <PopoverContent className="w-72 p-2 space-y-2" align="start">
+            {onUpload && (
+              <>
+                <input
+                  ref={imageFileRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleUploadImageFiles(e.target.files)}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  className="w-full"
+                  disabled={uploadingImages}
+                  onClick={() => imageFileRef.current?.click()}
+                >
+                  {uploadingImages ? 'Đang tải lên...' : '📤 Tải nhiều ảnh (1 hàng)'}
+                </Button>
+                <div className="text-[10px] text-muted-foreground text-center">
+                  Chọn nhiều ảnh cùng lúc — chèn trên cùng 1 dòng
+                </div>
+                <div className="border-t my-1" />
+              </>
+            )}
+            <Input value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="Hoặc dán URL ảnh..." className="text-sm" onKeyDown={e => e.key === 'Enter' && handleInsertImage()} />
+            <Button size="sm" variant="outline" className="w-full" onClick={handleInsertImage}>Chèn từ URL</Button>
           </PopoverContent>
         </Popover>
 
