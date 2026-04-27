@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { sortCategoriesByTree } from './useLandingProducts';
 
 export interface LandingArticleCategory {
   id: string;
@@ -270,8 +271,10 @@ export function usePublicLandingArticles(
         supabase.from('landing_article_categories' as any).select('*').eq('tenant_id', tenantId).order('display_order', { ascending: true }).order('created_at', { ascending: false }),
         supabase.from('landing_articles' as any).select('*').eq('tenant_id', tenantId).eq('is_published', true).order('display_order', { ascending: true }).order('created_at', { ascending: false }),
       ]);
+      const rawCats = (catRes.data || []) as unknown as LandingArticleCategory[];
+      const sortedCats = sortCategoriesByTree(rawCats);
       return {
-        categories: (catRes.data || []) as unknown as LandingArticleCategory[],
+        categories: sortedCats,
         articles: (artRes.data || []) as unknown as LandingArticle[],
       };
     },
