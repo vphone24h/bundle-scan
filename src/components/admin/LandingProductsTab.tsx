@@ -1631,9 +1631,12 @@ export function LandingProductsTab() {
                 </div>
               ))}
             </div>
+            </div>
+            {/* ===== /CỘT TRÁI ===== */}
 
+            {/* ===== CỘT GIỮA: Khuyến mãi / Bảo hành / Mô tả ===== */}
+            <div className="space-y-4 min-w-0">
             {/* ===== KHUYẾN MÃI ===== */}
-            <Separator />
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Label className="text-sm font-semibold">🎁 Khung khuyến mãi</Label>
@@ -1684,9 +1687,12 @@ export function LandingProductsTab() {
                 minHeight="150px"
               />
             </div>
+            </div>
+            {/* ===== /CỘT GIỮA ===== */}
 
+            {/* ===== CỘT PHẢI: Hình ảnh / Trạng thái / Nhãn / Hiển thị trang chủ / HSSV / Trả góp ===== */}
+            <div className="space-y-4 min-w-0">
             {/* Multiple images */}
-            <Separator />
             <div className="space-y-2">
               <Label>Hình ảnh sản phẩm (ảnh đầu tiên = ảnh chính)</Label>
               {form.images.length > 0 && (
