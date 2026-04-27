@@ -36,7 +36,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, ChevronUp, Folder, FolderOpen, Pencil, Eye, EyeOff, ArrowUp, ArrowDown, CalendarDays, Tag, Check } from 'lucide-react';
+import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, ChevronUp, Folder, FolderOpen, Pencil, Eye, EyeOff, ArrowUp, ArrowDown, CalendarDays, Tag, Check, Home, List } from 'lucide-react';
 import { SortableList, SortableItem, DragHandle } from '@/components/shared/SortableList';
 import { formatNumber } from '@/lib/formatNumber';
 import { BlockedDatesCalendar } from './BlockedDatesCalendar';
