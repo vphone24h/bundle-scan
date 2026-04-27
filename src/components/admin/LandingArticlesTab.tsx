@@ -512,7 +512,14 @@ export function LandingArticlesTab() {
                 onReorder={handleReorderArticlesPage}
                 className="space-y-2"
               >
-                {(a) => (
+                {(a, idx) => {
+                  const pageItemsCount = Math.min(ARTICLE_PAGE_SIZE, articles.length - (articlePage - 1) * ARTICLE_PAGE_SIZE);
+                  const totalPages = Math.ceil(articles.length / ARTICLE_PAGE_SIZE);
+                  const isFirst = idx === 0;
+                  const isLast = idx === pageItemsCount - 1;
+                  const hasPrev = articlePage > 1;
+                  const hasNext = articlePage < totalPages;
+                  return (
                   <SortableItem key={a.id} id={a.id}>
                     {({ dragHandleProps }) => (
                       <div className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
@@ -520,6 +527,17 @@ export function LandingArticlesTab() {
                           dragHandleProps={dragHandleProps}
                           className="h-8 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-grab active:cursor-grabbing touch-none shrink-0"
                         />
+                        {isFirst && hasPrev && (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-7 w-7 shrink-0"
+                            title="Chuyển lên trang trước"
+                            onClick={() => handleMoveArticleAcrossPage(a.id, 'prev')}
+                          >
+                            <ArrowUp className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                     {a.thumbnail_url ? (
                       <img src={a.thumbnail_url} alt={a.title} className="h-12 w-16 rounded-lg object-cover border shrink-0" />
                     ) : (
@@ -537,6 +555,18 @@ export function LandingArticlesTab() {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
+                      {isLast && hasNext && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs px-2 gap-1"
+                          title="Chuyển xuống trang sau"
+                          onClick={() => handleMoveArticleAcrossPage(a.id, 'next')}
+                        >
+                          <ArrowDown className="h-3.5 w-3.5" />
+                          Trang sau
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -553,7 +583,8 @@ export function LandingArticlesTab() {
                       </div>
                     )}
                   </SortableItem>
-                )}
+                  );
+                }}
               </SortableList>
               <ListPagination
                 currentPage={articlePage}
