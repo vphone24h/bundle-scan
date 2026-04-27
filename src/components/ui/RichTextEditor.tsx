@@ -15,6 +15,7 @@ interface RichTextEditorProps {
   placeholder?: string;
   className?: string;
   minHeight?: string;
+  onUpload?: (file: File) => Promise<string>;
 }
 
 const COLORS = [
@@ -28,6 +29,7 @@ export function RichTextEditor({
   placeholder = 'Nhập nội dung...',
   className,
   minHeight = '120px',
+  onUpload,
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const savedSelectionRef = useRef<Range | null>(null);
@@ -39,6 +41,8 @@ export function RichTextEditor({
   const [videoUrl, setVideoUrl] = useState('');
   const [tablePopoverOpen, setTablePopoverOpen] = useState(false);
   const [tableHover, setTableHover] = useState({ rows: 0, cols: 0 });
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const imageFileRef = useRef<HTMLInputElement>(null);
   const isInternalUpdate = useRef(false);
 
   // Sync external value only on first mount or when value changes externally
@@ -103,6 +107,9 @@ export function RichTextEditor({
   }, [onChange, getCleanHTML]);
 
   const attachResizeHandlesRef = useRef<(() => void) | null>(null);
+  const positionImageOverlayRef = useRef<((img: HTMLImageElement | null) => void) | null>(null);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const selectedImgRef = useRef<HTMLImageElement | null>(null);
 
   const toolbarBtn = (icon: React.ReactNode, command: string, title: string) => (
     <Button
@@ -130,8 +137,34 @@ export function RichTextEditor({
   const handleInsertImage = () => {
     if (imageUrl.trim()) {
       restoreSelection();
-      exec('insertHTML', `<img src="${imageUrl.trim()}" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0" />`);
+      exec('insertHTML', `<img src="${imageUrl.trim()}" class="rte-img" style="max-width:100%;height:auto;border-radius:8px;margin:8px 4px" />`);
       setImageUrl('');
+      setImagePopoverOpen(false);
+    }
+  };
+
+  const handleUploadImageFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !onUpload) return;
+    setUploadingImages(true);
+    try {
+      const urls: string[] = [];
+      for (const file of Array.from(files)) {
+        try {
+          const url = await onUpload(file);
+          if (url) urls.push(url);
+        } catch (e) { /* skip */ }
+      }
+      if (urls.length > 0) {
+        const inner = urls
+          .map(u => `<img src="${u}" class="rte-img" style="display:inline-block;max-width:32%;height:auto;border-radius:8px;margin:4px;vertical-align:top" />`)
+          .join('');
+        const html = `<div class="rte-image-row" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">${inner}</div><p><br></p>`;
+        restoreSelection();
+        exec('insertHTML', html);
+      }
+    } finally {
+      setUploadingImages(false);
+      if (imageFileRef.current) imageFileRef.current.value = '';
       setImagePopoverOpen(false);
     }
   };
@@ -266,6 +299,10 @@ export function RichTextEditor({
         firstCell.appendChild(handle);
       });
     });
+    // Mark images as resizable (cursor + class). Selection handle is added on click.
+    editor.querySelectorAll('img').forEach(img => {
+      if (!img.classList.contains('rte-img')) img.classList.add('rte-img');
+    });
   }, []);
 
   attachResizeHandlesRef.current = attachResizeHandles;
@@ -275,13 +312,97 @@ export function RichTextEditor({
     return () => clearTimeout(t);
   }, [value, attachResizeHandles]);
 
+  // ===== Image selection overlay with corner resize handles =====
+  const positionImageOverlay = useCallback((img: HTMLImageElement | null) => {
+    const overlay = overlayRef.current;
+    const editor = editorRef.current;
+    if (!overlay || !editor) return;
+    if (!img) {
+      overlay.style.display = 'none';
+      selectedImgRef.current = null;
+      return;
+    }
+    const eRect = editor.getBoundingClientRect();
+    const iRect = img.getBoundingClientRect();
+    overlay.style.display = 'block';
+    overlay.style.left = `${iRect.left - eRect.left + editor.scrollLeft}px`;
+    overlay.style.top = `${iRect.top - eRect.top + editor.scrollTop}px`;
+    overlay.style.width = `${iRect.width}px`;
+    overlay.style.height = `${iRect.height}px`;
+  }, []);
+  positionImageOverlayRef.current = positionImageOverlay;
+
+  const handleEditorClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG') {
+      const img = target as HTMLImageElement;
+      selectedImgRef.current = img;
+      positionImageOverlay(img);
+      // Attach handlers to handles after positioning
+      requestAnimationFrame(() => {
+        const overlay = overlayRef.current;
+        if (!overlay) return;
+        overlay.querySelectorAll('.rte-img-handle').forEach(h => {
+          (h as any)._targetImg = img;
+        });
+      });
+    } else if (!target.closest('.rte-img-overlay')) {
+      positionImageOverlay(null);
+    }
+  }, [positionImageOverlay]);
+
+  useEffect(() => {
+    const onScrollOrResize = () => {
+      if (selectedImgRef.current) positionImageOverlay(selectedImgRef.current);
+    };
+    window.addEventListener('resize', onScrollOrResize);
+    const editor = editorRef.current;
+    editor?.addEventListener('scroll', onScrollOrResize);
+    return () => {
+      window.removeEventListener('resize', onScrollOrResize);
+      editor?.removeEventListener('scroll', onScrollOrResize);
+    };
+  }, [positionImageOverlay]);
+
   const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     const isCol = target.classList.contains('rte-col-resize');
     const isRow = target.classList.contains('rte-row-resize');
-    if (!isCol && !isRow) return;
+    const isImgHandle = target.classList.contains('rte-img-handle');
+    if (!isCol && !isRow && !isImgHandle) return;
     e.preventDefault();
     e.stopPropagation();
+
+    if (isImgHandle) {
+      const img = (target as any)._targetImg as HTMLImageElement | undefined;
+      if (!img) return;
+      const corner = target.dataset.corner || 'br';
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startW = img.offsetWidth;
+      const startH = img.offsetHeight;
+      const ratio = startW > 0 ? startH / startW : 1;
+      const onMove = (ev: MouseEvent) => {
+        let dx = ev.clientX - startX;
+        if (corner.includes('l')) dx = -dx;
+        const newW = Math.max(40, startW + dx);
+        const newH = Math.max(40, newW * ratio);
+        img.style.width = `${newW}px`;
+        img.style.height = `${newH}px`;
+        img.style.maxWidth = 'none';
+        positionImageOverlayRef.current?.(img);
+      };
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        isInternalUpdate.current = true;
+        onChange(getCleanHTML());
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      return;
+    }
+
     target.classList.add('active');
 
     const cell = target.closest('th, td') as HTMLTableCellElement | null;
@@ -417,9 +538,34 @@ export function RichTextEditor({
               <Image className="h-3.5 w-3.5" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-64 p-2" align="start">
-            <Input value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="URL ảnh..." className="text-sm mb-2" onKeyDown={e => e.key === 'Enter' && handleInsertImage()} />
-            <Button size="sm" className="w-full" onClick={handleInsertImage}>Chèn ảnh</Button>
+          <PopoverContent className="w-72 p-2 space-y-2" align="start">
+            {onUpload && (
+              <>
+                <input
+                  ref={imageFileRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleUploadImageFiles(e.target.files)}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  className="w-full"
+                  disabled={uploadingImages}
+                  onClick={() => imageFileRef.current?.click()}
+                >
+                  {uploadingImages ? 'Đang tải lên...' : '📤 Tải nhiều ảnh (1 hàng)'}
+                </Button>
+                <div className="text-[10px] text-muted-foreground text-center">
+                  Chọn nhiều ảnh cùng lúc — chèn trên cùng 1 dòng
+                </div>
+                <div className="border-t my-1" />
+              </>
+            )}
+            <Input value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="Hoặc dán URL ảnh..." className="text-sm" onKeyDown={e => e.key === 'Enter' && handleInsertImage()} />
+            <Button size="sm" variant="outline" className="w-full" onClick={handleInsertImage}>Chèn từ URL</Button>
           </PopoverContent>
         </Popover>
 
@@ -491,17 +637,56 @@ export function RichTextEditor({
       </div>
 
       {/* Editor area */}
-      <div
-        ref={editorRef}
-        contentEditable
-        className="rte-content p-3 text-sm outline-none prose prose-sm dark:prose-invert max-w-none overflow-y-auto"
-        style={{ minHeight }}
-        onInput={handleInput}
-        onBlur={saveSelection}
-        onMouseDown={handleResizeMouseDown}
-        data-placeholder={placeholder}
-        suppressContentEditableWarning
-      />
+      <div className="relative">
+        <div
+          ref={editorRef}
+          contentEditable
+          className="rte-content p-3 text-sm outline-none prose prose-sm dark:prose-invert max-w-none overflow-y-auto"
+          style={{ minHeight }}
+          onInput={handleInput}
+          onBlur={saveSelection}
+          onMouseDown={handleResizeMouseDown}
+          onClick={handleEditorClick}
+          data-placeholder={placeholder}
+          suppressContentEditableWarning
+        />
+        {/* Image selection overlay (4 corner handles) */}
+        <div
+          ref={overlayRef}
+          className="rte-img-overlay"
+          style={{
+            display: 'none',
+            position: 'absolute',
+            border: '2px dashed hsl(var(--primary))',
+            pointerEvents: 'none',
+            zIndex: 5,
+          }}
+          contentEditable={false}
+        >
+          {(['tl', 'tr', 'bl', 'br'] as const).map(corner => (
+            <div
+              key={corner}
+              className="rte-img-handle"
+              data-corner={corner}
+              onMouseDown={handleResizeMouseDown as any}
+              style={{
+                position: 'absolute',
+                width: 12,
+                height: 12,
+                background: 'hsl(var(--primary))',
+                border: '2px solid white',
+                borderRadius: '50%',
+                pointerEvents: 'auto',
+                cursor: corner === 'tl' || corner === 'br' ? 'nwse-resize' : 'nesw-resize',
+                top: corner.startsWith('t') ? -6 : undefined,
+                bottom: corner.startsWith('b') ? -6 : undefined,
+                left: corner.endsWith('l') ? -6 : undefined,
+                right: corner.endsWith('r') ? -6 : undefined,
+              }}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

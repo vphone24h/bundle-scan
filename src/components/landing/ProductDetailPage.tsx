@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
 import { ProductBadges, LayoutProductCard, getProductGridClass } from '@/components/website-templates/layouts/ProductCardVariants';
 import type { LayoutStyle } from '@/lib/industryConfig';
+import { ImageLightbox } from '@/components/ui/ImageLightbox';
 
 interface BranchOption {
   id: string;
@@ -112,6 +113,7 @@ export function ProductDetailPage({
 
   const [selectedOption1, setSelectedOption1] = useState<string | null>(null);
   const [selectedOption2, setSelectedOption2] = useState<string | null>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const placeOrder = usePlaceLandingOrder();
 
@@ -828,6 +830,13 @@ export function ProductDetailPage({
                         📝 MÔ TẢ SẢN PHẨM
                       </div>
                       <div className="p-3 text-sm prose prose-sm max-w-none lg:prose-base lg:p-5 rte-content"
+                        onClick={(e) => {
+                          const t = e.target as HTMLElement;
+                          if (t.tagName === 'IMG') {
+                            const src = (t as HTMLImageElement).src;
+                            if (src) setLightboxSrc(src);
+                          }
+                        }}
                         dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.description) }} />
                     </div>
                   );
@@ -1744,6 +1753,7 @@ export function ProductDetailPage({
           </div>
         </div>
       )}
+      <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
     </div>
   );
 }
