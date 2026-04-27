@@ -31,6 +31,33 @@ export function slugify(text: string): string {
 }
 
 /**
+ * If the current page is path-based store routing (e.g. /store/bkl0522/...),
+ * extract that prefix so generated URLs remain inside the store context.
+ * Returns "" when not under /store/:id.
+ */
+function getCurrentStorePrefix(): string {
+  if (typeof window === 'undefined') return '';
+  const m = window.location.pathname.match(/^\/store\/([^/]+)/i);
+  return m ? `/store/${m[1]}` : '';
+}
+
+/**
+ * Remove a leading /store/:id prefix from a path so downstream parsers
+ * can reason about page segments uniformly.
+ */
+export function stripStorePrefix(path: string): string {
+  return path.replace(/^\/store\/[^/]+/i, '') || '/';
+}
+
+/** Prepend the active /store/:id prefix to a generated path when present. */
+export function withStorePrefix(path: string): string {
+  const prefix = getCurrentStorePrefix();
+  if (!prefix) return path;
+  if (path === '/' || path === '') return prefix;
+  return prefix + (path.startsWith('/') ? path : `/${path}`);
+}
+
+/**
  * Build a product URL path with category hierarchy
  * Format: /category-slug/subcategory-slug/product-slug
  * Appends short ID for reliable lookup
@@ -53,7 +80,7 @@ export function buildProductPath(
   }
   parts.push(`${productSlug}-${shortId}`);
 
-  return '/' + parts.join('/');
+  return withStorePrefix('/' + parts.join('/'));
 }
 
 /**
@@ -62,7 +89,8 @@ export function buildProductPath(
  */
 export function extractProductIdFromPath(path: string): string | null {
   // Strip known page prefixes
-  const cleaned = path.replace(/^\/(san-pham|tin-tuc)\/?/, '/');
+  const withoutStore = stripStorePrefix(path);
+  const cleaned = withoutStore.replace(/^\/(san-pham|tin-tuc)\/?/, '/');
   const segments = cleaned.replace(/^\//, '').split('/');
   const lastSegment = segments[segments.length - 1];
   if (!lastSegment) return null;
@@ -108,7 +136,7 @@ const PATH_TO_PAGE_MAP: Record<string, string> = Object.fromEntries(
  */
 export function buildPagePath(pageView: string): string {
   const segment = PAGE_PATH_MAP[pageView];
-  return segment ? `/${segment}` : '/';
+  return withStorePrefix(segment ? `/${segment}` : '/');
 }
 
 /**
@@ -132,7 +160,7 @@ export function buildProductDetailPath(
   }
   parts.push(`${productSlug}-${shortId}`);
 
-  return '/' + parts.join('/');
+  return withStorePrefix('/' + parts.join('/'));
 }
 
 /**
@@ -144,7 +172,7 @@ export function buildArticlePath(
 ): string {
   const shortId = articleId.slice(0, 8);
   const articleSlug = slugify(articleTitle);
-  return `/tin-tuc/${articleSlug}-${shortId}`;
+  return withStorePrefix(`/tin-tuc/${articleSlug}-${shortId}`);
 }
 
 /**
@@ -152,7 +180,8 @@ export function buildArticlePath(
  * Returns { pageView, contentId } or null if path is root
  */
 export function detectPageFromPath(path: string): { pageView: string; contentId: string | null } | null {
-  const segments = path.replace(/^\//, '').split('/').filter(Boolean);
+  const cleaned = stripStorePrefix(path);
+  const segments = cleaned.replace(/^\//, '').split('/').filter(Boolean);
   if (segments.length === 0) return null;
   
   const firstSegment = segments[0];
