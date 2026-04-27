@@ -642,6 +642,12 @@ export function RichTextEditor({
               });
               host.replaceWith(targetRow);
             }
+          } else if (!targetRow && host === editor) {
+            // Image is a direct child of the editor itself — wrap it in a row
+            targetRow = createImageRow();
+            styleRowImg(prevInline);
+            prevInline.replaceWith(targetRow);
+            targetRow.appendChild(prevInline);
           }
           anchorImg = prevInline;
         }
