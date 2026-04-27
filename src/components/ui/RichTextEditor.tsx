@@ -312,6 +312,58 @@ export function RichTextEditor({
     return () => clearTimeout(t);
   }, [value, attachResizeHandles]);
 
+  // ===== Image selection overlay with corner resize handles =====
+  const positionImageOverlay = useCallback((img: HTMLImageElement | null) => {
+    const overlay = overlayRef.current;
+    const editor = editorRef.current;
+    if (!overlay || !editor) return;
+    if (!img) {
+      overlay.style.display = 'none';
+      selectedImgRef.current = null;
+      return;
+    }
+    const eRect = editor.getBoundingClientRect();
+    const iRect = img.getBoundingClientRect();
+    overlay.style.display = 'block';
+    overlay.style.left = `${iRect.left - eRect.left + editor.scrollLeft}px`;
+    overlay.style.top = `${iRect.top - eRect.top + editor.scrollTop}px`;
+    overlay.style.width = `${iRect.width}px`;
+    overlay.style.height = `${iRect.height}px`;
+  }, []);
+  positionImageOverlayRef.current = positionImageOverlay;
+
+  const handleEditorClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG') {
+      const img = target as HTMLImageElement;
+      selectedImgRef.current = img;
+      positionImageOverlay(img);
+      // Attach handlers to handles after positioning
+      requestAnimationFrame(() => {
+        const overlay = overlayRef.current;
+        if (!overlay) return;
+        overlay.querySelectorAll('.rte-img-handle').forEach(h => {
+          (h as any)._targetImg = img;
+        });
+      });
+    } else if (!target.closest('.rte-img-overlay')) {
+      positionImageOverlay(null);
+    }
+  }, [positionImageOverlay]);
+
+  useEffect(() => {
+    const onScrollOrResize = () => {
+      if (selectedImgRef.current) positionImageOverlay(selectedImgRef.current);
+    };
+    window.addEventListener('resize', onScrollOrResize);
+    const editor = editorRef.current;
+    editor?.addEventListener('scroll', onScrollOrResize);
+    return () => {
+      window.removeEventListener('resize', onScrollOrResize);
+      editor?.removeEventListener('scroll', onScrollOrResize);
+    };
+  }, [positionImageOverlay]);
+
   const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     const isCol = target.classList.contains('rte-col-resize');
