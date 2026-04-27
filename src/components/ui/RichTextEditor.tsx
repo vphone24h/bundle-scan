@@ -637,17 +637,56 @@ export function RichTextEditor({
       </div>
 
       {/* Editor area */}
-      <div
-        ref={editorRef}
-        contentEditable
-        className="rte-content p-3 text-sm outline-none prose prose-sm dark:prose-invert max-w-none overflow-y-auto"
-        style={{ minHeight }}
-        onInput={handleInput}
-        onBlur={saveSelection}
-        onMouseDown={handleResizeMouseDown}
-        data-placeholder={placeholder}
-        suppressContentEditableWarning
-      />
+      <div className="relative">
+        <div
+          ref={editorRef}
+          contentEditable
+          className="rte-content p-3 text-sm outline-none prose prose-sm dark:prose-invert max-w-none overflow-y-auto"
+          style={{ minHeight }}
+          onInput={handleInput}
+          onBlur={saveSelection}
+          onMouseDown={handleResizeMouseDown}
+          onClick={handleEditorClick}
+          data-placeholder={placeholder}
+          suppressContentEditableWarning
+        />
+        {/* Image selection overlay (4 corner handles) */}
+        <div
+          ref={overlayRef}
+          className="rte-img-overlay"
+          style={{
+            display: 'none',
+            position: 'absolute',
+            border: '2px dashed hsl(var(--primary))',
+            pointerEvents: 'none',
+            zIndex: 5,
+          }}
+          contentEditable={false}
+        >
+          {(['tl', 'tr', 'bl', 'br'] as const).map(corner => (
+            <div
+              key={corner}
+              className="rte-img-handle"
+              data-corner={corner}
+              onMouseDown={handleResizeMouseDown as any}
+              style={{
+                position: 'absolute',
+                width: 12,
+                height: 12,
+                background: 'hsl(var(--primary))',
+                border: '2px solid white',
+                borderRadius: '50%',
+                pointerEvents: 'auto',
+                cursor: corner === 'tl' || corner === 'br' ? 'nwse-resize' : 'nesw-resize',
+                top: corner.startsWith('t') ? -6 : undefined,
+                bottom: corner.startsWith('b') ? -6 : undefined,
+                left: corner.endsWith('l') ? -6 : undefined,
+                right: corner.endsWith('r') ? -6 : undefined,
+              }}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
