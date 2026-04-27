@@ -1710,6 +1710,47 @@ export function LandingProductsTab() {
 
             {/* ===== CỘT PHẢI: Hình ảnh / Trạng thái / Nhãn / Hiển thị trang chủ / HSSV / Trả góp ===== */}
             <div className="space-y-4 min-w-0">
+            {/* Khung xem trước card sản phẩm (giống ngoài website) */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">👁️ Xem trước trên website</Label>
+              <div className="rounded-xl border-2 border-dashed border-primary/30 bg-gradient-to-br from-muted/40 to-background p-3">
+                <div className="mx-auto w-full max-w-[260px]">
+                  <LayoutProductCard
+                    layoutStyle={(() => {
+                      const tpl = (landingSettings as any)?.website_template || 'phone_store';
+                      const custom = (landingSettings as any)?.custom_layout_style;
+                      try {
+                        return (custom || getIndustryConfig(tpl).layoutStyle) as any;
+                      } catch {
+                        return 'minimal' as any;
+                      }
+                    })()}
+                    accentColor={(landingSettings as any)?.primary_color || '#2563eb'}
+                    onClick={() => {}}
+                    product={{
+                      id: 'preview',
+                      name: form.name || 'Tên sản phẩm sẽ hiển thị tại đây',
+                      price: form.price || 0,
+                      sale_price: form.sale_price || null,
+                      image_url: form.images?.[0] || form.image_url || null,
+                      images: form.images || [],
+                      is_active: true,
+                      is_featured: form.is_featured,
+                      is_sold_out: form.is_sold_out,
+                      badges: formBadges,
+                      badge_style: badgeStyle,
+                      student_discount_label: form.student_discount_label || null,
+                      student_discount_text: form.student_discount_text || null,
+                      installment_down_payment: form.installment_down_payment || null,
+                    } as any}
+                  />
+                </div>
+                <p className="mt-2 text-center text-[10px] text-muted-foreground">
+                  Xem trước cập nhật theo thông tin bạn nhập (ảnh, tên, giá, nhãn, HS-SV, trả góp…)
+                </p>
+              </div>
+            </div>
+            <Separator />
             <div className="flex items-center justify-between">
               <Label className="flex items-center gap-1.5">Hết hàng <Badge variant="destructive" className="text-[9px] px-1.5 py-0">Sold out</Badge></Label>
               <Switch checked={form.is_sold_out} onCheckedChange={v => setForm(p => ({ ...p, is_sold_out: v }))} />
