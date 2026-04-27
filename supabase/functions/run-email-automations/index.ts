@@ -770,16 +770,18 @@ Deno.serve(async (req) => {
                 console.log(`Zalo send to ${customer.phone}:`, JSON.stringify(zaloResult))
 
                 // Log to zalo_message_logs if table exists
-                await supabase.from('zalo_message_logs').insert({
-                  tenant_id: automation.tenant_id,
-                  customer_phone: customer.phone,
-                  customer_name: customer.name || '',
-                  message_type: 'automation',
-                  message_content: zaloMessage,
-                  status: zaloResult?.error === 0 ? 'sent' : 'failed',
-                  error_message: zaloResult?.error !== 0 ? JSON.stringify(zaloResult) : null,
-                  sent_at: new Date().toISOString(),
-                }).catch(() => {}) // silently ignore if table doesn't exist
+                try {
+                  await supabase.from('zalo_message_logs').insert({
+                    tenant_id: automation.tenant_id,
+                    customer_phone: customer.phone,
+                    customer_name: customer.name || '',
+                    message_type: 'automation',
+                    message_content: zaloMessage,
+                    status: zaloResult?.error === 0 ? 'sent' : 'failed',
+                    error_message: zaloResult?.error !== 0 ? JSON.stringify(zaloResult) : null,
+                    sent_at: new Date().toISOString(),
+                  });
+                } catch (_) { /* silently ignore if table doesn't exist */ }
               }
             } catch (zaloErr: any) {
               console.error('Zalo send error:', zaloErr.message)
