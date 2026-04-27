@@ -716,7 +716,7 @@ function TaxReportManual() {
     if (revenueNum <= 0) return;
     // Estimate annual revenue (quarter * 4)
     const annualEstimate = revenueNum * 4;
-    if (annualEstimate < 500_000_000) setRevenueTier('under_500m');
+    if (annualEstimate < 1_000_000_000) setRevenueTier('under_500m');
     else if (annualEstimate < 3_000_000_000) setRevenueTier('500m_3b');
     else if (annualEstimate < 50_000_000_000) setRevenueTier('3b_50b');
     else setRevenueTier('over_50b');
