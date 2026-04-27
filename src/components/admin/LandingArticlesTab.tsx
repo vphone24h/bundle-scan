@@ -206,6 +206,25 @@ export function LandingArticlesTab() {
     }
   };
 
+  const replaceSiblings = (nodes: LandingArticleCategory[], parentId: string | null, reordered: LandingArticleCategory[]): LandingArticleCategory[] => {
+    if (parentId === null) return reordered;
+    return nodes.map(n => {
+      if (n.id === parentId) return { ...n, children: reordered };
+      if (n.children?.length) return { ...n, children: replaceSiblings(n.children, parentId, reordered) };
+      return n;
+    });
+  };
+
+  const handleReorderArticleSiblings = async (parentId: string | null, reordered: LandingArticleCategory[]) => {
+    const newTree = replaceSiblings(tree, parentId, reordered);
+    const flat = flattenTree(newTree);
+    try {
+      await batchOrder.mutateAsync(flat);
+    } catch (e: any) {
+      toast({ title: 'Lỗi sắp xếp', description: e.message, variant: 'destructive' });
+    }
+  };
+
   // ─── Category CRUD ───
   const openAddCategory = (parentId?: string) => {
     setEditingCat(null);
@@ -405,23 +424,28 @@ export function LandingArticlesTab() {
           {catLoading ? (
             <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
           ) : tree.length > 0 ? (
-            <div className="space-y-0.5">
-              {tree.map((cat, idx) => (
-                <CategoryNode
-                  key={cat.id}
-                  category={cat}
-                  level={0}
-                  onEdit={openEditCategory}
-                  onDelete={handleDeleteCategory}
-                  onAddChild={(parentId) => openAddCategory(parentId)}
-                  onToggleVisible={handleToggleVisible}
-                  onMoveUp={(c) => handleMove(c, 'up')}
-                  onMoveDown={(c) => handleMove(c, 'down')}
-                  canMoveUp={idx > 0}
-                  canMoveDown={idx < tree.length - 1}
-                />
-              ))}
-            </div>
+            <SortableList<LandingArticleCategory>
+              items={tree}
+              onReorder={(reordered) => handleReorderArticleSiblings(null, reordered)}
+              className="space-y-0.5"
+            >
+              {(cat) => (
+                <SortableItem key={cat.id} id={cat.id}>
+                  {({ dragHandleProps }) => (
+                    <CategoryNode
+                      category={cat}
+                      level={0}
+                      onEdit={openEditCategory}
+                      onDelete={handleDeleteCategory}
+                      onAddChild={(parentId) => openAddCategory(parentId)}
+                      onToggleVisible={handleToggleVisible}
+                      onReorderSiblings={handleReorderArticleSiblings}
+                      dragHandleProps={dragHandleProps}
+                    />
+                  )}
+                </SortableItem>
+              )}
+            </SortableList>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-6">Chưa có danh mục nào</p>
           )}
