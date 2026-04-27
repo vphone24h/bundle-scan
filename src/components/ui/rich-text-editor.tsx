@@ -566,6 +566,81 @@ export function RichTextEditor({
     }
   }, []);
 
+  // Helper: is this block element "image-only" (contains only <img> + whitespace/<br>)
+  const isImageOnlyBlock = useCallback((el: HTMLElement | null): boolean => {
+    if (!el) return false;
+    const imgs = el.querySelectorAll('img');
+    if (imgs.length === 0) return false;
+    const text = (el.textContent || '').replace(/\u200B/g, '').trim();
+    return text.length === 0;
+  }, []);
+
+  // Backspace at start of an image-only block -> merge into previous image-only block as a flex row
+  const handleEditorKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key !== 'Backspace') return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    if (range.startOffset !== 0) return;
+
+    let node: Node | null = range.startContainer;
+    let block: HTMLElement | null = null;
+    while (node && node !== editorRef.current) {
+      if (node instanceof HTMLElement && /^(P|DIV)$/.test(node.tagName)) {
+        block = node;
+        break;
+      }
+      node = node.parentNode;
+    }
+    if (!block || !editorRef.current?.contains(block)) return;
+    if (!isImageOnlyBlock(block)) return;
+
+    let prev = block.previousElementSibling as HTMLElement | null;
+    while (prev && prev.tagName === 'BR') prev = prev.previousElementSibling as HTMLElement | null;
+    if (!prev || !isImageOnlyBlock(prev)) return;
+
+    e.preventDefault();
+
+    const styleImg = (img: HTMLImageElement) => {
+      img.style.flex = '1 1 0';
+      img.style.minWidth = '0';
+      img.style.maxWidth = '100%';
+      img.style.height = 'auto';
+      if (!img.style.borderRadius) img.style.borderRadius = '8px';
+      if (!img.style.objectFit) img.style.objectFit = 'cover';
+      img.style.cursor = 'pointer';
+      img.style.margin = '0';
+    };
+
+    let row: HTMLElement;
+    if (prev.classList.contains('rte-image-row')) {
+      row = prev;
+    } else {
+      row = document.createElement('div');
+      row.className = 'rte-image-row';
+      row.setAttribute('style', 'display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:flex-start;');
+      Array.from(prev.querySelectorAll('img')).forEach((img) => {
+        styleImg(img as HTMLImageElement);
+        row.appendChild(img);
+      });
+      prev.replaceWith(row);
+    }
+
+    Array.from(block.querySelectorAll('img')).forEach((img) => {
+      styleImg(img as HTMLImageElement);
+      row.appendChild(img);
+    });
+    block.remove();
+
+    const newRange = document.createRange();
+    newRange.setStartAfter(row);
+    newRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
+  }, [isImageOnlyBlock, onChange]);
+
   // Compute column/row handle positions for the active table
   useEffect(() => {
     if (!activeTable || !editorRef.current) {
