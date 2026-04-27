@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
 import { ProductBadges, LayoutProductCard, getProductGridClass } from '@/components/website-templates/layouts/ProductCardVariants';
 import type { LayoutStyle } from '@/lib/industryConfig';
+import { ImageLightbox } from '@/components/ui/ImageLightbox';
 
 interface BranchOption {
   id: string;
