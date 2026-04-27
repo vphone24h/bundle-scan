@@ -285,6 +285,42 @@ interface PublicLandingProductsOptions {
   enabled?: boolean;
 }
 
+/**
+ * Sắp xếp danh mục theo thứ tự cây cha-con: cha trước, các con đệ quy theo sau.
+ * Đảm bảo trên website: danh mục cha luôn xuất hiện trước danh mục con,
+ * thay vì để con (display_order nhỏ) lên trên cha.
+ */
+export function sortCategoriesByTree<T extends { id: string; parent_id: string | null; display_order: number }>(
+  categories: T[]
+): T[] {
+  const byParent = new Map<string | null, T[]>();
+  for (const c of categories) {
+    const key = c.parent_id ?? null;
+    if (!byParent.has(key)) byParent.set(key, []);
+    byParent.get(key)!.push(c);
+  }
+  for (const [, arr] of byParent) {
+    arr.sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+  }
+  const result: T[] = [];
+  const known = new Set(categories.map(c => c.id));
+  const walk = (parentId: string | null) => {
+    const list = byParent.get(parentId) || [];
+    for (const node of list) {
+      result.push(node);
+      walk(node.id);
+    }
+  };
+  walk(null);
+  // Orphan nodes (parent không tồn tại trong tập) — append cuối để không mất
+  for (const c of categories) {
+    if (c.parent_id && !known.has(c.parent_id) && !result.includes(c)) {
+      result.push(c);
+    }
+  }
+  return result;
+}
+
 export function usePublicLandingProducts(
   tenantId: string | null,
   options: PublicLandingProductsOptions = {}
