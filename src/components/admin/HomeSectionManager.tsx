@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronUp, ChevronDown, RotateCcw, Sparkles, Plus, Pencil, Trash2, X, Package, ArrowLeftRight, ArrowDownUp } from 'lucide-react';
+import { ChevronDown, RotateCcw, Sparkles, Plus, Pencil, Trash2, X, Package, ArrowLeftRight, ArrowDownUp } from 'lucide-react';
 import { HomeSection, getIndustryConfig, SYSTEM_PAGES } from '@/lib/industryConfig';
+import { SortableList, SortableItem, DragHandle } from '@/components/shared/SortableList';
 
 export interface HomeSectionItem {
   id: HomeSection | string; // string for custom tab IDs like "productTab_xxx"
@@ -116,18 +117,8 @@ export function HomeSectionManager({ templateId, customSections, onChange, custo
     onChange(updated);
   };
 
-  const handleMoveUp = (index: number) => {
-    if (index <= 0) return;
-    const updated = [...currentItems];
-    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
-    onChange(updated);
-  };
-
-  const handleMoveDown = (index: number) => {
-    if (index >= currentItems.length - 1) return;
-    const updated = [...currentItems];
-    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
-    onChange(updated);
+  const handleReorder = (next: HomeSectionItem[]) => {
+    onChange(next);
   };
 
   const handleReset = () => onChange(null);
