@@ -812,9 +812,15 @@ export function LandingProductsTab() {
                 onUploadImage={(catId) => { setPendingCatId(catId); catImageRef.current?.click(); }}
                 onRemoveImage={async (catId) => { await updateCat.mutateAsync({ id: catId, image_url: null }); toast({ title: 'Đã xóa ảnh bìa' }); }}
                 uploadingCatId={uploadingCatId}
-                onToggleHidden={async (cat) => {
-                  await updateCat.mutateAsync({ id: cat.id, is_hidden: !cat.is_hidden } as any);
-                  toast({ title: cat.is_hidden ? 'Đã hiện danh mục' : 'Đã ẩn danh mục' });
+                onToggleHome={async (cat) => {
+                  const next = !(cat as any).hidden_from_home;
+                  await updateCat.mutateAsync({ id: cat.id, hidden_from_home: next } as any);
+                  toast({ title: next ? 'Đã ẩn khỏi trang chủ' : 'Đã hiện trên trang chủ' });
+                }}
+                onTogglePage={async (cat) => {
+                  const next = !(cat as any).hidden_from_products_page;
+                  await updateCat.mutateAsync({ id: cat.id, hidden_from_products_page: next } as any);
+                  toast({ title: next ? 'Đã ẩn khỏi trang sản phẩm' : 'Đã hiện ở trang sản phẩm' });
                 }}
                 onReorderSiblings={handleReorderCatSiblings}
               />
