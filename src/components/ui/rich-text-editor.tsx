@@ -1051,6 +1051,13 @@ export function RichTextEditor({
     e.preventDefault();
     e.stopPropagation();
     if (!resizingImg) return;
+    // Nếu ảnh đang nằm trong .rte-image-row (flex:1 1 0) thì phải bỏ flex
+    // để width/height inline thực sự có hiệu lực khi kéo handle.
+    const inRow = !!resizingImg.closest('.rte-image-row');
+    if (inRow) {
+      resizingImg.style.flex = '0 0 auto';
+      resizingImg.style.objectFit = 'contain';
+    }
     resizeStartRef.current = {
       x: e.clientX,
       y: e.clientY,
@@ -1061,10 +1068,17 @@ export function RichTextEditor({
     const onMove = (ev: MouseEvent) => {
       if (!resizeStartRef.current || !resizingImg) return;
       const dx = ev.clientX - resizeStartRef.current.x;
-      const newW = Math.max(50, resizeStartRef.current.w + dx);
+      const dy = ev.clientY - resizeStartRef.current.y;
       const ratio = resizeStartRef.current.h / resizeStartRef.current.w;
+      // Lấy delta lớn hơn (theo trục dài hơn) để vừa cho phép kéo rộng vừa cao.
+      // Shift để tự do (không khoá tỷ lệ).
+      const free = ev.shiftKey;
+      const newW = Math.max(50, resizeStartRef.current.w + dx);
+      const newH = free
+        ? Math.max(40, resizeStartRef.current.h + dy)
+        : Math.round(newW * ratio);
       resizingImg.style.width = `${newW}px`;
-      resizingImg.style.height = `${Math.round(newW * ratio)}px`;
+      resizingImg.style.height = `${newH}px`;
       resizingImg.style.maxWidth = '100%';
     };
 
@@ -1084,6 +1098,11 @@ export function RichTextEditor({
     e.preventDefault();
     e.stopPropagation();
     if (!resizingImg || !e.touches[0]) return;
+    const inRow = !!resizingImg.closest('.rte-image-row');
+    if (inRow) {
+      resizingImg.style.flex = '0 0 auto';
+      resizingImg.style.objectFit = 'contain';
+    }
     resizeStartRef.current = {
       x: e.touches[0].clientX,
       y: e.touches[0].clientY,
