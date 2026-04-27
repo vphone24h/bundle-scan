@@ -187,8 +187,8 @@ export function HomeSectionManager({ templateId, customSections, onChange, custo
         )}
       </div>
 
-      <div className="space-y-1.5">
-        {currentItems.map((item, i) => {
+      <SortableList items={currentItems as any} onReorder={(next) => handleReorder(next as HomeSectionItem[])} className="space-y-1.5">
+        {(item, i) => {
           const meta = getSectionMeta(item.id, customProductTabs);
           const isHero = item.id === 'hero';
           const isCustom = isCustomTab(item.id);
@@ -196,23 +196,14 @@ export function HomeSectionManager({ templateId, customSections, onChange, custo
           const isEditing = editingTabId === item.id;
 
           return (
-            <div key={item.id} className="space-y-0">
+            <SortableItem key={item.id} id={item.id} className="space-y-0">
+              {({ dragHandleProps }) => (
               <div
                 className={`flex items-center gap-2 rounded-lg border p-2.5 transition-all ${
                   item.enabled ? 'bg-background' : 'bg-muted/40 opacity-60'
                 }`}
               >
-                {/* Move buttons */}
-                <div className="flex flex-col gap-0.5 shrink-0">
-                  <button type="button" onClick={() => handleMoveUp(i)} disabled={i === 0}
-                    className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
-                    <ChevronUp className="h-3 w-3" />
-                  </button>
-                  <button type="button" onClick={() => handleMoveDown(i)} disabled={i === currentItems.length - 1}
-                    className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
-                    <ChevronDown className="h-3 w-3" />
-                  </button>
-                </div>
+                <DragHandle dragHandleProps={dragHandleProps} />
 
                 {/* Icon */}
                 <span className="text-lg shrink-0">{meta.icon}</span>
