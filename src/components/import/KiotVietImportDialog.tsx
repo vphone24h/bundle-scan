@@ -15,6 +15,7 @@ import { useCreateCategory } from '@/hooks/useCategories';
 import { supabase } from '@/integrations/supabase/client';
 import kiotvietGuideFile1 from '@/assets/kiotviet-guide-file1.png';
 import kiotvietGuideFile2 from '@/assets/kiotviet-guide-file2.jpeg';
+import { SupportHotlineButton } from '@/components/shared/SupportHotlineButton';
 
 interface KiotVietImportDialogProps {
   open: boolean;
@@ -638,6 +639,12 @@ export function KiotVietImportDialog({
                 >
                   Bỏ qua hướng dẫn, tải file lên ngay
                 </button>
+              </div>
+
+              {/* Hotline hỗ trợ */}
+              <div className="flex items-center justify-center gap-2 pt-1">
+                <span className="text-xs text-muted-foreground">Cần hỗ trợ?</span>
+                <SupportHotlineButton />
               </div>
             </div>
           )}
