@@ -277,23 +277,34 @@ export function RichTextEditor({
     }
   }, [linkUrl, execCommand, onChange, restoreSelection]);
 
-  const insertImageHtml = useCallback((url: string) => {
-    const html = `<img src="${url}" alt="image" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0;cursor:pointer;" />`;
-    insertAtCursorOrEnd(html);
-  }, [insertAtCursorOrEnd]);
+  const placeCaretAfterNode = useCallback((node: Node) => {
+    const sel = window.getSelection();
+    if (!sel) return;
+    const range = document.createRange();
+    range.setStartAfter(node);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    saveSelection();
+  }, [saveSelection]);
 
-  const insertImage = useCallback(() => {
-    if (imageUrl) {
-      const sanitizedUrl = imageUrl.trim();
-      try {
-        const url = new URL(sanitizedUrl);
-        if (!['http:', 'https:'].includes(url.protocol)) return;
-      } catch { return; }
-      insertImageHtml(sanitizedUrl);
-      setImageUrl('');
-      setImageOpen(false);
-    }
-  }, [imageUrl, insertImageHtml]);
+  const createStandaloneImage = useCallback((url: string) => {
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = 'image';
+    img.setAttribute(
+      'style',
+      'max-width:100%;height:auto;border-radius:8px;margin:8px 0;cursor:pointer;'
+    );
+    return img;
+  }, []);
+
+  const createImageRow = useCallback(() => {
+    const row = document.createElement('div');
+    row.className = 'rte-image-row';
+    row.setAttribute('style', 'display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:flex-start;');
+    return row;
+  }, []);
 
   // === TABLE INSERT & EDIT ===
   const insertTable = useCallback((rows: number, cols: number) => {
@@ -491,68 +502,6 @@ export function RichTextEditor({
     saveSelection();
   }, [onChange, restoreSelection, saveSelection]);
 
-  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    // Save selection BEFORE async operation
-    saveSelection();
-    setUploading(true);
-    const uploadedUrls: string[] = [];
-    try {
-      for (const file of Array.from(files)) {
-        if (file.size > MAX_UPLOAD_SIZE) {
-          toast({
-            title: 'Ảnh quá lớn',
-            description: `${file.name}: tối đa 15MB.`,
-            variant: 'destructive',
-          });
-          continue;
-        }
-        if (file.type && !ALLOWED_UPLOAD_MIME_TYPES.has(file.type.toLowerCase())) {
-          toast({
-            title: 'Định dạng ảnh chưa hỗ trợ',
-            description: `${file.name}: chọn JPG, PNG, GIF, WEBP, HEIC hoặc AVIF.`,
-            variant: 'destructive',
-          });
-          continue;
-        }
-        try {
-          const ext = file.name.split('.').pop() || 'jpg';
-          const path = `editor/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-          const { error } = await supabase.storage
-            .from('tenant-assets')
-            .upload(path, file, { contentType: file.type || 'image/jpeg', upsert: false });
-          if (error) throw error;
-          const { data: urlData } = supabase.storage.from('tenant-assets').getPublicUrl(path);
-          if (urlData?.publicUrl) uploadedUrls.push(urlData.publicUrl);
-        } catch (err: any) {
-          console.error('Upload failed:', err);
-          toast({
-            title: 'Upload ảnh thất bại',
-            description: `${file.name}: ${err?.message || 'thử lại.'}`,
-            variant: 'destructive',
-          });
-        }
-      }
-
-      if (uploadedUrls.length === 1) {
-        insertImageHtml(uploadedUrls[0]);
-      } else if (uploadedUrls.length > 1) {
-        // Nhiều ảnh -> chèn trên cùng 1 hàng (flex row, có thể wrap)
-        const imgs = uploadedUrls
-          .map(u => `<img src="${u}" alt="image" style="flex:1 1 0;min-width:0;max-width:100%;height:auto;border-radius:8px;object-fit:cover;cursor:pointer;" />`)
-          .join('');
-        const html = `<div class="rte-image-row" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:flex-start;">${imgs}</div><p><br/></p>`;
-        insertAtCursorOrEnd(html);
-      }
-      if (uploadedUrls.length > 0) setImageOpen(false);
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  }, [insertImageHtml, insertAtCursorOrEnd, saveSelection]);
-
   // Image resize: click to select, drag corner to resize. Also detect active table for col/row resize.
   const handleEditorClick = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -623,6 +572,200 @@ export function RichTextEditor({
     img.style.cursor = 'pointer';
     img.style.margin = '0';
   }, []);
+
+  const insertImageHtml = useCallback((url: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    editor.focus();
+    const restored = restoreSelection();
+    const sel = window.getSelection();
+    if (!sel) return;
+
+    if (!restored || sel.rangeCount === 0) {
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    const range = sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : document.createRange();
+    const marker = document.createElement('span');
+    marker.setAttribute('data-rte-marker', 'true');
+    marker.style.display = 'inline-block';
+    marker.style.width = '0';
+    marker.style.height = '0';
+    marker.style.overflow = 'hidden';
+    marker.appendChild(document.createTextNode('\u200B'));
+    range.insertNode(marker);
+
+    const getEditorChild = (node: Node | null): HTMLElement | null => {
+      let current: Node | null = node;
+      while (current && current.parentNode !== editor) current = current.parentNode;
+      return current instanceof HTMLElement ? current : null;
+    };
+
+    const currentChild = getEditorChild(marker);
+    const previousChild = currentChild?.previousElementSibling as HTMLElement | null;
+    const nextChild = currentChild?.nextElementSibling as HTMLElement | null;
+    const parentEl = marker.parentElement;
+
+    let targetRow: HTMLElement | null = null;
+    let anchorImg: HTMLImageElement | null = null;
+    let emptyBlockToRemove: HTMLElement | null = null;
+
+    const rowAncestor = parentEl?.closest('.rte-image-row') as HTMLElement | null;
+    if (rowAncestor && editor.contains(rowAncestor)) {
+      targetRow = rowAncestor;
+      const prev = marker.previousElementSibling;
+      anchorImg = prev instanceof HTMLImageElement ? prev : (Array.from(targetRow.querySelectorAll('img')).at(-1) as HTMLImageElement | null);
+    } else {
+      const prevInline = marker.previousElementSibling;
+      if (prevInline instanceof HTMLImageElement) {
+        const host = getEditorChild(prevInline) ?? parentEl;
+        if (host instanceof HTMLElement) {
+          targetRow = host.classList.contains('rte-image-row') ? host : null;
+          if (!targetRow && host !== editor) {
+            targetRow = createImageRow();
+            Array.from(host.querySelectorAll('img')).forEach((img) => {
+              styleRowImg(img as HTMLImageElement);
+              targetRow?.appendChild(img);
+            });
+            host.replaceWith(targetRow);
+          }
+          anchorImg = prevInline;
+        }
+      } else if (currentChild && isImageOnlyBlock(currentChild)) {
+        targetRow = currentChild.classList.contains('rte-image-row') ? currentChild : createImageRow();
+        if (!currentChild.classList.contains('rte-image-row')) {
+          Array.from(currentChild.querySelectorAll('img')).forEach((img) => {
+            styleRowImg(img as HTMLImageElement);
+            targetRow?.appendChild(img);
+          });
+          currentChild.replaceWith(targetRow);
+        }
+        anchorImg = Array.from(targetRow.querySelectorAll('img')).at(-1) as HTMLImageElement | null;
+      } else if (currentChild && isEmptyBlock(currentChild) && previousChild && isImageOnlyBlock(previousChild)) {
+        targetRow = previousChild.classList.contains('rte-image-row') ? previousChild : createImageRow();
+        if (!previousChild.classList.contains('rte-image-row')) {
+          Array.from(previousChild.querySelectorAll('img')).forEach((img) => {
+            styleRowImg(img as HTMLImageElement);
+            targetRow?.appendChild(img);
+          });
+          previousChild.replaceWith(targetRow);
+        }
+        anchorImg = Array.from(targetRow.querySelectorAll('img')).at(-1) as HTMLImageElement | null;
+        emptyBlockToRemove = currentChild;
+      } else if (nextChild && isImageOnlyBlock(nextChild) && currentChild && isEmptyBlock(currentChild)) {
+        targetRow = nextChild.classList.contains('rte-image-row') ? nextChild : createImageRow();
+        if (!nextChild.classList.contains('rte-image-row')) {
+          Array.from(nextChild.querySelectorAll('img')).forEach((img) => {
+            styleRowImg(img as HTMLImageElement);
+            targetRow?.appendChild(img);
+          });
+          nextChild.replaceWith(targetRow);
+        }
+        emptyBlockToRemove = currentChild;
+      }
+    }
+
+    marker.remove();
+
+    if (targetRow) {
+      const img = createStandaloneImage(url);
+      styleRowImg(img);
+      if (anchorImg && anchorImg.parentNode === targetRow) {
+        anchorImg.insertAdjacentElement('afterend', img);
+      } else {
+        targetRow.appendChild(img);
+      }
+      emptyBlockToRemove?.remove();
+      onChange(editor.innerHTML);
+      placeCaretAfterNode(img);
+      return;
+    }
+
+    const img = createStandaloneImage(url);
+    const fallbackRange = sel.rangeCount > 0 ? sel.getRangeAt(0) : document.createRange();
+    fallbackRange.deleteContents();
+    fallbackRange.insertNode(img);
+    onChange(editor.innerHTML);
+    placeCaretAfterNode(img);
+  }, [createImageRow, createStandaloneImage, isEmptyBlock, isImageOnlyBlock, onChange, placeCaretAfterNode, restoreSelection, styleRowImg]);
+
+  const insertImage = useCallback(() => {
+    if (imageUrl) {
+      const sanitizedUrl = imageUrl.trim();
+      try {
+        const url = new URL(sanitizedUrl);
+        if (!['http:', 'https:'].includes(url.protocol)) return;
+      } catch { return; }
+      insertImageHtml(sanitizedUrl);
+      setImageUrl('');
+      setImageOpen(false);
+    }
+  }, [imageUrl, insertImageHtml]);
+
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    saveSelection();
+    setUploading(true);
+    const uploadedUrls: string[] = [];
+    try {
+      for (const file of Array.from(files)) {
+        if (file.size > MAX_UPLOAD_SIZE) {
+          toast({
+            title: 'Ảnh quá lớn',
+            description: `${file.name}: tối đa 15MB.`,
+            variant: 'destructive',
+          });
+          continue;
+        }
+        if (file.type && !ALLOWED_UPLOAD_MIME_TYPES.has(file.type.toLowerCase())) {
+          toast({
+            title: 'Định dạng ảnh chưa hỗ trợ',
+            description: `${file.name}: chọn JPG, PNG, GIF, WEBP, HEIC hoặc AVIF.`,
+            variant: 'destructive',
+          });
+          continue;
+        }
+        try {
+          const ext = file.name.split('.').pop() || 'jpg';
+          const path = `editor/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+          const { error } = await supabase.storage
+            .from('tenant-assets')
+            .upload(path, file, { contentType: file.type || 'image/jpeg', upsert: false });
+          if (error) throw error;
+          const { data: urlData } = supabase.storage.from('tenant-assets').getPublicUrl(path);
+          if (urlData?.publicUrl) uploadedUrls.push(urlData.publicUrl);
+        } catch (err: any) {
+          console.error('Upload failed:', err);
+          toast({
+            title: 'Upload ảnh thất bại',
+            description: `${file.name}: ${err?.message || 'thử lại.'}`,
+            variant: 'destructive',
+          });
+        }
+      }
+
+      if (uploadedUrls.length === 1) {
+        insertImageHtml(uploadedUrls[0]);
+      } else if (uploadedUrls.length > 1) {
+        const imgs = uploadedUrls
+          .map((u) => `<img src="${u}" alt="image" style="flex:1 1 0;min-width:0;max-width:100%;height:auto;border-radius:8px;object-fit:cover;cursor:pointer;" />`)
+          .join('');
+        const html = `<div class="rte-image-row" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:flex-start;">${imgs}</div><p><br/></p>`;
+        insertAtCursorOrEnd(html);
+      }
+      if (uploadedUrls.length > 0) setImageOpen(false);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }, [insertAtCursorOrEnd, insertImageHtml, saveSelection]);
 
   // Merge `block` into `prev` (must both be image-only blocks). Returns the resulting row.
   const mergeImageBlocks = useCallback((prev: HTMLElement, block: HTMLElement): HTMLElement => {
