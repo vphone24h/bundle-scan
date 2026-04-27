@@ -345,8 +345,10 @@ export function usePublicLandingProducts(
         supabase.from('landing_product_categories' as any).select('*').eq('tenant_id', tenantId).order('display_order', { ascending: true }).order('created_at', { ascending: false }),
         supabase.from('landing_products' as any).select('*').eq('tenant_id', tenantId).eq('is_active', true).order('display_order', { ascending: true }).order('created_at', { ascending: false }),
       ]);
+      const rawCats = (catRes.data || []) as unknown as LandingProductCategory[];
+      const sortedCats = sortCategoriesByTree(rawCats);
       return {
-        categories: (catRes.data || []) as unknown as LandingProductCategory[],
+        categories: sortedCats,
         products: (prodRes.data || []) as unknown as LandingProduct[],
       };
     },
