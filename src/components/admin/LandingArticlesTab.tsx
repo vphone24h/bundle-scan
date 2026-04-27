@@ -31,7 +31,7 @@ import { toast } from '@/hooks/use-toast';
 import {
   Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, FileText,
   ChevronDown, ChevronRight, Eye, EyeOff, FolderOpen, Folder,
-  Image as ImageIcon, Home, Star,
+  Image as ImageIcon, Home, Star, ArrowUp, ArrowDown,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
@@ -399,6 +399,29 @@ export function LandingArticlesTab() {
     pageItems.forEach((a, i) => {
       reordered[startIdx + i] = a;
     });
+    await reorderArticles.mutateAsync(
+      reordered.map((a, i) => ({ id: a.id, display_order: i }))
+    );
+  };
+
+  const handleMoveArticleAcrossPage = async (
+    articleId: string,
+    direction: 'prev' | 'next'
+  ) => {
+    if (!articles) return;
+    const currIdx = articles.findIndex(a => a.id === articleId);
+    if (currIdx < 0) return;
+    const reordered = [...articles];
+    const [item] = reordered.splice(currIdx, 1);
+    if (direction === 'next') {
+      const targetIdx = Math.min(articlePage * ARTICLE_PAGE_SIZE, reordered.length);
+      reordered.splice(targetIdx, 0, item);
+      setArticlePage(articlePage + 1);
+    } else {
+      const targetIdx = Math.max((articlePage - 1) * ARTICLE_PAGE_SIZE - 1, 0);
+      reordered.splice(targetIdx, 0, item);
+      setArticlePage(Math.max(articlePage - 1, 1));
+    }
     await reorderArticles.mutateAsync(
       reordered.map((a, i) => ({ id: a.id, display_order: i }))
     );
