@@ -304,10 +304,21 @@ export function LandingArticlesTab() {
     }
   };
 
-  const handleToggleVisible = async (cat: LandingArticleCategory) => {
+  const handleToggleHome = async (cat: LandingArticleCategory) => {
     try {
-      await updateCat.mutateAsync({ id: cat.id, is_visible: !cat.is_visible });
-      toast({ title: cat.is_visible ? 'Đã ẩn danh mục' : 'Đã hiện danh mục' });
+      const next = !(cat as any).hidden_from_home;
+      await updateCat.mutateAsync({ id: cat.id, hidden_from_home: next });
+      toast({ title: next ? 'Đã ẩn khỏi trang chủ' : 'Đã hiện trên trang chủ' });
+    } catch (e: any) {
+      toast({ title: 'Lỗi', description: e.message, variant: 'destructive' });
+    }
+  };
+
+  const handleTogglePage = async (cat: LandingArticleCategory) => {
+    try {
+      const next = !(cat as any).hidden_from_articles_page;
+      await updateCat.mutateAsync({ id: cat.id, hidden_from_articles_page: next });
+      toast({ title: next ? 'Đã ẩn khỏi trang tin tức' : 'Đã hiện ở trang tin tức' });
     } catch (e: any) {
       toast({ title: 'Lỗi', description: e.message, variant: 'destructive' });
     }
