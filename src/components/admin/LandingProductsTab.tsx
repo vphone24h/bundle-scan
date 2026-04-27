@@ -932,9 +932,10 @@ export function LandingProductsTab() {
                       </Button>
                     </div>
                   </div>
-                  );
-                })}
-              </div>
+                    )}
+                  </SortableItem>
+                )}
+              </SortableList>
               <ListPagination
                 currentPage={productPage}
                 totalItems={products.length}
