@@ -628,11 +628,26 @@ export function RichTextEditor({
           targetRow = host.classList.contains('rte-image-row') ? host : null;
           if (!targetRow && host !== editor) {
             targetRow = createImageRow();
-            Array.from(host.querySelectorAll('img')).forEach((img) => {
-              styleRowImg(img as HTMLImageElement);
-              targetRow?.appendChild(img);
-            });
-            host.replaceWith(targetRow);
+            if (host instanceof HTMLImageElement) {
+              // host IS the image (image is a direct child of editor)
+              styleRowImg(host);
+              host.replaceWith(targetRow);
+              targetRow.appendChild(host);
+            } else {
+              // host is a block containing the image(s)
+              const imgsInHost = Array.from(host.querySelectorAll('img'));
+              imgsInHost.forEach((img) => {
+                styleRowImg(img as HTMLImageElement);
+                targetRow?.appendChild(img);
+              });
+              host.replaceWith(targetRow);
+            }
+          } else if (!targetRow && host === editor) {
+            // Image is a direct child of the editor itself — wrap it in a row
+            targetRow = createImageRow();
+            styleRowImg(prevInline);
+            prevInline.replaceWith(targetRow);
+            targetRow.appendChild(prevInline);
           }
           anchorImg = prevInline;
         }
