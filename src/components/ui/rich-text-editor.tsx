@@ -502,68 +502,6 @@ export function RichTextEditor({
     saveSelection();
   }, [onChange, restoreSelection, saveSelection]);
 
-  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    // Save selection BEFORE async operation
-    saveSelection();
-    setUploading(true);
-    const uploadedUrls: string[] = [];
-    try {
-      for (const file of Array.from(files)) {
-        if (file.size > MAX_UPLOAD_SIZE) {
-          toast({
-            title: 'Ảnh quá lớn',
-            description: `${file.name}: tối đa 15MB.`,
-            variant: 'destructive',
-          });
-          continue;
-        }
-        if (file.type && !ALLOWED_UPLOAD_MIME_TYPES.has(file.type.toLowerCase())) {
-          toast({
-            title: 'Định dạng ảnh chưa hỗ trợ',
-            description: `${file.name}: chọn JPG, PNG, GIF, WEBP, HEIC hoặc AVIF.`,
-            variant: 'destructive',
-          });
-          continue;
-        }
-        try {
-          const ext = file.name.split('.').pop() || 'jpg';
-          const path = `editor/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-          const { error } = await supabase.storage
-            .from('tenant-assets')
-            .upload(path, file, { contentType: file.type || 'image/jpeg', upsert: false });
-          if (error) throw error;
-          const { data: urlData } = supabase.storage.from('tenant-assets').getPublicUrl(path);
-          if (urlData?.publicUrl) uploadedUrls.push(urlData.publicUrl);
-        } catch (err: any) {
-          console.error('Upload failed:', err);
-          toast({
-            title: 'Upload ảnh thất bại',
-            description: `${file.name}: ${err?.message || 'thử lại.'}`,
-            variant: 'destructive',
-          });
-        }
-      }
-
-      if (uploadedUrls.length === 1) {
-        insertImageHtml(uploadedUrls[0]);
-      } else if (uploadedUrls.length > 1) {
-        // Nhiều ảnh -> chèn trên cùng 1 hàng (flex row, có thể wrap)
-        const imgs = uploadedUrls
-          .map(u => `<img src="${u}" alt="image" style="flex:1 1 0;min-width:0;max-width:100%;height:auto;border-radius:8px;object-fit:cover;cursor:pointer;" />`)
-          .join('');
-        const html = `<div class="rte-image-row" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:flex-start;">${imgs}</div><p><br/></p>`;
-        insertAtCursorOrEnd(html);
-      }
-      if (uploadedUrls.length > 0) setImageOpen(false);
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  }, [insertImageHtml, insertAtCursorOrEnd, saveSelection]);
-
   // Image resize: click to select, drag corner to resize. Also detect active table for col/row resize.
   const handleEditorClick = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
