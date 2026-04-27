@@ -15,6 +15,27 @@ interface SubdomainRouterProps {
 }
 
 /**
+ * Đồng bộ kiểm tra: user có session admin đã lưu trong localStorage hay không.
+ * Dùng để tránh flash "store landing" trong lúc Supabase auth đang rehydrate
+ * (đặc biệt trên iOS/Android PWA khi mở lại app sau khi background lâu).
+ * CTV user bị loại trừ — họ luôn ở store landing.
+ */
+function hasPersistedAdminSession(): boolean {
+  try {
+    const raw = localStorage.getItem('sb-rodpbhesrwykmpywiiyd-auth-token');
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    const meta = parsed?.user?.user_metadata || parsed?.currentSession?.user?.user_metadata;
+    // CTV users không được tính là admin session
+    if (meta?.ctv_tenant_id) return false;
+    if (typeof localStorage.getItem === 'function' && localStorage.getItem('ctv_store_mode')) return false;
+    return !!(parsed?.access_token || parsed?.currentSession?.access_token);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Router component xử lý logic hiển thị:
  * - Main domain (vkho.vn) + chưa đăng nhập + path "/" → trang giới thiệu
  * - Company domain (cty.vphone.vn) + chưa đăng nhập + path "/" → trang giới thiệu công ty
@@ -31,6 +52,8 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
     () => location.pathname === '/admin' || location.pathname.startsWith('/platform-admin'),
     [location.pathname]
   );
+  // Đọc 1 lần lúc mount — đủ để chặn flash trong lúc auth rehydrate
+  const hasAdminSession = useMemo(() => hasPersistedAdminSession(), []);
 
   // Check if current hostname IS a company domain (not a shop subdomain of a company domain)
   const isCompanyDomain = useMemo(() => {
@@ -47,6 +70,8 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
     // only if the domain is later confirmed as a company domain.
     if (company.status === 'loading' && !hostInfo.isMainDomain && !hostInfo.subdomain) {
       if (isAdminEntryRoute) return 'app';
+      // Đã có session admin → vào thẳng app, không flash store landing
+      if (hasAdminSession) return 'app';
       return 'store_landing';
     }
 
@@ -59,7 +84,11 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
 
     // CRITICAL: On custom domain/subdomain, ALWAYS show store landing while loading
     // Never show admin app to store visitors during loading states
+    // EXCEPT: nếu đã có persisted admin session → render app ngay (tránh flash sang trang bán hàng)
     if (!hostInfo.isMainDomain && !isCompanyDomain) {
+      if (hasAdminSession && (authLoading || !user)) {
+        return 'app';
+      }
       if (!user && (resolvedTenant.status === 'loading' || authLoading)) {
         return 'store_landing';
       }
@@ -75,6 +104,7 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
       // Don't wait for authLoading — public landing is safe to show; if a user is
       // detected later, we can re-render to 'app'.
       if (!user && location.pathname === '/' && publicLandingPage) {
+        if (hasAdminSession) return 'app';
         return 'public_landing';
       }
 
@@ -105,10 +135,12 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
     
     // For subdomains/custom domains during loading — show store landing (not admin)
     if (resolvedTenant.status === 'loading') {
+      if (hasAdminSession) return 'app';
       return 'store_landing';
     }
     
     if (authLoading) {
+      if (hasAdminSession) return 'app';
       return 'store_landing';
     }
     
@@ -126,16 +158,18 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
     
     // No user + subdomain/custom domain resolved → show store landing
     if (resolvedTenant.status === 'resolved' && (resolvedTenant.subdomain || resolvedTenant.tenantId)) {
+      if (hasAdminSession) return 'app';
       return 'store_landing';
     }
     
     // Subdomain/custom domain not found → store landing will show "not found"
     if (resolvedTenant.status === 'not_found' && (resolvedTenant.subdomain || !resolvedTenant.isMainDomain)) {
+      if (hasAdminSession) return 'app';
       return 'store_landing';
     }
     
     return 'app';
-  }, [resolvedTenant, user, authLoading, publicLandingPage, hostInfo.isMainDomain, isCompanyDomain, isAdminEntryRoute, company.status, hostInfo.subdomain, location.pathname]);
+  }, [resolvedTenant, user, authLoading, publicLandingPage, hostInfo.isMainDomain, isCompanyDomain, isAdminEntryRoute, company.status, hostInfo.subdomain, location.pathname, hasAdminSession]);
 
   // No loading spinner - app shell renders immediately
 
