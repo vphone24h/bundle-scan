@@ -710,13 +710,30 @@ export function LandingArticlesTab() {
         </DialogContent>
       </Dialog>
 
-      {/* ─── Article Dialog ─── */}
-      <Dialog open={articleDialog} onOpenChange={setArticleDialog}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>{editingArticle ? 'Sửa bài viết' : 'Thêm bài viết mới'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
+      {/* ─── Trang Thêm/Sửa bài viết (full-screen) ─── */}
+      {articleDialog && (
+        <div className="fixed inset-0 z-50 bg-background flex flex-col">
+          {/* Header sticky */}
+          <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b bg-background/95 backdrop-blur px-4 sm:px-6 py-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <Button variant="ghost" size="sm" onClick={() => setArticleDialog(false)} className="gap-1">
+                ← Quay lại
+              </Button>
+              <h2 className="text-base sm:text-lg font-semibold truncate">
+                {editingArticle ? 'Sửa bài viết' : 'Thêm bài viết mới'}
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setArticleDialog(false)}>Huỷ</Button>
+              <Button size="sm" onClick={handleSaveArticle} disabled={!form.title.trim() || createArticle.isPending || updateArticle.isPending}>
+                {(createArticle.isPending || updateArticle.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {editingArticle ? 'Cập nhật' : 'Thêm'}
+              </Button>
+            </div>
+          </div>
+          {/* Body scroll */}
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
+            <div className="mx-auto w-full max-w-3xl space-y-4">
             <div className="space-y-2">
               <Label>Tiêu đề *</Label>
               <Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="Tiêu đề bài viết..." />
@@ -811,16 +828,18 @@ export function LandingArticlesTab() {
               </div>
               <Switch checked={form.is_featured_home} onCheckedChange={v => setForm(p => ({ ...p, is_featured_home: v }))} />
             </div>
+            </div>
           </div>
-          <DialogFooter>
+          {/* Footer sticky */}
+          <div className="sticky bottom-0 z-10 flex items-center justify-end gap-2 border-t bg-background/95 backdrop-blur px-4 sm:px-6 py-3">
             <Button variant="outline" onClick={() => setArticleDialog(false)}>Huỷ</Button>
             <Button onClick={handleSaveArticle} disabled={!form.title.trim() || createArticle.isPending || updateArticle.isPending}>
               {(createArticle.isPending || updateArticle.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingArticle ? 'Cập nhật' : 'Thêm'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
