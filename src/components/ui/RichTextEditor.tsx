@@ -107,6 +107,9 @@ export function RichTextEditor({
   }, [onChange, getCleanHTML]);
 
   const attachResizeHandlesRef = useRef<(() => void) | null>(null);
+  const positionImageOverlayRef = useRef<((img: HTMLImageElement | null) => void) | null>(null);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const selectedImgRef = useRef<HTMLImageElement | null>(null);
 
   const toolbarBtn = (icon: React.ReactNode, command: string, title: string) => (
     <Button
