@@ -31,7 +31,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { BADGE_POSITION_MAP } from '@/components/website-templates/layouts/ProductCardVariants';
+import { BADGE_POSITION_MAP, LayoutProductCard } from '@/components/website-templates/layouts/ProductCardVariants';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -1710,6 +1710,47 @@ export function LandingProductsTab() {
 
             {/* ===== CỘT PHẢI: Hình ảnh / Trạng thái / Nhãn / Hiển thị trang chủ / HSSV / Trả góp ===== */}
             <div className="space-y-4 min-w-0">
+            {/* Khung xem trước card sản phẩm (giống ngoài website) */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">👁️ Xem trước trên website</Label>
+              <div className="rounded-xl border-2 border-dashed border-primary/30 bg-gradient-to-br from-muted/40 to-background p-3">
+                <div className="mx-auto w-full max-w-[260px]">
+                  <LayoutProductCard
+                    layoutStyle={(() => {
+                      const tpl = (landingSettings as any)?.website_template || 'phone_store';
+                      const custom = (landingSettings as any)?.custom_layout_style;
+                      try {
+                        return (custom || getIndustryConfig(tpl).layoutStyle) as any;
+                      } catch {
+                        return 'minimal' as any;
+                      }
+                    })()}
+                    accentColor={(landingSettings as any)?.primary_color || '#2563eb'}
+                    onClick={() => {}}
+                    product={{
+                      id: 'preview',
+                      name: form.name || 'Tên sản phẩm sẽ hiển thị tại đây',
+                      price: form.price || 0,
+                      sale_price: form.sale_price || null,
+                      image_url: form.images?.[0] || form.image_url || null,
+                      images: form.images || [],
+                      is_active: true,
+                      is_featured: form.is_featured,
+                      is_sold_out: form.is_sold_out,
+                      badges: formBadges,
+                      badge_style: badgeStyle,
+                      student_discount_label: form.student_discount_label || null,
+                      student_discount_text: form.student_discount_text || null,
+                      installment_down_payment: form.installment_down_payment || null,
+                    } as any}
+                  />
+                </div>
+                <p className="mt-2 text-center text-[10px] text-muted-foreground">
+                  Xem trước cập nhật theo thông tin bạn nhập (ảnh, tên, giá, nhãn, HS-SV, trả góp…)
+                </p>
+              </div>
+            </div>
+            <Separator />
             <div className="flex items-center justify-between">
               <Label className="flex items-center gap-1.5">Hết hàng <Badge variant="destructive" className="text-[9px] px-1.5 py-0">Sold out</Badge></Label>
               <Switch checked={form.is_sold_out} onCheckedChange={v => setForm(p => ({ ...p, is_sold_out: v }))} />
@@ -1878,172 +1919,6 @@ export function LandingProductsTab() {
                     </Select>
                   </div>
 
-                  {/* Khung preview vị trí nhãn */}
-                  <div>
-                    <p className="text-[10px] font-medium text-muted-foreground mb-1.5">👁️ Xem trước vị trí nhãn trên ảnh sản phẩm:</p>
-                    <div className="relative w-full aspect-[4/3] max-h-40 mx-auto rounded-lg border-2 border-dashed border-border bg-gradient-to-br from-background to-muted overflow-hidden">
-                      <div className="absolute inset-0 flex items-center justify-center text-[10px] text-muted-foreground/60">
-                        <ImagePlus className="h-6 w-6 opacity-40" />
-                      </div>
-                      {formBadges.map(id => {
-                        const opt = PRODUCT_BADGE_OPTIONS.find(o => o.id === id);
-                        const corner = BADGE_POSITION_MAP[id]?.corner;
-                        if (!opt || !corner) return null;
-                        const cornerCls =
-                          corner === 'tl' ? 'top-1.5 left-1.5' :
-                          corner === 'tr' ? 'top-1.5 right-1.5' :
-                          corner === 'bl' ? 'bottom-1.5 left-1.5' :
-                          'bottom-1.5 right-1.5';
-                        if (badgeStyle === 'luxury') {
-                          const NEW_BADGE_IDS = new Set(['new', 'new_today', 'just_updated', 'new_version', 'preorder', 'trending']);
-                          const BEST_SELLER_BADGE_IDS = new Set(['best_seller', 'top_1', 'many_buy']);
-                          const TONE: Record<string, { from: string; to: string; sealFrom: string; sealTo: string }> = {
-                            new:         { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
-                            new_today:   { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
-                            just_updated:{ from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
-                            new_version: { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
-                            preorder:    { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
-                            trending:    { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
-                            hot:         { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
-                            sale:        { from: '#C62828', to: '#7A0F1A', sealFrom: '#A0151E', sealTo: '#5B0A11' },
-                            best_seller: { from: '#3B82F6', to: '#1E3A8A', sealFrom: '#2563EB', sealTo: '#172554' },
-                            top_1:       { from: '#3B82F6', to: '#1E3A8A', sealFrom: '#2563EB', sealTo: '#172554' },
-                            many_buy:    { from: '#3B82F6', to: '#1E3A8A', sealFrom: '#2563EB', sealTo: '#172554' },
-                            genuine:     { from: '#22C55E', to: '#166534', sealFrom: '#15803D', sealTo: '#0B3F1F' },
-                            warranty:    { from: '#22C55E', to: '#166534', sealFrom: '#15803D', sealTo: '#0B3F1F' },
-                            quality:     { from: '#22C55E', to: '#166534', sealFrom: '#15803D', sealTo: '#0B3F1F' },
-                            premium:     { from: '#22C55E', to: '#166534', sealFrom: '#15803D', sealTo: '#0B3F1F' },
-                          };
-                          const tone = TONE[id] || { from: '#1f1f1f', to: '#3a3a3a', sealFrom: '#2a2a2a', sealTo: '#111' };
-                          const displayText = NEW_BADGE_IDS.has(id)
-                            ? 'HÀNG MỚI'
-                            : BEST_SELLER_BADGE_IDS.has(id)
-                            ? 'SẢN PHẨM BÁN CHẠY'
-                            : opt.text.toUpperCase();
-
-                          if (NEW_BADGE_IDS.has(id)) {
-                            return (
-                              <div key={id} className={`absolute ${cornerCls} flex items-center`} style={{ filter: 'drop-shadow(0 5px 8px rgba(60,8,15,0.34))' }}>
-                                <span style={{
-                                  position: 'relative', width: 26, height: 26, borderRadius: '50%',
-                                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                  marginRight: -6, zIndex: 2,
-                                  background: 'linear-gradient(145deg, #fde7a8 0%, #a96d20 45%, #f8d37a 72%, #855018 100%)',
-                                  boxShadow: '0 2px 4px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 2px rgba(88,46,8,0.35)',
-                                }}>
-                                  <span style={{
-                                    position: 'absolute', inset: 3, borderRadius: '50%',
-                                    background: `radial-gradient(circle at 30% 25%, ${tone.from} 0%, ${tone.sealFrom} 42%, ${tone.sealTo} 100%)`,
-                                    border: '0.8px solid rgba(253,230,138,0.6)',
-                                  }} />
-                                  <span style={{
-                                    position: 'relative', zIndex: 1,
-                                    fontSize: 13, fontWeight: 700, color: '#f7dfab',
-                                    fontFamily: '"Playfair Display", Georgia, serif',
-                                    textShadow: '0 1px 0 rgba(72,22,12,0.9)',
-                                  }}>N</span>
-                                </span>
-                                <span style={{
-                                  position: 'relative',
-                                  minWidth: 74,
-                                  padding: '4px 14px 4px 10px',
-                                  fontSize: 7.6, fontWeight: 800, color: '#fff8e7',
-                                  textTransform: 'uppercase', letterSpacing: '0.03em',
-                                  background: `linear-gradient(90deg, ${tone.to} 0%, ${tone.from} 58%, #7f1120 100%)`,
-                                  clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 5px) 100%, 0 100%)',
-                                  borderRadius: 999,
-                                  boxShadow: 'inset 0 0 0 1px rgba(251,191,36,0.7), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 3px rgba(61,10,17,0.35)',
-                                  textShadow: '0 1px 1px rgba(0,0,0,0.45)',
-                                }}>{displayText}</span>
-                              </div>
-                            );
-                          }
-
-                          if (BEST_SELLER_BADGE_IDS.has(id)) {
-                            return (
-                              <div key={id} className={`absolute ${cornerCls}`} style={{ filter: 'drop-shadow(0 5px 8px rgba(20,44,99,0.24))' }}>
-                                <span style={{
-                                  position: 'relative',
-                                  display: 'inline-flex',
-                                  padding: 1.5,
-                                  background: 'linear-gradient(180deg, #f8fafc 0%, #cbd5e1 100%)',
-                                  clipPath: 'polygon(4% 0, 100% 0, 100% 74%, 93% 100%, 0 100%, 5% 45%)',
-                                  borderRadius: 5,
-                                  transform: 'skewX(-12deg)',
-                                }}>
-                                  <span style={{
-                                    position: 'relative',
-                                    minWidth: 92,
-                                    padding: '4px 12px 4px 10px',
-                                    fontSize: 6.8, fontWeight: 800, color: '#fff',
-                                    textTransform: 'uppercase', letterSpacing: '0.03em',
-                                    background: `linear-gradient(90deg, ${tone.to} 0%, #1d4ed8 42%, ${tone.from} 100%)`,
-                                    clipPath: 'polygon(4% 0, 100% 0, 100% 74%, 93% 100%, 0 100%, 5% 45%)',
-                                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 3px rgba(8,26,76,0.32)',
-                                    textShadow: '0 1px 1px rgba(0,0,0,0.35)',
-                                  }}>
-                                    <span style={{ display: 'block', transform: 'skewX(12deg)' }}>{displayText}</span>
-                                  </span>
-                                </span>
-                              </div>
-                            );
-                          }
-
-                          const isRight = corner === 'tr' || corner === 'br';
-                          return (
-                            <div key={id} className={`absolute ${cornerCls} flex items-center`} style={{ flexDirection: isRight ? 'row-reverse' : 'row', filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.4))' }}>
-                              <span style={{
-                                position: 'relative', width: 22, height: 22, borderRadius: '50%',
-                                background: `radial-gradient(circle at 32% 28%, ${tone.sealFrom} 0%, ${tone.sealTo} 85%)`,
-                                boxShadow: 'inset 0 0 0 1px #fbbf24, 0 0 0 1px #fde68a, 0 0 0 1.6px #92400e',
-                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: 11, fontWeight: 700, color: '#fde68a',
-                                fontFamily: '"Playfair Display", Georgia, serif',
-                                [isRight ? 'marginLeft' : 'marginRight']: -7, zIndex: 3,
-                                textShadow: '0 1px 0 rgba(0,0,0,0.7)',
-                              } as any}>
-                                {id === 'genuine' || id === 'warranty' ? 'H' : opt.text.charAt(0).toUpperCase()}
-                              </span>
-                              <span style={{
-                                position: 'relative',
-                                background: `linear-gradient(135deg, ${tone.from} 0%, ${tone.to} 100%)`,
-                                padding: isRight ? '3px 8px 3px 12px' : '3px 12px 3px 8px',
-                                fontSize: 8.5, fontWeight: 800, color: '#fff',
-                                textTransform: 'uppercase', letterSpacing: '0.06em',
-                                borderRadius: 5,
-                                boxShadow: 'inset 0 0 0 1px #fbbf24, inset 0 0 0 1.6px rgba(146,64,14,0.5), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 1px rgba(0,0,0,0.4)',
-                                textShadow: '0 1px 1px rgba(0,0,0,0.55)',
-                                display: 'inline-flex', alignItems: 'center',
-                                fontFamily: '"Playfair Display", Georgia, serif',
-                              }}>
-                                {displayText}
-                              </span>
-                            </div>
-                          );
-                        }
-                        if (badgeStyle === 'modern') {
-                          return (
-                            <span
-                              key={id}
-                              className={`absolute ${cornerCls} ${opt.color} text-white text-[8.5px] font-extrabold px-1.5 py-0.5 rounded-md shadow-md inline-flex items-center gap-1`}
-                              style={{
-                                letterSpacing: '0.06em',
-                                border: '1px solid rgba(255,255,255,0.4)',
-                              }}
-                            >
-                              <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#fff' }} />
-                              {opt.text.toUpperCase()}
-                            </span>
-                          );
-                        }
-                        return (
-                          <span key={id} className={`absolute ${cornerCls} ${opt.color} text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-md animate-pulse`}>
-                            {opt.text}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
 
                   <div className="grid grid-cols-2 gap-1.5">
                   {(() => {
