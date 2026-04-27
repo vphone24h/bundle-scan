@@ -2096,16 +2096,18 @@ export function LandingProductsTab() {
                 </div>
               )}
             </div>
+            </div>
           </div>
-          <DialogFooter>
+          {/* Footer sticky */}
+          <div className="sticky bottom-0 z-10 flex items-center justify-end gap-2 border-t bg-background/95 backdrop-blur px-4 sm:px-6 py-3">
             <Button variant="outline" onClick={() => setProductDialog(false)}>Huỷ</Button>
             <Button onClick={handleSaveProduct} disabled={!form.name.trim() || createProduct.isPending || updateProduct.isPending}>
               {(createProduct.isPending || updateProduct.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingProduct ? 'Cập nhật' : 'Thêm'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
       {/* Dialog nhập từ kho */}
       <ImportFromWarehouseDialog
