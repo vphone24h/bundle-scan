@@ -3,7 +3,8 @@ import { NavItemConfig, PageItemConfig, InstallmentRateConfig, DEFAULT_INSTALLME
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Plus, X, Trash2, ChevronUp, ChevronDown, Sparkles, Eye, EyeOff, Menu as MenuIcon } from 'lucide-react';
+import { Plus, X, Trash2, Sparkles, Eye, EyeOff, Menu as MenuIcon } from 'lucide-react';
+import { SortableList, SortableItem, DragHandle } from '@/components/shared/SortableList';
 
 interface NavMenuEditorProps {
   templateId: string;
@@ -76,20 +77,6 @@ export function NavMenuEditor({ templateId, customNavItems, onChange }: NavMenuE
     };
     onChange([...currentItems, newItem]);
     setShowAddMenu(false);
-  };
-
-  const handleMoveUp = (index: number) => {
-    if (index <= 0) return;
-    const updated = [...currentItems];
-    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
-    onChange(updated);
-  };
-
-  const handleMoveDown = (index: number) => {
-    if (index >= currentItems.length - 1) return;
-    const updated = [...currentItems];
-    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
-    onChange(updated);
   };
 
   const handleAutoSuggest = () => onChange(getFullNavItems(templateId));
@@ -184,8 +171,12 @@ export function NavMenuEditor({ templateId, customNavItems, onChange }: NavMenuE
       </div>
 
       {/* Nav items list */}
-      <div className="space-y-2">
-        {currentItems.map((item, i) => {
+      <SortableList<NavItemConfig & { id: string }>
+        items={currentItems.map((it) => ({ ...it, id: String(it.id) }))}
+        onReorder={(next) => onChange(next)}
+        className="space-y-2"
+      >
+        {(item, i) => {
           const isExpanded = expandedIndex === i;
           const canEditItems = hasEditableItems(item);
           const pageView = item.pageView || '';
@@ -193,19 +184,10 @@ export function NavMenuEditor({ templateId, customNavItems, onChange }: NavMenuE
           const currentPageItems = item.pageItems || defaults;
 
           return (
-            <div key={item.id + i} className="rounded-lg border transition-all overflow-hidden">
+            <SortableItem key={item.id} id={item.id} className="rounded-lg border transition-all overflow-hidden">
+              {({ dragHandleProps }) => (<>
               <div className={`flex items-center gap-2 p-2.5 ${item.enabled ? 'bg-background' : 'bg-muted/50 opacity-60'}`}>
-                {/* Order buttons */}
-                <div className="flex flex-col gap-0.5 shrink-0">
-                  <button type="button" onClick={() => handleMoveUp(i)} disabled={i === 0}
-                    className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
-                    <ChevronUp className="h-3 w-3" />
-                  </button>
-                  <button type="button" onClick={() => handleMoveDown(i)} disabled={i === currentItems.length - 1}
-                    className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
-                    <ChevronDown className="h-3 w-3" />
-                  </button>
-                </div>
+                <DragHandle dragHandleProps={dragHandleProps} />
 
                 <span className="text-lg shrink-0">{item.icon || '📄'}</span>
 
@@ -334,10 +316,11 @@ export function NavMenuEditor({ templateId, customNavItems, onChange }: NavMenuE
                   })()}
                 </div>
               )}
-            </div>
+              </>)}
+            </SortableItem>
           );
-        })}
-      </div>
+        }}
+      </SortableList>
 
       {/* Add new item */}
       {!showAddMenu ? (
