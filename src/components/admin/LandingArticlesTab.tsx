@@ -37,6 +37,7 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { ListPagination, paginateArray } from '@/components/ui/list-pagination';
+import { SortableList, SortableItem, DragHandle } from '@/components/shared/SortableList';
 
 const LazyRichTextEditor = lazy(() =>
   import('@/components/ui/rich-text-editor').then((m) => ({ default: m.RichTextEditor }))
@@ -44,7 +45,7 @@ const LazyRichTextEditor = lazy(() =>
 
 // ─── Category Tree Node ───
 function CategoryNode({
-  category, level, onEdit, onDelete, onAddChild, onToggleVisible, onMoveUp, onMoveDown, canMoveUp, canMoveDown,
+  category, level, onEdit, onDelete, onAddChild, onToggleVisible, onReorderSiblings, dragHandleProps,
 }: {
   category: LandingArticleCategory;
   level: number;
@@ -52,10 +53,8 @@ function CategoryNode({
   onDelete: (c: LandingArticleCategory) => void;
   onAddChild: (parentId: string) => void;
   onToggleVisible: (c: LandingArticleCategory) => void;
-  onMoveUp: (c: LandingArticleCategory) => void;
-  onMoveDown: (c: LandingArticleCategory) => void;
-  canMoveUp: boolean;
-  canMoveDown: boolean;
+  onReorderSiblings: (parentId: string | null, siblings: LandingArticleCategory[]) => void;
+  dragHandleProps: Record<string, unknown>;
 }) {
   const [expanded, setExpanded] = useState(true);
   const hasChildren = category.children && category.children.length > 0;
@@ -63,14 +62,7 @@ function CategoryNode({
   return (
     <div>
       <div className={cn('flex items-center gap-1.5 py-2 px-2 rounded-lg hover:bg-muted/50 group', level > 0 && 'ml-6')}>
-        <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={() => canMoveUp && onMoveUp(category)} disabled={!canMoveUp} className="text-muted-foreground hover:text-foreground disabled:opacity-30">
-            <ChevronDown className="h-3 w-3 rotate-180" />
-          </button>
-          <button onClick={() => canMoveDown && onMoveDown(category)} disabled={!canMoveDown} className="text-muted-foreground hover:text-foreground disabled:opacity-30">
-            <ChevronDown className="h-3 w-3" />
-          </button>
-        </div>
+        <DragHandle dragHandleProps={dragHandleProps} className="h-7 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-grab active:cursor-grabbing touch-none shrink-0" />
 
         <button
           onClick={() => setExpanded(!expanded)}
@@ -109,23 +101,28 @@ function CategoryNode({
         </div>
       </div>
       {hasChildren && expanded && (
-        <div className="animate-fade-in">
-          {category.children!.map((child, idx) => (
-            <CategoryNode
-              key={child.id}
-              category={child}
-              level={level + 1}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onAddChild={onAddChild}
-              onToggleVisible={onToggleVisible}
-              onMoveUp={onMoveUp}
-              onMoveDown={onMoveDown}
-              canMoveUp={idx > 0}
-              canMoveDown={idx < category.children!.length - 1}
-            />
-          ))}
-        </div>
+        <SortableList<LandingArticleCategory>
+          items={category.children!}
+          onReorder={(reordered) => onReorderSiblings(category.id, reordered)}
+          className="animate-fade-in"
+        >
+          {(child) => (
+            <SortableItem key={child.id} id={child.id}>
+              {({ dragHandleProps: childHandle }) => (
+                <CategoryNode
+                  category={child}
+                  level={level + 1}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  onAddChild={onAddChild}
+                  onToggleVisible={onToggleVisible}
+                  onReorderSiblings={onReorderSiblings}
+                  dragHandleProps={childHandle}
+                />
+              )}
+            </SortableItem>
+          )}
+        </SortableList>
       )}
     </div>
   );
@@ -201,6 +198,25 @@ export function LandingArticlesTab() {
 
   const handleMove = async (cat: LandingArticleCategory, direction: 'up' | 'down') => {
     const newTree = swapInTree(tree, cat.id, direction);
+    const flat = flattenTree(newTree);
+    try {
+      await batchOrder.mutateAsync(flat);
+    } catch (e: any) {
+      toast({ title: 'Lỗi sắp xếp', description: e.message, variant: 'destructive' });
+    }
+  };
+
+  const replaceSiblings = (nodes: LandingArticleCategory[], parentId: string | null, reordered: LandingArticleCategory[]): LandingArticleCategory[] => {
+    if (parentId === null) return reordered;
+    return nodes.map(n => {
+      if (n.id === parentId) return { ...n, children: reordered };
+      if (n.children?.length) return { ...n, children: replaceSiblings(n.children, parentId, reordered) };
+      return n;
+    });
+  };
+
+  const handleReorderArticleSiblings = async (parentId: string | null, reordered: LandingArticleCategory[]) => {
+    const newTree = replaceSiblings(tree, parentId, reordered);
     const flat = flattenTree(newTree);
     try {
       await batchOrder.mutateAsync(flat);
@@ -408,23 +424,28 @@ export function LandingArticlesTab() {
           {catLoading ? (
             <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
           ) : tree.length > 0 ? (
-            <div className="space-y-0.5">
-              {tree.map((cat, idx) => (
-                <CategoryNode
-                  key={cat.id}
-                  category={cat}
-                  level={0}
-                  onEdit={openEditCategory}
-                  onDelete={handleDeleteCategory}
-                  onAddChild={(parentId) => openAddCategory(parentId)}
-                  onToggleVisible={handleToggleVisible}
-                  onMoveUp={(c) => handleMove(c, 'up')}
-                  onMoveDown={(c) => handleMove(c, 'down')}
-                  canMoveUp={idx > 0}
-                  canMoveDown={idx < tree.length - 1}
-                />
-              ))}
-            </div>
+            <SortableList<LandingArticleCategory>
+              items={tree}
+              onReorder={(reordered) => handleReorderArticleSiblings(null, reordered)}
+              className="space-y-0.5"
+            >
+              {(cat) => (
+                <SortableItem key={cat.id} id={cat.id}>
+                  {({ dragHandleProps }) => (
+                    <CategoryNode
+                      category={cat}
+                      level={0}
+                      onEdit={openEditCategory}
+                      onDelete={handleDeleteCategory}
+                      onAddChild={(parentId) => openAddCategory(parentId)}
+                      onToggleVisible={handleToggleVisible}
+                      onReorderSiblings={handleReorderArticleSiblings}
+                      dragHandleProps={dragHandleProps}
+                    />
+                  )}
+                </SortableItem>
+              )}
+            </SortableList>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-6">Chưa có danh mục nào</p>
           )}

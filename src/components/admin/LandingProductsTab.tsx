@@ -37,6 +37,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, ChevronUp, Folder, FolderOpen, Pencil, Eye, EyeOff, ArrowUp, ArrowDown, CalendarDays, Tag, Check } from 'lucide-react';
+import { SortableList, SortableItem, DragHandle } from '@/components/shared/SortableList';
 import { formatNumber } from '@/lib/formatNumber';
 import { BlockedDatesCalendar } from './BlockedDatesCalendar';
 import { Separator } from '@/components/ui/separator';
@@ -139,7 +140,7 @@ function flattenCategoriesForSelect(categories: LandingProductCategory[], level 
 }
 // Category tree node component
 function CategoryTreeNode({
-  categories, level, onEdit, onAddChild, onDelete, onUploadImage, onRemoveImage, uploadingCatId, onToggleHidden, onMoveUp, onMoveDown,
+  categories, level, onEdit, onAddChild, onDelete, onUploadImage, onRemoveImage, uploadingCatId, onToggleHidden, onReorderSiblings,
 }: {
   categories: LandingProductCategory[];
   level: number;
@@ -150,21 +151,24 @@ function CategoryTreeNode({
   onRemoveImage: (catId: string) => void;
   uploadingCatId: string | null;
   onToggleHidden: (cat: LandingProductCategory) => void;
-  onMoveUp: (cat: LandingProductCategory, siblings: LandingProductCategory[]) => void;
-  onMoveDown: (cat: LandingProductCategory, siblings: LandingProductCategory[]) => void;
+  onReorderSiblings: (siblings: LandingProductCategory[]) => void;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   return (
-    <>
-      {categories.map((cat, idx) => {
+    <SortableList<LandingProductCategory>
+      items={categories}
+      onReorder={onReorderSiblings}
+    >
+      {(cat, idx) => {
         const hasChildren = cat.children && cat.children.length > 0;
         const isExpanded = expanded[cat.id] !== false; // default expanded
-        const isFirst = idx === 0;
-        const isLast = idx === categories.length - 1;
         return (
-          <div key={cat.id}>
+          <SortableItem key={cat.id} id={cat.id}>
+            {({ dragHandleProps }) => (
+            <div>
             <div className={`flex flex-wrap items-center gap-1.5 py-2 px-2 rounded-lg hover:bg-muted/50 group ${level > 0 ? 'ml-5' : ''}`}>
+              <DragHandle dragHandleProps={dragHandleProps} className="h-7 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-grab active:cursor-grabbing touch-none shrink-0" />
               <button
                 onClick={() => setExpanded(prev => ({ ...prev, [cat.id]: !isExpanded }))}
                 className={`h-6 w-6 flex items-center justify-center rounded hover:bg-muted shrink-0 ${!hasChildren ? 'invisible' : ''}`}
@@ -189,13 +193,6 @@ function CategoryTreeNode({
                 {hasChildren && <p className="text-[10px] text-muted-foreground">{cat.children!.length} danh mục con</p>}
               </div>
               <div className="flex items-center gap-0.5 shrink-0">
-                {/* Move up/down */}
-                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isFirst} onClick={() => onMoveUp(cat, categories)} title="Di chuyển lên">
-                  <ArrowUp className="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isLast} onClick={() => onMoveDown(cat, categories)} title="Di chuyển xuống">
-                  <ArrowDown className="h-3.5 w-3.5" />
-                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -234,14 +231,15 @@ function CategoryTreeNode({
                 onRemoveImage={onRemoveImage}
                 uploadingCatId={uploadingCatId}
                 onToggleHidden={onToggleHidden}
-                onMoveUp={onMoveUp}
-                onMoveDown={onMoveDown}
+                onReorderSiblings={onReorderSiblings}
               />
             )}
-          </div>
+            </div>
+            )}
+          </SortableItem>
         );
-      })}
-    </>
+      }}
+    </SortableList>
   );
 }
 
@@ -671,28 +669,20 @@ export function LandingProductsTab() {
     }
   };
 
-  const handleMoveCat = async (cat: LandingProductCategory, siblings: LandingProductCategory[], direction: 'up' | 'down') => {
-    const idx = siblings.findIndex(c => c.id === cat.id);
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= siblings.length) return;
-    // Build new order, then renumber to ensure unique sequential display_order
-    // (fixes case where many siblings share display_order = 0 and a simple swap is a no-op)
-    const reordered = [...siblings];
-    const [moved] = reordered.splice(idx, 1);
-    reordered.splice(swapIdx, 0, moved);
+  const handleReorderCatSiblings = async (reordered: LandingProductCategory[]) => {
     await reorderCats.mutateAsync(
       reordered.map((c, i) => ({ id: c.id, display_order: i }))
     );
   };
 
-  const handleMoveProduct = async (idx: number, direction: 'up' | 'down') => {
-    if (!products) return;
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= products.length) return;
-    // Renumber all to guarantee a real change even when display_order ties exist
+  const handleReorderProductsPage = async (pageItems: typeof products) => {
+    if (!products || !pageItems) return;
+    const startIdx = (productPage - 1) * PRODUCT_PAGE_SIZE;
     const reordered = [...products];
-    const [moved] = reordered.splice(idx, 1);
-    reordered.splice(swapIdx, 0, moved);
+    // Replace the slice for the current page with the new ordering
+    pageItems.forEach((p, i) => {
+      reordered[startIdx + i] = p;
+    });
     await reorderProds.mutateAsync(
       reordered.map((p, i) => ({ id: p.id, display_order: i }))
     );
@@ -783,8 +773,7 @@ export function LandingProductsTab() {
                   await updateCat.mutateAsync({ id: cat.id, is_hidden: !cat.is_hidden } as any);
                   toast({ title: cat.is_hidden ? 'Đã hiện danh mục' : 'Đã ẩn danh mục' });
                 }}
-                onMoveUp={(cat, siblings) => handleMoveCat(cat, siblings, 'up')}
-                onMoveDown={(cat, siblings) => handleMoveCat(cat, siblings, 'down')}
+                onReorderSiblings={handleReorderCatSiblings}
               />
             ) : (
               <p className="text-sm text-muted-foreground py-4 text-center">Chưa có danh mục nào</p>
@@ -854,21 +843,17 @@ export function LandingProductsTab() {
             <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
           ) : products && products.length > 0 ? (
             <>
-              <div className="space-y-2">
-                {paginateArray(products, productPage, PRODUCT_PAGE_SIZE).map((p) => {
-                  const idx = products.indexOf(p);
-                  return (
-                  <div key={p.id} className="flex flex-col gap-2 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+              <SortableList<typeof products[number]>
+                items={paginateArray(products, productPage, PRODUCT_PAGE_SIZE)}
+                onReorder={handleReorderProductsPage}
+                className="space-y-2"
+              >
+                {(p) => (
+                  <SortableItem key={p.id} id={p.id}>
+                    {({ dragHandleProps }) => (
+                  <div className="flex flex-col gap-2 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-2">
-                      {/* Move up/down */}
-                      <div className="flex flex-col gap-0.5 shrink-0">
-                        <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === 0 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'up')}>
-                          <ArrowUp className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === products.length - 1 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'down')}>
-                          <ArrowDown className="h-3 w-3" />
-                        </Button>
-                      </div>
+                      <DragHandle dragHandleProps={dragHandleProps} />
                       {p.image_url ? (
                         <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-lg object-cover border shrink-0" />
                       ) : (
@@ -947,9 +932,10 @@ export function LandingProductsTab() {
                       </Button>
                     </div>
                   </div>
-                  );
-                })}
-              </div>
+                    )}
+                  </SortableItem>
+                )}
+              </SortableList>
               <ListPagination
                 currentPage={productPage}
                 totalItems={products.length}
