@@ -14,7 +14,8 @@ import {
   MoreVertical,
   Home,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  PlayCircle
 } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -98,6 +99,23 @@ export default function InstallAppPage() {
         <p className="text-muted-foreground max-w-md mx-auto">
           Cài đặt vkho.vn như một ứng dụng trên điện thoại để truy cập nhanh hơn
         </p>
+        <div className="pt-2">
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className="border-primary/40 text-primary hover:bg-primary/10"
+          >
+            <a
+              href="https://vt.tiktok.com/ZS9hvvaSr/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <PlayCircle className="mr-2 h-5 w-5" />
+              Video hướng dẫn tải ứng dụng
+            </a>
+          </Button>
+        </div>
       </div>
 
       {/* Quick Install Button for Android */}
