@@ -9,6 +9,8 @@ export interface LandingProductCategory {
   image_url: string | null;
   parent_id: string | null;
   is_hidden: boolean;
+  hidden_from_home: boolean;
+  hidden_from_products_page: boolean;
   created_at: string;
   updated_at: string;
   children?: LandingProductCategory[];
@@ -133,7 +135,7 @@ export function useDeleteLandingProductCategory() {
 export function useUpdateLandingProductCategory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; name?: string; image_url?: string | null; parent_id?: string | null; is_hidden?: boolean }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; image_url?: string | null; parent_id?: string | null; is_hidden?: boolean; hidden_from_home?: boolean; hidden_from_products_page?: boolean }) => {
       const { data, error } = await supabase
         .from('landing_product_categories' as any)
         .update(updates)
