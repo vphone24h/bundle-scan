@@ -242,6 +242,8 @@ const App = () => (
               <Routes>
                 {/* Public store landing page - path-based */}
                 <Route path="/store/:storeId" element={<StoreLandingPage />} />
+                {/* Path-based store deep links (san-pham, tin-tuc, bao-hanh, ...) */}
+                <Route path="/store/:storeId/*" element={<StoreLandingPage />} />
                 
                 {/* Public routes */}
                 <Route path="/public/guides" element={<PlatformArticlesPage />} />
