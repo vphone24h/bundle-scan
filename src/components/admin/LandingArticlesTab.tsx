@@ -733,7 +733,53 @@ export function LandingArticlesTab() {
           </div>
           {/* Body scroll */}
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
-            <div className="mx-auto w-full max-w-3xl space-y-4">
+            <div className="mx-auto w-full max-w-7xl grid gap-4 lg:gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
+            {/* ===== CỘT TRÁI (sidebar) ===== */}
+            <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start order-2 lg:order-1">
+              {/* Ảnh đại diện */}
+              <div className="rounded-lg border bg-card p-3 space-y-2">
+                <Label className="text-sm font-semibold">🖼️ Ảnh đại diện</Label>
+                <input ref={fileRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                {form.thumbnail_url ? (
+                  <div className="relative inline-block">
+                    <img src={form.thumbnail_url} alt="" className="h-24 rounded-lg object-cover border" />
+                    <button onClick={() => setForm(p => ({ ...p, thumbnail_url: '' }))} className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : null}
+                <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className="gap-1.5 w-full">
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  Upload ảnh
+                </Button>
+              </div>
+
+              {/* Trạng thái hiển thị */}
+              <div className="rounded-lg border bg-card p-3 space-y-3">
+                <Label className="text-sm font-semibold">⚙️ Trạng thái hiển thị</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Xuất bản</Label>
+                  <Switch checked={form.is_published} onCheckedChange={v => setForm(p => ({ ...p, is_published: v }))} />
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <Label>Bài viết nổi bật</Label>
+                    <p className="text-[10px] text-muted-foreground leading-tight">Hiển thị lớn, ưu tiên đầu trang tin tức</p>
+                  </div>
+                  <Switch checked={form.is_featured} onCheckedChange={v => setForm(p => ({ ...p, is_featured: v }))} />
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <Label className="flex items-center gap-1.5"><Home className="h-3.5 w-3.5" /> Hiển thị trang chủ</Label>
+                    <p className="text-[10px] text-muted-foreground leading-tight">Đưa bài viết ra trang chủ website</p>
+                  </div>
+                  <Switch checked={form.is_featured_home} onCheckedChange={v => setForm(p => ({ ...p, is_featured_home: v }))} />
+                </div>
+              </div>
+            </aside>
+
+            {/* ===== CỘT GIỮA (form chính) ===== */}
+            <div className="space-y-4 min-w-0 order-1 lg:order-2">
             <div className="space-y-2">
               <Label>Tiêu đề *</Label>
               <Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="Tiêu đề bài viết..." />
@@ -787,46 +833,12 @@ export function LandingArticlesTab() {
                 </div>
               )}
             </div>
-            <div className="space-y-2">
-              <Label>Ảnh đại diện</Label>
-              <input ref={fileRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-              {form.thumbnail_url ? (
-                <div className="relative inline-block">
-                  <img src={form.thumbnail_url} alt="" className="h-24 rounded-lg object-cover border" />
-                  <button onClick={() => setForm(p => ({ ...p, thumbnail_url: '' }))} className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center">
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ) : null}
-              <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className="gap-1.5">
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                Upload ảnh
-              </Button>
-            </div>
               <div className="space-y-2">
                 <Label>Nội dung</Label>
                 <Suspense fallback={<div className="rounded-md border p-4 text-sm text-muted-foreground">Đang tải trình soạn thảo...</div>}>
                   <LazyRichTextEditor value={form.content} onChange={v => setForm(p => ({ ...p, content: v }))} />
                 </Suspense>
               </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <Label>Xuất bản</Label>
-              <Switch checked={form.is_published} onCheckedChange={v => setForm(p => ({ ...p, is_published: v }))} />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Bài viết nổi bật</Label>
-                <p className="text-xs text-muted-foreground">Hiển thị lớn và ưu tiên đầu trang tin tức</p>
-              </div>
-              <Switch checked={form.is_featured} onCheckedChange={v => setForm(p => ({ ...p, is_featured: v }))} />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="flex items-center gap-1.5"><Home className="h-3.5 w-3.5" /> Hiển thị trang chủ</Label>
-                <p className="text-xs text-muted-foreground">Đưa bài viết ra trang chủ website</p>
-              </div>
-              <Switch checked={form.is_featured_home} onCheckedChange={v => setForm(p => ({ ...p, is_featured_home: v }))} />
             </div>
             </div>
           </div>
