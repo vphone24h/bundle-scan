@@ -1228,6 +1228,11 @@ export function RichTextEditor({
           </PopoverContent>
         </Popover>
 
+        {/* Gộp các ảnh liền nhau thành 1 hàng */}
+        <ToolbarButton onClick={mergeAllImageBlocks} title="Gộp các ảnh liền nhau thành 1 hàng">
+          <Rows className="h-4 w-4" />
+        </ToolbarButton>
+
         <div className="w-px h-5 bg-border mx-1" />
 
         {/* Link */}
