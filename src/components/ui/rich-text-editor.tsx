@@ -277,10 +277,161 @@ export function RichTextEditor({
     }
   }, [linkUrl, execCommand, onChange, restoreSelection]);
 
+  const placeCaretAfterNode = useCallback((node: Node) => {
+    const sel = window.getSelection();
+    if (!sel) return;
+    const range = document.createRange();
+    range.setStartAfter(node);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    saveSelection();
+  }, [saveSelection]);
+
+  const createStandaloneImage = useCallback((url: string) => {
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = 'image';
+    img.setAttribute(
+      'style',
+      'max-width:100%;height:auto;border-radius:8px;margin:8px 0;cursor:pointer;'
+    );
+    return img;
+  }, []);
+
+  const createImageRow = useCallback(() => {
+    const row = document.createElement('div');
+    row.className = 'rte-image-row';
+    row.setAttribute('style', 'display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:flex-start;');
+    return row;
+  }, []);
+
+  const createEmptyParagraph = useCallback(() => {
+    const p = document.createElement('p');
+    p.innerHTML = '<br/>';
+    return p;
+  }, []);
+
   const insertImageHtml = useCallback((url: string) => {
-    const html = `<img src="${url}" alt="image" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0;cursor:pointer;" />`;
-    insertAtCursorOrEnd(html);
-  }, [insertAtCursorOrEnd]);
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    editor.focus();
+    const restored = restoreSelection();
+    const sel = window.getSelection();
+    if (!sel) return;
+
+    if (!restored || sel.rangeCount === 0) {
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    const range = sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : document.createRange();
+    const marker = document.createElement('span');
+    marker.setAttribute('data-rte-marker', 'true');
+    marker.style.display = 'inline-block';
+    marker.style.width = '0';
+    marker.style.height = '0';
+    marker.style.overflow = 'hidden';
+    marker.appendChild(document.createTextNode('\u200B'));
+    range.insertNode(marker);
+
+    const getEditorChild = (node: Node | null): HTMLElement | null => {
+      let current: Node | null = node;
+      while (current && current.parentNode !== editor) current = current.parentNode;
+      return current instanceof HTMLElement ? current : null;
+    };
+
+    const currentChild = getEditorChild(marker);
+    const previousChild = currentChild?.previousElementSibling as HTMLElement | null;
+    const nextChild = currentChild?.nextElementSibling as HTMLElement | null;
+    const parentEl = marker.parentElement;
+
+    let targetRow: HTMLElement | null = null;
+    let anchorImg: HTMLImageElement | null = null;
+    let emptyBlockToRemove: HTMLElement | null = null;
+
+    const rowAncestor = parentEl?.closest('.rte-image-row') as HTMLElement | null;
+    if (rowAncestor && editor.contains(rowAncestor)) {
+      targetRow = rowAncestor;
+      const prev = marker.previousElementSibling;
+      anchorImg = prev instanceof HTMLImageElement ? prev : (Array.from(targetRow.querySelectorAll('img')).at(-1) as HTMLImageElement | null);
+    } else {
+      const prevInline = marker.previousElementSibling;
+      if (prevInline instanceof HTMLImageElement) {
+        const host = getEditorChild(prevInline) ?? parentEl;
+        if (host instanceof HTMLElement) {
+          targetRow = host.classList.contains('rte-image-row') ? host : null;
+          if (!targetRow && host !== editor) {
+            targetRow = createImageRow();
+            Array.from(host.querySelectorAll('img')).forEach((img) => {
+              styleRowImg(img as HTMLImageElement);
+              targetRow?.appendChild(img);
+            });
+            host.replaceWith(targetRow);
+          }
+          anchorImg = prevInline;
+        }
+      } else if (currentChild && isImageOnlyBlock(currentChild)) {
+        targetRow = currentChild.classList.contains('rte-image-row') ? currentChild : createImageRow();
+        if (!currentChild.classList.contains('rte-image-row')) {
+          Array.from(currentChild.querySelectorAll('img')).forEach((img) => {
+            styleRowImg(img as HTMLImageElement);
+            targetRow?.appendChild(img);
+          });
+          currentChild.replaceWith(targetRow);
+        }
+        anchorImg = Array.from(targetRow.querySelectorAll('img')).at(-1) as HTMLImageElement | null;
+      } else if (currentChild && isEmptyBlock(currentChild) && previousChild && isImageOnlyBlock(previousChild)) {
+        targetRow = previousChild.classList.contains('rte-image-row') ? previousChild : createImageRow();
+        if (!previousChild.classList.contains('rte-image-row')) {
+          Array.from(previousChild.querySelectorAll('img')).forEach((img) => {
+            styleRowImg(img as HTMLImageElement);
+            targetRow?.appendChild(img);
+          });
+          previousChild.replaceWith(targetRow);
+        }
+        anchorImg = Array.from(targetRow.querySelectorAll('img')).at(-1) as HTMLImageElement | null;
+        emptyBlockToRemove = currentChild;
+      } else if (nextChild && isImageOnlyBlock(nextChild) && currentChild && isEmptyBlock(currentChild)) {
+        targetRow = nextChild.classList.contains('rte-image-row') ? nextChild : createImageRow();
+        if (!nextChild.classList.contains('rte-image-row')) {
+          Array.from(nextChild.querySelectorAll('img')).forEach((img) => {
+            styleRowImg(img as HTMLImageElement);
+            targetRow?.appendChild(img);
+          });
+          nextChild.replaceWith(targetRow);
+        }
+        emptyBlockToRemove = currentChild;
+      }
+    }
+
+    marker.remove();
+
+    if (targetRow) {
+      const img = createStandaloneImage(url);
+      styleRowImg(img);
+      if (anchorImg && anchorImg.parentNode === targetRow) {
+        anchorImg.insertAdjacentElement('afterend', img);
+      } else {
+        targetRow.appendChild(img);
+      }
+      emptyBlockToRemove?.remove();
+      onChange(editor.innerHTML);
+      placeCaretAfterNode(img);
+      return;
+    }
+
+    const img = createStandaloneImage(url);
+    const fallbackRange = sel.rangeCount > 0 ? sel.getRangeAt(0) : document.createRange();
+    fallbackRange.deleteContents();
+    fallbackRange.insertNode(img);
+    onChange(editor.innerHTML);
+    placeCaretAfterNode(img);
+  }, [createEmptyParagraph, createImageRow, createStandaloneImage, isEmptyBlock, isImageOnlyBlock, onChange, placeCaretAfterNode, restoreSelection, styleRowImg]);
 
   const insertImage = useCallback(() => {
     if (imageUrl) {
