@@ -1753,6 +1753,7 @@ export function ProductDetailPage({
           </div>
         </div>
       )}
+      <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
     </div>
   );
 }
