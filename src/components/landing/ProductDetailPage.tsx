@@ -830,6 +830,13 @@ export function ProductDetailPage({
                         📝 MÔ TẢ SẢN PHẨM
                       </div>
                       <div className="p-3 text-sm prose prose-sm max-w-none lg:prose-base lg:p-5 rte-content"
+                        onClick={(e) => {
+                          const t = e.target as HTMLElement;
+                          if (t.tagName === 'IMG') {
+                            const src = (t as HTMLImageElement).src;
+                            if (src) setLightboxSrc(src);
+                          }
+                        }}
                         dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.description) }} />
                     </div>
                   );
