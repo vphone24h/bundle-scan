@@ -834,16 +834,26 @@ export function RichTextEditor({
       const editorRect = editorRef.current.getBoundingClientRect();
       const imgRect = resizingImg.getBoundingClientRect();
       setResizeOverlay({
-        top: imgRect.top - editorRect.top + editorRef.current.scrollTop,
-        left: imgRect.left - editorRect.left + editorRef.current.scrollLeft,
+        top: imgRect.top - editorRect.top,
+        left: imgRect.left - editorRect.left,
         width: imgRect.width,
         height: imgRect.height,
       });
     };
     updateOverlay();
+    // Recompute on scroll/resize so handle stays glued to the image
+    const editorEl = editorRef.current;
+    editorEl.addEventListener('scroll', updateOverlay);
+    window.addEventListener('scroll', updateOverlay, true);
+    window.addEventListener('resize', updateOverlay);
     const observer = new MutationObserver(updateOverlay);
     observer.observe(editorRef.current, { childList: true, subtree: true, attributes: true });
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      editorEl.removeEventListener('scroll', updateOverlay);
+      window.removeEventListener('scroll', updateOverlay, true);
+      window.removeEventListener('resize', updateOverlay);
+    };
   }, [resizingImg]);
 
   return (
