@@ -647,6 +647,53 @@ export function RichTextEditor({
     return row;
   }, [styleRowImg]);
 
+  // Quét toàn bộ editor: gộp các block image-only liên tiếp (kể cả khi giữa có block trống) thành 1 hàng.
+  const mergeAllImageBlocks = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    let changed = false;
+    let pass = 0;
+    while (pass < 20) {
+      pass++;
+      let didMerge = false;
+      // Xoá các block trống nằm giữa 2 block ảnh
+      const children = Array.from(editor.children);
+      for (let i = 1; i < children.length - 1; i++) {
+        const cur = children[i];
+        if (isEmptyBlock(cur)) {
+          const prev = cur.previousElementSibling as HTMLElement | null;
+          const next = cur.nextElementSibling as HTMLElement | null;
+          if (prev && next && isImageOnlyBlock(prev) && isImageOnlyBlock(next)) {
+            cur.remove();
+            didMerge = true;
+            changed = true;
+            break;
+          }
+        }
+      }
+      if (didMerge) continue;
+      // Gộp 2 block ảnh liên tiếp
+      const kids = Array.from(editor.children);
+      for (let i = 0; i < kids.length - 1; i++) {
+        const a = kids[i] as HTMLElement;
+        const b = kids[i + 1] as HTMLElement;
+        if (isImageOnlyBlock(a) && isImageOnlyBlock(b)) {
+          mergeImageBlocks(a, b);
+          didMerge = true;
+          changed = true;
+          break;
+        }
+      }
+      if (!didMerge) break;
+    }
+    if (changed) {
+      onChange(editor.innerHTML);
+      toast({ title: 'Đã gộp các ảnh thành 1 hàng' });
+    } else {
+      toast({ title: 'Không có ảnh liền nhau để gộp', variant: 'destructive' });
+    }
+  }, [isEmptyBlock, isImageOnlyBlock, mergeImageBlocks, onChange]);
+
   // Backspace at start of an image-only block -> merge into previous image-only block as a flex row
   const handleEditorKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key !== 'Backspace') return;
