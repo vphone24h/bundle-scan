@@ -296,6 +296,10 @@ export function RichTextEditor({
         firstCell.appendChild(handle);
       });
     });
+    // Mark images as resizable (cursor + class). Selection handle is added on click.
+    editor.querySelectorAll('img').forEach(img => {
+      if (!img.classList.contains('rte-img')) img.classList.add('rte-img');
+    });
   }, []);
 
   attachResizeHandlesRef.current = attachResizeHandles;
