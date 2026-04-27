@@ -1056,19 +1056,37 @@ export function LandingProductsTab() {
                 {editingProduct ? 'Sửa sản phẩm' : 'Thêm sản phẩm mới'}
               </h2>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setProductDialog(false)}>Huỷ</Button>
-              <Button size="sm" onClick={handleSaveProduct} disabled={!form.name.trim() || createProduct.isPending || updateProduct.isPending}>
-                {(createProduct.isPending || updateProduct.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingProduct ? 'Cập nhật' : 'Thêm'}
-              </Button>
-            </div>
+            {/* Nút Huỷ/Cập nhật chỉ giữ ở footer dưới */}
           </div>
           {/* Body */}
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
             <div className="mx-auto w-full max-w-[1600px] grid gap-4 lg:gap-6 lg:grid-cols-3">
             {/* ===== CỘT TRÁI: Thông tin chính → Biến thể → Gói dịch vụ ===== */}
             <div className="space-y-4 min-w-0">
+            {/* Hình ảnh sản phẩm (chuyển lên đầu cột trái — đồng bộ với Biến thể) */}
+            <div className="space-y-2">
+              <Label>Hình ảnh sản phẩm (ảnh đầu tiên = ảnh chính)</Label>
+              {form.images.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {form.images.map((url, idx) => (
+                    <div key={idx} className="relative">
+                      <img src={url} alt="" className={`h-20 w-20 rounded-lg object-cover border-2 ${idx === 0 ? 'border-primary' : 'border-muted'}`} />
+                      {idx === 0 && (
+                        <span className="absolute bottom-0 left-0 right-0 bg-primary text-primary-foreground text-[9px] text-center py-0.5 rounded-b-lg">Ảnh chính</span>
+                      )}
+                      <button onClick={() => removeImage(idx)} className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className="gap-1.5">
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                Thêm ảnh
+              </Button>
+            </div>
+            <Separator />
             <div className="space-y-2">
               <Label>Tên sản phẩm *</Label>
               <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="iPhone 17 Pro Max..." />
@@ -1692,32 +1710,6 @@ export function LandingProductsTab() {
 
             {/* ===== CỘT PHẢI: Hình ảnh / Trạng thái / Nhãn / Hiển thị trang chủ / HSSV / Trả góp ===== */}
             <div className="space-y-4 min-w-0">
-            {/* Multiple images */}
-            <div className="space-y-2">
-              <Label>Hình ảnh sản phẩm (ảnh đầu tiên = ảnh chính)</Label>
-              {form.images.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {form.images.map((url, idx) => (
-                    <div key={idx} className="relative">
-                      <img src={url} alt="" className={`h-20 w-20 rounded-lg object-cover border-2 ${idx === 0 ? 'border-primary' : 'border-muted'}`} />
-                      {idx === 0 && (
-                        <span className="absolute bottom-0 left-0 right-0 bg-primary text-primary-foreground text-[9px] text-center py-0.5 rounded-b-lg">Ảnh chính</span>
-                      )}
-                      <button onClick={() => removeImage(idx)} className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className="gap-1.5">
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                Thêm ảnh
-              </Button>
-            </div>
-
-            <Separator />
-
             <div className="flex items-center justify-between">
               <Label className="flex items-center gap-1.5">Hết hàng <Badge variant="destructive" className="text-[9px] px-1.5 py-0">Sold out</Badge></Label>
               <Switch checked={form.is_sold_out} onCheckedChange={v => setForm(p => ({ ...p, is_sold_out: v }))} />
