@@ -31,6 +31,7 @@ import {
   Minus,
   PaintBucket,
   ChevronDown,
+  Rows,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -575,43 +576,56 @@ export function RichTextEditor({
     return text.length === 0;
   }, []);
 
-  // Backspace at start of an image-only block -> merge into previous image-only block as a flex row
-  const handleEditorKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key !== 'Backspace') return;
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return;
-    const range = sel.getRangeAt(0);
-    if (range.startOffset !== 0) return;
+  // Helper: is element an empty block (only <br> or whitespace, no images)
+  const isEmptyBlock = useCallback((el: Element | null): boolean => {
+    if (!el || !(el instanceof HTMLElement)) return false;
+    if (!/^(P|DIV)$/.test(el.tagName)) return false;
+    if (el.querySelector('img')) return false;
+    const text = (el.textContent || '').replace(/\u200B/g, '').trim();
+    return text.length === 0;
+  }, []);
 
+  // Helper: check if cursor is at the very start of a block
+  const isCursorAtBlockStart = useCallback((range: Range, block: HTMLElement): boolean => {
+    if (range.startOffset !== 0) {
+      // Could be a text node; if the text node is first descendant and offset=0 we still allow
+      return false;
+    }
+    // Walk up: ensure no previous sibling/content before cursor inside block
     let node: Node | null = range.startContainer;
-    let block: HTMLElement | null = null;
+    while (node && node !== block) {
+      if (node.previousSibling) return false;
+      node = node.parentNode;
+    }
+    return node === block;
+  }, []);
+
+  // Find nearest block ancestor (P/DIV/FIGURE) inside editor
+  const findBlock = useCallback((startNode: Node): HTMLElement | null => {
+    let node: Node | null = startNode;
     while (node && node !== editorRef.current) {
-      if (node instanceof HTMLElement && /^(P|DIV)$/.test(node.tagName)) {
-        block = node;
-        break;
+      if (node instanceof HTMLElement && /^(P|DIV|FIGURE)$/.test(node.tagName)) {
+        // Skip the editor itself
+        if (node !== editorRef.current) return node;
       }
       node = node.parentNode;
     }
-    if (!block || !editorRef.current?.contains(block)) return;
-    if (!isImageOnlyBlock(block)) return;
+    return null;
+  }, []);
 
-    let prev = block.previousElementSibling as HTMLElement | null;
-    while (prev && prev.tagName === 'BR') prev = prev.previousElementSibling as HTMLElement | null;
-    if (!prev || !isImageOnlyBlock(prev)) return;
+  const styleRowImg = useCallback((img: HTMLImageElement) => {
+    img.style.flex = '1 1 0';
+    img.style.minWidth = '0';
+    img.style.maxWidth = '100%';
+    img.style.height = 'auto';
+    if (!img.style.borderRadius) img.style.borderRadius = '8px';
+    if (!img.style.objectFit) img.style.objectFit = 'cover';
+    img.style.cursor = 'pointer';
+    img.style.margin = '0';
+  }, []);
 
-    e.preventDefault();
-
-    const styleImg = (img: HTMLImageElement) => {
-      img.style.flex = '1 1 0';
-      img.style.minWidth = '0';
-      img.style.maxWidth = '100%';
-      img.style.height = 'auto';
-      if (!img.style.borderRadius) img.style.borderRadius = '8px';
-      if (!img.style.objectFit) img.style.objectFit = 'cover';
-      img.style.cursor = 'pointer';
-      img.style.margin = '0';
-    };
-
+  // Merge `block` into `prev` (must both be image-only blocks). Returns the resulting row.
+  const mergeImageBlocks = useCallback((prev: HTMLElement, block: HTMLElement): HTMLElement => {
     let row: HTMLElement;
     if (prev.classList.contains('rte-image-row')) {
       row = prev;
@@ -620,26 +634,115 @@ export function RichTextEditor({
       row.className = 'rte-image-row';
       row.setAttribute('style', 'display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:flex-start;');
       Array.from(prev.querySelectorAll('img')).forEach((img) => {
-        styleImg(img as HTMLImageElement);
+        styleRowImg(img as HTMLImageElement);
         row.appendChild(img);
       });
       prev.replaceWith(row);
     }
-
     Array.from(block.querySelectorAll('img')).forEach((img) => {
-      styleImg(img as HTMLImageElement);
+      styleRowImg(img as HTMLImageElement);
       row.appendChild(img);
     });
     block.remove();
+    return row;
+  }, [styleRowImg]);
 
-    const newRange = document.createRange();
-    newRange.setStartAfter(row);
-    newRange.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(newRange);
+  // Quét toàn bộ editor: gộp các block image-only liên tiếp (kể cả khi giữa có block trống) thành 1 hàng.
+  const mergeAllImageBlocks = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    let changed = false;
+    let pass = 0;
+    while (pass < 20) {
+      pass++;
+      let didMerge = false;
+      // Xoá các block trống nằm giữa 2 block ảnh
+      const children = Array.from(editor.children);
+      for (let i = 1; i < children.length - 1; i++) {
+        const cur = children[i];
+        if (isEmptyBlock(cur)) {
+          const prev = cur.previousElementSibling as HTMLElement | null;
+          const next = cur.nextElementSibling as HTMLElement | null;
+          if (prev && next && isImageOnlyBlock(prev) && isImageOnlyBlock(next)) {
+            cur.remove();
+            didMerge = true;
+            changed = true;
+            break;
+          }
+        }
+      }
+      if (didMerge) continue;
+      // Gộp 2 block ảnh liên tiếp
+      const kids = Array.from(editor.children);
+      for (let i = 0; i < kids.length - 1; i++) {
+        const a = kids[i] as HTMLElement;
+        const b = kids[i + 1] as HTMLElement;
+        if (isImageOnlyBlock(a) && isImageOnlyBlock(b)) {
+          mergeImageBlocks(a, b);
+          didMerge = true;
+          changed = true;
+          break;
+        }
+      }
+      if (!didMerge) break;
+    }
+    if (changed) {
+      onChange(editor.innerHTML);
+      toast({ title: 'Đã gộp các ảnh thành 1 hàng' });
+    } else {
+      toast({ title: 'Không có ảnh liền nhau để gộp', variant: 'destructive' });
+    }
+  }, [isEmptyBlock, isImageOnlyBlock, mergeImageBlocks, onChange]);
 
-    if (editorRef.current) onChange(editorRef.current.innerHTML);
-  }, [isImageOnlyBlock, onChange]);
+  // Backspace at start of an image-only block -> merge into previous image-only block as a flex row
+  const handleEditorKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key !== 'Backspace') return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const block = findBlock(range.startContainer);
+    if (!block || !editorRef.current?.contains(block)) return;
+
+    // Case A: cursor in image-only block, at the start -> merge with prev image block
+    if (isImageOnlyBlock(block) && isCursorAtBlockStart(range, block)) {
+      let prev = block.previousElementSibling as HTMLElement | null;
+      // Skip empty blocks between
+      while (prev && isEmptyBlock(prev)) {
+        const toRemove = prev;
+        prev = prev.previousElementSibling as HTMLElement | null;
+        toRemove.remove();
+      }
+      if (prev && isImageOnlyBlock(prev)) {
+        e.preventDefault();
+        const row = mergeImageBlocks(prev, block);
+        const newRange = document.createRange();
+        newRange.setStartAfter(row);
+        newRange.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(newRange);
+        if (editorRef.current) onChange(editorRef.current.innerHTML);
+        return;
+      }
+    }
+
+    // Case B: cursor in an empty block sandwiched between two image-only blocks
+    if (isEmptyBlock(block)) {
+      const prev = block.previousElementSibling as HTMLElement | null;
+      const next = block.nextElementSibling as HTMLElement | null;
+      if (prev && next && isImageOnlyBlock(prev) && isImageOnlyBlock(next)) {
+        e.preventDefault();
+        block.remove();
+        const row = mergeImageBlocks(prev, next);
+        const newRange = document.createRange();
+        newRange.setStartAfter(row);
+        newRange.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(newRange);
+        if (editorRef.current) onChange(editorRef.current.innerHTML);
+        return;
+      }
+    }
+  }, [findBlock, isImageOnlyBlock, isEmptyBlock, isCursorAtBlockStart, mergeImageBlocks, onChange]);
 
   // Compute column/row handle positions for the active table
   useEffect(() => {
@@ -1124,6 +1227,11 @@ export function RichTextEditor({
             </div>
           </PopoverContent>
         </Popover>
+
+        {/* Gộp các ảnh liền nhau thành 1 hàng */}
+        <ToolbarButton onClick={mergeAllImageBlocks} title="Gộp các ảnh liền nhau thành 1 hàng">
+          <Rows className="h-4 w-4" />
+        </ToolbarButton>
 
         <div className="w-px h-5 bg-border mx-1" />
 
