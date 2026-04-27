@@ -96,20 +96,40 @@ function CategoryNode({
           <Button
             variant="ghost"
             size="icon"
-            className={cn('h-7 w-7', hiddenHome ? 'text-muted-foreground' : 'text-primary')}
+            className={cn(
+              'h-7 w-7 relative border',
+              hiddenHome
+                ? 'bg-destructive/10 border-destructive/40 text-destructive hover:bg-destructive/20'
+                : 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/20'
+            )}
             onClick={() => onToggleHome(category)}
             title={hiddenHome ? 'Hiện trên trang chủ' : 'Ẩn khỏi trang chủ'}
           >
             <Home className="h-3.5 w-3.5" />
+            {hiddenHome && (
+              <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span className="block h-[1.5px] w-5 bg-destructive rotate-45 rounded" />
+              </span>
+            )}
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className={cn('h-7 w-7', hiddenPage ? 'text-muted-foreground' : 'text-primary')}
+            className={cn(
+              'h-7 w-7 relative border',
+              hiddenPage
+                ? 'bg-destructive/10 border-destructive/40 text-destructive hover:bg-destructive/20'
+                : 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/20'
+            )}
             onClick={() => onTogglePage(category)}
             title={hiddenPage ? 'Hiện ở trang tin tức' : 'Ẩn khỏi trang tin tức'}
           >
             <List className="h-3.5 w-3.5" />
+            {hiddenPage && (
+              <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span className="block h-[1.5px] w-5 bg-destructive rotate-45 rounded" />
+              </span>
+            )}
           </Button>
         </div>
 
