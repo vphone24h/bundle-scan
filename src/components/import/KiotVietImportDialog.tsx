@@ -15,6 +15,7 @@ import { useCreateCategory } from '@/hooks/useCategories';
 import { supabase } from '@/integrations/supabase/client';
 import kiotvietGuideFile1 from '@/assets/kiotviet-guide-file1.png';
 import kiotvietGuideFile2 from '@/assets/kiotviet-guide-file2.jpeg';
+import { SupportHotlineButton } from '@/components/shared/SupportHotlineButton';
 
 interface KiotVietImportDialogProps {
   open: boolean;
