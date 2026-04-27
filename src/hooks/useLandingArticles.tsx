@@ -8,6 +8,8 @@ export interface LandingArticleCategory {
   image_url: string | null;
   parent_id: string | null;
   is_visible: boolean;
+  hidden_from_home: boolean;
+  hidden_from_articles_page: boolean;
   display_order: number;
   created_at: string;
   updated_at: string;
@@ -81,7 +83,7 @@ export function useCreateLandingArticleCategory() {
 export function useUpdateLandingArticleCategory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; name?: string; image_url?: string | null; parent_id?: string | null; is_visible?: boolean; display_order?: number }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; image_url?: string | null; parent_id?: string | null; is_visible?: boolean; hidden_from_home?: boolean; hidden_from_articles_page?: boolean; display_order?: number }) => {
       const { error } = await supabase
         .from('landing_article_categories' as any)
         .update(updates)
