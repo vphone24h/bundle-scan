@@ -1378,7 +1378,7 @@ export default function UniversalStoreTemplate({
               ];
               const newsSections = ((settings as any)?.custom_news_page_sections || defaultNewsSections).filter((s: any) => s.enabled);
               const allArticles = articlesData?.articles || [];
-              const articleCategories = (articlesData?.categories || []).filter((c: any) => c.is_visible !== false);
+              const articleCategories = (articlesData?.categories || []).filter((c: any) => c.is_visible !== false && !c.hidden_from_articles_page);
               const filteredAllArticles = selectedArticleCategoryId
                 ? allArticles.filter(a => a.category_id === selectedArticleCategoryId)
                 : allArticles;
