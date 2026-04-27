@@ -2120,6 +2120,7 @@ export function LandingProductsTab() {
               )}
             </div>
             </div>
+            </div>
           </div>
           {/* Footer sticky */}
           <div className="sticky bottom-0 z-10 flex items-center justify-end gap-2 border-t bg-background/95 backdrop-blur px-4 sm:px-6 py-3">
