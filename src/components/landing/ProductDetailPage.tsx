@@ -460,10 +460,9 @@ export function ProductDetailPage({
         <div className="flex items-center gap-3 px-3 py-2.5">
           <button
             onClick={onBack}
-            className="h-9 px-3 flex items-center gap-1.5 rounded-full hover:bg-muted transition-colors shrink-0 text-sm font-medium"
+            className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors shrink-0"
           >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Trang chủ</span>
+            <ArrowLeft className="h-5 w-5" />
           </button>
           <h1 className="text-sm font-medium truncate flex-1">{product.name}</h1>
           <div className="flex items-center gap-1.5 shrink-0">
