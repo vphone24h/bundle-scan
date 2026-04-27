@@ -511,7 +511,8 @@ export function LandingArticlesTab() {
                       onEdit={openEditCategory}
                       onDelete={handleDeleteCategory}
                       onAddChild={(parentId) => openAddCategory(parentId)}
-                      onToggleVisible={handleToggleVisible}
+                      onToggleHome={handleToggleHome}
+                      onTogglePage={handleTogglePage}
                       onReorderSiblings={handleReorderArticleSiblings}
                       dragHandleProps={dragHandleProps}
                     />
