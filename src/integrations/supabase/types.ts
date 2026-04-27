@@ -4561,6 +4561,8 @@ export type Database = {
         Row: {
           created_at: string
           display_order: number | null
+          hidden_from_articles_page: boolean
+          hidden_from_home: boolean
           id: string
           image_url: string | null
           is_visible: boolean
@@ -4572,6 +4574,8 @@ export type Database = {
         Insert: {
           created_at?: string
           display_order?: number | null
+          hidden_from_articles_page?: boolean
+          hidden_from_home?: boolean
           id?: string
           image_url?: string | null
           is_visible?: boolean
@@ -4583,6 +4587,8 @@ export type Database = {
         Update: {
           created_at?: string
           display_order?: number | null
+          hidden_from_articles_page?: boolean
+          hidden_from_home?: boolean
           id?: string
           image_url?: string | null
           is_visible?: boolean
@@ -4917,6 +4923,8 @@ export type Database = {
         Row: {
           created_at: string
           display_order: number | null
+          hidden_from_home: boolean
+          hidden_from_products_page: boolean
           id: string
           image_url: string | null
           is_hidden: boolean
@@ -4928,6 +4936,8 @@ export type Database = {
         Insert: {
           created_at?: string
           display_order?: number | null
+          hidden_from_home?: boolean
+          hidden_from_products_page?: boolean
           id?: string
           image_url?: string | null
           is_hidden?: boolean
@@ -4939,6 +4949,8 @@ export type Database = {
         Update: {
           created_at?: string
           display_order?: number | null
+          hidden_from_home?: boolean
+          hidden_from_products_page?: boolean
           id?: string
           image_url?: string | null
           is_hidden?: boolean
