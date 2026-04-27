@@ -669,15 +669,7 @@ export function LandingProductsTab() {
     }
   };
 
-  const handleMoveCat = async (cat: LandingProductCategory, siblings: LandingProductCategory[], direction: 'up' | 'down') => {
-    const idx = siblings.findIndex(c => c.id === cat.id);
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= siblings.length) return;
-    // Build new order, then renumber to ensure unique sequential display_order
-    // (fixes case where many siblings share display_order = 0 and a simple swap is a no-op)
-    const reordered = [...siblings];
-    const [moved] = reordered.splice(idx, 1);
-    reordered.splice(swapIdx, 0, moved);
+  const handleReorderCatSiblings = async (reordered: LandingProductCategory[]) => {
     await reorderCats.mutateAsync(
       reordered.map((c, i) => ({ id: c.id, display_order: i }))
     );
@@ -781,8 +773,7 @@ export function LandingProductsTab() {
                   await updateCat.mutateAsync({ id: cat.id, is_hidden: !cat.is_hidden } as any);
                   toast({ title: cat.is_hidden ? 'Đã hiện danh mục' : 'Đã ẩn danh mục' });
                 }}
-                onMoveUp={(cat, siblings) => handleMoveCat(cat, siblings, 'up')}
-                onMoveDown={(cat, siblings) => handleMoveCat(cat, siblings, 'down')}
+                onReorderSiblings={handleReorderCatSiblings}
               />
             ) : (
               <p className="text-sm text-muted-foreground py-4 text-center">Chưa có danh mục nào</p>
