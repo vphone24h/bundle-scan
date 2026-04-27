@@ -544,20 +544,6 @@ export function CTAButtonsEditor({ buttons, onChange, templateId }: CTAButtonsEd
     onChange(updated);
   };
 
-  const handleMoveUp = (index: number) => {
-    if (index <= 0) return;
-    const updated = [...currentButtons];
-    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
-    onChange(updated);
-  };
-
-  const handleMoveDown = (index: number) => {
-    if (index >= currentButtons.length - 1) return;
-    const updated = [...currentButtons];
-    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
-    onChange(updated);
-  };
-
   const [showAddPicker, setShowAddPicker] = useState(false);
 
   const handleAddPreset = (opt: CTAActionOption) => {
@@ -624,20 +610,13 @@ export function CTAButtonsEditor({ buttons, onChange, templateId }: CTAButtonsEd
         )}
       </div>
 
-      <div className="space-y-1.5">
-        {currentButtons.map((btn, i) => (
-          <div key={btn.id}>
+      <SortableList<CTAButtonItem> items={currentButtons} onReorder={onChange} className="space-y-1.5">
+        {(btn, i) => (
+          <SortableItem key={btn.id} id={btn.id}>
+            {({ dragHandleProps }) => (
+            <div>
             <div className={`flex items-center gap-2 rounded-lg border p-2 transition-all ${btn.enabled ? 'bg-background' : 'bg-muted/40 opacity-60'}`}>
-              <div className="flex flex-col gap-0.5 shrink-0">
-                <button type="button" onClick={() => handleMoveUp(i)} disabled={i === 0}
-                  className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
-                  <ChevronUp className="h-3 w-3" />
-                </button>
-                <button type="button" onClick={() => handleMoveDown(i)} disabled={i === currentButtons.length - 1}
-                  className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
-                  <ChevronDown className="h-3 w-3" />
-                </button>
-              </div>
+              <DragHandle dragHandleProps={dragHandleProps} />
 
               <span className="text-base shrink-0">{btn.icon}</span>
               
@@ -704,8 +683,10 @@ export function CTAButtonsEditor({ buttons, onChange, templateId }: CTAButtonsEd
               </div>
             )}
           </div>
-        ))}
-      </div>
+            )}
+          </SortableItem>
+        )}
+      </SortableList>
 
       {currentButtons.length < 10 && !showAddPicker && (
         <Button type="button" variant="outline" size="sm" className="w-full gap-1.5 text-xs border-dashed" onClick={() => setShowAddPicker(true)}>
