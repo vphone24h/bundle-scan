@@ -5105,6 +5105,7 @@ export type Database = {
           created_at: string
           description: string | null
           display_order: number | null
+          extra_discount_labels: Json
           home_tab_ids: string[] | null
           id: string
           image_url: string | null
@@ -5140,6 +5141,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number | null
+          extra_discount_labels?: Json
           home_tab_ids?: string[] | null
           id?: string
           image_url?: string | null
@@ -5175,6 +5177,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number | null
+          extra_discount_labels?: Json
           home_tab_ids?: string[] | null
           id?: string
           image_url?: string | null
