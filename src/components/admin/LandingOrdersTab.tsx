@@ -67,7 +67,7 @@ function getNextDeliveryAction(status: string, deliveryStatus: string | null): {
 function getSelectedPackages(order: LandingOrder) {
   return Array.isArray(order.selected_packages)
     ? order.selected_packages.filter(
-        (pkg): pkg is { id: string; name: string; price: number } =>
+        (pkg): pkg is { id: string; name: string; price: number; quantity?: number; groupName?: string } =>
           !!pkg && typeof pkg.name === 'string' && typeof pkg.price === 'number'
       )
     : [];
