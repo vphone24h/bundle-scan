@@ -185,6 +185,12 @@ export function CrossPlatformBackupSection() {
   });
 
   const isRestoreRunning = restoreJob?.status === 'queued' || restoreJob?.status === 'processing';
+  const displayImportProgress = isRestoreRunning
+    ? (restoreJob?.progress ?? importProgress)
+    : importProgress;
+  const displayImportStatus = isRestoreRunning
+    ? (restoreJob?.current_step || importStatus || 'Đang xử lý...')
+    : importStatus;
 
   // Update local progress from polling
   useEffect(() => {
@@ -193,6 +199,21 @@ export function CrossPlatformBackupSection() {
     setImportProgress(restoreJob?.progress ?? 0);
     setImportStatus(restoreJob?.current_step || 'Đang xử lý...');
   }, [isRestoreRunning, restoreJob?.progress, restoreJob?.current_step]);
+
+  // Nếu job nền đã kết thúc nhưng tab/session hiện tại không còn lưu ACTIVE_RESTORE_JOB_KEY,
+  // vẫn phải dọn local state để UI không bị kẹt ở 99% mãi.
+  useEffect(() => {
+    if (!restoreJob?.status || isRestoreRunning) return;
+    if (!isImporting) return;
+
+    setIsImporting(false);
+    setImportProgress(restoreJob.status === 'completed' ? 100 : (restoreJob.progress ?? 0));
+    setImportStatus(
+      restoreJob.status === 'failed'
+        ? (restoreJob.error_message || restoreJob.current_step || 'Khôi phục thất bại')
+        : (restoreJob.current_step || 'Hoàn tất!')
+    );
+  }, [isImporting, isRestoreRunning, restoreJob?.status, restoreJob?.progress, restoreJob?.current_step, restoreJob?.error_message]);
 
   // Handle job completion only for imports started in this session
   useEffect(() => {
@@ -598,6 +619,10 @@ export function CrossPlatformBackupSection() {
       }
 
       if (data?.alreadyRunning) {
+        if (data?.jobId && typeof window !== 'undefined') {
+          window.sessionStorage.removeItem(RESTORE_JOB_HANDLED_KEY);
+          window.sessionStorage.setItem(ACTIVE_RESTORE_JOB_KEY, data.jobId);
+        }
         toast.info('Hệ thống đang chạy tác vụ khôi phục trước đó. Vui lòng chờ hoàn tất.');
         return;
       }
@@ -676,11 +701,11 @@ export function CrossPlatformBackupSection() {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-blue-700 font-medium flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  {importStatus || restoreJob?.current_step || 'Đang xử lý...'}
+                  {displayImportStatus || 'Đang xử lý...'}
                 </span>
-                <span className="text-blue-600 font-bold">{importProgress || restoreJob?.progress || 0}%</span>
+                <span className="text-blue-600 font-bold">{displayImportProgress}%</span>
               </div>
-              <Progress value={importProgress || restoreJob?.progress || 0} className="h-2" />
+              <Progress value={displayImportProgress} className="h-2" />
               <p className="text-xs text-blue-600">
                 Đang chạy ngầm trên server — bạn có thể đóng trang và quay lại sau, tiến trình sẽ tiếp tục.
               </p>
@@ -693,7 +718,7 @@ export function CrossPlatformBackupSection() {
             </Button>
             <Button onClick={() => fileRef.current?.click()} disabled={isAnyRunning} variant="outline" className="flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50">
               {(isImporting || isRestoreRunning) ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Đang khôi phục {importProgress || restoreJob?.progress || 0}%</>
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Đang khôi phục {displayImportProgress}%</>
               ) : (
                 <><ArrowUpFromLine className="h-4 w-4 mr-2" />Khôi phục (Import JSON)</>
               )}
