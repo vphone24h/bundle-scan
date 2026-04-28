@@ -73,6 +73,9 @@ export interface LandingProduct {
   extra_discount_labels?: Array<{ label: string; text: string; color?: string }> | null;
   // SEO
   seo_description?: string | null;
+  // Sold count
+  sold_count?: number;
+  show_sold_count?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -192,7 +195,7 @@ const LANDING_PRODUCT_LIST_SELECT = `
   image_url, images, is_featured, is_active, is_sold_out,
   display_order, badges, badge_style, created_at, updated_at,
   student_discount_label, student_discount_text, installment_down_payment,
-  extra_discount_labels
+  extra_discount_labels, sold_count, show_sold_count
 `;
 
 export function useLandingProducts(tenantId?: string | null) {
