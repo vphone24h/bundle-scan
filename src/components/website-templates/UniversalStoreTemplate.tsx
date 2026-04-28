@@ -24,6 +24,7 @@ import {
   ComparePage, GenericSystemPage,
 } from './SystemPageTemplates';
 import LayoutBannerCollapsible from './LayoutBannerCollapsible';
+import { HorizontalProductScroll } from './HorizontalProductScroll';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
