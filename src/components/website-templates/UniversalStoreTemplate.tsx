@@ -1329,7 +1329,7 @@ export default function UniversalStoreTemplate({
                             <h3 className="text-lg font-bold tracking-tight mb-4">{tab.name}</h3>
                           </ScrollReveal>
                           {tab.displayStyle === 'slide' ? (
-                            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                            <HorizontalProductScroll>
                               {tabProducts.slice(0, 12).map((p, i) => (
                                 <div key={p.id} className="min-w-[180px] max-w-[200px] shrink-0">
                                   <ScrollReveal animation="fade-up" delay={i * 60}>
@@ -1337,7 +1337,7 @@ export default function UniversalStoreTemplate({
                                   </ScrollReveal>
                                 </div>
                               ))}
-                            </div>
+                            </HorizontalProductScroll>
                           ) : (
                             <div className={tab.displayStyle === 'list' ? 'space-y-3' : getProductGridClass(config.layoutStyle)}>
                               {tabProducts.slice(0, 8).map((p, i) => (
