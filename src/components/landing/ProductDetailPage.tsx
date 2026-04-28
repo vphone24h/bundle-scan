@@ -323,8 +323,8 @@ export function ProductDetailPage({
 
   const getVariantLabel = () => {
     if (usesMultiVariants) {
-      const parts = [selectedOption1, selectedOption2].filter(Boolean);
-      return parts.join(' / ') || undefined;
+      const parts = selectedOptions.slice(0, variantGroups.length).filter(Boolean);
+      return parts.length > 0 ? parts.join(' / ') : undefined;
     }
     return selectedLegacyVariant?.name;
   };
@@ -335,13 +335,13 @@ export function ProductDetailPage({
       toast.error('Vui lòng điền đầy đủ thông tin bắt buộc');
       return;
     }
-    if (usesMultiVariants && variantOptions1.length > 0 && !selectedOption1) {
-      toast.error(`Vui lòng chọn ${product.variant_group_1_name || 'biến thể cấp 1'}`);
-      return;
-    }
-    if (usesMultiVariants && variantOptions2.length > 0 && !selectedOption2) {
-      toast.error(`Vui lòng chọn ${product.variant_group_2_name || 'biến thể cấp 2'}`);
-      return;
+    if (usesMultiVariants) {
+      for (let i = 0; i < variantGroups.length; i++) {
+        if (!selectedOptions[i]) {
+          toast.error(`Vui lòng chọn ${variantGroups[i].name || `Biến thể ${i + 1}`}`);
+          return;
+        }
+      }
     }
     if (!usesMultiVariants && legacyVariants.length > 0 && selectedVariantIndex === null) {
       toast.error('Vui lòng chọn biến thể sản phẩm');
