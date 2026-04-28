@@ -343,6 +343,9 @@ async function cleanupDirectProductReferences(supabaseAdmin: any, productIds: st
   await deleteByIdsInBatches(supabaseAdmin, 'stock_transfer_items', 'product_id', productIds, 'Xoá liên kết chuyển kho theo sản phẩm', true)
   await deleteByIdsInBatches(supabaseAdmin, 'imei_histories', 'product_id', productIds, 'Xoá lịch sử IMEI còn sót', true)
   await deleteByIdsInBatches(supabaseAdmin, 'product_imports', 'product_id', productIds, 'Xoá lịch sử nhập sản phẩm còn sót', true)
+  await deleteByIdsInBatches(supabaseAdmin, 'repair_order_items', 'product_id', productIds, 'Xoá linh kiện đơn sửa chữa theo sản phẩm', true)
+  await deleteByIdsInBatches(supabaseAdmin, 'export_receipt_items', 'product_id', productIds, 'Xoá chi tiết phiếu xuất theo sản phẩm', true)
+  await deleteByIdsInBatches(supabaseAdmin, 'stock_count_items', 'product_id', productIds, 'Xoá chi tiết kiểm kho theo sản phẩm', true)
 }
 
 async function deleteByIdsInBatches(
