@@ -128,6 +128,10 @@ export function ProductDetailPage({
   // Fetch service packages (grouped). Falls back gracefully to legacy flat list.
   const { data: packageGroups } = usePublicProductPackageGroups(product?.id || null);
   const { data: productPackages } = usePublicProductPackages(product?.id || null);
+  const { data: productReviews = [] } = usePublicProductReviews(product?.id || null);
+  const ratingAvg = productReviews.length
+    ? productReviews.reduce((s, r) => s + (r.rating || 0), 0) / productReviews.length
+    : 0;
 
   // Flatten groups → all items with attached groupName for easy lookup
   const allPackageItems = useMemo(() => {
