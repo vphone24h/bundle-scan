@@ -202,6 +202,12 @@ async function assertOptionalMutation(label: string, operation: Promise<any>) {
   throw new Error(`${label}: ${error.message}`)
 }
 
+async function tryMutation(label: string, operation: Promise<any>) {
+  const { error } = await operation
+  if (!error) return
+  console.warn(`[tenant-data-management] ${label} skipped:`, error.message)
+}
+
 async function updateJob(supabaseAdmin: any, jobId: string, payload: Record<string, unknown>) {
   await assertMutation('Cập nhật tiến trình job', supabaseAdmin.from('data_management_jobs').update(payload).eq('id', jobId))
 }
