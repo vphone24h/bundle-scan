@@ -176,21 +176,14 @@ export function ProductDetailPage({
     [customerVouchers]
   );
 
-  const variantOptions1: Array<{ name: string; image_url?: string }> = useMemo(() => {
-    const opts = product.variant_options_1;
-    return Array.isArray(opts) ? opts.filter(o => o.name) : [];
-  }, [product]);
-
-  const variantOptions2: Array<{ name: string; image_url?: string }> = useMemo(() => {
-    const opts = product.variant_options_2;
-    return Array.isArray(opts) ? opts.filter(o => o.name) : [];
-  }, [product]);
+  // Multi-level variant groups (1-5 levels, with legacy fallback)
+  const variantGroups = useMemo(() => getVariantGroups(product), [product]);
 
   const variantPrices: VariantPriceEntry[] = useMemo(() => {
     return Array.isArray(product.variant_prices) ? product.variant_prices : [];
   }, [product]);
 
-  const uses2LevelVariants = variantOptions1.length > 0;
+  const usesMultiVariants = variantGroups.length > 0;
 
   const legacyVariants: LandingProductVariant[] = useMemo(() => {
     if (uses2LevelVariants) return [];
