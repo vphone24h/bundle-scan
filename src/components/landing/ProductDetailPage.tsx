@@ -199,12 +199,11 @@ export function ProductDetailPage({
     return [];
   }, [product?.variants, usesMultiVariants]);
 
+  const allLevelsSelected = usesMultiVariants && variantGroups.every((_, i) => !!selectedOptions[i]);
   const matchedVariantPrice = useMemo(() => {
-    if (!usesMultiVariants || !selectedOption1) return null;
-    return variantPrices.find(vp =>
-      vp.option1 === selectedOption1 && (variantOptions2.length === 0 || vp.option2 === selectedOption2)
-    ) || null;
-  }, [usesMultiVariants, selectedOption1, selectedOption2, variantPrices, variantOptions2]);
+    if (!usesMultiVariants || !allLevelsSelected) return null;
+    return findVariantPrice(variantPrices, selectedOptions.slice(0, variantGroups.length));
+  }, [usesMultiVariants, allLevelsSelected, variantPrices, selectedOptions, variantGroups.length]);
 
   const allImages = useMemo(() => {
     const imgs: string[] = [];
