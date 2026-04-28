@@ -69,6 +69,12 @@ export function ProductDetailDialog({
   // Fetch service packages for this product
   const { data: productPackages } = usePublicProductPackages(product?.id || null);
 
+  // Fetch reviews for rating summary
+  const { data: productReviews = [] } = usePublicProductReviews(product?.id || null);
+  const ratingAvg = productReviews.length
+    ? productReviews.reduce((s, r) => s + (r.rating || 0), 0) / productReviews.length
+    : 0;
+
   // Auto-select default packages when product changes
   useEffect(() => {
     if (productPackages && productPackages.length > 0) {
