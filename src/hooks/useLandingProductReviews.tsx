@@ -1,0 +1,122 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+
+export interface LandingProductReview {
+  id: string;
+  tenant_id: string;
+  product_id: string;
+  customer_name: string;
+  customer_phone: string;
+  content: string;
+  rating: number;
+  is_visible: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Public: lấy review hiển thị của 1 sản phẩm */
+export function usePublicProductReviews(productId: string | null) {
+  return useQuery({
+    queryKey: ['public-landing-reviews', productId],
+    queryFn: async () => {
+      if (!productId) return [] as LandingProductReview[];
+      const { data, error } = await supabase
+        .from('landing_product_reviews' as any)
+        .select('*')
+        .eq('product_id', productId)
+        .eq('is_visible', true)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as unknown as LandingProductReview[];
+    },
+    enabled: !!productId,
+    staleTime: 1000 * 30,
+  });
+}
+
+/** Public: gửi review */
+export function useCreateProductReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      tenant_id: string;
+      product_id: string;
+      customer_name: string;
+      customer_phone: string;
+      content: string;
+      rating: number;
+    }) => {
+      const { data, error } = await supabase
+        .from('landing_product_reviews' as any)
+        .insert([{ ...input, is_visible: true }])
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['public-landing-reviews', vars.product_id] });
+      qc.invalidateQueries({ queryKey: ['admin-landing-reviews'] });
+    },
+  });
+}
+
+/** Admin: tất cả review của tenant (kèm tên sản phẩm) */
+export function useAdminProductReviews(tenantId?: string | null) {
+  return useQuery({
+    queryKey: ['admin-landing-reviews', tenantId ?? '_auto_'],
+    queryFn: async () => {
+      let tid = tenantId;
+      if (!tid) {
+        const { data } = await supabase.rpc('get_user_tenant_id_secure');
+        tid = data;
+      }
+      if (!tid) return [];
+      const { data, error } = await supabase
+        .from('landing_product_reviews' as any)
+        .select('*, landing_products!inner(name)')
+        .eq('tenant_id', tid)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+    staleTime: 1000 * 60,
+  });
+}
+
+export function useUpdateProductReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string } & Partial<LandingProductReview>) => {
+      const { data, error } = await supabase
+        .from('landing_product_reviews' as any)
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-landing-reviews'] });
+      qc.invalidateQueries({ queryKey: ['public-landing-reviews'] });
+    },
+  });
+}
+
+export function useDeleteProductReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('landing_product_reviews' as any)
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-landing-reviews'] });
+      qc.invalidateQueries({ queryKey: ['public-landing-reviews'] });
+    },
+  });
+}
