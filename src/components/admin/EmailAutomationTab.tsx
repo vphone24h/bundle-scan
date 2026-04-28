@@ -600,7 +600,7 @@ function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest
 
           if (existing) {
             return (
-              <div key={ot.value} className="border rounded-lg p-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <div key={ot.value} className="border rounded-lg p-3 flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h4 className="font-medium text-sm break-words">{ot.label}</h4>
@@ -611,21 +611,25 @@ function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest
                   <p className="text-xs text-muted-foreground mt-0.5">📌 {ot.condition}</p>
                   <p className="text-xs text-muted-foreground mt-0.5 break-all">Subject: {existing.subject}</p>
                 </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <div className="flex flex-col items-center gap-0.5 mr-1">
-                    <span className="text-[9px] text-muted-foreground">Email</span>
-                    <Switch checked={existing.is_active} onCheckedChange={() => onToggle(existing)} />
+                <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-1 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0">
+                  <div className="flex items-center gap-3">
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className="text-[9px] text-muted-foreground">Email</span>
+                      <Switch checked={existing.is_active} onCheckedChange={() => onToggle(existing)} />
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className="text-[9px] text-blue-600 font-medium">Zalo</span>
+                      <Switch checked={existing.zalo_enabled} onCheckedChange={() => onZaloToggle(existing)} className="data-[state=checked]:bg-blue-500" />
+                    </div>
                   </div>
-                  <div className="flex flex-col items-center gap-0.5 mr-1">
-                    <span className="text-[9px] text-blue-600 font-medium">Zalo</span>
-                    <Switch checked={existing.zalo_enabled} onCheckedChange={() => onZaloToggle(existing)} className="data-[state=checked]:bg-blue-500" />
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => onSendTest(existing)} title="Gửi thử">
+                      <Send className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => onEdit(existing)} title="Chỉnh sửa">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onSendTest(existing)} title="Gửi thử">
-                    <Send className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(existing)} title="Chỉnh sửa">
-                    <Pencil className="h-4 w-4" />
-                  </Button>
                 </div>
               </div>
             );
