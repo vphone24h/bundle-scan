@@ -1561,11 +1561,25 @@ export function LandingProductsTab() {
                     🔄 Đồng bộ hệ thống
                   </Button>
                   <Button type="button" variant="outline" size="sm" className="gap-1 h-7 text-xs"
-                    onClick={() => setGroupsForm(prev => [...prev, {
-                      name: prev.length === 0 ? 'Gói bảo hành' : `Nhóm ${prev.length + 1}`,
-                      selection_mode: 'single',
-                      items: [],
-                    }])}>
+                    onClick={() => {
+                      setGroupsForm(prev => {
+                        const next = [...prev, {
+                          name: prev.length === 0 ? 'Gói bảo hành' : `Nhóm ${prev.length + 1}`,
+                          selection_mode: 'single' as const,
+                          items: [],
+                        }];
+                        // Scroll to the new group after render
+                        setTimeout(() => {
+                          const el = document.querySelector(`[data-pkg-group-idx="${next.length - 1}"]`) as HTMLElement | null;
+                          if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            el.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+                            setTimeout(() => el.classList.remove('ring-2', 'ring-primary', 'ring-offset-2'), 1500);
+                          }
+                        }, 100);
+                        return next;
+                      });
+                    }}>
                     <FolderPlus className="h-3 w-3" /> Thêm nhóm
                   </Button>
                 </div>
@@ -1596,7 +1610,7 @@ export function LandingProductsTab() {
                 }}
               />
               {groupsForm.map((group, gi) => (
-                <div key={gi} className="rounded-lg border bg-muted/10 p-3 space-y-2">
+                <div key={gi} data-pkg-group-idx={gi} className="rounded-lg border bg-muted/10 p-3 space-y-2 transition-all">
                   <div className="flex items-center gap-2">
                     <Input
                       value={group.name}
