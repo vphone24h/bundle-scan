@@ -508,6 +508,7 @@ export function LandingProductsTab() {
         is_sold_out: detail.is_sold_out || false,
         variants: Array.isArray(detail.variants) ? detail.variants : [],
         home_tab_ids: Array.isArray((detail as any).home_tab_ids) ? (detail as any).home_tab_ids : [],
+        variant_groups: getVariantGroups(detail),
         variant_group_1_name: detail.variant_group_1_name || 'Màu sắc',
         variant_group_2_name: detail.variant_group_2_name || 'Dung lượng',
         variant_options_1: Array.isArray(detail.variant_options_1) ? detail.variant_options_1 : [],
