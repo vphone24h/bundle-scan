@@ -675,6 +675,15 @@ export function LandingProductsTab() {
   const handleSaveProduct = async () => {
     if (!form.name.trim()) return;
     try {
+      // Normalize variant_groups (drop empty options)
+      const cleanGroups: VariantGroup[] = (form.variant_groups || [])
+        .map(g => ({
+          name: (g.name || '').trim() || 'Biến thể',
+          options: (g.options || []).filter(o => (o?.name || '').trim()),
+        }))
+        .filter(g => g.options.length > 0)
+        .slice(0, MAX_VARIANT_LEVELS);
+
       const payload: any = {
         name: form.name.trim(),
         description: form.description || null,
@@ -690,10 +699,12 @@ export function LandingProductsTab() {
         badges: formBadges,
         badge_style: badgeStyle,
         home_tab_ids: form.home_tab_ids,
-        variant_group_1_name: form.variant_group_1_name,
-        variant_group_2_name: form.variant_group_2_name,
-        variant_options_1: form.variant_options_1,
-        variant_options_2: form.variant_options_2,
+        variant_groups: cleanGroups,
+        // Mirror first two levels into legacy columns for backward-compat
+        variant_group_1_name: cleanGroups[0]?.name || form.variant_group_1_name,
+        variant_group_2_name: cleanGroups[1]?.name || form.variant_group_2_name,
+        variant_options_1: cleanGroups[0]?.options || [],
+        variant_options_2: cleanGroups[1]?.options || [],
         variant_prices: form.variant_prices,
         promotion_title: form.promotion_title,
         promotion_content: form.promotion_content || null,
