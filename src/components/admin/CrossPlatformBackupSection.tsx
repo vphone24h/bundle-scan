@@ -471,12 +471,37 @@ export function CrossPlatformBackupSection() {
     setImportStatus('Đang tải file lên hệ thống...');
 
     try {
-      // Use v3 background restore for version 3.0
+      if (!tenant?.id) {
+        throw new Error('Không xác định được cửa hàng hiện tại');
+      }
+
+      // ─── BƯỚC 1: Upload file JSON thẳng lên Storage ───
+      // Tránh gửi body lớn qua Edge Function (gây "Import bị quá thời gian xử lý" với file lớn).
+      const uploadId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const sourcePath = `${tenant.id}/restore-uploads/${uploadId}.json`;
+      const blob = new Blob([JSON.stringify(importFile)], { type: 'application/json' });
+
+      const { error: uploadErr } = await supabase
+        .storage
+        .from('temp-imports')
+        .upload(sourcePath, blob, {
+          upsert: true,
+          contentType: 'application/json',
+        });
+      if (uploadErr) {
+        throw new Error(`Không thể tải file lên: ${uploadErr.message}`);
+      }
+
+      setImportStatus('Đang khởi tạo tác vụ khôi phục nền...');
+
+      // ─── BƯỚC 2: Chỉ gửi sourcePath cho edge function ───
       const { data, error } = await supabase.functions.invoke('cross-platform-restore-v3', {
         body: {
-          importData: importFile,
+          sourcePath,
           mode: importMode,
-          tenantId: tenant?.id,
+          tenantId: tenant.id,
           tenantSubdomain: tenant?.subdomain ?? null,
         },
       });
