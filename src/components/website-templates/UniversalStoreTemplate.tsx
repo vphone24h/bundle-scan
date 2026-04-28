@@ -981,7 +981,7 @@ export default function UniversalStoreTemplate({
                             </button>
                           </div>
                         </ScrollReveal>
-                        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                        <HorizontalProductScroll>
                           {flashProducts.slice(0, 12).map((p, i) => (
                             <div key={p.id} className="min-w-[180px] max-w-[200px] shrink-0">
                               <ScrollReveal animation="fade-up" delay={i * 60}>
@@ -989,7 +989,7 @@ export default function UniversalStoreTemplate({
                               </ScrollReveal>
                             </div>
                           ))}
-                        </div>
+                        </HorizontalProductScroll>
                       </div>
                     </section>
                   );
