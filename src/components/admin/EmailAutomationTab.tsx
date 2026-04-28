@@ -1085,22 +1085,25 @@ export function EmailAutomationTab() {
 
   return (
     <Card>
-      <CardHeader className="px-3 sm:px-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <CardHeader className="px-3 sm:px-6 pb-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
             <Mail className="h-5 w-5" />
             Nhắn tin tự động
           </CardTitle>
-          <div className="flex items-center gap-2 overflow-x-auto">
-            <Button size="sm" variant="outline" onClick={handleRunNow} disabled={runningNow} className="shrink-0">
-              <Play className={`h-4 w-4 mr-1 ${runningNow ? 'animate-spin' : ''}`} /> {runningNow ? 'Đang chạy...' : 'Chạy ngay'}
+          <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center">
+            <Button size="sm" variant="outline" onClick={handleRunNow} disabled={runningNow} className="w-full sm:w-auto px-2">
+              <Play className={`h-4 w-4 sm:mr-1 ${runningNow ? 'animate-spin' : ''}`} />
+              <span className="ml-1 sm:ml-0 truncate">{runningNow ? 'Đang chạy' : 'Chạy ngay'}</span>
             </Button>
-            <Button size="sm" onClick={handleCreate} className="shrink-0">
-              <Plus className="h-4 w-4 mr-1" /> Tạo kịch bản
+            <Button size="sm" onClick={handleCreate} className="w-full sm:w-auto px-2">
+              <Plus className="h-4 w-4 sm:mr-1" />
+              <span className="ml-1 sm:ml-0 truncate">Tạo mới</span>
             </Button>
-            <Button size="sm" variant="outline" asChild className="shrink-0">
+            <Button size="sm" variant="outline" asChild className="w-full sm:w-auto px-2">
               <a href="https://youtu.be/WYDuxvwrNSs?si=DF1Jd7iLmh-o0RG8" target="_blank" rel="noopener noreferrer">
-                <BookOpen className="h-4 w-4 mr-1" /> Hướng dẫn
+                <BookOpen className="h-4 w-4 sm:mr-1" />
+                <span className="ml-1 sm:ml-0 truncate">Hướng dẫn</span>
               </a>
             </Button>
           </div>
@@ -1108,11 +1111,20 @@ export function EmailAutomationTab() {
       </CardHeader>
       <CardContent className="px-3 sm:px-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="w-full sm:w-auto">
-            <TabsTrigger value="scenarios" className="flex-1 sm:flex-none">Kịch bản ({automations?.length || 0})</TabsTrigger>
-            <TabsTrigger value="logs" className="flex-1 sm:flex-none">Lịch sử Mail ({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</TabsTrigger>
-            <TabsTrigger value="zalo-logs" className="flex-1 sm:flex-none">Lịch sử Zalo ({zaloLogs?.length || 0})</TabsTrigger>
-            <TabsTrigger value="config" className="flex-1 sm:flex-none">Cấu hình</TabsTrigger>
+          <TabsList className="w-full grid grid-cols-4 h-auto sm:w-auto sm:inline-flex sm:h-10">
+            <TabsTrigger value="scenarios" className="text-[11px] sm:text-sm px-1 sm:px-3 py-1.5 whitespace-normal leading-tight">
+              <span className="sm:hidden">Kịch bản<br/>({automations?.length || 0})</span>
+              <span className="hidden sm:inline">Kịch bản ({automations?.length || 0})</span>
+            </TabsTrigger>
+            <TabsTrigger value="logs" className="text-[11px] sm:text-sm px-1 sm:px-3 py-1.5 whitespace-normal leading-tight">
+              <span className="sm:hidden">Mail<br/>({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</span>
+              <span className="hidden sm:inline">Lịch sử Mail ({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</span>
+            </TabsTrigger>
+            <TabsTrigger value="zalo-logs" className="text-[11px] sm:text-sm px-1 sm:px-3 py-1.5 whitespace-normal leading-tight">
+              <span className="sm:hidden">Zalo<br/>({zaloLogs?.length || 0})</span>
+              <span className="hidden sm:inline">Lịch sử Zalo ({zaloLogs?.length || 0})</span>
+            </TabsTrigger>
+            <TabsTrigger value="config" className="text-[11px] sm:text-sm px-1 sm:px-3 py-1.5 whitespace-normal leading-tight">Cấu hình</TabsTrigger>
           </TabsList>
 
           <TabsContent value="config" className="mt-4">
