@@ -475,6 +475,42 @@ export function CrossPlatformBackupSection() {
         throw new Error('Không xác định được cửa hàng hiện tại');
       }
 
+      // ─── File backup phiên bản cũ (1.0 / 2.0) → dùng restore đồng bộ legacy ───
+      // Function 'cross-platform-restore-v3' chỉ nhận file v3.0 nên file cũ
+      // sẽ bị từ chối. Định tuyến sang function cũ vốn đã hỗ trợ.
+      if (importFile.version && importFile.version !== '3.0') {
+        setImportStatus(`Đang khôi phục file v${importFile.version} (legacy)...`);
+
+        const { data: legacyData, error: legacyError } = await supabase.functions.invoke(
+          'cross-platform-restore',
+          { body: { importData: importFile, mode: importMode } },
+        );
+
+        if (legacyError) throw legacyError;
+        if (legacyData?.error) throw new Error(legacyData.error);
+
+        clearRestoredDataCache();
+        setIsImporting(false);
+        setImportProgress(100);
+        setImportStatus('Hoàn tất!');
+        setImportResult(legacyData);
+        setShowResultDialog(true);
+        setImportFile(null);
+        setImportPreview(null);
+
+        const s = legacyData?.summary;
+        if (s) {
+          const msg = `Khôi phục hoàn tất: ${s.total_success || 0} thành công, ${s.total_skipped || 0} bỏ qua, ${s.total_failed || 0} lỗi`;
+          if ((s.total_failed || 0) > 0) toast.warning(msg);
+          else toast.success(msg);
+        } else {
+          toast.success('Khôi phục dữ liệu hoàn tất!');
+        }
+
+        queryClient.invalidateQueries({ refetchType: 'all' });
+        return;
+      }
+
       // ─── BƯỚC 1: Upload file JSON thẳng lên Storage ───
       // Tránh gửi body lớn qua Edge Function (gây "Import bị quá thời gian xử lý" với file lớn).
       const uploadId = (typeof crypto !== 'undefined' && crypto.randomUUID)
@@ -528,8 +564,8 @@ export function CrossPlatformBackupSection() {
       console.error('Import error:', error);
       setIsImporting(false);
       const rawMessage = (error as Error).message || 'Lỗi không xác định';
-      const message = /(Failed to send a request|non-2xx status code|CPU Time exceeded)/i.test(rawMessage)
-        ? 'Import bị quá thời gian xử lý. Vui lòng thử lại.'
+      const message = /(Failed to send a request|CPU Time exceeded)/i.test(rawMessage)
+        ? 'Import bị gián đoạn. Vui lòng thử lại.'
         : rawMessage;
       toast.error('Lỗi import: ' + message);
       setImportResult({
@@ -540,7 +576,7 @@ export function CrossPlatformBackupSection() {
       });
       setShowResultDialog(true);
     }
-  }, [importFile, importMode, refetchRestoreJob, tenant?.id, tenant?.subdomain]);
+  }, [importFile, importMode, refetchRestoreJob, tenant?.id, tenant?.subdomain, queryClient, clearRestoredDataCache]);
 
   const isAnyRunning = isExporting || isImporting || isRestoreRunning;
 
