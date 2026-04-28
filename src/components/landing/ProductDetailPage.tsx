@@ -558,54 +558,44 @@ export function ProductDetailPage({
             </p>
           )}
 
-          {/* ===== 2-LEVEL VARIANTS ===== */}
+          {/* ===== MULTI-LEVEL VARIANTS (1-5) ===== */}
           {usesMultiVariants && (
             <div className="space-y-3">
-              <div>
-                <Label className="text-sm font-medium mb-2 block">
-                  {product.variant_group_1_name || 'Biến thể 1'} <span className="text-red-500">*</span>
-                </Label>
-                <div className={`flex flex-wrap gap-2 ${(attempted || variantAttempted) && !selectedOption1 ? 'p-2 rounded-md border-2 border-red-400' : ''}`}>
-                  {variantOptions1.map((opt, i) => (
-                    <Badge
-                      key={i}
-                      variant={selectedOption1 === opt.name ? 'default' : 'outline'}
-                      className="cursor-pointer text-sm px-3 py-2 active:scale-95 transition-transform"
-                      style={selectedOption1 === opt.name ? { backgroundColor: primaryColor } : {}}
-                      onClick={() => { setSelectedOption1(selectedOption1 === opt.name ? null : opt.name); setVariantAttempted(false); }}
-                    >
-                      {opt.name}
-                    </Badge>
-                  ))}
-                </div>
-                {(attempted || variantAttempted) && !selectedOption1 && (
-                  <p className="text-xs text-red-500 font-medium mt-1">⚠ Vui lòng chọn {product.variant_group_1_name || 'Biến thể 1'}</p>
-                )}
-              </div>
-
-              {variantOptions2.length > 0 && (
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">
-                    {product.variant_group_2_name || 'Biến thể 2'} <span className="text-red-500">*</span>
-                  </Label>
-                  <div className={`flex flex-wrap gap-2 ${(attempted || variantAttempted) && !selectedOption2 ? 'p-2 rounded-md border-2 border-red-400' : ''}`}>
-                    {variantOptions2.map((opt, i) => (
-                      <Badge
-                        key={i}
-                        variant={selectedOption2 === opt.name ? 'default' : 'outline'}
-                        className="cursor-pointer text-sm px-3 py-2 active:scale-95 transition-transform"
-                        style={selectedOption2 === opt.name ? { backgroundColor: primaryColor } : {}}
-                        onClick={() => { setSelectedOption2(selectedOption2 === opt.name ? null : opt.name); setVariantAttempted(false); }}
-                      >
-                        {opt.name}
-                      </Badge>
-                    ))}
+              {variantGroups.map((group, gIdx) => {
+                const sel = selectedOptions[gIdx] || null;
+                const groupLabel = group.name || `Biến thể ${gIdx + 1}`;
+                return (
+                  <div key={gIdx}>
+                    <Label className="text-sm font-medium mb-2 block">
+                      {groupLabel} <span className="text-red-500">*</span>
+                    </Label>
+                    <div className={`flex flex-wrap gap-2 ${(attempted || variantAttempted) && !sel ? 'p-2 rounded-md border-2 border-red-400' : ''}`}>
+                      {group.options.map((opt, i) => (
+                        <Badge
+                          key={i}
+                          variant={sel === opt.name ? 'default' : 'outline'}
+                          className="cursor-pointer text-sm px-3 py-2 active:scale-95 transition-transform"
+                          style={sel === opt.name ? { backgroundColor: primaryColor } : {}}
+                          onClick={() => {
+                            setSelectedOptions(prev => {
+                              const next = [...prev];
+                              while (next.length <= gIdx) next.push(null);
+                              next[gIdx] = next[gIdx] === opt.name ? null : opt.name;
+                              return next;
+                            });
+                            setVariantAttempted(false);
+                          }}
+                        >
+                          {opt.name}
+                        </Badge>
+                      ))}
+                    </div>
+                    {(attempted || variantAttempted) && !sel && (
+                      <p className="text-xs text-red-500 font-medium mt-1">⚠ Vui lòng chọn {groupLabel}</p>
+                    )}
                   </div>
-                  {(attempted || variantAttempted) && !selectedOption2 && (
-                    <p className="text-xs text-red-500 font-medium mt-1">⚠ Vui lòng chọn {product.variant_group_2_name || 'Biến thể 2'}</p>
-                  )}
-                </div>
-              )}
+                );
+              })}
 
               {matchedVariantPrice && matchedVariantPrice.is_sold_out && (
                 <p className="text-sm font-medium text-red-600">🚫 Đã hết</p>
