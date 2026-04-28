@@ -393,7 +393,7 @@ export function LandingProductsTab() {
   });
   // Add badges to form - stored separately to avoid re-init issues
   const [formBadges, setFormBadges] = useState<string[]>([]);
-  const [badgeStyle, setBadgeStyle] = useState<'simple' | 'luxury' | 'modern'>('simple');
+  const [badgeStyle, setBadgeStyle] = useState<'simple' | 'luxury' | 'modern' | 'tiktok'>('simple');
 
   const [showBadges, setShowBadges] = useState(false);
   const badgesPanelRef = useRef<HTMLDivElement>(null);
@@ -517,6 +517,8 @@ export function LandingProductsTab() {
         (detail as any).badge_style === 'luxury'
           ? 'luxury'
           : (detail as any).badge_style === 'modern'
+          ? 'modern'
+          : (detail as any).badge_style === 'tiktok'
           ? 'modern'
           : 'simple',
       );
