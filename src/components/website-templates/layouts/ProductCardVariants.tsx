@@ -136,12 +136,15 @@ export function InstallmentLine({ amount }: { amount?: number | null }) {
 }
 
 // Shared badge overlay for product cards
-export function ProductBadges({ badges, style }: { badges?: string[]; style?: 'simple' | 'luxury' | 'modern' | string }) {
+export function ProductBadges({ badges, style }: { badges?: string[]; style?: 'simple' | 'luxury' | 'modern' | 'tiktok' | string }) {
   if (!badges || badges.length === 0) return null;
   const items = badges.slice(0, 3).map(b => PRODUCT_BADGE_OPTIONS.find(o => o.id === b)).filter(Boolean);
   if (items.length === 0) return null;
-  const badgeStyle: 'simple' | 'luxury' | 'modern' =
-    style === 'luxury' ? 'luxury' : style === 'modern' ? 'modern' : 'simple';
+  const badgeStyle: 'simple' | 'luxury' | 'modern' | 'tiktok' =
+    style === 'luxury' ? 'luxury'
+    : style === 'modern' ? 'modern'
+    : style === 'tiktok' ? 'tiktok'
+    : 'simple';
   const isMobile = useIsMobile();
 
   const getBadgeGradient = (opt: typeof PRODUCT_BADGE_OPTIONS[0]) => {
@@ -866,6 +869,87 @@ export function ProductBadges({ badges, style }: { badges?: string[]; style?: 's
     usedCorners.add(layout.corner);
     assignments.push({ opt: opt!, corner: layout.corner, variant: layout.variant });
   });
+
+  // === TIKTOK SHOP STYLE ===
+  // Một dải băng nhiều màu nằm sát đáy ảnh, mỗi nhãn là 1 segment với
+  // tiêu đề in hoa + dòng phụ nhỏ, các segment được "cắt răng cưa" gối lên nhau.
+  if (badgeStyle === 'tiktok') {
+    const tikItems = items.slice(0, 3) as typeof PRODUCT_BADGE_OPTIONS[number][];
+    // Bộ màu mặc định kiểu TikTok Shop (teal → orange → yellow)
+    const defaultPalette = ['#2dd4bf', '#fb923c', '#fbbf24'];
+    return (
+      <div
+        className="absolute left-0 right-0 z-10 px-1 pointer-events-none"
+        style={{ bottom: 6 }}
+      >
+        <div className="flex items-stretch w-fit max-w-full" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.18))' }}>
+          {tikItems.map((opt, idx) => {
+            const isFirst = idx === 0;
+            const isLast = idx === tikItems.length - 1;
+            const baseColor = getBadgeGradient(opt) || defaultPalette[idx % defaultPalette.length];
+            const [prefix, highlight] = splitLabel(opt.id, opt.text);
+            // Cắt răng cưa: trái phẳng cho segment đầu, phải vát chéo (trừ segment cuối)
+            const clip = isLast
+              ? (isFirst
+                  ? 'polygon(0 0, 100% 0, 100% 100%, 0 100%)'
+                  : 'polygon(8px 0, 100% 0, 100% 100%, 0 100%)')
+              : (isFirst
+                  ? 'polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%)'
+                  : 'polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%)');
+            return (
+              <div
+                key={opt.id}
+                style={{
+                  background: baseColor,
+                  clipPath: clip,
+                  marginLeft: isFirst ? 0 : -6,
+                  padding: '3px 10px 3px 12px',
+                  minWidth: 56,
+                  borderTopLeftRadius: isFirst ? 6 : 0,
+                  borderBottomLeftRadius: isFirst ? 6 : 0,
+                  borderTopRightRadius: isLast ? 6 : 0,
+                  borderBottomRightRadius: isLast ? 6 : 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  lineHeight: 1.05,
+                }}
+              >
+                <span
+                  style={{
+                    color: '#ffffff',
+                    fontSize: 10,
+                    fontWeight: 900,
+                    letterSpacing: '0.02em',
+                    textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
+                    textShadow: '0 1px 1px rgba(0,0,0,0.18)',
+                  }}
+                >
+                  {highlight}
+                </span>
+                {prefix && (
+                  <span
+                    style={{
+                      color: '#ffffff',
+                      fontSize: 8,
+                      fontWeight: 700,
+                      whiteSpace: 'nowrap',
+                      opacity: 0.95,
+                      marginTop: 1,
+                    }}
+                  >
+                    {prefix}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
