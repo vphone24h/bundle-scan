@@ -388,6 +388,7 @@ export function LandingProductsTab() {
     // Promotional
     student_discount_label: 'HỌC SINH SINH VIÊN',
     student_discount_text: '',
+    extra_discount_labels: [] as Array<{ label: string; text: string; color?: string }>,
     installment_down_payment: null as number | null,
     seo_description: '',
   });
@@ -464,6 +465,7 @@ export function LandingProductsTab() {
       warranty_title: 'BẢO HÀNH', warranty_content: '',
       package_selection_mode: 'multiple',
       student_discount_label: 'HỌC SINH SINH VIÊN', student_discount_text: '', installment_down_payment: null,
+      extra_discount_labels: [],
       seo_description: '',
     });
     setShowBadges(false);
