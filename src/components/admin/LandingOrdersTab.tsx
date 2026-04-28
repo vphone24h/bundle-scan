@@ -978,7 +978,21 @@ export function LandingOrdersTab() {
                 const groupTotal = allGroupOrders.reduce((sum, o) => sum + o.quantity * o.product_price, 0);
 
                 const detailPackages = getSelectedPackages(detailOrder);
-                const packagesSubtotal = detailPackages.reduce((sum, pkg) => sum + pkg.price, 0);
+                const packagesSubtotal = detailPackages.reduce(
+                  (sum, pkg) => sum + pkg.price * Math.max(1, pkg.quantity || 1),
+                  0,
+                );
+                // Group packages by groupName for richer breakdown
+                const packagesByGroup = (() => {
+                  const map = new Map<string, typeof detailPackages>();
+                  detailPackages.forEach(p => {
+                    const key = p.groupName || 'Gói dịch vụ';
+                    const arr = map.get(key) || [];
+                    arr.push(p);
+                    map.set(key, arr);
+                  });
+                  return Array.from(map.entries());
+                })();
 
                 return (
                   <div className="space-y-2">
