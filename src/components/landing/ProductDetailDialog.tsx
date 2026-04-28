@@ -9,7 +9,7 @@ import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, Chevr
 import { formatNumber } from '@/lib/formatNumber';
 import DOMPurify from 'dompurify';
 import { sanitizeRichHtml } from '@/lib/sanitizeRichHtml';
-import { LandingProduct, LandingProductVariant, VariantPriceEntry } from '@/hooks/useLandingProducts';
+import { LandingProduct, LandingProductVariant, VariantPriceEntry, getVariantGroups, findVariantPrice } from '@/hooks/useLandingProducts';
 import { usePublicProductPackages, LandingProductPackage } from '@/hooks/useLandingProducts';
 import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
@@ -60,9 +60,8 @@ export function ProductDetailDialog({
   const [attempted, setAttempted] = useState(false);
   const [selectedPackageIds, setSelectedPackageIds] = useState<Set<string>>(new Set());
 
-  // 2-level variant selections
-  const [selectedOption1, setSelectedOption1] = useState<string | null>(null);
-  const [selectedOption2, setSelectedOption2] = useState<string | null>(null);
+  // Multi-level variant selections (up to 5)
+  const [selectedOptions, setSelectedOptions] = useState<(string | null)[]>([]);
 
   const placeOrder = usePlaceLandingOrder();
 
@@ -99,29 +98,19 @@ export function ProductDetailDialog({
     [customerVouchers]
   );
 
-  // Check if product uses 2-level variant system
-  const variantOptions1: Array<{ name: string; image_url?: string }> = useMemo(() => {
-    if (!product) return [];
-    const opts = product.variant_options_1;
-    return Array.isArray(opts) ? opts.filter(o => o.name) : [];
-  }, [product]);
-
-  const variantOptions2: Array<{ name: string; image_url?: string }> = useMemo(() => {
-    if (!product) return [];
-    const opts = product.variant_options_2;
-    return Array.isArray(opts) ? opts.filter(o => o.name) : [];
-  }, [product]);
+  // Variant groups (up to 5 levels)
+  const variantGroups = useMemo(() => (product ? getVariantGroups(product) : []), [product]);
 
   const variantPrices: VariantPriceEntry[] = useMemo(() => {
     if (!product) return [];
     return Array.isArray(product.variant_prices) ? product.variant_prices : [];
   }, [product]);
 
-  const uses2LevelVariants = variantOptions1.length > 0;
+  const usesMultiVariants = variantGroups.length > 0;
 
   // Legacy single-level variants
   const legacyVariants: LandingProductVariant[] = useMemo(() => {
-    if (uses2LevelVariants) return [];
+    if (usesMultiVariants) return [];
     try {
       const v = product?.variants as any;
       if (!Array.isArray(v)) return [];
@@ -132,15 +121,14 @@ export function ProductDetailDialog({
       }).filter(Boolean) as LandingProductVariant[];
     } catch { }
     return [];
-  }, [product?.variants, uses2LevelVariants]);
+  }, [product?.variants, usesMultiVariants]);
 
-  // Find the matching variant price entry
+  // Find the matching variant price entry across N levels
+  const allLevelsSelected = usesMultiVariants && variantGroups.every((_, i) => !!selectedOptions[i]);
   const matchedVariantPrice = useMemo(() => {
-    if (!uses2LevelVariants || !selectedOption1) return null;
-    return variantPrices.find(vp =>
-      vp.option1 === selectedOption1 && (variantOptions2.length === 0 || vp.option2 === selectedOption2)
-    ) || null;
-  }, [uses2LevelVariants, selectedOption1, selectedOption2, variantPrices, variantOptions2]);
+    if (!usesMultiVariants || !allLevelsSelected) return null;
+    return findVariantPrice(variantPrices, selectedOptions.slice(0, variantGroups.length));
+  }, [usesMultiVariants, allLevelsSelected, variantPrices, selectedOptions, variantGroups.length]);
 
   // All images
   const allImages = useMemo(() => {
@@ -153,7 +141,7 @@ export function ProductDetailDialog({
       imgs.push(product.image_url);
     }
 
-    if (uses2LevelVariants) {
+    if (usesMultiVariants) {
       variantPrices.forEach(vp => {
         if (vp.image_url && !imgs.includes(vp.image_url)) imgs.push(vp.image_url);
       });
@@ -164,30 +152,30 @@ export function ProductDetailDialog({
     }
 
     return imgs;
-  }, [product, legacyVariants, uses2LevelVariants, variantPrices]);
+  }, [product, legacyVariants, usesMultiVariants, variantPrices]);
 
   const selectedLegacyVariant = selectedVariantIndex !== null ? legacyVariants[selectedVariantIndex] : null;
 
   // Calculate price
   const basePrice = useMemo(() => {
-    if (uses2LevelVariants && matchedVariantPrice) {
+    if (usesMultiVariants && matchedVariantPrice) {
       return matchedVariantPrice.sale_price || matchedVariantPrice.price;
     }
     if (selectedLegacyVariant && selectedLegacyVariant.price > 0) {
       return selectedLegacyVariant.price;
     }
     return product?.sale_price || product?.price || 0;
-  }, [uses2LevelVariants, matchedVariantPrice, selectedLegacyVariant, product]);
+  }, [usesMultiVariants, matchedVariantPrice, selectedLegacyVariant, product]);
 
   const originalPrice = useMemo(() => {
-    if (uses2LevelVariants && matchedVariantPrice && matchedVariantPrice.sale_price) {
+    if (usesMultiVariants && matchedVariantPrice && matchedVariantPrice.sale_price) {
       return matchedVariantPrice.price;
     }
-    if (!uses2LevelVariants && !selectedLegacyVariant && product?.sale_price) {
+    if (!usesMultiVariants && !selectedLegacyVariant && product?.sale_price) {
       return product.price;
     }
     return 0;
-  }, [uses2LevelVariants, matchedVariantPrice, selectedLegacyVariant, product]);
+  }, [usesMultiVariants, matchedVariantPrice, selectedLegacyVariant, product]);
 
   // Voucher/points discount
   const selectedVoucher = useMemo(() => {
@@ -238,10 +226,10 @@ export function ProductDetailDialog({
   };
 
   useEffect(() => {
-    if (!uses2LevelVariants || !matchedVariantPrice?.image_url) return;
+    if (!usesMultiVariants || !matchedVariantPrice?.image_url) return;
     const imgIdx = allImages.indexOf(matchedVariantPrice.image_url);
     if (imgIdx >= 0) setCurrentImageIndex(imgIdx);
-  }, [uses2LevelVariants, matchedVariantPrice?.image_url, allImages]);
+  }, [usesMultiVariants, matchedVariantPrice?.image_url, allImages]);
 
   const resetForm = () => {
     setShowOrderForm(false);
@@ -252,8 +240,7 @@ export function ProductDetailDialog({
     setNote('');
     setSelectedBranch('');
     setSelectedVariantIndex(null);
-    setSelectedOption1(null);
-    setSelectedOption2(null);
+    setSelectedOptions([]);
     setQuantity(1);
     setCurrentImageIndex(0);
     setSelectedVoucherId(null);
@@ -269,9 +256,9 @@ export function ProductDetailDialog({
   };
 
   const getVariantLabel = () => {
-    if (uses2LevelVariants) {
-      const parts = [selectedOption1, selectedOption2].filter(Boolean);
-      return parts.join(' / ') || undefined;
+    if (usesMultiVariants) {
+      const parts = selectedOptions.slice(0, variantGroups.length).filter(Boolean);
+      return parts.length > 0 ? parts.join(' / ') : undefined;
     }
     return selectedLegacyVariant?.name;
   };
@@ -283,15 +270,15 @@ export function ProductDetailDialog({
       return;
     }
     // Validate variant selection
-    if (uses2LevelVariants && variantOptions1.length > 0 && !selectedOption1) {
-      toast.error(`Vui lòng chọn ${product.variant_group_1_name || 'biến thể cấp 1'}`);
-      return;
+    if (usesMultiVariants) {
+      for (let i = 0; i < variantGroups.length; i++) {
+        if (!selectedOptions[i]) {
+          toast.error(`Vui lòng chọn ${variantGroups[i].name || `Biến thể ${i + 1}`}`);
+          return;
+        }
+      }
     }
-    if (uses2LevelVariants && variantOptions2.length > 0 && !selectedOption2) {
-      toast.error(`Vui lòng chọn ${product.variant_group_2_name || 'biến thể cấp 2'}`);
-      return;
-    }
-    if (!uses2LevelVariants && legacyVariants.length > 0 && selectedVariantIndex === null) {
+    if (!usesMultiVariants && legacyVariants.length > 0 && selectedVariantIndex === null) {
       toast.error('Vui lòng chọn biến thể sản phẩm');
       return;
     }
@@ -434,50 +421,39 @@ export function ProductDetailDialog({
             </p>
           )}
 
-          {/* ===== 2-LEVEL VARIANTS ===== */}
-          {uses2LevelVariants && (
+          {/* ===== MULTI-LEVEL VARIANTS (up to 5) ===== */}
+          {usesMultiVariants && (
             <div className="space-y-3">
-              {/* Level 1 */}
-              <div>
-                <Label className="text-sm font-medium mb-2 block">
-                  {product.variant_group_1_name || 'Biến thể 1'} <span className="text-destructive">*</span>
-                </Label>
-                <div className={`flex flex-wrap gap-2 p-2 rounded-md ${attempted && !selectedOption1 ? 'border-2 border-destructive' : ''}`}>
-                  {variantOptions1.map((opt, i) => (
-                    <Badge
-                      key={i}
-                      variant={selectedOption1 === opt.name ? 'default' : 'outline'}
-                      className="cursor-pointer text-sm px-3 py-1.5"
-                      style={selectedOption1 === opt.name ? { backgroundColor: primaryColor } : {}}
-                      onClick={() => setSelectedOption1(selectedOption1 === opt.name ? null : opt.name)}
-                    >
-                      {opt.name}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {/* Level 2 */}
-              {variantOptions2.length > 0 && (
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">
-                    {product.variant_group_2_name || 'Biến thể 2'} <span className="text-destructive">*</span>
-                  </Label>
-                  <div className={`flex flex-wrap gap-2 p-2 rounded-md ${attempted && !selectedOption2 ? 'border-2 border-destructive' : ''}`}>
-                    {variantOptions2.map((opt, i) => (
-                      <Badge
-                        key={i}
-                        variant={selectedOption2 === opt.name ? 'default' : 'outline'}
-                        className="cursor-pointer text-sm px-3 py-1.5"
-                        style={selectedOption2 === opt.name ? { backgroundColor: primaryColor } : {}}
-                        onClick={() => setSelectedOption2(selectedOption2 === opt.name ? null : opt.name)}
-                      >
-                        {opt.name}
-                      </Badge>
-                    ))}
+              {variantGroups.map((group, gIdx) => {
+                const sel = selectedOptions[gIdx] || null;
+                return (
+                  <div key={gIdx}>
+                    <Label className="text-sm font-medium mb-2 block">
+                      {group.name || `Biến thể ${gIdx + 1}`} <span className="text-destructive">*</span>
+                    </Label>
+                    <div className={`flex flex-wrap gap-2 p-2 rounded-md ${attempted && !sel ? 'border-2 border-destructive' : ''}`}>
+                      {group.options.map((opt, i) => (
+                        <Badge
+                          key={i}
+                          variant={sel === opt.name ? 'default' : 'outline'}
+                          className="cursor-pointer text-sm px-3 py-1.5"
+                          style={sel === opt.name ? { backgroundColor: primaryColor } : {}}
+                          onClick={() => {
+                            setSelectedOptions(prev => {
+                              const next = [...prev];
+                              while (next.length <= gIdx) next.push(null);
+                              next[gIdx] = next[gIdx] === opt.name ? null : opt.name;
+                              return next;
+                            });
+                          }}
+                        >
+                          {opt.name}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })}
 
               {/* Stock / sold-out info */}
               {matchedVariantPrice && matchedVariantPrice.is_sold_out && (
@@ -490,7 +466,7 @@ export function ProductDetailDialog({
           )}
 
           {/* ===== LEGACY VARIANTS ===== */}
-          {!uses2LevelVariants && legacyVariants.length > 0 && (
+          {!usesMultiVariants && legacyVariants.length > 0 && (
             <div>
               <Label className="text-sm font-medium mb-2 block">Chọn phiên bản <span className="text-destructive">*</span></Label>
               <div className={`flex flex-wrap gap-2 p-2 rounded-md ${attempted && selectedVariantIndex === null ? 'border-2 border-destructive' : ''}`}>
