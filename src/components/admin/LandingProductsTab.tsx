@@ -627,26 +627,48 @@ export function LandingProductsTab() {
 
   // Auto-generate variant price matrix
   const generateVariantPrices = () => {
-    const existing = form.variant_prices;
-    const newPrices: VariantPriceEntry[] = [...existing];
-    
-    if (form.variant_options_1.length === 0) return;
-    
-    for (const opt1 of form.variant_options_1) {
-      if (form.variant_options_2.length > 0) {
-        for (const opt2 of form.variant_options_2) {
-          const alreadyExists = existing.find(p => p.option1 === opt1.name && p.option2 === opt2.name);
-          if (!alreadyExists) {
-            newPrices.push({ option1: opt1.name, option2: opt2.name, price: form.price, sale_price: 0, stock: 0 });
-          }
-        }
-      } else {
-        const alreadyExists = existing.find(p => p.option1 === opt1.name && !p.option2);
-        if (!alreadyExists) {
-          newPrices.push({ option1: opt1.name, price: form.price, sale_price: 0, stock: 0 });
-        }
+    const groups = (form.variant_groups || []).filter(g => (g.options || []).length > 0);
+    if (groups.length === 0) return;
+
+    // Build cartesian product of option names across all active levels
+    let combos: string[][] = [['']]; // start with seed; will be replaced on first iter
+    combos = [];
+    const walk = (depth: number, acc: string[]) => {
+      if (depth === groups.length) { combos.push([...acc]); return; }
+      for (const opt of groups[depth].options) {
+        if (!opt?.name) continue;
+        acc.push(opt.name);
+        walk(depth + 1, acc);
+        acc.pop();
       }
-    }
+    };
+    walk(0, []);
+
+    const existing = form.variant_prices;
+    const matchExisting = (combo: string[]) =>
+      existing.find(e =>
+        (e.option1 || '') === (combo[0] || '') &&
+        (e.option2 || '') === (combo[1] || '') &&
+        (e.option3 || '') === (combo[2] || '') &&
+        (e.option4 || '') === (combo[3] || '') &&
+        (e.option5 || '') === (combo[4] || '')
+      );
+
+    const newPrices: VariantPriceEntry[] = combos.map(combo => {
+      const found = matchExisting(combo);
+      if (found) return found;
+      return {
+        option1: combo[0] || '',
+        option2: combo[1] || undefined,
+        option3: combo[2] || undefined,
+        option4: combo[3] || undefined,
+        option5: combo[4] || undefined,
+        price: form.price,
+        sale_price: 0,
+        stock: 0,
+      } as VariantPriceEntry;
+    });
+
     setForm(p => ({ ...p, variant_prices: newPrices }));
   };
 
