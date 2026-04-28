@@ -20,6 +20,7 @@ import { ContactFormDialog, BookingDialog, HotelBookingDialog, TrackOrderDialog,
 import { toast } from 'sonner';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
 import { ProductReviewsSection } from '@/components/landing/ProductReviewsSection';
+import { usePublicProductReviews } from '@/hooks/useLandingProductReviews';
 import { ProductBadges, LayoutProductCard, getProductGridClass } from '@/components/website-templates/layouts/ProductCardVariants';
 import type { LayoutStyle } from '@/lib/industryConfig';
 import { ImageLightbox } from '@/components/ui/ImageLightbox';
