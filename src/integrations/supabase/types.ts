@@ -10902,6 +10902,10 @@ export type Database = {
         Args: { p_tenant_id: string }
         Returns: Json
       }
+      is_admin_of_tenant: {
+        Args: { _tenant_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_authenticated: { Args: never; Returns: boolean }
       is_company_admin: {
         Args: { _company_id?: string; _user_id: string }
