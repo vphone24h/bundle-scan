@@ -108,6 +108,25 @@ type RestoreJob = {
 
 const RESTORE_JOB_HANDLED_KEY = 'vkho_restore_job_handled';
 const ACTIVE_RESTORE_JOB_KEY = 'vkho_active_restore_job_id';
+const SUPPORTED_BACKUP_VERSIONS = new Set(['1.0', '2.0', '3.0']);
+const LEGACY_BACKUP_VERSIONS = new Set(['1.0', '2.0']);
+
+const normalizeBackupVersion = (value: unknown): string | null => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value.toFixed(1);
+  }
+
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const normalized = value.trim().replace(/^v/i, '');
+  if (/^\d+$/.test(normalized)) {
+    return `${normalized}.0`;
+  }
+
+  return /^\d+\.\d+$/.test(normalized) ? normalized : null;
+};
 
 export function CrossPlatformBackupSection() {
   const { data: tenant } = useCurrentTenant();
@@ -439,6 +458,43 @@ export function CrossPlatformBackupSection() {
   };
 
   // ─── Import v3 (background job) ───
+  const runLegacyRestore = useCallback(async (backupData: any) => {
+    const version = normalizeBackupVersion(backupData?.version) ?? backupData?.version ?? '?';
+    setImportStatus(`Đang khôi phục file v${version} (legacy)...`);
+
+    const payload = backupData?.version === version
+      ? backupData
+      : { ...backupData, version };
+
+    const { data: legacyData, error: legacyError } = await supabase.functions.invoke(
+      'cross-platform-restore',
+      { body: { importData: payload, mode: importMode } },
+    );
+
+    if (legacyError) throw legacyError;
+    if (legacyData?.error) throw new Error(legacyData.error);
+
+    clearRestoredDataCache();
+    setIsImporting(false);
+    setImportProgress(100);
+    setImportStatus('Hoàn tất!');
+    setImportResult(legacyData);
+    setShowResultDialog(true);
+    setImportFile(null);
+    setImportPreview(null);
+
+    const s = legacyData?.summary;
+    if (s) {
+      const msg = `Khôi phục hoàn tất: ${s.total_success || 0} thành công, ${s.total_skipped || 0} bỏ qua, ${s.total_failed || 0} lỗi`;
+      if ((s.total_failed || 0) > 0) toast.warning(msg);
+      else toast.success(msg);
+    } else {
+      toast.success('Khôi phục dữ liệu hoàn tất!');
+    }
+
+    queryClient.invalidateQueries({ refetchType: 'all' });
+  }, [clearRestoredDataCache, importMode, queryClient]);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -448,12 +504,18 @@ export function CrossPlatformBackupSection() {
     reader.onload = (ev) => {
       try {
         const data = JSON.parse(ev.target?.result as string);
-        if (!data.version || !['1.0', '2.0', '3.0'].includes(data.version)) {
+        const normalizedVersion = normalizeBackupVersion(data?.version);
+        if (!normalizedVersion || !SUPPORTED_BACKUP_VERSIONS.has(normalizedVersion)) {
           toast.error('File không hợp lệ hoặc version không hỗ trợ');
           return;
         }
-        setImportFile(data);
-        setImportPreview(data._metadata || {});
+
+        const normalizedData = data?.version === normalizedVersion
+          ? data
+          : { ...data, version: normalizedVersion };
+
+        setImportFile(normalizedData);
+        setImportPreview(normalizedData._metadata || {});
         setShowImportDialog(true);
       } catch {
         toast.error('File JSON không hợp lệ');
@@ -475,39 +537,20 @@ export function CrossPlatformBackupSection() {
         throw new Error('Không xác định được cửa hàng hiện tại');
       }
 
+      const normalizedVersion = normalizeBackupVersion(importFile?.version);
+      if (!normalizedVersion || !SUPPORTED_BACKUP_VERSIONS.has(normalizedVersion)) {
+        throw new Error('File không hợp lệ hoặc version không hỗ trợ');
+      }
+
+      const normalizedImportFile = importFile?.version === normalizedVersion
+        ? importFile
+        : { ...importFile, version: normalizedVersion };
+
       // ─── File backup phiên bản cũ (1.0 / 2.0) → dùng restore đồng bộ legacy ───
       // Function 'cross-platform-restore-v3' chỉ nhận file v3.0 nên file cũ
       // sẽ bị từ chối. Định tuyến sang function cũ vốn đã hỗ trợ.
-      if (importFile.version && importFile.version !== '3.0') {
-        setImportStatus(`Đang khôi phục file v${importFile.version} (legacy)...`);
-
-        const { data: legacyData, error: legacyError } = await supabase.functions.invoke(
-          'cross-platform-restore',
-          { body: { importData: importFile, mode: importMode } },
-        );
-
-        if (legacyError) throw legacyError;
-        if (legacyData?.error) throw new Error(legacyData.error);
-
-        clearRestoredDataCache();
-        setIsImporting(false);
-        setImportProgress(100);
-        setImportStatus('Hoàn tất!');
-        setImportResult(legacyData);
-        setShowResultDialog(true);
-        setImportFile(null);
-        setImportPreview(null);
-
-        const s = legacyData?.summary;
-        if (s) {
-          const msg = `Khôi phục hoàn tất: ${s.total_success || 0} thành công, ${s.total_skipped || 0} bỏ qua, ${s.total_failed || 0} lỗi`;
-          if ((s.total_failed || 0) > 0) toast.warning(msg);
-          else toast.success(msg);
-        } else {
-          toast.success('Khôi phục dữ liệu hoàn tất!');
-        }
-
-        queryClient.invalidateQueries({ refetchType: 'all' });
+      if (LEGACY_BACKUP_VERSIONS.has(normalizedVersion)) {
+        await runLegacyRestore(normalizedImportFile);
         return;
       }
 
@@ -517,7 +560,7 @@ export function CrossPlatformBackupSection() {
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const sourcePath = `${tenant.id}/restore-uploads/${uploadId}.json`;
-      const blob = new Blob([JSON.stringify(importFile)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(normalizedImportFile)], { type: 'application/json' });
 
       const { error: uploadErr } = await supabase
         .storage
@@ -543,6 +586,10 @@ export function CrossPlatformBackupSection() {
       });
 
       if (error) throw error;
+      if (data?.requiresLegacyRestore || data?.errorCode === 'LEGACY_BACKUP_VERSION') {
+        await runLegacyRestore(normalizedImportFile);
+        return;
+      }
       if (data?.error) throw new Error(data.error);
 
       if (data?.jobId && typeof window !== 'undefined') {
@@ -576,7 +623,7 @@ export function CrossPlatformBackupSection() {
       });
       setShowResultDialog(true);
     }
-  }, [importFile, importMode, refetchRestoreJob, tenant?.id, tenant?.subdomain, queryClient, clearRestoredDataCache]);
+  }, [importFile, importMode, refetchRestoreJob, tenant?.id, tenant?.subdomain, queryClient, clearRestoredDataCache, runLegacyRestore]);
 
   const isAnyRunning = isExporting || isImporting || isRestoreRunning;
 
