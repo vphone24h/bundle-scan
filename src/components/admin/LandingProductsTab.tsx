@@ -1894,7 +1894,7 @@ export function LandingProductsTab() {
                     <Label className="text-[11px] font-semibold flex items-center gap-1.5">
                       🎨 Phong cách nhãn
                     </Label>
-                    <Select value={badgeStyle} onValueChange={(v) => setBadgeStyle(v as 'simple' | 'luxury' | 'modern')}>
+                    <Select value={badgeStyle} onValueChange={(v) => setBadgeStyle(v as 'simple' | 'luxury' | 'modern' | 'tiktok')}>
                       <SelectTrigger className="h-9 text-xs">
                         <SelectValue />
                       </SelectTrigger>
@@ -1915,6 +1915,12 @@ export function LandingProductsTab() {
                           <div className="flex flex-col items-start">
                             <span className="font-medium">👑 Sang trọng (Royal Luxe)</span>
                             <span className="text-[10px] text-muted-foreground">Ribbon + huy hiệu vàng, gradient cao cấp</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="tiktok">
+                          <div className="flex flex-col items-start">
+                            <span className="font-medium">🎀 Dải Ưu Đãi (Promo Strip)</span>
+                            <span className="text-[10px] text-muted-foreground">Dải băng nhiều màu sát đáy ảnh — phong cách sàn TMĐT</span>
                           </div>
                         </SelectItem>
                       </SelectContent>
