@@ -391,6 +391,8 @@ export function LandingProductsTab() {
     extra_discount_labels: [] as Array<{ label: string; text: string; color?: string }>,
     installment_down_payment: null as number | null,
     seo_description: '',
+    sold_count: 0,
+    show_sold_count: true,
   });
   // Add badges to form - stored separately to avoid re-init issues
   const [formBadges, setFormBadges] = useState<string[]>([]);
@@ -467,6 +469,8 @@ export function LandingProductsTab() {
       student_discount_label: 'HỌC SINH SINH VIÊN', student_discount_text: '', installment_down_payment: null,
       extra_discount_labels: [],
       seo_description: '',
+      sold_count: 0,
+      show_sold_count: true,
     });
     setShowBadges(false);
     setFormBadges([]);
@@ -513,6 +517,8 @@ export function LandingProductsTab() {
         installment_down_payment: (detail as any).installment_down_payment ?? null,
         extra_discount_labels: Array.isArray((detail as any).extra_discount_labels) ? (detail as any).extra_discount_labels : [],
         seo_description: (detail as any).seo_description || '',
+        sold_count: Number((detail as any).sold_count ?? 0),
+        show_sold_count: (detail as any).show_sold_count !== false,
       });
       setShowBadges(Array.isArray((detail as any).badges) && (detail as any).badges.length > 0);
       setFormBadges(Array.isArray((detail as any).badges) ? (detail as any).badges : []);
@@ -670,6 +676,8 @@ export function LandingProductsTab() {
         installment_down_payment: form.installment_down_payment,
         extra_discount_labels: (form.extra_discount_labels || []).filter(x => x && (x.text || '').trim()),
         seo_description: form.seo_description?.trim() || null,
+        sold_count: Number(form.sold_count) || 0,
+        show_sold_count: form.show_sold_count !== false,
       };
       if (editingProduct) {
         await updateProduct.mutateAsync({ id: editingProduct.id, ...payload });
@@ -1769,6 +1777,30 @@ export function LandingProductsTab() {
             <div className="flex items-center justify-between">
               <Label>Hiển thị</Label>
               <Switch checked={form.is_active} onCheckedChange={v => setForm(p => ({ ...p, is_active: v }))} />
+            </div>
+
+            {/* Số lượng đã bán */}
+            <Separator />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1.5">🔥 Hiển thị "Đã bán"</Label>
+                <Switch
+                  checked={form.show_sold_count !== false}
+                  onCheckedChange={v => setForm(p => ({ ...p, show_sold_count: v }))}
+                />
+              </div>
+              {form.show_sold_count !== false && (
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Số lượng khởi tạo (sẽ tự +1 mỗi đơn mới từ web)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={form.sold_count ?? 0}
+                    onChange={e => setForm(p => ({ ...p, sold_count: Math.max(0, Number(e.target.value) || 0) }))}
+                    placeholder="Ví dụ: 150"
+                  />
+                </div>
+              )}
             </div>
 
 
