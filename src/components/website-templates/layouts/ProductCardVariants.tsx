@@ -1055,11 +1055,7 @@ function AppleProductCard({ product, onClick, accentColor }: ProductCardProps) {
       </div>
       <div className="p-3 sm:p-4">
         <p className="font-medium text-xs sm:text-sm line-clamp-2 min-h-[2rem] leading-tight">{product.name}</p>
-        {(product as any).student_discount_text && (
-          <div className="mt-2">
-            <DiscountBadgesStack product={product as any} />
-          </div>
-        )}
+        <div className="mt-2"><DiscountBadgesStack product={product as any} /></div>
         <div className="mt-2">
           {product.sale_price ? (
             <div className="space-y-0.5">
@@ -1102,9 +1098,7 @@ function TGDDProductCard({ product, onClick, accentColor }: ProductCardProps) {
           {[1,2,3,4,5].map(i => <Star key={i} className="h-3 w-3 text-yellow-400 fill-yellow-400" />)}
           <span className="text-[10px] text-gray-400 ml-1">(99+)</span>
         </div>
-        {(product as any).student_discount_text && (
-          <DiscountBadgesStack product={product as any} />
-        )}
+        <DiscountBadgesStack product={product as any} />
         <div>
           {product.sale_price ? (
             <>
@@ -1151,9 +1145,7 @@ function HasakiProductCard({ product, onClick, accentColor }: ProductCardProps) 
           {[1,2,3,4,5].map(i => <Star key={i} className="h-3 w-3 text-amber-400 fill-amber-400" />)}
           <span className="text-[10px] text-gray-400 ml-1">({Math.floor(Math.random() * 200) + 50})</span>
         </div>
-        {(product as any).student_discount_text && (
-          <DiscountBadgesStack product={product as any} />
-        )}
+        <DiscountBadgesStack product={product as any} />
         <div>
           {product.sale_price ? (
             <div className="flex items-baseline gap-2">
@@ -1197,9 +1189,7 @@ function NikeProductCard({ product, onClick, accentColor }: ProductCardProps) {
       </div>
       <div className="pt-3 space-y-1">
         <p className="font-semibold text-sm line-clamp-1">{product.name}</p>
-        {(product as any).student_discount_text && (
-          <DiscountBadgesStack product={product as any} />
-        )}
+        <DiscountBadgesStack product={product as any} />
         <div className="flex items-baseline gap-2">
           {product.sale_price ? (
             <>
@@ -1236,9 +1226,7 @@ function LuxuryProductCard({ product, onClick, accentColor }: ProductCardProps) 
       </div>
       <div className="pt-3 space-y-1 text-center">
         <p className="font-light text-sm tracking-wide line-clamp-2" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>{product.name}</p>
-        {(product as any).student_discount_text && (
-          <DiscountBadgesStack product={product as any} align="center" />
-        )}
+        <DiscountBadgesStack product={product as any} align="center" />
         <div>
           {product.sale_price ? (
             <div className="space-y-0.5">
@@ -1275,9 +1263,7 @@ function MinimalProductCard({ product, onClick, accentColor }: ProductCardProps)
       </div>
       <div className="p-3">
         <p className="font-medium text-xs line-clamp-2 min-h-[2rem] leading-tight text-stone-700">{product.name}</p>
-        {(product as any).student_discount_text && (
-          <div className="mt-1.5"><DiscountBadgesStack product={product as any} /></div>
-        )}
+        <div className="mt-1.5"><DiscountBadgesStack product={product as any} /></div>
         <div className="mt-2">
           {product.sale_price ? (
             <div className="space-y-0.5">
@@ -1315,9 +1301,7 @@ function ShopeeProductCard({ product, onClick, accentColor }: ProductCardProps) 
       </div>
       <div className="p-2.5 space-y-1">
         <p className="font-medium text-xs line-clamp-2 min-h-[2rem] text-gray-800">{product.name}</p>
-        {(product as any).student_discount_text && (
-          <DiscountBadgesStack product={product as any} />
-        )}
+        <DiscountBadgesStack product={product as any} />
         <div>
           {product.sale_price ? (
             <>
@@ -1357,9 +1341,7 @@ function OrganicProductCard({ product, onClick, accentColor }: ProductCardProps)
       </div>
       <div className="p-3">
         <p className="font-medium text-xs line-clamp-2 min-h-[2rem] leading-tight text-green-900">{product.name}</p>
-        {(product as any).student_discount_text && (
-          <div className="mt-1.5"><DiscountBadgesStack product={product as any} /></div>
-        )}
+        <div className="mt-1.5"><DiscountBadgesStack product={product as any} /></div>
         <div className="mt-2">
           {product.sale_price ? (
             <div className="space-y-0.5">
