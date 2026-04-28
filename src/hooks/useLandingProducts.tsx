@@ -113,7 +113,9 @@ export interface LandingProduct {
   is_sold_out: boolean;
   display_order: number;
   variants: LandingProductVariant[];
-  // 2-level variant system
+  // Variant system (up to 5 levels — `variant_groups` is the source of truth)
+  variant_groups: VariantGroup[];
+  // Legacy 2-level fields (kept for backward compatibility, auto-migrated by getVariantGroups)
   variant_group_1_name: string;
   variant_group_2_name: string;
   variant_options_1: VariantOption[];
