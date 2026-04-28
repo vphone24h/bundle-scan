@@ -112,8 +112,7 @@ export function ProductDetailPage({
   const [showConsultDialog, setShowConsultDialog] = useState(false);
   const cart = useLandingCart();
 
-  const [selectedOption1, setSelectedOption1] = useState<string | null>(null);
-  const [selectedOption2, setSelectedOption2] = useState<string | null>(null);
+  const [selectedOptions, setSelectedOptions] = useState<(string | null)[]>([]);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const placeOrder = usePlaceLandingOrder();
