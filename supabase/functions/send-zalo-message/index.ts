@@ -190,41 +190,60 @@ async function trySendCSToRecentFollowers(
     const total = data.data?.total || 0;
     if (total === 0) return { userId: null, result: { error: "no_followers" } };
 
-    // Get the LAST N followers (most recently added = most likely to have interacted recently)
-    const count = Math.min(maxTry, 50);
-    const offset = Math.max(0, total - count);
-    console.log(`Getting followers offset=${offset} count=${count} (total=${total})`);
-    
-    const res2 = await fetch("https://openapi.zalo.me/v3.0/oa/user/getlist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", access_token: accessToken },
-      body: JSON.stringify({ offset, count }),
-    });
-    const rawText2 = await res2.text();
-    
-    // Extract all user_ids safely from raw text
-    const userIdMatches = [...rawText2.matchAll(/"user_id"\s*:\s*"(\d+)"/g)];
-    // Reverse so most recent follower is tried first
-    const userIds = userIdMatches.map(m => m[1]).reverse();
-    console.log(`Testing CS to ${userIds.length} recent followers...`);
+    // Strategy: scan multiple batches across the follower list to find one
+    // who has interacted within Zalo's 7-day CS messaging window.
+    // Followers can be ordered arbitrarily by Zalo, so we try BOTH the tail
+    // (recently added) and the head (oldest), plus the middle as fallback.
+    const pageSize = 50;
+    const batchOffsets: number[] = [];
+    // Tail (most recent)
+    batchOffsets.push(Math.max(0, total - pageSize));
+    // Head (oldest)
+    if (total > pageSize) batchOffsets.push(0);
+    // Middle
+    if (total > pageSize * 2) batchOffsets.push(Math.max(0, Math.floor(total / 2) - Math.floor(pageSize / 2)));
+    // Second tail page
+    if (total > pageSize * 2) batchOffsets.push(Math.max(0, total - pageSize * 2));
 
-    for (const uid of userIds) {
-      const csRes = await fetch("https://openapi.zalo.me/v3.0/oa/message/cs", {
+    let lastError: any = { error: -230, message: "Không có follower nào tương tác OA trong 7 ngày gần đây" };
+    let attempted = 0;
+    const maxAttempts = Math.max(maxTry, 40);
+
+    for (const offset of batchOffsets) {
+      if (attempted >= maxAttempts) break;
+      console.log(`Getting followers offset=${offset} count=${pageSize} (total=${total})`);
+      const res2 = await fetch("https://openapi.zalo.me/v3.0/oa/user/getlist", {
         method: "POST",
         headers: { "Content-Type": "application/json", access_token: accessToken },
-        body: JSON.stringify({
-          recipient: { user_id: uid },
-          message: { text: messageText },
-        }),
+        body: JSON.stringify({ offset, count: pageSize }),
       });
-      const csResult = await csRes.json();
-      if (!csResult.error || csResult.error === 0) {
-        console.log("CS success to follower:", uid);
-        return { userId: uid, result: csResult };
+      const rawText2 = await res2.text();
+      const userIdMatches = [...rawText2.matchAll(/"user_id"\s*:\s*"(\d+)"/g)];
+      // Reverse so most recent in this batch is tried first
+      const userIds = userIdMatches.map(m => m[1]).reverse();
+      console.log(`Batch offset=${offset}: testing CS to ${userIds.length} followers...`);
+
+      for (const uid of userIds) {
+        if (attempted >= maxAttempts) break;
+        attempted++;
+        const csRes = await fetch("https://openapi.zalo.me/v3.0/oa/message/cs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", access_token: accessToken },
+          body: JSON.stringify({
+            recipient: { user_id: uid },
+            message: { text: messageText },
+          }),
+        });
+        const csResult = await csRes.json();
+        if (!csResult.error || csResult.error === 0) {
+          console.log(`CS success to follower ${uid} (after ${attempted} attempts)`);
+          return { userId: uid, result: csResult };
+        }
+        lastError = csResult;
       }
-      console.log(`CS failed for ${uid}: ${csResult.message}`);
     }
-    return { userId: null, result: { error: -230, message: "Không có follower nào tương tác OA trong 7 ngày gần đây" } };
+    console.log(`Exhausted ${attempted} follower attempts without success`);
+    return { userId: null, result: lastError };
   } catch (e) {
     return { userId: null, result: { error: -1, message: (e as Error).message } };
   }
