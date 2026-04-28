@@ -891,7 +891,12 @@ export function ProductDetailPage({
                 case 'reviews':
                   if (!tenantId) return null;
                   return (
-                    <div key="reviews">
+                    <div key="reviews" className="space-y-4">
+                      <ProductReviewsSection
+                        productId={product.id}
+                        tenantId={tenantId}
+                        primaryColor={primaryColor}
+                      />
                       <StoreReviewsSection tenantId={tenantId} primaryColor={primaryColor} />
                     </div>
                   );
