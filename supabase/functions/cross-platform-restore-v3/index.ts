@@ -1074,8 +1074,34 @@ Deno.serve(async (req) => {
       return jsonResponse(403, { error: 'Forbidden: Admin only' })
     }
 
-    const importData = body?.importData
     const restoreMode = normalizeMode(body?.mode)
+
+    // Hỗ trợ 2 cách truyền dữ liệu:
+    //   (1) sourcePath: file đã được client upload sẵn lên bucket 'temp-imports' (KHUYẾN NGHỊ - không bị giới hạn body Edge Function)
+    //   (2) importData: gửi thẳng JSON trong body (backward-compat, dễ timeout với file lớn)
+    let importData: any = body?.importData
+    const incomingSourcePath = typeof body?.sourcePath === 'string' && body.sourcePath.trim()
+      ? body.sourcePath.trim()
+      : null
+
+    if (incomingSourcePath) {
+      // Bảo đảm path nằm trong thư mục của tenant này để tránh truy cập chéo
+      const expectedPrefix = `${tenantId}/`
+      if (!incomingSourcePath.startsWith(expectedPrefix)) {
+        return jsonResponse(400, { error: 'sourcePath không thuộc cửa hàng hiện tại' })
+      }
+      const { data: fileBlob, error: downloadErr } = await adminClient.storage
+        .from('temp-imports')
+        .download(incomingSourcePath)
+      if (downloadErr || !fileBlob) {
+        return jsonResponse(400, { error: `Không đọc được file sao lưu đã tải lên: ${downloadErr?.message || 'unknown'}` })
+      }
+      try {
+        importData = JSON.parse(await fileBlob.text())
+      } catch (e) {
+        return jsonResponse(400, { error: 'File sao lưu không phải JSON hợp lệ' })
+      }
+    }
 
     if (!importData?.version || importData.version !== '3.0') {
       return jsonResponse(400, { error: 'Chỉ hỗ trợ file sao lưu v3.0' })
@@ -1143,25 +1169,27 @@ Deno.serve(async (req) => {
       return jsonResponse(500, { error: createJobError?.message || 'Không thể tạo job khôi phục' })
     }
 
-     const sourcePath = `${tenantId}/restore-jobs/${createdJob.id}.json`
-    const backupBlob = new Blob([JSON.stringify(importData)], { type: 'application/json' })
-
-    const { error: uploadError } = await adminClient.storage
-      .from('temp-imports')
-      .upload(sourcePath, backupBlob, {
-        upsert: true,
-        contentType: 'application/json',
-      })
-
-    if (uploadError) {
-      await updateJob(adminClient, createdJob.id, {
-        status: 'failed',
-        progress: 100,
-        current_step: 'Tải file sao lưu thất bại',
-        error_message: uploadError.message,
-        completed_at: new Date().toISOString(),
-      })
-      return jsonResponse(500, { error: `Không thể tải file sao lưu: ${uploadError.message}` })
+    let sourcePath = incomingSourcePath
+    if (!sourcePath) {
+      // Fallback path: client gửi thẳng importData → server tự upload (chỉ phù hợp file nhỏ)
+      sourcePath = `${tenantId}/restore-jobs/${createdJob.id}.json`
+      const backupBlob = new Blob([JSON.stringify(importData)], { type: 'application/json' })
+      const { error: uploadError } = await adminClient.storage
+        .from('temp-imports')
+        .upload(sourcePath, backupBlob, {
+          upsert: true,
+          contentType: 'application/json',
+        })
+      if (uploadError) {
+        await updateJob(adminClient, createdJob.id, {
+          status: 'failed',
+          progress: 100,
+          current_step: 'Tải file sao lưu thất bại',
+          error_message: uploadError.message,
+          completed_at: new Date().toISOString(),
+        })
+        return jsonResponse(500, { error: `Không thể tải file sao lưu: ${uploadError.message}` })
+      }
     }
 
     await updateJob(adminClient, createdJob.id, {
