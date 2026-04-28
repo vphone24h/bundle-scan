@@ -519,7 +519,7 @@ export function LandingProductsTab() {
           : (detail as any).badge_style === 'modern'
           ? 'modern'
           : (detail as any).badge_style === 'tiktok'
-          ? 'modern'
+          ? 'tiktok'
           : 'simple',
       );
       setProductDialog(true);
