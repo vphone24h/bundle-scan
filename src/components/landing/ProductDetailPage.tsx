@@ -1194,13 +1194,14 @@ export function ProductDetailPage({
                 <Button key={btn.id} className="shrink-0 gap-2 h-11 text-sm font-semibold px-4" style={{ backgroundColor: primaryColor }}
                   onClick={() => {
                     const hasVariants = usesMultiVariants
-                      ? variantOptions1.length > 0
+                      ? variantGroups.length > 0
                       : legacyVariants.length > 0;
                     if (hasVariants) {
                       const missing: string[] = [];
                       if (usesMultiVariants) {
-                        if (variantOptions1.length > 0 && !selectedOption1) missing.push(product.variant_group_1_name || 'Biến thể 1');
-                        if (variantOptions2.length > 0 && !selectedOption2) missing.push(product.variant_group_2_name || 'Biến thể 2');
+                        variantGroups.forEach((g, i) => {
+                          if (!selectedOptions[i]) missing.push(g.name || `Biến thể ${i + 1}`);
+                        });
                       } else if (legacyVariants.length > 0 && selectedVariantIndex === null) {
                         missing.push('phiên bản');
                       }
