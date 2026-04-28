@@ -1155,43 +1155,47 @@ export function EmailAutomationTab() {
                 ) : (
                   <div className="space-y-3">
                     {automationScenarios.map(a => (
-                      <div key={a.id} className="border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                      <div key={a.id} className="border rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="font-medium truncate">{a.name}</h4>
-                            <Badge variant={a.is_active ? 'default' : 'secondary'}>
+                            <h4 className="font-medium text-sm sm:text-base truncate">{a.name}</h4>
+                            <Badge variant={a.is_active ? 'default' : 'secondary'} className="text-[10px]">
                               {a.is_active ? 'Đang bật' : 'Tắt'}
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground mt-0.5">
+                          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                             {TRIGGER_TYPES.find(t => t.value === a.trigger_type)?.label || a.trigger_type}
                             {!['customer_birthday', 'after_customer_review', 'after_voucher_received', 'on_order_cancelled', 'on_booking_confirmation', 'on_booking_reminder', 'on_booking_cancelled', 'on_table_booking', 'on_food_order', 'on_room_booking', 'on_room_checkin_reminder', 'on_course_registration', 'on_viewing_booking', 'on_quote_request'].includes(a.trigger_type) && (
                               <>: <strong>{a.trigger_type === 'customer_registration_anniversary' ? `${a.trigger_days} năm` : `${a.trigger_days} ngày`}</strong></>
                             )}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-0.5">Subject: {a.subject}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 break-all">Subject: {a.subject}</p>
                         </div>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <div className="flex flex-col items-center gap-0.5">
-                            <span className="text-[9px] text-muted-foreground">Email</span>
-                            <Switch checked={a.is_active} onCheckedChange={() => handleToggle(a)} />
+                        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-1.5 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0">
+                          <div className="flex items-center gap-3">
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="text-[9px] text-muted-foreground">Email</span>
+                              <Switch checked={a.is_active} onCheckedChange={() => handleToggle(a)} />
+                            </div>
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="text-[9px] text-blue-600 font-medium">Zalo</span>
+                              <Switch checked={a.zalo_enabled} onCheckedChange={() => handleZaloToggle(a)} className="data-[state=checked]:bg-blue-500" />
+                            </div>
                           </div>
-                          <div className="flex flex-col items-center gap-0.5">
-                            <span className="text-[9px] text-blue-600 font-medium">Zalo</span>
-                            <Switch checked={a.zalo_enabled} onCheckedChange={() => handleZaloToggle(a)} className="data-[state=checked]:bg-blue-500" />
+                          <div className="flex items-center gap-0.5">
+                            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => handleRunSingle(a.id)} disabled={runningItemId === a.id} title="Chạy ngay">
+                              <Play className={`h-4 w-4 ${runningItemId === a.id ? 'animate-spin' : ''}`} />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => handleSendTest(a)} title="Gửi thử">
+                              <Send className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => handleEdit(a)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => handleDelete(a)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
                           </div>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRunSingle(a.id)} disabled={runningItemId === a.id} title="Chạy ngay">
-                            <Play className={`h-4 w-4 ${runningItemId === a.id ? 'animate-spin' : ''}`} />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSendTest(a)} title="Gửi thử">
-                            <Send className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(a)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDelete(a)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
                         </div>
                       </div>
                     ))}
