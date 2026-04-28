@@ -576,7 +576,7 @@ export function CrossPlatformBackupSection() {
       });
       setShowResultDialog(true);
     }
-  }, [importFile, importMode, refetchRestoreJob, tenant?.id, tenant?.subdomain]);
+  }, [importFile, importMode, refetchRestoreJob, tenant?.id, tenant?.subdomain, queryClient, clearRestoredDataCache]);
 
   const isAnyRunning = isExporting || isImporting || isRestoreRunning;
 
