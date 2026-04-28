@@ -668,6 +668,7 @@ export function LandingProductsTab() {
         student_discount_label: form.student_discount_label || null,
         student_discount_text: form.student_discount_text || null,
         installment_down_payment: form.installment_down_payment,
+        extra_discount_labels: (form.extra_discount_labels || []).filter(x => x && (x.text || '').trim()),
         seo_description: form.seo_description?.trim() || null,
       };
       if (editingProduct) {
@@ -1747,6 +1748,7 @@ export function LandingProductsTab() {
                       student_discount_label: form.student_discount_label || null,
                       student_discount_text: form.student_discount_text || null,
                       installment_down_payment: form.installment_down_payment || null,
+                      extra_discount_labels: form.extra_discount_labels || [],
                     } as any}
                   />
                 </div>
