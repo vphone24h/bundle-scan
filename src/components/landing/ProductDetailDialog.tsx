@@ -9,7 +9,7 @@ import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, Chevr
 import { formatNumber } from '@/lib/formatNumber';
 import DOMPurify from 'dompurify';
 import { sanitizeRichHtml } from '@/lib/sanitizeRichHtml';
-import { LandingProduct, LandingProductVariant, VariantPriceEntry, getVariantGroups, findVariantPrice } from '@/hooks/useLandingProducts';
+import { LandingProduct, LandingProductVariant, VariantPriceEntry } from '@/hooks/useLandingProducts';
 import { usePublicProductPackages, LandingProductPackage } from '@/hooks/useLandingProducts';
 import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
@@ -60,10 +60,9 @@ export function ProductDetailDialog({
   const [attempted, setAttempted] = useState(false);
   const [selectedPackageIds, setSelectedPackageIds] = useState<Set<string>>(new Set());
 
-  // Multi-level variant selections (up to 5)
+  // 2-level variant selections
   const [selectedOption1, setSelectedOption1] = useState<string | null>(null);
   const [selectedOption2, setSelectedOption2] = useState<string | null>(null);
-  const [selectedOptions, setSelectedOptions] = useState<(string | null)[]>([]);
 
   const placeOrder = usePlaceLandingOrder();
 
