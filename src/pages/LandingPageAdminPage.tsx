@@ -26,6 +26,7 @@ const importArticles = () => import('@/components/admin/LandingArticlesTab').the
 const importOrders = () => import('@/components/admin/LandingOrdersTab').then(m => ({ default: m.LandingOrdersTab }));
 const importEmail = () => import('@/components/admin/EmailAutomationTab').then(m => ({ default: m.EmailAutomationTab }));
 const importCTV = () => import('@/components/admin/ShopCTVManagement').then(m => ({ default: m.ShopCTVManagement }));
+const importReviews = () => import('@/components/admin/LandingReviewsTab').then(m => ({ default: m.LandingReviewsTab }));
 
 const LandingPageSettings = lazy(importSettings);
 const LandingProductsTab = lazy(importProducts);
@@ -33,6 +34,7 @@ const LandingArticlesTab = lazy(importArticles);
 const LandingOrdersTab = lazy(importOrders);
 const EmailAutomationTab = lazy(importEmail);
 const ShopCTVManagement = lazy(importCTV);
+const LandingReviewsTab = lazy(importReviews);
 
 // Preload all chunks immediately so tab switching is instant
 if (typeof window !== 'undefined') {
@@ -43,6 +45,7 @@ if (typeof window !== 'undefined') {
     importOrders();
     importEmail();
     importCTV();
+    importReviews();
   };
   if (typeof window.requestIdleCallback === 'function') {
     window.requestIdleCallback(preloadAll);
@@ -184,6 +187,7 @@ export default function LandingPageAdminPage() {
               <TabsList className="mb-4 h-auto p-1.5 w-max min-w-full justify-start flex-nowrap pointer-events-auto">
                 {showSettings && <TabsTrigger value="settings" className="shrink-0 py-2.5 px-4 text-sm touch-manipulation" data-tour="landing-tab-settings">Cấu hình</TabsTrigger>}
                 {showProducts && <TabsTrigger value="products" className="shrink-0 py-2.5 px-4 text-sm touch-manipulation" data-tour="landing-tab-products">Sản phẩm</TabsTrigger>}
+                {showProducts && <TabsTrigger value="reviews" className="shrink-0 py-2.5 px-4 text-sm touch-manipulation">⭐ Đánh giá</TabsTrigger>}
                 {showArticles && <TabsTrigger value="articles" className="shrink-0 py-2.5 px-4 text-sm touch-manipulation" data-tour="landing-tab-articles">Tin tức</TabsTrigger>}
                 {showOrders && (
                   <TabsTrigger value="orders" className="shrink-0 relative py-2.5 px-4 text-sm touch-manipulation" data-tour="landing-tab-orders">
@@ -211,6 +215,11 @@ export default function LandingPageAdminPage() {
             {showProducts && (
               <TabsContent value="products">
                 <Suspense fallback={<TabLoader />}><LandingProductsTab /></Suspense>
+              </TabsContent>
+            )}
+            {showProducts && (
+              <TabsContent value="reviews">
+                <Suspense fallback={<TabLoader />}><LandingReviewsTab /></Suspense>
               </TabsContent>
             )}
             {showArticles && (

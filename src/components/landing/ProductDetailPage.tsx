@@ -19,6 +19,7 @@ import { useLandingCart } from '@/hooks/useLandingCart';
 import { ContactFormDialog, BookingDialog, HotelBookingDialog, TrackOrderDialog, CheckWarrantyDialog, WriteReviewDialog, SupportDialog, CartDialog, PromotionInfoDialog, JoinMemberDialog } from '@/components/landing/CTAActionDialogs';
 import { toast } from 'sonner';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
+import { ProductReviewsSection } from '@/components/landing/ProductReviewsSection';
 import { ProductBadges, LayoutProductCard, getProductGridClass } from '@/components/website-templates/layouts/ProductCardVariants';
 import type { LayoutStyle } from '@/lib/industryConfig';
 import { ImageLightbox } from '@/components/ui/ImageLightbox';
@@ -560,6 +561,11 @@ export function ProductDetailPage({
               <span className="text-base text-gray-400 line-through">{formatNumber(originalPrice)}đ</span>
             )}
           </div>
+          {(product as any).show_sold_count !== false && Number((product as any).sold_count ?? 0) > 0 && (
+            <p className="text-xs text-gray-500 -mt-2">
+              🔥 Đã bán <span className="font-semibold text-orange-600">{formatNumber(Number((product as any).sold_count))}</span>
+            </p>
+          )}
 
           {/* ===== 2-LEVEL VARIANTS ===== */}
           {uses2LevelVariants && (
@@ -891,7 +897,12 @@ export function ProductDetailPage({
                 case 'reviews':
                   if (!tenantId) return null;
                   return (
-                    <div key="reviews">
+                    <div key="reviews" className="space-y-4">
+                      <ProductReviewsSection
+                        productId={product.id}
+                        tenantId={tenantId}
+                        primaryColor={primaryColor}
+                      />
                       <StoreReviewsSection tenantId={tenantId} primaryColor={primaryColor} />
                     </div>
                   );

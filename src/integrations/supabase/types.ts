@@ -5097,6 +5097,60 @@ export type Database = {
           },
         ]
       }
+      landing_product_reviews: {
+        Row: {
+          content: string
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          id: string
+          is_visible: boolean
+          product_id: string
+          rating: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          customer_name: string
+          customer_phone: string
+          id?: string
+          is_visible?: boolean
+          product_id: string
+          rating?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          customer_name?: string
+          customer_phone?: string
+          id?: string
+          is_visible?: boolean
+          product_id?: string
+          rating?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "landing_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_product_reviews_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       landing_products: {
         Row: {
           badge_style: string
@@ -5121,6 +5175,8 @@ export type Database = {
           promotion_title: string | null
           sale_price: number | null
           seo_description: string | null
+          show_sold_count: boolean
+          sold_count: number
           student_discount_label: string | null
           student_discount_text: string | null
           tenant_id: string
@@ -5157,6 +5213,8 @@ export type Database = {
           promotion_title?: string | null
           sale_price?: number | null
           seo_description?: string | null
+          show_sold_count?: boolean
+          sold_count?: number
           student_discount_label?: string | null
           student_discount_text?: string | null
           tenant_id: string
@@ -5193,6 +5251,8 @@ export type Database = {
           promotion_title?: string | null
           sale_price?: number | null
           seo_description?: string | null
+          show_sold_count?: boolean
+          sold_count?: number
           student_discount_label?: string | null
           student_discount_text?: string | null
           tenant_id?: string

@@ -15,6 +15,7 @@ import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import { useCustomerPointsPublic } from '@/hooks/useTenantLanding';
 import { toast } from 'sonner';
+import { ProductReviewsSection } from './ProductReviewsSection';
 
 interface BranchOption {
   id: string;
@@ -426,6 +427,12 @@ export function ProductDetailDialog({
               <span className="text-sm text-muted-foreground line-through">{formatNumber(originalPrice)}đ</span>
             )}
           </div>
+          {/* Đã bán */}
+          {(product as any).show_sold_count !== false && Number((product as any).sold_count ?? 0) > 0 && (
+            <p className="text-xs text-muted-foreground -mt-1">
+              🔥 Đã bán <span className="font-semibold text-orange-600">{formatNumber(Number((product as any).sold_count))}</span>
+            </p>
+          )}
 
           {/* ===== 2-LEVEL VARIANTS ===== */}
           {uses2LevelVariants && (
@@ -577,6 +584,15 @@ export function ProductDetailDialog({
               <div className="p-3 text-sm prose prose-sm max-w-none rte-content"
                 dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(product.description) }} />
             </div>
+          )}
+
+          {/* ===== REVIEWS ===== */}
+          {product.id && product.tenant_id && (
+            <ProductReviewsSection
+              productId={product.id}
+              tenantId={product.tenant_id}
+              primaryColor={primaryColor}
+            />
           )}
 
           {/* ===== ORDER / INSTALLMENT BUTTONS ===== */}
