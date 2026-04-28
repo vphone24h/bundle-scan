@@ -561,6 +561,11 @@ export function ProductDetailPage({
               <span className="text-base text-gray-400 line-through">{formatNumber(originalPrice)}đ</span>
             )}
           </div>
+          {(product as any).show_sold_count !== false && Number((product as any).sold_count ?? 0) > 0 && (
+            <p className="text-xs text-gray-500 -mt-2">
+              🔥 Đã bán <span className="font-semibold text-orange-600">{formatNumber(Number((product as any).sold_count))}</span>
+            </p>
+          )}
 
           {/* ===== 2-LEVEL VARIANTS ===== */}
           {uses2LevelVariants && (
