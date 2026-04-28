@@ -121,6 +121,66 @@ export function StudentDiscountBadge({ label, text }: { label?: string | null; t
   );
 }
 
+// === EXTRA DISCOUNT BADGE ===
+// Style theo ảnh tham khảo (Samsung): pill rộng, nền pastel theo màu, chữ thường + số tiền nổi bật
+export function ExtraDiscountBadge({
+  label,
+  text,
+  color,
+}: {
+  label?: string | null;
+  text?: string | null;
+  color?: string | null;
+}) {
+  if (!text || !text.trim()) return null;
+  const c = (color || '#3b82f6').trim();
+  return (
+    <div
+      className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] sm:text-xs font-medium select-none w-full"
+      style={{
+        background: `${c}1A`, // ~10% opacity
+        color: c,
+      }}
+    >
+      <span className="truncate">{label || 'Ưu đãi'}</span>
+      <span className="font-bold whitespace-nowrap ml-auto">{text}</span>
+    </div>
+  );
+}
+
+// Bộ màu mặc định cho các nhãn ưu đãi bổ sung
+export const EXTRA_DISCOUNT_COLORS = ['#2563eb', '#7c3aed', '#059669', '#ea580c', '#db2777'];
+
+// === STACK: nhãn HS-SV chính + các nhãn ưu đãi bổ sung ===
+export function DiscountBadgesStack({
+  product,
+  align = 'start',
+}: {
+  product: any;
+  align?: 'start' | 'center';
+}) {
+  const main = product?.student_discount_text;
+  const extras: Array<{ label: string; text: string; color?: string }> = Array.isArray(product?.extra_discount_labels)
+    ? product.extra_discount_labels.filter((x: any) => x && x.text && String(x.text).trim())
+    : [];
+  if (!main && extras.length === 0) return null;
+  return (
+    <div className={`flex flex-col gap-1 ${align === 'center' ? 'items-center' : 'items-start'} w-full`}>
+      {main ? (
+        <StudentDiscountBadge label={product?.student_discount_label} text={main} />
+      ) : null}
+      {extras.slice(0, 4).map((it, idx) => (
+        <ExtraDiscountBadge
+          key={idx}
+          label={it.label}
+          text={it.text}
+          color={it.color || EXTRA_DISCOUNT_COLORS[idx % EXTRA_DISCOUNT_COLORS.length]}
+        />
+      ))}
+    </div>
+  );
+}
+
 // === INSTALLMENT LINE ===
 // Dòng "Hoặc trả trước XXX,000đ" hiển thị bên dưới giá
 export function InstallmentLine({ amount }: { amount?: number | null }) {
