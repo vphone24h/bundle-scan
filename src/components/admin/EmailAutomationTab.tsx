@@ -600,7 +600,7 @@ function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest
 
           if (existing) {
             return (
-              <div key={ot.value} className="border rounded-lg p-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <div key={ot.value} className="border rounded-lg p-3 flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h4 className="font-medium text-sm break-words">{ot.label}</h4>
@@ -611,21 +611,25 @@ function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest
                   <p className="text-xs text-muted-foreground mt-0.5">📌 {ot.condition}</p>
                   <p className="text-xs text-muted-foreground mt-0.5 break-all">Subject: {existing.subject}</p>
                 </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <div className="flex flex-col items-center gap-0.5 mr-1">
-                    <span className="text-[9px] text-muted-foreground">Email</span>
-                    <Switch checked={existing.is_active} onCheckedChange={() => onToggle(existing)} />
+                <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-1 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0">
+                  <div className="flex items-center gap-3">
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className="text-[9px] text-muted-foreground">Email</span>
+                      <Switch checked={existing.is_active} onCheckedChange={() => onToggle(existing)} />
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className="text-[9px] text-blue-600 font-medium">Zalo</span>
+                      <Switch checked={existing.zalo_enabled} onCheckedChange={() => onZaloToggle(existing)} className="data-[state=checked]:bg-blue-500" />
+                    </div>
                   </div>
-                  <div className="flex flex-col items-center gap-0.5 mr-1">
-                    <span className="text-[9px] text-blue-600 font-medium">Zalo</span>
-                    <Switch checked={existing.zalo_enabled} onCheckedChange={() => onZaloToggle(existing)} className="data-[state=checked]:bg-blue-500" />
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => onSendTest(existing)} title="Gửi thử">
+                      <Send className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => onEdit(existing)} title="Chỉnh sửa">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onSendTest(existing)} title="Gửi thử">
-                    <Send className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(existing)} title="Chỉnh sửa">
-                    <Pencil className="h-4 w-4" />
-                  </Button>
                 </div>
               </div>
             );
@@ -1085,22 +1089,25 @@ export function EmailAutomationTab() {
 
   return (
     <Card>
-      <CardHeader className="px-3 sm:px-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <CardHeader className="px-3 sm:px-6 pb-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
             <Mail className="h-5 w-5" />
             Nhắn tin tự động
           </CardTitle>
-          <div className="flex items-center gap-2 overflow-x-auto">
-            <Button size="sm" variant="outline" onClick={handleRunNow} disabled={runningNow} className="shrink-0">
-              <Play className={`h-4 w-4 mr-1 ${runningNow ? 'animate-spin' : ''}`} /> {runningNow ? 'Đang chạy...' : 'Chạy ngay'}
+          <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center">
+            <Button size="sm" variant="outline" onClick={handleRunNow} disabled={runningNow} className="w-full sm:w-auto px-2">
+              <Play className={`h-4 w-4 sm:mr-1 ${runningNow ? 'animate-spin' : ''}`} />
+              <span className="ml-1 sm:ml-0 truncate">{runningNow ? 'Đang chạy' : 'Chạy ngay'}</span>
             </Button>
-            <Button size="sm" onClick={handleCreate} className="shrink-0">
-              <Plus className="h-4 w-4 mr-1" /> Tạo kịch bản
+            <Button size="sm" onClick={handleCreate} className="w-full sm:w-auto px-2">
+              <Plus className="h-4 w-4 sm:mr-1" />
+              <span className="ml-1 sm:ml-0 truncate">Tạo mới</span>
             </Button>
-            <Button size="sm" variant="outline" asChild className="shrink-0">
+            <Button size="sm" variant="outline" asChild className="w-full sm:w-auto px-2">
               <a href="https://youtu.be/WYDuxvwrNSs?si=DF1Jd7iLmh-o0RG8" target="_blank" rel="noopener noreferrer">
-                <BookOpen className="h-4 w-4 mr-1" /> Hướng dẫn
+                <BookOpen className="h-4 w-4 sm:mr-1" />
+                <span className="ml-1 sm:ml-0 truncate">Hướng dẫn</span>
               </a>
             </Button>
           </div>
@@ -1108,11 +1115,20 @@ export function EmailAutomationTab() {
       </CardHeader>
       <CardContent className="px-3 sm:px-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="w-full sm:w-auto">
-            <TabsTrigger value="scenarios" className="flex-1 sm:flex-none">Kịch bản ({automations?.length || 0})</TabsTrigger>
-            <TabsTrigger value="logs" className="flex-1 sm:flex-none">Lịch sử Mail ({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</TabsTrigger>
-            <TabsTrigger value="zalo-logs" className="flex-1 sm:flex-none">Lịch sử Zalo ({zaloLogs?.length || 0})</TabsTrigger>
-            <TabsTrigger value="config" className="flex-1 sm:flex-none">Cấu hình</TabsTrigger>
+          <TabsList className="w-full grid grid-cols-4 h-auto sm:w-auto sm:inline-flex sm:h-10">
+            <TabsTrigger value="scenarios" className="text-[11px] sm:text-sm px-1 sm:px-3 py-1.5 whitespace-normal leading-tight">
+              <span className="sm:hidden">Kịch bản<br/>({automations?.length || 0})</span>
+              <span className="hidden sm:inline">Kịch bản ({automations?.length || 0})</span>
+            </TabsTrigger>
+            <TabsTrigger value="logs" className="text-[11px] sm:text-sm px-1 sm:px-3 py-1.5 whitespace-normal leading-tight">
+              <span className="sm:hidden">Mail<br/>({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</span>
+              <span className="hidden sm:inline">Lịch sử Mail ({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</span>
+            </TabsTrigger>
+            <TabsTrigger value="zalo-logs" className="text-[11px] sm:text-sm px-1 sm:px-3 py-1.5 whitespace-normal leading-tight">
+              <span className="sm:hidden">Zalo<br/>({zaloLogs?.length || 0})</span>
+              <span className="hidden sm:inline">Lịch sử Zalo ({zaloLogs?.length || 0})</span>
+            </TabsTrigger>
+            <TabsTrigger value="config" className="text-[11px] sm:text-sm px-1 sm:px-3 py-1.5 whitespace-normal leading-tight">Cấu hình</TabsTrigger>
           </TabsList>
 
           <TabsContent value="config" className="mt-4">
@@ -1139,43 +1155,47 @@ export function EmailAutomationTab() {
                 ) : (
                   <div className="space-y-3">
                     {automationScenarios.map(a => (
-                      <div key={a.id} className="border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                      <div key={a.id} className="border rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="font-medium truncate">{a.name}</h4>
-                            <Badge variant={a.is_active ? 'default' : 'secondary'}>
+                            <h4 className="font-medium text-sm sm:text-base truncate">{a.name}</h4>
+                            <Badge variant={a.is_active ? 'default' : 'secondary'} className="text-[10px]">
                               {a.is_active ? 'Đang bật' : 'Tắt'}
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground mt-0.5">
+                          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                             {TRIGGER_TYPES.find(t => t.value === a.trigger_type)?.label || a.trigger_type}
                             {!['customer_birthday', 'after_customer_review', 'after_voucher_received', 'on_order_cancelled', 'on_booking_confirmation', 'on_booking_reminder', 'on_booking_cancelled', 'on_table_booking', 'on_food_order', 'on_room_booking', 'on_room_checkin_reminder', 'on_course_registration', 'on_viewing_booking', 'on_quote_request'].includes(a.trigger_type) && (
                               <>: <strong>{a.trigger_type === 'customer_registration_anniversary' ? `${a.trigger_days} năm` : `${a.trigger_days} ngày`}</strong></>
                             )}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-0.5">Subject: {a.subject}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 break-all">Subject: {a.subject}</p>
                         </div>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <div className="flex flex-col items-center gap-0.5">
-                            <span className="text-[9px] text-muted-foreground">Email</span>
-                            <Switch checked={a.is_active} onCheckedChange={() => handleToggle(a)} />
+                        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-1.5 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0">
+                          <div className="flex items-center gap-3">
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="text-[9px] text-muted-foreground">Email</span>
+                              <Switch checked={a.is_active} onCheckedChange={() => handleToggle(a)} />
+                            </div>
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="text-[9px] text-blue-600 font-medium">Zalo</span>
+                              <Switch checked={a.zalo_enabled} onCheckedChange={() => handleZaloToggle(a)} className="data-[state=checked]:bg-blue-500" />
+                            </div>
                           </div>
-                          <div className="flex flex-col items-center gap-0.5">
-                            <span className="text-[9px] text-blue-600 font-medium">Zalo</span>
-                            <Switch checked={a.zalo_enabled} onCheckedChange={() => handleZaloToggle(a)} className="data-[state=checked]:bg-blue-500" />
+                          <div className="flex items-center gap-0.5">
+                            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => handleRunSingle(a.id)} disabled={runningItemId === a.id} title="Chạy ngay">
+                              <Play className={`h-4 w-4 ${runningItemId === a.id ? 'animate-spin' : ''}`} />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => handleSendTest(a)} title="Gửi thử">
+                              <Send className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => handleEdit(a)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => handleDelete(a)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
                           </div>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRunSingle(a.id)} disabled={runningItemId === a.id} title="Chạy ngay">
-                            <Play className={`h-4 w-4 ${runningItemId === a.id ? 'animate-spin' : ''}`} />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSendTest(a)} title="Gửi thử">
-                            <Send className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(a)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDelete(a)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
                         </div>
                       </div>
                     ))}
