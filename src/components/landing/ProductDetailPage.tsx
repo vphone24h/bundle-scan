@@ -10,7 +10,7 @@ import { CTAButtonItem, getDefaultCTAButtons } from '@/components/admin/ProductD
 import { formatNumber } from '@/lib/formatNumber';
 import DOMPurify from 'dompurify';
 import { sanitizeRichHtml } from '@/lib/sanitizeRichHtml';
-import { LandingProduct, LandingProductVariant, VariantPriceEntry } from '@/hooks/useLandingProducts';
+import { LandingProduct, LandingProductVariant, VariantPriceEntry, getVariantGroups, findVariantPrice } from '@/hooks/useLandingProducts';
 import { usePublicProductPackages, usePublicProductPackageGroups, LandingProductPackage, PackageGroupWithItems } from '@/hooks/useLandingProducts';
 import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
