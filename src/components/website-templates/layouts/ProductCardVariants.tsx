@@ -195,6 +195,18 @@ export function InstallmentLine({ amount }: { amount?: number | null }) {
   );
 }
 
+/** Hiển thị "Đã bán XXX" — tự ẩn khi sold_count<=0 hoặc show_sold_count=false. */
+export function SoldCountLine({ product }: { product: any }) {
+  const show = product?.show_sold_count !== false; // mặc định bật
+  const count = Number(product?.sold_count ?? 0);
+  if (!show || count <= 0) return null;
+  return (
+    <p className="text-[10px] sm:text-[11px] text-gray-500 mt-1 leading-tight">
+      🔥 Đã bán <span className="font-semibold text-orange-600">{formatNumber(count)}</span>
+    </p>
+  );
+}
+
 // Shared badge overlay for product cards
 export function ProductBadges({ badges, style }: { badges?: string[]; style?: 'simple' | 'luxury' | 'modern' | 'tiktok' | string }) {
   if (!badges || badges.length === 0) return null;
