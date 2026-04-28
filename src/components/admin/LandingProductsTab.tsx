@@ -21,6 +21,9 @@ import {
   useSavePackageGroups,
   LandingProductPackage,
   PackageGroupWithItems,
+  VariantGroup,
+  MAX_VARIANT_LEVELS,
+  getVariantGroups,
 } from '@/hooks/useLandingProducts';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings } from '@/hooks/useTenantLanding';
