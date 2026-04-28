@@ -511,6 +511,7 @@ export function LandingProductsTab() {
         student_discount_label: (detail as any).student_discount_label || 'HỌC SINH SINH VIÊN',
         student_discount_text: (detail as any).student_discount_text || '',
         installment_down_payment: (detail as any).installment_down_payment ?? null,
+        extra_discount_labels: Array.isArray((detail as any).extra_discount_labels) ? (detail as any).extra_discount_labels : [],
         seo_description: (detail as any).seo_description || '',
       });
       setShowBadges(Array.isArray((detail as any).badges) && (detail as any).badges.length > 0);
