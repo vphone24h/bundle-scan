@@ -746,7 +746,7 @@ async function runFullDeletePhase(
       }
 
       await deleteByIdsBestEffort(supabaseAdmin, 'products', 'id', productIds, 'Xoá sản phẩm', LARGE_DELETE_BATCH_SIZE)
-      await assertOptionalMutation('Xoá nhóm sản phẩm', supabaseAdmin.from('product_groups').delete().eq('tenant_id', tenantId))
+      await tryMutation('Xoá nhóm sản phẩm', supabaseAdmin.from('product_groups').delete().eq('tenant_id', tenantId))
 
       const cashBookIds = await fetchIdsByTenant(supabaseAdmin, 'cash_book', tenantId)
       await deleteByIdsBestEffort(supabaseAdmin, 'cash_book', 'id', cashBookIds, 'Xoá sổ quỹ', LARGE_DELETE_BATCH_SIZE)
@@ -1439,7 +1439,7 @@ async function deleteAllWarehouseData(supabaseAdmin: any, tenantId: string, repo
   }
 
   await deleteByIdsBestEffort(supabaseAdmin, 'products', 'id', productIds, 'Xoá sản phẩm', LARGE_DELETE_BATCH_SIZE)
-  await assertOptionalMutation('Xoá nhóm sản phẩm', supabaseAdmin.from('product_groups').delete().eq('tenant_id', tenantId))
+  await tryMutation('Xoá nhóm sản phẩm', supabaseAdmin.from('product_groups').delete().eq('tenant_id', tenantId))
 
   const cashBookIds = await fetchIdsByTenant(supabaseAdmin, 'cash_book', tenantId)
   await deleteByIdsBestEffort(supabaseAdmin, 'cash_book', 'id', cashBookIds, 'Xoá sổ quỹ', LARGE_DELETE_BATCH_SIZE)
