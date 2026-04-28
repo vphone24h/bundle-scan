@@ -15,6 +15,7 @@ import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import { useCustomerPointsPublic } from '@/hooks/useTenantLanding';
 import { toast } from 'sonner';
+import { ProductReviewsSection } from './ProductReviewsSection';
 
 interface BranchOption {
   id: string;
