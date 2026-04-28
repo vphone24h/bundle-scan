@@ -4,6 +4,7 @@ import { formatNumber } from '@/lib/formatNumber';
 import { Package, Star, Zap, ShoppingBag } from 'lucide-react';
 import { PRODUCT_BADGE_OPTIONS } from '@/components/admin/LandingProductsTab';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTenantRatingStats } from '@/hooks/useLandingProductReviews';
 
 // === FIXED BADGE POSITION MAP ===
 // Mỗi nhãn được gán cố định 1 trong 4 góc để đảm bảo nhất quán giữa admin & website,
@@ -204,6 +205,54 @@ export function SoldCountLine({ product }: { product: any }) {
     <p className="text-[10px] sm:text-[11px] text-gray-500 mt-1 leading-tight">
       🔥 Đã bán <span className="font-semibold text-orange-600">{formatNumber(count)}</span>
     </p>
+  );
+}
+
+/** Hiển thị "★ 4.9 (165)" — tự ẩn nếu chưa có đánh giá. */
+export function RatingLine({ product, inline = false }: { product: any; inline?: boolean }) {
+  const { data: stats } = useTenantRatingStats(product?.tenant_id);
+  const s = stats?.[product?.id];
+  if (!s || s.count <= 0) return null;
+  return (
+    <span
+      className={
+        inline
+          ? 'inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] text-gray-600 leading-tight'
+          : 'flex items-center gap-0.5 text-[10px] sm:text-[11px] text-gray-600 mt-1 leading-tight'
+      }
+    >
+      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+      <span className="font-semibold text-gray-800">{s.avg.toFixed(1)}</span>
+      <span className="text-gray-500">({formatNumber(s.count)})</span>
+    </span>
+  );
+}
+
+/** Combined inline: ★ 4.9 (165) · Đã bán 1.484 */
+export function RatingAndSoldLine({ product }: { product: any }) {
+  const { data: stats } = useTenantRatingStats(product?.tenant_id);
+  const s = stats?.[product?.id];
+  const showSold = product?.show_sold_count !== false;
+  const soldCount = Number(product?.sold_count ?? 0);
+  const hasRating = s && s.count > 0;
+  const hasSold = showSold && soldCount > 0;
+  if (!hasRating && !hasSold) return null;
+  return (
+    <div className="flex items-center gap-1.5 mt-1 text-[10px] sm:text-[11px] leading-tight flex-wrap">
+      {hasRating && (
+        <span className="inline-flex items-center gap-0.5">
+          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+          <span className="font-semibold text-gray-800">{s.avg.toFixed(1)}</span>
+          <span className="text-gray-500">({formatNumber(s.count)})</span>
+        </span>
+      )}
+      {hasRating && hasSold && <span className="text-gray-300">·</span>}
+      {hasSold && (
+        <span className="text-gray-500">
+          🔥 Đã bán <span className="font-semibold text-orange-600">{formatNumber(soldCount)}</span>
+        </span>
+      )}
+    </div>
   );
 }
 
