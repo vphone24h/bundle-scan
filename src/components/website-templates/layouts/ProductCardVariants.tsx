@@ -137,14 +137,14 @@ export function ExtraDiscountBadge({
   const c = (color || '#3b82f6').trim();
   return (
     <div
-      className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] sm:text-xs font-medium select-none w-full"
+      className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] sm:text-xs font-medium select-none w-full min-w-0"
       style={{
         background: `${c}1A`, // ~10% opacity
         color: c,
       }}
     >
-      <span className="truncate">{label || 'Ưu đãi'}</span>
-      <span className="font-bold whitespace-nowrap ml-auto">{text}</span>
+      <span className="truncate min-w-0 flex-1" title={label || 'Ưu đãi'}>{label || 'Ưu đãi'}</span>
+      <span className="font-bold whitespace-nowrap flex-shrink-0">{text}</span>
     </div>
   );
 }
