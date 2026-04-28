@@ -1056,6 +1056,18 @@ export function LandingProductsTab() {
                       >
                         {p.is_sold_out ? '✓ Hết' : 'Hết hàng'}
                       </Button>
+                      <Button
+                        variant={!p.is_active ? "secondary" : "outline"}
+                        size="icon"
+                        className="h-8 w-8 shrink-0"
+                        title={p.is_active ? 'Ẩn khỏi trang web' : 'Hiện trên trang web'}
+                        onClick={async () => {
+                          await updateProduct.mutateAsync({ id: p.id, is_active: !p.is_active } as any);
+                          toast({ title: p.is_active ? 'Đã ẩn sản phẩm khỏi trang web' : 'Đã hiện sản phẩm trên trang web' });
+                        }}
+                      >
+                        {p.is_active ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                      </Button>
                       {landingSettings?.website_template === 'hotel_store' && (
                         <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" title="Quản lý ngày chặn" onClick={() => setBlockedDatesProduct(p)}>
                           <CalendarDays className="h-3.5 w-3.5" />
