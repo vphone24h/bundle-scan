@@ -20,6 +20,7 @@ import { ContactFormDialog, BookingDialog, HotelBookingDialog, TrackOrderDialog,
 import { toast } from 'sonner';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
 import { ProductReviewsSection } from '@/components/landing/ProductReviewsSection';
+import { usePublicProductReviews } from '@/hooks/useLandingProductReviews';
 import { ProductBadges, LayoutProductCard, getProductGridClass } from '@/components/website-templates/layouts/ProductCardVariants';
 import type { LayoutStyle } from '@/lib/industryConfig';
 import { ImageLightbox } from '@/components/ui/ImageLightbox';
@@ -127,6 +128,10 @@ export function ProductDetailPage({
   // Fetch service packages (grouped). Falls back gracefully to legacy flat list.
   const { data: packageGroups } = usePublicProductPackageGroups(product?.id || null);
   const { data: productPackages } = usePublicProductPackages(product?.id || null);
+  const { data: productReviews = [] } = usePublicProductReviews(product?.id || null);
+  const ratingAvg = productReviews.length
+    ? productReviews.reduce((s, r) => s + (r.rating || 0), 0) / productReviews.length
+    : 0;
 
   // Flatten groups → all items with attached groupName for easy lookup
   const allPackageItems = useMemo(() => {
@@ -552,10 +557,22 @@ export function ProductDetailPage({
               <span className="text-base text-gray-400 line-through">{formatNumber(originalPrice)}đ</span>
             )}
           </div>
-          {(product as any).show_sold_count !== false && Number((product as any).sold_count ?? 0) > 0 && (
-            <p className="text-xs text-gray-500 -mt-2">
-              🔥 Đã bán <span className="font-semibold text-orange-600">{formatNumber(Number((product as any).sold_count))}</span>
-            </p>
+          {(productReviews.length > 0 || ((product as any).show_sold_count !== false && Number((product as any).sold_count ?? 0) > 0)) && (
+            <div className="flex items-center gap-2 text-xs text-gray-500 -mt-2 flex-wrap">
+              {productReviews.length > 0 && (
+                <span className="inline-flex items-center gap-0.5">
+                  <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                  <span className="font-semibold text-gray-800">{ratingAvg.toFixed(1)}</span>
+                  <span>({formatNumber(productReviews.length)})</span>
+                </span>
+              )}
+              {productReviews.length > 0 && (product as any).show_sold_count !== false && Number((product as any).sold_count ?? 0) > 0 && (
+                <span className="text-gray-300">·</span>
+              )}
+              {(product as any).show_sold_count !== false && Number((product as any).sold_count ?? 0) > 0 && (
+                <span>🔥 Đã bán <span className="font-semibold text-orange-600">{formatNumber(Number((product as any).sold_count))}</span></span>
+              )}
+            </div>
           )}
 
           {/* ===== MULTI-LEVEL VARIANTS (1-5) ===== */}

@@ -120,3 +120,36 @@ export function useDeleteProductReview() {
     },
   });
 }
+
+/**
+ * Public: aggregate rating stats (avg + count) cho tất cả sản phẩm của 1 tenant.
+ * Fetch 1 lần rồi group ở client để tiết kiệm query trên grid sản phẩm.
+ */
+export function useTenantRatingStats(tenantId?: string | null) {
+  return useQuery({
+    queryKey: ['public-landing-rating-stats', tenantId],
+    queryFn: async () => {
+      const map: Record<string, { avg: number; count: number }> = {};
+      if (!tenantId) return map;
+      const { data, error } = await supabase
+        .from('landing_product_reviews' as any)
+        .select('product_id, rating')
+        .eq('tenant_id', tenantId)
+        .eq('is_visible', true);
+      if (error) throw error;
+      const acc: Record<string, { sum: number; count: number }> = {};
+      (data || []).forEach((r: any) => {
+        const pid = r.product_id as string;
+        if (!acc[pid]) acc[pid] = { sum: 0, count: 0 };
+        acc[pid].sum += Number(r.rating || 0);
+        acc[pid].count += 1;
+      });
+      Object.entries(acc).forEach(([pid, v]) => {
+        map[pid] = { avg: v.count ? v.sum / v.count : 0, count: v.count };
+      });
+      return map;
+    },
+    enabled: !!tenantId,
+    staleTime: 1000 * 60,
+  });
+}
