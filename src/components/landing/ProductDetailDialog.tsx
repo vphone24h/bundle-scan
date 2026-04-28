@@ -422,10 +422,22 @@ export function ProductDetailDialog({
             )}
           </div>
           {/* Đã bán */}
-          {(product as any).show_sold_count !== false && Number((product as any).sold_count ?? 0) > 0 && (
-            <p className="text-xs text-muted-foreground -mt-1">
-              🔥 Đã bán <span className="font-semibold text-orange-600">{formatNumber(Number((product as any).sold_count))}</span>
-            </p>
+          {(productReviews.length > 0 || ((product as any).show_sold_count !== false && Number((product as any).sold_count ?? 0) > 0)) && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground -mt-1 flex-wrap">
+              {productReviews.length > 0 && (
+                <span className="inline-flex items-center gap-0.5">
+                  <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                  <span className="font-semibold text-foreground">{ratingAvg.toFixed(1)}</span>
+                  <span>({formatNumber(productReviews.length)})</span>
+                </span>
+              )}
+              {productReviews.length > 0 && (product as any).show_sold_count !== false && Number((product as any).sold_count ?? 0) > 0 && (
+                <span className="text-muted-foreground/50">·</span>
+              )}
+              {(product as any).show_sold_count !== false && Number((product as any).sold_count ?? 0) > 0 && (
+                <span>🔥 Đã bán <span className="font-semibold text-orange-600">{formatNumber(Number((product as any).sold_count))}</span></span>
+              )}
+            </div>
           )}
 
           {/* ===== MULTI-LEVEL VARIANTS (up to 5) ===== */}
