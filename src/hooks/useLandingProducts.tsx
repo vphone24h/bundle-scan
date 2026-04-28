@@ -70,6 +70,7 @@ export interface LandingProduct {
   student_discount_label?: string | null;
   student_discount_text?: string | null;
   installment_down_payment?: number | null;
+  extra_discount_labels?: Array<{ label: string; text: string; color?: string }> | null;
   // SEO
   seo_description?: string | null;
   created_at: string;
@@ -190,7 +191,8 @@ const LANDING_PRODUCT_LIST_SELECT = `
   id, tenant_id, category_id, name, price, sale_price,
   image_url, images, is_featured, is_active, is_sold_out,
   display_order, badges, badge_style, created_at, updated_at,
-  student_discount_label, student_discount_text, installment_down_payment
+  student_discount_label, student_discount_text, installment_down_payment,
+  extra_discount_labels
 `;
 
 export function useLandingProducts(tenantId?: string | null) {
