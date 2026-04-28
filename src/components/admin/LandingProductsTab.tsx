@@ -1341,7 +1341,7 @@ export function LandingProductsTab() {
                               className="h-3.5 w-3.5"
                             />
                             <span className={`font-medium truncate ${vp.is_sold_out ? 'line-through text-muted-foreground' : ''}`}>
-                              {vp.option1}{vp.option2 ? ` / ${vp.option2}` : ''}
+                              {[vp.option1, vp.option2, vp.option3, vp.option4, vp.option5].filter(Boolean).join(' / ')}
                             </span>
                           </label>
                           {vp.is_sold_out && <Badge variant="destructive" className="text-[9px] px-1.5 py-0 shrink-0">Hết</Badge>}
