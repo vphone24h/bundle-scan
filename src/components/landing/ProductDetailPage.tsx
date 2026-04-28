@@ -186,7 +186,7 @@ export function ProductDetailPage({
   const usesMultiVariants = variantGroups.length > 0;
 
   const legacyVariants: LandingProductVariant[] = useMemo(() => {
-    if (uses2LevelVariants) return [];
+    if (usesMultiVariants) return [];
     try {
       const v = product?.variants as any;
       if (!Array.isArray(v)) return [];
@@ -197,14 +197,14 @@ export function ProductDetailPage({
       }).filter(Boolean) as LandingProductVariant[];
     } catch { }
     return [];
-  }, [product?.variants, uses2LevelVariants]);
+  }, [product?.variants, usesMultiVariants]);
 
   const matchedVariantPrice = useMemo(() => {
-    if (!uses2LevelVariants || !selectedOption1) return null;
+    if (!usesMultiVariants || !selectedOption1) return null;
     return variantPrices.find(vp =>
       vp.option1 === selectedOption1 && (variantOptions2.length === 0 || vp.option2 === selectedOption2)
     ) || null;
-  }, [uses2LevelVariants, selectedOption1, selectedOption2, variantPrices, variantOptions2]);
+  }, [usesMultiVariants, selectedOption1, selectedOption2, variantPrices, variantOptions2]);
 
   const allImages = useMemo(() => {
     const imgs: string[] = [];
@@ -215,7 +215,7 @@ export function ProductDetailPage({
       imgs.push(product.image_url);
     }
 
-    if (uses2LevelVariants) {
+    if (usesMultiVariants) {
       variantPrices.forEach(vp => {
         if (vp.image_url && !imgs.includes(vp.image_url)) imgs.push(vp.image_url);
       });
@@ -226,29 +226,29 @@ export function ProductDetailPage({
     }
 
     return imgs;
-  }, [product, legacyVariants, uses2LevelVariants, variantPrices]);
+  }, [product, legacyVariants, usesMultiVariants, variantPrices]);
 
   const selectedLegacyVariant = selectedVariantIndex !== null ? legacyVariants[selectedVariantIndex] : null;
 
   const basePrice = useMemo(() => {
-    if (uses2LevelVariants && matchedVariantPrice) {
+    if (usesMultiVariants && matchedVariantPrice) {
       return matchedVariantPrice.sale_price || matchedVariantPrice.price;
     }
     if (selectedLegacyVariant && selectedLegacyVariant.price > 0) {
       return selectedLegacyVariant.price;
     }
     return product?.sale_price || product?.price || 0;
-  }, [uses2LevelVariants, matchedVariantPrice, selectedLegacyVariant, product]);
+  }, [usesMultiVariants, matchedVariantPrice, selectedLegacyVariant, product]);
 
   const originalPrice = useMemo(() => {
-    if (uses2LevelVariants && matchedVariantPrice && matchedVariantPrice.sale_price) {
+    if (usesMultiVariants && matchedVariantPrice && matchedVariantPrice.sale_price) {
       return matchedVariantPrice.price;
     }
-    if (!uses2LevelVariants && !selectedLegacyVariant && product?.sale_price) {
+    if (!usesMultiVariants && !selectedLegacyVariant && product?.sale_price) {
       return product.price;
     }
     return 0;
-  }, [uses2LevelVariants, matchedVariantPrice, selectedLegacyVariant, product]);
+  }, [usesMultiVariants, matchedVariantPrice, selectedLegacyVariant, product]);
 
   const selectedVoucher = useMemo(() => {
     if (!selectedVoucherId) return null;
@@ -317,13 +317,13 @@ export function ProductDetailPage({
   };
 
   useEffect(() => {
-    if (!uses2LevelVariants || !matchedVariantPrice?.image_url) return;
+    if (!usesMultiVariants || !matchedVariantPrice?.image_url) return;
     const imgIdx = allImages.indexOf(matchedVariantPrice.image_url);
     if (imgIdx >= 0) setCurrentImageIndex(imgIdx);
-  }, [uses2LevelVariants, matchedVariantPrice?.image_url, allImages]);
+  }, [usesMultiVariants, matchedVariantPrice?.image_url, allImages]);
 
   const getVariantLabel = () => {
-    if (uses2LevelVariants) {
+    if (usesMultiVariants) {
       const parts = [selectedOption1, selectedOption2].filter(Boolean);
       return parts.join(' / ') || undefined;
     }
@@ -336,15 +336,15 @@ export function ProductDetailPage({
       toast.error('Vui lòng điền đầy đủ thông tin bắt buộc');
       return;
     }
-    if (uses2LevelVariants && variantOptions1.length > 0 && !selectedOption1) {
+    if (usesMultiVariants && variantOptions1.length > 0 && !selectedOption1) {
       toast.error(`Vui lòng chọn ${product.variant_group_1_name || 'biến thể cấp 1'}`);
       return;
     }
-    if (uses2LevelVariants && variantOptions2.length > 0 && !selectedOption2) {
+    if (usesMultiVariants && variantOptions2.length > 0 && !selectedOption2) {
       toast.error(`Vui lòng chọn ${product.variant_group_2_name || 'biến thể cấp 2'}`);
       return;
     }
-    if (!uses2LevelVariants && legacyVariants.length > 0 && selectedVariantIndex === null) {
+    if (!usesMultiVariants && legacyVariants.length > 0 && selectedVariantIndex === null) {
       toast.error('Vui lòng chọn biến thể sản phẩm');
       return;
     }
@@ -560,7 +560,7 @@ export function ProductDetailPage({
           )}
 
           {/* ===== 2-LEVEL VARIANTS ===== */}
-          {uses2LevelVariants && (
+          {usesMultiVariants && (
             <div className="space-y-3">
               <div>
                 <Label className="text-sm font-medium mb-2 block">
@@ -618,7 +618,7 @@ export function ProductDetailPage({
           )}
 
           {/* ===== LEGACY VARIANTS ===== */}
-          {!uses2LevelVariants && legacyVariants.length > 0 && (
+          {!usesMultiVariants && legacyVariants.length > 0 && (
             <div>
               <Label className="text-sm font-medium mb-2 block">Chọn phiên bản <span className="text-red-500">*</span></Label>
               <div className={`flex flex-wrap gap-2 ${(attempted || variantAttempted) && selectedVariantIndex === null ? 'p-2 rounded-md border-2 border-red-400' : ''}`}>
@@ -1204,12 +1204,12 @@ export function ProductDetailPage({
               return (
                 <Button key={btn.id} className="shrink-0 gap-2 h-11 text-sm font-semibold px-4" style={{ backgroundColor: primaryColor }}
                   onClick={() => {
-                    const hasVariants = uses2LevelVariants
+                    const hasVariants = usesMultiVariants
                       ? variantOptions1.length > 0
                       : legacyVariants.length > 0;
                     if (hasVariants) {
                       const missing: string[] = [];
-                      if (uses2LevelVariants) {
+                      if (usesMultiVariants) {
                         if (variantOptions1.length > 0 && !selectedOption1) missing.push(product.variant_group_1_name || 'Biến thể 1');
                         if (variantOptions2.length > 0 && !selectedOption2) missing.push(product.variant_group_2_name || 'Biến thể 2');
                       } else if (legacyVariants.length > 0 && selectedVariantIndex === null) {
@@ -1504,7 +1504,7 @@ export function ProductDetailPage({
         isSubmitting={placeOrder.isPending}
         onNavigateOrderLookup={onNavigateOrderLookup}
         onPlaceOrder={async (data) => {
-          if (uses2LevelVariants && variantOptions1.length > 0 && !selectedOption1) {
+          if (usesMultiVariants && variantOptions1.length > 0 && !selectedOption1) {
             toast.error(`Vui lòng chọn ${product.variant_group_1_name || 'biến thể'}`);
             throw new Error('missing variant');
           }
