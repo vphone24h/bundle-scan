@@ -376,7 +376,9 @@ export function LandingProductsTab() {
     is_sold_out: false,
     variants: [] as LandingProductVariant[],
     home_tab_ids: [] as string[],
-    // 2-level variants
+    // Variant system (up to 5 levels)
+    variant_groups: [] as VariantGroup[],
+    // Legacy 2-level fields kept for backward compatibility
     variant_group_1_name: 'Màu sắc',
     variant_group_2_name: 'Dung lượng',
     variant_options_1: [] as VariantOption[],
