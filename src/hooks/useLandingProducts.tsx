@@ -30,11 +30,72 @@ export interface VariantOption {
 export interface VariantPriceEntry {
   option1: string;
   option2?: string;
+  option3?: string;
+  option4?: string;
+  option5?: string;
   price: number;
   sale_price?: number;
   stock?: number;
   image_url?: string;
   is_sold_out?: boolean;
+}
+
+export interface VariantGroup {
+  name: string;
+  options: VariantOption[];
+}
+
+export const MAX_VARIANT_LEVELS = 5;
+
+/**
+ * Normalize legacy 2-level variant fields into the unified `variant_groups` array.
+ * If `variant_groups` already has data, it wins. Otherwise we fall back to the
+ * old `variant_group_1_name / variant_options_1 / ...` columns.
+ */
+export function getVariantGroups(p: any): VariantGroup[] {
+  const raw = Array.isArray(p?.variant_groups) ? p.variant_groups : [];
+  const cleaned: VariantGroup[] = raw
+    .map((g: any) => ({
+      name: String(g?.name || ''),
+      options: Array.isArray(g?.options) ? g.options.filter((o: any) => o && o.name) : [],
+    }))
+    .filter((g: VariantGroup) => g.options.length > 0);
+  if (cleaned.length > 0) return cleaned.slice(0, MAX_VARIANT_LEVELS);
+
+  // Fallback to legacy 2-level
+  const legacy: VariantGroup[] = [];
+  const opts1 = Array.isArray(p?.variant_options_1) ? p.variant_options_1.filter((o: any) => o && o.name) : [];
+  const opts2 = Array.isArray(p?.variant_options_2) ? p.variant_options_2.filter((o: any) => o && o.name) : [];
+  if (opts1.length > 0) legacy.push({ name: p?.variant_group_1_name || 'Biến thể 1', options: opts1 });
+  if (opts2.length > 0) legacy.push({ name: p?.variant_group_2_name || 'Biến thể 2', options: opts2 });
+  return legacy;
+}
+
+/** Build the option key for a variant_prices entry up to N levels. */
+export function variantPriceKey(entry: { option1?: string; option2?: string; option3?: string; option4?: string; option5?: string }): string {
+  return [entry.option1, entry.option2, entry.option3, entry.option4, entry.option5]
+    .filter(v => v !== undefined && v !== null && v !== '')
+    .join(' / ');
+}
+
+/** Find the matching variant_prices entry for the chosen options array. */
+export function findVariantPrice(
+  entries: VariantPriceEntry[],
+  chosen: (string | null | undefined)[],
+): VariantPriceEntry | null {
+  if (!Array.isArray(entries) || entries.length === 0) return null;
+  const norm = chosen.map(v => (v === undefined || v === null ? '' : v));
+  return entries.find(e => {
+    const k = [e.option1 || '', e.option2 || '', e.option3 || '', e.option4 || '', e.option5 || ''];
+    for (let i = 0; i < norm.length; i++) {
+      if ((k[i] || '') !== (norm[i] || '')) return false;
+    }
+    // Trailing entries on the price side must be empty if not selected
+    for (let i = norm.length; i < 5; i++) {
+      if (k[i]) return false;
+    }
+    return true;
+  }) || null;
 }
 
 export interface LandingProduct {
@@ -52,7 +113,9 @@ export interface LandingProduct {
   is_sold_out: boolean;
   display_order: number;
   variants: LandingProductVariant[];
-  // 2-level variant system
+  // Variant system (up to 5 levels — `variant_groups` is the source of truth)
+  variant_groups: VariantGroup[];
+  // Legacy 2-level fields (kept for backward compatibility, auto-migrated by getVariantGroups)
   variant_group_1_name: string;
   variant_group_2_name: string;
   variant_options_1: VariantOption[];

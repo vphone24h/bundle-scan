@@ -5183,6 +5183,7 @@ export type Database = {
           updated_at: string
           variant_group_1_name: string | null
           variant_group_2_name: string | null
+          variant_groups: Json
           variant_options_1: Json | null
           variant_options_2: Json | null
           variant_prices: Json | null
@@ -5221,6 +5222,7 @@ export type Database = {
           updated_at?: string
           variant_group_1_name?: string | null
           variant_group_2_name?: string | null
+          variant_groups?: Json
           variant_options_1?: Json | null
           variant_options_2?: Json | null
           variant_prices?: Json | null
@@ -5259,6 +5261,7 @@ export type Database = {
           updated_at?: string
           variant_group_1_name?: string | null
           variant_group_2_name?: string | null
+          variant_groups?: Json
           variant_options_1?: Json | null
           variant_options_2?: Json | null
           variant_prices?: Json | null

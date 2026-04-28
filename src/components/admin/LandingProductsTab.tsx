@@ -21,6 +21,9 @@ import {
   useSavePackageGroups,
   LandingProductPackage,
   PackageGroupWithItems,
+  VariantGroup,
+  MAX_VARIANT_LEVELS,
+  getVariantGroups,
 } from '@/hooks/useLandingProducts';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings } from '@/hooks/useTenantLanding';
@@ -373,7 +376,9 @@ export function LandingProductsTab() {
     is_sold_out: false,
     variants: [] as LandingProductVariant[],
     home_tab_ids: [] as string[],
-    // 2-level variants
+    // Variant system (up to 5 levels)
+    variant_groups: [] as VariantGroup[],
+    // Legacy 2-level fields kept for backward compatibility
     variant_group_1_name: 'Màu sắc',
     variant_group_2_name: 'Dung lượng',
     variant_options_1: [] as VariantOption[],
@@ -461,6 +466,7 @@ export function LandingProductsTab() {
     setForm({
       name: '', description: '', price: 0, sale_price: null, category_id: '_none_',
       image_url: '', images: [], is_featured: false, is_active: true, is_sold_out: false, variants: [], home_tab_ids: [],
+      variant_groups: [],
       variant_group_1_name: 'Màu sắc', variant_group_2_name: 'Dung lượng',
       variant_options_1: [], variant_options_2: [], variant_prices: [],
       promotion_title: 'KHUYẾN MÃI', promotion_content: '',
@@ -502,6 +508,7 @@ export function LandingProductsTab() {
         is_sold_out: detail.is_sold_out || false,
         variants: Array.isArray(detail.variants) ? detail.variants : [],
         home_tab_ids: Array.isArray((detail as any).home_tab_ids) ? (detail as any).home_tab_ids : [],
+        variant_groups: getVariantGroups(detail),
         variant_group_1_name: detail.variant_group_1_name || 'Màu sắc',
         variant_group_2_name: detail.variant_group_2_name || 'Dung lượng',
         variant_options_1: Array.isArray(detail.variant_options_1) ? detail.variant_options_1 : [],
@@ -620,32 +627,63 @@ export function LandingProductsTab() {
 
   // Auto-generate variant price matrix
   const generateVariantPrices = () => {
-    const existing = form.variant_prices;
-    const newPrices: VariantPriceEntry[] = [...existing];
-    
-    if (form.variant_options_1.length === 0) return;
-    
-    for (const opt1 of form.variant_options_1) {
-      if (form.variant_options_2.length > 0) {
-        for (const opt2 of form.variant_options_2) {
-          const alreadyExists = existing.find(p => p.option1 === opt1.name && p.option2 === opt2.name);
-          if (!alreadyExists) {
-            newPrices.push({ option1: opt1.name, option2: opt2.name, price: form.price, sale_price: 0, stock: 0 });
-          }
-        }
-      } else {
-        const alreadyExists = existing.find(p => p.option1 === opt1.name && !p.option2);
-        if (!alreadyExists) {
-          newPrices.push({ option1: opt1.name, price: form.price, sale_price: 0, stock: 0 });
-        }
+    const groups = (form.variant_groups || []).filter(g => (g.options || []).length > 0);
+    if (groups.length === 0) return;
+
+    // Build cartesian product of option names across all active levels
+    let combos: string[][] = [['']]; // start with seed; will be replaced on first iter
+    combos = [];
+    const walk = (depth: number, acc: string[]) => {
+      if (depth === groups.length) { combos.push([...acc]); return; }
+      for (const opt of groups[depth].options) {
+        if (!opt?.name) continue;
+        acc.push(opt.name);
+        walk(depth + 1, acc);
+        acc.pop();
       }
-    }
+    };
+    walk(0, []);
+
+    const existing = form.variant_prices;
+    const matchExisting = (combo: string[]) =>
+      existing.find(e =>
+        (e.option1 || '') === (combo[0] || '') &&
+        (e.option2 || '') === (combo[1] || '') &&
+        (e.option3 || '') === (combo[2] || '') &&
+        (e.option4 || '') === (combo[3] || '') &&
+        (e.option5 || '') === (combo[4] || '')
+      );
+
+    const newPrices: VariantPriceEntry[] = combos.map(combo => {
+      const found = matchExisting(combo);
+      if (found) return found;
+      return {
+        option1: combo[0] || '',
+        option2: combo[1] || undefined,
+        option3: combo[2] || undefined,
+        option4: combo[3] || undefined,
+        option5: combo[4] || undefined,
+        price: form.price,
+        sale_price: 0,
+        stock: 0,
+      } as VariantPriceEntry;
+    });
+
     setForm(p => ({ ...p, variant_prices: newPrices }));
   };
 
   const handleSaveProduct = async () => {
     if (!form.name.trim()) return;
     try {
+      // Normalize variant_groups (drop empty options)
+      const cleanGroups: VariantGroup[] = (form.variant_groups || [])
+        .map(g => ({
+          name: (g.name || '').trim() || 'Biến thể',
+          options: (g.options || []).filter(o => (o?.name || '').trim()),
+        }))
+        .filter(g => g.options.length > 0)
+        .slice(0, MAX_VARIANT_LEVELS);
+
       const payload: any = {
         name: form.name.trim(),
         description: form.description || null,
@@ -661,10 +699,12 @@ export function LandingProductsTab() {
         badges: formBadges,
         badge_style: badgeStyle,
         home_tab_ids: form.home_tab_ids,
-        variant_group_1_name: form.variant_group_1_name,
-        variant_group_2_name: form.variant_group_2_name,
-        variant_options_1: form.variant_options_1,
-        variant_options_2: form.variant_options_2,
+        variant_groups: cleanGroups,
+        // Mirror first two levels into legacy columns for backward-compat
+        variant_group_1_name: cleanGroups[0]?.name || form.variant_group_1_name,
+        variant_group_2_name: cleanGroups[1]?.name || form.variant_group_2_name,
+        variant_options_1: cleanGroups[0]?.options || [],
+        variant_options_2: cleanGroups[1]?.options || [],
         variant_prices: form.variant_prices,
         promotion_title: form.promotion_title,
         promotion_content: form.promotion_content || null,
@@ -1167,90 +1207,116 @@ export function LandingProductsTab() {
             {/* ===== BIẾN THỂ 2 CẤP ===== */}
             <Separator />
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Label className="text-sm font-semibold">Biến thể sản phẩm (2 cấp)</Label>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <Label className="text-sm font-semibold">
+                  Biến thể sản phẩm ({form.variant_groups.length}/{MAX_VARIANT_LEVELS} cấp)
+                </Label>
+                {form.variant_groups.length < MAX_VARIANT_LEVELS && (
+                  <Button
+                    type="button" variant="outline" size="sm" className="h-7 text-xs gap-1"
+                    onClick={() => {
+                      const defaults = ['Màu sắc', 'Dung lượng', 'Phiên bản', 'Size', 'Tình trạng'];
+                      setForm(p => ({
+                        ...p,
+                        variant_groups: [
+                          ...p.variant_groups,
+                          { name: defaults[p.variant_groups.length] || `Biến thể ${p.variant_groups.length + 1}`, options: [] },
+                        ],
+                      }));
+                    }}
+                  >
+                    <Plus className="h-3 w-3" /> Thêm cấp biến thể
+                  </Button>
+                )}
               </div>
               <p className="text-xs text-muted-foreground flex items-start gap-1">
                 <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                VD biến thể cấp 1: Màu sắc / Loại máy / Phiên bản. VD cấp 2: Dung lượng / Size / RAM / Bộ nhớ.
+                Tối đa 5 cấp. VD: Màu sắc / Dung lượng / Phiên bản / Size / Tình trạng. Sau khi nhập xong, nhấn <b>Tạo bảng giá</b> để sinh tổ hợp.
               </p>
 
-              {/* Group 1 */}
-              <div className="p-3 rounded-lg border bg-muted/20 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs shrink-0">Tên cấp 1:</Label>
-                  <Input
-                    value={form.variant_group_1_name}
-                    onChange={e => setForm(p => ({ ...p, variant_group_1_name: e.target.value }))}
-                    placeholder="VD: Màu sắc"
-                    className="h-8 text-sm"
-                  />
+              {form.variant_groups.length === 0 && (
+                <div className="p-4 rounded-lg border border-dashed text-center text-xs text-muted-foreground">
+                  Chưa có biến thể nào. Nhấn <b>“+ Thêm cấp biến thể”</b> để bắt đầu.
                 </div>
-                <div className="space-y-1.5">
-                  {form.variant_options_1.map((opt, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <Input
-                        value={opt.name}
-                        onChange={e => {
-                          const opts = [...form.variant_options_1];
-                          opts[i] = { ...opts[i], name: e.target.value };
-                          setForm(p => ({ ...p, variant_options_1: opts }));
-                        }}
-                        placeholder={`Giá trị ${i + 1}`}
-                        className="h-8 text-sm flex-1"
-                      />
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0"
-                        onClick={() => setForm(p => ({ ...p, variant_options_1: p.variant_options_1.filter((_, j) => j !== i) }))}>
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1"
-                    onClick={() => setForm(p => ({ ...p, variant_options_1: [...p.variant_options_1, { name: '' }] }))}>
-                    <Plus className="h-3 w-3" /> Thêm
-                  </Button>
-                </div>
-              </div>
+              )}
 
-              {/* Group 2 */}
-              <div className="p-3 rounded-lg border bg-muted/20 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs shrink-0">Tên cấp 2:</Label>
-                  <Input
-                    value={form.variant_group_2_name}
-                    onChange={e => setForm(p => ({ ...p, variant_group_2_name: e.target.value }))}
-                    placeholder="VD: Dung lượng"
-                    className="h-8 text-sm"
-                  />
+              {form.variant_groups.map((group, gIdx) => (
+                <div key={gIdx} className="p-3 rounded-lg border bg-muted/20 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="shrink-0 text-[10px]">Cấp {gIdx + 1}</Badge>
+                    <Input
+                      value={group.name}
+                      onChange={e => {
+                        const groups = [...form.variant_groups];
+                        groups[gIdx] = { ...groups[gIdx], name: e.target.value };
+                        setForm(p => ({ ...p, variant_groups: groups }));
+                      }}
+                      placeholder={`Tên biến thể (VD: Màu sắc, Dung lượng...)`}
+                      className="h-8 text-sm flex-1"
+                    />
+                    <Button
+                      type="button" variant="ghost" size="icon"
+                      className="h-7 w-7 text-destructive shrink-0"
+                      onClick={() => {
+                        setForm(p => ({
+                          ...p,
+                          variant_groups: p.variant_groups.filter((_, j) => j !== gIdx),
+                          // Wipe price matrix as combinations no longer match
+                          variant_prices: [],
+                        }));
+                      }}
+                      title="Xoá cấp biến thể này"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <div className="space-y-1.5">
+                    {group.options.map((opt, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <Input
+                          value={opt.name}
+                          onChange={e => {
+                            const groups = [...form.variant_groups];
+                            const opts = [...groups[gIdx].options];
+                            opts[i] = { ...opts[i], name: e.target.value };
+                            groups[gIdx] = { ...groups[gIdx], options: opts };
+                            setForm(p => ({ ...p, variant_groups: groups }));
+                          }}
+                          placeholder={`Giá trị ${i + 1}`}
+                          className="h-8 text-sm flex-1"
+                        />
+                        <Button
+                          variant="ghost" size="icon"
+                          className="h-7 w-7 text-destructive shrink-0"
+                          onClick={() => {
+                            const groups = [...form.variant_groups];
+                            groups[gIdx] = {
+                              ...groups[gIdx],
+                              options: groups[gIdx].options.filter((_, j) => j !== i),
+                            };
+                            setForm(p => ({ ...p, variant_groups: groups }));
+                          }}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      variant="outline" size="sm" className="h-7 text-xs gap-1"
+                      onClick={() => {
+                        const groups = [...form.variant_groups];
+                        groups[gIdx] = { ...groups[gIdx], options: [...groups[gIdx].options, { name: '' }] };
+                        setForm(p => ({ ...p, variant_groups: groups }));
+                      }}
+                    >
+                      <Plus className="h-3 w-3" /> Thêm giá trị
+                    </Button>
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  {form.variant_options_2.map((opt, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <Input
-                        value={opt.name}
-                        onChange={e => {
-                          const opts = [...form.variant_options_2];
-                          opts[i] = { ...opts[i], name: e.target.value };
-                          setForm(p => ({ ...p, variant_options_2: opts }));
-                        }}
-                        placeholder={`Giá trị ${i + 1}`}
-                        className="h-8 text-sm flex-1"
-                      />
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0"
-                        onClick={() => setForm(p => ({ ...p, variant_options_2: p.variant_options_2.filter((_, j) => j !== i) }))}>
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1"
-                    onClick={() => setForm(p => ({ ...p, variant_options_2: [...p.variant_options_2, { name: '' }] }))}>
-                    <Plus className="h-3 w-3" /> Thêm
-                  </Button>
-                </div>
-              </div>
+              ))}
 
               {/* Generate price matrix button */}
-              {form.variant_options_1.length > 0 && (
+              {form.variant_groups.some(g => g.options.length > 0) && (
                 <Button variant="outline" size="sm" onClick={generateVariantPrices} className="gap-1">
                   🔄 Tạo bảng giá biến thể
                 </Button>
@@ -1275,7 +1341,7 @@ export function LandingProductsTab() {
                               className="h-3.5 w-3.5"
                             />
                             <span className={`font-medium truncate ${vp.is_sold_out ? 'line-through text-muted-foreground' : ''}`}>
-                              {vp.option1}{vp.option2 ? ` / ${vp.option2}` : ''}
+                              {[vp.option1, vp.option2, vp.option3, vp.option4, vp.option5].filter(Boolean).join(' / ')}
                             </span>
                           </label>
                           {vp.is_sold_out && <Badge variant="destructive" className="text-[9px] px-1.5 py-0 shrink-0">Hết</Badge>}
@@ -1388,7 +1454,7 @@ export function LandingProductsTab() {
             </div>
 
             {/* Legacy single-level variants (backward compat) */}
-            {form.variant_options_1.length === 0 && (
+            {form.variant_groups.length === 0 && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs text-muted-foreground">Biến thể đơn giản (cũ)</Label>
