@@ -1127,7 +1127,7 @@ function AppleProductCard({ product, onClick, accentColor }: ProductCardProps) {
             <p className="font-bold text-sm text-[#1d1d1f]">{formatNumber(product.price)}đ</p>
           )}
           <InstallmentLine amount={(product as any).installment_down_payment} />
-          <SoldCountLine product={product} />
+          <RatingAndSoldLine product={product} />
         </div>
       </div>
     </button>
@@ -1171,7 +1171,7 @@ function TGDDProductCard({ product, onClick, accentColor }: ProductCardProps) {
             <p className="font-extrabold text-sm text-blue-700">{formatNumber(product.price)}đ</p>
           )}
           <InstallmentLine amount={(product as any).installment_down_payment} />
-          <SoldCountLine product={product} />
+          <RatingAndSoldLine product={product} />
         </div>
         {/* Promo labels */}
         <div className="flex flex-wrap gap-1">
@@ -1219,7 +1219,7 @@ function HasakiProductCard({ product, onClick, accentColor }: ProductCardProps) 
             <p className="font-bold text-sm text-gray-900">{formatNumber(product.price)}đ</p>
           )}
           <InstallmentLine amount={(product as any).installment_down_payment} />
-          <SoldCountLine product={product} />
+          <RatingAndSoldLine product={product} />
         </div>
         {/* Deal tag */}
         {product.sale_price && (
@@ -1265,7 +1265,7 @@ function NikeProductCard({ product, onClick, accentColor }: ProductCardProps) {
           )}
         </div>
         <InstallmentLine amount={(product as any).installment_down_payment} />
-          <SoldCountLine product={product} />
+          <RatingAndSoldLine product={product} />
       </div>
     </button>
   );
@@ -1302,7 +1302,7 @@ function LuxuryProductCard({ product, onClick, accentColor }: ProductCardProps) 
             <p className="font-semibold text-sm text-gray-900">{formatNumber(product.price)}đ</p>
           )}
           <InstallmentLine amount={(product as any).installment_down_payment} />
-          <SoldCountLine product={product} />
+          <RatingAndSoldLine product={product} />
         </div>
       </div>
     </button>
@@ -1340,7 +1340,7 @@ function MinimalProductCard({ product, onClick, accentColor }: ProductCardProps)
             <p className="font-semibold text-sm text-stone-800">{formatNumber(product.price)}đ</p>
           )}
           <InstallmentLine amount={(product as any).installment_down_payment} />
-          <SoldCountLine product={product} />
+          <RatingAndSoldLine product={product} />
         </div>
       </div>
     </button>
@@ -1379,7 +1379,7 @@ function ShopeeProductCard({ product, onClick, accentColor }: ProductCardProps) 
             <p className="font-bold text-sm text-orange-600">{formatNumber(product.price)}đ</p>
           )}
           <InstallmentLine amount={(product as any).installment_down_payment} />
-          <SoldCountLine product={product} />
+          <RatingAndSoldLine product={product} />
         </div>
         <div className="flex items-center gap-1">
           <span className="text-[9px] bg-red-50 text-red-500 font-medium px-1.5 py-0.5 rounded border border-red-100">🔥 Bán chạy</span>
@@ -1420,7 +1420,7 @@ function OrganicProductCard({ product, onClick, accentColor }: ProductCardProps)
             <p className="font-bold text-sm text-green-800">{formatNumber(product.price)}đ</p>
           )}
           <InstallmentLine amount={(product as any).installment_down_payment} />
-          <SoldCountLine product={product} />
+          <RatingAndSoldLine product={product} />
         </div>
       </div>
     </button>
