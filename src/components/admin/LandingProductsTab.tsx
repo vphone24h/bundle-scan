@@ -1454,7 +1454,7 @@ export function LandingProductsTab() {
             </div>
 
             {/* Legacy single-level variants (backward compat) */}
-            {form.variant_options_1.length === 0 && (
+            {form.variant_groups.length === 0 && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs text-muted-foreground">Biến thể đơn giản (cũ)</Label>
