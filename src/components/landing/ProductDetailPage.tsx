@@ -1494,9 +1494,13 @@ export function ProductDetailPage({
         isSubmitting={placeOrder.isPending}
         onNavigateOrderLookup={onNavigateOrderLookup}
         onPlaceOrder={async (data) => {
-          if (usesMultiVariants && variantOptions1.length > 0 && !selectedOption1) {
-            toast.error(`Vui lòng chọn ${product.variant_group_1_name || 'biến thể'}`);
-            throw new Error('missing variant');
+          if (usesMultiVariants) {
+            for (let i = 0; i < variantGroups.length; i++) {
+              if (!selectedOptions[i]) {
+                toast.error(`Vui lòng chọn ${variantGroups[i].name || `Biến thể ${i + 1}`}`);
+                throw new Error('missing variant');
+              }
+            }
           }
           await placeOrder.mutateAsync({
             tenant_id: tenantId,
