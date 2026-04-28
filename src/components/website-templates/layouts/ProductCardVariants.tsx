@@ -1057,7 +1057,7 @@ function AppleProductCard({ product, onClick, accentColor }: ProductCardProps) {
         <p className="font-medium text-xs sm:text-sm line-clamp-2 min-h-[2rem] leading-tight">{product.name}</p>
         {(product as any).student_discount_text && (
           <div className="mt-2">
-            <StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} />
+            <DiscountBadgesStack product={product as any} />
           </div>
         )}
         <div className="mt-2">
@@ -1103,7 +1103,7 @@ function TGDDProductCard({ product, onClick, accentColor }: ProductCardProps) {
           <span className="text-[10px] text-gray-400 ml-1">(99+)</span>
         </div>
         {(product as any).student_discount_text && (
-          <StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} />
+          <DiscountBadgesStack product={product as any} />
         )}
         <div>
           {product.sale_price ? (
@@ -1152,7 +1152,7 @@ function HasakiProductCard({ product, onClick, accentColor }: ProductCardProps) 
           <span className="text-[10px] text-gray-400 ml-1">({Math.floor(Math.random() * 200) + 50})</span>
         </div>
         {(product as any).student_discount_text && (
-          <StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} />
+          <DiscountBadgesStack product={product as any} />
         )}
         <div>
           {product.sale_price ? (
@@ -1198,7 +1198,7 @@ function NikeProductCard({ product, onClick, accentColor }: ProductCardProps) {
       <div className="pt-3 space-y-1">
         <p className="font-semibold text-sm line-clamp-1">{product.name}</p>
         {(product as any).student_discount_text && (
-          <StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} />
+          <DiscountBadgesStack product={product as any} />
         )}
         <div className="flex items-baseline gap-2">
           {product.sale_price ? (
@@ -1237,7 +1237,7 @@ function LuxuryProductCard({ product, onClick, accentColor }: ProductCardProps) 
       <div className="pt-3 space-y-1 text-center">
         <p className="font-light text-sm tracking-wide line-clamp-2" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>{product.name}</p>
         {(product as any).student_discount_text && (
-          <div className="flex justify-center"><StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} /></div>
+          <DiscountBadgesStack product={product as any} align="center" />
         )}
         <div>
           {product.sale_price ? (
@@ -1276,7 +1276,7 @@ function MinimalProductCard({ product, onClick, accentColor }: ProductCardProps)
       <div className="p-3">
         <p className="font-medium text-xs line-clamp-2 min-h-[2rem] leading-tight text-stone-700">{product.name}</p>
         {(product as any).student_discount_text && (
-          <div className="mt-1.5"><StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} /></div>
+          <div className="mt-1.5"><DiscountBadgesStack product={product as any} /></div>
         )}
         <div className="mt-2">
           {product.sale_price ? (
@@ -1316,7 +1316,7 @@ function ShopeeProductCard({ product, onClick, accentColor }: ProductCardProps) 
       <div className="p-2.5 space-y-1">
         <p className="font-medium text-xs line-clamp-2 min-h-[2rem] text-gray-800">{product.name}</p>
         {(product as any).student_discount_text && (
-          <StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} />
+          <DiscountBadgesStack product={product as any} />
         )}
         <div>
           {product.sale_price ? (
@@ -1358,7 +1358,7 @@ function OrganicProductCard({ product, onClick, accentColor }: ProductCardProps)
       <div className="p-3">
         <p className="font-medium text-xs line-clamp-2 min-h-[2rem] leading-tight text-green-900">{product.name}</p>
         {(product as any).student_discount_text && (
-          <div className="mt-1.5"><StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} /></div>
+          <div className="mt-1.5"><DiscountBadgesStack product={product as any} /></div>
         )}
         <div className="mt-2">
           {product.sale_price ? (
