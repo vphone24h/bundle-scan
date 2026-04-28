@@ -1,0 +1,1 @@
+ALTER TABLE public.landing_products ADD COLUMN IF NOT EXISTS extra_discount_labels jsonb NOT NULL DEFAULT '[]'::jsonb;

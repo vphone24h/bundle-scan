@@ -121,6 +121,66 @@ export function StudentDiscountBadge({ label, text }: { label?: string | null; t
   );
 }
 
+// === EXTRA DISCOUNT BADGE ===
+// Style theo ảnh tham khảo (Samsung): pill rộng, nền pastel theo màu, chữ thường + số tiền nổi bật
+export function ExtraDiscountBadge({
+  label,
+  text,
+  color,
+}: {
+  label?: string | null;
+  text?: string | null;
+  color?: string | null;
+}) {
+  if (!text || !text.trim()) return null;
+  const c = (color || '#3b82f6').trim();
+  return (
+    <div
+      className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] sm:text-xs font-medium select-none w-full"
+      style={{
+        background: `${c}1A`, // ~10% opacity
+        color: c,
+      }}
+    >
+      <span className="truncate">{label || 'Ưu đãi'}</span>
+      <span className="font-bold whitespace-nowrap ml-auto">{text}</span>
+    </div>
+  );
+}
+
+// Bộ màu mặc định cho các nhãn ưu đãi bổ sung
+export const EXTRA_DISCOUNT_COLORS = ['#2563eb', '#7c3aed', '#059669', '#ea580c', '#db2777'];
+
+// === STACK: nhãn HS-SV chính + các nhãn ưu đãi bổ sung ===
+export function DiscountBadgesStack({
+  product,
+  align = 'start',
+}: {
+  product: any;
+  align?: 'start' | 'center';
+}) {
+  const main = product?.student_discount_text;
+  const extras: Array<{ label: string; text: string; color?: string }> = Array.isArray(product?.extra_discount_labels)
+    ? product.extra_discount_labels.filter((x: any) => x && x.text && String(x.text).trim())
+    : [];
+  if (!main && extras.length === 0) return null;
+  return (
+    <div className={`flex flex-col gap-1 ${align === 'center' ? 'items-center' : 'items-start'} w-full`}>
+      {main ? (
+        <StudentDiscountBadge label={product?.student_discount_label} text={main} />
+      ) : null}
+      {extras.slice(0, 4).map((it, idx) => (
+        <ExtraDiscountBadge
+          key={idx}
+          label={it.label}
+          text={it.text}
+          color={it.color || EXTRA_DISCOUNT_COLORS[idx % EXTRA_DISCOUNT_COLORS.length]}
+        />
+      ))}
+    </div>
+  );
+}
+
 // === INSTALLMENT LINE ===
 // Dòng "Hoặc trả trước XXX,000đ" hiển thị bên dưới giá
 export function InstallmentLine({ amount }: { amount?: number | null }) {
@@ -995,11 +1055,7 @@ function AppleProductCard({ product, onClick, accentColor }: ProductCardProps) {
       </div>
       <div className="p-3 sm:p-4">
         <p className="font-medium text-xs sm:text-sm line-clamp-2 min-h-[2rem] leading-tight">{product.name}</p>
-        {(product as any).student_discount_text && (
-          <div className="mt-2">
-            <StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} />
-          </div>
-        )}
+        <div className="mt-2"><DiscountBadgesStack product={product as any} /></div>
         <div className="mt-2">
           {product.sale_price ? (
             <div className="space-y-0.5">
@@ -1042,9 +1098,7 @@ function TGDDProductCard({ product, onClick, accentColor }: ProductCardProps) {
           {[1,2,3,4,5].map(i => <Star key={i} className="h-3 w-3 text-yellow-400 fill-yellow-400" />)}
           <span className="text-[10px] text-gray-400 ml-1">(99+)</span>
         </div>
-        {(product as any).student_discount_text && (
-          <StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} />
-        )}
+        <DiscountBadgesStack product={product as any} />
         <div>
           {product.sale_price ? (
             <>
@@ -1091,9 +1145,7 @@ function HasakiProductCard({ product, onClick, accentColor }: ProductCardProps) 
           {[1,2,3,4,5].map(i => <Star key={i} className="h-3 w-3 text-amber-400 fill-amber-400" />)}
           <span className="text-[10px] text-gray-400 ml-1">({Math.floor(Math.random() * 200) + 50})</span>
         </div>
-        {(product as any).student_discount_text && (
-          <StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} />
-        )}
+        <DiscountBadgesStack product={product as any} />
         <div>
           {product.sale_price ? (
             <div className="flex items-baseline gap-2">
@@ -1137,9 +1189,7 @@ function NikeProductCard({ product, onClick, accentColor }: ProductCardProps) {
       </div>
       <div className="pt-3 space-y-1">
         <p className="font-semibold text-sm line-clamp-1">{product.name}</p>
-        {(product as any).student_discount_text && (
-          <StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} />
-        )}
+        <DiscountBadgesStack product={product as any} />
         <div className="flex items-baseline gap-2">
           {product.sale_price ? (
             <>
@@ -1176,9 +1226,7 @@ function LuxuryProductCard({ product, onClick, accentColor }: ProductCardProps) 
       </div>
       <div className="pt-3 space-y-1 text-center">
         <p className="font-light text-sm tracking-wide line-clamp-2" style={{ fontFamily: '"Playfair Display", Georgia, serif' }}>{product.name}</p>
-        {(product as any).student_discount_text && (
-          <div className="flex justify-center"><StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} /></div>
-        )}
+        <DiscountBadgesStack product={product as any} align="center" />
         <div>
           {product.sale_price ? (
             <div className="space-y-0.5">
@@ -1215,9 +1263,7 @@ function MinimalProductCard({ product, onClick, accentColor }: ProductCardProps)
       </div>
       <div className="p-3">
         <p className="font-medium text-xs line-clamp-2 min-h-[2rem] leading-tight text-stone-700">{product.name}</p>
-        {(product as any).student_discount_text && (
-          <div className="mt-1.5"><StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} /></div>
-        )}
+        <div className="mt-1.5"><DiscountBadgesStack product={product as any} /></div>
         <div className="mt-2">
           {product.sale_price ? (
             <div className="space-y-0.5">
@@ -1255,9 +1301,7 @@ function ShopeeProductCard({ product, onClick, accentColor }: ProductCardProps) 
       </div>
       <div className="p-2.5 space-y-1">
         <p className="font-medium text-xs line-clamp-2 min-h-[2rem] text-gray-800">{product.name}</p>
-        {(product as any).student_discount_text && (
-          <StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} />
-        )}
+        <DiscountBadgesStack product={product as any} />
         <div>
           {product.sale_price ? (
             <>
@@ -1297,9 +1341,7 @@ function OrganicProductCard({ product, onClick, accentColor }: ProductCardProps)
       </div>
       <div className="p-3">
         <p className="font-medium text-xs line-clamp-2 min-h-[2rem] leading-tight text-green-900">{product.name}</p>
-        {(product as any).student_discount_text && (
-          <div className="mt-1.5"><StudentDiscountBadge label={(product as any).student_discount_label} text={(product as any).student_discount_text} /></div>
-        )}
+        <div className="mt-1.5"><DiscountBadgesStack product={product as any} /></div>
         <div className="mt-2">
           {product.sale_price ? (
             <div className="space-y-0.5">

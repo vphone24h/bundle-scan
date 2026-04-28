@@ -31,7 +31,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { BADGE_POSITION_MAP, LayoutProductCard } from '@/components/website-templates/layouts/ProductCardVariants';
+import { BADGE_POSITION_MAP, LayoutProductCard, EXTRA_DISCOUNT_COLORS } from '@/components/website-templates/layouts/ProductCardVariants';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -388,6 +388,7 @@ export function LandingProductsTab() {
     // Promotional
     student_discount_label: 'HỌC SINH SINH VIÊN',
     student_discount_text: '',
+    extra_discount_labels: [] as Array<{ label: string; text: string; color?: string }>,
     installment_down_payment: null as number | null,
     seo_description: '',
   });
@@ -464,6 +465,7 @@ export function LandingProductsTab() {
       warranty_title: 'BẢO HÀNH', warranty_content: '',
       package_selection_mode: 'multiple',
       student_discount_label: 'HỌC SINH SINH VIÊN', student_discount_text: '', installment_down_payment: null,
+      extra_discount_labels: [],
       seo_description: '',
     });
     setShowBadges(false);
@@ -509,6 +511,7 @@ export function LandingProductsTab() {
         student_discount_label: (detail as any).student_discount_label || 'HỌC SINH SINH VIÊN',
         student_discount_text: (detail as any).student_discount_text || '',
         installment_down_payment: (detail as any).installment_down_payment ?? null,
+        extra_discount_labels: Array.isArray((detail as any).extra_discount_labels) ? (detail as any).extra_discount_labels : [],
         seo_description: (detail as any).seo_description || '',
       });
       setShowBadges(Array.isArray((detail as any).badges) && (detail as any).badges.length > 0);
@@ -665,6 +668,7 @@ export function LandingProductsTab() {
         student_discount_label: form.student_discount_label || null,
         student_discount_text: form.student_discount_text || null,
         installment_down_payment: form.installment_down_payment,
+        extra_discount_labels: (form.extra_discount_labels || []).filter(x => x && (x.text || '').trim()),
         seo_description: form.seo_description?.trim() || null,
       };
       if (editingProduct) {
@@ -1744,6 +1748,7 @@ export function LandingProductsTab() {
                       student_discount_label: form.student_discount_label || null,
                       student_discount_text: form.student_discount_text || null,
                       installment_down_payment: form.installment_down_payment || null,
+                      extra_discount_labels: form.extra_discount_labels || [],
                     } as any}
                   />
                 </div>
@@ -1811,33 +1816,56 @@ export function LandingProductsTab() {
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <Label className="text-sm font-semibold">🎓 Nhãn ưu đãi HS-SV</Label>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-[11px] gap-1"
-                  onClick={() => {
-                    const source = (products || []).find((p: any) =>
-                      p.id !== editingProductId && (p.student_discount_text || p.student_discount_label)
-                    ) || (products || []).find((p: any) => p.id !== editingProductId);
-                    if (!source) {
-                      toast({ title: 'Chưa có sản phẩm nguồn', description: 'Cần ít nhất 1 sản phẩm khác đã cấu hình nhãn HS-SV.', variant: 'destructive' });
-                      return;
-                    }
-                    setForm(p => ({
-                      ...p,
-                      student_discount_label: (source as any).student_discount_label || 'HỌC SINH SINH VIÊN',
-                      student_discount_text: (source as any).student_discount_text || '',
-                    }));
-                    toast({ title: '✅ Đã đồng bộ', description: `Copy nhãn HS-SV từ "${(source as any).name}".` });
-                  }}
-                >
-                  🔄 Đồng bộ
-                </Button>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px] gap-1"
+                    disabled={(form.extra_discount_labels?.length || 0) >= 4}
+                    onClick={() => {
+                      setForm(p => {
+                        const cur = Array.isArray(p.extra_discount_labels) ? p.extra_discount_labels : [];
+                        if (cur.length >= 4) return p;
+                        const color = EXTRA_DISCOUNT_COLORS[cur.length % EXTRA_DISCOUNT_COLORS.length];
+                        return { ...p, extra_discount_labels: [...cur, { label: '', text: '', color }] };
+                      });
+                    }}
+                  >
+                    ➕ Thêm Nhãn Ưu Đãi
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px] gap-1"
+                    onClick={() => {
+                      const source = (products || []).find((p: any) =>
+                        p.id !== editingProductId && (p.student_discount_text || p.student_discount_label || (Array.isArray(p.extra_discount_labels) && p.extra_discount_labels.length > 0))
+                      ) || (products || []).find((p: any) => p.id !== editingProductId);
+                      if (!source) {
+                        toast({ title: 'Chưa có sản phẩm nguồn', description: 'Cần ít nhất 1 sản phẩm khác đã cấu hình nhãn ưu đãi.', variant: 'destructive' });
+                        return;
+                      }
+                      setForm(p => ({
+                        ...p,
+                        student_discount_label: (source as any).student_discount_label || 'HỌC SINH SINH VIÊN',
+                        student_discount_text: (source as any).student_discount_text || '',
+                        extra_discount_labels: Array.isArray((source as any).extra_discount_labels) ? (source as any).extra_discount_labels : [],
+                      }));
+                      toast({ title: '✅ Đã đồng bộ', description: `Copy nhãn ưu đãi từ "${(source as any).name}".` });
+                    }}
+                  >
+                    🔄 Đồng bộ
+                  </Button>
+                </div>
               </div>
+              <p className="text-[10px] text-muted-foreground">
+                Nhãn đầu tiên hiển thị kiểu tem đỏ HSSV. Có thể thêm tối đa 4 nhãn phụ (tổng 5), mỗi nhãn 1 màu khác nhau.
+              </p>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label className="text-xs">Tiêu đề</Label>
+                  <Label className="text-xs">Nhãn 1 - Tiêu đề</Label>
                   <Input
                     value={form.student_discount_label}
                     onChange={e => setForm(p => ({ ...p, student_discount_label: e.target.value }))}
@@ -1846,7 +1874,7 @@ export function LandingProductsTab() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Nội dung giảm</Label>
+                  <Label className="text-xs">Nhãn 1 - Nội dung giảm</Label>
                   <Input
                     value={form.student_discount_text}
                     onChange={e => setForm(p => ({ ...p, student_discount_text: e.target.value }))}
@@ -1855,6 +1883,68 @@ export function LandingProductsTab() {
                   />
                 </div>
               </div>
+              {(form.extra_discount_labels || []).map((it, idx) => (
+                <div key={idx} className="rounded-md border border-dashed p-2 space-y-1.5 bg-muted/30">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-semibold">Nhãn {idx + 2}</span>
+                      <input
+                        type="color"
+                        value={it.color || EXTRA_DISCOUNT_COLORS[idx % EXTRA_DISCOUNT_COLORS.length]}
+                        onChange={e => {
+                          const v = e.target.value;
+                          setForm(p => ({
+                            ...p,
+                            extra_discount_labels: (p.extra_discount_labels || []).map((x, i) => i === idx ? { ...x, color: v } : x),
+                          }));
+                        }}
+                        className="h-6 w-8 rounded border cursor-pointer"
+                        title="Màu nhãn"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-2 text-[11px] text-destructive hover:text-destructive"
+                      onClick={() => {
+                        setForm(p => ({
+                          ...p,
+                          extra_discount_labels: (p.extra_discount_labels || []).filter((_, i) => i !== idx),
+                        }));
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      value={it.label}
+                      onChange={e => {
+                        const v = e.target.value;
+                        setForm(p => ({
+                          ...p,
+                          extra_discount_labels: (p.extra_discount_labels || []).map((x, i) => i === idx ? { ...x, label: v } : x),
+                        }));
+                      }}
+                      placeholder="VD: Smember giảm đến"
+                      className="h-8 text-sm"
+                    />
+                    <Input
+                      value={it.text}
+                      onChange={e => {
+                        const v = e.target.value;
+                        setForm(p => ({
+                          ...p,
+                          extra_discount_labels: (p.extra_discount_labels || []).map((x, i) => i === idx ? { ...x, text: v } : x),
+                        }));
+                      }}
+                      placeholder="VD: 300.000đ"
+                      className="h-8 text-sm font-semibold"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Trả góp */}
