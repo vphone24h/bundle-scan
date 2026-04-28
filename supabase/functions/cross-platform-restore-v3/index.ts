@@ -158,6 +158,23 @@ function normalizeMode(value: unknown): RestoreMode {
   return value === 'overwrite' ? 'overwrite' : 'merge'
 }
 
+function normalizeBackupVersion(value: unknown): string | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value.toFixed(1)
+  }
+
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const normalized = value.trim().replace(/^v/i, '')
+  if (/^\d+$/.test(normalized)) {
+    return `${normalized}.0`
+  }
+
+  return /^\d+\.\d+$/.test(normalized) ? normalized : null
+}
+
 function createInitialResult(importData: any): RestoreSummary {
   const stats: Record<string, StatBucket> = {}
 
@@ -781,7 +798,8 @@ async function processJob(jobId: string) {
   }
 
   const importData = JSON.parse(await fileData.text())
-  if (importData?.version !== '3.0') {
+  const backupVersion = normalizeBackupVersion(importData?.version)
+  if (backupVersion !== '3.0') {
     throw new Error('Chỉ hỗ trợ file sao lưu v3.0 cho tác vụ này')
   }
 
@@ -1103,8 +1121,23 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (!importData?.version || importData.version !== '3.0') {
-      return jsonResponse(400, { error: 'Chỉ hỗ trợ file sao lưu v3.0' })
+    const backupVersion = normalizeBackupVersion(importData?.version)
+    if (!backupVersion) {
+      return jsonResponse(400, { error: 'File JSON không hợp lệ hoặc version không hỗ trợ' })
+    }
+
+    if (backupVersion !== '3.0') {
+      return jsonResponse(200, {
+        success: false,
+        requiresLegacyRestore: true,
+        errorCode: 'LEGACY_BACKUP_VERSION',
+        version: backupVersion,
+        error: 'File sao lưu phiên bản cũ sẽ được xử lý bằng luồng legacy',
+      })
+    }
+
+    if (importData.version !== backupVersion) {
+      importData.version = backupVersion
     }
 
     const activeStatuses = ['queued', 'processing']
