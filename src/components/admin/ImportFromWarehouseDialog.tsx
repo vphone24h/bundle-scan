@@ -264,6 +264,14 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
       variant_options_1,
       variant_options_2,
       variant_prices,
+      variant_groups: [
+        ...(variant_options_1.length > 0
+          ? [{ name: label1 || 'Biến thể 1', options: variant_options_1 }]
+          : []),
+        ...(variant_options_2.length > 0
+          ? [{ name: label2 || 'Biến thể 2', options: variant_options_2 }]
+          : []),
+      ],
     };
   };
 

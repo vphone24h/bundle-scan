@@ -67,7 +67,7 @@ function getNextDeliveryAction(status: string, deliveryStatus: string | null): {
 function getSelectedPackages(order: LandingOrder) {
   return Array.isArray(order.selected_packages)
     ? order.selected_packages.filter(
-        (pkg): pkg is { id: string; name: string; price: number } =>
+        (pkg): pkg is { id: string; name: string; price: number; quantity?: number; groupName?: string } =>
           !!pkg && typeof pkg.name === 'string' && typeof pkg.price === 'number'
       )
     : [];
@@ -978,7 +978,21 @@ export function LandingOrdersTab() {
                 const groupTotal = allGroupOrders.reduce((sum, o) => sum + o.quantity * o.product_price, 0);
 
                 const detailPackages = getSelectedPackages(detailOrder);
-                const packagesSubtotal = detailPackages.reduce((sum, pkg) => sum + pkg.price, 0);
+                const packagesSubtotal = detailPackages.reduce(
+                  (sum, pkg) => sum + pkg.price * Math.max(1, pkg.quantity || 1),
+                  0,
+                );
+                // Group packages by groupName for richer breakdown
+                const packagesByGroup = (() => {
+                  const map = new Map<string, typeof detailPackages>();
+                  detailPackages.forEach(p => {
+                    const key = p.groupName || 'Gói dịch vụ';
+                    const arr = map.get(key) || [];
+                    arr.push(p);
+                    map.set(key, arr);
+                  });
+                  return Array.from(map.entries());
+                })();
 
                 return (
                   <div className="space-y-2">
@@ -1020,12 +1034,35 @@ export function LandingOrdersTab() {
                       </div>
                       {detailPackages.length > 0 && (
                         <>
-                          {detailPackages.map((pkg, idx) => (
-                            <div key={`${pkg.id}-${idx}`} className="flex justify-between text-muted-foreground">
-                              <span>• {pkg.name}</span>
-                              <span className="font-medium text-foreground">{pkg.price > 0 ? `+${formatNumber(pkg.price * detailOrder.quantity)}đ` : 'Miễn phí'}</span>
-                            </div>
-                          ))}
+                          {packagesByGroup.map(([groupName, pkgs]) => {
+                            const groupSubtotal = pkgs.reduce(
+                              (s, p) => s + p.price * Math.max(1, p.quantity || 1),
+                              0,
+                            );
+                            return (
+                              <div key={groupName} className="space-y-1 pt-1">
+                                <div className="text-xs font-semibold text-foreground">{groupName}</div>
+                                {pkgs.map((pkg, idx) => {
+                                  const qty = Math.max(1, pkg.quantity || 1);
+                                  const lineTotal = pkg.price * qty * detailOrder.quantity;
+                                  return (
+                                    <div key={`${pkg.id}-${idx}`} className="flex justify-between text-muted-foreground">
+                                      <span>• {pkg.name}{qty > 1 ? ` × ${qty}` : ''}</span>
+                                      <span className="font-medium text-foreground">
+                                        {pkg.price > 0 ? `+${formatNumber(lineTotal)}đ` : 'Miễn phí'}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                                {packagesByGroup.length > 1 && (
+                                  <div className="flex justify-between text-xs text-muted-foreground border-t border-dashed pt-1">
+                                    <span>Tổng {groupName}</span>
+                                    <span>{groupSubtotal > 0 ? `+${formatNumber(groupSubtotal * detailOrder.quantity)}đ` : '0đ'}</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                           <div className="flex justify-between font-medium border-t border-dashed pt-1.5">
                             <span>Tổng gói DV</span>
                             <span>{packagesSubtotal > 0 ? `+${formatNumber(packagesSubtotal * detailOrder.quantity)}đ` : '0đ'}</span>

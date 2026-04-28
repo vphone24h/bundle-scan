@@ -10,7 +10,7 @@ import { CTAButtonItem, getDefaultCTAButtons } from '@/components/admin/ProductD
 import { formatNumber } from '@/lib/formatNumber';
 import DOMPurify from 'dompurify';
 import { sanitizeRichHtml } from '@/lib/sanitizeRichHtml';
-import { LandingProduct, LandingProductVariant, VariantPriceEntry } from '@/hooks/useLandingProducts';
+import { LandingProduct, LandingProductVariant, VariantPriceEntry, getVariantGroups, findVariantPrice } from '@/hooks/useLandingProducts';
 import { usePublicProductPackages, usePublicProductPackageGroups, LandingProductPackage, PackageGroupWithItems } from '@/hooks/useLandingProducts';
 import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
@@ -112,8 +112,7 @@ export function ProductDetailPage({
   const [showConsultDialog, setShowConsultDialog] = useState(false);
   const cart = useLandingCart();
 
-  const [selectedOption1, setSelectedOption1] = useState<string | null>(null);
-  const [selectedOption2, setSelectedOption2] = useState<string | null>(null);
+  const [selectedOptions, setSelectedOptions] = useState<(string | null)[]>([]);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const placeOrder = usePlaceLandingOrder();
@@ -177,24 +176,17 @@ export function ProductDetailPage({
     [customerVouchers]
   );
 
-  const variantOptions1: Array<{ name: string; image_url?: string }> = useMemo(() => {
-    const opts = product.variant_options_1;
-    return Array.isArray(opts) ? opts.filter(o => o.name) : [];
-  }, [product]);
-
-  const variantOptions2: Array<{ name: string; image_url?: string }> = useMemo(() => {
-    const opts = product.variant_options_2;
-    return Array.isArray(opts) ? opts.filter(o => o.name) : [];
-  }, [product]);
+  // Multi-level variant groups (1-5 levels, with legacy fallback)
+  const variantGroups = useMemo(() => getVariantGroups(product), [product]);
 
   const variantPrices: VariantPriceEntry[] = useMemo(() => {
     return Array.isArray(product.variant_prices) ? product.variant_prices : [];
   }, [product]);
 
-  const uses2LevelVariants = variantOptions1.length > 0;
+  const usesMultiVariants = variantGroups.length > 0;
 
   const legacyVariants: LandingProductVariant[] = useMemo(() => {
-    if (uses2LevelVariants) return [];
+    if (usesMultiVariants) return [];
     try {
       const v = product?.variants as any;
       if (!Array.isArray(v)) return [];
@@ -205,14 +197,13 @@ export function ProductDetailPage({
       }).filter(Boolean) as LandingProductVariant[];
     } catch { }
     return [];
-  }, [product?.variants, uses2LevelVariants]);
+  }, [product?.variants, usesMultiVariants]);
 
+  const allLevelsSelected = usesMultiVariants && variantGroups.every((_, i) => !!selectedOptions[i]);
   const matchedVariantPrice = useMemo(() => {
-    if (!uses2LevelVariants || !selectedOption1) return null;
-    return variantPrices.find(vp =>
-      vp.option1 === selectedOption1 && (variantOptions2.length === 0 || vp.option2 === selectedOption2)
-    ) || null;
-  }, [uses2LevelVariants, selectedOption1, selectedOption2, variantPrices, variantOptions2]);
+    if (!usesMultiVariants || !allLevelsSelected) return null;
+    return findVariantPrice(variantPrices, selectedOptions.slice(0, variantGroups.length));
+  }, [usesMultiVariants, allLevelsSelected, variantPrices, selectedOptions, variantGroups.length]);
 
   const allImages = useMemo(() => {
     const imgs: string[] = [];
@@ -223,7 +214,7 @@ export function ProductDetailPage({
       imgs.push(product.image_url);
     }
 
-    if (uses2LevelVariants) {
+    if (usesMultiVariants) {
       variantPrices.forEach(vp => {
         if (vp.image_url && !imgs.includes(vp.image_url)) imgs.push(vp.image_url);
       });
@@ -234,29 +225,29 @@ export function ProductDetailPage({
     }
 
     return imgs;
-  }, [product, legacyVariants, uses2LevelVariants, variantPrices]);
+  }, [product, legacyVariants, usesMultiVariants, variantPrices]);
 
   const selectedLegacyVariant = selectedVariantIndex !== null ? legacyVariants[selectedVariantIndex] : null;
 
   const basePrice = useMemo(() => {
-    if (uses2LevelVariants && matchedVariantPrice) {
+    if (usesMultiVariants && matchedVariantPrice) {
       return matchedVariantPrice.sale_price || matchedVariantPrice.price;
     }
     if (selectedLegacyVariant && selectedLegacyVariant.price > 0) {
       return selectedLegacyVariant.price;
     }
     return product?.sale_price || product?.price || 0;
-  }, [uses2LevelVariants, matchedVariantPrice, selectedLegacyVariant, product]);
+  }, [usesMultiVariants, matchedVariantPrice, selectedLegacyVariant, product]);
 
   const originalPrice = useMemo(() => {
-    if (uses2LevelVariants && matchedVariantPrice && matchedVariantPrice.sale_price) {
+    if (usesMultiVariants && matchedVariantPrice && matchedVariantPrice.sale_price) {
       return matchedVariantPrice.price;
     }
-    if (!uses2LevelVariants && !selectedLegacyVariant && product?.sale_price) {
+    if (!usesMultiVariants && !selectedLegacyVariant && product?.sale_price) {
       return product.price;
     }
     return 0;
-  }, [uses2LevelVariants, matchedVariantPrice, selectedLegacyVariant, product]);
+  }, [usesMultiVariants, matchedVariantPrice, selectedLegacyVariant, product]);
 
   const selectedVoucher = useMemo(() => {
     if (!selectedVoucherId) return null;
@@ -325,15 +316,15 @@ export function ProductDetailPage({
   };
 
   useEffect(() => {
-    if (!uses2LevelVariants || !matchedVariantPrice?.image_url) return;
+    if (!usesMultiVariants || !matchedVariantPrice?.image_url) return;
     const imgIdx = allImages.indexOf(matchedVariantPrice.image_url);
     if (imgIdx >= 0) setCurrentImageIndex(imgIdx);
-  }, [uses2LevelVariants, matchedVariantPrice?.image_url, allImages]);
+  }, [usesMultiVariants, matchedVariantPrice?.image_url, allImages]);
 
   const getVariantLabel = () => {
-    if (uses2LevelVariants) {
-      const parts = [selectedOption1, selectedOption2].filter(Boolean);
-      return parts.join(' / ') || undefined;
+    if (usesMultiVariants) {
+      const parts = selectedOptions.slice(0, variantGroups.length).filter(Boolean);
+      return parts.length > 0 ? parts.join(' / ') : undefined;
     }
     return selectedLegacyVariant?.name;
   };
@@ -344,15 +335,15 @@ export function ProductDetailPage({
       toast.error('Vui lòng điền đầy đủ thông tin bắt buộc');
       return;
     }
-    if (uses2LevelVariants && variantOptions1.length > 0 && !selectedOption1) {
-      toast.error(`Vui lòng chọn ${product.variant_group_1_name || 'biến thể cấp 1'}`);
-      return;
+    if (usesMultiVariants) {
+      for (let i = 0; i < variantGroups.length; i++) {
+        if (!selectedOptions[i]) {
+          toast.error(`Vui lòng chọn ${variantGroups[i].name || `Biến thể ${i + 1}`}`);
+          return;
+        }
+      }
     }
-    if (uses2LevelVariants && variantOptions2.length > 0 && !selectedOption2) {
-      toast.error(`Vui lòng chọn ${product.variant_group_2_name || 'biến thể cấp 2'}`);
-      return;
-    }
-    if (!uses2LevelVariants && legacyVariants.length > 0 && selectedVariantIndex === null) {
+    if (!usesMultiVariants && legacyVariants.length > 0 && selectedVariantIndex === null) {
       toast.error('Vui lòng chọn biến thể sản phẩm');
       return;
     }
@@ -567,54 +558,44 @@ export function ProductDetailPage({
             </p>
           )}
 
-          {/* ===== 2-LEVEL VARIANTS ===== */}
-          {uses2LevelVariants && (
+          {/* ===== MULTI-LEVEL VARIANTS (1-5) ===== */}
+          {usesMultiVariants && (
             <div className="space-y-3">
-              <div>
-                <Label className="text-sm font-medium mb-2 block">
-                  {product.variant_group_1_name || 'Biến thể 1'} <span className="text-red-500">*</span>
-                </Label>
-                <div className={`flex flex-wrap gap-2 ${(attempted || variantAttempted) && !selectedOption1 ? 'p-2 rounded-md border-2 border-red-400' : ''}`}>
-                  {variantOptions1.map((opt, i) => (
-                    <Badge
-                      key={i}
-                      variant={selectedOption1 === opt.name ? 'default' : 'outline'}
-                      className="cursor-pointer text-sm px-3 py-2 active:scale-95 transition-transform"
-                      style={selectedOption1 === opt.name ? { backgroundColor: primaryColor } : {}}
-                      onClick={() => { setSelectedOption1(selectedOption1 === opt.name ? null : opt.name); setVariantAttempted(false); }}
-                    >
-                      {opt.name}
-                    </Badge>
-                  ))}
-                </div>
-                {(attempted || variantAttempted) && !selectedOption1 && (
-                  <p className="text-xs text-red-500 font-medium mt-1">⚠ Vui lòng chọn {product.variant_group_1_name || 'Biến thể 1'}</p>
-                )}
-              </div>
-
-              {variantOptions2.length > 0 && (
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">
-                    {product.variant_group_2_name || 'Biến thể 2'} <span className="text-red-500">*</span>
-                  </Label>
-                  <div className={`flex flex-wrap gap-2 ${(attempted || variantAttempted) && !selectedOption2 ? 'p-2 rounded-md border-2 border-red-400' : ''}`}>
-                    {variantOptions2.map((opt, i) => (
-                      <Badge
-                        key={i}
-                        variant={selectedOption2 === opt.name ? 'default' : 'outline'}
-                        className="cursor-pointer text-sm px-3 py-2 active:scale-95 transition-transform"
-                        style={selectedOption2 === opt.name ? { backgroundColor: primaryColor } : {}}
-                        onClick={() => { setSelectedOption2(selectedOption2 === opt.name ? null : opt.name); setVariantAttempted(false); }}
-                      >
-                        {opt.name}
-                      </Badge>
-                    ))}
+              {variantGroups.map((group, gIdx) => {
+                const sel = selectedOptions[gIdx] || null;
+                const groupLabel = group.name || `Biến thể ${gIdx + 1}`;
+                return (
+                  <div key={gIdx}>
+                    <Label className="text-sm font-medium mb-2 block">
+                      {groupLabel} <span className="text-red-500">*</span>
+                    </Label>
+                    <div className={`flex flex-wrap gap-2 ${(attempted || variantAttempted) && !sel ? 'p-2 rounded-md border-2 border-red-400' : ''}`}>
+                      {group.options.map((opt, i) => (
+                        <Badge
+                          key={i}
+                          variant={sel === opt.name ? 'default' : 'outline'}
+                          className="cursor-pointer text-sm px-3 py-2 active:scale-95 transition-transform"
+                          style={sel === opt.name ? { backgroundColor: primaryColor } : {}}
+                          onClick={() => {
+                            setSelectedOptions(prev => {
+                              const next = [...prev];
+                              while (next.length <= gIdx) next.push(null);
+                              next[gIdx] = next[gIdx] === opt.name ? null : opt.name;
+                              return next;
+                            });
+                            setVariantAttempted(false);
+                          }}
+                        >
+                          {opt.name}
+                        </Badge>
+                      ))}
+                    </div>
+                    {(attempted || variantAttempted) && !sel && (
+                      <p className="text-xs text-red-500 font-medium mt-1">⚠ Vui lòng chọn {groupLabel}</p>
+                    )}
                   </div>
-                  {(attempted || variantAttempted) && !selectedOption2 && (
-                    <p className="text-xs text-red-500 font-medium mt-1">⚠ Vui lòng chọn {product.variant_group_2_name || 'Biến thể 2'}</p>
-                  )}
-                </div>
-              )}
+                );
+              })}
 
               {matchedVariantPrice && matchedVariantPrice.is_sold_out && (
                 <p className="text-sm font-medium text-red-600">🚫 Đã hết</p>
@@ -626,7 +607,7 @@ export function ProductDetailPage({
           )}
 
           {/* ===== LEGACY VARIANTS ===== */}
-          {!uses2LevelVariants && legacyVariants.length > 0 && (
+          {!usesMultiVariants && legacyVariants.length > 0 && (
             <div>
               <Label className="text-sm font-medium mb-2 block">Chọn phiên bản <span className="text-red-500">*</span></Label>
               <div className={`flex flex-wrap gap-2 ${(attempted || variantAttempted) && selectedVariantIndex === null ? 'p-2 rounded-md border-2 border-red-400' : ''}`}>
@@ -1212,14 +1193,15 @@ export function ProductDetailPage({
               return (
                 <Button key={btn.id} className="shrink-0 gap-2 h-11 text-sm font-semibold px-4" style={{ backgroundColor: primaryColor }}
                   onClick={() => {
-                    const hasVariants = uses2LevelVariants
-                      ? variantOptions1.length > 0
+                    const hasVariants = usesMultiVariants
+                      ? variantGroups.length > 0
                       : legacyVariants.length > 0;
                     if (hasVariants) {
                       const missing: string[] = [];
-                      if (uses2LevelVariants) {
-                        if (variantOptions1.length > 0 && !selectedOption1) missing.push(product.variant_group_1_name || 'Biến thể 1');
-                        if (variantOptions2.length > 0 && !selectedOption2) missing.push(product.variant_group_2_name || 'Biến thể 2');
+                      if (usesMultiVariants) {
+                        variantGroups.forEach((g, i) => {
+                          if (!selectedOptions[i]) missing.push(g.name || `Biến thể ${i + 1}`);
+                        });
                       } else if (legacyVariants.length > 0 && selectedVariantIndex === null) {
                         missing.push('phiên bản');
                       }
@@ -1512,9 +1494,13 @@ export function ProductDetailPage({
         isSubmitting={placeOrder.isPending}
         onNavigateOrderLookup={onNavigateOrderLookup}
         onPlaceOrder={async (data) => {
-          if (uses2LevelVariants && variantOptions1.length > 0 && !selectedOption1) {
-            toast.error(`Vui lòng chọn ${product.variant_group_1_name || 'biến thể'}`);
-            throw new Error('missing variant');
+          if (usesMultiVariants) {
+            for (let i = 0; i < variantGroups.length; i++) {
+              if (!selectedOptions[i]) {
+                toast.error(`Vui lòng chọn ${variantGroups[i].name || `Biến thể ${i + 1}`}`);
+                throw new Error('missing variant');
+              }
+            }
           }
           await placeOrder.mutateAsync({
             tenant_id: tenantId,
