@@ -878,11 +878,32 @@ async function processJob(jobId: string) {
     const sourceRows = Array.isArray(importData?.[operation.key]) ? importData[operation.key] : []
     const chunkRows = sourceRows.slice(operation.from, operation.to)
     const tableName = operation.table!
-    const payload = await prepareRows(tableName, chunkRows, restoreContext)
+    const preparedRows = await prepareRows(tableName, chunkRows, restoreContext)
+
+    // CRITICAL: Deduplicate by id within the chunk to avoid Postgres error
+    //   "ON CONFLICT DO UPDATE command cannot affect row a second time"
+    // This happens when 2 source rows resolve to the same target id (cross-tenant
+    // clone with hash collision, or duplicate ids in the source backup file).
+    // Without this, the entire chunk fails and ALL rows are lost.
+    const seenIds = new Set<string>()
+    const payload: any[] = []
+    let dedupSkipped = 0
+    for (const row of preparedRows) {
+      if (!row || typeof row !== 'object') continue
+      const rowId = typeof row.id === 'string' ? row.id : null
+      if (rowId) {
+        if (seenIds.has(rowId)) {
+          dedupSkipped++
+          continue
+        }
+        seenIds.add(rowId)
+      }
+      payload.push(row)
+    }
 
     if (payload.length > 0) {
       let chunkSuccess = 0
-      let chunkSkipped = 0
+      let chunkSkipped = dedupSkipped
       let chunkError = 0
 
       // Try batch upsert first
@@ -891,11 +912,18 @@ async function processJob(jobId: string) {
         .upsert(payload, { onConflict: 'id', ignoreDuplicates: false })
 
       if (batchError) {
-        // If unique constraint error, fallback to row-by-row with conflict handling
-        if (batchError.message?.includes('duplicate key value violates unique constraint') ||
-            batchError.message?.includes('unique constraint') ||
-            batchError.code === '23505') {
-          console.log(`[restore-v3] ${tableName}: batch failed with unique constraint, falling back to row-by-row`)
+        // Fallback to row-by-row when the batch fails for any recoverable reason
+        // (unique constraint, double affect on ON CONFLICT, etc.). Without this
+        // the entire chunk would be lost.
+        const msg = batchError.message || ''
+        const isRecoverable =
+          msg.includes('duplicate key value violates unique constraint') ||
+          msg.includes('unique constraint') ||
+          msg.includes('cannot affect row a second time') ||
+          batchError.code === '23505' ||
+          batchError.code === '21000'
+        if (isRecoverable) {
+          console.log(`[restore-v3] ${tableName}: batch failed (${msg}), falling back to row-by-row`)
 
           for (const row of payload) {
             try {
@@ -906,7 +934,9 @@ async function processJob(jobId: string) {
 
               if (rowError) {
                 // If still fails (different id, same unique key), try to find & update existing
-                if (rowError.message?.includes('unique constraint') || rowError.code === '23505') {
+                if (rowError.message?.includes('unique constraint') ||
+                    rowError.message?.includes('cannot affect row a second time') ||
+                    rowError.code === '23505') {
                   // Skip this duplicate row - the existing record takes priority
                   chunkSkipped++
                   console.log(`[restore-v3] ${tableName}: skipped duplicate row ${row.id}`)
