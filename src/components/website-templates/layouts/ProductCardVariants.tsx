@@ -136,12 +136,15 @@ export function InstallmentLine({ amount }: { amount?: number | null }) {
 }
 
 // Shared badge overlay for product cards
-export function ProductBadges({ badges, style }: { badges?: string[]; style?: 'simple' | 'luxury' | 'modern' | string }) {
+export function ProductBadges({ badges, style }: { badges?: string[]; style?: 'simple' | 'luxury' | 'modern' | 'tiktok' | string }) {
   if (!badges || badges.length === 0) return null;
   const items = badges.slice(0, 3).map(b => PRODUCT_BADGE_OPTIONS.find(o => o.id === b)).filter(Boolean);
   if (items.length === 0) return null;
-  const badgeStyle: 'simple' | 'luxury' | 'modern' =
-    style === 'luxury' ? 'luxury' : style === 'modern' ? 'modern' : 'simple';
+  const badgeStyle: 'simple' | 'luxury' | 'modern' | 'tiktok' =
+    style === 'luxury' ? 'luxury'
+    : style === 'modern' ? 'modern'
+    : style === 'tiktok' ? 'tiktok'
+    : 'simple';
   const isMobile = useIsMobile();
 
   const getBadgeGradient = (opt: typeof PRODUCT_BADGE_OPTIONS[0]) => {
