@@ -1,0 +1,2 @@
+ALTER TABLE public.landing_product_reviews ADD COLUMN IF NOT EXISTS is_fake boolean NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS idx_landing_reviews_is_fake ON public.landing_product_reviews(tenant_id, is_fake);
