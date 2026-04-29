@@ -42,6 +42,20 @@ export function useProductsPaginated(filters: ProductsPaginatedFilters = {}) {
   // (e.g. EditProductDialog, EditTemplateProductDialog) should also refresh
   // the paginated/grouped product list.
   useEffect(() => {
+    // Sentinel queries: ensure ['products'] / ['all-products'] exist in the
+    // cache so any invalidateQueries({ queryKey: ['products'] }) call from
+    // legacy code (CreateProductTemplateDialog, EditProductDialog, import
+    // receipts, returns, stock transfers, ...) actually fires an
+    // 'invalidate' event that our bridge below can react to.
+    qc.getQueryCache().build(qc, {
+      queryKey: ['products', '__bridge_sentinel__'],
+      queryFn: async () => null,
+    });
+    qc.getQueryCache().build(qc, {
+      queryKey: ['all-products', '__bridge_sentinel__'],
+      queryFn: async () => null,
+    });
+
     const cache = qc.getQueryCache();
     const unsub = cache.subscribe(event => {
       if (event?.type !== 'updated') return;
