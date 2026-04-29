@@ -226,6 +226,14 @@ export function WarehouseValueHistory({ currentData }: Props) {
                 const changePct = (change !== null && prevDay.total !== 0) ? change / prevDay.total : null;
                 const isAlert = changePct !== null && Math.abs(changePct) >= ALERT_THRESHOLD;
 
+                // Breakdown delta per component
+                const componentDeltas = (prevDay?.hasData && day.hasData) ? [
+                  { label: 'Tồn kho', delta: day.inventory - prevDay.inventory },
+                  { label: 'Số dư quỹ', delta: day.cash - prevDay.cash },
+                  { label: 'CN khách hàng', delta: day.custDebt - prevDay.custDebt },
+                  { label: 'CN nhà cung cấp', delta: -(day.suppDebt - prevDay.suppDebt) }, // supplier debt giảm = tăng giá trị
+                ].filter(c => Math.abs(c.delta) >= 1) : [];
+
                 return (
                   <div
                     key={day.date}
@@ -282,6 +290,22 @@ export function WarehouseValueHistory({ currentData }: Props) {
 
                     {selectedDate === day.date && day.hasData && (
                       <DailyChangeBreakdown date={day.date} />
+                    )}
+
+                    {componentDeltas.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-dashed space-y-0.5">
+                        {componentDeltas.map((c) => (
+                          <div key={c.label} className="flex items-center justify-between text-[10px]">
+                            <span className="text-muted-foreground">{c.label}</span>
+                            <span className={cn(
+                              "font-medium tabular-nums",
+                              c.delta > 0 ? 'text-emerald-600' : 'text-destructive'
+                            )}>
+                              {c.delta > 0 ? '+' : ''}{formatNumber(c.delta)} đ
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 );
