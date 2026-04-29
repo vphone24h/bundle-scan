@@ -42,16 +42,32 @@ export function useProductsPaginated(filters: ProductsPaginatedFilters = {}) {
   // (e.g. EditProductDialog, EditTemplateProductDialog) should also refresh
   // the paginated/grouped product list.
   useEffect(() => {
+    // Sentinel queries: ensure ['products'] / ['all-products'] exist in the
+    // cache so any invalidateQueries({ queryKey: ['products'] }) call from
+    // legacy code (CreateProductTemplateDialog, EditProductDialog, import
+    // receipts, returns, stock transfers, ...) actually fires an
+    // 'invalidate' event that our bridge below can react to.
+    qc.getQueryCache().build(qc, {
+      queryKey: ['products', '__bridge_sentinel__'],
+      queryFn: async () => null,
+    });
+    qc.getQueryCache().build(qc, {
+      queryKey: ['all-products', '__bridge_sentinel__'],
+      queryFn: async () => null,
+    });
+
     const cache = qc.getQueryCache();
     const unsub = cache.subscribe(event => {
       if (event?.type !== 'updated') return;
       const key = event.query.queryKey;
-      if (Array.isArray(key) && (key[0] === 'products' || key[0] === 'all-products')) {
-        // Only refetch when the source query was invalidated
-        if ((event as any).action?.type === 'invalidate') {
-          qc.invalidateQueries({ queryKey: ['products-paginated'] });
-          qc.invalidateQueries({ queryKey: ['group-variants'] });
-        }
+      if (!Array.isArray(key)) return;
+      if (key[0] !== 'products' && key[0] !== 'all-products') return;
+      const actionType = (event as any).action?.type;
+      // React Query v5 fires 'invalidate' on invalidateQueries, but also
+      // 'success' after a refetch. Only react to invalidate to avoid loops.
+      if (actionType === 'invalidate') {
+        qc.invalidateQueries({ queryKey: ['products-paginated'], refetchType: 'active' });
+        qc.invalidateQueries({ queryKey: ['group-variants'], refetchType: 'active' });
       }
     });
     return () => unsub();

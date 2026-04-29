@@ -225,7 +225,11 @@ export function CreateProductTemplateDialog({ open, onOpenChange, initialData }:
       }
 
       queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ['all-products'], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ['products-paginated'], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ['group-variants'], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ['product-groups'], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ['inventory'], refetchType: 'all' });
       resetForm();
       onOpenChange(false);
     } catch (err: any) {
