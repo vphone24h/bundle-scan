@@ -200,7 +200,7 @@ function extractBaseName(name: string, v1?: string, v2?: string, v3?: string): s
 }
 
 // Debounce hook for search
-function useDebouncedValue(value: string, delay = 200) {
+function useDebouncedValue(value: string, delay = 350) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(value), delay);
@@ -239,8 +239,10 @@ export default function ProductsPage() {
   const [printedFilter, setPrintedFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Debounce search to avoid hammering server
-  const debouncedSearch = useDebouncedValue(searchTerm);
+  // Debounce search to avoid hammering server.
+  // Skip 1-char queries (too broad → fetches too many rows for nothing useful).
+  const rawDebounced = useDebouncedValue(searchTerm);
+  const debouncedSearch = rawDebounced.trim().length >= 2 ? rawDebounced.trim() : '';
 
   // Pagination: count by GROUP (sản phẩm gốc), not by raw rows (biến thể).
   // We fetch a large server-side window then group + paginate on the client so
@@ -253,9 +255,12 @@ export default function ProductsPage() {
   }, [debouncedSearch, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter, printedFilter, groupPagination.setPage]);
 
   // Server fetches a wide buffer; grouping reduces it to far fewer rows.
-  // Buffer = pageSize * 20 (cap 2000) is enough for typical tenants where each
-  // group has ≤ 20 variants.
-  const SERVER_BUFFER = Math.min(2000, Math.max(200, groupPagination.pageSize * 20));
+  // When searching, results are usually small → use a smaller buffer to keep
+  // payload light (mobile-friendly). Without search, keep the wider window so
+  // grouping has enough variants per group.
+  const SERVER_BUFFER = debouncedSearch
+    ? 250
+    : Math.min(2000, Math.max(200, groupPagination.pageSize * 20));
 
   // Build server-side filters (always page 1 — we paginate groups client-side)
   const serverFilters = useMemo(() => ({
