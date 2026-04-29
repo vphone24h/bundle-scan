@@ -119,7 +119,17 @@ export function useProducts(filters?: ProductFilters) {
         if (filters?.search) {
           const s = filters.search.trim();
           if (s) {
-            q = q.or(`name.ilike.%${s}%,sku.ilike.%${s}%,imei.ilike.%${s}%`);
+            // Escape PostgREST OR special chars (commas, parens) to avoid syntax errors.
+            const safe = s.replace(/[,()]/g, ' ').trim();
+            // IMEI is always digits → only include imei branch when query is numeric.
+            // Skipping imei ILIKE for text queries avoids a slow seq-scan branch
+            // (imei has no trigram index).
+            const isNumeric = /^\d+$/.test(safe);
+            if (isNumeric) {
+              q = q.or(`name.ilike.%${safe}%,sku.ilike.%${safe}%,imei.ilike.%${safe}%`);
+            } else {
+              q = q.or(`name.ilike.%${safe}%,sku.ilike.%${safe}%`);
+            }
           }
         }
         if (filters?.categoryId && filters.categoryId !== '_all_') {
