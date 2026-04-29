@@ -1980,14 +1980,14 @@ export function LandingProductsTab() {
               <div className="flex items-center justify-between gap-2">
                 <Label className="flex items-center gap-1.5 text-sm font-semibold">
                   <Sparkles className="h-4 w-4 text-amber-500" />
-                  Tạo đánh giá ảo (AI)
+                  Tạo đánh giá ảo
                 </Label>
                 {!editingProductId && (
                   <Badge variant="outline" className="text-[10px]">Lưu sản phẩm trước</Badge>
                 )}
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Nhập số lượng đánh giá theo từng mức sao. AI sẽ tự sinh tên + nội dung gần gũi, không trùng tên đã có.
+                Nhập số lượng đánh giá theo từng mức sao. Hệ thống tự sinh tên + nội dung ngẫu nhiên (phong cách 7x/8x), không trùng tên đã có.
               </p>
               <div className="grid grid-cols-5 gap-1.5">
                 {[5, 4, 3, 2, 1].map(s => (
