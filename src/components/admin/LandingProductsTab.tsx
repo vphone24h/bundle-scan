@@ -39,7 +39,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, ChevronUp, Folder, FolderOpen, Pencil, Eye, EyeOff, ArrowUp, ArrowDown, CalendarDays, Tag, Check, Home, List } from 'lucide-react';
+import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, ChevronUp, Folder, FolderOpen, Pencil, Eye, EyeOff, ArrowUp, ArrowDown, CalendarDays, Tag, Check, Home, List, Sparkles, Star } from 'lucide-react';
 import { SortableList, SortableItem, DragHandle } from '@/components/shared/SortableList';
 import { formatNumber } from '@/lib/formatNumber';
 import { BlockedDatesCalendar } from './BlockedDatesCalendar';
@@ -405,6 +405,96 @@ export function LandingProductsTab() {
 
   const [showBadges, setShowBadges] = useState(false);
   const badgesPanelRef = useRef<HTMLDivElement>(null);
+
+  // ===== Fake reviews generator state =====
+  const [fakeReviewCounts, setFakeReviewCounts] = useState<Record<1 | 2 | 3 | 4 | 5, number>>({
+    1: 0, 2: 0, 3: 0, 4: 0, 5: 0,
+  });
+  const [generatingFakeReviews, setGeneratingFakeReviews] = useState(false);
+
+  const handleGenerateFakeReviews = async () => {
+    if (!editingProductId) {
+      toast({
+        title: 'Hãy lưu sản phẩm trước',
+        description: 'Bạn cần bấm "Lưu" sản phẩm này một lần rồi mở lại để tạo đánh giá ảo.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const totalCount = (fakeReviewCounts[1] + fakeReviewCounts[2] + fakeReviewCounts[3] + fakeReviewCounts[4] + fakeReviewCounts[5]);
+    if (totalCount <= 0) {
+      toast({ title: 'Nhập số lượng đánh giá > 0', variant: 'destructive' });
+      return;
+    }
+    if (totalCount > 100) {
+      toast({ title: 'Tổng tối đa 100 đánh giá / lần', variant: 'destructive' });
+      return;
+    }
+    setGeneratingFakeReviews(true);
+    try {
+      // Lấy tenant id
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
+      // Lấy danh sách tên đã có để AI tránh trùng
+      const { data: existing } = await supabase
+        .from('landing_product_reviews' as any)
+        .select('customer_name')
+        .eq('tenant_id', tenantId)
+        .eq('product_id', editingProductId)
+        .limit(200);
+      const existingNames = ((existing || []) as any[]).map(r => r.customer_name).filter(Boolean);
+
+      const { data, error } = await supabase.functions.invoke('generate-fake-reviews', {
+        body: {
+          product_name: form.name || 'Sản phẩm',
+          counts: {
+            '1': fakeReviewCounts[1],
+            '2': fakeReviewCounts[2],
+            '3': fakeReviewCounts[3],
+            '4': fakeReviewCounts[4],
+            '5': fakeReviewCounts[5],
+          },
+          existing_names: existingNames,
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+
+      const reviews = (data as any)?.reviews as Array<{ customer_name: string; content: string; rating: number }> || [];
+      if (reviews.length === 0) throw new Error('AI không tạo được đánh giá nào');
+
+      // Tạo SĐT ngẫu nhiên (giấu bớt) cho đẹp hồ sơ
+      const fakePhone = () => {
+        const prefixes = ['090', '091', '093', '094', '096', '097', '098', '081', '082', '083', '084', '085', '086', '088', '089'];
+        const p = prefixes[Math.floor(Math.random() * prefixes.length)];
+        const rest = String(Math.floor(1000000 + Math.random() * 9000000));
+        return p + rest;
+      };
+
+      const rows = reviews.map(r => ({
+        tenant_id: tenantId,
+        product_id: editingProductId,
+        customer_name: r.customer_name.slice(0, 100),
+        customer_phone: fakePhone(),
+        content: r.content.slice(0, 1000),
+        rating: Math.max(1, Math.min(5, r.rating)),
+        is_visible: true,
+      }));
+
+      const { error: insErr } = await supabase
+        .from('landing_product_reviews' as any)
+        .insert(rows);
+      if (insErr) throw insErr;
+
+      toast({ title: `✅ Đã tạo ${rows.length} đánh giá ảo` });
+      setFakeReviewCounts({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
+    } catch (e: any) {
+      toast({ title: 'Lỗi tạo đánh giá ảo', description: e?.message, variant: 'destructive' });
+    } finally {
+      setGeneratingFakeReviews(false);
+    }
+  };
 
   const handleToggleBadges = () => {
     const next = !showBadges;
@@ -1893,6 +1983,62 @@ export function LandingProductsTab() {
                   />
                 </div>
               )}
+            </div>
+
+            {/* Tạo đánh giá ảo bằng AI */}
+            <Separator />
+            <div className="space-y-2 rounded-lg border border-dashed p-3 bg-muted/30">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="flex items-center gap-1.5 text-sm font-semibold">
+                  <Sparkles className="h-4 w-4 text-amber-500" />
+                  Tạo đánh giá ảo (AI)
+                </Label>
+                {!editingProductId && (
+                  <Badge variant="outline" className="text-[10px]">Lưu sản phẩm trước</Badge>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Nhập số lượng đánh giá theo từng mức sao. AI sẽ tự sinh tên + nội dung gần gũi, không trùng tên đã có.
+              </p>
+              <div className="grid grid-cols-5 gap-1.5">
+                {[5, 4, 3, 2, 1].map(s => (
+                  <div key={s} className="space-y-1">
+                    <div className="flex items-center justify-center gap-0.5">
+                      {Array.from({ length: s }).map((_, i) => (
+                        <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      ))}
+                    </div>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={50}
+                      className="h-8 text-center text-xs"
+                      value={fakeReviewCounts[s as 1 | 2 | 3 | 4 | 5]}
+                      onChange={e => {
+                        const v = Math.max(0, Math.min(50, Number(e.target.value) || 0));
+                        setFakeReviewCounts(prev => ({ ...prev, [s]: v }));
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="w-full"
+                disabled={generatingFakeReviews || !editingProductId}
+                onClick={handleGenerateFakeReviews}
+              >
+                {generatingFakeReviews ? (
+                  <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Đang tạo...</>
+                ) : (
+                  <><Sparkles className="h-3.5 w-3.5 mr-1.5" /> Tạo đánh giá ảo</>
+                )}
+              </Button>
+              <p className="text-[10px] text-muted-foreground italic">
+                Tối đa 50/sao, tổng 100/lần. Có thể bấm nhiều lần để tăng dần.
+              </p>
             </div>
 
 
