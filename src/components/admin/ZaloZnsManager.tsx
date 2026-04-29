@@ -142,8 +142,18 @@ function ZaloConnectionTab({ tenantId }: { tenantId: string }) {
       const { data, error } = await supabase.functions.invoke('zalo-oauth-callback', {
         body: { action: 'refresh_token', tenant_id: tenantId },
       });
-      if (error || data?.error) throw new Error(data?.error || data?.details || error?.message);
-      toast.success('✅ Đã gia hạn token thành công!');
+      if (error) {
+        throw new Error(data?.details || data?.error || error.message);
+      }
+      if (data?.error) {
+        if (data.requiresReconnect) {
+          toast.error('Refresh token cũ không còn hiệu lực, vui lòng bấm Kết nối lại Zalo OA.', { duration: 8000 });
+        } else {
+          toast.error(data.details || data.error, { duration: 8000 });
+        }
+        return;
+      }
+      toast.success(data?.refreshedElsewhere ? '✅ Token đã được gia hạn ở phiên khác!' : '✅ Đã gia hạn token thành công!');
       queryClient.invalidateQueries({ queryKey: ['zalo-zns-config'] });
     } catch (err: any) {
       toast.error(err.message);

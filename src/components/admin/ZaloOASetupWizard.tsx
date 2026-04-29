@@ -67,9 +67,16 @@ export function ZaloOASetupWizard({ formData, handleChange, tenantId, onSave }: 
       const { data, error } = await supabase.functions.invoke('zalo-oauth-callback', {
         body: { action: 'refresh_token', tenant_id: tenantId },
       });
-      if (error) throw new Error(data?.details || error.message);
-      if (data?.error) throw new Error(data.details || data.error);
-      toast.success('✅ Đã gia hạn token thành công!');
+      if (error) throw new Error(data?.details || data?.error || error.message);
+      if (data?.error) {
+        if (data.requiresReconnect) {
+          toast.error('Refresh token cũ không còn hiệu lực, vui lòng kết nối lại Zalo OA.', { duration: 8000 });
+        } else {
+          toast.error(data.details || data.error, { duration: 8000 });
+        }
+        return;
+      }
+      toast.success(data?.refreshedElsewhere ? '✅ Token đã được gia hạn ở phiên khác!' : '✅ Đã gia hạn token thành công!');
     } catch (err: any) {
       toast.error('Lỗi: ' + (err.message || 'Không xác định'));
     } finally {
