@@ -6,6 +6,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ProductTable } from '@/components/products/ProductTable';
 import { useProducts, useServerPagination, Product } from '@/hooks/useProducts';
+import { useProductsPaginated, useInvalidateProductsPaginated } from '@/hooks/useProductsPaginated';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { EditProductDialog } from '@/components/import/EditProductDialog';
@@ -216,6 +217,7 @@ export default function ProductsPage() {
   const [manualTourActive, setManualTourActive] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const invalidateProductsPaginated = useInvalidateProductsPaginated();
   const { data: categories } = useCategories();
   const { data: suppliers } = useSupplierOptions();
   const { data: branches } = useBranches();
@@ -244,26 +246,18 @@ export default function ProductsPage() {
   const rawDebounced = useDebouncedValue(searchTerm);
   const debouncedSearch = rawDebounced.trim().length >= 2 ? rawDebounced.trim() : '';
 
-  // Pagination: count by GROUP (sản phẩm gốc), not by raw rows (biến thể).
-  // We fetch a large server-side window then group + paginate on the client so
-  // pageSize reflects the number of groups visible.
-  const groupPagination = useServerPagination(25); // page size in GROUPS
+  // Pagination: count by GROUP (sản phẩm gốc).
+  // Server-side grouping & pagination via RPC `list_product_groups` — scales to
+  // 100k+ products (only one row per group is sent over the wire).
+  const groupPagination = useServerPagination(25);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     groupPagination.setPage(1);
   }, [debouncedSearch, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter, printedFilter, groupPagination.setPage]);
 
-  // Server fetches a wide buffer; grouping reduces it to far fewer rows.
-  // When searching, results are usually small → use a smaller buffer to keep
-  // payload light (mobile-friendly). Without search, keep the wider window so
-  // grouping has enough variants per group.
-  const SERVER_BUFFER = debouncedSearch
-    ? 250
-    : Math.min(2000, Math.max(200, groupPagination.pageSize * 20));
-
-  // Build server-side filters (always page 1 — we paginate groups client-side)
-  const serverFilters = useMemo(() => ({
+  // Build paginated filters — RPC paginates by GROUP server-side
+  const paginatedFilters = useMemo(() => ({
     search: debouncedSearch || undefined,
     categoryId: categoryFilter !== '_all_' ? categoryFilter : undefined,
     supplierId: supplierFilter !== '_all_' ? supplierFilter : undefined,
@@ -272,31 +266,61 @@ export default function ProductsPage() {
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
     printedFilter: printedFilter !== '_all_' ? printedFilter : undefined,
-    page: 1,
-    pageSize: SERVER_BUFFER,
-  }), [debouncedSearch, categoryFilter, supplierFilter, statusFilter, branchFilter, dateFrom, dateTo, printedFilter, SERVER_BUFFER]);
+    page: groupPagination.page,
+    pageSize: groupPagination.pageSize,
+  }), [debouncedSearch, categoryFilter, supplierFilter, statusFilter, branchFilter, dateFrom, dateTo, printedFilter, groupPagination.page, groupPagination.pageSize]);
 
-  const { data: products, isLoading, isFetching, totalCount } = useProducts(serverFilters);
-  const isFirstLoad = isLoading && !products?.length;
+  const { items: groupRows, totalGroups, isLoading, isFetching } = useProductsPaginated(paginatedFilters);
+  const isFirstLoad = isLoading && groupRows.length === 0;
 
   const categoryMap = useMemo(() => new Map<string, string>((categories || []).map(c => [c.id, c.name])), [categories]);
   const supplierMap = useMemo(() => new Map<string, string>((suppliers || []).map(s => [s.id, s.name])), [suppliers]);
   const branchMap = useMemo(() => new Map<string, string>((branches || []).map(b => [b.id, b.name])), [branches]);
 
-  // Group products first → total = number of groups (sản phẩm gốc)
-  const groupedProducts = useMemo(() => {
-    const mapped = products?.map(p => mapProductForTable(p, categoryMap, supplierMap, branchMap)) || [];
-    return groupTemplateProducts(mapped);
-  }, [products, categoryMap, supplierMap, branchMap]);
+  // Build display rows from server-side group results.
+  // Each group is shown as ONE row (representative variant) + variant_count badge.
+  // Variants are fetched lazily on demand (Edit / Delete / Expand actions).
+  const mappedProducts = useMemo(() => {
+    return groupRows.map((g) => {
+      const base = mapProductForTable(g.rep, categoryMap, supplierMap, branchMap);
+      const isGroup = g.variant_count > 1;
+      if (!isGroup) return { ...base, _groupKey: g.group_key };
+      // Multi-variant group → show as collapsed group row
+      const baseName = extractBaseName(
+        base.name,
+        base.variant1,
+        base.variant2,
+        base.variant3,
+      );
+      const skuBase = base.sku?.split('-').slice(0, -1).join('-') || base.sku;
+      return {
+        ...base,
+        name: baseName,
+        sku: skuBase,
+        isVariantGroup: true,
+        isTemplateGroup: g.rep.status === 'template',
+        variantCount: g.variant_count,
+        // childProducts left undefined → loaded lazily when needed
+        _groupKey: g.group_key,
+      };
+    });
+  }, [groupRows, categoryMap, supplierMap, branchMap]);
 
-  // Client-side pagination over GROUPS
-  const totalGroups = groupedProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalGroups / groupPagination.pageSize));
   const startIdx = (groupPagination.page - 1) * groupPagination.pageSize;
-  const mappedProducts = useMemo(
-    () => groupedProducts.slice(startIdx, startIdx + groupPagination.pageSize),
-    [groupedProducts, startIdx, groupPagination.pageSize],
+
+  // Total variant count across the groups currently visible on this page
+  const totalVariantsOnPage = useMemo(
+    () => groupRows.reduce((sum, g) => sum + (g.variant_count || 1), 0),
+    [groupRows],
   );
+
+  // Helper: lazily load all variants for a group (used by Edit / Delete handlers)
+  const loadGroupVariants = useCallback(async (groupKey: string): Promise<Product[]> => {
+    const { data, error } = await supabase.rpc('get_group_variants', { p_group_key: groupKey });
+    if (error) throw error;
+    return ((data ?? []) as unknown) as Product[];
+  }, []);
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -311,36 +335,38 @@ export default function ProductsPage() {
 
   const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_' || branchFilter !== '_all_' || printedFilter !== '_all_';
 
-  const handleEdit = (product: any) => {
-    // Template or variant group products → open template editor with variant management
-    if (product.status === 'template' || product.isTemplateGroup || product.isVariantGroup) {
-      const originalProduct = products?.find(p => p.id === product.id);
-      setEditTemplateProduct(originalProduct ? { ...originalProduct, isTemplateGroup: product.isTemplateGroup, isVariantGroup: product.isVariantGroup, childProducts: product.childProducts } : product);
-    } else if (product.groupId) {
-      // Child variant with group_id → find all siblings and open template editor
-      const groupSiblings = products?.filter(p => p.group_id === product.groupId) || [];
-      if (groupSiblings.length > 1) {
-        const first = groupSiblings[0];
-        const mappedSiblings = groupSiblings.map(p => mapProductForTable(p, categoryMap, supplierMap, branchMap));
-        const baseName = extractBaseName(first.name, first.variant_1 || '', first.variant_2 || '', first.variant_3 || '');
+  const handleEdit = async (product: any) => {
+    const groupKey: string | undefined = product._groupKey
+      ?? (product.groupId ? product.groupId : `solo:${product.id}`);
+
+    try {
+      // Lazy-load all variants of this group from server (1 row per group → small payload)
+      const variants = await loadGroupVariants(groupKey);
+
+      // Template / variant group → open template editor with full variant list
+      if (product.status === 'template' || product.isTemplateGroup || product.isVariantGroup) {
+        const original = variants[0];
+        if (!original) {
+          setEditTemplateProduct(product);
+          return;
+        }
+        const mappedSiblings = variants.map(p => mapProductForTable(p, categoryMap, supplierMap, branchMap));
+        const baseName = extractBaseName(original.name, original.variant_1 || '', original.variant_2 || '', original.variant_3 || '');
         setEditTemplateProduct({
-          ...first,
+          ...original,
           name: baseName,
           isVariantGroup: true,
-          isTemplateGroup: groupSiblings.some(p => p.status === 'template'),
+          isTemplateGroup: variants.some(p => p.status === 'template'),
           childProducts: mappedSiblings,
         });
-      } else {
-        // Single product in group → open regular editor
-        const originalProduct = products?.find(p => p.id === product.id);
-        if (originalProduct) setEditProduct(originalProduct);
+        return;
       }
-    } else {
-      // Regular products → existing edit dialog
-      const originalProduct = products?.find(p => p.id === product.id);
-      if (originalProduct) {
-        setEditProduct(originalProduct);
-      }
+
+      // Single (non-grouped) product → regular editor
+      const original = variants.find(p => p.id === product.id) ?? variants[0];
+      if (original) setEditProduct(original);
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message ?? 'Không tải được dữ liệu sản phẩm', variant: 'destructive' });
     }
   };
 
@@ -434,38 +460,31 @@ export default function ProductsPage() {
   };
 
   const handleDeleteTemplate = async (product: any) => {
-    if (!confirm(`Bạn có chắc muốn xóa sản phẩm mẫu "${product.name}"${product.isTemplateGroup ? ` và ${product.variantCount} biến thể` : ''}?`)) return;
-    
-    // Optimistic: xóa khỏi cache ngay lập tức
-    const idsToDelete = new Set<string>();
-    if (product.isTemplateGroup && product.childProducts?.length > 0) {
-      product.childProducts.forEach((c: any) => idsToDelete.add(c.id));
-    } else {
-      idsToDelete.add(product.id);
-    }
+    if (!confirm(`Bạn có chắc muốn xóa sản phẩm mẫu "${product.name}"${product.isTemplateGroup || product.isVariantGroup ? ` và ${product.variantCount} biến thể` : ''}?`)) return;
 
-    queryClient.setQueriesData({ queryKey: ['products'] }, (old: any) => {
-      if (!old?.items) return old;
-      return { ...old, items: old.items.filter((p: any) => !idsToDelete.has(p.id)), totalCount: Math.max(0, (old.totalCount || 0) - idsToDelete.size) };
-    });
-    toast({ title: 'Đã xóa sản phẩm mẫu' });
-
-    // Background: xóa thật trong DB
     try {
-      if (product.isTemplateGroup && product.childProducts?.length > 0) {
-        const ids = product.childProducts.map((c: any) => c.id);
-        const { error } = await supabase.from('products').delete().in('id', ids);
-        if (error) throw error;
+      // Resolve all IDs to delete (lazy-load variants if this is a group row)
+      let ids: string[] = [];
+      if ((product.isTemplateGroup || product.isVariantGroup) && !product.childProducts) {
+        const groupKey: string = product._groupKey ?? (product.groupId ? product.groupId : `solo:${product.id}`);
+        const variants = await loadGroupVariants(groupKey);
+        ids = variants.map(v => v.id);
+      } else if (product.childProducts?.length > 0) {
+        ids = product.childProducts.map((c: any) => c.id);
       } else {
-        const { error } = await supabase.from('products').delete().eq('id', product.id);
-        if (error) throw error;
+        ids = [product.id];
       }
-      // Refresh in background to sync
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+
+      if (ids.length === 0) return;
+
+      const { error } = await supabase.from('products').delete().in('id', ids);
+      if (error) throw error;
+
+      toast({ title: 'Đã xóa sản phẩm mẫu' });
+      invalidateProductsPaginated();
     } catch (err: any) {
-      // Rollback on error
-      queryClient.invalidateQueries({ queryKey: ['products'] });
       toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+      invalidateProductsPaginated();
     }
   };
 
@@ -678,8 +697,8 @@ export default function ProductsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <p className="text-xs sm:text-sm text-muted-foreground">
             Hiển thị {mappedProducts.length} / {totalGroups} nhóm sản phẩm
-            {totalCount > totalGroups && (
-              <span className="text-muted-foreground/70"> ({totalCount} biến thể)</span>
+            {totalVariantsOnPage > mappedProducts.length && (
+              <span className="text-muted-foreground/70"> ({totalVariantsOnPage} biến thể trên trang)</span>
             )}
           </p>
           {selectedProducts.length > 0 && (
@@ -732,7 +751,7 @@ export default function ProductsPage() {
             .update({ is_printed: true })
             .in('id', productIds);
           if (!error) {
-            queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'all' });
+            invalidateProductsPaginated();
           } else {
             console.error('Failed to mark products as printed:', error);
           }
