@@ -10666,6 +10666,7 @@ export type Database = {
           warranty: string
         }[]
       }
+      get_group_variants: { Args: { p_group_key: string }; Returns: Json }
       get_import_history_stats: {
         Args: {
           _branch_id?: string
@@ -10918,6 +10919,21 @@ export type Database = {
       }
       is_tenant_accessible: { Args: { _tenant_id: string }; Returns: boolean }
       is_tenant_admin: { Args: { _user_id: string }; Returns: boolean }
+      list_product_groups: {
+        Args: {
+          p_branch_id?: string
+          p_category_id?: string
+          p_date_from?: string
+          p_date_to?: string
+          p_page?: number
+          p_page_size?: number
+          p_printed_filter?: string
+          p_search?: string
+          p_status?: string
+          p_supplier_id?: string
+        }
+        Returns: Json
+      }
       lookup_company_by_domain: {
         Args: { _domain: string }
         Returns: {
