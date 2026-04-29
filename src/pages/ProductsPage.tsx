@@ -723,6 +723,18 @@ export default function ProductsPage() {
               onDuplicate={handleDuplicate}
               onImportFromTemplate={handleImportFromTemplate}
               onDeleteTemplate={handleDeleteTemplate}
+              onLoadVariants={async (product: any) => {
+                const groupKey: string | undefined = product._groupKey
+                  ?? (product.groupId ? product.groupId : `solo:${product.id}`);
+                if (!groupKey) return [];
+                try {
+                  const variants = await loadGroupVariants(groupKey);
+                  return variants.map(p => mapProductForTable(p, categoryMap, supplierMap, branchMap)) as any;
+                } catch (err: any) {
+                  toast({ title: 'Lỗi', description: err.message ?? 'Không tải được biến thể', variant: 'destructive' });
+                  return [];
+                }
+              }}
             />
           </div>
         )}
