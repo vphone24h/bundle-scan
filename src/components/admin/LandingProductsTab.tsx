@@ -406,6 +406,96 @@ export function LandingProductsTab() {
   const [showBadges, setShowBadges] = useState(false);
   const badgesPanelRef = useRef<HTMLDivElement>(null);
 
+  // ===== Fake reviews generator state =====
+  const [fakeReviewCounts, setFakeReviewCounts] = useState<Record<1 | 2 | 3 | 4 | 5, number>>({
+    1: 0, 2: 0, 3: 0, 4: 0, 5: 0,
+  });
+  const [generatingFakeReviews, setGeneratingFakeReviews] = useState(false);
+
+  const handleGenerateFakeReviews = async () => {
+    if (!editingProductId) {
+      toast({
+        title: 'Hãy lưu sản phẩm trước',
+        description: 'Bạn cần bấm "Lưu" sản phẩm này một lần rồi mở lại để tạo đánh giá ảo.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const totalCount = (fakeReviewCounts[1] + fakeReviewCounts[2] + fakeReviewCounts[3] + fakeReviewCounts[4] + fakeReviewCounts[5]);
+    if (totalCount <= 0) {
+      toast({ title: 'Nhập số lượng đánh giá > 0', variant: 'destructive' });
+      return;
+    }
+    if (totalCount > 100) {
+      toast({ title: 'Tổng tối đa 100 đánh giá / lần', variant: 'destructive' });
+      return;
+    }
+    setGeneratingFakeReviews(true);
+    try {
+      // Lấy tenant id
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
+      // Lấy danh sách tên đã có để AI tránh trùng
+      const { data: existing } = await supabase
+        .from('landing_product_reviews' as any)
+        .select('customer_name')
+        .eq('tenant_id', tenantId)
+        .eq('product_id', editingProductId)
+        .limit(200);
+      const existingNames = ((existing || []) as any[]).map(r => r.customer_name).filter(Boolean);
+
+      const { data, error } = await supabase.functions.invoke('generate-fake-reviews', {
+        body: {
+          product_name: form.name || 'Sản phẩm',
+          counts: {
+            '1': fakeReviewCounts[1],
+            '2': fakeReviewCounts[2],
+            '3': fakeReviewCounts[3],
+            '4': fakeReviewCounts[4],
+            '5': fakeReviewCounts[5],
+          },
+          existing_names: existingNames,
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+
+      const reviews = (data as any)?.reviews as Array<{ customer_name: string; content: string; rating: number }> || [];
+      if (reviews.length === 0) throw new Error('AI không tạo được đánh giá nào');
+
+      // Tạo SĐT ngẫu nhiên (giấu bớt) cho đẹp hồ sơ
+      const fakePhone = () => {
+        const prefixes = ['090', '091', '093', '094', '096', '097', '098', '081', '082', '083', '084', '085', '086', '088', '089'];
+        const p = prefixes[Math.floor(Math.random() * prefixes.length)];
+        const rest = String(Math.floor(1000000 + Math.random() * 9000000));
+        return p + rest;
+      };
+
+      const rows = reviews.map(r => ({
+        tenant_id: tenantId,
+        product_id: editingProductId,
+        customer_name: r.customer_name.slice(0, 100),
+        customer_phone: fakePhone(),
+        content: r.content.slice(0, 1000),
+        rating: Math.max(1, Math.min(5, r.rating)),
+        is_visible: true,
+      }));
+
+      const { error: insErr } = await supabase
+        .from('landing_product_reviews' as any)
+        .insert(rows);
+      if (insErr) throw insErr;
+
+      toast({ title: `✅ Đã tạo ${rows.length} đánh giá ảo` });
+      setFakeReviewCounts({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
+    } catch (e: any) {
+      toast({ title: 'Lỗi tạo đánh giá ảo', description: e?.message, variant: 'destructive' });
+    } finally {
+      setGeneratingFakeReviews(false);
+    }
+  };
+
   const handleToggleBadges = () => {
     const next = !showBadges;
     setShowBadges(next);
