@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { History, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { History, Download, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 import { AlertTriangle } from 'lucide-react';
 import { format, eachDayOfInterval, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import type { WarehouseValueData } from '@/hooks/useWarehouseValue';
 import { DailyChangeBreakdown } from './DailyChangeBreakdown';
+import { useWarehouseValueSnapshots } from '@/hooks/useWarehouseValueSnapshots';
 
 interface Props {
   currentData: WarehouseValueData | undefined;
@@ -56,6 +57,7 @@ export function WarehouseValueHistory({ currentData }: Props) {
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const { data: tenant } = useCurrentTenant();
+  const { backfillMutation } = useWarehouseValueSnapshots(7);
 
   const dateRange = useMemo(() => getDateRange(dateFilter, customFrom, customTo), [dateFilter, customFrom, customTo]);
   const fromStr = format(dateRange.from, 'yyyy-MM-dd');
@@ -96,9 +98,10 @@ export function WarehouseValueHistory({ currentData }: Props) {
       });
     });
 
-    // Add current data for today if not in snapshots
+    // Always override today with live data so the history matches
+    // the "Giá trị toàn kho" card (snapshot may be stale from earlier today)
     const todayStr = format(new Date(), 'yyyy-MM-dd');
-    if (currentData && !snapshotMap.has(todayStr)) {
+    if (currentData) {
       snapshotMap.set(todayStr, {
         inventory: currentData.inventoryValue,
         cash: currentData.cashBalance,
@@ -177,6 +180,17 @@ export function WarehouseValueHistory({ currentData }: Props) {
           <Button variant="outline" size="sm" onClick={handleExport} className="w-full text-xs h-8">
             <Download className="h-3.5 w-3.5 mr-1.5" />
             Xuất Excel giá trị kho
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => backfillMutation.mutate()}
+            disabled={backfillMutation.isPending}
+            className="w-full text-xs h-8 gap-1.5"
+          >
+            <RotateCcw className={`h-3.5 w-3.5 ${backfillMutation.isPending ? 'animate-spin' : ''}`} />
+            Khôi phục dữ liệu
           </Button>
 
           <div className="flex flex-wrap gap-2">
