@@ -329,36 +329,38 @@ export default function ProductsPage() {
 
   const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_' || branchFilter !== '_all_' || printedFilter !== '_all_';
 
-  const handleEdit = (product: any) => {
-    // Template or variant group products → open template editor with variant management
-    if (product.status === 'template' || product.isTemplateGroup || product.isVariantGroup) {
-      const originalProduct = products?.find(p => p.id === product.id);
-      setEditTemplateProduct(originalProduct ? { ...originalProduct, isTemplateGroup: product.isTemplateGroup, isVariantGroup: product.isVariantGroup, childProducts: product.childProducts } : product);
-    } else if (product.groupId) {
-      // Child variant with group_id → find all siblings and open template editor
-      const groupSiblings = products?.filter(p => p.group_id === product.groupId) || [];
-      if (groupSiblings.length > 1) {
-        const first = groupSiblings[0];
-        const mappedSiblings = groupSiblings.map(p => mapProductForTable(p, categoryMap, supplierMap, branchMap));
-        const baseName = extractBaseName(first.name, first.variant_1 || '', first.variant_2 || '', first.variant_3 || '');
+  const handleEdit = async (product: any) => {
+    const groupKey: string | undefined = product._groupKey
+      ?? (product.groupId ? product.groupId : `solo:${product.id}`);
+
+    try {
+      // Lazy-load all variants of this group from server (1 row per group → small payload)
+      const variants = await loadGroupVariants(groupKey);
+
+      // Template / variant group → open template editor with full variant list
+      if (product.status === 'template' || product.isTemplateGroup || product.isVariantGroup) {
+        const original = variants[0];
+        if (!original) {
+          setEditTemplateProduct(product);
+          return;
+        }
+        const mappedSiblings = variants.map(p => mapProductForTable(p, categoryMap, supplierMap, branchMap));
+        const baseName = extractBaseName(original.name, original.variant_1 || '', original.variant_2 || '', original.variant_3 || '');
         setEditTemplateProduct({
-          ...first,
+          ...original,
           name: baseName,
           isVariantGroup: true,
-          isTemplateGroup: groupSiblings.some(p => p.status === 'template'),
+          isTemplateGroup: variants.some(p => p.status === 'template'),
           childProducts: mappedSiblings,
         });
-      } else {
-        // Single product in group → open regular editor
-        const originalProduct = products?.find(p => p.id === product.id);
-        if (originalProduct) setEditProduct(originalProduct);
+        return;
       }
-    } else {
-      // Regular products → existing edit dialog
-      const originalProduct = products?.find(p => p.id === product.id);
-      if (originalProduct) {
-        setEditProduct(originalProduct);
-      }
+
+      // Single (non-grouped) product → regular editor
+      const original = variants.find(p => p.id === product.id) ?? variants[0];
+      if (original) setEditProduct(original);
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message ?? 'Không tải được dữ liệu sản phẩm', variant: 'destructive' });
     }
   };
 
