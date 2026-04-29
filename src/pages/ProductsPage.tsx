@@ -6,6 +6,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ProductTable } from '@/components/products/ProductTable';
 import { useProducts, useServerPagination, Product } from '@/hooks/useProducts';
+import { useProductsPaginated, useInvalidateProductsPaginated } from '@/hooks/useProductsPaginated';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { EditProductDialog } from '@/components/import/EditProductDialog';
@@ -216,6 +217,7 @@ export default function ProductsPage() {
   const [manualTourActive, setManualTourActive] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const invalidateProductsPaginated = useInvalidateProductsPaginated();
   const { data: categories } = useCategories();
   const { data: suppliers } = useSupplierOptions();
   const { data: branches } = useBranches();
@@ -244,26 +246,18 @@ export default function ProductsPage() {
   const rawDebounced = useDebouncedValue(searchTerm);
   const debouncedSearch = rawDebounced.trim().length >= 2 ? rawDebounced.trim() : '';
 
-  // Pagination: count by GROUP (sản phẩm gốc), not by raw rows (biến thể).
-  // We fetch a large server-side window then group + paginate on the client so
-  // pageSize reflects the number of groups visible.
-  const groupPagination = useServerPagination(25); // page size in GROUPS
+  // Pagination: count by GROUP (sản phẩm gốc).
+  // Server-side grouping & pagination via RPC `list_product_groups` — scales to
+  // 100k+ products (only one row per group is sent over the wire).
+  const groupPagination = useServerPagination(25);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     groupPagination.setPage(1);
   }, [debouncedSearch, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter, printedFilter, groupPagination.setPage]);
 
-  // Server fetches a wide buffer; grouping reduces it to far fewer rows.
-  // When searching, results are usually small → use a smaller buffer to keep
-  // payload light (mobile-friendly). Without search, keep the wider window so
-  // grouping has enough variants per group.
-  const SERVER_BUFFER = debouncedSearch
-    ? 250
-    : Math.min(2000, Math.max(200, groupPagination.pageSize * 20));
-
-  // Build server-side filters (always page 1 — we paginate groups client-side)
-  const serverFilters = useMemo(() => ({
+  // Build paginated filters — RPC paginates by GROUP server-side
+  const paginatedFilters = useMemo(() => ({
     search: debouncedSearch || undefined,
     categoryId: categoryFilter !== '_all_' ? categoryFilter : undefined,
     supplierId: supplierFilter !== '_all_' ? supplierFilter : undefined,
@@ -272,31 +266,55 @@ export default function ProductsPage() {
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
     printedFilter: printedFilter !== '_all_' ? printedFilter : undefined,
-    page: 1,
-    pageSize: SERVER_BUFFER,
-  }), [debouncedSearch, categoryFilter, supplierFilter, statusFilter, branchFilter, dateFrom, dateTo, printedFilter, SERVER_BUFFER]);
+    page: groupPagination.page,
+    pageSize: groupPagination.pageSize,
+  }), [debouncedSearch, categoryFilter, supplierFilter, statusFilter, branchFilter, dateFrom, dateTo, printedFilter, groupPagination.page, groupPagination.pageSize]);
 
-  const { data: products, isLoading, isFetching, totalCount } = useProducts(serverFilters);
-  const isFirstLoad = isLoading && !products?.length;
+  const { items: groupRows, totalGroups, isLoading, isFetching } = useProductsPaginated(paginatedFilters);
+  const isFirstLoad = isLoading && groupRows.length === 0;
 
   const categoryMap = useMemo(() => new Map<string, string>((categories || []).map(c => [c.id, c.name])), [categories]);
   const supplierMap = useMemo(() => new Map<string, string>((suppliers || []).map(s => [s.id, s.name])), [suppliers]);
   const branchMap = useMemo(() => new Map<string, string>((branches || []).map(b => [b.id, b.name])), [branches]);
 
-  // Group products first → total = number of groups (sản phẩm gốc)
-  const groupedProducts = useMemo(() => {
-    const mapped = products?.map(p => mapProductForTable(p, categoryMap, supplierMap, branchMap)) || [];
-    return groupTemplateProducts(mapped);
-  }, [products, categoryMap, supplierMap, branchMap]);
+  // Build display rows from server-side group results.
+  // Each group is shown as ONE row (representative variant) + variant_count badge.
+  // Variants are fetched lazily on demand (Edit / Delete / Expand actions).
+  const mappedProducts = useMemo(() => {
+    return groupRows.map((g) => {
+      const base = mapProductForTable(g.rep, categoryMap, supplierMap, branchMap);
+      const isGroup = g.variant_count > 1;
+      if (!isGroup) return { ...base, _groupKey: g.group_key };
+      // Multi-variant group → show as collapsed group row
+      const baseName = extractBaseName(
+        base.name,
+        base.variant1,
+        base.variant2,
+        base.variant3,
+      );
+      const skuBase = base.sku?.split('-').slice(0, -1).join('-') || base.sku;
+      return {
+        ...base,
+        name: baseName,
+        sku: skuBase,
+        isVariantGroup: true,
+        isTemplateGroup: g.rep.status === 'template',
+        variantCount: g.variant_count,
+        // childProducts left undefined → loaded lazily when needed
+        _groupKey: g.group_key,
+      };
+    });
+  }, [groupRows, categoryMap, supplierMap, branchMap]);
 
-  // Client-side pagination over GROUPS
-  const totalGroups = groupedProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalGroups / groupPagination.pageSize));
   const startIdx = (groupPagination.page - 1) * groupPagination.pageSize;
-  const mappedProducts = useMemo(
-    () => groupedProducts.slice(startIdx, startIdx + groupPagination.pageSize),
-    [groupedProducts, startIdx, groupPagination.pageSize],
-  );
+
+  // Helper: lazily load all variants for a group (used by Edit / Delete handlers)
+  const loadGroupVariants = useCallback(async (groupKey: string): Promise<Product[]> => {
+    const { data, error } = await supabase.rpc('get_group_variants', { p_group_key: groupKey });
+    if (error) throw error;
+    return ((data ?? []) as unknown) as Product[];
+  }, []);
 
   const clearFilters = () => {
     setSearchTerm('');
