@@ -6,6 +6,7 @@ import { useBranchFilter } from './useBranchFilter';
 import { usePermissions } from './usePermissions';
 import { useCurrentTenant } from './useTenant';
 import { useState, useCallback } from 'react';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 type ProductStatus = Database['public']['Enums']['product_status'];
 
@@ -143,21 +144,16 @@ export function useProducts(filters?: ProductFilters) {
         query = query.eq('is_printed', false);
       }
 
-      // Server-side pagination
+      // Server-side pagination when filters are applied
       if (hasServerFilters) {
         const from = (page - 1) * pageSize;
         const to = from + pageSize;
         query = query.range(from, to);
-      } else {
-        query = query.limit(500);
-      }
 
-      const { data, error } = await query;
-      if (error) throw error;
+        const { data, error } = await query;
+        if (error) throw error;
 
-      const rows = (data || []) as Product[];
-
-      if (hasServerFilters) {
+        const rows = (data || []) as Product[];
         const hasMore = rows.length > pageSize;
         const items = hasMore ? rows.slice(0, pageSize) : rows;
         const totalCount = hasMore
@@ -167,6 +163,9 @@ export function useProducts(filters?: ProductFilters) {
         return { items, totalCount };
       }
 
+      // No filters: fetch ALL rows so that group-by on the client doesn't drop groups.
+      // The 500-row cap previously hid groups whose variants fell beyond the cutoff.
+      const rows = await fetchAllRows<Product>(() => query);
       return { items: rows, totalCount: rows.length };
     },
     enabled: !!user?.id && !permissionsLoading,
