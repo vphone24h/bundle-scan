@@ -456,8 +456,8 @@ export function LandingProductsTab() {
           4: fakeReviewCounts[4],
           5: fakeReviewCounts[5],
         },
-        existing_names: existingNames,
-      } as any);
+        existingNames,
+      });
 
       if (reviews.length === 0) throw new Error('Không tạo được đánh giá nào');
 
