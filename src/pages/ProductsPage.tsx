@@ -242,15 +242,22 @@ export default function ProductsPage() {
   // Debounce search to avoid hammering server
   const debouncedSearch = useDebouncedValue(searchTerm);
 
-  // Server-side pagination
-  const serverPagination = useServerPagination(50);
+  // Pagination: count by GROUP (sản phẩm gốc), not by raw rows (biến thể).
+  // We fetch a large server-side window then group + paginate on the client so
+  // pageSize reflects the number of groups visible.
+  const groupPagination = useServerPagination(25); // page size in GROUPS
 
-  // Reset to page 1 when filters change (tránh setState trong render gây re-render loop)
+  // Reset to page 1 when filters change
   useEffect(() => {
-    serverPagination.setPage(1);
-  }, [debouncedSearch, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter, printedFilter, serverPagination.setPage]);
+    groupPagination.setPage(1);
+  }, [debouncedSearch, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter, printedFilter, groupPagination.setPage]);
 
-  // Build server-side filters
+  // Server fetches a wide buffer; grouping reduces it to far fewer rows.
+  // Buffer = pageSize * 20 (cap 2000) is enough for typical tenants where each
+  // group has ≤ 20 variants.
+  const SERVER_BUFFER = Math.min(2000, Math.max(200, groupPagination.pageSize * 20));
+
+  // Build server-side filters (always page 1 — we paginate groups client-side)
   const serverFilters = useMemo(() => ({
     search: debouncedSearch || undefined,
     categoryId: categoryFilter !== '_all_' ? categoryFilter : undefined,
@@ -260,9 +267,9 @@ export default function ProductsPage() {
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
     printedFilter: printedFilter !== '_all_' ? printedFilter : undefined,
-    page: serverPagination.page,
-    pageSize: serverPagination.pageSize,
-  }), [debouncedSearch, categoryFilter, supplierFilter, statusFilter, branchFilter, dateFrom, dateTo, printedFilter, serverPagination.page, serverPagination.pageSize]);
+    page: 1,
+    pageSize: SERVER_BUFFER,
+  }), [debouncedSearch, categoryFilter, supplierFilter, statusFilter, branchFilter, dateFrom, dateTo, printedFilter, SERVER_BUFFER]);
 
   const { data: products, isLoading, isFetching, totalCount } = useProducts(serverFilters);
   const isFirstLoad = isLoading && !products?.length;
@@ -271,12 +278,20 @@ export default function ProductsPage() {
   const supplierMap = useMemo(() => new Map<string, string>((suppliers || []).map(s => [s.id, s.name])), [suppliers]);
   const branchMap = useMemo(() => new Map<string, string>((branches || []).map(b => [b.id, b.name])), [branches]);
 
-  const mappedProducts = useMemo(() => {
+  // Group products first → total = number of groups (sản phẩm gốc)
+  const groupedProducts = useMemo(() => {
     const mapped = products?.map(p => mapProductForTable(p, categoryMap, supplierMap, branchMap)) || [];
     return groupTemplateProducts(mapped);
   }, [products, categoryMap, supplierMap, branchMap]);
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / serverPagination.pageSize));
+  // Client-side pagination over GROUPS
+  const totalGroups = groupedProducts.length;
+  const totalPages = Math.max(1, Math.ceil(totalGroups / groupPagination.pageSize));
+  const startIdx = (groupPagination.page - 1) * groupPagination.pageSize;
+  const mappedProducts = useMemo(
+    () => groupedProducts.slice(startIdx, startIdx + groupPagination.pageSize),
+    [groupedProducts, startIdx, groupPagination.pageSize],
+  );
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -657,7 +672,10 @@ export default function ProductsPage() {
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Hiển thị {mappedProducts.length} / {totalCount} sản phẩm
+            Hiển thị {mappedProducts.length} / {totalGroups} nhóm sản phẩm
+            {totalCount > totalGroups && (
+              <span className="text-muted-foreground/70"> ({totalCount} biến thể)</span>
+            )}
           </p>
           {selectedProducts.length > 0 && (
             <p className="text-xs sm:text-sm font-medium text-primary">
@@ -685,16 +703,16 @@ export default function ProductsPage() {
           </div>
         )}
         
-        {totalCount > 0 && (
+        {totalGroups > 0 && (
           <TablePagination
-            currentPage={serverPagination.page}
+            currentPage={groupPagination.page}
             totalPages={totalPages}
-            pageSize={serverPagination.pageSize}
-            totalItems={totalCount}
-            startIndex={(serverPagination.page - 1) * serverPagination.pageSize + 1}
-            endIndex={Math.min(serverPagination.page * serverPagination.pageSize, totalCount)}
-            onPageChange={serverPagination.setPage}
-            onPageSizeChange={serverPagination.setPageSize}
+            pageSize={groupPagination.pageSize}
+            totalItems={totalGroups}
+            startIndex={startIdx + 1}
+            endIndex={Math.min(startIdx + groupPagination.pageSize, totalGroups)}
+            onPageChange={groupPagination.setPage}
+            onPageSizeChange={groupPagination.setPageSize}
           />
         )}
       </div>
