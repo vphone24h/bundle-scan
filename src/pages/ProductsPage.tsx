@@ -460,38 +460,31 @@ export default function ProductsPage() {
   };
 
   const handleDeleteTemplate = async (product: any) => {
-    if (!confirm(`Bạn có chắc muốn xóa sản phẩm mẫu "${product.name}"${product.isTemplateGroup ? ` và ${product.variantCount} biến thể` : ''}?`)) return;
-    
-    // Optimistic: xóa khỏi cache ngay lập tức
-    const idsToDelete = new Set<string>();
-    if (product.isTemplateGroup && product.childProducts?.length > 0) {
-      product.childProducts.forEach((c: any) => idsToDelete.add(c.id));
-    } else {
-      idsToDelete.add(product.id);
-    }
+    if (!confirm(`Bạn có chắc muốn xóa sản phẩm mẫu "${product.name}"${product.isTemplateGroup || product.isVariantGroup ? ` và ${product.variantCount} biến thể` : ''}?`)) return;
 
-    queryClient.setQueriesData({ queryKey: ['products'] }, (old: any) => {
-      if (!old?.items) return old;
-      return { ...old, items: old.items.filter((p: any) => !idsToDelete.has(p.id)), totalCount: Math.max(0, (old.totalCount || 0) - idsToDelete.size) };
-    });
-    toast({ title: 'Đã xóa sản phẩm mẫu' });
-
-    // Background: xóa thật trong DB
     try {
-      if (product.isTemplateGroup && product.childProducts?.length > 0) {
-        const ids = product.childProducts.map((c: any) => c.id);
-        const { error } = await supabase.from('products').delete().in('id', ids);
-        if (error) throw error;
+      // Resolve all IDs to delete (lazy-load variants if this is a group row)
+      let ids: string[] = [];
+      if ((product.isTemplateGroup || product.isVariantGroup) && !product.childProducts) {
+        const groupKey: string = product._groupKey ?? (product.groupId ? product.groupId : `solo:${product.id}`);
+        const variants = await loadGroupVariants(groupKey);
+        ids = variants.map(v => v.id);
+      } else if (product.childProducts?.length > 0) {
+        ids = product.childProducts.map((c: any) => c.id);
       } else {
-        const { error } = await supabase.from('products').delete().eq('id', product.id);
-        if (error) throw error;
+        ids = [product.id];
       }
-      // Refresh in background to sync
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+
+      if (ids.length === 0) return;
+
+      const { error } = await supabase.from('products').delete().in('id', ids);
+      if (error) throw error;
+
+      toast({ title: 'Đã xóa sản phẩm mẫu' });
+      invalidateProductsPaginated();
     } catch (err: any) {
-      // Rollback on error
-      queryClient.invalidateQueries({ queryKey: ['products'] });
       toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+      invalidateProductsPaginated();
     }
   };
 
