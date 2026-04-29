@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useWarehouseValueSnapshots, aggregateSnapshots } from '@/hooks/useWarehouseValueSnapshots';
 import { useBranches } from '@/hooks/useBranches';
@@ -34,6 +34,71 @@ const chartConfig = {
     label: 'Giá trị toàn kho',
     color: 'hsl(var(--primary))',
   },
+};
+
+function formatLabel(d: string) {
+  try {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+      return format(parseISO(d), 'dd/MM/yyyy', { locale: vi });
+    }
+    return d;
+  } catch {
+    return d;
+  }
+}
+
+const CustomTooltip = ({ active, payload, allData }: any) => {
+  if (!active || !payload || !payload.length) return null;
+  const cur = payload[0].payload;
+  const idx = allData.findIndex((d: any) => d.date === cur.date);
+  const prev = idx > 0 ? allData[idx - 1] : null;
+
+  const total = Math.round(cur.totalValue);
+  const change = prev ? Math.round(cur.totalValue - prev.totalValue) : null;
+
+  const deltas = prev ? [
+    { label: 'Tồn kho', delta: Math.round(cur.inventoryValue - prev.inventoryValue) },
+    { label: 'Số dư quỹ', delta: Math.round(cur.cashBalance - prev.cashBalance) },
+    { label: 'CN khách hàng', delta: Math.round(cur.customerDebt - prev.customerDebt) },
+    { label: 'CN nhà cung cấp', delta: -Math.round(cur.supplierDebt - prev.supplierDebt) },
+  ].filter(d => Math.abs(d.delta) >= 1) : [];
+
+  return (
+    <div className="rounded-lg border bg-background p-2.5 shadow-md text-xs min-w-[220px]">
+      <p className="font-semibold mb-1">{formatLabel(cur.date)}</p>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-muted-foreground">Giá trị</span>
+        <span className="font-bold text-primary tabular-nums">{formatNumber(total)} đ</span>
+      </div>
+      {change !== null && (
+        <div className="flex items-center justify-between gap-3 mt-0.5">
+          <span className="text-muted-foreground">So với kỳ trước</span>
+          <span className={`font-medium tabular-nums ${change > 0 ? 'text-emerald-600' : change < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+            {change > 0 ? '+' : ''}{formatNumber(change)} đ
+          </span>
+        </div>
+      )}
+      {prev && (
+        <p className="text-[10px] text-muted-foreground mt-1.5 pt-1.5 border-t border-dashed">
+          So sánh với {formatLabel(prev.date)}:
+        </p>
+      )}
+      {deltas.length > 0 ? (
+        <div className="mt-1 space-y-0.5">
+          {deltas.map(d => (
+            <div key={d.label} className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">{d.label}</span>
+              <span className={`font-medium tabular-nums ${d.delta > 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+                {d.delta > 0 ? '+' : ''}{formatNumber(d.delta)} đ
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : prev ? (
+        <p className="text-[10px] text-muted-foreground mt-1">Không có thay đổi đáng kể</p>
+      ) : null}
+    </div>
+  );
 };
 
 export function WarehouseValueChart() {
@@ -219,25 +284,7 @@ export function WarehouseValueChart() {
                   width={50}
                 />
                 <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      labelFormatter={(_, payload) => {
-                        if (payload?.[0]?.payload?.date) {
-                          try {
-                            const d = payload[0].payload.date;
-                            if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
-                              return format(parseISO(d), 'dd/MM/yyyy', { locale: vi });
-                            }
-                            return d;
-                          } catch {
-                            return payload[0].payload.date;
-                          }
-                        }
-                        return '';
-                      }}
-                      formatter={(value) => [`${formatNumber(Number(value))} đ`, 'Giá trị']}
-                    />
-                  }
+                  content={<CustomTooltip allData={displayData} />}
                 />
                 <Bar
                   dataKey="totalValue"
