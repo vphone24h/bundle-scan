@@ -223,7 +223,7 @@ export function ProductTable({
                               {isGroup && (
                                 <button
                                   type="button"
-                                  onClick={() => toggleGroup(product.id)}
+                                  onClick={() => toggleGroup(product)}
                                   className="shrink-0 p-0.5 rounded hover:bg-muted"
                                 >
                                   {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
@@ -231,7 +231,7 @@ export function ProductTable({
                               )}
                               <p
                                 className={cn("font-medium text-sm break-words", isGroup && "cursor-pointer")}
-                                onClick={isGroup ? () => toggleGroup(product.id) : undefined}
+                                onClick={isGroup ? () => toggleGroup(product) : undefined}
                               >
                                 {product.name}
                               </p>
@@ -352,9 +352,12 @@ export function ProductTable({
                   </div>
 
                   {/* Expanded variant children */}
-                  {isGroup && isExpanded && product.childProducts && (
+                  {isGroup && isExpanded && (
                     <div className="ml-4 mt-1 space-y-1 border-l-2 border-primary/20 pl-3">
-                      {product.childProducts.map((child) => {
+                      {loadingGroups.has(product.id) && !getChildren(product) && (
+                        <div className="text-xs text-muted-foreground py-2 px-2">Đang tải biến thể...</div>
+                      )}
+                      {getChildren(product)?.map((child) => {
                         const variantLabel = [child.variant1, child.variant2, child.variant3].filter(Boolean).join(' · ');
                         return (
                           <div
