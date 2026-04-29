@@ -10,6 +10,7 @@ export interface LandingProductReview {
   content: string;
   rating: number;
   is_visible: boolean;
+  is_fake?: boolean;
   created_at: string;
   updated_at: string;
 }
