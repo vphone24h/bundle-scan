@@ -6,6 +6,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const jsonResponse = (payload: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 // Resolve Zalo App credentials: tenant_landing_settings → payment_config (company) → payment_config (platform)
 async function resolveZaloAppCredentials(
   supabaseAdmin: any,
@@ -128,10 +134,7 @@ Deno.serve(async (req) => {
     // Action: get_oauth_url — auto-resolve app_id if not provided
     if (action === "get_oauth_url") {
       if (!tenant_id) {
-        return new Response(
-          JSON.stringify({ error: "Missing tenant_id" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ error: "Missing tenant_id" }, 400);
       }
 
       const creds = await resolveZaloAppCredentials(supabaseAdmin, tenant_id, app_id, app_secret);
@@ -312,12 +315,10 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (!settings?.zalo_refresh_token || !creds) {
-        return new Response(
-          JSON.stringify({ error: "Thiếu thông tin để gia hạn token. Vui lòng kết nối lại." }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return jsonResponse({ error: "Thiếu thông tin để gia hạn token. Vui lòng kết nối lại." }, 400);
       }
 
+      const previousRefreshToken = settings.zalo_refresh_token;
       const refreshRes = await fetch("https://oauth.zaloapp.com/v4/oa/access_token", {
         method: "POST",
         headers: {
@@ -325,7 +326,7 @@ Deno.serve(async (req) => {
           secret_key: creds.app_secret,
         },
         body: new URLSearchParams({
-          refresh_token: settings.zalo_refresh_token,
+          refresh_token: previousRefreshToken,
           app_id: creds.app_id,
           grant_type: "refresh_token",
         }),
@@ -335,13 +336,48 @@ Deno.serve(async (req) => {
       console.log("Refresh token response:", JSON.stringify(refreshData));
 
       if (refreshData.error || !refreshData.access_token) {
-        return new Response(
-          JSON.stringify({
+        const isInvalidRefreshToken =
+          refreshData.error === -14014 ||
+          String(refreshData.error_description || refreshData.error_name || "").toLowerCase().includes("invalid refresh token");
+
+        if (isInvalidRefreshToken) {
+          for (let attempt = 0; attempt < 3; attempt++) {
+            const { data: latestSettings } = await supabaseAdmin
+              .from("tenant_landing_settings")
+              .select("zalo_access_token, zalo_refresh_token")
+              .eq("tenant_id", tenant_id)
+              .maybeSingle();
+
+            if (
+              latestSettings?.zalo_access_token &&
+              latestSettings?.zalo_refresh_token &&
+              latestSettings.zalo_refresh_token !== previousRefreshToken
+            ) {
+              return jsonResponse({
+                success: true,
+                message: "Token đã được gia hạn ở yêu cầu khác.",
+                refreshedElsewhere: true,
+              });
+            }
+
+            if (attempt < 2) {
+              await new Promise((resolve) => setTimeout(resolve, 350));
+            }
+          }
+
+          return jsonResponse({
             error: "Gia hạn token thất bại. Vui lòng kết nối lại Zalo OA.",
-            details: refreshData.error_description || refreshData.error,
-          }),
-          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+            details: refreshData.error_description || refreshData.error_name || refreshData.error,
+            errorCode: "INVALID_REFRESH_TOKEN",
+            requiresReconnect: true,
+          });
+        }
+
+        return jsonResponse({
+          error: "Gia hạn token thất bại. Vui lòng thử lại sau.",
+          details: refreshData.error_description || refreshData.error_name || refreshData.error,
+          errorCode: "ZALO_REFRESH_FAILED",
+        });
       }
 
       await supabaseAdmin
@@ -352,10 +388,7 @@ Deno.serve(async (req) => {
         })
         .eq("tenant_id", tenant_id);
 
-      return new Response(
-        JSON.stringify({ success: true, message: "Đã gia hạn token thành công" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ success: true, message: "Đã gia hạn token thành công" });
     }
 
     // Action: disconnect
