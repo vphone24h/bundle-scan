@@ -6,6 +6,7 @@ import { useBranchFilter } from './useBranchFilter';
 import { usePermissions } from './usePermissions';
 import { useCurrentTenant } from './useTenant';
 import { useState, useCallback } from 'react';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 type ProductStatus = Database['public']['Enums']['product_status'];
 
