@@ -51,20 +51,37 @@ export function LandingReviewsTab() {
   const deleteReview = useDeleteProductReview();
 
   const [search, setSearch] = useState('');
+  const [ratingFilter, setRatingFilter] = useState<'all' | 1 | 2 | 3 | 4 | 5>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'real' | 'fake'>('all');
   const [editing, setEditing] = useState<any | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ customer_name: '', customer_phone: '', content: '', rating: 5, is_visible: true });
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return reviews;
-    return reviews.filter((r: any) =>
-      (r.customer_name || '').toLowerCase().includes(q) ||
-      (r.customer_phone || '').includes(q) ||
-      (r.content || '').toLowerCase().includes(q) ||
-      (r.landing_products?.name || '').toLowerCase().includes(q)
-    );
-  }, [reviews, search]);
+    return reviews.filter((r: any) => {
+      if (ratingFilter !== 'all' && r.rating !== ratingFilter) return false;
+      if (typeFilter === 'fake' && !r.is_fake) return false;
+      if (typeFilter === 'real' && r.is_fake) return false;
+      if (!q) return true;
+      return (
+        (r.customer_name || '').toLowerCase().includes(q) ||
+        (r.customer_phone || '').includes(q) ||
+        (r.content || '').toLowerCase().includes(q) ||
+        (r.landing_products?.name || '').toLowerCase().includes(q)
+      );
+    });
+  }, [reviews, search, ratingFilter, typeFilter]);
+
+  const counts = useMemo(() => {
+    const byStar: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    let real = 0, fake = 0;
+    reviews.forEach((r: any) => {
+      byStar[r.rating] = (byStar[r.rating] || 0) + 1;
+      if (r.is_fake) fake++; else real++;
+    });
+    return { byStar, real, fake };
+  }, [reviews]);
 
   const openEdit = (r: any) => {
     setEditing(r);
@@ -122,6 +139,55 @@ export function LandingReviewsTab() {
         <Badge variant="secondary">{filtered.length} đánh giá</Badge>
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Button
+          size="sm"
+          variant={ratingFilter === 'all' ? 'default' : 'outline'}
+          className="h-7 px-2 text-xs"
+          onClick={() => setRatingFilter('all')}
+        >
+          Tất cả ({reviews.length})
+        </Button>
+        {([5, 4, 3, 2, 1] as const).map(s => (
+          <Button
+            key={s}
+            size="sm"
+            variant={ratingFilter === s ? 'default' : 'outline'}
+            className="h-7 px-2 text-xs gap-0.5"
+            onClick={() => setRatingFilter(s)}
+          >
+            {s}<Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+            <span className="text-muted-foreground ml-0.5">({counts.byStar[s] || 0})</span>
+          </Button>
+        ))}
+        <span className="mx-1 text-muted-foreground">|</span>
+        <Button
+          size="sm"
+          variant={typeFilter === 'all' ? 'default' : 'outline'}
+          className="h-7 px-2 text-xs"
+          onClick={() => setTypeFilter('all')}
+        >
+          Tất cả loại
+        </Button>
+        <Button
+          size="sm"
+          variant={typeFilter === 'real' ? 'default' : 'outline'}
+          className="h-7 px-2 text-xs"
+          onClick={() => setTypeFilter('real')}
+        >
+          Thật ({counts.real})
+        </Button>
+        <Button
+          size="sm"
+          variant={typeFilter === 'fake' ? 'default' : 'outline'}
+          className="h-7 px-2 text-xs"
+          onClick={() => setTypeFilter('fake')}
+        >
+          Ảo ({counts.fake})
+        </Button>
+      </div>
+
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Đang tải...</p>
       ) : filtered.length === 0 ? (
@@ -138,6 +204,7 @@ export function LandingReviewsTab() {
                     <span className="font-semibold text-sm">{r.customer_name}</span>
                     <span className="text-xs text-muted-foreground">{r.customer_phone}</span>
                     <StarsView value={r.rating} />
+                    {r.is_fake && <Badge variant="outline" className="text-[10px] border-orange-300 text-orange-600">Ảo</Badge>}
                     {!r.is_visible && <Badge variant="outline" className="text-[10px]">Đã ẩn</Badge>}
                   </div>
                   <p className="text-xs text-muted-foreground mb-1">
