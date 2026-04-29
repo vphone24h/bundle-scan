@@ -1985,6 +1985,62 @@ export function LandingProductsTab() {
               )}
             </div>
 
+            {/* Tạo đánh giá ảo bằng AI */}
+            <Separator />
+            <div className="space-y-2 rounded-lg border border-dashed p-3 bg-muted/30">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="flex items-center gap-1.5 text-sm font-semibold">
+                  <Sparkles className="h-4 w-4 text-amber-500" />
+                  Tạo đánh giá ảo (AI)
+                </Label>
+                {!editingProductId && (
+                  <Badge variant="outline" className="text-[10px]">Lưu sản phẩm trước</Badge>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Nhập số lượng đánh giá theo từng mức sao. AI sẽ tự sinh tên + nội dung gần gũi, không trùng tên đã có.
+              </p>
+              <div className="grid grid-cols-5 gap-1.5">
+                {[5, 4, 3, 2, 1].map(s => (
+                  <div key={s} className="space-y-1">
+                    <div className="flex items-center justify-center gap-0.5">
+                      {Array.from({ length: s }).map((_, i) => (
+                        <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      ))}
+                    </div>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={50}
+                      className="h-8 text-center text-xs"
+                      value={fakeReviewCounts[s as 1 | 2 | 3 | 4 | 5]}
+                      onChange={e => {
+                        const v = Math.max(0, Math.min(50, Number(e.target.value) || 0));
+                        setFakeReviewCounts(prev => ({ ...prev, [s]: v }));
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="w-full"
+                disabled={generatingFakeReviews || !editingProductId}
+                onClick={handleGenerateFakeReviews}
+              >
+                {generatingFakeReviews ? (
+                  <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Đang tạo...</>
+                ) : (
+                  <><Sparkles className="h-3.5 w-3.5 mr-1.5" /> Tạo đánh giá ảo</>
+                )}
+              </Button>
+              <p className="text-[10px] text-muted-foreground italic">
+                Tối đa 50/sao, tổng 100/lần. Có thể bấm nhiều lần để tăng dần.
+              </p>
+            </div>
+
 
             {/* Hiển thị trên trang chủ */}
             <Separator />
