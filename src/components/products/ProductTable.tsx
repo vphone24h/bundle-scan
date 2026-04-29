@@ -40,6 +40,8 @@ interface ProductTableProps {
   onDuplicate?: (product: ExtendedProduct) => void;
   onImportFromTemplate?: (product: ExtendedProduct) => void;
   onDeleteTemplate?: (product: ExtendedProduct) => void;
+  /** Lazy-load variants of a group when user expands it (server-side grouping). */
+  onLoadVariants?: (product: ExtendedProduct) => Promise<ExtendedProduct[]>;
 }
 
 export function ProductTable({
@@ -51,6 +53,7 @@ export function ProductTable({
   onDuplicate,
   onImportFromTemplate,
   onDeleteTemplate,
+  onLoadVariants,
 }: ProductTableProps) {
   const isMobile = useIsMobile();
   const { data: permissions } = usePermissions();
@@ -76,13 +79,45 @@ export function ProductTable({
 
   // Expand/collapse state for variant groups
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const toggleGroup = (id: string) => {
+  // Lazy-loaded variants per group id (when childProducts not preloaded)
+  const [loadedVariants, setLoadedVariants] = useState<Record<string, ExtendedProduct[]>>({});
+  const [loadingGroups, setLoadingGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroup = (product: ExtendedProduct) => {
+    const id = product.id;
     setExpandedGroups(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+    // Lazy-load if no childProducts and not yet loaded
+    if (
+      onLoadVariants &&
+      !product.childProducts &&
+      !loadedVariants[id] &&
+      !loadingGroups.has(id)
+    ) {
+      setLoadingGroups(prev => new Set(prev).add(id));
+      onLoadVariants(product)
+        .then(variants => {
+          setLoadedVariants(prev => ({ ...prev, [id]: variants }));
+        })
+        .catch(() => {
+          // swallow — caller should toast
+        })
+        .finally(() => {
+          setLoadingGroups(prev => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+        });
+    }
+  };
+
+  const getChildren = (product: ExtendedProduct): ExtendedProduct[] | undefined => {
+    return product.childProducts ?? loadedVariants[product.id];
   };
 
   const toggleAll = () => {
