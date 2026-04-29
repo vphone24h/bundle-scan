@@ -309,6 +309,12 @@ export default function ProductsPage() {
   const totalPages = Math.max(1, Math.ceil(totalGroups / groupPagination.pageSize));
   const startIdx = (groupPagination.page - 1) * groupPagination.pageSize;
 
+  // Total variant count across the groups currently visible on this page
+  const totalVariantsOnPage = useMemo(
+    () => groupRows.reduce((sum, g) => sum + (g.variant_count || 1), 0),
+    [groupRows],
+  );
+
   // Helper: lazily load all variants for a group (used by Edit / Delete handlers)
   const loadGroupVariants = useCallback(async (groupKey: string): Promise<Product[]> => {
     const { data, error } = await supabase.rpc('get_group_variants', { p_group_key: groupKey });
