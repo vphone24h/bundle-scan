@@ -51,6 +51,7 @@ import { ListPagination, paginateArray } from '@/components/ui/list-pagination';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
+import { generateFakeReviews } from '@/lib/fakeReviewsGenerator';
 
 // Badge options for products
 const PRODUCT_BADGE_OPTIONS = [
@@ -445,40 +446,28 @@ export function LandingProductsTab() {
         .limit(200);
       const existingNames = ((existing || []) as any[]).map(r => r.customer_name).filter(Boolean);
 
-      const { data, error } = await supabase.functions.invoke('generate-fake-reviews', {
-        body: {
-          product_name: form.name || 'Sản phẩm',
-          counts: {
-            '1': fakeReviewCounts[1],
-            '2': fakeReviewCounts[2],
-            '3': fakeReviewCounts[3],
-            '4': fakeReviewCounts[4],
-            '5': fakeReviewCounts[5],
-          },
-          existing_names: existingNames,
+      // Sinh review ngay tại client từ template (không dùng AI, không tốn điểm)
+      const reviews = generateFakeReviews({
+        productName: form.name || 'Sản phẩm',
+        counts: {
+          1: fakeReviewCounts[1],
+          2: fakeReviewCounts[2],
+          3: fakeReviewCounts[3],
+          4: fakeReviewCounts[4],
+          5: fakeReviewCounts[5],
         },
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
+        existing_names: existingNames,
+      } as any);
 
-      const reviews = (data as any)?.reviews as Array<{ customer_name: string; content: string; rating: number }> || [];
-      if (reviews.length === 0) throw new Error('AI không tạo được đánh giá nào');
-
-      // Tạo SĐT ngẫu nhiên (giấu bớt) cho đẹp hồ sơ
-      const fakePhone = () => {
-        const prefixes = ['090', '091', '093', '094', '096', '097', '098', '081', '082', '083', '084', '085', '086', '088', '089'];
-        const p = prefixes[Math.floor(Math.random() * prefixes.length)];
-        const rest = String(Math.floor(1000000 + Math.random() * 9000000));
-        return p + rest;
-      };
+      if (reviews.length === 0) throw new Error('Không tạo được đánh giá nào');
 
       const rows = reviews.map(r => ({
         tenant_id: tenantId,
         product_id: editingProductId,
         customer_name: r.customer_name.slice(0, 100),
-        customer_phone: fakePhone(),
+        customer_phone: r.customer_phone,
         content: r.content.slice(0, 1000),
-        rating: Math.max(1, Math.min(5, r.rating)),
+        rating: r.rating,
         is_visible: true,
       }));
 
