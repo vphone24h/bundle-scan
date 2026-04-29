@@ -698,8 +698,8 @@ export default function ProductsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <p className="text-xs sm:text-sm text-muted-foreground">
             Hiển thị {mappedProducts.length} / {totalGroups} nhóm sản phẩm
-            {totalCount > totalGroups && (
-              <span className="text-muted-foreground/70"> ({totalCount} biến thể)</span>
+            {totalVariantsOnPage > mappedProducts.length && (
+              <span className="text-muted-foreground/70"> ({totalVariantsOnPage} biến thể trên trang)</span>
             )}
           </p>
           {selectedProducts.length > 0 && (
@@ -752,7 +752,7 @@ export default function ProductsPage() {
             .update({ is_printed: true })
             .in('id', productIds);
           if (!error) {
-            queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'all' });
+            invalidateProductsPaginated();
           } else {
             console.error('Failed to mark products as printed:', error);
           }
