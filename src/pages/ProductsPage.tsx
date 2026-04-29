@@ -672,7 +672,10 @@ export default function ProductsPage() {
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Hiển thị {mappedProducts.length} / {totalCount} sản phẩm
+            Hiển thị {mappedProducts.length} / {totalGroups} nhóm sản phẩm
+            {totalCount > totalGroups && (
+              <span className="text-muted-foreground/70"> ({totalCount} biến thể)</span>
+            )}
           </p>
           {selectedProducts.length > 0 && (
             <p className="text-xs sm:text-sm font-medium text-primary">
@@ -700,16 +703,16 @@ export default function ProductsPage() {
           </div>
         )}
         
-        {totalCount > 0 && (
+        {totalGroups > 0 && (
           <TablePagination
-            currentPage={serverPagination.page}
+            currentPage={groupPagination.page}
             totalPages={totalPages}
-            pageSize={serverPagination.pageSize}
-            totalItems={totalCount}
-            startIndex={(serverPagination.page - 1) * serverPagination.pageSize + 1}
-            endIndex={Math.min(serverPagination.page * serverPagination.pageSize, totalCount)}
-            onPageChange={serverPagination.setPage}
-            onPageSizeChange={serverPagination.setPageSize}
+            pageSize={groupPagination.pageSize}
+            totalItems={totalGroups}
+            startIndex={startIdx + 1}
+            endIndex={Math.min(startIdx + groupPagination.pageSize, totalGroups)}
+            onPageChange={groupPagination.setPage}
+            onPageSizeChange={groupPagination.setPageSize}
           />
         )}
       </div>
