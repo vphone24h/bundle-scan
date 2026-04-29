@@ -5104,6 +5104,7 @@ export type Database = {
           customer_name: string
           customer_phone: string
           id: string
+          is_fake: boolean
           is_visible: boolean
           product_id: string
           rating: number
@@ -5116,6 +5117,7 @@ export type Database = {
           customer_name: string
           customer_phone: string
           id?: string
+          is_fake?: boolean
           is_visible?: boolean
           product_id: string
           rating?: number
@@ -5128,6 +5130,7 @@ export type Database = {
           customer_name?: string
           customer_phone?: string
           id?: string
+          is_fake?: boolean
           is_visible?: boolean
           product_id?: string
           rating?: number

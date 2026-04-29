@@ -469,6 +469,7 @@ export function LandingProductsTab() {
         content: r.content.slice(0, 1000),
         rating: r.rating,
         is_visible: true,
+        is_fake: true,
       }));
 
       const { error: insErr } = await supabase
