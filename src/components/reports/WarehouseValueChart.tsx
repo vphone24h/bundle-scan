@@ -147,18 +147,16 @@ export function WarehouseValueChart() {
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
-        {displayData.length < 7 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => backfillMutation.mutate()}
-            disabled={backfillMutation.isPending}
-            className="gap-1.5"
-          >
-            <RotateCcw className={`h-3.5 w-3.5 ${backfillMutation.isPending ? 'animate-spin' : ''}`} />
-            <span className="text-xs">Khôi phục dữ liệu</span>
-          </Button>
-        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => backfillMutation.mutate()}
+          disabled={backfillMutation.isPending}
+          className="gap-1.5"
+        >
+          <RotateCcw className={`h-3.5 w-3.5 ${backfillMutation.isPending ? 'animate-spin' : ''}`} />
+          <span className="text-xs">Khôi phục dữ liệu</span>
+        </Button>
         <Select value={timeRange} onValueChange={setTimeRange}>
           <SelectTrigger className="w-[130px]">
             <SelectValue />
