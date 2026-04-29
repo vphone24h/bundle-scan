@@ -195,7 +195,7 @@ export function ProductTable({
                                 </button>
                               )}
                               <p
-                                className={cn("font-medium text-sm truncate", isGroup && "cursor-pointer")}
+                                className={cn("font-medium text-sm break-words", isGroup && "cursor-pointer")}
                                 onClick={isGroup ? () => toggleGroup(product.id) : undefined}
                               >
                                 {product.name}
@@ -327,7 +327,7 @@ export function ProductTable({
                             className="bg-muted/30 border rounded-md p-2.5 flex items-center justify-between gap-2"
                           >
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium truncate">{variantLabel || child.name}</p>
+                            <p className="text-sm font-medium break-words">{variantLabel || child.name}</p>
                               <p className="text-[10px] text-muted-foreground font-mono">{child.sku}</p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
@@ -429,12 +429,12 @@ export function ProductTable({
                         aria-label={`Chọn ${product.name}`}
                       />
                     </td>
-                    <td className="font-medium max-w-[200px]">
+                    <td className="font-medium min-w-[260px] max-w-[420px]">
                       <div className="flex items-center gap-1.5">
                         {isGroup && (
                           isExpanded ? <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                         )}
-                        <span className="truncate">{product.name}</span>
+                        <span className="break-words">{product.name}</span>
                         {isGroup && (
                           <Badge variant="secondary" className="text-[10px] gap-0.5 shrink-0">
                             <Layers className="h-2.5 w-2.5" />
@@ -539,8 +539,8 @@ export function ProductTable({
                             onCheckedChange={() => toggleOne(child.id)}
                           />
                         </td>
-                        <td className="font-medium max-w-[200px] pl-8">
-                          <span className="truncate text-sm">{variantLabel || child.name}</span>
+                        <td className="font-medium min-w-[260px] max-w-[420px] pl-8">
+                          <span className="break-words text-sm">{variantLabel || child.name}</span>
                         </td>
                         <td className="text-muted-foreground text-xs sm:text-sm">{child.sku}</td>
                         <td className="font-mono text-xs sm:text-sm hidden lg:table-cell">{child.imei || '-'}</td>
