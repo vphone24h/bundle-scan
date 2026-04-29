@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Barcode, Loader2, Filter, X, Download, Plus, Printer, PlayCircle, AlertCircle, Package } from 'lucide-react';
+import { Search, Barcode, Loader2, Filter, X, Download, Plus, Printer, PlayCircle, AlertCircle, Package, Trash2 } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -488,6 +488,56 @@ export default function ProductsPage() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedProducts.length === 0) return;
+    const selectedRows = mappedProducts.filter((p: any) => selectedProducts.includes(p.id));
+    const groupCount = selectedRows.filter((p: any) => p.isVariantGroup || p.isTemplateGroup).length;
+    const totalVariants = selectedRows.reduce(
+      (sum: number, p: any) => sum + ((p.isVariantGroup || p.isTemplateGroup) ? (p.variantCount || 1) : 1),
+      0,
+    );
+    const msg = groupCount > 0
+      ? `Bạn có chắc muốn xóa ${selectedRows.length} mục đã chọn (bao gồm ${groupCount} nhóm với tổng ${totalVariants} biến thể)?`
+      : `Bạn có chắc muốn xóa ${selectedRows.length} sản phẩm đã chọn?`;
+    if (!confirm(msg)) return;
+
+    try {
+      // Resolve all real product IDs (expand groups via lazy load)
+      const idSet = new Set<string>();
+      for (const row of selectedRows) {
+        const r: any = row;
+        if (r.isVariantGroup || r.isTemplateGroup) {
+          if (r.childProducts?.length > 0) {
+            r.childProducts.forEach((c: any) => idSet.add(c.id));
+          } else {
+            const groupKey: string = r._groupKey ?? (r.groupId ? r.groupId : `solo:${r.id}`);
+            const variants = await loadGroupVariants(groupKey);
+            variants.forEach(v => idSet.add(v.id));
+          }
+        } else {
+          idSet.add(r.id);
+        }
+      }
+      const ids = Array.from(idSet);
+      if (ids.length === 0) return;
+
+      // Delete in batches of 200 to avoid URL length limits
+      const BATCH = 200;
+      for (let i = 0; i < ids.length; i += BATCH) {
+        const chunk = ids.slice(i, i + BATCH);
+        const { error } = await supabase.from('products').delete().in('id', chunk);
+        if (error) throw error;
+      }
+
+      toast({ title: 'Đã xóa', description: `Đã xóa ${ids.length} sản phẩm` });
+      setSelectedProducts([]);
+      invalidateProductsPaginated();
+    } catch (err: any) {
+      toast({ title: 'Lỗi xóa', description: err.message, variant: 'destructive' });
+      invalidateProductsPaginated();
+    }
+  };
+
   const handleExportProducts = () => {
     if (mappedProducts.length === 0) {
       toast({ title: t('pages.products.noData'), description: t('pages.products.noProductsToExport'), variant: 'destructive' });
@@ -577,6 +627,16 @@ export default function ProductsPage() {
                 </Popover>
               )}
             </div>
+            {selectedProducts.length > 0 && (
+              <Button
+                onClick={handleBulkDelete}
+                size="sm"
+                variant="destructive"
+              >
+                <Trash2 className="mr-1.5 h-4 w-4" />
+                Xóa đã chọn ({selectedProducts.length})
+              </Button>
+            )}
           </div>
         }
       />
