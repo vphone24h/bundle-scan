@@ -75,7 +75,21 @@ export function useProducts(filters?: ProductFilters) {
 
   const page = filters?.page ?? 1;
   const pageSize = filters?.pageSize ?? 50;
-  const hasServerFilters = !!filters;
+  // True only when there is an ACTUAL filter narrowing the result set.
+  // Page/pageSize alone don't count — we still want to fetch ALL rows so
+  // client-side grouping (group_id) works across the full dataset.
+  const hasServerFilters = !!(
+    filters && (
+      (filters.search && filters.search.trim()) ||
+      (filters.categoryId && filters.categoryId !== '_all_') ||
+      (filters.supplierId && filters.supplierId !== '_all_') ||
+      (filters.status && filters.status !== '_all_') ||
+      (filters.branchId && filters.branchId !== '_all_') ||
+      filters.dateFrom ||
+      filters.dateTo ||
+      (filters.printedFilter && filters.printedFilter !== '_all_')
+    )
+  );
 
   const result = useQuery({
     queryKey: [
