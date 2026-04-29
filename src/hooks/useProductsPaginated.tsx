@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import { usePermissions } from './usePermissions';
 import { useCurrentTenant } from './useTenant';
 import type { Product } from './useProducts';
+import { useEffect } from 'react';
 
 export interface ProductGroupRow {
   group_key: string;          // group_id OR "solo:<product_id>"
@@ -35,6 +36,26 @@ export function useProductsPaginated(filters: ProductsPaginatedFilters = {}) {
   const { isLoading: permissionsLoading } = usePermissions();
   const { data: tenant } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
+  const qc = useQueryClient();
+
+  // Bridge legacy cache invalidations: any code that invalidates ['products']
+  // (e.g. EditProductDialog, EditTemplateProductDialog) should also refresh
+  // the paginated/grouped product list.
+  useEffect(() => {
+    const cache = qc.getQueryCache();
+    const unsub = cache.subscribe(event => {
+      if (event?.type !== 'updated') return;
+      const key = event.query.queryKey;
+      if (Array.isArray(key) && (key[0] === 'products' || key[0] === 'all-products')) {
+        // Only refetch when the source query was invalidated
+        if ((event as any).action?.type === 'invalidate') {
+          qc.invalidateQueries({ queryKey: ['products-paginated'] });
+          qc.invalidateQueries({ queryKey: ['group-variants'] });
+        }
+      }
+    });
+    return () => unsub();
+  }, [qc]);
 
   const page = filters.page ?? 1;
   const pageSize = filters.pageSize ?? 25;
