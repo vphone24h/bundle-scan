@@ -459,7 +459,7 @@ export function ProductTable({
               
               return (
                 <React.Fragment key={product.id}>
-                  <tr className={cn(isGroup && 'cursor-pointer')} onClick={isGroup ? () => toggleGroup(product.id) : undefined}>
+                  <tr className={cn(isGroup && 'cursor-pointer')} onClick={isGroup ? () => toggleGroup(product) : undefined}>
                     <td onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={selectedProducts.includes(product.id)}
@@ -567,7 +567,12 @@ export function ProductTable({
                     </td>
                   </tr>
                   {/* Expanded variant rows */}
-                  {isGroup && isExpanded && product.childProducts?.map((child) => {
+                  {isGroup && isExpanded && loadingGroups.has(product.id) && !getChildren(product) && (
+                    <tr className="bg-muted/20">
+                      <td colSpan={20} className="text-xs text-muted-foreground py-2 px-4">Đang tải biến thể...</td>
+                    </tr>
+                  )}
+                  {isGroup && isExpanded && getChildren(product)?.map((child) => {
                     const variantLabel = [child.variant1, child.variant2, child.variant3].filter(Boolean).join(' · ');
                     return (
                       <tr key={child.id} className="bg-muted/20">
