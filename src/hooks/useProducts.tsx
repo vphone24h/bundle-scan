@@ -98,59 +98,61 @@ export function useProducts(filters?: ProductFilters) {
     queryFn: async () => {
       if (isDataHidden) return { items: [] as Product[], totalCount: 0 };
 
-      let query = supabase
-        .from('products')
-        .select(`
-          id, name, sku, imei, category_id, sale_price, import_price,
-          import_date, supplier_id, branch_id, import_receipt_id, status,
-          note, quantity, unit, is_printed,
-          group_id, variant_1, variant_2, variant_3
-        `)
-        .in('status', ['in_stock', 'sold', 'returned', 'template'])
-        .order('import_date', { ascending: false });
+      // Build a fresh query each time to avoid mutating a single builder instance
+      // (critical for fetchAllRows pagination loop).
+      const buildQuery = () => {
+        let q = supabase
+          .from('products')
+          .select(`
+            id, name, sku, imei, category_id, sale_price, import_price,
+            import_date, supplier_id, branch_id, import_receipt_id, status,
+            note, quantity, unit, is_printed,
+            group_id, variant_1, variant_2, variant_3
+          `)
+          .in('status', ['in_stock', 'sold', 'returned', 'template'])
+          .order('import_date', { ascending: false })
+          .order('id', { ascending: false });
 
-      // Branch filter: include template products (no branch) alongside branch-specific products
-      if (shouldFilter && branchId) {
-        query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
-      }
-
-      if (filters?.search) {
-        const s = filters.search.trim();
-        if (s) {
-          query = query.or(`name.ilike.%${s}%,sku.ilike.%${s}%,imei.ilike.%${s}%`);
+        if (shouldFilter && branchId) {
+          q = q.or(`branch_id.eq.${branchId},branch_id.is.null`);
         }
-      }
-      if (filters?.categoryId && filters.categoryId !== '_all_') {
-        query = query.eq('category_id', filters.categoryId);
-      }
-      if (filters?.supplierId && filters.supplierId !== '_all_') {
-        query = query.eq('supplier_id', filters.supplierId);
-      }
-      if (filters?.status && filters.status !== '_all_') {
-        query = query.eq('status', filters.status as ProductStatus);
-      }
-      if (filters?.branchId && filters.branchId !== '_all_') {
-        query = query.eq('branch_id', filters.branchId);
-      }
-      if (filters?.dateFrom) {
-        query = query.gte('import_date', filters.dateFrom);
-      }
-      if (filters?.dateTo) {
-        query = query.lte('import_date', filters.dateTo + 'T23:59:59');
-      }
-      if (filters?.printedFilter === 'printed') {
-        query = query.eq('is_printed', true);
-      } else if (filters?.printedFilter === 'not_printed') {
-        query = query.eq('is_printed', false);
-      }
+        if (filters?.search) {
+          const s = filters.search.trim();
+          if (s) {
+            q = q.or(`name.ilike.%${s}%,sku.ilike.%${s}%,imei.ilike.%${s}%`);
+          }
+        }
+        if (filters?.categoryId && filters.categoryId !== '_all_') {
+          q = q.eq('category_id', filters.categoryId);
+        }
+        if (filters?.supplierId && filters.supplierId !== '_all_') {
+          q = q.eq('supplier_id', filters.supplierId);
+        }
+        if (filters?.status && filters.status !== '_all_') {
+          q = q.eq('status', filters.status as ProductStatus);
+        }
+        if (filters?.branchId && filters.branchId !== '_all_') {
+          q = q.eq('branch_id', filters.branchId);
+        }
+        if (filters?.dateFrom) {
+          q = q.gte('import_date', filters.dateFrom);
+        }
+        if (filters?.dateTo) {
+          q = q.lte('import_date', filters.dateTo + 'T23:59:59');
+        }
+        if (filters?.printedFilter === 'printed') {
+          q = q.eq('is_printed', true);
+        } else if (filters?.printedFilter === 'not_printed') {
+          q = q.eq('is_printed', false);
+        }
+        return q;
+      };
 
       // Server-side pagination when filters are applied
       if (hasServerFilters) {
         const from = (page - 1) * pageSize;
         const to = from + pageSize;
-        query = query.range(from, to);
-
-        const { data, error } = await query;
+        const { data, error } = await buildQuery().range(from, to);
         if (error) throw error;
 
         const rows = (data || []) as Product[];
@@ -165,7 +167,7 @@ export function useProducts(filters?: ProductFilters) {
 
       // No filters: fetch ALL rows so that group-by on the client doesn't drop groups.
       // The 500-row cap previously hid groups whose variants fell beyond the cutoff.
-      const rows = await fetchAllRows<Product>(() => query);
+      const rows = await fetchAllRows<Product>(buildQuery);
       return { items: rows, totalCount: rows.length };
     },
     enabled: !!user?.id && !permissionsLoading,
