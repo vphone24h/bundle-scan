@@ -40,6 +40,8 @@ interface ProductTableProps {
   onDuplicate?: (product: ExtendedProduct) => void;
   onImportFromTemplate?: (product: ExtendedProduct) => void;
   onDeleteTemplate?: (product: ExtendedProduct) => void;
+  /** Lazy-load variants of a group when user expands it (server-side grouping). */
+  onLoadVariants?: (product: ExtendedProduct) => Promise<ExtendedProduct[]>;
 }
 
 export function ProductTable({
@@ -51,6 +53,7 @@ export function ProductTable({
   onDuplicate,
   onImportFromTemplate,
   onDeleteTemplate,
+  onLoadVariants,
 }: ProductTableProps) {
   const isMobile = useIsMobile();
   const { data: permissions } = usePermissions();
@@ -76,13 +79,45 @@ export function ProductTable({
 
   // Expand/collapse state for variant groups
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const toggleGroup = (id: string) => {
+  // Lazy-loaded variants per group id (when childProducts not preloaded)
+  const [loadedVariants, setLoadedVariants] = useState<Record<string, ExtendedProduct[]>>({});
+  const [loadingGroups, setLoadingGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroup = (product: ExtendedProduct) => {
+    const id = product.id;
     setExpandedGroups(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+    // Lazy-load if no childProducts and not yet loaded
+    if (
+      onLoadVariants &&
+      !product.childProducts &&
+      !loadedVariants[id] &&
+      !loadingGroups.has(id)
+    ) {
+      setLoadingGroups(prev => new Set(prev).add(id));
+      onLoadVariants(product)
+        .then(variants => {
+          setLoadedVariants(prev => ({ ...prev, [id]: variants }));
+        })
+        .catch(() => {
+          // swallow — caller should toast
+        })
+        .finally(() => {
+          setLoadingGroups(prev => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+        });
+    }
+  };
+
+  const getChildren = (product: ExtendedProduct): ExtendedProduct[] | undefined => {
+    return product.childProducts ?? loadedVariants[product.id];
   };
 
   const toggleAll = () => {
@@ -188,7 +223,7 @@ export function ProductTable({
                               {isGroup && (
                                 <button
                                   type="button"
-                                  onClick={() => toggleGroup(product.id)}
+                                  onClick={() => toggleGroup(product)}
                                   className="shrink-0 p-0.5 rounded hover:bg-muted"
                                 >
                                   {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
@@ -196,7 +231,7 @@ export function ProductTable({
                               )}
                               <p
                                 className={cn("font-medium text-sm break-words", isGroup && "cursor-pointer")}
-                                onClick={isGroup ? () => toggleGroup(product.id) : undefined}
+                                onClick={isGroup ? () => toggleGroup(product) : undefined}
                               >
                                 {product.name}
                               </p>
@@ -317,9 +352,12 @@ export function ProductTable({
                   </div>
 
                   {/* Expanded variant children */}
-                  {isGroup && isExpanded && product.childProducts && (
+                  {isGroup && isExpanded && (
                     <div className="ml-4 mt-1 space-y-1 border-l-2 border-primary/20 pl-3">
-                      {product.childProducts.map((child) => {
+                      {loadingGroups.has(product.id) && !getChildren(product) && (
+                        <div className="text-xs text-muted-foreground py-2 px-2">Đang tải biến thể...</div>
+                      )}
+                      {getChildren(product)?.map((child) => {
                         const variantLabel = [child.variant1, child.variant2, child.variant3].filter(Boolean).join(' · ');
                         return (
                           <div
@@ -421,7 +459,7 @@ export function ProductTable({
               
               return (
                 <React.Fragment key={product.id}>
-                  <tr className={cn(isGroup && 'cursor-pointer')} onClick={isGroup ? () => toggleGroup(product.id) : undefined}>
+                  <tr className={cn(isGroup && 'cursor-pointer')} onClick={isGroup ? () => toggleGroup(product) : undefined}>
                     <td onClick={(e) => e.stopPropagation()}>
                       <Checkbox
                         checked={selectedProducts.includes(product.id)}
@@ -529,7 +567,12 @@ export function ProductTable({
                     </td>
                   </tr>
                   {/* Expanded variant rows */}
-                  {isGroup && isExpanded && product.childProducts?.map((child) => {
+                  {isGroup && isExpanded && loadingGroups.has(product.id) && !getChildren(product) && (
+                    <tr className="bg-muted/20">
+                      <td colSpan={20} className="text-xs text-muted-foreground py-2 px-4">Đang tải biến thể...</td>
+                    </tr>
+                  )}
+                  {isGroup && isExpanded && getChildren(product)?.map((child) => {
                     const variantLabel = [child.variant1, child.variant2, child.variant3].filter(Boolean).join(' · ');
                     return (
                       <tr key={child.id} className="bg-muted/20">
