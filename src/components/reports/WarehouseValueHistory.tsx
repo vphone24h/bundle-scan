@@ -167,7 +167,7 @@ export function WarehouseValueHistory({ currentData }: Props) {
           <div className="flex items-center gap-2">
             {!expanded && latestValue !== undefined && (
               <span className={cn("text-sm font-bold", latestValue >= 0 ? 'text-primary' : 'text-destructive')}>
-                {formatNumber(latestValue)} đ
+                {formatNumber(Math.round(latestValue))} đ
               </span>
             )}
             {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
@@ -255,8 +255,8 @@ export function WarehouseValueHistory({ currentData }: Props) {
                         </div>
                         {day.hasData ? (
                           <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
-                            <span className="text-[10px] text-muted-foreground">TK: {formatNumber(day.inventory)}</span>
-                            <span className="text-[10px] text-muted-foreground">SQ: {formatNumber(day.cash)}</span>
+                            <span className="text-[10px] text-muted-foreground">TK: {formatNumber(Math.round(day.inventory))}</span>
+                            <span className="text-[10px] text-muted-foreground">SQ: {formatNumber(Math.round(day.cash))}</span>
                           </div>
                         ) : (
                           <span className="text-[10px] text-muted-foreground">Chưa ghi nhận</span>
@@ -267,14 +267,14 @@ export function WarehouseValueHistory({ currentData }: Props) {
                           "font-bold text-sm",
                           !day.hasData ? 'text-muted-foreground' : day.total >= 0 ? 'text-primary' : 'text-destructive'
                         )}>
-                          {day.hasData ? `${formatNumber(day.total)} đ` : '—'}
+                          {day.hasData ? `${formatNumber(Math.round(day.total))} đ` : '—'}
                         </p>
                         {change !== null && (
                           <span className={cn(
                             "text-[10px] font-medium",
                             change > 0 ? 'text-emerald-600' : change < 0 ? 'text-destructive' : 'text-muted-foreground'
                           )}>
-                            {change > 0 ? '+' : ''}{formatNumber(change)} đ
+                            {change > 0 ? '+' : ''}{formatNumber(Math.round(change))} đ
                           </span>
                         )}
                         {changePct !== null && Math.abs(changePct) >= 0.01 && (
@@ -301,7 +301,7 @@ export function WarehouseValueHistory({ currentData }: Props) {
                               "font-medium tabular-nums",
                               c.delta > 0 ? 'text-emerald-600' : 'text-destructive'
                             )}>
-                              {c.delta > 0 ? '+' : ''}{formatNumber(c.delta)} đ
+                              {c.delta > 0 ? '+' : ''}{formatNumber(Math.round(c.delta))} đ
                             </span>
                           </div>
                         ))}
