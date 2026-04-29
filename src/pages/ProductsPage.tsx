@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Barcode, Loader2, Filter, X, Download, Plus, Printer, PlayCircle, AlertCircle, Package } from 'lucide-react';
+import { Search, Barcode, Loader2, Filter, X, Download, Plus, Printer, PlayCircle, AlertCircle, Package, Trash2 } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -627,6 +627,16 @@ export default function ProductsPage() {
                 </Popover>
               )}
             </div>
+            {selectedProducts.length > 0 && (
+              <Button
+                onClick={handleBulkDelete}
+                size="sm"
+                variant="destructive"
+              >
+                <Trash2 className="mr-1.5 h-4 w-4" />
+                Xóa đã chọn ({selectedProducts.length})
+              </Button>
+            )}
           </div>
         }
       />
