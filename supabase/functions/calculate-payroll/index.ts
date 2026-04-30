@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
         .in("status", ["completed", "paid"]),
       supabase.from("export_receipt_items")
         .select("receipt_id, product_id, product_name, category_id, sale_price, quantity, imei")
-        .eq("status", "active"),
+        .neq("status", "returned"),
       supabase.from("leave_requests")
         .select("user_id, leave_date_from, leave_date_to, status, request_type")
         .eq("tenant_id", tenant_id)
