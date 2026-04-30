@@ -445,7 +445,7 @@ Deno.serve(async (req) => {
 
       // ===== SALES DATA =====
       const userSales = allSales.filter((s: any) => (s.sales_staff_id || s.created_by) === employee.user_id);
-      const userRevenue = userSales.reduce((s: number, r: any) => s + (r.total_amount || 0), 0);
+      const userRevenue = userSales.reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0);
       const userSaleIds = new Set(userSales.map((s: any) => s.id));
 
       // Aggregate sold items by product & category
@@ -456,17 +456,19 @@ Deno.serve(async (req) => {
       for (const sale of userSales) {
         const items = saleItemsByReceipt[sale.id] || [];
         for (const item of items) {
-          const lineTotal = (item.sale_price || 0) * (item.quantity || 1);
+          const quantity = Number(item.quantity ?? 1) || 0;
+          const salePrice = Number(item.sale_price || 0);
+          const lineTotal = salePrice * quantity;
           // Gross profit = (sale_price - import_price) * quantity
           const productInfo = item.product_id ? productInfoMap.get(item.product_id) : null;
-          const importPrice = productInfo?.import_price || 0;
+          const importPrice = Number(productInfo?.import_price || 0);
           if (importPrice > 0) {
-            userGrossProfit += ((item.sale_price || 0) - importPrice) * (item.quantity || 1);
+            userGrossProfit += (salePrice - importPrice) * quantity;
           }
           // By product
           const pKey = item.product_id || item.product_name;
           const existing = soldByProduct.get(pKey) || { name: item.product_name, qty: 0, revenue: 0 };
-          existing.qty += item.quantity || 1;
+          existing.qty += quantity;
           existing.revenue += lineTotal;
           soldByProduct.set(pKey, existing);
           // By category — propagate to ALL ancestor categories so a commission rule
@@ -476,14 +478,14 @@ Deno.serve(async (req) => {
             const ancestors = getCategoryAncestors(effectiveCategoryId);
             for (const cid of ancestors) {
               const cExisting = soldByCategory.get(cid) || { qty: 0, revenue: 0 };
-              cExisting.qty += item.quantity || 1;
+              cExisting.qty += quantity;
               cExisting.revenue += lineTotal;
               soldByCategory.set(cid, cExisting);
 
               const categoryNameKey = normalizeText(categoryNameMap.get(cid));
               if (categoryNameKey) {
                 const byName = soldByCategoryName.get(categoryNameKey) || { qty: 0, revenue: 0 };
-                byName.qty += item.quantity || 1;
+                byName.qty += quantity;
                 byName.revenue += lineTotal;
                 soldByCategoryName.set(categoryNameKey, byName);
               }
@@ -497,7 +499,7 @@ Deno.serve(async (req) => {
       const branchSales = userBranchId
         ? allSales.filter((s: any) => s.branch_id === userBranchId)
         : [];
-      const branchRevenue = branchSales.reduce((s: number, r: any) => s + (r.total_amount || 0), 0);
+      const branchRevenue = branchSales.reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0);
 
       // ===== 1. BASE SALARY =====
       let baseSalary = 0;
