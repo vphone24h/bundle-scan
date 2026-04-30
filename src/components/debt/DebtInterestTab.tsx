@@ -261,17 +261,27 @@ export function DebtInterestTab({ entityType, entityId, mergedEntityIds }: Props
       )}
 
       {/* History */}
-      {isActive && (payments?.length ?? 0) === 0 && (
-        <div className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
-          Chưa có lịch sử đóng lãi. Khi khách đóng lãi, mỗi lần sẽ ghi rõ:
-          <br />
-          <span className="text-foreground">ngày giờ đóng</span> · <span className="text-foreground">số tiền</span> · <span className="text-foreground">lãi còn lại sau đó</span>
-        </div>
-      )}
-      {(payments?.length ?? 0) > 0 && (
+      {isActive && (
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase">Lịch sử đóng lãi</p>
-          {(payments || []).map((p) => {
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase">Lịch sử trả lãi</p>
+            {(payments?.length ?? 0) > 0 && (
+              <span className="text-[11px] text-muted-foreground">
+                {(payments?.length ?? 0)} lần đóng
+              </span>
+            )}
+          </div>
+
+          {(payments?.length ?? 0) === 0 ? (
+            <div className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
+              Chưa có lịch sử trả lãi.
+              <br />
+              Khi khách đóng lãi, mỗi lần sẽ ghi rõ:
+              <br />
+              <span className="text-foreground">ngày giờ đóng</span> · <span className="text-foreground">số tiền</span> · <span className="text-foreground">lãi còn lại sau đó</span>
+            </div>
+          ) : (
+            (payments || []).map((p) => {
             const detail = accrual.paymentBreakdown?.find((x) => x.id === p.id);
             return (
               <div
@@ -323,7 +333,8 @@ export function DebtInterestTab({ entityType, entityId, mergedEntityIds }: Props
                 )}
               </div>
             );
-          })}
+            })
+          )}
         </div>
       )}
     </div>
