@@ -610,7 +610,7 @@ Deno.serve(async (req) => {
       let totalCommission = 0;
       const commissionDetails: any[] = [];
       const tComms = commsByTemplate[templateId] || [];
-      const runtimeCommissionEnabled = template?.commission_enabled ?? tComms.length > 0;
+      const runtimeCommissionEnabled = tComms.length > 0 || template?.commission_enabled === true;
       if (isPayrollReady && runtimeCommissionEnabled) {
         // Priority: product > category > general revenue
         const processedProducts = new Set<string>();
@@ -677,6 +677,35 @@ Deno.serve(async (req) => {
               }
             }
           }
+        }
+
+        if (tComms.length > 0 && userRevenue > 0 && totalCommission <= 0) {
+          console.log("[payroll-commission-debug]", JSON.stringify({
+            user_id: employee.user_id,
+            user_name: employee.display_name,
+            template_id: templateId,
+            user_revenue: userRevenue,
+            sale_count: userSales.length,
+            commission_rule_count: tComms.length,
+            commission_rules: tComms.map((c: any) => ({
+              target_type: c.target_type,
+              target_id: c.target_id,
+              target_name: c.target_name,
+              calc_type: c.calc_type,
+              value: c.value,
+            })),
+            sold_categories: Array.from(soldByCategory.entries()).map(([categoryId, sold]) => ({
+              category_id: categoryId,
+              category_name: categoryNameMap.get(categoryId) || null,
+              qty: sold.qty,
+              revenue: sold.revenue,
+            })),
+            sold_categories_by_name: Array.from(soldByCategoryName.entries()).map(([name, sold]) => ({
+              category_name: name,
+              qty: sold.qty,
+              revenue: sold.revenue,
+            })),
+          }));
         }
       }
 
@@ -1036,10 +1065,11 @@ Deno.serve(async (req) => {
     }
 
     // Update period status
-    await supabase
+    const { error: periodStatusErr } = await supabase
       .from("payroll_periods")
       .update({ status: "calculated" })
       .eq("id", period_id);
+    if (periodStatusErr) throw periodStatusErr;
 
     return new Response(
       JSON.stringify({ success: true, count: results.length }),
