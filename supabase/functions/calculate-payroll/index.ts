@@ -529,6 +529,22 @@ Deno.serve(async (req) => {
         : [];
       const branchRevenue = branchSales.reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0);
 
+      // Branch-wide product breakdown + branch gross profit (for branch_revenue popup)
+      const soldByBranchProduct = new Map<string, { name: string; qty: number; revenue: number }>();
+      for (const sale of branchSales) {
+        const items = saleItemsByReceipt[sale.id] || [];
+        for (const item of items) {
+          const quantity = Number(item.quantity ?? 1) || 0;
+          const salePrice = Number(item.sale_price || 0);
+          const lineTotal = salePrice * quantity;
+          const pKey = item.product_id || item.product_name;
+          const ex = soldByBranchProduct.get(pKey) || { name: item.product_name, qty: 0, revenue: 0 };
+          ex.qty += quantity;
+          ex.revenue += lineTotal;
+          soldByBranchProduct.set(pKey, ex);
+        }
+      }
+
       // ===== 1. BASE SALARY =====
       let baseSalary = 0;
       if (!isPayrollReady) {
@@ -609,7 +625,7 @@ Deno.serve(async (req) => {
             }
             amount = baseAmt + tierAmt;
             (b as any)._breakdown = { baseAmt: Math.round(baseAmt), tierAmt: Math.round(tierAmt), matchedTier, baseValue: b.value, baseCalcType: b.calc_type };
-          } else if (b.bonus_type === "kpi_branch") {
+          } else if (b.bonus_type === "kpi_branch" || b.bonus_type === "branch_revenue") {
             // KPI chi nhánh: so sánh doanh thu chi nhánh (theo branch của NV) với ngưỡng
             // CỘNG DỒN: thưởng cơ bản + tier vượt cao nhất (giống kpi_personal)
             const threshold = b.threshold || 0;
@@ -665,12 +681,17 @@ Deno.serve(async (req) => {
               bonusProducts = Array.from(soldByProduct.values())
                 .sort((a, b2) => b2.revenue - a.revenue)
                 .map(p => ({ name: p.name, qty: p.qty, revenue: p.revenue }));
+            } else if (b.bonus_type === "kpi_branch" || b.bonus_type === "branch_revenue") {
+              // Branch revenue: list products sold by employee's branch
+              bonusProducts = Array.from(soldByBranchProduct.values())
+                .sort((a: any, b2: any) => b2.revenue - a.revenue)
+                .map((p: any) => ({ name: p.name, qty: p.qty, revenue: p.revenue }));
             }
             bonusDetails.push({
               name: b.name,
               type: b.bonus_type,
               amount: Math.round(amount),
-              revenue: b.bonus_type === "kpi_personal" ? userRevenue : b.bonus_type === "kpi_branch" ? branchRevenue : b.bonus_type === "gross_profit" ? userGrossProfit : undefined,
+              revenue: b.bonus_type === "kpi_personal" ? userRevenue : (b.bonus_type === "kpi_branch" || b.bonus_type === "branch_revenue") ? branchRevenue : b.bonus_type === "gross_profit" ? userGrossProfit : undefined,
               threshold: b.threshold || undefined,
               calc_type: b.calc_type,
               value: b.value,
