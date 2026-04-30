@@ -14,7 +14,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { toast as sonnerToast } from 'sonner';
-import { Globe, Store, Save, Eye, EyeOff, QrCode } from 'lucide-react';
+import { Globe, Store, Save, Eye, EyeOff, QrCode, Percent } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { ImportHistoricalOrdersSection } from '@/components/admin/ImportHistoricalOrdersSection';
 import { SecurityPasswordSettings } from '@/components/security/SecurityPasswordSettings';
@@ -108,6 +108,48 @@ function BusinessModeSection({ tenantId, currentMode }: { tenantId: string; curr
         <p className="text-xs text-muted-foreground mt-3">
           Khi chọn "Bí mật", tất cả tài khoản trong cửa hàng sẽ không thấy các chức năng liên quan đến thuế và hoá đơn điện tử.
         </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function InterestFeatureToggle({ tenantId, enabled }: { tenantId: string; enabled: boolean }) {
+  const queryClient = useQueryClient();
+  const [checked, setChecked] = useState(enabled);
+
+  useEffect(() => { setChecked(enabled); }, [enabled]);
+
+  const handleToggle = async (next: boolean) => {
+    setChecked(next);
+    const { error } = await supabase
+      .from('tenants')
+      .update({ interest_enabled: next } as any)
+      .eq('id', tenantId);
+    if (error) {
+      setChecked(!next);
+      sonnerToast.error('Lỗi cập nhật');
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ['current-tenant-combined'] });
+    sonnerToast.success(next ? 'Đã bật tính năng tính lãi công nợ' : 'Đã tắt tính năng tính lãi công nợ');
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Percent className="h-5 w-5 text-primary" />
+          Tính lãi công nợ
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium">Cho phép tính lãi trên công nợ</p>
+          <p className="text-xs text-muted-foreground">
+            Khi bật, mỗi khách/NCC có tab "Tính lãi" để cấu hình lãi suất theo tháng. Mặc định tắt.
+          </p>
+        </div>
+        <Switch checked={checked} onCheckedChange={handleToggle} />
       </CardContent>
     </Card>
   );
@@ -381,6 +423,11 @@ export default function SettingsPage() {
         {/* Business Mode - Super Admin only */}
         {isSuperAdmin && tenant && (
           <BusinessModeSection tenantId={tenant.id} currentMode={tenant.business_mode || 'public'} />
+        )}
+
+        {/* Interest Feature - Super Admin only */}
+        {isSuperAdmin && tenant && (
+          <InterestFeatureToggle tenantId={tenant.id} enabled={!!(tenant as any).interest_enabled} />
         )}
 
         {/* Daily Backup - Super Admin only */}
