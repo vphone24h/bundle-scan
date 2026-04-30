@@ -355,9 +355,14 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                         </SelectContent>
                       </Select>
                     </div>
-                    {(b.bonus_type === 'kpi_personal' || b.bonus_type === 'branch_revenue' || b.bonus_type === 'gross_profit') && (
+                    {(b.bonus_type === 'kpi_personal' || b.bonus_type === 'kpi_branch' || b.bonus_type === 'branch_revenue' || b.bonus_type === 'gross_profit') && (
                       <div className="space-y-1">
-                        <Label className="text-xs">{b.bonus_type === 'kpi_personal' ? 'Doanh số đạt (VNĐ)' : 'Mức tối thiểu (VNĐ)'}</Label>
+                        <Label className="text-xs">
+                          {b.bonus_type === 'kpi_personal' ? 'Doanh số cá nhân đạt (VNĐ)'
+                            : b.bonus_type === 'kpi_branch' ? 'Doanh thu chi nhánh đạt (VNĐ)'
+                            : b.bonus_type === 'gross_profit' ? 'Lợi nhuận gộp đạt (VNĐ)'
+                            : 'Mức tối thiểu (VNĐ)'}
+                        </Label>
                         <Input type="number" className="h-8 text-xs" value={b.threshold} onChange={e => { const n = [...bonuses]; n[i].threshold = Number(e.target.value); setBonuses(n); }} />
                       </div>
                     )}
@@ -370,10 +375,12 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
-                {b.bonus_type === 'kpi_personal' && (
+                {(b.bonus_type === 'kpi_personal' || b.bonus_type === 'kpi_branch' || b.bonus_type === 'gross_profit') && (
                   <div className="border-t pt-2 mt-2 space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs font-medium">Mức thưởng vượt KPI</Label>
+                      <Label className="text-xs font-medium">
+                        {b.bonus_type === 'gross_profit' ? 'Mức thưởng vượt LN gộp' : 'Mức thưởng vượt KPI'}
+                      </Label>
                       <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { const n = [...bonuses]; n[i].tiers = [...(n[i].tiers || []), { percent_over: 10, calc_type: 'fixed_amount', value: 0 }]; setBonuses(n); }}>
                         <Plus className="h-3 w-3 mr-1" />Thêm mức vượt
                       </Button>
@@ -381,7 +388,9 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                     {(b.tiers || []).map((t, ti) => (
                       <div key={ti} className="grid grid-cols-12 gap-2 items-end">
                         <div className="col-span-3 space-y-1">
-                          <Label className="text-[10px]">Vượt KPI (%)</Label>
+                          <Label className="text-[10px]">
+                            {b.bonus_type === 'gross_profit' ? 'Vượt LN (%)' : 'Vượt KPI (%)'}
+                          </Label>
                           <Input type="number" className="h-8 text-xs" value={t.percent_over} onChange={e => { const n = [...bonuses]; n[i].tiers[ti].percent_over = Number(e.target.value); setBonuses(n); }} />
                         </div>
                         <div className="col-span-3 space-y-1">
@@ -390,7 +399,9 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                             <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="fixed_amount">Số tiền</SelectItem>
-                              <SelectItem value="percentage">% doanh thu</SelectItem>
+                              <SelectItem value="percentage">
+                                {b.bonus_type === 'gross_profit' ? '% LN gộp' : '% doanh thu'}
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -405,9 +416,10 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                     ))}
                     {(b.tiers || []).length > 0 && (
                       <p className="text-[10px] text-muted-foreground">
-                        💡 <strong>Vượt KPI (%)</strong> = % vượt thêm so với mức KPI cơ bản. VD: KPI 50tr, "Vượt 100%" nghĩa là đạt 100tr (vượt thêm 50tr = 100% của KPI).<br/>
-                        <strong>CỘNG DỒN</strong>: Tổng thưởng = Thưởng cơ bản (khi đạt KPI) <strong>+</strong> "Thưởng thêm" của mức vượt cao nhất NV đạt được.<br/>
-                        VD: KPI 50tr thưởng 1tr, vượt 100% thưởng thêm 2tr → NV đạt 100tr nhận <strong>3tr</strong>.
+                        💡 <strong>Vượt (%)</strong> = % vượt thêm so với mức cơ bản. VD: mục tiêu 50tr, "Vượt 100%" nghĩa là đạt 100tr (vượt thêm 50tr = 100% mục tiêu).<br/>
+                        <strong>CỘNG DỒN</strong>: Tổng thưởng = Thưởng cơ bản (khi đạt mục tiêu) <strong>+</strong> "Thưởng thêm" của mức vượt cao nhất đạt được.<br/>
+                        {b.bonus_type === 'kpi_branch' && <>📍 Doanh thu chi nhánh tính theo chi nhánh nhân viên đó đang làm việc.<br/></>}
+                        {b.bonus_type === 'gross_profit' && <>📍 Lợi nhuận gộp = (Giá bán - Giá nhập) × SL của các đơn nhân viên đó bán.<br/></>}
                       </p>
                     )}
                   </div>
