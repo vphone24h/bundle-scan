@@ -8,7 +8,7 @@ import { PageItemConfig, DEFAULT_PAGE_ITEMS, InstallmentRateConfig, DEFAULT_INST
 import {
   Wrench, RefreshCw, CreditCard, Headphones, BarChart3, DollarSign,
   Calendar, MapPin, Phone, Mail, Clock, CheckCircle, ArrowRight,
-  Package, Star, Shield, ChevronRight, Users, FileText
+  Package, Star, Shield, ChevronRight, Users, FileText, Info
 } from 'lucide-react';
 
 interface SystemPageProps {
@@ -20,6 +20,12 @@ interface SystemPageProps {
   onNavigateProducts?: () => void;
   pageItems?: PageItemConfig[];
   installmentRates?: InstallmentRateConfig[];
+  /** Price list articles (used by PriceListPage) */
+  priceListArticles?: { id: string; title: string; thumbnail_url?: string | null; summary?: string | null }[];
+  /** Pre-selected article id from menu config (used by PriceListPage) */
+  selectedArticleId?: string | null;
+  /** Open an article when user clicks an item */
+  onSelectArticle?: (articleId: string) => void;
 }
 
 // === REPAIR PAGE ===
