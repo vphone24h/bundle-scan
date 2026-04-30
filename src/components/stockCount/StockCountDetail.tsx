@@ -123,7 +123,7 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
   useEffect(() => {
     if (!stockCount || !items.length || hasFixedNonImeiSystemQty.current) return;
 
-    const nonImeiItemsNeedingFix = items.filter((item) => !item.hasImei && item.productId);
+    const nonImeiItemsNeedingFix = items.filter((item) => !item.hasImei);
     if (nonImeiItemsNeedingFix.length === 0) {
       hasFixedNonImeiSystemQty.current = true;
       return;
@@ -132,25 +132,33 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
     let cancelled = false;
 
     const syncNonImeiSystemQuantity = async () => {
-      const productIds = Array.from(new Set(nonImeiItemsNeedingFix.map((item) => item.productId!).filter(Boolean)));
-      const { data: products, error } = await supabase
+      let productsQuery = supabase
         .from('products')
-        .select('id, quantity')
-        .in('id', productIds);
+        .select('name, sku, quantity, branch_id')
+        .eq('status', 'in_stock')
+        .is('imei', null);
+
+      if (stockCount.branchId) {
+        productsQuery = productsQuery.eq('branch_id', stockCount.branchId);
+      }
+
+      const { data: products, error } = await productsQuery;
 
       if (error || cancelled) return;
 
       const quantityMap = new Map(
-        (products || []).map((product) => {
+        (products || []).reduce((acc, product) => {
+          const key = `${product.name}:::${product.sku}`;
           const parsedQuantity = Number(product.quantity);
           const quantity = Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
-          return [product.id, quantity] as const;
-        })
+          acc.set(key, (acc.get(key) || 0) + quantity);
+          return acc;
+        }, new Map<string, number>())
       );
 
       const updates = nonImeiItemsNeedingFix
         .map((item) => {
-          const nextSystemQuantity = quantityMap.get(item.productId!);
+          const nextSystemQuantity = quantityMap.get(`${item.productName}:::${item.sku}`);
           if (nextSystemQuantity == null || nextSystemQuantity === item.systemQuantity) return null;
 
           const nextVariance = item.actualQuantity - nextSystemQuantity;
