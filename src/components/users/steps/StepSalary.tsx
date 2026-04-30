@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -7,6 +9,7 @@ import { Plus, X } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { SalaryTemplateEditor } from '@/components/payroll/SalaryTemplateEditor';
+import { PaidLeaveDaysPicker } from '../PaidLeaveDaysPicker';
 import type { SalaryData } from '../CreateEmployeeStepper';
 
 interface Template { id: string; name: string; salary_type: string; base_amount: number; }
@@ -26,6 +29,22 @@ export function StepSalary({ salaryData, onChange, templates }: Props) {
   const [showTemplateEditor, setShowTemplateEditor] = useState(false);
 
   const selectedTemplate = templates.find(t => t.id === salaryData.templateId);
+
+  // Lấy số ngày nghỉ có lương từ template được chọn
+  const { data: templateMeta } = useQuery({
+    queryKey: ['template-paid-leave', salaryData.templateId],
+    enabled: !!salaryData.templateId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('salary_templates')
+        .select('paid_leave_days_per_month')
+        .eq('id', salaryData.templateId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+  const requiredLeaveDays = (templateMeta as any)?.paid_leave_days_per_month || 0;
 
   const addItem = (type: 'allowances' | 'deductions') => {
     onChange({ ...salaryData, [type]: [...salaryData[type], { name: '', amount: 0 }] });
@@ -84,6 +103,14 @@ export function StepSalary({ salaryData, onChange, templates }: Props) {
           <p><strong>Loại:</strong> {SALARY_TYPE_LABELS[selectedTemplate.salary_type]}</p>
           <p><strong>Mức cơ bản:</strong> {formatNumber(selectedTemplate.base_amount)}đ</p>
         </div>
+      )}
+
+      {requiredLeaveDays > 0 && (
+        <PaidLeaveDaysPicker
+          requiredDays={requiredLeaveDays}
+          selectedDays={salaryData.paidLeaveDaysOfMonth || []}
+          onChange={(days) => onChange({ ...salaryData, paidLeaveDaysOfMonth: days })}
+        />
       )}
 
       <div className="space-y-1.5">
