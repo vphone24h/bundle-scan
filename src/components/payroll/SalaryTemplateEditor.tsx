@@ -400,12 +400,12 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                             : b.bonus_type === 'gross_profit' ? 'Lợi nhuận gộp đạt (VNĐ)'
                             : 'Mức tối thiểu (VNĐ)'}
                         </Label>
-                        <Input type="number" className="h-8 text-xs" value={b.threshold} onChange={e => { const n = [...bonuses]; n[i].threshold = Number(e.target.value); setBonuses(n); }} />
+                        <NumberInput className="h-8 text-xs" value={b.threshold} onChangeNumber={v => { const n = [...bonuses]; n[i].threshold = v; setBonuses(n); }} />
                       </div>
                     )}
                     <div className="space-y-1">
                       <Label className="text-xs">{b.calc_type === 'percentage' ? 'Tỷ lệ (%)' : 'Số tiền (VNĐ)'}</Label>
-                      <Input type="number" className="h-8 text-xs" value={b.value} onChange={e => { const n = [...bonuses]; n[i].value = Number(e.target.value); setBonuses(n); }} />
+                      <NumberInput className="h-8 text-xs" value={b.value} onChangeNumber={v => { const n = [...bonuses]; n[i].value = v; setBonuses(n); }} />
                     </div>
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive ml-1" onClick={() => setBonuses(bonuses.filter((_, j) => j !== i))}>
@@ -428,7 +428,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                           <Label className="text-[10px]">
                             {b.bonus_type === 'gross_profit' ? 'Vượt LN (%)' : 'Vượt KPI (%)'}
                           </Label>
-                          <Input type="number" className="h-8 text-xs" value={t.percent_over} onChange={e => { const n = [...bonuses]; n[i].tiers[ti].percent_over = Number(e.target.value); setBonuses(n); }} />
+                          <NumberInput className="h-8 text-xs" value={t.percent_over} onChangeNumber={v => { const n = [...bonuses]; n[i].tiers[ti].percent_over = v; setBonuses(n); }} />
                         </div>
                         <div className="col-span-3 space-y-1">
                           <Label className="text-[10px]">Hình thức</Label>
@@ -444,7 +444,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                         </div>
                         <div className="col-span-5 space-y-1">
                           <Label className="text-[10px]">{t.calc_type === 'percentage' ? 'Tỷ lệ (%)' : 'Thưởng thêm (VNĐ)'}</Label>
-                          <Input type="number" className="h-8 text-xs" value={t.value} onChange={e => { const n = [...bonuses]; n[i].tiers[ti].value = Number(e.target.value); setBonuses(n); }} />
+                          <NumberInput className="h-8 text-xs" value={t.value} onChangeNumber={v => { const n = [...bonuses]; n[i].tiers[ti].value = v; setBonuses(n); }} />
                         </div>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive col-span-1" onClick={() => { const n = [...bonuses]; n[i].tiers = n[i].tiers.filter((_, j) => j !== ti); setBonuses(n); }}>
                           <Trash2 className="h-3.5 w-3.5" />
