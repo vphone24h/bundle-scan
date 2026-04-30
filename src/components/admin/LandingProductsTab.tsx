@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useLandingProductCategories,
   useCreateLandingProductCategory,
@@ -288,6 +289,7 @@ export function LandingProductsTab() {
   const updateCat = useUpdateLandingProductCategory();
   const { data: products, isLoading: prodLoading } = useLandingProducts(tenantId);
   const { data: reviewStatsMap = {} } = useAdminTenantReviewStats(tenantId);
+  const queryClient = useQueryClient();
   const createProduct = useCreateLandingProduct();
   const updateProduct = useUpdateLandingProduct();
   const deleteProduct = useDeleteLandingProduct();
