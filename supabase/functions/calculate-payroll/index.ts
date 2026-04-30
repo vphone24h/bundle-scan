@@ -242,6 +242,30 @@ Deno.serve(async (req) => {
     // Map sale items by receipt_id
     const saleItemsByReceipt = groupBy(allSaleItems, "receipt_id");
 
+    // Load category hierarchy so commission picked at parent category (e.g. "iPhone")
+    // also captures sales tagged with leaf categories (e.g. "iPhone 15", "iPhone 15 Pro").
+    const { data: categoriesData } = await supabase
+      .from("categories")
+      .select("id, parent_id")
+      .eq("tenant_id", tenant_id);
+    const categoryParentMap = new Map<string, string | null>();
+    for (const c of (categoriesData || [])) {
+      categoryParentMap.set((c as any).id, (c as any).parent_id || null);
+    }
+    /** Trả về tất cả id tổ tiên (bao gồm chính nó) của 1 category */
+    function getCategoryAncestors(catId: string | null | undefined): string[] {
+      if (!catId) return [];
+      const out: string[] = [];
+      let cur: string | null | undefined = catId;
+      const seen = new Set<string>();
+      while (cur && !seen.has(cur)) {
+        seen.add(cur);
+        out.push(cur);
+        cur = categoryParentMap.get(cur) || null;
+      }
+      return out;
+    }
+
     // Get template sub-configs including overtimes
     const templateIds = (templatesRes.data || []).map((t: any) => t.id);
     const [bonusRes, commRes, allowRes, holidayRes, penaltyRes, overtimeRes] = templateIds.length
@@ -432,12 +456,16 @@ Deno.serve(async (req) => {
           existing.qty += item.quantity || 1;
           existing.revenue += lineTotal;
           soldByProduct.set(pKey, existing);
-          // By category
+          // By category — propagate to ALL ancestor categories so a commission rule
+          // attached to a parent ("iPhone") includes sales of leaf categories ("iPhone 15 Pro", ...)
           if (item.category_id) {
-            const cExisting = soldByCategory.get(item.category_id) || { qty: 0, revenue: 0 };
-            cExisting.qty += item.quantity || 1;
-            cExisting.revenue += lineTotal;
-            soldByCategory.set(item.category_id, cExisting);
+            const ancestors = getCategoryAncestors(item.category_id);
+            for (const cid of ancestors) {
+              const cExisting = soldByCategory.get(cid) || { qty: 0, revenue: 0 };
+              cExisting.qty += item.quantity || 1;
+              cExisting.revenue += lineTotal;
+              soldByCategory.set(cid, cExisting);
+            }
           }
         }
       }
@@ -502,33 +530,30 @@ Deno.serve(async (req) => {
               : b.value * overtimeHours;
           } else if (b.bonus_type === "kpi_personal") {
             // KPI cá nhân: so sánh doanh thu cá nhân với ngưỡng (threshold = mức đạt KPI 100%)
-            // QUY TẮC: KHÔNG cộng dồn — chỉ áp dụng 1 mức duy nhất (mức cao nhất NV đạt được).
-            // - Nếu có tiers: tier có "Vượt KPI (%)" tính theo % VƯỢT THÊM so với threshold
-            //   (VD: threshold=50tr, tier 100% nghĩa là đạt 100tr = vượt thêm 100%).
-            //   Tier 0% = vừa đạt KPI. Chọn tier cao nhất NV match → thay thế thưởng cơ bản.
-            // - Nếu không có tiers: dùng thưởng cơ bản khi userRevenue >= threshold.
+            // QUY TẮC CỘNG DỒN:
+            //  - Khi đạt KPI (userRevenue >= threshold): nhận thưởng cơ bản (baseAmt).
+            //  - Khi vượt thêm theo từng mức tier: cộng thêm "Thưởng thêm" của mức cao nhất NV đạt.
+            //  - Tier có "Vượt KPI (%)" = % VƯỢT THÊM so với threshold (VD threshold=50tr,
+            //    "Vượt 100%" nghĩa là đạt 100tr — tức vượt thêm 50tr = 100% của KPI).
+            //  → Tổng = baseAmt + tier cao nhất matched (cộng dồn, KHÔNG thay thế).
             const threshold = b.threshold || 0;
             const baseAmt = (threshold > 0 && userRevenue >= threshold)
               ? (b.calc_type === "percentage" ? userRevenue * b.value / 100 : b.value)
               : 0;
 
+            let tierAmt = 0;
             const tiers = Array.isArray(b.tiers) ? b.tiers : [];
             if (tiers.length > 0 && threshold > 0 && userRevenue >= threshold) {
               const overPercent = ((userRevenue - threshold) / threshold) * 100;
               const sortedTiers = [...tiers].sort((a: any, b2: any) => Number(b2.percent_over) - Number(a.percent_over));
               const matched = sortedTiers.find((t: any) => overPercent >= Number(t.percent_over || 0));
               if (matched) {
-                const tierAmt = matched.calc_type === "percentage"
+                tierAmt = matched.calc_type === "percentage"
                   ? userRevenue * Number(matched.value || 0) / 100
                   : Number(matched.value || 0);
-                // KHÔNG cộng dồn: tier thay thế thưởng cơ bản (lấy mức cao hơn để có lợi cho NV)
-                amount = Math.max(baseAmt, tierAmt);
-              } else {
-                amount = baseAmt;
               }
-            } else {
-              amount = baseAmt;
             }
+            amount = baseAmt + tierAmt;
           } else if (b.bonus_type === "kpi_branch") {
             // KPI chi nhánh: so sánh doanh thu chi nhánh với ngưỡng
             const threshold = b.threshold || 0;
