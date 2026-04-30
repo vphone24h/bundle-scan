@@ -1,0 +1,1 @@
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS interest_enabled boolean NOT NULL DEFAULT false;

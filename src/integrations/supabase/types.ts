@@ -9806,6 +9806,7 @@ export type Database = {
           email: string | null
           has_data_backup: boolean | null
           id: string
+          interest_enabled: boolean
           is_data_hidden: boolean | null
           locked_at: string | null
           locked_reason: string | null
@@ -9839,6 +9840,7 @@ export type Database = {
           email?: string | null
           has_data_backup?: boolean | null
           id?: string
+          interest_enabled?: boolean
           is_data_hidden?: boolean | null
           locked_at?: string | null
           locked_reason?: string | null
@@ -9872,6 +9874,7 @@ export type Database = {
           email?: string | null
           has_data_backup?: boolean | null
           id?: string
+          interest_enabled?: boolean
           is_data_hidden?: boolean | null
           locked_at?: string | null
           locked_reason?: string | null
