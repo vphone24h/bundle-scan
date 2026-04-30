@@ -68,7 +68,7 @@ const ALLOWANCE_PRESETS = [
 interface BonusTier { percent_over: number; calc_type: 'fixed_amount' | 'percentage'; value: number; }
 interface BonusRow { bonus_type: string; name: string; calc_type: string; value: number; threshold: number; tiers: BonusTier[]; }
 interface CommissionRow { target_type: string; target_id: string; target_name: string; calc_type: string; value: number; }
-interface AllowanceRow { allowance_type: string; name: string; amount: number; is_fixed: boolean; }
+interface AllowanceRow { allowance_type: string; name: string; amount: number; is_fixed: boolean; max_absent_days: number; }
 interface HolidayRow { holiday_name: string; holiday_date: string; multiplier_percent: number; }
 interface PenaltyTier { percent_achieved: number; penalty_amount: number; }
 interface PenaltyRow { penalty_type: string; name: string; amount: number; description: string; threshold_minutes: number; full_day_absence_minutes: number; kpi_target: number; tiers: PenaltyTier[]; }
@@ -210,7 +210,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
 
   useEffect(() => { if (exBonuses?.length) setBonuses(exBonuses.map(b => ({ bonus_type: b.bonus_type, name: b.name, calc_type: b.calc_type, value: Number(b.value), threshold: Number(b.threshold || 0), tiers: Array.isArray((b as any).tiers) ? (b as any).tiers : [] }))); }, [exBonuses]);
   useEffect(() => { if (exCommissions?.length) setCommissions(exCommissions.map(c => ({ target_type: c.target_type, target_id: c.target_id || '', target_name: c.target_name, calc_type: c.calc_type, value: Number(c.value) }))); }, [exCommissions]);
-  useEffect(() => { if (exAllowances?.length) setAllowances(exAllowances.map(a => ({ allowance_type: a.allowance_type, name: a.name, amount: Number(a.amount), is_fixed: a.is_fixed }))); }, [exAllowances]);
+  useEffect(() => { if (exAllowances?.length) setAllowances(exAllowances.map(a => ({ allowance_type: a.allowance_type, name: a.name, amount: Number(a.amount), is_fixed: a.is_fixed, max_absent_days: Number((a as any).max_absent_days || 0) }))); }, [exAllowances]);
   useEffect(() => { if (exHolidays?.length) setHolidays(exHolidays.map(h => ({ holiday_name: h.holiday_name, holiday_date: h.holiday_date, multiplier_percent: Number(h.multiplier_percent) }))); }, [exHolidays]);
   useEffect(() => { if (exPenalties?.length) setPenalties(exPenalties.map(p => ({ penalty_type: p.penalty_type, name: p.name, amount: Number(p.amount), description: p.description || '', threshold_minutes: (p as any).threshold_minutes || 0, full_day_absence_minutes: (p as any).full_day_absence_minutes || 0, kpi_target: Number((p as any).kpi_target || 0), tiers: Array.isArray((p as any).tiers) ? (p as any).tiers : [] }))); }, [exPenalties]);
   useEffect(() => { if (exOvertimes?.length) setOvertimes(exOvertimes.map(o => ({ overtime_type: o.overtime_type, name: o.name, calc_type: o.calc_type, value: Number(o.value), description: o.description || '' }))); }, [exOvertimes]);
@@ -571,29 +571,36 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
             {allowances.length === 0 && (
               <div className="flex flex-wrap gap-2">
                 {ALLOWANCE_PRESETS.map(p => (
-                  <Button key={p.type} variant="outline" size="sm" className="text-xs" onClick={() => setAllowances([...allowances, { allowance_type: p.type, name: p.name, amount: 0, is_fixed: true }])}>
+                  <Button key={p.type} variant="outline" size="sm" className="text-xs" onClick={() => setAllowances([...allowances, { allowance_type: p.type, name: p.name, amount: 0, is_fixed: true, max_absent_days: 0 }])}>
                     <Plus className="h-3 w-3 mr-1" />{p.name}
                   </Button>
                 ))}
               </div>
             )}
             {allowances.map((a, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Input className="h-8 text-xs flex-1" placeholder="Tên phụ cấp" value={a.name} onChange={e => { const n = [...allowances]; n[i].name = e.target.value; setAllowances(n); }} />
-                <Input type="number" className="h-8 text-xs w-28" placeholder="Số tiền" value={a.amount} onChange={e => { const n = [...allowances]; n[i].amount = Number(e.target.value); setAllowances(n); }} />
-                <Select value={a.is_fixed ? 'fixed' : 'manual'} onValueChange={v => { const n = [...allowances]; n[i].is_fixed = v === 'fixed'; setAllowances(n); }}>
-                  <SelectTrigger className="h-8 text-xs w-28"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="fixed">Cố định</SelectItem>
-                    <SelectItem value="manual">Nhập tay</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setAllowances(allowances.filter((_, j) => j !== i))}>
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+              <div key={i} className="space-y-1 border rounded p-2">
+                <div className="flex items-center gap-2">
+                  <Input className="h-8 text-xs flex-1" placeholder="Tên phụ cấp" value={a.name} onChange={e => { const n = [...allowances]; n[i].name = e.target.value; setAllowances(n); }} />
+                  <Input type="number" className="h-8 text-xs w-28" placeholder="Số tiền" value={a.amount} onChange={e => { const n = [...allowances]; n[i].amount = Number(e.target.value); setAllowances(n); }} />
+                  <Select value={a.is_fixed ? 'fixed' : 'manual'} onValueChange={v => { const n = [...allowances]; n[i].is_fixed = v === 'fixed'; setAllowances(n); }}>
+                    <SelectTrigger className="h-8 text-xs w-28"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fixed">Cố định</SelectItem>
+                      <SelectItem value="manual">Nhập tay</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setAllowances(allowances.filter((_, j) => j !== i))}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2 pl-1">
+                  <Label className="text-[11px] text-muted-foreground whitespace-nowrap">Vắng quá (ngày) → mất phụ cấp:</Label>
+                  <Input type="number" min={0} className="h-7 text-xs w-20" placeholder="0 = không áp dụng" value={a.max_absent_days || ''} onChange={e => { const n = [...allowances]; n[i].max_absent_days = Number(e.target.value); setAllowances(n); }} />
+                  <span className="text-[10px] text-muted-foreground">{a.max_absent_days > 0 ? `Vắng > ${a.max_absent_days} ngày sẽ KHÔNG nhận phụ cấp này` : 'Luôn nhận phụ cấp'}</span>
+                </div>
               </div>
             ))}
-            <Button variant="outline" size="sm" onClick={() => setAllowances([...allowances, { allowance_type: 'custom', name: '', amount: 0, is_fixed: true }])}>
+            <Button variant="outline" size="sm" onClick={() => setAllowances([...allowances, { allowance_type: 'custom', name: '', amount: 0, is_fixed: true, max_absent_days: 0 }])}>
               <Plus className="h-3.5 w-3.5 mr-1" />Thêm phụ cấp
             </Button>
           </CardContent>
