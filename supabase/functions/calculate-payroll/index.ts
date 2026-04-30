@@ -343,6 +343,7 @@ Deno.serve(async (req) => {
       const userAssignments = shiftAssignments.filter((sa: any) => sa.user_id === employee.user_id);
       const hasSchedule = userAssignments.length > 0;
       const hasSalaryTemplate = !!templateId;
+      const salaryType = template?.salary_type || "fixed";
       // Schedule requirements per salary type:
       // - shift: ALWAYS requires schedule (to match completed shifts)
       // - fixed/daily/hourly with overtime ON: requires schedule
@@ -431,7 +432,6 @@ Deno.serve(async (req) => {
 
       // ===== 1. BASE SALARY =====
       let baseSalary = 0;
-      const salaryType = template?.salary_type || "fixed";
       if (!isPayrollReady) {
         baseSalary = 0;
       } else if (salaryType === "fixed") {
