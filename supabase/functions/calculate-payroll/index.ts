@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
         .in("status", ["completed", "paid"]),
       supabase.from("export_receipt_items")
         .select("receipt_id, product_id, product_name, category_id, sale_price, quantity, imei")
-        .eq("status", "active"),
+        .neq("status", "returned"),
       supabase.from("leave_requests")
         .select("user_id, leave_date_from, leave_date_to, status, request_type")
         .eq("tenant_id", tenant_id)
@@ -691,8 +691,10 @@ Deno.serve(async (req) => {
             return mmdd === h.holiday_date;
           });
           if (holidayDates.length > 0) {
+            // Lấy lương/ngày theo MỨC CHUẨN (không prorate theo ngày công thực tế)
+            // VD: lương 7tr/tháng, chuẩn 30 ngày → 233k/ngày. Lễ 200% → thưởng thêm 233k.
             const dailyRate = salaryType === "fixed"
-              ? (baseSalary / (expectedWorkDays || 22))
+              ? (baseAmount / (expectedWorkDays || 22))
               : baseAmount;
             const extra = dailyRate * (h.multiplier_percent / 100 - 1) * holidayDates.length;
             holidayBonus += extra;
