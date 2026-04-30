@@ -83,8 +83,11 @@ export function LeaveApprovalsTab() {
       const req = requests?.find(r => r.id === id);
       if (!req) return;
 
-      // For approved & unexcused: create absence_reviews for each day + can update shift assignments
-      if (action === 'approved' || action === 'unexcused') {
+      const reqType = (req as any).request_type || 'full_day';
+
+      // For approved & unexcused FULL-DAY leaves: create absence_reviews for each day
+      // late_arrival / early_leave handled separately by payroll engine (waives late/early minutes)
+      if ((action === 'approved' || action === 'unexcused') && reqType === 'full_day') {
         const days = eachDayOfInterval({ start: parseISO(req.leave_date_from), end: parseISO(req.leave_date_to) });
         
         for (const day of days) {
