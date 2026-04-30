@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import { getPaidLeaveMonthKey } from '@/lib/paidLeaveSchedule';
 
 const DAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
@@ -64,6 +65,44 @@ export function ShiftScheduleTab() {
     enabled: !!tenantId,
   });
 
+  const monthKeysInView = useMemo(
+    () => Array.from(new Set(weekDays.map((day) => getPaidLeaveMonthKey(day)))),
+    [weekDays]
+  );
+
+  const { data: paidLeaveSchedules } = useQuery({
+    queryKey: ['paid-leave-schedule-week', tenantId, weekStartStr],
+    queryFn: async () => {
+      const monthFilters = monthKeysInView.map((monthKey) => {
+        const [year, month] = monthKey.split('-').map(Number);
+        return { year, month };
+      });
+
+      const [defaultRes, overrideRes] = await Promise.all([
+        supabase
+          .from('paid_leave_default_dates')
+          .select('user_id, days_of_month')
+          .eq('tenant_id', tenantId!),
+        monthFilters.length
+          ? supabase
+              .from('paid_leave_overrides')
+              .select('user_id, year, month, leave_dates')
+              .eq('tenant_id', tenantId!)
+              .or(monthFilters.map((item) => `and(year.eq.${item.year},month.eq.${item.month})`).join(','))
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+
+      if (defaultRes.error) throw defaultRes.error;
+      if (overrideRes.error) throw overrideRes.error;
+
+      return {
+        defaults: defaultRes.data || [],
+        overrides: overrideRes.data || [],
+      };
+    },
+    enabled: !!tenantId && monthKeysInView.length > 0,
+  });
+
   // Build a map: dateStr -> [{ user_id, status }]
   const leaveMap = useMemo(() => {
     const map = new Map<string, { user_id: string; status: string; reason: string }[]>();
@@ -75,8 +114,38 @@ export function ShiftScheduleTab() {
         map.get(ds)!.push({ user_id: lr.user_id, status: lr.status, reason: lr.reason || '' });
       });
     });
+
+    const scheduledMap = new Map<string, string[]>();
+
+    (paidLeaveSchedules?.defaults || []).forEach((row: any) => {
+      weekDays.forEach((day) => {
+        if ((row.days_of_month || []).includes(day.getDate())) {
+          const ds = format(day, 'yyyy-MM-dd');
+          if (!scheduledMap.has(ds)) scheduledMap.set(ds, []);
+          scheduledMap.get(ds)!.push(row.user_id);
+        }
+      });
+    });
+
+    (paidLeaveSchedules?.overrides || []).forEach((row: any) => {
+      (row.leave_dates || []).forEach((dateStr: string) => {
+        if (!scheduledMap.has(dateStr)) scheduledMap.set(dateStr, []);
+        scheduledMap.get(dateStr)!.push(row.user_id);
+      });
+    });
+
+    scheduledMap.forEach((userIds, ds) => {
+      const existingIds = new Set((map.get(ds) || []).map((item) => item.user_id));
+      userIds.forEach((userId) => {
+        if (!existingIds.has(userId)) {
+          if (!map.has(ds)) map.set(ds, []);
+          map.get(ds)!.push({ user_id: userId, status: 'paid_leave', reason: 'Lịch nghỉ có lương' });
+        }
+      });
+    });
+
     return map;
-  }, [leaveRequests]);
+  }, [leaveRequests, paidLeaveSchedules, weekDays]);
 
   const getAssignmentsForDay = (date: string) => {
     return assignments?.filter((a: any) => {
@@ -94,7 +163,7 @@ export function ShiftScheduleTab() {
     const dayAssignments = getAssignmentsForDay(date);
     const workingUsers = new Set(dayAssignments.map((a: any) => a.user_id));
     const dayLeaves = leaveMap.get(date) || [];
-    const excused = dayLeaves.filter(l => l.status === 'approved').length;
+    const excused = dayLeaves.filter(l => l.status === 'approved' || l.status === 'paid_leave').length;
     const unexcused = dayLeaves.filter(l => l.status === 'unexcused').length;
     const totalStaff = staffList?.length || 0;
     const onLeaveUserIds = new Set(dayLeaves.map(l => l.user_id));
