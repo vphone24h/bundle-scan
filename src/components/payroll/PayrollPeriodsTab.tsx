@@ -579,6 +579,7 @@ function InlinePayrollBreakdown({ record, periodName, onExport }: { record: any;
   const holidayDetails = rec.holiday_details || [];
   const overtimeDetails = configSnapshot.overtime_details || [];
   const attendanceDetails = rec.attendance_details || [];
+  const [productPopup, setProductPopup] = useState<{ title: string; subtitle?: string; products: any[] } | null>(null);
 
   // Build per-day overtime breakdown (from attendance) for "Tăng ca" section
   const overtimeByDay = attendanceDetails
@@ -666,12 +667,16 @@ function InlinePayrollBreakdown({ record, periodName, onExport }: { record: any;
           {/* Bonuses */}
           <BreakdownSection icon="🎁" title="Thưởng" total={rec.total_bonus || 0}>
             {bonusDetails.length > 0 ? bonusDetails.map((b: any, i: number) => (
-              <BreakdownItem
+              <BonusBreakdownItem
                 key={i}
-                label={b.name}
-                detail={describeBonus(b)}
-                amount={b.amount}
-                positive
+                bonus={b}
+                onShowProducts={(b.products && b.products.length > 0)
+                  ? () => setProductPopup({
+                      title: b.name,
+                      subtitle: describeBonus(b),
+                      products: b.products,
+                    })
+                  : undefined}
               />
             )) : (
               <p className="text-[11px] text-muted-foreground italic">Không có khoản thưởng</p>
@@ -687,6 +692,13 @@ function InlinePayrollBreakdown({ record, periodName, onExport }: { record: any;
                 detail={describeCommission(c)}
                 amount={c.amount}
                 positive
+                onClick={(c.products && c.products.length > 0)
+                  ? () => setProductPopup({
+                      title: `Hoa hồng: ${c.name || 'Sản phẩm'}`,
+                      subtitle: describeCommission(c),
+                      products: c.products,
+                    })
+                  : undefined}
               />
             )) : (
               <p className="text-[11px] text-muted-foreground italic">Không có hoa hồng</p>
@@ -789,6 +801,9 @@ function InlinePayrollBreakdown({ record, periodName, onExport }: { record: any;
           ))}
         </div>
       )}
+
+      {/* Product list popup */}
+      <ProductListDialog open={!!productPopup} onClose={() => setProductPopup(null)} data={productPopup} />
     </div>
   );
 }
@@ -809,19 +824,130 @@ function BreakdownSection({ icon, title, total, isDeduction, children }: {
   );
 }
 
-function BreakdownItem({ label, detail, amount, positive, negative }: {
-  label: string; detail?: string; amount: number; positive?: boolean; negative?: boolean;
+function BreakdownItem({ label, detail, amount, positive, negative, onClick }: {
+  label: string; detail?: string; amount: number; positive?: boolean; negative?: boolean; onClick?: () => void;
 }) {
+  const clickable = !!onClick;
   return (
-    <div className="flex items-center justify-between text-xs py-0.5">
+    <div
+      className={`flex items-center justify-between text-xs py-0.5 ${clickable ? 'cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1 transition-colors' : ''}`}
+      onClick={onClick}
+      title={clickable ? 'Bấm để xem danh sách sản phẩm' : undefined}
+    >
       <div className="flex-1 min-w-0">
-        <span className="text-foreground">{label}</span>
+        <span className={`text-foreground ${clickable ? 'underline decoration-dotted underline-offset-2' : ''}`}>{label}</span>
         {detail && <span className="text-muted-foreground ml-1">({detail})</span>}
       </div>
       <span className={`font-medium ml-2 whitespace-nowrap ${negative ? 'text-destructive' : positive ? 'text-primary' : ''}`}>
         {negative ? '-' : '+'}{formatNumber(amount || 0)}đ
       </span>
     </div>
+  );
+}
+
+// Bonus breakdown item: shows base + tier sub-rows when applicable
+function BonusBreakdownItem({ bonus, onShowProducts }: { bonus: any; onShowProducts?: () => void }) {
+  const b = bonus;
+  const hasBreakdown = (b.base_amount || 0) > 0 || (b.tier_amount || 0) > 0;
+  const isKpi = b.type === 'kpi_personal' || b.type === 'kpi_branch' || b.type === 'gross_profit';
+  const clickable = !!onShowProducts;
+
+  // Headline row
+  const Header = (
+    <div
+      className={`flex items-center justify-between text-xs py-0.5 ${clickable ? 'cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1 transition-colors' : ''}`}
+      onClick={onShowProducts}
+      title={clickable ? 'Bấm để xem chi tiết sản phẩm' : undefined}
+    >
+      <div className="flex-1 min-w-0">
+        <span className={`text-foreground font-medium ${clickable ? 'underline decoration-dotted underline-offset-2' : ''}`}>{b.name}</span>
+        <span className="text-muted-foreground ml-1">({describeBonus(b)})</span>
+      </div>
+      <span className="font-medium ml-2 whitespace-nowrap text-primary">+{formatNumber(b.amount || 0)}đ</span>
+    </div>
+  );
+
+  if (!isKpi || !hasBreakdown) return Header;
+
+  // Sub-rows
+  const baseLabel = b.calc_type === 'percentage'
+    ? `Đạt mục tiêu: ${formatNumber(b.revenue || 0)}đ × ${b.value}%`
+    : `Đạt mục tiêu (${formatNumber(b.threshold || 0)}đ) → thưởng cố định`;
+
+  let tierLabel = '';
+  if (b.matched_tier) {
+    const mt = b.matched_tier;
+    if (mt.calc_type === 'percentage') {
+      tierLabel = `Vượt ${mt.percent_over}%: ${formatNumber(b.revenue || 0)}đ × ${mt.value}%`;
+    } else {
+      tierLabel = `Vượt ${mt.percent_over}%: thưởng thêm cố định`;
+    }
+  }
+
+  return (
+    <div className="space-y-0.5">
+      {Header}
+      <div className="pl-3 border-l-2 border-primary/20 ml-1 space-y-0.5">
+        {(b.base_amount || 0) > 0 && (
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground py-0.5">
+            <span>↳ {baseLabel}</span>
+            <span className="font-medium text-foreground ml-2 whitespace-nowrap">+{formatNumber(b.base_amount)}đ</span>
+          </div>
+        )}
+        {(b.tier_amount || 0) > 0 && (
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground py-0.5">
+            <span>↳ {tierLabel || 'Thưởng vượt'}</span>
+            <span className="font-medium text-foreground ml-2 whitespace-nowrap">+{formatNumber(b.tier_amount)}đ</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Product list popup (used for both Bonus and Commission)
+function ProductListDialog({ open, onClose, data }: { open: boolean; onClose: () => void; data: { title: string; subtitle?: string; products: any[] } | null }) {
+  if (!data) return null;
+  const total = data.products.reduce((s, p) => s + (Number(p.revenue) || 0), 0);
+  const totalQty = data.products.reduce((s, p) => s + (Number(p.qty) || 0), 0);
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{data.title}</DialogTitle>
+          {data.subtitle && <p className="text-xs text-muted-foreground">{data.subtitle}</p>}
+        </DialogHeader>
+        <div className="max-h-[60vh] overflow-y-auto">
+          {data.products.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic text-center py-6">Không có sản phẩm</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Sản phẩm</TableHead>
+                  <TableHead className="text-xs text-right w-20">SL</TableHead>
+                  <TableHead className="text-xs text-right w-32">Doanh thu</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.products.map((p, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="text-xs">{p.name || '—'}</TableCell>
+                    <TableCell className="text-xs text-right">{formatNumber(p.qty || 0)}</TableCell>
+                    <TableCell className="text-xs text-right font-medium">{formatNumber(p.revenue || 0)}đ</TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="bg-muted/40 font-semibold">
+                  <TableCell className="text-xs">Tổng</TableCell>
+                  <TableCell className="text-xs text-right">{formatNumber(totalQty)}</TableCell>
+                  <TableCell className="text-xs text-right text-primary">{formatNumber(total)}đ</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

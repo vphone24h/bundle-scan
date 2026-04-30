@@ -461,6 +461,9 @@ Deno.serve(async (req) => {
       const soldByProduct = new Map<string, { name: string; qty: number; revenue: number }>();
       const soldByCategory = new Map<string, { qty: number; revenue: number }>();
       const soldByCategoryName = new Map<string, { qty: number; revenue: number }>();
+      // Per-target product breakdown: list each product sold under a category/target
+      const productsByCategory = new Map<string, Map<string, { name: string; qty: number; revenue: number }>>();
+      const productsByCategoryName = new Map<string, Map<string, { name: string; qty: number; revenue: number }>>();
       let userGrossProfit = 0;
       for (const sale of userSales) {
         const items = saleItemsByReceipt[sale.id] || [];
@@ -491,12 +494,28 @@ Deno.serve(async (req) => {
               cExisting.revenue += lineTotal;
               soldByCategory.set(cid, cExisting);
 
+              // Per-product list for this category
+              let prodMap = productsByCategory.get(cid);
+              if (!prodMap) { prodMap = new Map(); productsByCategory.set(cid, prodMap); }
+              const prodKey = item.product_id || item.product_name;
+              const prodEx = prodMap.get(prodKey) || { name: item.product_name, qty: 0, revenue: 0 };
+              prodEx.qty += quantity;
+              prodEx.revenue += lineTotal;
+              prodMap.set(prodKey, prodEx);
+
               const categoryNameKey = normalizeText(categoryNameMap.get(cid));
               if (categoryNameKey) {
                 const byName = soldByCategoryName.get(categoryNameKey) || { qty: 0, revenue: 0 };
                 byName.qty += quantity;
                 byName.revenue += lineTotal;
                 soldByCategoryName.set(categoryNameKey, byName);
+
+                let prodMapN = productsByCategoryName.get(categoryNameKey);
+                if (!prodMapN) { prodMapN = new Map(); productsByCategoryName.set(categoryNameKey, prodMapN); }
+                const pEx = prodMapN.get(prodKey) || { name: item.product_name, qty: 0, revenue: 0 };
+                pEx.qty += quantity;
+                pEx.revenue += lineTotal;
+                prodMapN.set(prodKey, pEx);
               }
             }
           }
@@ -575,18 +594,21 @@ Deno.serve(async (req) => {
               : 0;
 
             let tierAmt = 0;
+            let matchedTier: any = null;
             const tiers = Array.isArray(b.tiers) ? b.tiers : [];
             if (tiers.length > 0 && threshold > 0 && userRevenue >= threshold) {
               const overPercent = ((userRevenue - threshold) / threshold) * 100;
               const sortedTiers = [...tiers].sort((a: any, b2: any) => Number(b2.percent_over) - Number(a.percent_over));
               const matched = sortedTiers.find((t: any) => overPercent >= Number(t.percent_over || 0));
               if (matched) {
+                matchedTier = matched;
                 tierAmt = matched.calc_type === "percentage"
                   ? userRevenue * Number(matched.value || 0) / 100
                   : Number(matched.value || 0);
               }
             }
             amount = baseAmt + tierAmt;
+            (b as any)._breakdown = { baseAmt: Math.round(baseAmt), tierAmt: Math.round(tierAmt), matchedTier, baseValue: b.value, baseCalcType: b.calc_type };
           } else if (b.bonus_type === "kpi_branch") {
             // KPI chi nhánh: so sánh doanh thu chi nhánh (theo branch của NV) với ngưỡng
             // CỘNG DỒN: thưởng cơ bản + tier vượt cao nhất (giống kpi_personal)
@@ -595,18 +617,21 @@ Deno.serve(async (req) => {
               ? (b.calc_type === "percentage" ? branchRevenue * b.value / 100 : b.value)
               : 0;
             let tierAmt = 0;
+            let matchedTier: any = null;
             const tiers = Array.isArray(b.tiers) ? b.tiers : [];
             if (tiers.length > 0 && threshold > 0 && branchRevenue >= threshold) {
               const overPercent = ((branchRevenue - threshold) / threshold) * 100;
               const sortedTiers = [...tiers].sort((a: any, b2: any) => Number(b2.percent_over) - Number(a.percent_over));
               const matched = sortedTiers.find((t: any) => overPercent >= Number(t.percent_over || 0));
               if (matched) {
+                matchedTier = matched;
                 tierAmt = matched.calc_type === "percentage"
                   ? branchRevenue * Number(matched.value || 0) / 100
                   : Number(matched.value || 0);
               }
             }
             amount = baseAmt + tierAmt;
+            (b as any)._breakdown = { baseAmt: Math.round(baseAmt), tierAmt: Math.round(tierAmt), matchedTier, baseValue: b.value, baseCalcType: b.calc_type };
           } else if (b.bonus_type === "gross_profit") {
             // Lợi nhuận gộp cá nhân: (giá bán - giá nhập) × SL của các đơn NV bán
             // CỘNG DỒN: thưởng cơ bản + tier vượt cao nhất
@@ -615,27 +640,48 @@ Deno.serve(async (req) => {
               ? (b.calc_type === "percentage" ? userGrossProfit * b.value / 100 : b.value)
               : 0;
             let tierAmt = 0;
+            let matchedTier: any = null;
             const tiers = Array.isArray(b.tiers) ? b.tiers : [];
             if (tiers.length > 0 && threshold > 0 && userGrossProfit >= threshold) {
               const overPercent = ((userGrossProfit - threshold) / threshold) * 100;
               const sortedTiers = [...tiers].sort((a: any, b2: any) => Number(b2.percent_over) - Number(a.percent_over));
               const matched = sortedTiers.find((t: any) => overPercent >= Number(t.percent_over || 0));
               if (matched) {
+                matchedTier = matched;
                 tierAmt = matched.calc_type === "percentage"
                   ? userGrossProfit * Number(matched.value || 0) / 100
                   : Number(matched.value || 0);
               }
             }
             amount = baseAmt + tierAmt;
+            (b as any)._breakdown = { baseAmt: Math.round(baseAmt), tierAmt: Math.round(tierAmt), matchedTier, baseValue: b.value, baseCalcType: b.calc_type };
           }
           if (amount > 0) {
             totalBonus += amount;
+            const bd = (b as any)._breakdown || null;
+            // For revenue-based bonuses, attach product list for popup detail
+            let bonusProducts: any[] = [];
+            if (b.bonus_type === "kpi_personal" || b.bonus_type === "gross_profit") {
+              bonusProducts = Array.from(soldByProduct.values())
+                .sort((a, b2) => b2.revenue - a.revenue)
+                .map(p => ({ name: p.name, qty: p.qty, revenue: p.revenue }));
+            }
             bonusDetails.push({
               name: b.name,
               type: b.bonus_type,
               amount: Math.round(amount),
               revenue: b.bonus_type === "kpi_personal" ? userRevenue : b.bonus_type === "kpi_branch" ? branchRevenue : b.bonus_type === "gross_profit" ? userGrossProfit : undefined,
               threshold: b.threshold || undefined,
+              calc_type: b.calc_type,
+              value: b.value,
+              base_amount: bd?.baseAmt,
+              tier_amount: bd?.tierAmt,
+              matched_tier: bd?.matchedTier ? {
+                percent_over: Number(bd.matchedTier.percent_over || 0),
+                calc_type: bd.matchedTier.calc_type,
+                value: Number(bd.matchedTier.value || 0),
+              } : null,
+              products: bonusProducts,
             });
           }
         }
@@ -668,6 +714,7 @@ Deno.serve(async (req) => {
                   rate: c.value,
                   calc_type: c.calc_type,
                   amount: Math.round(amount),
+                  products: [{ name: sold.name, qty: sold.qty, revenue: sold.revenue }],
                 });
                 processedProducts.add(c.target_id);
               }
@@ -676,12 +723,19 @@ Deno.serve(async (req) => {
             // Commission per category (excluding already-processed products)
             const catSold = (c.target_id ? soldByCategory.get(c.target_id) : undefined)
               || soldByCategoryName.get(normalizeText(c.target_name));
+            const prodMap = (c.target_id ? productsByCategory.get(c.target_id) : undefined)
+              || productsByCategoryName.get(normalizeText(c.target_name));
             if (catSold && catSold.revenue > 0) {
               const amount = c.calc_type === "percentage"
                 ? catSold.revenue * c.value / 100
                 : c.value * catSold.qty;
               if (amount > 0) {
                 totalCommission += amount;
+                const productList = prodMap
+                  ? Array.from(prodMap.values())
+                      .sort((a, b) => b.revenue - a.revenue)
+                      .map(p => ({ name: p.name, qty: p.qty, revenue: p.revenue }))
+                  : [];
                 commissionDetails.push({
                   name: c.target_name || "Danh mục",
                   target_type: "category",
@@ -690,6 +744,7 @@ Deno.serve(async (req) => {
                   rate: c.value,
                   calc_type: c.calc_type,
                   amount: Math.round(amount),
+                  products: productList,
                 });
               }
             }
@@ -701,6 +756,9 @@ Deno.serve(async (req) => {
                 : c.value;
               if (amount > 0) {
                 totalCommission += amount;
+                const allProducts = Array.from(soldByProduct.values())
+                  .sort((a, b) => b.revenue - a.revenue)
+                  .map(p => ({ name: p.name, qty: p.qty, revenue: p.revenue }));
                 commissionDetails.push({
                   name: c.target_name || "Doanh thu",
                   target_type: "revenue",
@@ -708,6 +766,7 @@ Deno.serve(async (req) => {
                   rate: c.value,
                   calc_type: c.calc_type,
                   amount: Math.round(amount),
+                  products: allProducts,
                 });
               }
             }
