@@ -531,20 +531,29 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                         />
                       </div>
                     )}
-                    <div className="space-y-1">
-                      <Label className="text-xs">Hình thức</Label>
-                      <Select value={c.calc_type} onValueChange={v => { const n = [...commissions]; n[i].calc_type = v; setCommissions(n); }}>
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="percentage">% giá bán</SelectItem>
-                          <SelectItem value="fixed_amount">Số tiền cố định</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">{c.calc_type === 'percentage' ? 'Tỷ lệ (%)' : 'Số tiền (VNĐ)'}</Label>
-                      <Input type="number" className="h-8 text-xs" value={c.value} onChange={e => { const n = [...commissions]; n[i].value = Number(e.target.value); setCommissions(n); }} />
-                    </div>
+                     <div className="space-y-1">
+                       <Label className="text-xs">Hình thức</Label>
+                       <Select value={c.calc_type} onValueChange={v => { const n = [...commissions]; n[i].calc_type = v; setCommissions(n); }}>
+                         <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="percentage">% giá bán</SelectItem>
+                           <SelectItem value="fixed_amount">Số tiền cố định / 1 sản phẩm bán ra</SelectItem>
+                         </SelectContent>
+                       </Select>
+                     </div>
+                     <div className="space-y-1">
+                       <Label className="text-xs">
+                         {c.calc_type === 'percentage'
+                           ? 'Tỷ lệ (%) / mỗi đơn'
+                           : 'Số tiền VNĐ / 1 sản phẩm bán ra'}
+                       </Label>
+                       <Input type="number" className="h-8 text-xs" value={c.value} onChange={e => { const n = [...commissions]; n[i].value = Number(e.target.value); setCommissions(n); }} />
+                       {c.calc_type === 'fixed_amount' && (
+                         <p className="text-[10px] text-muted-foreground">
+                           💡 Nhân với số lượng sản phẩm thuộc {c.target_type === 'category' ? 'danh mục' : c.target_type === 'service' ? 'dịch vụ' : 'sản phẩm'} này NV bán được trong kỳ.
+                         </p>
+                       )}
+                     </div>
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive ml-1" onClick={() => setCommissions(commissions.filter((_, j) => j !== i))}>
                     <Trash2 className="h-3.5 w-3.5" />
