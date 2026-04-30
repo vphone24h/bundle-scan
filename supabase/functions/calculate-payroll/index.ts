@@ -529,6 +529,22 @@ Deno.serve(async (req) => {
         : [];
       const branchRevenue = branchSales.reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0);
 
+      // Branch-wide product breakdown + branch gross profit (for branch_revenue popup)
+      const soldByBranchProduct = new Map<string, { name: string; qty: number; revenue: number }>();
+      for (const sale of branchSales) {
+        const items = saleItemsByReceipt[sale.id] || [];
+        for (const item of items) {
+          const quantity = Number(item.quantity ?? 1) || 0;
+          const salePrice = Number(item.sale_price || 0);
+          const lineTotal = salePrice * quantity;
+          const pKey = item.product_id || item.product_name;
+          const ex = soldByBranchProduct.get(pKey) || { name: item.product_name, qty: 0, revenue: 0 };
+          ex.qty += quantity;
+          ex.revenue += lineTotal;
+          soldByBranchProduct.set(pKey, ex);
+        }
+      }
+
       // ===== 1. BASE SALARY =====
       let baseSalary = 0;
       if (!isPayrollReady) {
