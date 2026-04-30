@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
         .lte("created_at", period.end_date + "T23:59:59")
         .in("status", ["completed", "paid"]),
       supabase.from("export_receipt_items")
-        .select("receipt_id, product_id, product_name, category_id, sale_price, quantity")
+        .select("receipt_id, product_id, product_name, category_id, sale_price, quantity, imei")
         .eq("status", "active"),
       supabase.from("leave_requests")
         .select("user_id, leave_date_from, leave_date_to, status, request_type")
