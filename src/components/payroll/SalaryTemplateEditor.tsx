@@ -331,14 +331,14 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Mức lương (VNĐ)</Label>
-              <Input type="number" placeholder="0" value={baseAmount} onChange={e => setBaseAmount(e.target.value)} />
+              <NumberInput placeholder="0" value={baseAmount} onChangeNumber={n => setBaseAmount(String(n))} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {salaryType === 'fixed' && (
               <div className="space-y-1.5">
                 <Label className="text-xs">Số ngày nghỉ có lương / tháng</Label>
-                <Input type="number" min="0" max="30" placeholder="0" value={paidLeaveDays} onChange={e => setPaidLeaveDays(e.target.value)} />
+                <NumberInput min={0} max={30} placeholder="0" value={paidLeaveDays} onChangeNumber={n => setPaidLeaveDays(String(n))} />
                 <p className="text-[10px] text-muted-foreground">Số ngày NV được nghỉ mà vẫn hưởng lương</p>
               </div>
             )}
