@@ -483,6 +483,10 @@ export function LandingProductsTab() {
 
       toast({ title: `✅ Đã tạo ${rows.length} đánh giá ảo` });
       setFakeReviewCounts({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
+      queryClient.invalidateQueries({ queryKey: ['admin-landing-review-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-landing-reviews'] });
+      queryClient.invalidateQueries({ queryKey: ['public-landing-rating-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['public-landing-reviews'] });
     } catch (e: any) {
       toast({ title: 'Lỗi tạo đánh giá ảo', description: e?.message, variant: 'destructive' });
     } finally {
