@@ -691,8 +691,10 @@ Deno.serve(async (req) => {
             return mmdd === h.holiday_date;
           });
           if (holidayDates.length > 0) {
+            // Lấy lương/ngày theo MỨC CHUẨN (không prorate theo ngày công thực tế)
+            // VD: lương 7tr/tháng, chuẩn 30 ngày → 233k/ngày. Lễ 200% → thưởng thêm 233k.
             const dailyRate = salaryType === "fixed"
-              ? (baseSalary / (expectedWorkDays || 22))
+              ? (baseAmount / (expectedWorkDays || 22))
               : baseAmount;
             const extra = dailyRate * (h.multiplier_percent / 100 - 1) * holidayDates.length;
             holidayBonus += extra;
