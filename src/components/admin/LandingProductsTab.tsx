@@ -27,6 +27,7 @@ import {
 } from '@/hooks/useLandingProducts';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings } from '@/hooks/useTenantLanding';
+import { useAdminTenantReviewStats } from '@/hooks/useLandingProductReviews';
 import { getIndustryConfig } from '@/lib/industryConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
