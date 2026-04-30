@@ -729,24 +729,9 @@ Deno.serve(async (req) => {
             const effectiveUnexcused = Math.max(0, unexcusedCount - Math.max(0, paidLeaveDaysPerMonth - excusedCount));
             count = effectiveUnexcused;
             
-            // For fixed salary: deduct 1 day salary per unexcused absence
-            // For daily/shift: already not counted in base, but apply penalty amount
-            if (count > 0 && (salaryType === "fixed") && baseSalary > 0) {
-              const dailyRate = baseAmount / (expectedWorkDays || 22);
-              const absenceDeduction = Math.round(dailyRate * count);
-              penaltyFullDayAbsenceDays += count;
-              totalPenalty += absenceDeduction;
-              penaltyDetails.push({
-                name: "Trừ lương nghỉ không phép",
-                type: "absent_salary_deduction",
-                count,
-                per_amount: Math.round(dailyRate),
-                amount: absenceDeduction,
-                detail: `${count} ngày nghỉ không phép x ${Math.round(dailyRate)}đ/ngày`,
-              });
-            }
-            // For daily/shift: absence is already "not paid" (no work = no pay)
-            // But still record info for transparency
+            // Lương cố định: ngày vắng không phép đã được trừ tự động qua prorate base salary.
+            // Ở đây CHỈ áp khoản phạt theo template (p.amount × count) bên dưới — không trừ trùng lương.
+            // Lương daily/shift: vắng = không có công = không trả, nên cũng chỉ áp phạt template.
             
             detail = `${absentCount} ngày vắng (${excusedCount} có phép, ${unexcusedCount} không phép)`;
             // For the penalty amount (p.amount per violation), only apply to unexcused
