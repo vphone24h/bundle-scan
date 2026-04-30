@@ -328,7 +328,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                       </div>
                     ))}
                     {(b.tiers || []).length > 0 && (
-                      <p className="text-[10px] text-muted-foreground">💡 Vượt KPI ≥ X% sẽ được thưởng thêm theo mức cao nhất phù hợp (cộng vào thưởng cơ bản).</p>
+                      <p className="text-[10px] text-muted-foreground">💡 Chỉ áp dụng <strong>1 mức duy nhất</strong> – mức cao nhất NV đạt được (KHÔNG cộng dồn các mức). VD: vượt 200% chỉ nhận thưởng của mức 200%.</p>
                     )}
                   </div>
                 )}
@@ -640,7 +640,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                       </div>
                     ))}
                     {(p.tiers || []).length > 0 && (
-                      <p className="text-[10px] text-muted-foreground">💡 Hệ thống sẽ chọn mức phạt theo % KPI thực tế đạt được (chọn mức gần nhất ≥ % đạt). VD: đạt 45% → áp dụng mức "Đạt ≤ 50%".</p>
+                      <p className="text-[10px] text-muted-foreground">💡 Chỉ áp dụng <strong>1 mức phạt duy nhất</strong> – mức gần nhất ≥ % KPI đạt được (KHÔNG cộng dồn). VD: đạt 45% → chỉ phạt theo mức "Đạt ≤ 50%".</p>
                     )}
                   </div>
                 )}
