@@ -20,6 +20,7 @@ import { StepSchedule } from './steps/StepSchedule';
 import { StepSalary } from './steps/StepSalary';
 import { StepAttendanceSetup, type AttendanceSetupData } from './steps/StepAttendanceSetup';
 import { buildRecurringShiftAssignments } from '@/lib/attendanceSchedule';
+import { buildPaidLeaveOverrideRows, getPaidLeaveMonthKey, mapPaidLeaveOverrideRows } from '@/lib/paidLeaveSchedule';
 import { toast } from 'sonner';
 import type { ScheduleData, SalaryData } from './CreateEmployeeStepper';
 
@@ -214,16 +215,26 @@ export function EmployeeSetupTab() {
       }
     }
     setScheduleData(restoredSchedule);
-    // Load existing paid leave default dates
+    // Load existing paid leave default dates + monthly overrides
     let existingLeaveDays: number[] = [];
+    let paidLeaveOverrides: Record<string, number[]> = {};
+    const referenceMonth = getPaidLeaveMonthKey(new Date());
     if (tenantId) {
-      const { data } = await supabase
-        .from('paid_leave_default_dates')
-        .select('days_of_month')
-        .eq('tenant_id', tenantId)
-        .eq('user_id', emp.userId)
-        .maybeSingle();
-      existingLeaveDays = ((data as any)?.days_of_month as number[]) || [];
+      const [{ data: defaultLeaveData }, { data: overrideRows }] = await Promise.all([
+        supabase
+          .from('paid_leave_default_dates')
+          .select('days_of_month')
+          .eq('tenant_id', tenantId)
+          .eq('user_id', emp.userId)
+          .maybeSingle(),
+        supabase
+          .from('paid_leave_overrides')
+          .select('year, month, leave_dates')
+          .eq('tenant_id', tenantId)
+          .eq('user_id', emp.userId),
+      ]);
+      existingLeaveDays = ((defaultLeaveData as any)?.days_of_month as number[]) || [];
+      paidLeaveOverrides = mapPaidLeaveOverrideRows((overrideRows as any) || []);
     }
     setSalaryData({
       allowances: [],
@@ -231,6 +242,8 @@ export function EmployeeSetupTab() {
       templateId: emp.salaryConfig?.salary_template_id || undefined,
       customBaseAmount: emp.salaryConfig?.custom_base_amount || undefined,
       paidLeaveDaysOfMonth: existingLeaveDays,
+      paidLeaveReferenceMonth: referenceMonth,
+      paidLeaveOverrides,
     });
     setAttendanceData({ allowGps: true, allowQr: true, allowPos: false, maxDevices: 2, requireDeviceApproval: true });
     const firstIncomplete = [true, emp.hasShift, emp.hasSchedule, emp.hasSalary, emp.hasAttendance].findIndex(s => !s);
@@ -335,16 +348,33 @@ export function EmployeeSetupTab() {
           .upsert(salaryPayload, { onConflict: 'tenant_id,user_id' });
         if (error) throw error;
 
-        // Lưu lịch ngày nghỉ có lương mặc định (lặp hàng tháng)
-        if (salaryData.paidLeaveDaysOfMonth && salaryData.paidLeaveDaysOfMonth.length > 0) {
-          const { error: leaveErr } = await supabase
-            .from('paid_leave_default_dates')
-            .upsert({
-              tenant_id: tenantId,
-              user_id: selectedEmployee.userId,
-              days_of_month: salaryData.paidLeaveDaysOfMonth,
-            }, { onConflict: 'tenant_id,user_id' });
-          if (leaveErr) throw leaveErr;
+        const { error: leaveErr } = await supabase
+          .from('paid_leave_default_dates')
+          .upsert({
+            tenant_id: tenantId,
+            user_id: selectedEmployee.userId,
+            days_of_month: salaryData.paidLeaveDaysOfMonth || [],
+          }, { onConflict: 'tenant_id,user_id' });
+        if (leaveErr) throw leaveErr;
+
+        const overrideRows = buildPaidLeaveOverrideRows({
+          tenantId,
+          userId: selectedEmployee.userId,
+          overrides: salaryData.paidLeaveOverrides,
+        });
+
+        const { error: deleteOverridesError } = await supabase
+          .from('paid_leave_overrides')
+          .delete()
+          .eq('tenant_id', tenantId)
+          .eq('user_id', selectedEmployee.userId);
+        if (deleteOverridesError) throw deleteOverridesError;
+
+        if (overrideRows.length > 0) {
+          const { error: overrideErr } = await supabase
+            .from('paid_leave_overrides')
+            .insert(overrideRows as any);
+          if (overrideErr) throw overrideErr;
         }
 
         updateEmployeeProgress(selectedEmployee.userId, {
