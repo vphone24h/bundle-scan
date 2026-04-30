@@ -14,7 +14,44 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSalaryTemplates, useCreateSalaryTemplate, useUpdateSalaryTemplate, useTemplateBonuses, useTemplateCommissions, useTemplateAllowances, useTemplateHolidays, useTemplatePenalties, useTemplateOvertimes, useSaveTemplateConfigs } from '@/hooks/usePayroll';
 import { useCategories } from '@/hooks/useCategories';
 import { toast } from 'sonner';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatNumber, formatInputNumber, parseFormattedNumber } from '@/lib/formatNumber';
+
+// Number input that displays digits grouped by spaces (e.g. 1 000 000)
+// Internally still produces a numeric value via onChangeNumber.
+function NumberInput({
+  value,
+  onChangeNumber,
+  className,
+  placeholder,
+  min,
+  max,
+}: {
+  value: number | string | undefined | null;
+  onChangeNumber: (n: number) => void;
+  className?: string;
+  placeholder?: string;
+  min?: number;
+  max?: number;
+}) {
+  const display = value === '' || value === null || value === undefined
+    ? ''
+    : formatInputNumber(String(value));
+  return (
+    <Input
+      type="text"
+      inputMode="numeric"
+      className={className}
+      placeholder={placeholder}
+      value={display}
+      onChange={(e) => {
+        let n = parseFormattedNumber(e.target.value);
+        if (typeof min === 'number' && n < min) n = min;
+        if (typeof max === 'number' && n > max) n = max;
+        onChangeNumber(n);
+      }}
+    />
+  );
+}
 
 const SALARY_TYPES = [
   { value: 'fixed', label: 'Lương cố định theo tháng' },
