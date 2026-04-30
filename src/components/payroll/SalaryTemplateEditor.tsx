@@ -404,7 +404,10 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                       </div>
                     ))}
                     {(b.tiers || []).length > 0 && (
-                      <p className="text-[10px] text-muted-foreground">💡 Chỉ áp dụng <strong>1 mức duy nhất</strong> – mức cao nhất NV đạt được (KHÔNG cộng dồn các mức). VD: vượt 200% chỉ nhận thưởng của mức 200%.</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        💡 <strong>Vượt KPI (%)</strong> = % vượt thêm so với mức KPI cơ bản. VD: KPI 50tr, "Vượt 100%" nghĩa là đạt 100tr (vượt thêm 50tr = 100% của KPI).<br/>
+                        Chỉ áp dụng <strong>1 mức duy nhất</strong> – mức cao nhất NV đạt được (KHÔNG cộng dồn). Tier sẽ thay thế thưởng cơ bản (lấy mức có lợi nhất cho NV).
+                      </p>
                     )}
                   </div>
                 )}
