@@ -281,7 +281,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                     </div>
                     {(b.bonus_type === 'kpi_personal' || b.bonus_type === 'branch_revenue' || b.bonus_type === 'gross_profit') && (
                       <div className="space-y-1">
-                        <Label className="text-xs">Mức tối thiểu (VNĐ)</Label>
+                        <Label className="text-xs">{b.bonus_type === 'kpi_personal' ? 'Doanh số đạt (VNĐ)' : 'Mức tối thiểu (VNĐ)'}</Label>
                         <Input type="number" className="h-8 text-xs" value={b.threshold} onChange={e => { const n = [...bonuses]; n[i].threshold = Number(e.target.value); setBonuses(n); }} />
                       </div>
                     )}
@@ -294,9 +294,47 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
+                {b.bonus_type === 'kpi_personal' && (
+                  <div className="border-t pt-2 mt-2 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-medium">Mức thưởng vượt KPI</Label>
+                      <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { const n = [...bonuses]; n[i].tiers = [...(n[i].tiers || []), { percent_over: 10, calc_type: 'fixed_amount', value: 0 }]; setBonuses(n); }}>
+                        <Plus className="h-3 w-3 mr-1" />Thêm mức vượt
+                      </Button>
+                    </div>
+                    {(b.tiers || []).map((t, ti) => (
+                      <div key={ti} className="grid grid-cols-12 gap-2 items-end">
+                        <div className="col-span-3 space-y-1">
+                          <Label className="text-[10px]">Vượt KPI (%)</Label>
+                          <Input type="number" className="h-8 text-xs" value={t.percent_over} onChange={e => { const n = [...bonuses]; n[i].tiers[ti].percent_over = Number(e.target.value); setBonuses(n); }} />
+                        </div>
+                        <div className="col-span-3 space-y-1">
+                          <Label className="text-[10px]">Hình thức</Label>
+                          <Select value={t.calc_type} onValueChange={v => { const n = [...bonuses]; n[i].tiers[ti].calc_type = v as any; setBonuses(n); }}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="fixed_amount">Số tiền</SelectItem>
+                              <SelectItem value="percentage">% doanh thu</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="col-span-5 space-y-1">
+                          <Label className="text-[10px]">{t.calc_type === 'percentage' ? 'Tỷ lệ (%)' : 'Thưởng thêm (VNĐ)'}</Label>
+                          <Input type="number" className="h-8 text-xs" value={t.value} onChange={e => { const n = [...bonuses]; n[i].tiers[ti].value = Number(e.target.value); setBonuses(n); }} />
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive col-span-1" onClick={() => { const n = [...bonuses]; n[i].tiers = n[i].tiers.filter((_, j) => j !== ti); setBonuses(n); }}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                    {(b.tiers || []).length > 0 && (
+                      <p className="text-[10px] text-muted-foreground">💡 Vượt KPI ≥ X% sẽ được thưởng thêm theo mức cao nhất phù hợp (cộng vào thưởng cơ bản).</p>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
-            <Button variant="outline" size="sm" onClick={() => setBonuses([...bonuses, { bonus_type: 'fixed', name: 'Thưởng cố định', calc_type: 'fixed_amount', value: 0, threshold: 0 }])}>
+            <Button variant="outline" size="sm" onClick={() => setBonuses([...bonuses, { bonus_type: 'fixed', name: 'Thưởng cố định', calc_type: 'fixed_amount', value: 0, threshold: 0, tiers: [] }])}>
               <Plus className="h-3.5 w-3.5 mr-1" />Thêm mức thưởng
             </Button>
           </CardContent>
