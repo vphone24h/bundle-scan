@@ -16,7 +16,6 @@ import {
   calculateRemainingDays 
 } from '@/hooks/useTenant';
 import { useCompanies } from '@/hooks/useCompanies';
-import { Percent } from 'lucide-react';
 import { 
   Search, 
   Lock, 
