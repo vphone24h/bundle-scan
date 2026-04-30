@@ -55,8 +55,9 @@ export function DebtInterestTab({ entityType, entityId, mergedEntityIds }: Props
         </div>
         <h3 className="font-semibold text-base mb-2">Tính năng tính lãi đang tắt</h3>
         <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-          Vui lòng liên hệ admin công ty để bật chức năng tính lãi công nợ.
+          Vui lòng liên hệ admin để bật chức năng này
         </p>
+        <p className="text-xs text-muted-foreground mb-2">SĐT admin công ty:</p>
         {adminPhone ? (
           <a
             href={`tel:${adminPhone}`}
@@ -66,7 +67,7 @@ export function DebtInterestTab({ entityType, entityId, mergedEntityIds }: Props
             {adminPhone}
           </a>
         ) : (
-          <p className="text-xs text-muted-foreground">(Chưa có số liên hệ admin)</p>
+          <p className="text-xs text-muted-foreground">(Chưa cập nhật)</p>
         )}
       </div>
     );
