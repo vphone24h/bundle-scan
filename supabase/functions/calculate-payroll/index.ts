@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
       .eq("tenant_id", tenant_id)
       .single();
     if (periodErr || !period) throw new Error("Period not found");
-    if (period.status === "finalized") throw new Error("Period already finalized");
+    if (period.status === "paid") throw new Error("Period already finalized");
 
     // Parallel fetch all needed data
     const [
@@ -77,7 +77,6 @@ Deno.serve(async (req) => {
       absenceReviewsRes,
       overtimeRequestsRes,
       salesRes,
-      salesItemsRes,
       leaveRequestsRes,
     ] = await Promise.all([
       supabase.from("platform_users").select("user_id, email, display_name").eq("tenant_id", tenant_id),
@@ -99,9 +98,6 @@ Deno.serve(async (req) => {
         .gte("created_at", period.start_date)
         .lte("created_at", period.end_date + "T23:59:59")
         .in("status", ["completed", "paid"]),
-      supabase.from("export_receipt_items")
-        .select("receipt_id, product_id, product_name, category_id, sale_price, quantity, imei")
-        .neq("status", "returned"),
       supabase.from("leave_requests")
         .select("user_id, leave_date_from, leave_date_to, status, request_type")
         .eq("tenant_id", tenant_id)
@@ -121,7 +117,6 @@ Deno.serve(async (req) => {
       ["absence_reviews", absenceReviewsRes],
       ["overtime_requests", overtimeRequestsRes],
       ["export_receipts", salesRes],
-      ["export_receipt_items", salesItemsRes],
     ].forEach(([label, result]) => throwIfQueryError(label as string, result as { error: any }));
 
     const scopedUsers = platformUsersRes.data || [];
@@ -172,7 +167,21 @@ Deno.serve(async (req) => {
     const absenceReviews = absenceReviewsRes.data || [];
     const approvedOvertimeRequests = overtimeRequestsRes.data || [];
     const allSales = salesRes.data || [];
-    const allSaleItems = salesItemsRes.data || [];
+    const saleReceiptIds = allSales.map((sale: any) => sale.id).filter(Boolean);
+    let allSaleItems: any[] = [];
+    if (saleReceiptIds.length > 0) {
+      const salesItemsResults = await Promise.all(
+        chunkArray(saleReceiptIds, 100).map((receiptIds) =>
+          supabase
+            .from("export_receipt_items")
+            .select("receipt_id, product_id, product_name, category_id, sale_price, quantity, imei")
+            .in("receipt_id", receiptIds)
+            .neq("status", "returned")
+        )
+      );
+      salesItemsResults.forEach((result) => throwIfQueryError("export_receipt_items", result));
+      allSaleItems = salesItemsResults.flatMap((result) => result.data || []);
+    }
     const approvedLeaveRequests = leaveRequestsRes.data || [];
 
     // Load paid leave default schedules (lặp hàng tháng) + overrides cho period này
@@ -1055,7 +1064,7 @@ Deno.serve(async (req) => {
           is_payroll_ready: isPayrollReady,
           missing_setup_reasons: missingSetupReasons,
         },
-        status: "draft",
+        status: "confirmed",
       });
     }
 
@@ -1067,7 +1076,7 @@ Deno.serve(async (req) => {
     // Update period status
     const { error: periodStatusErr } = await supabase
       .from("payroll_periods")
-      .update({ status: "calculated" })
+      .update({ status: "confirmed" })
       .eq("id", period_id);
     if (periodStatusErr) throw periodStatusErr;
 
@@ -1091,4 +1100,10 @@ function groupBy(arr: any[], key: string): Record<string, any[]> {
     acc[k].push(item);
     return acc;
   }, {} as Record<string, any[]>);
+}
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
 }
