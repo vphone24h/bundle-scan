@@ -530,6 +530,11 @@ export default function UniversalStoreTemplate({
 
   const handleNavClick = (item: NavItemConfig) => {
     if (item.type === 'page' && item.pageView) {
+      // Bảng giá: nếu menu đã chọn 1 bài viết thì mở thẳng bài viết đó
+      if (item.pageView === 'pricelist' && item.articleId && articlesData?.articles) {
+        const a = articlesData.articles.find(x => x.id === item.articleId);
+        if (a) { openArticle(a); return; }
+      }
       navigateTo(item.pageView as PageView);
     } else if (item.type === 'link' && item.url) {
       window.open(item.url, '_blank', 'noopener,noreferrer');
