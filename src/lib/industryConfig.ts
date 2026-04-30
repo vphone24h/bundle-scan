@@ -44,6 +44,7 @@ export interface NavItemConfig {
   icon?: string; // emoji or lucide icon name
   pageItems?: PageItemConfig[]; // editable items within the system page
   installmentRates?: InstallmentRateConfig[]; // configurable rates for installment page
+  articleId?: string; // for pricelist menu: chọn 1 bài viết trong Tin tức để hiển thị khi click
 }
 
 // Default items for each system page type
