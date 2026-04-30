@@ -640,7 +640,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
               <div key={i} className="space-y-1 border rounded p-2">
                 <div className="flex items-center gap-2">
                   <Input className="h-8 text-xs flex-1" placeholder="Tên phụ cấp" value={a.name} onChange={e => { const n = [...allowances]; n[i].name = e.target.value; setAllowances(n); }} />
-                  <Input type="number" className="h-8 text-xs w-28" placeholder="Số tiền" value={a.amount} onChange={e => { const n = [...allowances]; n[i].amount = Number(e.target.value); setAllowances(n); }} />
+                  <NumberInput className="h-8 text-xs w-28" placeholder="Số tiền" value={a.amount} onChangeNumber={v => { const n = [...allowances]; n[i].amount = v; setAllowances(n); }} />
                   <Select value={a.is_fixed ? 'fixed' : 'manual'} onValueChange={v => { const n = [...allowances]; n[i].is_fixed = v === 'fixed'; setAllowances(n); }}>
                     <SelectTrigger className="h-8 text-xs w-28"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -654,7 +654,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                 </div>
                 <div className="flex items-center gap-2 pl-1">
                   <Label className="text-[11px] text-muted-foreground whitespace-nowrap">Vắng quá (ngày) → mất phụ cấp:</Label>
-                  <Input type="number" min={0} className="h-7 text-xs w-20" placeholder="0 = không áp dụng" value={a.max_absent_days || ''} onChange={e => { const n = [...allowances]; n[i].max_absent_days = Number(e.target.value); setAllowances(n); }} />
+                  <NumberInput min={0} className="h-7 text-xs w-20" placeholder="0 = không áp dụng" value={a.max_absent_days || ''} onChangeNumber={v => { const n = [...allowances]; n[i].max_absent_days = v; setAllowances(n); }} />
                   <span className="text-[10px] text-muted-foreground">{a.max_absent_days > 0 ? `Vắng > ${a.max_absent_days} ngày sẽ KHÔNG nhận phụ cấp này` : 'Luôn nhận phụ cấp'}</span>
                 </div>
               </div>
