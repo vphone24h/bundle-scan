@@ -281,7 +281,7 @@ export function AttendanceLocationsTab() {
               <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="VD: Kho chính" />
             </div>
             <div>
-              <Label>Địa chỉ hoặc link Google Maps</Label>
+              <Label>Địa chỉ điểm chấm công</Label>
               <div className="flex gap-2">
                 <Input value={form.address} onChange={e => {
                   const val = e.target.value;
@@ -295,7 +295,7 @@ export function AttendanceLocationsTab() {
                   {geocoding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                 </Button>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1">Dán link Google Maps (mở Maps → nhấn Chia sẻ → Sao chép) hoặc nhập địa chỉ rồi bấm 🔍</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Nhập địa chỉ rồi bấm 🔍 để tìm, hoặc bấm <strong>"Lấy vị trí hiện tại (GPS)"</strong> bên dưới khi đang đứng tại điểm chấm công để có toạ độ chính xác nhất.</p>
               {showSuggestions && suggestions.length > 0 && (
                 <div className="border rounded-lg max-h-48 overflow-y-auto divide-y bg-background shadow-md mt-1">
                   {suggestions.map((item, idx) => (
