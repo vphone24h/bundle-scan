@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Plus, X, Trash2, Sparkles, Eye, EyeOff, Menu as MenuIcon } from 'lucide-react';
 import { SortableList, SortableItem, DragHandle } from '@/components/shared/SortableList';
+import { useLandingArticles } from '@/hooks/useLandingArticles';
 
 interface NavMenuEditorProps {
   templateId: string;
@@ -17,6 +18,9 @@ export function NavMenuEditor({ templateId, customNavItems, onChange }: NavMenuE
   const defaultItems = getDefaultNavItems(config);
   const suggestedExtras = INDUSTRY_SUGGESTED_NAV[templateId] || [];
   const currentItems = customNavItems || [...defaultItems, ...suggestedExtras];
+
+  // Articles list (Tin tức) - for Bảng giá menu picker
+  const { data: articles = [] } = useLandingArticles();
 
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
@@ -152,7 +156,13 @@ export function NavMenuEditor({ templateId, customNavItems, onChange }: NavMenuE
   const hasEditableItems = (item: NavItemConfig) => {
     if (item.type !== 'page') return false;
     const pv = item.pageView || '';
-    return !!DEFAULT_PAGE_ITEMS[pv] || (item.pageItems && item.pageItems.length > 0) || pv === 'installment';
+    return !!DEFAULT_PAGE_ITEMS[pv] || (item.pageItems && item.pageItems.length > 0) || pv === 'installment' || pv === 'pricelist';
+  };
+
+  const handleArticleIdChange = (navIndex: number, articleId: string) => {
+    const updated = [...currentItems];
+    updated[navIndex] = { ...updated[navIndex], articleId: articleId || undefined };
+    onChange(updated);
   };
 
   return (
