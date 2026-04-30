@@ -1071,7 +1071,7 @@ export default function UniversalStoreTemplate({
                     const pageId = (sectionId as string).replace(/^layout_\d+_/, '').replace(/^layout_/, '');
                     const page = SYSTEM_PAGES.find(p => p.id === pageId);
                     if (!page) return null;
-                    const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products') };
+                    const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products'), priceListArticles: articlesData?.articles, onSelectArticle: (id: string) => { const a = articlesData?.articles?.find(x => x.id === id); if (a) openArticle(a); } };
                     return (
                       <section key={sectionId} className="max-w-[1200px] mx-auto px-4">
                         <ScrollReveal animation="fade-up">
@@ -1360,7 +1360,7 @@ export default function UniversalStoreTemplate({
                       const pageId = section.id.replace(/^layout_\d+_/, '').replace(/^layout_/, '');
                       const page = SYSTEM_PAGES.find(p => p.id === pageId);
                       if (!page) return null;
-                      const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products') };
+                      const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products'), priceListArticles: articlesData?.articles, onSelectArticle: (id: string) => { const a = articlesData?.articles?.find(x => x.id === id); if (a) openArticle(a); } };
                       return (
                         <div key={section.id} className="mb-4">
                           <LayoutBannerCollapsible pageId={pageId} accentColor={accentColor}>
@@ -1649,7 +1649,7 @@ export default function UniversalStoreTemplate({
                           const pageId = section.id.replace(/^layout_\d+_/, '').replace(/^layout_/, '');
                           const page = SYSTEM_PAGES.find(p => p.id === pageId);
                           if (!page) return null;
-                          const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products') };
+                          const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products'), priceListArticles: articlesData?.articles, onSelectArticle: (id: string) => { const a = articlesData?.articles?.find(x => x.id === id); if (a) openArticle(a); } };
                           return (
                             <div key={section.id} className="mb-4">
                               <LayoutBannerCollapsible pageId={pageId} accentColor={accentColor}>
