@@ -14,7 +14,44 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSalaryTemplates, useCreateSalaryTemplate, useUpdateSalaryTemplate, useTemplateBonuses, useTemplateCommissions, useTemplateAllowances, useTemplateHolidays, useTemplatePenalties, useTemplateOvertimes, useSaveTemplateConfigs } from '@/hooks/usePayroll';
 import { useCategories } from '@/hooks/useCategories';
 import { toast } from 'sonner';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatNumber, formatInputNumber, parseFormattedNumber } from '@/lib/formatNumber';
+
+// Number input that displays digits grouped by spaces (e.g. 1 000 000)
+// Internally still produces a numeric value via onChangeNumber.
+function NumberInput({
+  value,
+  onChangeNumber,
+  className,
+  placeholder,
+  min,
+  max,
+}: {
+  value: number | string | undefined | null;
+  onChangeNumber: (n: number) => void;
+  className?: string;
+  placeholder?: string;
+  min?: number;
+  max?: number;
+}) {
+  const display = value === '' || value === null || value === undefined
+    ? ''
+    : formatInputNumber(String(value));
+  return (
+    <Input
+      type="text"
+      inputMode="numeric"
+      className={className}
+      placeholder={placeholder}
+      value={display}
+      onChange={(e) => {
+        let n = parseFormattedNumber(e.target.value);
+        if (typeof min === 'number' && n < min) n = min;
+        if (typeof max === 'number' && n > max) n = max;
+        onChangeNumber(n);
+      }}
+    />
+  );
+}
 
 const SALARY_TYPES = [
   { value: 'fixed', label: 'Lương cố định theo tháng' },
@@ -294,14 +331,14 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Mức lương (VNĐ)</Label>
-              <Input type="number" placeholder="0" value={baseAmount} onChange={e => setBaseAmount(e.target.value)} />
+              <NumberInput placeholder="0" value={baseAmount} onChangeNumber={n => setBaseAmount(String(n))} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {salaryType === 'fixed' && (
               <div className="space-y-1.5">
                 <Label className="text-xs">Số ngày nghỉ có lương / tháng</Label>
-                <Input type="number" min="0" max="30" placeholder="0" value={paidLeaveDays} onChange={e => setPaidLeaveDays(e.target.value)} />
+                <NumberInput min={0} max={30} placeholder="0" value={paidLeaveDays} onChangeNumber={n => setPaidLeaveDays(String(n))} />
                 <p className="text-[10px] text-muted-foreground">Số ngày NV được nghỉ mà vẫn hưởng lương</p>
               </div>
             )}
@@ -363,12 +400,12 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                             : b.bonus_type === 'gross_profit' ? 'Lợi nhuận gộp đạt (VNĐ)'
                             : 'Mức tối thiểu (VNĐ)'}
                         </Label>
-                        <Input type="number" className="h-8 text-xs" value={b.threshold} onChange={e => { const n = [...bonuses]; n[i].threshold = Number(e.target.value); setBonuses(n); }} />
+                        <NumberInput className="h-8 text-xs" value={b.threshold} onChangeNumber={v => { const n = [...bonuses]; n[i].threshold = v; setBonuses(n); }} />
                       </div>
                     )}
                     <div className="space-y-1">
                       <Label className="text-xs">{b.calc_type === 'percentage' ? 'Tỷ lệ (%)' : 'Số tiền (VNĐ)'}</Label>
-                      <Input type="number" className="h-8 text-xs" value={b.value} onChange={e => { const n = [...bonuses]; n[i].value = Number(e.target.value); setBonuses(n); }} />
+                      <NumberInput className="h-8 text-xs" value={b.value} onChangeNumber={v => { const n = [...bonuses]; n[i].value = v; setBonuses(n); }} />
                     </div>
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive ml-1" onClick={() => setBonuses(bonuses.filter((_, j) => j !== i))}>
@@ -391,7 +428,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                           <Label className="text-[10px]">
                             {b.bonus_type === 'gross_profit' ? 'Vượt LN (%)' : 'Vượt KPI (%)'}
                           </Label>
-                          <Input type="number" className="h-8 text-xs" value={t.percent_over} onChange={e => { const n = [...bonuses]; n[i].tiers[ti].percent_over = Number(e.target.value); setBonuses(n); }} />
+                          <NumberInput className="h-8 text-xs" value={t.percent_over} onChangeNumber={v => { const n = [...bonuses]; n[i].tiers[ti].percent_over = v; setBonuses(n); }} />
                         </div>
                         <div className="col-span-3 space-y-1">
                           <Label className="text-[10px]">Hình thức</Label>
@@ -407,7 +444,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                         </div>
                         <div className="col-span-5 space-y-1">
                           <Label className="text-[10px]">{t.calc_type === 'percentage' ? 'Tỷ lệ (%)' : 'Thưởng thêm (VNĐ)'}</Label>
-                          <Input type="number" className="h-8 text-xs" value={t.value} onChange={e => { const n = [...bonuses]; n[i].tiers[ti].value = Number(e.target.value); setBonuses(n); }} />
+                          <NumberInput className="h-8 text-xs" value={t.value} onChangeNumber={v => { const n = [...bonuses]; n[i].tiers[ti].value = v; setBonuses(n); }} />
                         </div>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive col-span-1" onClick={() => { const n = [...bonuses]; n[i].tiers = n[i].tiers.filter((_, j) => j !== ti); setBonuses(n); }}>
                           <Trash2 className="h-3.5 w-3.5" />
@@ -459,7 +496,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                       <>
                         <div className="space-y-1">
                           <Label className="text-xs">Hệ số lương (%)</Label>
-                          <Input type="number" className="h-8 text-xs" value={o.value} onChange={e => { const n = [...overtimes]; n[i].value = Number(e.target.value); setOvertimes(n); }} />
+                          <NumberInput className="h-8 text-xs" value={o.value} onChangeNumber={v => { const n = [...overtimes]; n[i].value = v; setOvertimes(n); }} />
                         </div>
                         <div className="col-span-2">
                           <p className="text-xs text-muted-foreground">
@@ -474,7 +511,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                       <>
                         <div className="space-y-1">
                           <Label className="text-xs">Số tiền mỗi giờ OT (VNĐ)</Label>
-                          <Input type="number" className="h-8 text-xs" value={o.value} onChange={e => { const n = [...overtimes]; n[i].value = Number(e.target.value); setOvertimes(n); }} />
+                          <NumberInput className="h-8 text-xs" value={o.value} onChangeNumber={v => { const n = [...overtimes]; n[i].value = v; setOvertimes(n); }} />
                         </div>
                         <div className="col-span-2">
                           <p className="text-xs text-muted-foreground">
@@ -559,7 +596,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                            ? 'Tỷ lệ (%) / mỗi đơn'
                            : 'Số tiền VNĐ / 1 sản phẩm bán ra'}
                        </Label>
-                       <Input type="number" className="h-8 text-xs" value={c.value} onChange={e => { const n = [...commissions]; n[i].value = Number(e.target.value); setCommissions(n); }} />
+                       <NumberInput className="h-8 text-xs" value={c.value} onChangeNumber={v => { const n = [...commissions]; n[i].value = v; setCommissions(n); }} />
                        {c.calc_type === 'fixed_amount' && (
                          <p className="text-[10px] text-muted-foreground">
                            💡 Nhân với số lượng sản phẩm thuộc {c.target_type === 'category' ? 'danh mục' : c.target_type === 'service' ? 'dịch vụ' : 'sản phẩm'} này NV bán được trong kỳ.
@@ -603,7 +640,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
               <div key={i} className="space-y-1 border rounded p-2">
                 <div className="flex items-center gap-2">
                   <Input className="h-8 text-xs flex-1" placeholder="Tên phụ cấp" value={a.name} onChange={e => { const n = [...allowances]; n[i].name = e.target.value; setAllowances(n); }} />
-                  <Input type="number" className="h-8 text-xs w-28" placeholder="Số tiền" value={a.amount} onChange={e => { const n = [...allowances]; n[i].amount = Number(e.target.value); setAllowances(n); }} />
+                  <NumberInput className="h-8 text-xs w-28" placeholder="Số tiền" value={a.amount} onChangeNumber={v => { const n = [...allowances]; n[i].amount = v; setAllowances(n); }} />
                   <Select value={a.is_fixed ? 'fixed' : 'manual'} onValueChange={v => { const n = [...allowances]; n[i].is_fixed = v === 'fixed'; setAllowances(n); }}>
                     <SelectTrigger className="h-8 text-xs w-28"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -617,7 +654,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                 </div>
                 <div className="flex items-center gap-2 pl-1">
                   <Label className="text-[11px] text-muted-foreground whitespace-nowrap">Vắng quá (ngày) → mất phụ cấp:</Label>
-                  <Input type="number" min={0} className="h-7 text-xs w-20" placeholder="0 = không áp dụng" value={a.max_absent_days || ''} onChange={e => { const n = [...allowances]; n[i].max_absent_days = Number(e.target.value); setAllowances(n); }} />
+                  <NumberInput min={0} className="h-7 text-xs w-20" placeholder="0 = không áp dụng" value={a.max_absent_days || ''} onChangeNumber={v => { const n = [...allowances]; n[i].max_absent_days = v; setAllowances(n); }} />
                   <span className="text-[10px] text-muted-foreground">{a.max_absent_days > 0 ? `Vắng > ${a.max_absent_days} ngày sẽ KHÔNG nhận phụ cấp này` : 'Luôn nhận phụ cấp'}</span>
                 </div>
               </div>
@@ -649,7 +686,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                 <Input className="h-8 text-xs flex-1" placeholder="Tên ngày lễ" value={h.holiday_name} onChange={e => { const n = [...holidays]; n[i].holiday_name = e.target.value; setHolidays(n); }} />
                 <Input className="h-8 text-xs w-20" placeholder="MM-DD" value={h.holiday_date} onChange={e => { const n = [...holidays]; n[i].holiday_date = e.target.value; setHolidays(n); }} />
                 <div className="flex items-center gap-1">
-                  <Input type="number" className="h-8 text-xs w-20" value={h.multiplier_percent} onChange={e => { const n = [...holidays]; n[i].multiplier_percent = Number(e.target.value); setHolidays(n); }} />
+                  <NumberInput className="h-8 text-xs w-20" value={h.multiplier_percent} onChangeNumber={v => { const n = [...holidays]; n[i].multiplier_percent = v; setHolidays(n); }} />
                   <span className="text-xs text-muted-foreground">%</span>
                 </div>
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setHolidays(holidays.filter((_, j) => j !== i))}>
@@ -688,18 +725,18 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                     {p.penalty_type !== 'kpi_not_met' && (
                       <div className="space-y-1">
                         <Label className="text-xs">Số tiền phạt (VNĐ)</Label>
-                        <Input type="number" className="h-8 text-xs" value={p.amount} onChange={e => { const n = [...penalties]; n[i].amount = Number(e.target.value); setPenalties(n); }} />
+                        <NumberInput className="h-8 text-xs" value={p.amount} onChangeNumber={v => { const n = [...penalties]; n[i].amount = v; setPenalties(n); }} />
                       </div>
                     )}
                     {(p.penalty_type === 'late' || p.penalty_type === 'early_leave') && (
                       <>
                         <div className="space-y-1">
                           <Label className="text-xs">{p.penalty_type === 'late' ? 'Trễ từ (phút)' : 'Về sớm từ (phút)'}</Label>
-                          <Input type="number" className="h-8 text-xs" placeholder="0 = phạt ngay" value={p.threshold_minutes || ''} onChange={e => { const n = [...penalties]; n[i].threshold_minutes = Number(e.target.value); setPenalties(n); }} />
+                          <NumberInput className="h-8 text-xs" placeholder="0 = phạt ngay" value={p.threshold_minutes || ''} onChangeNumber={v => { const n = [...penalties]; n[i].threshold_minutes = v; setPenalties(n); }} />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">{p.penalty_type === 'late' ? 'Trễ ≥ (phút) = nghỉ ngày' : 'Sớm ≥ (phút) = nghỉ ngày'}</Label>
-                          <Input type="number" className="h-8 text-xs" placeholder="0 = không áp dụng" value={p.full_day_absence_minutes || ''} onChange={e => { const n = [...penalties]; n[i].full_day_absence_minutes = Number(e.target.value); setPenalties(n); }} />
+                          <NumberInput className="h-8 text-xs" placeholder="0 = không áp dụng" value={p.full_day_absence_minutes || ''} onChangeNumber={v => { const n = [...penalties]; n[i].full_day_absence_minutes = v; setPenalties(n); }} />
                         </div>
                         <div className="col-span-2">
                           <p className="text-xs text-muted-foreground">
@@ -721,7 +758,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                       <>
                         <div className="space-y-1 col-span-2">
                           <Label className="text-xs">Doanh số KPI mục tiêu (VNĐ)</Label>
-                          <Input type="number" className="h-8 text-xs" placeholder="VD: 100,000,000" value={p.kpi_target} onChange={e => { const n = [...penalties]; n[i].kpi_target = Number(e.target.value); setPenalties(n); }} />
+                          <NumberInput className="h-8 text-xs" placeholder="VD: 100 000 000" value={p.kpi_target} onChangeNumber={v => { const n = [...penalties]; n[i].kpi_target = v; setPenalties(n); }} />
                           <p className="text-[10px] text-muted-foreground">💡 Doanh số NV phải đạt trong kỳ. Không đạt 100% sẽ bị phạt theo các mức bên dưới.</p>
                         </div>
                       </>
@@ -743,11 +780,11 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                       <div key={ti} className="grid grid-cols-12 gap-2 items-end">
                         <div className="col-span-5 space-y-1">
                           <Label className="text-[10px]">Đạt ≤ (% KPI)</Label>
-                          <Input type="number" className="h-8 text-xs" value={t.percent_achieved} onChange={e => { const n = [...penalties]; n[i].tiers[ti].percent_achieved = Number(e.target.value); setPenalties(n); }} />
+                          <NumberInput className="h-8 text-xs" value={t.percent_achieved} onChangeNumber={v => { const n = [...penalties]; n[i].tiers[ti].percent_achieved = v; setPenalties(n); }} />
                         </div>
                         <div className="col-span-6 space-y-1">
                           <Label className="text-[10px]">Phạt (VNĐ)</Label>
-                          <Input type="number" className="h-8 text-xs" value={t.penalty_amount} onChange={e => { const n = [...penalties]; n[i].tiers[ti].penalty_amount = Number(e.target.value); setPenalties(n); }} />
+                          <NumberInput className="h-8 text-xs" value={t.penalty_amount} onChangeNumber={v => { const n = [...penalties]; n[i].tiers[ti].penalty_amount = v; setPenalties(n); }} />
                         </div>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive col-span-1" onClick={() => { const n = [...penalties]; n[i].tiers = n[i].tiers.filter((_, j) => j !== ti); setPenalties(n); }}>
                           <Trash2 className="h-3.5 w-3.5" />
