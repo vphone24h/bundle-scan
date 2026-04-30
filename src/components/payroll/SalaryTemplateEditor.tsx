@@ -42,6 +42,7 @@ const PENALTY_TYPES = [
   { value: 'early_leave', label: 'Về sớm' },
   { value: 'absent_no_permission', label: 'Nghỉ không phép' },
   { value: 'violation', label: 'Vi phạm nội quy' },
+  { value: 'kpi_not_met', label: 'Không đạt KPI doanh thu' },
 ];
 
 const VN_HOLIDAYS = [
@@ -60,11 +61,13 @@ const ALLOWANCE_PRESETS = [
   { type: 'responsibility', name: 'Trách nhiệm' },
 ];
 
-interface BonusRow { bonus_type: string; name: string; calc_type: string; value: number; threshold: number; }
+interface BonusTier { percent_over: number; calc_type: 'fixed_amount' | 'percentage'; value: number; }
+interface BonusRow { bonus_type: string; name: string; calc_type: string; value: number; threshold: number; tiers: BonusTier[]; }
 interface CommissionRow { target_type: string; target_id: string; target_name: string; calc_type: string; value: number; }
 interface AllowanceRow { allowance_type: string; name: string; amount: number; is_fixed: boolean; }
 interface HolidayRow { holiday_name: string; holiday_date: string; multiplier_percent: number; }
-interface PenaltyRow { penalty_type: string; name: string; amount: number; description: string; threshold_minutes: number; full_day_absence_minutes: number; }
+interface PenaltyTier { percent_achieved: number; penalty_amount: number; }
+interface PenaltyRow { penalty_type: string; name: string; amount: number; description: string; threshold_minutes: number; full_day_absence_minutes: number; kpi_target: number; tiers: PenaltyTier[]; }
 interface OvertimeRow { overtime_type: string; name: string; calc_type: string; value: number; description: string; }
 
 interface Props {
@@ -129,11 +132,11 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
     }
   }, [existing]);
 
-  useEffect(() => { if (exBonuses?.length) setBonuses(exBonuses.map(b => ({ bonus_type: b.bonus_type, name: b.name, calc_type: b.calc_type, value: Number(b.value), threshold: Number(b.threshold || 0) }))); }, [exBonuses]);
+  useEffect(() => { if (exBonuses?.length) setBonuses(exBonuses.map(b => ({ bonus_type: b.bonus_type, name: b.name, calc_type: b.calc_type, value: Number(b.value), threshold: Number(b.threshold || 0), tiers: Array.isArray((b as any).tiers) ? (b as any).tiers : [] }))); }, [exBonuses]);
   useEffect(() => { if (exCommissions?.length) setCommissions(exCommissions.map(c => ({ target_type: c.target_type, target_id: c.target_id || '', target_name: c.target_name, calc_type: c.calc_type, value: Number(c.value) }))); }, [exCommissions]);
   useEffect(() => { if (exAllowances?.length) setAllowances(exAllowances.map(a => ({ allowance_type: a.allowance_type, name: a.name, amount: Number(a.amount), is_fixed: a.is_fixed }))); }, [exAllowances]);
   useEffect(() => { if (exHolidays?.length) setHolidays(exHolidays.map(h => ({ holiday_name: h.holiday_name, holiday_date: h.holiday_date, multiplier_percent: Number(h.multiplier_percent) }))); }, [exHolidays]);
-  useEffect(() => { if (exPenalties?.length) setPenalties(exPenalties.map(p => ({ penalty_type: p.penalty_type, name: p.name, amount: Number(p.amount), description: p.description || '', threshold_minutes: (p as any).threshold_minutes || 0, full_day_absence_minutes: (p as any).full_day_absence_minutes || 0 }))); }, [exPenalties]);
+  useEffect(() => { if (exPenalties?.length) setPenalties(exPenalties.map(p => ({ penalty_type: p.penalty_type, name: p.name, amount: Number(p.amount), description: p.description || '', threshold_minutes: (p as any).threshold_minutes || 0, full_day_absence_minutes: (p as any).full_day_absence_minutes || 0, kpi_target: Number((p as any).kpi_target || 0), tiers: Array.isArray((p as any).tiers) ? (p as any).tiers : [] }))); }, [exPenalties]);
   useEffect(() => { if (exOvertimes?.length) setOvertimes(exOvertimes.map(o => ({ overtime_type: o.overtime_type, name: o.name, calc_type: o.calc_type, value: Number(o.value), description: o.description || '' }))); }, [exOvertimes]);
 
   const handleSave = async () => {
@@ -278,7 +281,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                     </div>
                     {(b.bonus_type === 'kpi_personal' || b.bonus_type === 'branch_revenue' || b.bonus_type === 'gross_profit') && (
                       <div className="space-y-1">
-                        <Label className="text-xs">Mức tối thiểu (VNĐ)</Label>
+                        <Label className="text-xs">{b.bonus_type === 'kpi_personal' ? 'Doanh số đạt (VNĐ)' : 'Mức tối thiểu (VNĐ)'}</Label>
                         <Input type="number" className="h-8 text-xs" value={b.threshold} onChange={e => { const n = [...bonuses]; n[i].threshold = Number(e.target.value); setBonuses(n); }} />
                       </div>
                     )}
@@ -291,9 +294,47 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
+                {b.bonus_type === 'kpi_personal' && (
+                  <div className="border-t pt-2 mt-2 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-medium">Mức thưởng vượt KPI</Label>
+                      <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { const n = [...bonuses]; n[i].tiers = [...(n[i].tiers || []), { percent_over: 10, calc_type: 'fixed_amount', value: 0 }]; setBonuses(n); }}>
+                        <Plus className="h-3 w-3 mr-1" />Thêm mức vượt
+                      </Button>
+                    </div>
+                    {(b.tiers || []).map((t, ti) => (
+                      <div key={ti} className="grid grid-cols-12 gap-2 items-end">
+                        <div className="col-span-3 space-y-1">
+                          <Label className="text-[10px]">Vượt KPI (%)</Label>
+                          <Input type="number" className="h-8 text-xs" value={t.percent_over} onChange={e => { const n = [...bonuses]; n[i].tiers[ti].percent_over = Number(e.target.value); setBonuses(n); }} />
+                        </div>
+                        <div className="col-span-3 space-y-1">
+                          <Label className="text-[10px]">Hình thức</Label>
+                          <Select value={t.calc_type} onValueChange={v => { const n = [...bonuses]; n[i].tiers[ti].calc_type = v as any; setBonuses(n); }}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="fixed_amount">Số tiền</SelectItem>
+                              <SelectItem value="percentage">% doanh thu</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="col-span-5 space-y-1">
+                          <Label className="text-[10px]">{t.calc_type === 'percentage' ? 'Tỷ lệ (%)' : 'Thưởng thêm (VNĐ)'}</Label>
+                          <Input type="number" className="h-8 text-xs" value={t.value} onChange={e => { const n = [...bonuses]; n[i].tiers[ti].value = Number(e.target.value); setBonuses(n); }} />
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive col-span-1" onClick={() => { const n = [...bonuses]; n[i].tiers = n[i].tiers.filter((_, j) => j !== ti); setBonuses(n); }}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                    {(b.tiers || []).length > 0 && (
+                      <p className="text-[10px] text-muted-foreground">💡 Vượt KPI ≥ X% sẽ được thưởng thêm theo mức cao nhất phù hợp (cộng vào thưởng cơ bản).</p>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
-            <Button variant="outline" size="sm" onClick={() => setBonuses([...bonuses, { bonus_type: 'fixed', name: 'Thưởng cố định', calc_type: 'fixed_amount', value: 0, threshold: 0 }])}>
+            <Button variant="outline" size="sm" onClick={() => setBonuses([...bonuses, { bonus_type: 'fixed', name: 'Thưởng cố định', calc_type: 'fixed_amount', value: 0, threshold: 0, tiers: [] }])}>
               <Plus className="h-3.5 w-3.5 mr-1" />Thêm mức thưởng
             </Button>
           </CardContent>
@@ -561,14 +602,51 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                         <Input className="h-8 text-xs" placeholder="VD: Không mặc đồng phục" value={p.description} onChange={e => { const n = [...penalties]; n[i].description = e.target.value; setPenalties(n); }} />
                       </div>
                     )}
+                    {p.penalty_type === 'kpi_not_met' && (
+                      <>
+                        <div className="space-y-1 col-span-2">
+                          <Label className="text-xs">Doanh số KPI mục tiêu (VNĐ)</Label>
+                          <Input type="number" className="h-8 text-xs" placeholder="VD: 100,000,000" value={p.kpi_target} onChange={e => { const n = [...penalties]; n[i].kpi_target = Number(e.target.value); setPenalties(n); }} />
+                          <p className="text-[10px] text-muted-foreground">💡 Doanh số NV phải đạt trong kỳ. Không đạt 100% sẽ bị phạt theo các mức bên dưới.</p>
+                        </div>
+                      </>
+                    )}
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive ml-1" onClick={() => setPenalties(penalties.filter((_, j) => j !== i))}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
+                {p.penalty_type === 'kpi_not_met' && (
+                  <div className="border-t pt-2 mt-2 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-medium">Mức phạt theo % KPI đạt được</Label>
+                      <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { const n = [...penalties]; n[i].tiers = [...(n[i].tiers || []), { percent_achieved: 50, penalty_amount: 0 }]; setPenalties(n); }}>
+                        <Plus className="h-3 w-3 mr-1" />Thêm mức phạt
+                      </Button>
+                    </div>
+                    {(p.tiers || []).map((t, ti) => (
+                      <div key={ti} className="grid grid-cols-12 gap-2 items-end">
+                        <div className="col-span-5 space-y-1">
+                          <Label className="text-[10px]">Đạt ≤ (% KPI)</Label>
+                          <Input type="number" className="h-8 text-xs" value={t.percent_achieved} onChange={e => { const n = [...penalties]; n[i].tiers[ti].percent_achieved = Number(e.target.value); setPenalties(n); }} />
+                        </div>
+                        <div className="col-span-6 space-y-1">
+                          <Label className="text-[10px]">Phạt (VNĐ)</Label>
+                          <Input type="number" className="h-8 text-xs" value={t.penalty_amount} onChange={e => { const n = [...penalties]; n[i].tiers[ti].penalty_amount = Number(e.target.value); setPenalties(n); }} />
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive col-span-1" onClick={() => { const n = [...penalties]; n[i].tiers = n[i].tiers.filter((_, j) => j !== ti); setPenalties(n); }}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                    {(p.tiers || []).length > 0 && (
+                      <p className="text-[10px] text-muted-foreground">💡 Hệ thống sẽ chọn mức phạt theo % KPI thực tế đạt được (chọn mức gần nhất ≥ % đạt). VD: đạt 45% → áp dụng mức "Đạt ≤ 50%".</p>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
-            <Button variant="outline" size="sm" onClick={() => setPenalties([...penalties, { penalty_type: 'late', name: 'Đi trễ', amount: 0, description: '', threshold_minutes: 0, full_day_absence_minutes: 0 }])}>
+            <Button variant="outline" size="sm" onClick={() => setPenalties([...penalties, { penalty_type: 'late', name: 'Đi trễ', amount: 0, description: '', threshold_minutes: 0, full_day_absence_minutes: 0, kpi_target: 0, tiers: [] }])}>
               <Plus className="h-3.5 w-3.5 mr-1" />Thêm phạt
             </Button>
           </CardContent>

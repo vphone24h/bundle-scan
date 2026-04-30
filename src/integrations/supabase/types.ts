@@ -7478,6 +7478,7 @@ export type Database = {
           template_id: string
           tenant_id: string
           threshold: number | null
+          tiers: Json
           value: number
         }
         Insert: {
@@ -7490,6 +7491,7 @@ export type Database = {
           template_id: string
           tenant_id: string
           threshold?: number | null
+          tiers?: Json
           value?: number
         }
         Update: {
@@ -7502,6 +7504,7 @@ export type Database = {
           template_id?: string
           tenant_id?: string
           threshold?: number | null
+          tiers?: Json
           value?: number
         }
         Relationships: [
@@ -7685,11 +7688,13 @@ export type Database = {
           display_order: number
           full_day_absence_minutes: number
           id: string
+          kpi_target: number
           name: string
           penalty_type: string
           template_id: string
           tenant_id: string
           threshold_minutes: number
+          tiers: Json
         }
         Insert: {
           amount?: number
@@ -7698,11 +7703,13 @@ export type Database = {
           display_order?: number
           full_day_absence_minutes?: number
           id?: string
+          kpi_target?: number
           name?: string
           penalty_type?: string
           template_id: string
           tenant_id: string
           threshold_minutes?: number
+          tiers?: Json
         }
         Update: {
           amount?: number
@@ -7711,11 +7718,13 @@ export type Database = {
           display_order?: number
           full_day_absence_minutes?: number
           id?: string
+          kpi_target?: number
           name?: string
           penalty_type?: string
           template_id?: string
           tenant_id?: string
           threshold_minutes?: number
+          tiers?: Json
         }
         Relationships: [
           {
