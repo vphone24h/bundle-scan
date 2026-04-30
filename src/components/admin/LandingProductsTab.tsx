@@ -2012,6 +2012,34 @@ export function LandingProductsTab() {
                   <Badge variant="outline" className="text-[10px]">Lưu sản phẩm trước</Badge>
                 )}
               </div>
+              {/* Tổng số đánh giá hiện tại của sản phẩm đang sửa */}
+              {editingProductId && (() => {
+                const st = reviewStatsMap[editingProductId];
+                const total = st?.total || 0;
+                return (
+                  <div className="flex flex-wrap items-center gap-1.5 rounded-md bg-background/60 border p-2">
+                    <span className="text-[11px] font-medium text-muted-foreground">Hiện có:</span>
+                    <Badge variant="outline" className="text-[10px] gap-0.5 border-yellow-400 text-yellow-700">
+                      <Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />
+                      {total} đánh giá
+                    </Badge>
+                    {total > 0 && (
+                      <>
+                        {([5, 4, 3, 2, 1] as const).map(s => (
+                          st!.byStar[s] > 0 ? (
+                            <Badge key={s} variant="outline" className="text-[10px] gap-0.5">
+                              {s}<Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />: {st!.byStar[s]}
+                            </Badge>
+                          ) : null
+                        ))}
+                        <span className="mx-0.5 text-muted-foreground">|</span>
+                        <Badge variant="outline" className="text-[10px] border-green-300 text-green-700">Thật: {st!.real}</Badge>
+                        <Badge variant="outline" className="text-[10px] border-orange-300 text-orange-600">Ảo: {st!.fake}</Badge>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
               <p className="text-[11px] text-muted-foreground">
                 Nhập số lượng đánh giá theo từng mức sao. Hệ thống tự sinh tên + nội dung ngẫu nhiên (phong cách 7x/8x), không trùng tên đã có.
               </p>
