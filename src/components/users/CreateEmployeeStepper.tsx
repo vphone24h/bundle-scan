@@ -127,7 +127,9 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
       case 3: {
         // Validate ngày nghỉ có lương phải bằng số ngày trong template
         const tpl = salaryTemplates?.find(t => t.id === salaryData.templateId);
-        const required = (tpl as any)?.paid_leave_days_per_month || 0;
+        // Chỉ áp dụng cho lương cố định theo tháng
+        const isFixed = (tpl as any)?.salary_type === 'fixed';
+        const required = isFixed ? ((tpl as any)?.paid_leave_days_per_month || 0) : 0;
         const chosen = salaryData.paidLeaveDaysOfMonth?.length || 0;
         if (required > 0 && chosen !== required) {
           toast.error(`Mẫu lương cho phép ${required} ngày nghỉ có lương/tháng. Bạn đang chọn ${chosen}. Vui lòng chọn đủ.`);
