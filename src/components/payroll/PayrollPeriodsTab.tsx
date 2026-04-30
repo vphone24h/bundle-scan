@@ -579,6 +579,7 @@ function InlinePayrollBreakdown({ record, periodName, onExport }: { record: any;
   const holidayDetails = rec.holiday_details || [];
   const overtimeDetails = configSnapshot.overtime_details || [];
   const attendanceDetails = rec.attendance_details || [];
+  const [productPopup, setProductPopup] = useState<{ title: string; subtitle?: string; products: any[] } | null>(null);
 
   // Build per-day overtime breakdown (from attendance) for "Tăng ca" section
   const overtimeByDay = attendanceDetails
@@ -666,12 +667,16 @@ function InlinePayrollBreakdown({ record, periodName, onExport }: { record: any;
           {/* Bonuses */}
           <BreakdownSection icon="🎁" title="Thưởng" total={rec.total_bonus || 0}>
             {bonusDetails.length > 0 ? bonusDetails.map((b: any, i: number) => (
-              <BreakdownItem
+              <BonusBreakdownItem
                 key={i}
-                label={b.name}
-                detail={describeBonus(b)}
-                amount={b.amount}
-                positive
+                bonus={b}
+                onShowProducts={(b.products && b.products.length > 0)
+                  ? () => setProductPopup({
+                      title: b.name,
+                      subtitle: describeBonus(b),
+                      products: b.products,
+                    })
+                  : undefined}
               />
             )) : (
               <p className="text-[11px] text-muted-foreground italic">Không có khoản thưởng</p>
@@ -687,6 +692,13 @@ function InlinePayrollBreakdown({ record, periodName, onExport }: { record: any;
                 detail={describeCommission(c)}
                 amount={c.amount}
                 positive
+                onClick={(c.products && c.products.length > 0)
+                  ? () => setProductPopup({
+                      title: `Hoa hồng: ${c.name || 'Sản phẩm'}`,
+                      subtitle: describeCommission(c),
+                      products: c.products,
+                    })
+                  : undefined}
               />
             )) : (
               <p className="text-[11px] text-muted-foreground italic">Không có hoa hồng</p>
@@ -789,6 +801,9 @@ function InlinePayrollBreakdown({ record, periodName, onExport }: { record: any;
           ))}
         </div>
       )}
+
+      {/* Product list popup */}
+      <ProductListDialog open={!!productPopup} onClose={() => setProductPopup(null)} data={productPopup} />
     </div>
   );
 }
