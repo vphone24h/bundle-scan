@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
@@ -50,6 +50,18 @@ export function StepSalary({ salaryData, onChange, templates }: Props) {
   const requiredLeaveDays = templateSalaryType === 'fixed'
     ? ((templateMeta as any)?.paid_leave_days_per_month || 0)
     : 0;
+
+  // Tự động đồng bộ: nếu số ngày đã chọn vượt quá yêu cầu của mẫu mới → cắt bớt;
+  // nếu mẫu mới không cho phép nghỉ có lương → xóa hết.
+  useEffect(() => {
+    const current = salaryData.paidLeaveDaysOfMonth || [];
+    if (requiredLeaveDays === 0 && current.length > 0) {
+      onChange({ ...salaryData, paidLeaveDaysOfMonth: [] });
+    } else if (current.length > requiredLeaveDays) {
+      onChange({ ...salaryData, paidLeaveDaysOfMonth: current.slice(0, requiredLeaveDays) });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requiredLeaveDays]);
 
   const addItem = (type: 'allowances' | 'deductions') => {
     onChange({ ...salaryData, [type]: [...salaryData[type], { name: '', amount: 0 }] });
