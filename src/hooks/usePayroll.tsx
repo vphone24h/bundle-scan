@@ -171,7 +171,7 @@ export function useSaveTemplateConfigs() {
 
       const inserts = [];
       if (bonuses.length) inserts.push(supabase.from('salary_template_bonuses').insert(bonuses.map((b, i) => ({ ...b, template_id: templateId, tenant_id: tenantId, display_order: i }))));
-      if (commissions.length) inserts.push(supabase.from('salary_template_commissions').insert(commissions.map((c, i) => ({ ...c, template_id: templateId, tenant_id: tenantId, display_order: i }))));
+      if (commissions.length) inserts.push(supabase.from('salary_template_commissions').insert(commissions.map((c, i) => ({ ...c, target_id: c.target_id || null, template_id: templateId, tenant_id: tenantId, display_order: i }))));
       if (allowances.length) inserts.push(supabase.from('salary_template_allowances').insert(allowances.map((a, i) => ({ ...a, template_id: templateId, tenant_id: tenantId, display_order: i }))));
       if (holidays.length) inserts.push(supabase.from('salary_template_holidays').insert(holidays.map((h, i) => ({ ...h, template_id: templateId, tenant_id: tenantId, display_order: i }))));
       if (penalties.length) inserts.push(supabase.from('salary_template_penalties').insert(penalties.map((p, i) => ({ ...p, template_id: templateId, tenant_id: tenantId, display_order: i }))));
