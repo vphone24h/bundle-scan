@@ -698,6 +698,38 @@ Deno.serve(async (req) => {
           } else if (p.penalty_type === "violation") {
             count = 0; // manual
           }
+          else if (p.penalty_type === "kpi_not_met") {
+            // KPI không đạt: so sánh userRevenue với kpi_target
+            const target = Number(p.kpi_target || 0);
+            const tiers = Array.isArray(p.tiers) ? p.tiers : [];
+            if (target > 0) {
+              const achievedPct = (userRevenue / target) * 100;
+              if (achievedPct < 100) {
+                let penaltyAmt = 0;
+                if (tiers.length > 0) {
+                  // Find the smallest tier whose percent_achieved >= achievedPct
+                  const sortedTiers = [...tiers].sort((a: any, b: any) => Number(a.percent_achieved) - Number(b.percent_achieved));
+                  const matched = sortedTiers.find((t: any) => achievedPct <= Number(t.percent_achieved || 0));
+                  if (matched) penaltyAmt = Number(matched.penalty_amount || 0);
+                } else {
+                  penaltyAmt = Number(p.amount || 0);
+                }
+                if (penaltyAmt > 0) {
+                  totalPenalty += penaltyAmt;
+                  penaltyDetails.push({
+                    name: p.name || "Không đạt KPI",
+                    type: "kpi_not_met",
+                    count: 1,
+                    per_amount: penaltyAmt,
+                    amount: Math.round(penaltyAmt),
+                    detail: `KPI đạt ${achievedPct.toFixed(1)}% (${Math.round(userRevenue).toLocaleString('vi-VN')}đ / ${target.toLocaleString('vi-VN')}đ)`,
+                  });
+                }
+              }
+            }
+            // Skip the generic amount*count handler below
+            continue;
+          }
 
           penaltyFullDayAbsenceDays += fullDayCount;
           const amount = p.amount * count;
