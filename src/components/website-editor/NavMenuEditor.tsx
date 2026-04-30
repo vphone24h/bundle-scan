@@ -267,6 +267,7 @@ export function NavMenuEditor({ templateId, customNavItems, onChange }: NavMenuE
                     </div>
                   )}
 
+                  {pageView !== 'pricelist' && (<>
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-medium">Nội dung trang ({currentPageItems.length} mục)</Label>
                     <div className="flex gap-1">
@@ -306,6 +307,7 @@ export function NavMenuEditor({ templateId, customNavItems, onChange }: NavMenuE
                       </div>
                     ))}
                   </div>
+                  </>)}
 
                   {/* Installment rates editor */}
                   {pageView === 'installment' && (() => {
