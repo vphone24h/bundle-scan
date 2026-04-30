@@ -628,6 +628,7 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
                 <TableHead>HĐĐT</TableHead>
                 <TableHead>Còn lại</TableHead>
                 <TableHead>Công ty</TableHead>
+                <TableHead>Tính lãi</TableHead>
                 <TableHead>Ngày tạo</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
@@ -733,6 +734,25 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
                       <span className="text-xs">
                         {companies?.find(c => c.id === (tenant as any).company_id)?.name || '-'}
                       </span>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      {(() => {
+                        const cid = (tenant as any).company_id as string | null;
+                        const companyOn = cid ? !!companyInterestMap?.get(cid) : false;
+                        const tenantOn = !!(tenant as any).interest_enabled;
+                        return (
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={tenantOn}
+                              disabled={!companyOn || togglingInterest === tenant.id}
+                              onCheckedChange={(v) => handleToggleTenantInterest(tenant, v)}
+                            />
+                            {!companyOn && (
+                              <span className="text-[10px] text-muted-foreground">Cty tắt</span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell>
                       {format(new Date(tenant.created_at), 'dd/MM/yyyy', { locale: vi })}
