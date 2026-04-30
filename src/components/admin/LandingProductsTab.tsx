@@ -287,6 +287,7 @@ export function LandingProductsTab() {
   const deleteCat = useDeleteLandingProductCategory();
   const updateCat = useUpdateLandingProductCategory();
   const { data: products, isLoading: prodLoading } = useLandingProducts(tenantId);
+  const { data: reviewStatsMap = {} } = useAdminTenantReviewStats(tenantId);
   const createProduct = useCreateLandingProduct();
   const updateProduct = useUpdateLandingProduct();
   const deleteProduct = useDeleteLandingProduct();
