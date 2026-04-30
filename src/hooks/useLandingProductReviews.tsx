@@ -154,3 +154,41 @@ export function useTenantRatingStats(tenantId?: string | null) {
     staleTime: 1000 * 60,
   });
 }
+
+/**
+ * Admin: thống kê đầy đủ review theo product (kể cả ẩn) cho tenant
+ * - total, byStar {1..5}, fake, real
+ */
+export interface AdminProductReviewStats {
+  total: number;
+  byStar: Record<1 | 2 | 3 | 4 | 5, number>;
+  fake: number;
+  real: number;
+}
+export function useAdminTenantReviewStats(tenantId?: string | null) {
+  return useQuery({
+    queryKey: ['admin-landing-review-stats', tenantId],
+    queryFn: async () => {
+      const map: Record<string, AdminProductReviewStats> = {};
+      if (!tenantId) return map;
+      const { data, error } = await supabase
+        .from('landing_product_reviews' as any)
+        .select('product_id, rating, is_fake')
+        .eq('tenant_id', tenantId);
+      if (error) throw error;
+      (data || []).forEach((r: any) => {
+        const pid = r.product_id as string;
+        if (!map[pid]) {
+          map[pid] = { total: 0, byStar: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, fake: 0, real: 0 };
+        }
+        map[pid].total += 1;
+        const star = Math.max(1, Math.min(5, Number(r.rating || 0))) as 1 | 2 | 3 | 4 | 5;
+        map[pid].byStar[star] += 1;
+        if (r.is_fake) map[pid].fake += 1; else map[pid].real += 1;
+      });
+      return map;
+    },
+    enabled: !!tenantId,
+    staleTime: 1000 * 30,
+  });
+}
