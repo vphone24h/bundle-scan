@@ -331,7 +331,7 @@ export function useCreateStockCount() {
             existing.systemQuantity += quantity;
           } else {
             itemsMap.set(key, {
-              productId: null,
+              productId: product.id,
               productName: product.name,
               sku: product.sku,
               hasImei: false,
