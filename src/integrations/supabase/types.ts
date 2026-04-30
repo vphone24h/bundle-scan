@@ -5576,6 +5576,66 @@ export type Database = {
           },
         ]
       }
+      paid_leave_default_dates: {
+        Row: {
+          created_at: string
+          days_of_month: number[]
+          id: string
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          days_of_month?: number[]
+          id?: string
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          days_of_month?: number[]
+          id?: string
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      paid_leave_overrides: {
+        Row: {
+          created_at: string
+          id: string
+          leave_dates: string[]
+          month: number
+          tenant_id: string
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          leave_dates?: string[]
+          month: number
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          leave_dates?: string[]
+          month?: number
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
       payment_config: {
         Row: {
           company_id: string | null

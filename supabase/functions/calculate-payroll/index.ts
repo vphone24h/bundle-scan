@@ -175,6 +175,39 @@ Deno.serve(async (req) => {
     const allSaleItems = salesItemsRes.data || [];
     const approvedLeaveRequests = leaveRequestsRes.data || [];
 
+    // Load paid leave default schedules (lặp hàng tháng) + overrides cho period này
+    const periodYear = new Date(period.start_date).getFullYear();
+    const periodMonth = new Date(period.start_date).getMonth() + 1;
+    const [paidLeaveDefaultsRes, paidLeaveOverridesRes] = await Promise.all([
+      supabase.from("paid_leave_default_dates").select("user_id, days_of_month").eq("tenant_id", tenantId).in("user_id", scopedUserIds),
+      supabase.from("paid_leave_overrides").select("user_id, leave_dates").eq("tenant_id", tenantId).eq("year", periodYear).eq("month", periodMonth).in("user_id", scopedUserIds),
+    ]);
+    const paidLeaveDefaultMap = new Map<string, number[]>();
+    for (const r of (paidLeaveDefaultsRes.data || [])) {
+      paidLeaveDefaultMap.set((r as any).user_id, ((r as any).days_of_month as number[]) || []);
+    }
+    const paidLeaveOverrideMap = new Map<string, string[]>();
+    for (const r of (paidLeaveOverridesRes.data || [])) {
+      paidLeaveOverrideMap.set((r as any).user_id, ((r as any).leave_dates as string[]) || []);
+    }
+    /** Trả về Set các ngày (YYYY-MM-DD) là ngày nghỉ có lương cho user trong period */
+    function getPaidLeaveDatesForUser(userId: string): Set<string> {
+      const set = new Set<string>();
+      const override = paidLeaveOverrideMap.get(userId);
+      if (override && override.length > 0) {
+        for (const d of override) set.add(d);
+        return set;
+      }
+      const defaults = paidLeaveDefaultMap.get(userId) || [];
+      if (defaults.length === 0) return set;
+      for (let d = new Date(period.start_date); d <= new Date(period.end_date); d.setDate(d.getDate() + 1)) {
+        if (defaults.includes(d.getDate())) {
+          set.add(d.toISOString().split("T")[0]);
+        }
+      }
+      return set;
+    }
+
     // Build per-user maps of dates with approved late_arrival / early_leave waivers
     // Key: user_id + "_" + date(yyyy-MM-dd)
     const approvedLateArrivalKeys = new Set<string>();
@@ -332,9 +365,13 @@ Deno.serve(async (req) => {
         }
       }
       // Only count full-day OT if the day-off work was approved
-      const fullDayOTCount = userAttendance.filter((a: any) =>
-        a.check_in_time && a.status !== "absent" && !scheduledDates.has(a.date) && approvedDayOffDates.has(a.date)
-      ).length;
+      // Ngày nghỉ có lương cũng được coi như day-off: đi làm phải có duyệt OT mới được tính.
+      const paidLeaveDatesSet = getPaidLeaveDatesForUser(employee.user_id);
+      const fullDayOTCount = userAttendance.filter((a: any) => {
+        if (!a.check_in_time || a.status === "absent") return false;
+        const isDayOff = !scheduledDates.has(a.date) || paidLeaveDatesSet.has(a.date);
+        return isDayOff && approvedDayOffDates.has(a.date);
+      }).length;
 
       // Build day-by-day attendance details
       const attendanceDetails = userAttendance.map((a: any) => {

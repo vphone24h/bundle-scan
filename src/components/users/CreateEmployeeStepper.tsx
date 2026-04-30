@@ -51,6 +51,7 @@ export interface SalaryData {
   customBaseAmount?: number;
   allowances: { name: string; amount: number }[];
   deductions: { name: string; amount: number }[];
+  paidLeaveDaysOfMonth?: number[];
 }
 
 export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEmployeeStepperProps) {
@@ -123,7 +124,17 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
         return true;
       case 1: return true; // optional
       case 2: return true; // optional
-      case 3: return true; // optional
+      case 3: {
+        // Validate ngày nghỉ có lương phải bằng số ngày trong template
+        const tpl = salaryTemplates?.find(t => t.id === salaryData.templateId);
+        const required = (tpl as any)?.paid_leave_days_per_month || 0;
+        const chosen = salaryData.paidLeaveDaysOfMonth?.length || 0;
+        if (required > 0 && chosen !== required) {
+          toast.error(`Mẫu lương cho phép ${required} ngày nghỉ có lương/tháng. Bạn đang chọn ${chosen}. Vui lòng chọn đủ.`);
+          return false;
+        }
+        return true;
+      }
       default: return true;
     }
   };
@@ -196,6 +207,16 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
           allowances: salaryData.allowances,
           deductions: salaryData.deductions,
         });
+        if (error) throw error;
+      }
+
+      // Lưu lịch ngày nghỉ có lương mặc định (lặp hàng tháng)
+      if (salaryData.paidLeaveDaysOfMonth && salaryData.paidLeaveDaysOfMonth.length > 0) {
+        const { error } = await supabase.from('paid_leave_default_dates').upsert({
+          tenant_id: tenantId,
+          user_id: userId,
+          days_of_month: salaryData.paidLeaveDaysOfMonth,
+        }, { onConflict: 'tenant_id,user_id' });
         if (error) throw error;
       }
 
