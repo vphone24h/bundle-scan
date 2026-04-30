@@ -504,6 +504,7 @@ export function PayrollPeriodsTab() {
                 <TableRow>
                   <TableHead className="text-xs w-8"></TableHead>
                   <TableHead className="text-xs">Nhân viên</TableHead>
+                  <TableHead className="text-xs">Chi nhánh</TableHead>
                   <TableHead className="text-xs text-center">Ngày công</TableHead>
                   <TableHead className="text-xs text-center">Giờ công</TableHead>
                   <TableHead className="text-xs text-right">Lương chính</TableHead>
@@ -530,6 +531,7 @@ export function PayrollPeriodsTab() {
                           {isExpanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
                         </TableCell>
                         <TableCell className="text-xs font-medium max-w-[120px] truncate">{r.user_name || r.user_id?.slice(0, 8)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">{branchByUserId.get(r.user_id) || '—'}</TableCell>
                         <TableCell className="text-xs text-center">
                           <span className="font-medium">{r.total_work_days}</span>
                           <span className="text-muted-foreground">/{rec.expected_work_days || '-'}</span>
@@ -549,7 +551,7 @@ export function PayrollPeriodsTab() {
                       </TableRow>
                       {isExpanded && (
                         <TableRow key={`${r.id}-detail`}>
-                          <TableCell colSpan={11} className="p-0 bg-muted/30">
+                          <TableCell colSpan={12} className="p-0 bg-muted/30">
                             <InlinePayrollBreakdown record={r} periodName={period?.name} onExport={() => handleExportSingle(r)} />
                           </TableCell>
                         </TableRow>
