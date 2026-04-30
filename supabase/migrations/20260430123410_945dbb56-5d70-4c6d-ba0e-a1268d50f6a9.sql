@@ -1,0 +1,2 @@
+ALTER TABLE public.salary_template_allowances ADD COLUMN IF NOT EXISTS max_absent_days integer NOT NULL DEFAULT 0;
+COMMENT ON COLUMN public.salary_template_allowances.max_absent_days IS 'Số ngày vắng tối đa được nhận phụ cấp. 0 = không áp dụng (luôn nhận). >0 = nếu vắng vượt quá sẽ KHÔNG nhận phụ cấp này.';

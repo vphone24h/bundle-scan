@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
         .lte("created_at", period.end_date + "T23:59:59")
         .in("status", ["completed", "paid"]),
       supabase.from("export_receipt_items")
-        .select("receipt_id, product_id, product_name, category_id, sale_price, quantity")
+        .select("receipt_id, product_id, product_name, category_id, sale_price, quantity, imei")
         .eq("status", "active"),
       supabase.from("leave_requests")
         .select("user_id, leave_date_from, leave_date_to, status, request_type")
@@ -206,6 +206,19 @@ Deno.serve(async (req) => {
         }
       }
       return set;
+    }
+
+    // Load product import_price for gross_profit bonus calculation
+    const productIdsInSales = [...new Set(allSaleItems.map((it: any) => it.product_id).filter(Boolean))];
+    const productImportPriceMap = new Map<string, number>();
+    if (productIdsInSales.length > 0) {
+      const { data: prods } = await supabase
+        .from("products")
+        .select("id, import_price")
+        .in("id", productIdsInSales);
+      for (const p of (prods || [])) {
+        productImportPriceMap.set((p as any).id, Number((p as any).import_price || 0));
+      }
     }
 
     // Build per-user maps of dates with approved late_arrival / early_leave waivers
@@ -403,10 +416,16 @@ Deno.serve(async (req) => {
       // Aggregate sold items by product & category
       const soldByProduct = new Map<string, { name: string; qty: number; revenue: number }>();
       const soldByCategory = new Map<string, { qty: number; revenue: number }>();
+      let userGrossProfit = 0;
       for (const sale of userSales) {
         const items = saleItemsByReceipt[sale.id] || [];
         for (const item of items) {
           const lineTotal = (item.sale_price || 0) * (item.quantity || 1);
+          // Gross profit = (sale_price - import_price) * quantity
+          const importPrice = item.product_id ? (productImportPriceMap.get(item.product_id) || 0) : 0;
+          if (importPrice > 0) {
+            userGrossProfit += ((item.sale_price || 0) - importPrice) * (item.quantity || 1);
+          }
           // By product
           const pKey = item.product_id || item.product_name;
           const existing = soldByProduct.get(pKey) || { name: item.product_name, qty: 0, revenue: 0 };
@@ -517,8 +536,13 @@ Deno.serve(async (req) => {
               amount = b.calc_type === "percentage" ? branchRevenue * b.value / 100 : b.value;
             }
           } else if (b.bonus_type === "gross_profit") {
-            // Placeholder - needs import price data for profit calc
-            amount = 0;
+            // Lợi nhuận gộp: (giá bán - giá nhập) × SL của các đơn NV bán
+            const threshold = b.threshold || 0;
+            if (userGrossProfit >= threshold) {
+              amount = b.calc_type === "percentage"
+                ? userGrossProfit * b.value / 100
+                : b.value;
+            }
           }
           if (amount > 0) {
             totalBonus += amount;
@@ -526,7 +550,7 @@ Deno.serve(async (req) => {
               name: b.name,
               type: b.bonus_type,
               amount: Math.round(amount),
-              revenue: b.bonus_type === "kpi_personal" ? userRevenue : b.bonus_type === "kpi_branch" ? branchRevenue : undefined,
+              revenue: b.bonus_type === "kpi_personal" ? userRevenue : b.bonus_type === "kpi_branch" ? branchRevenue : b.bonus_type === "gross_profit" ? userGrossProfit : undefined,
               threshold: b.threshold || undefined,
             });
           }
@@ -609,9 +633,35 @@ Deno.serve(async (req) => {
       let totalAllowance = 0;
       const allowanceDetailsV2: any[] = [];
       if (isPayrollReady && template?.allowance_enabled) {
+        // Tính tổng số ngày vắng (recorded absent + scheduled no-show) cho rule max_absent_days
+        const absentRecordedForAllow = userAttendance.filter((a: any) => a.status === "absent").length;
+        let absentNoShowForAllow = 0;
+        for (const dateStr of scheduledDates) {
+          const hasRecord = userAttendance.some((a: any) => a.date === dateStr);
+          if (hasRecord) continue;
+          const dateObj = new Date(dateStr);
+          const today = new Date();
+          today.setHours(23, 59, 59, 999);
+          if (dateObj > today) continue;
+          absentNoShowForAllow++;
+        }
+        const totalAbsentForAllow = absentRecordedForAllow + absentNoShowForAllow;
+
         const tAllows = allowsByTemplate[templateId] || [];
         for (const a of tAllows) {
           let amount = 0;
+          const maxAbsent = Number((a as any).max_absent_days || 0);
+          // Nếu cấu hình giới hạn vắng và NV vắng vượt → bỏ phụ cấp này
+          if (maxAbsent > 0 && totalAbsentForAllow > maxAbsent) {
+            allowanceDetailsV2.push({
+              name: a.name,
+              amount: 0,
+              type: a.is_fixed ? "fixed" : "per_day",
+              days: a.is_fixed ? null : workDays,
+              skipped_reason: `Vắng ${totalAbsentForAllow} ngày > ${maxAbsent} ngày cho phép`,
+            });
+            continue;
+          }
           if (a.is_fixed) {
             amount = a.amount;
           } else {

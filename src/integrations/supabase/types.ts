@@ -7484,6 +7484,7 @@ export type Database = {
           display_order: number
           id: string
           is_fixed: boolean
+          max_absent_days: number
           name: string
           template_id: string
           tenant_id: string
@@ -7495,6 +7496,7 @@ export type Database = {
           display_order?: number
           id?: string
           is_fixed?: boolean
+          max_absent_days?: number
           name?: string
           template_id: string
           tenant_id: string
@@ -7506,6 +7508,7 @@ export type Database = {
           display_order?: number
           id?: string
           is_fixed?: boolean
+          max_absent_days?: number
           name?: string
           template_id?: string
           tenant_id?: string
