@@ -659,6 +659,13 @@ Deno.serve(async (req) => {
           if (amount > 0) {
             totalBonus += amount;
             const bd = (b as any)._breakdown || null;
+            // For revenue-based bonuses, attach product list for popup detail
+            let bonusProducts: any[] = [];
+            if (b.bonus_type === "kpi_personal" || b.bonus_type === "gross_profit") {
+              bonusProducts = Array.from(soldByProduct.values())
+                .sort((a, b2) => b2.revenue - a.revenue)
+                .map(p => ({ name: p.name, qty: p.qty, revenue: p.revenue }));
+            }
             bonusDetails.push({
               name: b.name,
               type: b.bonus_type,
@@ -674,6 +681,7 @@ Deno.serve(async (req) => {
                 calc_type: bd.matchedTier.calc_type,
                 value: Number(bd.matchedTier.value || 0),
               } : null,
+              products: bonusProducts,
             });
           }
         }
