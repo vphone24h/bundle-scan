@@ -78,6 +78,7 @@ Deno.serve(async (req) => {
       overtimeRequestsRes,
       salesRes,
       salesItemsRes,
+      leaveRequestsRes,
     ] = await Promise.all([
       supabase.from("platform_users").select("user_id, email, display_name").eq("tenant_id", tenant_id),
       supabase.from("user_roles").select("user_id, user_role, branch_id, tenant_id").eq("tenant_id", tenant_id),
@@ -101,6 +102,12 @@ Deno.serve(async (req) => {
       supabase.from("export_receipt_items")
         .select("receipt_id, product_id, product_name, category_id, sale_price, quantity")
         .eq("status", "active"),
+      supabase.from("leave_requests")
+        .select("user_id, leave_date_from, leave_date_to, status, request_type")
+        .eq("tenant_id", tenant_id)
+        .eq("status", "approved")
+        .lte("leave_date_from", period.end_date)
+        .gte("leave_date_to", period.start_date),
     ]);
 
     [
@@ -166,6 +173,25 @@ Deno.serve(async (req) => {
     const approvedOvertimeRequests = overtimeRequestsRes.data || [];
     const allSales = salesRes.data || [];
     const allSaleItems = salesItemsRes.data || [];
+    const approvedLeaveRequests = leaveRequestsRes.data || [];
+
+    // Build per-user maps of dates with approved late_arrival / early_leave waivers
+    // Key: user_id + "_" + date(yyyy-MM-dd)
+    const approvedLateArrivalKeys = new Set<string>();
+    const approvedEarlyLeaveKeys = new Set<string>();
+    for (const lr of approvedLeaveRequests) {
+      const rType = (lr as any).request_type || 'full_day';
+      if (rType !== 'late_arrival' && rType !== 'early_leave') continue;
+      // Iterate dates from -> to
+      const start = new Date(lr.leave_date_from);
+      const end = new Date(lr.leave_date_to);
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const ds = d.toISOString().split("T")[0];
+        const key = `${lr.user_id}_${ds}`;
+        if (rType === 'late_arrival') approvedLateArrivalKeys.add(key);
+        else approvedEarlyLeaveKeys.add(key);
+      }
+    }
 
     // Map sale items by receipt_id
     const saleItemsByReceipt = groupBy(allSaleItems, "receipt_id");
