@@ -210,14 +210,17 @@ Deno.serve(async (req) => {
 
     // Load product import_price for gross_profit bonus calculation
     const productIdsInSales = [...new Set(allSaleItems.map((it: any) => it.product_id).filter(Boolean))];
-    const productImportPriceMap = new Map<string, number>();
+    const productInfoMap = new Map<string, { import_price: number; category_id: string | null }>();
     if (productIdsInSales.length > 0) {
       const { data: prods } = await supabase
         .from("products")
-        .select("id, import_price")
+        .select("id, import_price, category_id")
         .in("id", productIdsInSales);
       for (const p of (prods || [])) {
-        productImportPriceMap.set((p as any).id, Number((p as any).import_price || 0));
+        productInfoMap.set((p as any).id, {
+          import_price: Number((p as any).import_price || 0),
+          category_id: (p as any).category_id || null,
+        });
       }
     }
 
@@ -246,11 +249,19 @@ Deno.serve(async (req) => {
     // also captures sales tagged with leaf categories (e.g. "iPhone 15", "iPhone 15 Pro").
     const { data: categoriesData } = await supabase
       .from("categories")
-      .select("id, parent_id")
+      .select("id, parent_id, name")
       .eq("tenant_id", tenant_id);
     const categoryParentMap = new Map<string, string | null>();
+    const categoryNameMap = new Map<string, string>();
     for (const c of (categoriesData || [])) {
       categoryParentMap.set((c as any).id, (c as any).parent_id || null);
+      categoryNameMap.set((c as any).id, String((c as any).name || ""));
+    }
+    function normalizeText(value: string | null | undefined): string {
+      return String(value || "")
+        .trim()
+        .toLocaleLowerCase("vi-VN")
+        .normalize("NFC");
     }
     /** Trả về tất cả id tổ tiên (bao gồm chính nó) của 1 category */
     function getCategoryAncestors(catId: string | null | undefined): string[] {
