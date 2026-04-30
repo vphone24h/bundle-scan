@@ -255,6 +255,13 @@ export function EmployeeSetupTab() {
           if (!selectedTemplate?.enable_overtime && selectedEmployee.hasSchedule) {
             toast.warning('Tăng ca đang tắt — lịch làm việc đã xếp sẽ không được dùng để tính lương. Hệ thống chỉ tính theo giờ check-in/check-out thực tế.');
           }
+
+          // Validate ngày nghỉ có lương phải bằng số ngày trong template
+          const requiredLeaveDays = (selectedTemplate as any)?.paid_leave_days_per_month || 0;
+          const chosenLeaveDays = salaryData.paidLeaveDaysOfMonth?.length || 0;
+          if (requiredLeaveDays > 0 && chosenLeaveDays !== requiredLeaveDays) {
+            throw new Error(`Mẫu lương cho phép ${requiredLeaveDays} ngày nghỉ có lương/tháng. Bạn đang chọn ${chosenLeaveDays}. Vui lòng chọn đủ trong phần "Ngày nghỉ có lương".`);
+          }
         }
 
         const salaryPayload = {
@@ -270,6 +277,18 @@ export function EmployeeSetupTab() {
           .from('employee_salary_configs')
           .upsert(salaryPayload, { onConflict: 'tenant_id,user_id' });
         if (error) throw error;
+
+        // Lưu lịch ngày nghỉ có lương mặc định (lặp hàng tháng)
+        if (salaryData.paidLeaveDaysOfMonth && salaryData.paidLeaveDaysOfMonth.length > 0) {
+          const { error: leaveErr } = await supabase
+            .from('paid_leave_default_dates')
+            .upsert({
+              tenant_id: tenantId,
+              user_id: selectedEmployee.userId,
+              days_of_month: salaryData.paidLeaveDaysOfMonth,
+            }, { onConflict: 'tenant_id,user_id' });
+          if (leaveErr) throw leaveErr;
+        }
 
         updateEmployeeProgress(selectedEmployee.userId, {
           hasSalary: true,
