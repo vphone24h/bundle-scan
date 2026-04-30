@@ -355,11 +355,11 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                         </SelectContent>
                       </Select>
                     </div>
-                    {(b.bonus_type === 'kpi_personal' || b.bonus_type === 'kpi_branch' || b.bonus_type === 'branch_revenue' || b.bonus_type === 'gross_profit') && (
+                    {(b.bonus_type === 'kpi_personal' || b.bonus_type === 'branch_revenue' || b.bonus_type === 'branch_revenue' || b.bonus_type === 'gross_profit') && (
                       <div className="space-y-1">
                         <Label className="text-xs">
                           {b.bonus_type === 'kpi_personal' ? 'Doanh số cá nhân đạt (VNĐ)'
-                            : b.bonus_type === 'kpi_branch' ? 'Doanh thu chi nhánh đạt (VNĐ)'
+                            : b.bonus_type === 'branch_revenue' ? 'Doanh thu chi nhánh đạt (VNĐ)'
                             : b.bonus_type === 'gross_profit' ? 'Lợi nhuận gộp đạt (VNĐ)'
                             : 'Mức tối thiểu (VNĐ)'}
                         </Label>
@@ -375,7 +375,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
-                {(b.bonus_type === 'kpi_personal' || b.bonus_type === 'kpi_branch' || b.bonus_type === 'gross_profit') && (
+                {(b.bonus_type === 'kpi_personal' || b.bonus_type === 'branch_revenue' || b.bonus_type === 'gross_profit') && (
                   <div className="border-t pt-2 mt-2 space-y-2">
                     <div className="flex items-center justify-between">
                       <Label className="text-xs font-medium">
@@ -418,7 +418,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                       <p className="text-[10px] text-muted-foreground">
                         💡 <strong>Vượt (%)</strong> = % vượt thêm so với mức cơ bản. VD: mục tiêu 50tr, "Vượt 100%" nghĩa là đạt 100tr (vượt thêm 50tr = 100% mục tiêu).<br/>
                         <strong>CỘNG DỒN</strong>: Tổng thưởng = Thưởng cơ bản (khi đạt mục tiêu) <strong>+</strong> "Thưởng thêm" của mức vượt cao nhất đạt được.<br/>
-                        {b.bonus_type === 'kpi_branch' && <>📍 Doanh thu chi nhánh tính theo chi nhánh nhân viên đó đang làm việc.<br/></>}
+                        {b.bonus_type === 'branch_revenue' && <>📍 Doanh thu chi nhánh tính theo chi nhánh nhân viên đó đang làm việc.<br/></>}
                         {b.bonus_type === 'gross_profit' && <>📍 Lợi nhuận gộp = (Giá bán - Giá nhập) × SL của các đơn nhân viên đó bán.<br/></>}
                       </p>
                     )}
