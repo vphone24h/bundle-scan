@@ -530,33 +530,30 @@ Deno.serve(async (req) => {
               : b.value * overtimeHours;
           } else if (b.bonus_type === "kpi_personal") {
             // KPI cá nhân: so sánh doanh thu cá nhân với ngưỡng (threshold = mức đạt KPI 100%)
-            // QUY TẮC: KHÔNG cộng dồn — chỉ áp dụng 1 mức duy nhất (mức cao nhất NV đạt được).
-            // - Nếu có tiers: tier có "Vượt KPI (%)" tính theo % VƯỢT THÊM so với threshold
-            //   (VD: threshold=50tr, tier 100% nghĩa là đạt 100tr = vượt thêm 100%).
-            //   Tier 0% = vừa đạt KPI. Chọn tier cao nhất NV match → thay thế thưởng cơ bản.
-            // - Nếu không có tiers: dùng thưởng cơ bản khi userRevenue >= threshold.
+            // QUY TẮC CỘNG DỒN:
+            //  - Khi đạt KPI (userRevenue >= threshold): nhận thưởng cơ bản (baseAmt).
+            //  - Khi vượt thêm theo từng mức tier: cộng thêm "Thưởng thêm" của mức cao nhất NV đạt.
+            //  - Tier có "Vượt KPI (%)" = % VƯỢT THÊM so với threshold (VD threshold=50tr,
+            //    "Vượt 100%" nghĩa là đạt 100tr — tức vượt thêm 50tr = 100% của KPI).
+            //  → Tổng = baseAmt + tier cao nhất matched (cộng dồn, KHÔNG thay thế).
             const threshold = b.threshold || 0;
             const baseAmt = (threshold > 0 && userRevenue >= threshold)
               ? (b.calc_type === "percentage" ? userRevenue * b.value / 100 : b.value)
               : 0;
 
+            let tierAmt = 0;
             const tiers = Array.isArray(b.tiers) ? b.tiers : [];
             if (tiers.length > 0 && threshold > 0 && userRevenue >= threshold) {
               const overPercent = ((userRevenue - threshold) / threshold) * 100;
               const sortedTiers = [...tiers].sort((a: any, b2: any) => Number(b2.percent_over) - Number(a.percent_over));
               const matched = sortedTiers.find((t: any) => overPercent >= Number(t.percent_over || 0));
               if (matched) {
-                const tierAmt = matched.calc_type === "percentage"
+                tierAmt = matched.calc_type === "percentage"
                   ? userRevenue * Number(matched.value || 0) / 100
                   : Number(matched.value || 0);
-                // KHÔNG cộng dồn: tier thay thế thưởng cơ bản (lấy mức cao hơn để có lợi cho NV)
-                amount = Math.max(baseAmt, tierAmt);
-              } else {
-                amount = baseAmt;
               }
-            } else {
-              amount = baseAmt;
             }
+            amount = baseAmt + tierAmt;
           } else if (b.bonus_type === "kpi_branch") {
             // KPI chi nhánh: so sánh doanh thu chi nhánh với ngưỡng
             const threshold = b.threshold || 0;
