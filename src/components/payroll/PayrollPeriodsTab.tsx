@@ -825,6 +825,48 @@ function BreakdownItem({ label, detail, amount, positive, negative }: {
   );
 }
 
+// Mô tả công thức cho từng loại thưởng
+function describeBonus(b: any): string {
+  const t = b.type;
+  const rev = b.revenue ? `${formatNumber(b.revenue)}đ` : '';
+  const thr = b.threshold ? `${formatNumber(b.threshold)}đ` : '';
+  if (t === 'kpi_personal') {
+    if (b.threshold && b.revenue) {
+      const pct = Math.round((b.revenue / b.threshold) * 100);
+      return `KPI cá nhân: DT ${rev} / mục tiêu ${thr} → đạt ${pct}%`;
+    }
+    return `KPI cá nhân: DT ${rev}`;
+  }
+  if (t === 'kpi_branch') {
+    return `KPI chi nhánh: DT ${rev}${thr ? ` / mục tiêu ${thr}` : ''}`;
+  }
+  if (t === 'gross_profit') {
+    return `Lợi nhuận gộp: ${rev}${thr ? ` / mục tiêu ${thr}` : ''}`;
+  }
+  if (t === 'overtime') return 'Thưởng tăng ca';
+  if (t === 'fixed') return 'Thưởng cố định';
+  return t || '';
+}
+
+// Mô tả công thức hoa hồng
+function describeCommission(c: any): string {
+  const isPct = c.calc_type === 'percentage';
+  const rate = c.rate ?? 0;
+  if (c.target_type === 'category') {
+    if (isPct) return `Danh mục: ${formatNumber(c.revenue || 0)}đ × ${rate}% (${c.qty || 0} đơn)`;
+    return `Danh mục: ${c.qty || 0} đơn × ${formatNumber(rate)}đ/đơn`;
+  }
+  if (c.target_type === 'product' || c.target_type === 'service') {
+    if (isPct) return `Sản phẩm: ${formatNumber(c.revenue || 0)}đ × ${rate}% (${c.qty || 0} đơn)`;
+    return `Sản phẩm: ${c.qty || 0} đơn × ${formatNumber(rate)}đ/đơn`;
+  }
+  if (c.target_type === 'revenue') {
+    if (isPct) return `Doanh thu: ${formatNumber(c.revenue || 0)}đ × ${rate}%`;
+    return `Doanh thu cố định: ${formatNumber(rate)}đ`;
+  }
+  return c.target_type || '';
+}
+
 function AttendanceStatusBadge({ status, lateMinutes }: { status: string; lateMinutes: number }) {
   if (status === 'absent') return <Badge variant="destructive" className="text-[9px] px-1 py-0">Vắng</Badge>;
   if (status === 'late') return (
