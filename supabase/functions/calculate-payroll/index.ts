@@ -456,12 +456,16 @@ Deno.serve(async (req) => {
           existing.qty += item.quantity || 1;
           existing.revenue += lineTotal;
           soldByProduct.set(pKey, existing);
-          // By category
+          // By category — propagate to ALL ancestor categories so a commission rule
+          // attached to a parent ("iPhone") includes sales of leaf categories ("iPhone 15 Pro", ...)
           if (item.category_id) {
-            const cExisting = soldByCategory.get(item.category_id) || { qty: 0, revenue: 0 };
-            cExisting.qty += item.quantity || 1;
-            cExisting.revenue += lineTotal;
-            soldByCategory.set(item.category_id, cExisting);
+            const ancestors = getCategoryAncestors(item.category_id);
+            for (const cid of ancestors) {
+              const cExisting = soldByCategory.get(cid) || { qty: 0, revenue: 0 };
+              cExisting.qty += item.quantity || 1;
+              cExisting.revenue += lineTotal;
+              soldByCategory.set(cid, cExisting);
+            }
           }
         }
       }
