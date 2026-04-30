@@ -588,19 +588,45 @@ Deno.serve(async (req) => {
             }
             amount = baseAmt + tierAmt;
           } else if (b.bonus_type === "kpi_branch") {
-            // KPI chi nhánh: so sánh doanh thu chi nhánh với ngưỡng
+            // KPI chi nhánh: so sánh doanh thu chi nhánh (theo branch của NV) với ngưỡng
+            // CỘNG DỒN: thưởng cơ bản + tier vượt cao nhất (giống kpi_personal)
             const threshold = b.threshold || 0;
-            if (branchRevenue >= threshold && threshold > 0) {
-              amount = b.calc_type === "percentage" ? branchRevenue * b.value / 100 : b.value;
+            const baseAmt = (threshold > 0 && branchRevenue >= threshold)
+              ? (b.calc_type === "percentage" ? branchRevenue * b.value / 100 : b.value)
+              : 0;
+            let tierAmt = 0;
+            const tiers = Array.isArray(b.tiers) ? b.tiers : [];
+            if (tiers.length > 0 && threshold > 0 && branchRevenue >= threshold) {
+              const overPercent = ((branchRevenue - threshold) / threshold) * 100;
+              const sortedTiers = [...tiers].sort((a: any, b2: any) => Number(b2.percent_over) - Number(a.percent_over));
+              const matched = sortedTiers.find((t: any) => overPercent >= Number(t.percent_over || 0));
+              if (matched) {
+                tierAmt = matched.calc_type === "percentage"
+                  ? branchRevenue * Number(matched.value || 0) / 100
+                  : Number(matched.value || 0);
+              }
             }
+            amount = baseAmt + tierAmt;
           } else if (b.bonus_type === "gross_profit") {
-            // Lợi nhuận gộp: (giá bán - giá nhập) × SL của các đơn NV bán
+            // Lợi nhuận gộp cá nhân: (giá bán - giá nhập) × SL của các đơn NV bán
+            // CỘNG DỒN: thưởng cơ bản + tier vượt cao nhất
             const threshold = b.threshold || 0;
-            if (userGrossProfit >= threshold) {
-              amount = b.calc_type === "percentage"
-                ? userGrossProfit * b.value / 100
-                : b.value;
+            const baseAmt = (threshold > 0 && userGrossProfit >= threshold)
+              ? (b.calc_type === "percentage" ? userGrossProfit * b.value / 100 : b.value)
+              : 0;
+            let tierAmt = 0;
+            const tiers = Array.isArray(b.tiers) ? b.tiers : [];
+            if (tiers.length > 0 && threshold > 0 && userGrossProfit >= threshold) {
+              const overPercent = ((userGrossProfit - threshold) / threshold) * 100;
+              const sortedTiers = [...tiers].sort((a: any, b2: any) => Number(b2.percent_over) - Number(a.percent_over));
+              const matched = sortedTiers.find((t: any) => overPercent >= Number(t.percent_over || 0));
+              if (matched) {
+                tierAmt = matched.calc_type === "percentage"
+                  ? userGrossProfit * Number(matched.value || 0) / 100
+                  : Number(matched.value || 0);
+              }
             }
+            amount = baseAmt + tierAmt;
           }
           if (amount > 0) {
             totalBonus += amount;
