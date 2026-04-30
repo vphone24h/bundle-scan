@@ -274,7 +274,9 @@ export function EmployeeSetupTab() {
           }
 
           // Validate ngày nghỉ có lương phải bằng số ngày trong template
-          const requiredLeaveDays = (selectedTemplate as any)?.paid_leave_days_per_month || 0;
+          // Chỉ áp dụng cho lương cố định theo tháng (fixed). Lương theo giờ/ngày/ca không có chế độ nghỉ có lương.
+          const isFixedSalary = (selectedTemplate as any)?.salary_type === 'fixed';
+          const requiredLeaveDays = isFixedSalary ? ((selectedTemplate as any)?.paid_leave_days_per_month || 0) : 0;
           const chosenLeaveDays = salaryData.paidLeaveDaysOfMonth?.length || 0;
           if (requiredLeaveDays > 0 && chosenLeaveDays !== requiredLeaveDays) {
             throw new Error(`Mẫu lương cho phép ${requiredLeaveDays} ngày nghỉ có lương/tháng. Bạn đang chọn ${chosenLeaveDays}. Vui lòng chọn đủ trong phần "Ngày nghỉ có lương".`);
