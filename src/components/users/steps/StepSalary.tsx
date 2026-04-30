@@ -126,7 +126,14 @@ export function StepSalary({ salaryData, onChange, templates }: Props) {
         <PaidLeaveDaysPicker
           requiredDays={requiredLeaveDays}
           selectedDays={salaryData.paidLeaveDaysOfMonth || []}
-          onChange={(days) => onChange({ ...salaryData, paidLeaveDaysOfMonth: days })}
+          referenceMonth={salaryData.paidLeaveReferenceMonth || new Date().toISOString().slice(0, 7)}
+          overrides={salaryData.paidLeaveOverrides || {}}
+          onChange={({ defaultDays, referenceMonth, overrides }) => onChange({
+            ...salaryData,
+            paidLeaveDaysOfMonth: defaultDays,
+            paidLeaveReferenceMonth: referenceMonth,
+            paidLeaveOverrides: overrides,
+          })}
         />
       )}
 
