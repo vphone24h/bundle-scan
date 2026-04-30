@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Copy } from 'lucide-react';
-import { format, addDays, startOfWeek, eachDayOfInterval, subWeeks } from 'date-fns';
+import { format, addDays, startOfWeek, eachDayOfInterval, subWeeks, startOfMonth, endOfMonth, addMonths, startOfYear, endOfYear, addYears } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import type { ScheduleData } from '../CreateEmployeeStepper';
 
@@ -28,13 +28,36 @@ const DAY_LABELS: Record<string, string> = {
 export function StepSchedule({ scheduleData, onChange, shifts, selectedShiftId, existingDailyAssignments }: Props) {
   const selectedShift = shifts.find(s => s.id === selectedShiftId);
 
-  // Weekly mode state
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  // Weekly mode: range type (week | month | year)
+  const [rangeType, setRangeType] = useState<'week' | 'month' | 'year'>('week');
+  const [anchorDate, setAnchorDate] = useState<Date>(() => new Date());
 
-  const weekDays = useMemo(
-    () => eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) }),
-    [weekStart]
+  const { rangeStart, rangeEnd, rangeLabel } = useMemo(() => {
+    if (rangeType === 'week') {
+      const s = startOfWeek(anchorDate, { weekStartsOn: 1 });
+      const e = addDays(s, 6);
+      return { rangeStart: s, rangeEnd: e, rangeLabel: `${format(s, 'dd/MM')} - ${format(e, 'dd/MM/yyyy')}` };
+    }
+    if (rangeType === 'month') {
+      const s = startOfMonth(anchorDate);
+      const e = endOfMonth(anchorDate);
+      return { rangeStart: s, rangeEnd: e, rangeLabel: format(s, 'MM/yyyy') };
+    }
+    const s = startOfYear(anchorDate);
+    const e = endOfYear(anchorDate);
+    return { rangeStart: s, rangeEnd: e, rangeLabel: format(s, 'yyyy') };
+  }, [rangeType, anchorDate]);
+
+  const rangeDays = useMemo(
+    () => eachDayOfInterval({ start: rangeStart, end: rangeEnd }),
+    [rangeStart, rangeEnd]
   );
+
+  const moveRange = (dir: -1 | 1) => {
+    if (rangeType === 'week') setAnchorDate(prev => addDays(prev, dir * 7));
+    else if (rangeType === 'month') setAnchorDate(prev => addMonths(prev, dir));
+    else setAnchorDate(prev => addYears(prev, dir));
+  };
 
   // Build map of existing assignments for quick lookup
   const existingMap = useMemo(() => {
@@ -53,28 +76,61 @@ export function StepSchedule({ scheduleData, onChange, shifts, selectedShiftId, 
     onChange({ ...scheduleData, weeklyDays });
   };
 
-  const handleCopyLastWeek = () => {
-    const lastWeekStart = subWeeks(weekStart, 1);
-    const lastWeekDays = eachDayOfInterval({ start: lastWeekStart, end: addDays(lastWeekStart, 6) });
+  /** Áp dụng nhanh ca đã chọn (selectedShiftId) cho toàn bộ ngày trong khoảng đang xem */
+  const handleFillRange = () => {
+    if (!selectedShiftId) return;
     const weeklyDays = { ...(scheduleData.weeklyDays || {}) };
+    rangeDays.forEach(d => { weeklyDays[format(d, 'yyyy-MM-dd')] = selectedShiftId; });
+    onChange({ ...scheduleData, weeklyDays });
+  };
 
-    lastWeekDays.forEach((lastDay, idx) => {
-      const lastDateStr = format(lastDay, 'yyyy-MM-dd');
-      const currentDateStr = format(weekDays[idx], 'yyyy-MM-dd');
-      const shiftFromLast = weeklyDays[lastDateStr] || existingMap.get(lastDateStr);
-      if (shiftFromLast) {
-        weeklyDays[currentDateStr] = shiftFromLast;
-      } else {
-        delete weeklyDays[currentDateStr];
-      }
+  /** Xóa toàn bộ ca trong khoảng đang xem (đặt về Nghỉ) */
+  const handleClearRange = () => {
+    const weeklyDays = { ...(scheduleData.weeklyDays || {}) };
+    rangeDays.forEach(d => { delete weeklyDays[format(d, 'yyyy-MM-dd')]; });
+    onChange({ ...scheduleData, weeklyDays });
+  };
+
+  /** Copy lịch từ kỳ trước (tuần/tháng/năm trước) sang kỳ hiện tại theo offset */
+  const handleCopyPrev = () => {
+    const offsetDays = rangeType === 'week' ? -7 : 0;
+    const prevStart = rangeType === 'week'
+      ? subWeeks(rangeStart, 1)
+      : rangeType === 'month'
+        ? startOfMonth(addMonths(rangeStart, -1))
+        : startOfYear(addYears(rangeStart, -1));
+    const prevEnd = rangeType === 'week'
+      ? addDays(prevStart, 6)
+      : rangeType === 'month'
+        ? endOfMonth(prevStart)
+        : endOfYear(prevStart);
+    const prevDays = eachDayOfInterval({ start: prevStart, end: prevEnd });
+    const weeklyDays = { ...(scheduleData.weeklyDays || {}) };
+    // Map theo index ngày (giữ thứ tự dd)
+    rangeDays.forEach((d, idx) => {
+      const src = prevDays[idx];
+      if (!src) return;
+      const srcStr = format(src, 'yyyy-MM-dd');
+      const dstStr = format(d, 'yyyy-MM-dd');
+      const shiftFromPrev = weeklyDays[srcStr] || existingMap.get(srcStr);
+      if (shiftFromPrev) weeklyDays[dstStr] = shiftFromPrev;
+      else delete weeklyDays[dstStr];
     });
-
+    void offsetDays;
     onChange({ ...scheduleData, weeklyDays });
   };
 
   const getWeeklyShiftForDate = (dateStr: string): string => {
     return scheduleData.weeklyDays?.[dateStr] || existingMap.get(dateStr) || '_off';
   };
+
+  // Đếm số ngày đã xếp trong khoảng đang xem
+  const assignedCount = useMemo(() => {
+    return rangeDays.filter(d => {
+      const v = getWeeklyShiftForDate(format(d, 'yyyy-MM-dd'));
+      return v !== '_off';
+    }).length;
+  }, [rangeDays, scheduleData.weeklyDays, existingMap]);
 
   return (
     <div className="space-y-4">
@@ -88,7 +144,7 @@ export function StepSchedule({ scheduleData, onChange, shifts, selectedShiftId, 
           <SelectContent>
             <SelectItem value="fixed">Cố định (cùng ca mỗi ngày)</SelectItem>
             <SelectItem value="custom">Tùy chỉnh (khác ca mỗi ngày)</SelectItem>
-            <SelectItem value="weekly">Theo tuần (xếp lịch cụ thể)</SelectItem>
+            <SelectItem value="weekly">Theo lịch cụ thể (Tuần/Tháng/Năm)</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -132,52 +188,69 @@ export function StepSchedule({ scheduleData, onChange, shifts, selectedShiftId, 
       ) : (
         /* Weekly mode */
         <div className="space-y-3">
-          {/* Week navigation */}
+          {/* Range type toggle */}
+          <div className="flex items-center gap-1 rounded-md border p-0.5 bg-muted/30 w-fit">
+            {(['week', 'month', 'year'] as const).map(t => (
+              <Button
+                key={t}
+                variant={rangeType === t ? 'default' : 'ghost'}
+                size="sm"
+                className="h-7 text-xs px-3"
+                onClick={() => setRangeType(t)}
+              >
+                {t === 'week' ? 'Tuần' : t === 'month' ? 'Tháng' : 'Năm'}
+              </Button>
+            ))}
+          </div>
+
+          {/* Range navigator */}
           <div className="flex items-center justify-between">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setWeekStart(prev => addDays(prev, -7))}
-            >
+            <Button variant="outline" size="sm" onClick={() => moveRange(-1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm font-medium">
-              {format(weekStart, 'dd/MM', { locale: vi })} - {format(addDays(weekStart, 6), 'dd/MM/yyyy', { locale: vi })}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setWeekStart(prev => addDays(prev, 7))}
-            >
+            <div className="text-center">
+              <div className="text-sm font-medium">{rangeLabel}</div>
+              <div className="text-[11px] text-muted-foreground">
+                Đã xếp {assignedCount}/{rangeDays.length} ngày
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => moveRange(1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
 
-          {/* Copy last week */}
-          <Button variant="outline" size="sm" className="w-full" onClick={handleCopyLastWeek}>
-            <Copy className="h-3.5 w-3.5 mr-1.5" />
-            Copy tuần trước
-          </Button>
+          {/* Bulk actions */}
+          <div className="grid grid-cols-3 gap-2">
+            <Button variant="outline" size="sm" className="text-xs" onClick={handleFillRange} disabled={!selectedShiftId}>
+              Áp ca cho cả kỳ
+            </Button>
+            <Button variant="outline" size="sm" className="text-xs" onClick={handleCopyPrev}>
+              <Copy className="h-3 w-3 mr-1" /> Copy kỳ trước
+            </Button>
+            <Button variant="outline" size="sm" className="text-xs text-destructive" onClick={handleClearRange}>
+              Xóa hết (nghỉ)
+            </Button>
+          </div>
 
-          {/* Days */}
-          <div className="space-y-2">
-            {weekDays.map(day => {
+          {/* Days list (scrollable for long ranges) */}
+          <div className={`space-y-1.5 ${rangeType === 'week' ? '' : 'max-h-[420px] overflow-y-auto pr-1 border rounded-md p-2'}`}>
+            {rangeDays.map(day => {
               const dateStr = format(day, 'yyyy-MM-dd');
-              const dayLabel = format(day, 'EEEE', { locale: vi });
-              const dateLabel = format(day, 'dd/MM');
+              const dayLabel = format(day, 'EEE', { locale: vi });
+              const dateLabel = format(day, 'dd/MM/yyyy');
               const currentValue = getWeeklyShiftForDate(dateStr);
+              const isOff = currentValue === '_off';
 
               return (
-                <div key={dateStr} className="flex items-center gap-3">
-                  <div className="min-w-[80px]">
-                    <p className="text-sm font-medium capitalize">{dayLabel}</p>
-                    <p className="text-xs text-muted-foreground">{dateLabel}</p>
+                <div key={dateStr} className={`flex items-center gap-2 rounded-md px-2 py-1 ${isOff ? 'bg-muted/30' : 'bg-primary/5'}`}>
+                  <div className="min-w-[110px]">
+                    <p className="text-xs font-medium capitalize">{dayLabel} {dateLabel}</p>
                   </div>
                   <Select
                     value={currentValue}
                     onValueChange={v => handleWeeklyDayChange(dateStr, v)}
                   >
-                    <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="flex-1 h-8 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="_off">Nghỉ</SelectItem>
                       {shifts.map(s => (
@@ -191,7 +264,8 @@ export function StepSchedule({ scheduleData, onChange, shifts, selectedShiftId, 
           </div>
 
           <p className="text-xs text-muted-foreground">
-            💡 Chọn ca cho từng ngày cụ thể. Dùng nút mũi tên để chuyển tuần, hoặc "Copy tuần trước" để sao chép lịch.
+            💡 Chọn phạm vi Tuần/Tháng/Năm rồi xếp ca cho từng ngày. Ngày không xếp sẽ tính là <strong>nghỉ</strong>.
+            Trên trang <strong>Xếp ca tổng quan</strong> sẽ hiện đếm số người đi làm/nghỉ tương ứng.
           </p>
         </div>
       )}
