@@ -665,12 +665,17 @@ Deno.serve(async (req) => {
               bonusProducts = Array.from(soldByProduct.values())
                 .sort((a, b2) => b2.revenue - a.revenue)
                 .map(p => ({ name: p.name, qty: p.qty, revenue: p.revenue }));
+            } else if (b.bonus_type === "kpi_branch" || b.bonus_type === "branch_revenue") {
+              // Branch revenue: list products sold by employee's branch
+              bonusProducts = Array.from(soldByBranchProduct?.values?.() || [])
+                .sort((a: any, b2: any) => b2.revenue - a.revenue)
+                .map((p: any) => ({ name: p.name, qty: p.qty, revenue: p.revenue }));
             }
             bonusDetails.push({
               name: b.name,
               type: b.bonus_type,
               amount: Math.round(amount),
-              revenue: b.bonus_type === "kpi_personal" ? userRevenue : b.bonus_type === "kpi_branch" ? branchRevenue : b.bonus_type === "gross_profit" ? userGrossProfit : undefined,
+              revenue: b.bonus_type === "kpi_personal" ? userRevenue : (b.bonus_type === "kpi_branch" || b.bonus_type === "branch_revenue") ? branchRevenue : b.bonus_type === "gross_profit" ? userGrossProfit : undefined,
               threshold: b.threshold || undefined,
               calc_type: b.calc_type,
               value: b.value,
