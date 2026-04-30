@@ -41,7 +41,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, ChevronUp, Folder, FolderOpen, Pencil, Eye, EyeOff, ArrowUp, ArrowDown, CalendarDays, Tag, Check, Home, List, Sparkles, Star } from 'lucide-react';
+import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, ChevronUp, Folder, FolderOpen, Pencil, Eye, EyeOff, ArrowUp, ArrowDown, CalendarDays, Tag, Check, Home, List, Sparkles, Star, ExternalLink } from 'lucide-react';
 import { SortableList, SortableItem, DragHandle } from '@/components/shared/SortableList';
 import { formatNumber } from '@/lib/formatNumber';
 import { BlockedDatesCalendar } from './BlockedDatesCalendar';
@@ -1929,7 +1929,29 @@ export function LandingProductsTab() {
             <div className="space-y-4 min-w-0">
             {/* Khung xem trước card sản phẩm (giống ngoài website) */}
             <div className="space-y-2">
-              <Label className="text-sm font-semibold flex items-center gap-1.5">👁️ Xem trước trên website</Label>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <Label className="text-sm font-semibold flex items-center gap-1.5">👁️ Xem trước trên website</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => {
+                    if (!editingProduct?.id) {
+                      toast({
+                        title: 'Vui lòng lưu lại sản phẩm để xem trên web',
+                        description: 'Bạn cần bấm "Lưu" sản phẩm trước, sau đó mở lại để xem trên website.',
+                      });
+                      return;
+                    }
+                    const slugOrId = (editingProduct as any).slug || editingProduct.id;
+                    window.open(`${window.location.origin}/n/${slugOrId}`, '_blank', 'noopener,noreferrer');
+                  }}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Xem sản phẩm trên web
+                </Button>
+              </div>
               <div className="rounded-xl border-2 border-dashed border-primary/30 bg-gradient-to-br from-muted/40 to-background p-3">
                 <div className="mx-auto w-full max-w-[260px]">
                   <LayoutProductCard
