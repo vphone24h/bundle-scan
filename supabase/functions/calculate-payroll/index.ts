@@ -550,7 +550,7 @@ Deno.serve(async (req) => {
               name: b.name,
               type: b.bonus_type,
               amount: Math.round(amount),
-              revenue: b.bonus_type === "kpi_personal" ? userRevenue : b.bonus_type === "kpi_branch" ? branchRevenue : undefined,
+              revenue: b.bonus_type === "kpi_personal" ? userRevenue : b.bonus_type === "kpi_branch" ? branchRevenue : b.bonus_type === "gross_profit" ? userGrossProfit : undefined,
               threshold: b.threshold || undefined,
             });
           }
