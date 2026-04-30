@@ -35,13 +35,17 @@ export function useCompanyInterestEnabled() {
     queryKey: ['company-interest-phone', companyId],
     queryFn: async () => {
       if (!companyId) return { phone: null as string | null };
-      // Prefer admin contact phone configured in platform_settings (Admin AI/contact),
-      // fallback to company_settings.phone
-      const [{ data: ps }, { data: cs }] = await Promise.all([
-        supabase.from('platform_settings').select('admin_phone').eq('company_id', companyId).maybeSingle(),
+      const [{ data: hotlineConfig }, { data: companySettings }] = await Promise.all([
+        supabase
+          .from('payment_config')
+          .select('config_value')
+          .eq('company_id', companyId)
+          .eq('config_key', 'hotline')
+          .maybeSingle(),
         supabase.from('company_settings').select('phone').eq('company_id', companyId).maybeSingle(),
       ]);
-      const phone = (ps as any)?.admin_phone || (cs as any)?.phone || null;
+
+      const phone = hotlineConfig?.config_value || companySettings?.phone || null;
       return { phone };
     },
     enabled: !!companyId,
