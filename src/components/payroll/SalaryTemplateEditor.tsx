@@ -653,10 +653,12 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                         <SelectContent>{PENALTY_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Số tiền phạt (VNĐ)</Label>
-                      <Input type="number" className="h-8 text-xs" value={p.amount} onChange={e => { const n = [...penalties]; n[i].amount = Number(e.target.value); setPenalties(n); }} />
-                    </div>
+                    {p.penalty_type !== 'kpi_not_met' && (
+                      <div className="space-y-1">
+                        <Label className="text-xs">Số tiền phạt (VNĐ)</Label>
+                        <Input type="number" className="h-8 text-xs" value={p.amount} onChange={e => { const n = [...penalties]; n[i].amount = Number(e.target.value); setPenalties(n); }} />
+                      </div>
+                    )}
                     {(p.penalty_type === 'late' || p.penalty_type === 'early_leave') && (
                       <>
                         <div className="space-y-1">
