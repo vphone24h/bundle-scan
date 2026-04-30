@@ -53,7 +53,7 @@ import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TenantProductsDialog } from './TenantProductsDialog';
 import { BulkEmailDialog } from './BulkEmailDialog';
 
@@ -112,6 +112,43 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
   const [companyFilter, setCompanyFilter] = useState('_all_');
   
   const { data: companies } = useCompanies();
+
+  // Map of company_id -> interest_enabled, để biết cty nào đã bật master switch
+  const { data: companyInterestMap } = useQuery({
+    queryKey: ['companies-interest-flag-map'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('id, interest_enabled');
+      if (error) throw error;
+      const m = new Map<string, boolean>();
+      (data || []).forEach((c: any) => m.set(c.id, !!c.interest_enabled));
+      return m;
+    },
+  });
+
+  const [togglingInterest, setTogglingInterest] = useState<string | null>(null);
+  const handleToggleTenantInterest = async (tenant: Tenant, next: boolean) => {
+    setTogglingInterest(tenant.id);
+    try {
+      const { error } = await supabase
+        .from('tenants')
+        .update({ interest_enabled: next } as any)
+        .eq('id', tenant.id);
+      if (error) throw error;
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['all-tenants'] }),
+        queryClient.invalidateQueries({ queryKey: ['admin-tenants'] }),
+        queryClient.invalidateQueries({ queryKey: ['current-tenant-combined'] }),
+      ]);
+      toast({ title: next ? 'Đã bật tính lãi cho shop' : 'Đã tắt tính lãi cho shop' });
+    } catch (e: any) {
+      toast({ title: 'Lỗi', description: e.message, variant: 'destructive' });
+    } finally {
+      setTogglingInterest(null);
+    }
+  };
+
   const filteredTenants = tenants?.filter(t => {
     // Text search
     const matchSearch = !search || 
@@ -589,6 +626,7 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
                 <TableHead>HĐĐT</TableHead>
                 <TableHead>Còn lại</TableHead>
                 <TableHead>Công ty</TableHead>
+                <TableHead>Tính lãi</TableHead>
                 <TableHead>Ngày tạo</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
@@ -694,6 +732,25 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
                       <span className="text-xs">
                         {companies?.find(c => c.id === (tenant as any).company_id)?.name || '-'}
                       </span>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      {(() => {
+                        const cid = (tenant as any).company_id as string | null;
+                        const companyOn = cid ? !!companyInterestMap?.get(cid) : false;
+                        const tenantOn = !!(tenant as any).interest_enabled;
+                        return (
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={tenantOn}
+                              disabled={!companyOn || togglingInterest === tenant.id}
+                              onCheckedChange={(v) => handleToggleTenantInterest(tenant, v)}
+                            />
+                            {!companyOn && (
+                              <span className="text-[10px] text-muted-foreground">Cty tắt</span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell>
                       {format(new Date(tenant.created_at), 'dd/MM/yyyy', { locale: vi })}
