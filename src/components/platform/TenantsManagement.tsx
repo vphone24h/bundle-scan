@@ -113,20 +113,6 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
   
   const { data: companies } = useCompanies();
 
-  // Map of company_id -> interest_enabled, để biết cty nào đã bật master switch
-  const { data: companyInterestMap } = useQuery({
-    queryKey: ['companies-interest-flag-map'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('companies')
-        .select('id, interest_enabled');
-      if (error) throw error;
-      const m = new Map<string, boolean>();
-      (data || []).forEach((c: any) => m.set(c.id, !!c.interest_enabled));
-      return m;
-    },
-  });
-
   const [togglingInterest, setTogglingInterest] = useState<string | null>(null);
   const handleToggleTenantInterest = async (tenant: Tenant, next: boolean) => {
     setTogglingInterest(tenant.id);
@@ -734,23 +720,11 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
                       </span>
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
-                      {(() => {
-                        const cid = (tenant as any).company_id as string | null;
-                        const companyOn = cid ? !!companyInterestMap?.get(cid) : false;
-                        const tenantOn = !!(tenant as any).interest_enabled;
-                        return (
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={tenantOn}
-                              disabled={!companyOn || togglingInterest === tenant.id}
-                              onCheckedChange={(v) => handleToggleTenantInterest(tenant, v)}
-                            />
-                            {!companyOn && (
-                              <span className="text-[10px] text-muted-foreground">Cty tắt</span>
-                            )}
-                          </div>
-                        );
-                      })()}
+                      <Switch
+                        checked={!!(tenant as any).interest_enabled}
+                        disabled={togglingInterest === tenant.id}
+                        onCheckedChange={(v) => handleToggleTenantInterest(tenant, v)}
+                      />
                     </TableCell>
                     <TableCell>
                       {format(new Date(tenant.created_at), 'dd/MM/yyyy', { locale: vi })}
