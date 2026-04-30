@@ -706,6 +706,7 @@ Deno.serve(async (req) => {
                   rate: c.value,
                   calc_type: c.calc_type,
                   amount: Math.round(amount),
+                  products: [{ name: sold.name, qty: sold.qty, revenue: sold.revenue }],
                 });
                 processedProducts.add(c.target_id);
               }
@@ -714,12 +715,19 @@ Deno.serve(async (req) => {
             // Commission per category (excluding already-processed products)
             const catSold = (c.target_id ? soldByCategory.get(c.target_id) : undefined)
               || soldByCategoryName.get(normalizeText(c.target_name));
+            const prodMap = (c.target_id ? productsByCategory.get(c.target_id) : undefined)
+              || productsByCategoryName.get(normalizeText(c.target_name));
             if (catSold && catSold.revenue > 0) {
               const amount = c.calc_type === "percentage"
                 ? catSold.revenue * c.value / 100
                 : c.value * catSold.qty;
               if (amount > 0) {
                 totalCommission += amount;
+                const productList = prodMap
+                  ? Array.from(prodMap.values())
+                      .sort((a, b) => b.revenue - a.revenue)
+                      .map(p => ({ name: p.name, qty: p.qty, revenue: p.revenue }))
+                  : [];
                 commissionDetails.push({
                   name: c.target_name || "Danh mục",
                   target_type: "category",
@@ -728,6 +736,7 @@ Deno.serve(async (req) => {
                   rate: c.value,
                   calc_type: c.calc_type,
                   amount: Math.round(amount),
+                  products: productList,
                 });
               }
             }
@@ -739,6 +748,9 @@ Deno.serve(async (req) => {
                 : c.value;
               if (amount > 0) {
                 totalCommission += amount;
+                const allProducts = Array.from(soldByProduct.values())
+                  .sort((a, b) => b.revenue - a.revenue)
+                  .map(p => ({ name: p.name, qty: p.qty, revenue: p.revenue }));
                 commissionDetails.push({
                   name: c.target_name || "Doanh thu",
                   target_type: "revenue",
@@ -746,6 +758,7 @@ Deno.serve(async (req) => {
                   rate: c.value,
                   calc_type: c.calc_type,
                   amount: Math.round(amount),
+                  products: allProducts,
                 });
               }
             }
