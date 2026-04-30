@@ -1,15 +1,25 @@
 import { useMemo } from 'react';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { CalendarDays, AlertCircle } from 'lucide-react';
+import { CalendarDays, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { addMonths, format, getDaysInMonth } from 'date-fns';
+import { vi } from 'date-fns/locale';
+import { getPaidLeaveDaysForMonth, getPaidLeaveMonthKey, type PaidLeaveOverrideMap } from '@/lib/paidLeaveSchedule';
 
 interface Props {
   /** Số ngày nghỉ có lương / tháng yêu cầu (từ mẫu lương) */
   requiredDays: number;
-  /** Mảng ngày 1-31 đã chọn */
+  /** Mảng ngày mặc định 1-31 đã chọn */
   selectedDays: number[];
-  onChange: (days: number[]) => void;
+  referenceMonth: string;
+  overrides?: PaidLeaveOverrideMap;
+  onChange: (payload: {
+    defaultDays: number[];
+    referenceMonth: string;
+    overrides: PaidLeaveOverrideMap;
+  }) => void;
   className?: string;
 }
 
@@ -17,23 +27,67 @@ interface Props {
  * Grid chọn ngày nghỉ có lương cố định trong tháng (1-31).
  * Áp dụng lặp lại mỗi tháng. Admin có thể override theo từng tháng riêng nếu cần.
  */
-export function PaidLeaveDaysPicker({ requiredDays, selectedDays, onChange, className }: Props) {
-  const days = useMemo(() => Array.from({ length: 31 }, (_, i) => i + 1), []);
-  const selectedSet = useMemo(() => new Set(selectedDays), [selectedDays]);
-  const isComplete = selectedDays.length === requiredDays;
-  const isOver = selectedDays.length > requiredDays;
+export function PaidLeaveDaysPicker({ requiredDays, selectedDays, referenceMonth, overrides = {}, onChange, className }: Props) {
+  const monthDate = useMemo(() => {
+    const [year, month] = referenceMonth.split('-').map(Number);
+    return new Date(year || new Date().getFullYear(), (month || 1) - 1, 1);
+  }, [referenceMonth]);
+  const monthKey = getPaidLeaveMonthKey(monthDate);
+  const daysInMonth = getDaysInMonth(monthDate);
+  const days = useMemo(() => Array.from({ length: daysInMonth }, (_, i) => i + 1), [daysInMonth]);
+  const activeDays = useMemo(
+    () => getPaidLeaveDaysForMonth({ monthDate, overrides, defaultDays: selectedDays }),
+    [monthDate, overrides, selectedDays]
+  );
+  const selectedSet = useMemo(() => new Set(activeDays), [activeDays]);
+  const isComplete = activeDays.length === requiredDays;
+  const isOver = activeDays.length > requiredDays;
 
   const toggle = (day: number) => {
-    if (selectedSet.has(day)) {
-      onChange(selectedDays.filter(d => d !== day));
-    } else {
-      if (selectedDays.length >= requiredDays) {
-        // Đã đủ - thay ngày cũ nhất
-        onChange([...selectedDays.slice(1), day].sort((a, b) => a - b));
-      } else {
-        onChange([...selectedDays, day].sort((a, b) => a - b));
-      }
+    const currentDays = activeDays;
+    const nextDays = selectedSet.has(day)
+      ? currentDays.filter(d => d !== day)
+      : currentDays.length >= requiredDays
+        ? [...currentDays.slice(1), day].sort((a, b) => a - b)
+        : [...currentDays, day].sort((a, b) => a - b);
+
+    const nextOverrides = {
+      ...overrides,
+      [monthKey]: nextDays,
+    };
+
+    if (nextDays.length === 0) {
+      delete nextOverrides[monthKey];
     }
+
+    onChange({
+      defaultDays: selectedDays,
+      referenceMonth,
+      overrides: nextOverrides,
+    });
+  };
+
+  const moveMonth = (amount: number) => {
+    const nextMonth = getPaidLeaveMonthKey(addMonths(monthDate, amount));
+    onChange({
+      defaultDays: selectedDays,
+      referenceMonth: nextMonth,
+      overrides,
+    });
+  };
+
+  const saveAsDefault = () => {
+    if (selectedSet.has(day)) {
+      return;
+    }
+    onChange({
+      defaultDays: activeDays,
+      referenceMonth,
+      overrides: {
+        ...overrides,
+        [monthKey]: activeDays,
+      },
+    });
   };
 
   if (requiredDays <= 0) return null;
@@ -43,18 +97,30 @@ export function PaidLeaveDaysPicker({ requiredDays, selectedDays, onChange, clas
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <Label className="text-xs flex items-center gap-1.5">
           <CalendarDays className="h-3.5 w-3.5" />
-          Ngày nghỉ có lương (lặp hàng tháng)
+          Ngày nghỉ có lương theo tháng
         </Label>
         <Badge
           variant={isComplete ? 'default' : isOver ? 'destructive' : 'outline'}
           className="text-[10px]"
         >
-          Đã chọn {selectedDays.length}/{requiredDays}
+          Đã chọn {activeDays.length}/{requiredDays}
         </Badge>
       </div>
+      <div className="flex items-center justify-between gap-2 rounded-md border bg-background/80 p-2">
+        <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => moveMonth(-1)}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <div className="min-w-0 text-center">
+          <div className="text-sm font-medium">{format(monthDate, "'Tháng' M yyyy", { locale: vi })}</div>
+          <div className="text-[11px] text-muted-foreground">Nhấn mũi tên để chuyển tháng trước / sau</div>
+        </div>
+        <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => moveMonth(1)}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
       <p className="text-[11px] text-muted-foreground leading-relaxed">
-        Mẫu lương cho phép nghỉ <strong>{requiredDays}</strong> ngày có lương/tháng. Chọn đúng <strong>{requiredDays}</strong> ngày trong tháng (vd ngày 5, 15) — sẽ được áp dụng tự động mọi tháng.
-        Nếu NV vẫn đến chấm công vào ngày này → tự động đề xuất tăng ca cả ngày, cần admin duyệt mới được tính.
+        Mẫu lương cho phép nghỉ <strong>{requiredDays}</strong> ngày có lương/tháng. Chọn đúng <strong>{requiredDays}</strong> ngày cho <strong>{format(monthDate, "MM/yyyy")}</strong>.
+        Hệ thống sẽ lưu lại theo tháng đang chọn và đồng bộ sang tổng quan xếp ca.
       </p>
 
       <div className="grid grid-cols-7 gap-1.5 pt-1">
@@ -76,6 +142,13 @@ export function PaidLeaveDaysPicker({ requiredDays, selectedDays, onChange, clas
             </button>
           );
         })}
+      </div>
+
+      <div className="flex items-center justify-between gap-2 rounded-md border border-dashed p-2 text-[11px]">
+        <span className="text-muted-foreground">Muốn dùng tháng này làm mẫu cho các tháng khác chưa chỉnh?</span>
+        <Button type="button" variant="outline" size="sm" className="h-7 text-[11px]" onClick={saveAsDefault}>
+          Dùng làm mặc định
+        </Button>
       </div>
 
       {!isComplete && (
