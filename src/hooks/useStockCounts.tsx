@@ -303,6 +303,7 @@ export function useCreateStockCount() {
         hasImei: boolean;
         importPrice: number;
         imeis: string[];
+        systemQuantity: number;
       }>();
 
       products?.forEach((product) => {
@@ -316,21 +317,27 @@ export function useCreateStockCount() {
             hasImei: true,
             importPrice: product.import_price,
             imeis: [product.imei],
+            systemQuantity: 1,
           });
         } else {
           // Non-IMEI product - group by name+sku
           const key = `noImei:${product.name}:${product.sku}`;
           const existing = itemsMap.get(key);
+          const parsedQuantity = Number(product.quantity);
+          const quantity = Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
+
           if (existing) {
-            existing.imeis.push(product.id); // Use as count
+            existing.imeis.push(product.id);
+            existing.systemQuantity += quantity;
           } else {
             itemsMap.set(key, {
-              productId: null,
+              productId: product.id,
               productName: product.name,
               sku: product.sku,
               hasImei: false,
               importPrice: product.import_price,
               imeis: [product.id],
+              systemQuantity: quantity,
             });
           }
         }
@@ -344,9 +351,9 @@ export function useCreateStockCount() {
         sku: item.sku,
         imei: item.hasImei ? item.imeis[0] : null,
         has_imei: item.hasImei,
-        system_quantity: item.hasImei ? 1 : item.imeis.length,
+        system_quantity: item.systemQuantity,
         actual_quantity: 0,
-        variance: item.hasImei ? -1 : -item.imeis.length,
+        variance: -item.systemQuantity,
         status: 'pending' as const,
         is_checked: false,
         import_price: item.importPrice,
@@ -759,24 +766,34 @@ export function useConfirmStockCount() {
               note: 'Hao hụt - Kiểm kho',
             });
           } else {
-            // For non-IMEI, update N products to sold
-            const { data: productsToUpdate } = await supabase
+            // For non-IMEI, reduce quantity on the grouped stock row
+            const { data: productToUpdate } = await supabase
               .from('products')
-              .select('id')
+              .select('id, quantity, total_import_cost, import_price')
               .eq('name', item.product_name)
               .eq('sku', item.sku)
               .eq('status', 'in_stock')
               .is('imei', null)
               .eq('branch_id', stockCount.branch_id)
-              .limit(missingQty);
+              .maybeSingle();
 
-            if (productsToUpdate) {
-              for (const prod of productsToUpdate) {
-                await supabase
-                  .from('products')
-                  .update({ status: 'sold' })
-                  .eq('id', prod.id);
-              }
+            if (productToUpdate) {
+              const currentQty = Number(productToUpdate.quantity) || 0;
+              const newQuantity = Math.max(0, Math.round((currentQty - missingQty) * 1000) / 1000);
+              const currentTotalCost = Number(productToUpdate.total_import_cost || 0);
+              const avgPrice = currentQty > 0
+                ? currentTotalCost / currentQty
+                : Number(productToUpdate.import_price || item.import_price || 0);
+              const newTotalCost = Math.max(0, Math.round((currentTotalCost - avgPrice * missingQty) * 1000) / 1000);
+
+              await supabase
+                .from('products')
+                .update(
+                  newQuantity <= 0
+                    ? { status: 'sold', quantity: 0, total_import_cost: 0 }
+                    : { quantity: newQuantity, total_import_cost: newTotalCost }
+                )
+                .eq('id', productToUpdate.id);
             }
 
             await supabase.from('export_receipt_items').insert({
@@ -834,13 +851,37 @@ export function useConfirmStockCount() {
               note: `Bổ sung từ kiểm kho ${stockCount.code}`,
             });
           } else {
-            // Create N products for non-IMEI surplus
-            for (let i = 0; i < surplusQty; i++) {
+            // For non-IMEI, increase quantity on existing row or create a new grouped row
+            const { data: existingProduct } = await supabase
+              .from('products')
+              .select('id, quantity, total_import_cost')
+              .eq('name', item.product_name)
+              .eq('sku', item.sku)
+              .eq('status', 'in_stock')
+              .is('imei', null)
+              .eq('branch_id', stockCount.branch_id)
+              .maybeSingle();
+
+            if (existingProduct) {
+              const currentQty = Number(existingProduct.quantity) || 0;
+              const currentTotalCost = Number(existingProduct.total_import_cost || 0);
+              const addedCost = Math.round((Number(item.import_price || 0) * surplusQty) * 1000) / 1000;
+
+              await supabase
+                .from('products')
+                .update({
+                  quantity: Math.round((currentQty + surplusQty) * 1000) / 1000,
+                  total_import_cost: Math.round((currentTotalCost + addedCost) * 1000) / 1000,
+                })
+                .eq('id', existingProduct.id);
+            } else {
               await supabase.from('products').insert({
                 name: item.product_name,
                 sku: item.sku,
                 imei: null,
+                quantity: surplusQty,
                 import_price: item.import_price || 0,
+                total_import_cost: Math.round((Number(item.import_price || 0) * surplusQty) * 1000) / 1000,
                 import_date: new Date().toISOString(),
                 import_receipt_id: importReceipt.id,
                 branch_id: stockCount.branch_id,
