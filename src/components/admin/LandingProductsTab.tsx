@@ -1112,6 +1112,29 @@ export function LandingProductsTab() {
                             )}
                           </div>
                         )}
+                        {/* Review count badge — hiển thị tổng + tách thật/ảo cho dễ quản lý */}
+                        {(() => {
+                          const st = reviewStatsMap[p.id];
+                          if (!st || st.total === 0) return null;
+                          return (
+                            <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-yellow-400 text-yellow-700 font-medium gap-0.5">
+                                <Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />
+                                {st.total} đánh giá
+                              </Badge>
+                              {st.real > 0 && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-green-300 text-green-700">
+                                  Thật: {st.real}
+                                </Badge>
+                              )}
+                              {st.fake > 0 && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-orange-300 text-orange-600">
+                                  Ảo: {st.fake}
+                                </Badge>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 justify-end">
