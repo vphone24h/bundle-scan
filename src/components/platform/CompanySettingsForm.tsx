@@ -10,51 +10,12 @@ import { usePlatformUser } from '@/hooks/useTenant';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Save, Plus, Trash2, Building2, Phone, Mail, Globe, CreditCard, Image, Upload } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Percent } from 'lucide-react';
-import { toast as sonnerToast } from 'sonner';
 
 export function CompanySettingsForm() {
   const { data: platformUser } = usePlatformUser();
   const companyId = platformUser?.company_id;
   const { data: settings, isLoading } = useCompanySettings(companyId);
   const upsert = useUpsertCompanySettings();
-  const queryClient = useQueryClient();
-
-  const { data: companyRow } = useQuery({
-    queryKey: ['company-feature-flags', companyId],
-    queryFn: async () => {
-      if (!companyId) return null;
-      const { data, error } = await supabase
-        .from('companies')
-        .select('interest_enabled')
-        .eq('id', companyId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!companyId,
-  });
-  const interestEnabled = !!(companyRow as any)?.interest_enabled;
-
-  const handleToggleInterest = async (next: boolean) => {
-    if (!companyId) return;
-    const { error } = await supabase
-      .from('companies')
-      .update({ interest_enabled: next })
-      .eq('id', companyId);
-    if (error) {
-      sonnerToast.error('Lỗi cập nhật');
-      return;
-    }
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['company-feature-flags', companyId] }),
-      queryClient.invalidateQueries({ queryKey: ['company-interest-flag'] }),
-      queryClient.invalidateQueries({ queryKey: ['companies'] }),
-    ]);
-    sonnerToast.success(next ? 'Đã bật tính năng tính lãi công nợ' : 'Đã tắt tính năng tính lãi công nợ');
-  };
 
   const [displayName, setDisplayName] = useState('');
   const [slogan, setSlogan] = useState('');
