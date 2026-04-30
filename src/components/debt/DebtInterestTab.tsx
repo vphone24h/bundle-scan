@@ -177,18 +177,50 @@ export function DebtInterestTab({ entityType, entityId, mergedEntityIds }: Props
                 {formatNumber(Math.round(accrual.currentDebt))} đ
               </span>
             </div>
+            {(() => {
+              const rate = Number(config?.monthly_rate_percent) || 0;
+              const dailyRatePct = rate / 30;
+              const startMs = config?.start_date ? new Date(config.start_date).getTime() : Date.now();
+              const elapsedDays = Math.max(0, (Date.now() - startMs) / (1000 * 60 * 60 * 24));
+              return (
+                <div className="text-[11px] text-muted-foreground space-y-1 pb-2 border-b">
+                  <div className="flex justify-between">
+                    <span>Lãi suất tháng:</span>
+                    <span className="font-medium text-foreground">{rate}% / tháng</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Lãi suất ngày:</span>
+                    <span className="font-medium text-foreground">{dailyRatePct.toFixed(4)}% / ngày</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Số ngày đã tính:</span>
+                    <span className="font-medium text-foreground">
+                      {elapsedDays < 1
+                        ? `${(elapsedDays * 24).toFixed(2)} giờ`
+                        : `${elapsedDays.toFixed(2)} ngày`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-dashed">
+                    <span>Công thức:</span>
+                    <span className="font-medium text-foreground text-right">
+                      Dư nợ × {rate}%/tháng × ngày
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
             <div className="grid grid-cols-3 gap-2 text-center text-sm">
               <div>
                 <p className="text-muted-foreground text-xs">Tổng lãi phát sinh</p>
-                <p className="font-bold text-orange-600">{formatNumber(Math.round(accrual.accrued))}</p>
+                <p className="font-bold text-orange-600">{formatNumber(Math.round(accrual.accrued))} đ</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Đã đóng lãi</p>
-                <p className="font-bold text-green-600">{formatNumber(Math.round(accrual.paidInterest))}</p>
+                <p className="font-bold text-green-600">{formatNumber(Math.round(accrual.paidInterest))} đ</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Lãi còn lại</p>
-                <p className="font-bold text-destructive">{formatNumber(Math.round(accrual.remainingInterest))}</p>
+                <p className="font-bold text-destructive">{formatNumber(Math.round(accrual.remainingInterest))} đ</p>
               </div>
             </div>
           </CardContent>
@@ -229,6 +261,13 @@ export function DebtInterestTab({ entityType, entityId, mergedEntityIds }: Props
       )}
 
       {/* History */}
+      {isActive && (payments?.length ?? 0) === 0 && (
+        <div className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
+          Chưa có lịch sử đóng lãi. Khi khách đóng lãi, mỗi lần sẽ ghi rõ:
+          <br />
+          <span className="text-foreground">ngày giờ đóng</span> · <span className="text-foreground">số tiền</span> · <span className="text-foreground">lãi còn lại sau đó</span>
+        </div>
+      )}
       {(payments?.length ?? 0) > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase">Lịch sử đóng lãi</p>
