@@ -365,9 +365,13 @@ Deno.serve(async (req) => {
         }
       }
       // Only count full-day OT if the day-off work was approved
-      const fullDayOTCount = userAttendance.filter((a: any) =>
-        a.check_in_time && a.status !== "absent" && !scheduledDates.has(a.date) && approvedDayOffDates.has(a.date)
-      ).length;
+      // Ngày nghỉ có lương cũng được coi như day-off: đi làm phải có duyệt OT mới được tính.
+      const paidLeaveDatesSet = getPaidLeaveDatesForUser(employee.user_id);
+      const fullDayOTCount = userAttendance.filter((a: any) => {
+        if (!a.check_in_time || a.status === "absent") return false;
+        const isDayOff = !scheduledDates.has(a.date) || paidLeaveDatesSet.has(a.date);
+        return isDayOff && approvedDayOffDates.has(a.date);
+      }).length;
 
       // Build day-by-day attendance details
       const attendanceDetails = userAttendance.map((a: any) => {
