@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import {
@@ -65,6 +66,7 @@ interface StockCountDetailProps {
 
 export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps) {
   const { data, isLoading } = useStockCountDetail(stockCountId);
+  const queryClient = useQueryClient();
   const updateItemMutation = useUpdateStockCountItem();
   const addSurplusMutation = useAddSurplusImei();
   const confirmMutation = useConfirmStockCount();
@@ -183,6 +185,8 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
         return;
       }
 
+      hasFixedNonImeiSystemQty.current = true;
+
       await Promise.all(
         updates.map((update) =>
           supabase
@@ -219,9 +223,9 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
             total_variance: totals.variance,
           })
           .eq('id', stockCount.id);
-      }
 
-      hasFixedNonImeiSystemQty.current = true;
+        await queryClient.invalidateQueries({ queryKey: ['stock-count', stockCount.id] });
+      }
     };
 
     void syncNonImeiSystemQuantity();
@@ -229,7 +233,7 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
     return () => {
       cancelled = true;
     };
-  }, [stockCount, items]);
+  }, [stockCount, items, queryClient]);
 
   // Separate IMEI and non-IMEI items
   const { imeiItems, nonImeiItems, filteredImeiItems, filteredNonImeiItems } = useMemo(() => {
