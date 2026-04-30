@@ -575,18 +575,21 @@ Deno.serve(async (req) => {
               : 0;
 
             let tierAmt = 0;
+            let matchedTier: any = null;
             const tiers = Array.isArray(b.tiers) ? b.tiers : [];
             if (tiers.length > 0 && threshold > 0 && userRevenue >= threshold) {
               const overPercent = ((userRevenue - threshold) / threshold) * 100;
               const sortedTiers = [...tiers].sort((a: any, b2: any) => Number(b2.percent_over) - Number(a.percent_over));
               const matched = sortedTiers.find((t: any) => overPercent >= Number(t.percent_over || 0));
               if (matched) {
+                matchedTier = matched;
                 tierAmt = matched.calc_type === "percentage"
                   ? userRevenue * Number(matched.value || 0) / 100
                   : Number(matched.value || 0);
               }
             }
             amount = baseAmt + tierAmt;
+            (b as any)._breakdown = { baseAmt: Math.round(baseAmt), tierAmt: Math.round(tierAmt), matchedTier, baseValue: b.value, baseCalcType: b.calc_type };
           } else if (b.bonus_type === "kpi_branch") {
             // KPI chi nhánh: so sánh doanh thu chi nhánh (theo branch của NV) với ngưỡng
             // CỘNG DỒN: thưởng cơ bản + tier vượt cao nhất (giống kpi_personal)
@@ -595,18 +598,21 @@ Deno.serve(async (req) => {
               ? (b.calc_type === "percentage" ? branchRevenue * b.value / 100 : b.value)
               : 0;
             let tierAmt = 0;
+            let matchedTier: any = null;
             const tiers = Array.isArray(b.tiers) ? b.tiers : [];
             if (tiers.length > 0 && threshold > 0 && branchRevenue >= threshold) {
               const overPercent = ((branchRevenue - threshold) / threshold) * 100;
               const sortedTiers = [...tiers].sort((a: any, b2: any) => Number(b2.percent_over) - Number(a.percent_over));
               const matched = sortedTiers.find((t: any) => overPercent >= Number(t.percent_over || 0));
               if (matched) {
+                matchedTier = matched;
                 tierAmt = matched.calc_type === "percentage"
                   ? branchRevenue * Number(matched.value || 0) / 100
                   : Number(matched.value || 0);
               }
             }
             amount = baseAmt + tierAmt;
+            (b as any)._breakdown = { baseAmt: Math.round(baseAmt), tierAmt: Math.round(tierAmt), matchedTier, baseValue: b.value, baseCalcType: b.calc_type };
           } else if (b.bonus_type === "gross_profit") {
             // Lợi nhuận gộp cá nhân: (giá bán - giá nhập) × SL của các đơn NV bán
             // CỘNG DỒN: thưởng cơ bản + tier vượt cao nhất
@@ -615,27 +621,40 @@ Deno.serve(async (req) => {
               ? (b.calc_type === "percentage" ? userGrossProfit * b.value / 100 : b.value)
               : 0;
             let tierAmt = 0;
+            let matchedTier: any = null;
             const tiers = Array.isArray(b.tiers) ? b.tiers : [];
             if (tiers.length > 0 && threshold > 0 && userGrossProfit >= threshold) {
               const overPercent = ((userGrossProfit - threshold) / threshold) * 100;
               const sortedTiers = [...tiers].sort((a: any, b2: any) => Number(b2.percent_over) - Number(a.percent_over));
               const matched = sortedTiers.find((t: any) => overPercent >= Number(t.percent_over || 0));
               if (matched) {
+                matchedTier = matched;
                 tierAmt = matched.calc_type === "percentage"
                   ? userGrossProfit * Number(matched.value || 0) / 100
                   : Number(matched.value || 0);
               }
             }
             amount = baseAmt + tierAmt;
+            (b as any)._breakdown = { baseAmt: Math.round(baseAmt), tierAmt: Math.round(tierAmt), matchedTier, baseValue: b.value, baseCalcType: b.calc_type };
           }
           if (amount > 0) {
             totalBonus += amount;
+            const bd = (b as any)._breakdown || null;
             bonusDetails.push({
               name: b.name,
               type: b.bonus_type,
               amount: Math.round(amount),
               revenue: b.bonus_type === "kpi_personal" ? userRevenue : b.bonus_type === "kpi_branch" ? branchRevenue : b.bonus_type === "gross_profit" ? userGrossProfit : undefined,
               threshold: b.threshold || undefined,
+              calc_type: b.calc_type,
+              value: b.value,
+              base_amount: bd?.baseAmt,
+              tier_amount: bd?.tierAmt,
+              matched_tier: bd?.matchedTier ? {
+                percent_over: Number(bd.matchedTier.percent_over || 0),
+                calc_type: bd.matchedTier.calc_type,
+                value: Number(bd.matchedTier.value || 0),
+              } : null,
             });
           }
         }
