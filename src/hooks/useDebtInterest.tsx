@@ -22,13 +22,33 @@ export interface InterestPayment {
   paid_at: string;
 }
 
-/** Whether interest feature enabled at tenant level */
-export function useTenantInterestEnabled() {
+/** Whether interest feature enabled at COMPANY level (admin tên miền) */
+export function useCompanyInterestEnabled() {
   const { data: tenant } = useCurrentTenant();
+  const companyId = (tenant as any)?.company_id || null;
+
+  const { data } = useQuery({
+    queryKey: ['company-interest-flag', companyId],
+    queryFn: async () => {
+      if (!companyId) return { enabled: false, phone: null as string | null };
+      const [{ data: company }, { data: settings }] = await Promise.all([
+        supabase.from('companies').select('interest_enabled').eq('id', companyId).maybeSingle(),
+        supabase.from('company_settings').select('phone').eq('company_id', companyId).maybeSingle(),
+      ]);
+      return {
+        enabled: !!(company as any)?.interest_enabled,
+        phone: (settings as any)?.phone || null,
+      };
+    },
+    enabled: !!companyId,
+    staleTime: 60_000,
+  });
+
   return {
-    enabled: !!(tenant as any)?.interest_enabled,
-    adminPhone: (tenant as any)?.phone || null,
+    enabled: !!data?.enabled,
+    adminPhone: data?.phone || null,
     tenantId: tenant?.id,
+    companyId,
   };
 }
 
