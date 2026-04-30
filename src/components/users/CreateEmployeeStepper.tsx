@@ -22,6 +22,7 @@ import { StepSalary } from './steps/StepSalary';
 import { StepAttendanceSetup, type AttendanceSetupData } from './steps/StepAttendanceSetup';
 import { cn } from '@/lib/utils';
 import { buildRecurringShiftAssignments } from '@/lib/attendanceSchedule';
+import { buildPaidLeaveOverrideRows } from '@/lib/paidLeaveSchedule';
 
 interface Branch { id: string; name: string; }
 
@@ -214,14 +215,33 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
         if (error) throw error;
       }
 
-      // Lưu lịch ngày nghỉ có lương mặc định (lặp hàng tháng)
-      if (salaryData.paidLeaveDaysOfMonth && salaryData.paidLeaveDaysOfMonth.length > 0) {
-        const { error } = await supabase.from('paid_leave_default_dates').upsert({
-          tenant_id: tenantId,
-          user_id: userId,
-          days_of_month: salaryData.paidLeaveDaysOfMonth,
-        }, { onConflict: 'tenant_id,user_id' });
-        if (error) throw error;
+      // Lưu ngày nghỉ có lương mặc định + theo từng tháng đã chọn
+      const defaultLeaveDays = salaryData.paidLeaveDaysOfMonth || [];
+      const { error: defaultLeaveError } = await supabase.from('paid_leave_default_dates').upsert({
+        tenant_id: tenantId,
+        user_id: userId,
+        days_of_month: defaultLeaveDays,
+      }, { onConflict: 'tenant_id,user_id' });
+      if (defaultLeaveError) throw defaultLeaveError;
+
+      const overrideRows = buildPaidLeaveOverrideRows({
+        tenantId,
+        userId,
+        overrides: salaryData.paidLeaveOverrides,
+      });
+
+      const { error: deleteOverrideError } = await supabase
+        .from('paid_leave_overrides')
+        .delete()
+        .eq('tenant_id', tenantId)
+        .eq('user_id', userId);
+      if (deleteOverrideError) throw deleteOverrideError;
+
+      if (overrideRows.length > 0) {
+        const { error: overrideError } = await supabase
+          .from('paid_leave_overrides')
+          .insert(overrideRows);
+        if (overrideError) throw overrideError;
       }
 
       await logAction({
