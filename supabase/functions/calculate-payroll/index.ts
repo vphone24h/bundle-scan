@@ -542,7 +542,7 @@ Deno.serve(async (req) => {
         const processedProducts = new Set<string>();
 
         for (const c of tComms) {
-          if (c.target_type === "product" && c.target_id) {
+          if ((c.target_type === "product" || c.target_type === "service") && c.target_id) {
             // Commission per specific product
             const sold = soldByProduct.get(c.target_id);
             if (sold && sold.revenue > 0) {
@@ -553,7 +553,7 @@ Deno.serve(async (req) => {
                 totalCommission += amount;
                 commissionDetails.push({
                   name: c.target_name || sold.name,
-                  target_type: "product",
+                  target_type: c.target_type,
                   qty: sold.qty,
                   revenue: sold.revenue,
                   rate: c.value,
