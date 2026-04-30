@@ -872,8 +872,8 @@ export function DebtDetailDialog({
   if (isMobile) {
     return (
       <>
-        <Drawer open={open} onOpenChange={onOpenChange}>
-          <DrawerContent className="max-h-[90vh] flex flex-col">
+        <Drawer open={open} onOpenChange={onOpenChange} repositionInputs={false}>
+          <DrawerContent className="h-[90svh] max-h-[90svh] flex flex-col">
             <DrawerHeader className="shrink-0 relative">
               <DrawerTitle className="text-base">Chi tiết công nợ</DrawerTitle>
               <button
@@ -884,7 +884,7 @@ export function DebtDetailDialog({
                 <span className="sr-only">Đóng</span>
               </button>
             </DrawerHeader>
-            <div className="flex-1 overflow-y-auto px-4 pb-6">
+            <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-6">
               {mainContent}
             </div>
           </DrawerContent>
