@@ -55,19 +55,25 @@ export default function InventoryPage() {
   const searchTrimmed = filters.search.trim();
   const isImeiSearch = /^\d{4,}$/.test(searchTrimmed);
 
-  // Lookup product IDs by IMEI when search looks like an IMEI fragment
-  const { data: imeiProductIds } = useQuery({
+  // Lookup grouped inventory keys by IMEI when search looks like an IMEI fragment
+  const { data: imeiInventoryKeys } = useQuery({
     queryKey: ['inventory-imei-search', currentTenant?.id, searchTrimmed],
     queryFn: async () => {
       if (!currentTenant?.id || !isImeiSearch) return new Set<string>();
       const { data, error } = await supabase
         .from('products')
-        .select('id')
+        .select('group_id, name, sku, branch_id')
         .eq('tenant_id', currentTenant.id)
+        .eq('status', 'in_stock')
         .ilike('imei', `%${searchTrimmed}%`)
         .limit(500);
       if (error) throw error;
-      return new Set((data || []).map((r: any) => r.id));
+
+      return new Set(
+        (data || []).map((product: any) =>
+          product.group_id || `${product.name}|${product.sku}|${product.branch_id || 'no-branch'}`
+        )
+      );
     },
     enabled: !!currentTenant?.id && isImeiSearch,
     staleTime: 30 * 1000,
@@ -80,7 +86,8 @@ export default function InventoryPage() {
         const searchLower = filters.search.toLowerCase();
         const matchesName = item.productName.toLowerCase().includes(searchLower);
         const matchesSku = item.sku.toLowerCase().includes(searchLower);
-        const matchesImei = isImeiSearch && imeiProductIds?.has(item.productId);
+        const inventoryKey = item.groupId || `${item.productName}|${item.sku}|${item.branchId || 'no-branch'}`;
+        const matchesImei = isImeiSearch && imeiInventoryKeys?.has(inventoryKey);
         if (!matchesName && !matchesSku && !matchesImei) return false;
       }
       if (filters.categoryId && item.categoryId !== filters.categoryId) return false;
@@ -100,7 +107,7 @@ export default function InventoryPage() {
     if (filters.stockSort === 'stock_high') filtered.sort((a, b) => b.stock - a.stock);
     else if (filters.stockSort === 'stock_low') filtered.sort((a, b) => a.stock - b.stock);
     return filtered;
-  }, [inventory, filters, isImeiSearch, imeiProductIds]);
+  }, [inventory, filters, isImeiSearch, imeiInventoryKeys]);
 
   const pagination = usePagination(filteredInventory, { storageKey: 'inventory-list' });
 
