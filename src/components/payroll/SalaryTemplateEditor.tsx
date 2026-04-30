@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Loader2, Plus, Trash2, Save } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus, Trash2, Save, Check, ChevronsUpDown } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 import { useSalaryTemplates, useCreateSalaryTemplate, useUpdateSalaryTemplate, useTemplateBonuses, useTemplateCommissions, useTemplateAllowances, useTemplateHolidays, useTemplatePenalties, useTemplateOvertimes, useSaveTemplateConfigs } from '@/hooks/usePayroll';
 import { useCategories } from '@/hooks/useCategories';
 import { toast } from 'sonner';
@@ -75,6 +79,78 @@ interface Props {
   tenantId?: string;
   onClose: () => void;
   onSaved?: (templateId: string) => void;
+}
+
+function ProductPicker({ value, onChange, tenantId, placeholder }: { value: string; onChange: (v: string) => void; tenantId?: string; placeholder: string }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const { data: items, isLoading } = useQuery({
+    queryKey: ['salary-product-picker', tenantId],
+    enabled: !!tenantId && open,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('name, sku')
+        .eq('tenant_id', tenantId!)
+        .order('name', { ascending: true })
+        .limit(2000);
+      if (error) throw error;
+      const seen = new Set<string>();
+      const result: { name: string; sku: string | null }[] = [];
+      for (const r of (data || [])) {
+        const key = `${r.name}__${r.sku || ''}`;
+        if (!seen.has(key)) { seen.add(key); result.push(r as any); }
+      }
+      return result;
+    },
+  });
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" role="combobox" className="h-8 text-xs justify-between font-normal w-full">
+          <span className={cn('truncate', !value && 'text-muted-foreground')}>{value || placeholder}</span>
+          <ChevronsUpDown className="h-3 w-3 opacity-50 shrink-0 ml-1" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[280px] p-0" align="start">
+        <Command shouldFilter={true}>
+          <CommandInput placeholder="Tìm hoặc nhập tên..." value={search} onValueChange={setSearch} className="h-9 text-xs" />
+          <CommandList className="max-h-60">
+            {isLoading && <div className="py-4 text-center text-xs text-muted-foreground">Đang tải...</div>}
+            <CommandEmpty>
+              {search ? (
+                <button
+                  className="w-full text-left px-2 py-2 text-xs hover:bg-accent"
+                  onClick={() => { onChange(search); setOpen(false); setSearch(''); }}
+                >
+                  Dùng tên tự nhập: <strong>"{search}"</strong>
+                </button>
+              ) : (
+                <div className="py-4 text-center text-xs text-muted-foreground">Không có dữ liệu</div>
+              )}
+            </CommandEmpty>
+            <CommandGroup>
+              {items?.map((p, idx) => (
+                <CommandItem
+                  key={`${p.name}-${idx}`}
+                  value={`${p.name} ${p.sku || ''}`}
+                  onSelect={() => { onChange(p.name); setOpen(false); setSearch(''); }}
+                  className="text-xs"
+                >
+                  <Check className={cn('h-3 w-3 mr-2', value === p.name ? 'opacity-100' : 'opacity-0')} />
+                  <div className="flex flex-col">
+                    <span>{p.name}</span>
+                    {p.sku && <span className="text-[10px] text-muted-foreground">SKU: {p.sku}</span>}
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }: Props) {
@@ -443,7 +519,12 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                     {(c.target_type === 'product' || c.target_type === 'service') && (
                       <div className="space-y-1">
                         <Label className="text-xs">Tên {c.target_type === 'product' ? 'sản phẩm' : 'dịch vụ'}</Label>
-                        <Input className="h-8 text-xs" placeholder="Nhập tên..." value={c.target_name} onChange={e => { const n = [...commissions]; n[i].target_name = e.target.value; setCommissions(n); }} />
+                        <ProductPicker
+                          tenantId={tenantId}
+                          value={c.target_name}
+                          placeholder={`Chọn ${c.target_type === 'product' ? 'sản phẩm' : 'dịch vụ'}...`}
+                          onChange={(v) => { const n = [...commissions]; n[i].target_name = v; n[i].target_id = ''; setCommissions(n); }}
+                        />
                       </div>
                     )}
                     <div className="space-y-1">
