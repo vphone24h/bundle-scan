@@ -849,7 +849,7 @@ function BreakdownItem({ label, detail, amount, positive, negative, onClick }: {
 function BonusBreakdownItem({ bonus, onShowProducts }: { bonus: any; onShowProducts?: () => void }) {
   const b = bonus;
   const hasBreakdown = (b.base_amount || 0) > 0 || (b.tier_amount || 0) > 0;
-  const isKpi = b.type === 'kpi_personal' || b.type === 'kpi_branch' || b.type === 'gross_profit';
+  const isKpi = b.type === 'kpi_personal' || b.type === 'kpi_branch' || b.type === 'branch_revenue' || b.type === 'gross_profit';
   const clickable = !!onShowProducts;
 
   // Headline row
@@ -963,10 +963,18 @@ function describeBonus(b: any): string {
     }
     return `KPI cá nhân: DT ${rev}`;
   }
-  if (t === 'kpi_branch') {
-    return `KPI chi nhánh: DT ${rev}${thr ? ` / mục tiêu ${thr}` : ''}`;
+  if (t === 'kpi_branch' || t === 'branch_revenue') {
+    if (b.threshold && b.revenue) {
+      const pct = Math.round((b.revenue / b.threshold) * 100);
+      return `DT chi nhánh ${rev} / mục tiêu ${thr} → đạt ${pct}%`;
+    }
+    return `Doanh thu chi nhánh: ${rev}${thr ? ` / mục tiêu ${thr}` : ''}`;
   }
   if (t === 'gross_profit') {
+    if (b.threshold && b.revenue) {
+      const pct = Math.round((b.revenue / b.threshold) * 100);
+      return `LN gộp ${rev} / mục tiêu ${thr} → đạt ${pct}%`;
+    }
     return `Lợi nhuận gộp: ${rev}${thr ? ` / mục tiêu ${thr}` : ''}`;
   }
   if (t === 'overtime') return 'Thưởng tăng ca';
