@@ -17,8 +17,9 @@ import * as XLSX from 'xlsx';
 
 const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   draft: { label: 'Nháp', variant: 'outline' },
-  calculated: { label: 'Đã tính', variant: 'secondary' },
-  finalized: { label: 'Đã chốt', variant: 'default' },
+  confirmed: { label: 'Đã tính', variant: 'secondary' },
+  paid: { label: 'Đã chốt', variant: 'default' },
+  cancelled: { label: 'Đã hủy', variant: 'destructive' },
 };
 
 const PAGE_SIZE = 20;
@@ -302,8 +303,9 @@ export function PayrollPeriodsTab() {
             <SelectContent>
               <SelectItem value="all">Tất cả</SelectItem>
               <SelectItem value="draft">Nháp</SelectItem>
-              <SelectItem value="calculated">Đã tính</SelectItem>
-              <SelectItem value="finalized">Đã chốt</SelectItem>
+              <SelectItem value="confirmed">Đã tính</SelectItem>
+              <SelectItem value="paid">Đã chốt</SelectItem>
+              <SelectItem value="cancelled">Đã hủy</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -391,14 +393,14 @@ export function PayrollPeriodsTab() {
           </Badge>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {(period?.status === 'draft' || period?.status === 'calculated') && (
+          {(period?.status === 'draft' || period?.status === 'confirmed') && (
             <Button size="sm" variant="outline" onClick={() => handleCalculate(selectedPeriodId)} disabled={calculatePayroll.isPending}>
               <Calculator className="h-3.5 w-3.5 mr-1" />
-              {period?.status === 'calculated' ? 'Tính lại' : 'Tính lương'}
+              {period?.status === 'confirmed' ? 'Tính lại' : 'Tính lương'}
             </Button>
           )}
-          {period?.status === 'calculated' && (
-            <Button size="sm" variant="destructive" onClick={() => handleLock(selectedPeriodId)} disabled={lockPeriod.isPending}>
+          {period?.status === 'confirmed' && (
+            <Button size="sm" variant="destructive" onClick={() => handleLock(selectedPeriodId, 'paid')} disabled={lockPeriod.isPending}>
               <Lock className="h-3.5 w-3.5 mr-1" />Chốt bảng lương
             </Button>
           )}
