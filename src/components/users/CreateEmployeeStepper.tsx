@@ -22,7 +22,7 @@ import { StepSalary } from './steps/StepSalary';
 import { StepAttendanceSetup, type AttendanceSetupData } from './steps/StepAttendanceSetup';
 import { cn } from '@/lib/utils';
 import { buildRecurringShiftAssignments } from '@/lib/attendanceSchedule';
-import { buildPaidLeaveOverrideRows } from '@/lib/paidLeaveSchedule';
+import { buildPaidLeaveOverrideRows, getPaidLeaveDaysForMonth } from '@/lib/paidLeaveSchedule';
 
 interface Branch { id: string; name: string; }
 
@@ -138,7 +138,6 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
           const refMonth = salaryData.paidLeaveReferenceMonth || new Date().toISOString().slice(0, 7);
           const [yy, mm] = refMonth.split('-').map(Number);
           const monthDate = new Date(yy || new Date().getFullYear(), (mm || 1) - 1, 1);
-          const { getPaidLeaveDaysForMonth } = require('@/lib/paidLeaveSchedule');
           const activeDays: number[] = getPaidLeaveDaysForMonth({
             monthDate,
             overrides: salaryData.paidLeaveOverrides || {},
