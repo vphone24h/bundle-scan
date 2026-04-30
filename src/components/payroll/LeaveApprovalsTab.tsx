@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, Search, CheckCircle, XCircle, Clock, CalendarOff, AlertTriangle } from 'lucide-react';
+import { Loader2, Search, CheckCircle, XCircle, Clock, CalendarOff, AlertTriangle, LogIn, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, parseISO, eachDayOfInterval, differenceInCalendarDays } from 'date-fns';
 
@@ -146,6 +146,25 @@ export function LeaveApprovalsTab() {
     return `${f} → ${t} (${days} ngày)`;
   };
 
+  const requestTypeBadge = (req: any) => {
+    const t = req.request_type || 'full_day';
+    if (t === 'late_arrival') return (
+      <Badge variant="outline" className="text-[10px] border-blue-300 text-blue-700">
+        <LogIn className="h-3 w-3 mr-1" />Đi muộn {req.time_minutes || 0}'
+      </Badge>
+    );
+    if (t === 'early_leave') return (
+      <Badge variant="outline" className="text-[10px] border-purple-300 text-purple-700">
+        <LogOut className="h-3 w-3 mr-1" />Về sớm {req.time_minutes || 0}'
+      </Badge>
+    );
+    return (
+      <Badge variant="outline" className="text-[10px] border-slate-300 text-slate-700">
+        <CalendarOff className="h-3 w-3 mr-1" />Nghỉ cả ngày
+      </Badge>
+    );
+  };
+
   const statusBadge = (status: string) => {
     if (status === 'approved') return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-[10px]"><CheckCircle className="h-3 w-3 mr-1" />Có phép</Badge>;
     if (status === 'unexcused') return <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 text-[10px]"><AlertTriangle className="h-3 w-3 mr-1" />Không phép</Badge>;
@@ -224,6 +243,7 @@ export function LeaveApprovalsTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nhân viên</TableHead>
+                  <TableHead>Loại</TableHead>
                   <TableHead>Ngày nghỉ</TableHead>
                   <TableHead>Lý do</TableHead>
                   <TableHead>Trạng thái</TableHead>
@@ -235,6 +255,7 @@ export function LeaveApprovalsTab() {
                 {filtered.map(req => (
                   <TableRow key={req.id}>
                     <TableCell className="font-medium text-sm">{userMap.get(req.user_id) || req.user_id.slice(0, 8)}</TableCell>
+                    <TableCell>{requestTypeBadge(req)}</TableCell>
                     <TableCell className="text-sm">{formatDateRange(req.leave_date_from, req.leave_date_to)}</TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{req.reason}</TableCell>
                     <TableCell>{statusBadge(req.status)}</TableCell>
@@ -259,18 +280,19 @@ export function LeaveApprovalsTab() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <CalendarOff className="h-5 w-5" /> Duyệt đơn xin nghỉ
+              <CalendarOff className="h-5 w-5" /> Duyệt đơn xin phép
             </DialogTitle>
           </DialogHeader>
           {reviewDialog && (
             <div className="space-y-4">
+              <div>{requestTypeBadge(reviewDialog)}</div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs text-muted-foreground">Nhân viên</Label>
                   <div className="font-medium">{userMap.get(reviewDialog.user_id) || reviewDialog.user_id.slice(0, 8)}</div>
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Ngày nghỉ</Label>
+                  <Label className="text-xs text-muted-foreground">Ngày</Label>
                   <div className="font-medium">{formatDateRange(reviewDialog.leave_date_from, reviewDialog.leave_date_to)}</div>
                 </div>
               </div>
@@ -288,11 +310,18 @@ export function LeaveApprovalsTab() {
                     <Label>Ghi chú duyệt</Label>
                     <Textarea value={reviewNote} onChange={e => setReviewNote(e.target.value)} placeholder="Ghi chú..." rows={2} />
                   </div>
-                  <div className="bg-muted/50 p-3 rounded text-xs space-y-1.5">
-                    <p>✅ <strong>Có phép</strong>: Nghỉ có phép — nếu còn hạn mức nghỉ có lương thì không trừ lương, hết hạn mức chỉ trừ ngày công.</p>
-                    <p>⚠️ <strong>Không phép</strong>: Cho nghỉ nhưng không phép — trừ lương ngày công + phạt theo quy định.</p>
-                    <p>❌ <strong>Từ chối</strong>: Không được nghỉ — nhân viên phải đi làm.</p>
-                  </div>
+                  {(reviewDialog.request_type === 'late_arrival' || reviewDialog.request_type === 'early_leave') ? (
+                    <div className="bg-muted/50 p-3 rounded text-xs space-y-1.5">
+                      <p>✅ <strong>Duyệt</strong>: <strong>Không tính phạt</strong> phút {reviewDialog.request_type === 'late_arrival' ? 'đi muộn' : 'về sớm'} của ngày đó.</p>
+                      <p>❌ <strong>Từ chối</strong>: Hệ thống vẫn <strong>tính phạt</strong> theo quy định công ty.</p>
+                    </div>
+                  ) : (
+                    <div className="bg-muted/50 p-3 rounded text-xs space-y-1.5">
+                      <p>✅ <strong>Có phép</strong>: Nghỉ có phép — nếu còn hạn mức nghỉ có lương thì không trừ lương, hết hạn mức chỉ trừ ngày công.</p>
+                      <p>⚠️ <strong>Không phép</strong>: Cho nghỉ nhưng không phép — trừ lương ngày công + phạt theo quy định.</p>
+                      <p>❌ <strong>Từ chối</strong>: Không được nghỉ — nhân viên phải đi làm.</p>
+                    </div>
+                  )}
                 </>
               )}
               {reviewDialog.review_note && reviewDialog.status !== 'pending' && (
@@ -305,32 +334,53 @@ export function LeaveApprovalsTab() {
           )}
           <DialogFooter className="flex-col gap-2 sm:flex-col">
             {reviewDialog?.status === 'pending' && (
-              <>
-                <Button
-                  className="w-full bg-green-600 hover:bg-green-700"
-                  onClick={() => reviewMutation.mutate({ id: reviewDialog.id, action: 'approved', note: reviewNote })}
-                  disabled={reviewMutation.isPending}
-                >
-                  {reviewMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
-                  Duyệt có phép
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full border-orange-400 text-orange-600 hover:bg-orange-50"
-                  onClick={() => reviewMutation.mutate({ id: reviewDialog.id, action: 'unexcused', note: reviewNote })}
-                  disabled={reviewMutation.isPending}
-                >
-                  <AlertTriangle className="h-4 w-4 mr-1" /> Duyệt không phép
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="w-full"
-                  onClick={() => reviewMutation.mutate({ id: reviewDialog.id, action: 'rejected', note: reviewNote })}
-                  disabled={reviewMutation.isPending}
-                >
-                  <XCircle className="h-4 w-4 mr-1" /> Từ chối (không được nghỉ)
-                </Button>
-              </>
+              (reviewDialog.request_type === 'late_arrival' || reviewDialog.request_type === 'early_leave') ? (
+                <>
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    onClick={() => reviewMutation.mutate({ id: reviewDialog.id, action: 'approved', note: reviewNote })}
+                    disabled={reviewMutation.isPending}
+                  >
+                    {reviewMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
+                    Duyệt (miễn phạt)
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="w-full"
+                    onClick={() => reviewMutation.mutate({ id: reviewDialog.id, action: 'rejected', note: reviewNote })}
+                    disabled={reviewMutation.isPending}
+                  >
+                    <XCircle className="h-4 w-4 mr-1" /> Từ chối (vẫn tính phạt)
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    onClick={() => reviewMutation.mutate({ id: reviewDialog.id, action: 'approved', note: reviewNote })}
+                    disabled={reviewMutation.isPending}
+                  >
+                    {reviewMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
+                    Duyệt có phép
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full border-orange-400 text-orange-600 hover:bg-orange-50"
+                    onClick={() => reviewMutation.mutate({ id: reviewDialog.id, action: 'unexcused', note: reviewNote })}
+                    disabled={reviewMutation.isPending}
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-1" /> Duyệt không phép
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="w-full"
+                    onClick={() => reviewMutation.mutate({ id: reviewDialog.id, action: 'rejected', note: reviewNote })}
+                    disabled={reviewMutation.isPending}
+                  >
+                    <XCircle className="h-4 w-4 mr-1" /> Từ chối (không được nghỉ)
+                  </Button>
+                </>
+              )
             )}
             <Button variant="outline" onClick={() => setReviewDialog(null)} className="w-full">Đóng</Button>
           </DialogFooter>
