@@ -683,7 +683,7 @@ Deno.serve(async (req) => {
                 .map(p => ({ name: p.name, qty: p.qty, revenue: p.revenue }));
             } else if (b.bonus_type === "kpi_branch" || b.bonus_type === "branch_revenue") {
               // Branch revenue: list products sold by employee's branch
-              bonusProducts = Array.from(soldByBranchProduct?.values?.() || [])
+              bonusProducts = Array.from(soldByBranchProduct.values())
                 .sort((a: any, b2: any) => b2.revenue - a.revenue)
                 .map((p: any) => ({ name: p.name, qty: p.qty, revenue: p.revenue }));
             }
