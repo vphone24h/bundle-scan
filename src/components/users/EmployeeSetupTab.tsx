@@ -175,7 +175,45 @@ export function EmployeeSetupTab() {
   const selectEmployee = async (emp: EmployeeSetup) => {
     setSelectedEmployee(emp);
     setSelectedShiftId(emp.shiftId || '');
-    setScheduleData({ type: 'fixed', fixedShiftId: emp.shiftId });
+    // Load existing shift assignments to restore the correct schedule type
+    let restoredSchedule: ScheduleData = { type: 'fixed', fixedShiftId: emp.shiftId };
+    if (tenantId) {
+      const { data: assignments } = await supabase
+        .from('shift_assignments')
+        .select('assignment_type, day_of_week, specific_date, shift_id')
+        .eq('tenant_id', tenantId)
+        .eq('user_id', emp.userId);
+
+      const rows = (assignments || []) as Array<{
+        assignment_type: string;
+        day_of_week: number | null;
+        specific_date: string | null;
+        shift_id: string;
+      }>;
+
+      const dailyRows = rows.filter(r => r.assignment_type === 'daily' && r.specific_date);
+      const fixedRows = rows.filter(r => r.assignment_type === 'fixed' && r.day_of_week !== null);
+
+      if (dailyRows.length > 0) {
+        const weeklyDays: Record<string, string> = {};
+        dailyRows.forEach(r => { if (r.specific_date) weeklyDays[r.specific_date] = r.shift_id; });
+        restoredSchedule = { type: 'weekly', weeklyDays, fixedShiftId: emp.shiftId };
+      } else if (fixedRows.length > 0) {
+        const uniqueShifts = new Set(fixedRows.map(r => r.shift_id));
+        // 7 days same shift = fixed; otherwise custom
+        if (fixedRows.length === 7 && uniqueShifts.size === 1) {
+          restoredSchedule = { type: 'fixed', fixedShiftId: fixedRows[0].shift_id };
+        } else {
+          const dayKeys = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+          const customDays: Record<string, string> = {};
+          fixedRows.forEach(r => {
+            if (r.day_of_week !== null) customDays[dayKeys[r.day_of_week]] = r.shift_id;
+          });
+          restoredSchedule = { type: 'custom', customDays, fixedShiftId: emp.shiftId };
+        }
+      }
+    }
+    setScheduleData(restoredSchedule);
     // Load existing paid leave default dates
     let existingLeaveDays: number[] = [];
     if (tenantId) {
