@@ -179,8 +179,8 @@ Deno.serve(async (req) => {
     const periodYear = new Date(period.start_date).getFullYear();
     const periodMonth = new Date(period.start_date).getMonth() + 1;
     const [paidLeaveDefaultsRes, paidLeaveOverridesRes] = await Promise.all([
-      supabase.from("paid_leave_default_dates").select("user_id, days_of_month").eq("tenant_id", tenantId).in("user_id", scopedUserIds),
-      supabase.from("paid_leave_overrides").select("user_id, leave_dates").eq("tenant_id", tenantId).eq("year", periodYear).eq("month", periodMonth).in("user_id", scopedUserIds),
+      supabase.from("paid_leave_default_dates").select("user_id, days_of_month").eq("tenant_id", tenant_id).in("user_id", scopedUserIds),
+      supabase.from("paid_leave_overrides").select("user_id, leave_dates").eq("tenant_id", tenant_id).eq("year", periodYear).eq("month", periodMonth).in("user_id", scopedUserIds),
     ]);
     const paidLeaveDefaultMap = new Map<string, number[]>();
     for (const r of (paidLeaveDefaultsRes.data || [])) {
