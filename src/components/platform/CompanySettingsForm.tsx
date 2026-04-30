@@ -10,51 +10,12 @@ import { usePlatformUser } from '@/hooks/useTenant';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Save, Plus, Trash2, Building2, Phone, Mail, Globe, CreditCard, Image, Upload } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Percent } from 'lucide-react';
-import { toast as sonnerToast } from 'sonner';
 
 export function CompanySettingsForm() {
   const { data: platformUser } = usePlatformUser();
   const companyId = platformUser?.company_id;
   const { data: settings, isLoading } = useCompanySettings(companyId);
   const upsert = useUpsertCompanySettings();
-  const queryClient = useQueryClient();
-
-  const { data: companyRow } = useQuery({
-    queryKey: ['company-feature-flags', companyId],
-    queryFn: async () => {
-      if (!companyId) return null;
-      const { data, error } = await supabase
-        .from('companies')
-        .select('interest_enabled')
-        .eq('id', companyId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!companyId,
-  });
-  const interestEnabled = !!(companyRow as any)?.interest_enabled;
-
-  const handleToggleInterest = async (next: boolean) => {
-    if (!companyId) return;
-    const { error } = await supabase
-      .from('companies')
-      .update({ interest_enabled: next })
-      .eq('id', companyId);
-    if (error) {
-      sonnerToast.error('Lỗi cập nhật');
-      return;
-    }
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['company-feature-flags', companyId] }),
-      queryClient.invalidateQueries({ queryKey: ['company-interest-flag'] }),
-      queryClient.invalidateQueries({ queryKey: ['companies'] }),
-    ]);
-    sonnerToast.success(next ? 'Đã bật tính năng tính lãi công nợ' : 'Đã tắt tính năng tính lãi công nợ');
-  };
 
   const [displayName, setDisplayName] = useState('');
   const [slogan, setSlogan] = useState('');
@@ -300,30 +261,6 @@ export function CompanySettingsForm() {
             <Plus className="h-3.5 w-3.5" />
             Thêm tài khoản
           </Button>
-        </CardContent>
-      </Card>
-
-      <Separator />
-
-      {/* Feature toggles */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Percent className="h-4 w-4" />
-            Tính lãi công nợ
-          </CardTitle>
-          <CardDescription className="text-xs">
-            Cho phép các shop trong công ty tính lãi suất trên công nợ khách/NCC. Mặc định tắt.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium">Cho phép tính lãi trên công nợ</p>
-            <p className="text-xs text-muted-foreground">
-              Khi tắt, shop vẫn thấy tab "Tính lãi" nhưng sẽ hiển thị SĐT công ty để liên hệ bật.
-            </p>
-          </div>
-          <Switch checked={interestEnabled} onCheckedChange={handleToggleInterest} />
         </CardContent>
       </Card>
 

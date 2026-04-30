@@ -23,10 +23,8 @@ export interface InterestPayment {
 }
 
 /**
- * Whether interest feature enabled.
- * Requires BOTH:
- *  - company.interest_enabled = true (admin tên miền bật toàn cty)
- *  - tenant.interest_enabled = true (admin tên miền bật riêng cho shop này)
+ * Whether interest feature enabled for this shop.
+ * Admin tên miền bật/tắt riêng từng shop ở tab DN (tenants.interest_enabled).
  */
 export function useCompanyInterestEnabled() {
   const { data: tenant } = useCurrentTenant();
@@ -34,24 +32,22 @@ export function useCompanyInterestEnabled() {
   const tenantInterestEnabled = !!(tenant as any)?.interest_enabled;
 
   const { data } = useQuery({
-    queryKey: ['company-interest-flag', companyId],
+    queryKey: ['company-interest-phone', companyId],
     queryFn: async () => {
-      if (!companyId) return { companyEnabled: false, phone: null as string | null };
-      const [{ data: company }, { data: settings }] = await Promise.all([
-        supabase.from('companies').select('interest_enabled').eq('id', companyId).maybeSingle(),
-        supabase.from('company_settings').select('phone').eq('company_id', companyId).maybeSingle(),
-      ]);
-      return {
-        companyEnabled: !!(company as any)?.interest_enabled,
-        phone: (settings as any)?.phone || null,
-      };
+      if (!companyId) return { phone: null as string | null };
+      const { data: settings } = await supabase
+        .from('company_settings')
+        .select('phone')
+        .eq('company_id', companyId)
+        .maybeSingle();
+      return { phone: (settings as any)?.phone || null };
     },
     enabled: !!companyId,
     staleTime: 60_000,
   });
 
   return {
-    enabled: !!data?.companyEnabled && tenantInterestEnabled,
+    enabled: tenantInterestEnabled,
     adminPhone: data?.phone || null,
     tenantId: tenant?.id,
     companyId,
