@@ -5296,11 +5296,13 @@ export type Database = {
           leave_date_from: string
           leave_date_to: string
           reason: string
+          request_type: string
           review_note: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
           tenant_id: string
+          time_minutes: number | null
           updated_at: string
           user_id: string
         }
@@ -5310,11 +5312,13 @@ export type Database = {
           leave_date_from: string
           leave_date_to: string
           reason: string
+          request_type?: string
           review_note?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
           tenant_id: string
+          time_minutes?: number | null
           updated_at?: string
           user_id: string
         }
@@ -5324,11 +5328,13 @@ export type Database = {
           leave_date_from?: string
           leave_date_to?: string
           reason?: string
+          request_type?: string
           review_note?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
           tenant_id?: string
+          time_minutes?: number | null
           updated_at?: string
           user_id?: string
         }

@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { CalendarOff, Plus, Clock, CheckCircle, XCircle, Loader2, Send, AlertTriangle } from 'lucide-react';
+import { CalendarOff, Plus, Clock, CheckCircle, XCircle, Loader2, Send, AlertTriangle, LogIn, LogOut } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO, addDays, differenceInCalendarDays, eachDayOfInterval } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -17,10 +18,14 @@ interface Props {
   tenantId?: string | null;
 }
 
+type RequestType = 'full_day' | 'late_arrival' | 'early_leave';
+
 export function EmployeeLeaveRequests({ userId, tenantId }: Props) {
   const [showForm, setShowForm] = useState(false);
+  const [requestType, setRequestType] = useState<RequestType>('full_day');
   const [dateFrom, setDateFrom] = useState(format(addDays(new Date(), 1), 'yyyy-MM-dd'));
   const [dateTo, setDateTo] = useState(format(addDays(new Date(), 1), 'yyyy-MM-dd'));
+  const [timeMinutes, setTimeMinutes] = useState<number>(15);
   const [reason, setReason] = useState('');
   const qc = useQueryClient();
 
@@ -61,15 +66,20 @@ export function EmployeeLeaveRequests({ userId, tenantId }: Props) {
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!reason.trim()) throw new Error('Vui lòng nhập lý do xin nghỉ');
-      if (!dateFrom || !dateTo) throw new Error('Vui lòng chọn ngày nghỉ');
-      if (dateTo < dateFrom) throw new Error('Ngày kết thúc phải sau ngày bắt đầu');
+      if (!dateFrom) throw new Error('Vui lòng chọn ngày');
+      // For late/early: only single day
+      const effectiveTo = requestType === 'full_day' ? dateTo : dateFrom;
+      if (requestType === 'full_day' && effectiveTo < dateFrom) throw new Error('Ngày kết thúc phải sau ngày bắt đầu');
+      if (requestType !== 'full_day' && (!timeMinutes || timeMinutes <= 0)) throw new Error('Vui lòng nhập số phút hợp lệ');
       const { error } = await supabase.from('leave_requests').insert({
         tenant_id: tenantId!,
         user_id: userId!,
         leave_date_from: dateFrom,
-        leave_date_to: dateTo,
+        leave_date_to: effectiveTo,
         reason: reason.trim(),
-      });
+        request_type: requestType,
+        time_minutes: requestType === 'full_day' ? null : timeMinutes,
+      } as any);
       if (error) {
         if (error.code === '23505') throw new Error('Bạn đã gửi đơn xin nghỉ trùng ngày rồi');
         throw error;
@@ -78,9 +88,14 @@ export function EmployeeLeaveRequests({ userId, tenantId }: Props) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['my-leave-requests'] });
       qc.invalidateQueries({ queryKey: ['pending-approvals-count'] });
-      toast.success(`Đã gửi đơn xin nghỉ ${leaveDays} ngày`);
+      const label = requestType === 'late_arrival' ? `Đã gửi đơn xin đi muộn ${timeMinutes} phút` :
+                    requestType === 'early_leave' ? `Đã gửi đơn xin về sớm ${timeMinutes} phút` :
+                    `Đã gửi đơn xin nghỉ ${leaveDays} ngày`;
+      toast.success(label);
       setShowForm(false);
       setReason('');
+      setRequestType('full_day');
+      setTimeMinutes(15);
       setDateFrom(format(addDays(new Date(), 1), 'yyyy-MM-dd'));
       setDateTo(format(addDays(new Date(), 1), 'yyyy-MM-dd'));
     },
@@ -113,6 +128,25 @@ export function EmployeeLeaveRequests({ userId, tenantId }: Props) {
     return `${f} → ${t} (${days} ngày)`;
   };
 
+  const requestTypeBadge = (req: any) => {
+    const t = req.request_type || 'full_day';
+    if (t === 'late_arrival') return (
+      <Badge variant="outline" className="text-[10px] border-blue-300 text-blue-700">
+        <LogIn className="h-3 w-3 mr-1" />Đi muộn {req.time_minutes || 0}'
+      </Badge>
+    );
+    if (t === 'early_leave') return (
+      <Badge variant="outline" className="text-[10px] border-purple-300 text-purple-700">
+        <LogOut className="h-3 w-3 mr-1" />Về sớm {req.time_minutes || 0}'
+      </Badge>
+    );
+    return (
+      <Badge variant="outline" className="text-[10px] border-slate-300 text-slate-700">
+        <CalendarOff className="h-3 w-3 mr-1" />Nghỉ cả ngày
+      </Badge>
+    );
+  };
+
   return (
     <div className="space-y-3">
       {paidLeaveDays > 0 && (
@@ -136,10 +170,10 @@ export function EmployeeLeaveRequests({ userId, tenantId }: Props) {
 
       <div className="flex justify-between items-center">
         <h3 className="text-sm font-semibold flex items-center gap-1.5">
-          <CalendarOff className="h-4 w-4" /> Đơn xin nghỉ
+          <CalendarOff className="h-4 w-4" /> Đơn xin nghỉ / muộn / về sớm
         </h3>
         <Button size="sm" onClick={() => setShowForm(true)} className="gap-1">
-          <Plus className="h-3.5 w-3.5" /> Xin nghỉ
+          <Plus className="h-3.5 w-3.5" /> Tạo đơn
         </Button>
       </div>
 
@@ -147,13 +181,24 @@ export function EmployeeLeaveRequests({ userId, tenantId }: Props) {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <CalendarOff className="h-5 w-5" /> Xin nghỉ phép
+              <CalendarOff className="h-5 w-5" /> Tạo đơn xin phép
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <div>
+              <Label>Loại đơn <span className="text-destructive">*</span></Label>
+              <Select value={requestType} onValueChange={(v: RequestType) => setRequestType(v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full_day">📅 Xin nghỉ cả ngày</SelectItem>
+                  <SelectItem value="late_arrival">🕘 Xin đi muộn</SelectItem>
+                  <SelectItem value="early_leave">🚪 Xin về sớm</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Từ ngày <span className="text-destructive">*</span></Label>
+                <Label>{requestType === 'full_day' ? 'Từ ngày' : 'Ngày'} <span className="text-destructive">*</span></Label>
                 <Input
                   type="date"
                   value={dateFrom}
@@ -164,19 +209,40 @@ export function EmployeeLeaveRequests({ userId, tenantId }: Props) {
                   min={format(new Date(), 'yyyy-MM-dd')}
                 />
               </div>
-              <div>
-                <Label>Đến ngày <span className="text-destructive">*</span></Label>
-                <Input
-                  type="date"
-                  value={dateTo}
-                  onChange={e => setDateTo(e.target.value)}
-                  min={dateFrom}
-                />
-              </div>
+              {requestType === 'full_day' ? (
+                <div>
+                  <Label>Đến ngày <span className="text-destructive">*</span></Label>
+                  <Input
+                    type="date"
+                    value={dateTo}
+                    onChange={e => setDateTo(e.target.value)}
+                    min={dateFrom}
+                  />
+                </div>
+              ) : (
+                <div>
+                  <Label>Số phút <span className="text-destructive">*</span></Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={480}
+                    value={timeMinutes}
+                    onChange={e => setTimeMinutes(parseInt(e.target.value) || 0)}
+                    placeholder="vd: 15"
+                  />
+                </div>
+              )}
             </div>
-            {leaveDays > 1 && (
+            {requestType === 'full_day' && leaveDays > 1 && (
               <p className="text-xs text-muted-foreground text-center">
                 📅 Tổng: <strong>{leaveDays}</strong> ngày nghỉ
+              </p>
+            )}
+            {requestType !== 'full_day' && timeMinutes > 0 && (
+              <p className="text-xs text-muted-foreground text-center">
+                {requestType === 'late_arrival'
+                  ? `🕘 Sẽ đến muộn ${timeMinutes} phút so với giờ vào ca.`
+                  : `🚪 Sẽ về sớm ${timeMinutes} phút so với giờ kết thúc ca.`}
               </p>
             )}
             <div>
@@ -184,25 +250,29 @@ export function EmployeeLeaveRequests({ userId, tenantId }: Props) {
               <Textarea
                 value={reason}
                 onChange={e => setReason(e.target.value)}
-                placeholder="Nhập lý do xin nghỉ..."
+                placeholder="Nhập lý do..."
                 rows={3}
               />
             </div>
-            {paidLeaveDays > 0 && (
+            {requestType === 'full_day' && paidLeaveDays > 0 && (
               <p className="text-xs text-muted-foreground">
                 💡 Bạn còn <strong>{remainingPaidLeave}</strong> ngày nghỉ có lương tháng này.
                 {remainingPaidLeave <= 0 && ' Nghỉ thêm sẽ bị trừ lương ngày công.'}
               </p>
             )}
+            <div className="bg-muted/50 p-2 rounded text-[11px] text-muted-foreground">
+              ℹ️ Đơn được admin <strong>duyệt</strong> sẽ <strong>không bị tính phạt</strong>.
+              Nếu không duyệt (hoặc không gửi đơn), hệ thống sẽ tính phạt theo quy định công ty.
+            </div>
           </div>
           <DialogFooter className="flex-col gap-2 sm:flex-col">
             <Button
               onClick={() => createMutation.mutate()}
-              disabled={createMutation.isPending || !reason.trim() || !dateFrom || !dateTo || leaveDays < 1}
+              disabled={createMutation.isPending || !reason.trim() || !dateFrom || (requestType === 'full_day' ? leaveDays < 1 : timeMinutes <= 0)}
               className="w-full gap-1"
             >
               {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Gửi đơn {leaveDays > 1 ? `(${leaveDays} ngày)` : ''}
+              Gửi đơn {requestType === 'full_day' && leaveDays > 1 ? `(${leaveDays} ngày)` : requestType !== 'full_day' && timeMinutes > 0 ? `(${timeMinutes} phút)` : ''}
             </Button>
             <Button variant="outline" onClick={() => setShowForm(false)} className="w-full">Hủy</Button>
           </DialogFooter>
@@ -224,7 +294,8 @@ export function EmployeeLeaveRequests({ userId, tenantId }: Props) {
               <CardContent className="p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      {requestTypeBadge(req)}
                       <span className="text-sm font-medium">
                         {formatDateRange(req.leave_date_from, req.leave_date_to)}
                       </span>
