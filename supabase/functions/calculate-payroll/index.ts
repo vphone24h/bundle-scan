@@ -416,10 +416,16 @@ Deno.serve(async (req) => {
       // Aggregate sold items by product & category
       const soldByProduct = new Map<string, { name: string; qty: number; revenue: number }>();
       const soldByCategory = new Map<string, { qty: number; revenue: number }>();
+      let userGrossProfit = 0;
       for (const sale of userSales) {
         const items = saleItemsByReceipt[sale.id] || [];
         for (const item of items) {
           const lineTotal = (item.sale_price || 0) * (item.quantity || 1);
+          // Gross profit = (sale_price - import_price) * quantity
+          const importPrice = item.product_id ? (productImportPriceMap.get(item.product_id) || 0) : 0;
+          if (importPrice > 0) {
+            userGrossProfit += ((item.sale_price || 0) - importPrice) * (item.quantity || 1);
+          }
           // By product
           const pKey = item.product_id || item.product_name;
           const existing = soldByProduct.get(pKey) || { name: item.product_name, qty: 0, revenue: 0 };
@@ -530,8 +536,13 @@ Deno.serve(async (req) => {
               amount = b.calc_type === "percentage" ? branchRevenue * b.value / 100 : b.value;
             }
           } else if (b.bonus_type === "gross_profit") {
-            // Placeholder - needs import price data for profit calc
-            amount = 0;
+            // Lợi nhuận gộp: (giá bán - giá nhập) × SL của các đơn NV bán
+            const threshold = b.threshold || 0;
+            if (userGrossProfit >= threshold) {
+              amount = b.calc_type === "percentage"
+                ? userGrossProfit * b.value / 100
+                : b.value;
+            }
           }
           if (amount > 0) {
             totalBonus += amount;
