@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Phone, Percent, Calendar, Wallet, Trash2, AlertCircle, Play, Square } from 'lucide-react';
 import { formatNumber, formatInputNumber, parseFormattedNumber } from '@/lib/formatNumber';
 import {
-  useTenantInterestEnabled,
+  useCompanyInterestEnabled,
   useDebtInterestConfig,
   useDebtInterestPayments,
   useAccruedInterest,
@@ -26,7 +26,7 @@ interface Props {
 }
 
 export function DebtInterestTab({ entityType, entityId, mergedEntityIds }: Props) {
-  const { enabled: featureEnabled, adminPhone } = useTenantInterestEnabled();
+  const { enabled: featureEnabled, adminPhone } = useCompanyInterestEnabled();
   const { data: config } = useDebtInterestConfig(entityType, entityId);
   const { data: payments } = useDebtInterestPayments(entityType, entityId);
   const accrual = useAccruedInterest(entityType, entityId, mergedEntityIds);
