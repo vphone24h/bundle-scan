@@ -597,6 +597,8 @@ Deno.serve(async (req) => {
             for (const a of userAttendance) {
               const mins = a.late_minutes || 0;
               if (mins <= 0) continue;
+              // Skip if employee had an approved late_arrival request that day
+              if (approvedLateArrivalKeys.has(`${employee.user_id}_${a.date}`)) continue;
               if (fullDayMin > 0 && mins >= fullDayMin) {
                 fullDayCount++;
               } else if (mins >= thresholdMin) {
@@ -608,6 +610,8 @@ Deno.serve(async (req) => {
             for (const a of userAttendance) {
               const mins = a.early_leave_minutes || 0;
               if (mins <= 0) continue;
+              // Skip if employee had an approved early_leave request that day
+              if (approvedEarlyLeaveKeys.has(`${employee.user_id}_${a.date}`)) continue;
               if (fullDayMin > 0 && mins >= fullDayMin) {
                 fullDayCount++;
               } else if (mins >= thresholdMin) {
