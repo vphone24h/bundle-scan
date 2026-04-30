@@ -710,6 +710,14 @@ export function DebtDetailDialog({
               </div>
             )}
           </TabsContent>
+
+          <TabsContent value="interest" className="flex-1 mt-4 min-h-0">
+            <DebtInterestTab
+              entityType={entityType}
+              entityId={entityId}
+              mergedEntityIds={mergedEntityIds}
+            />
+          </TabsContent>
         </Tabs>
         </div>
   );
