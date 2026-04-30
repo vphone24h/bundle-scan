@@ -89,6 +89,34 @@ export function ShiftScheduleTab() {
     }) || [];
   };
 
+  /** Đếm: đi làm (unique users có ca), nghỉ phép, nghỉ KL, trống (không xếp & không nghỉ) */
+  const getDayStats = (date: string) => {
+    const dayAssignments = getAssignmentsForDay(date);
+    const workingUsers = new Set(dayAssignments.map((a: any) => a.user_id));
+    const dayLeaves = leaveMap.get(date) || [];
+    const excused = dayLeaves.filter(l => l.status === 'approved').length;
+    const unexcused = dayLeaves.filter(l => l.status === 'unexcused').length;
+    const totalStaff = staffList?.length || 0;
+    const onLeaveUserIds = new Set(dayLeaves.map(l => l.user_id));
+    // "Trống" = NV không có ca và không có đơn nghỉ
+    let empty = 0;
+    (staffList || []).forEach((s: any) => {
+      if (!workingUsers.has(s.user_id) && !onLeaveUserIds.has(s.user_id)) empty++;
+    });
+    return { working: workingUsers.size, excused, unexcused, empty, totalStaff };
+  };
+
+  /** Tổng kết toàn tuần: cộng dồn theo từng ngày */
+  const weekStats = useMemo(() => {
+    let working = 0, excused = 0, unexcused = 0, empty = 0;
+    weekDays.forEach(d => {
+      const s = getDayStats(format(d, 'yyyy-MM-dd'));
+      working += s.working; excused += s.excused; unexcused += s.unexcused; empty += s.empty;
+    });
+    return { working, excused, unexcused, empty };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekDays, assignments, leaveMap, staffList]);
+
   const handleAddAssignment = async () => {
     if (!selectedUserId || !selectedShiftId || !selectedDate) return;
     await createAssignment.mutateAsync({
@@ -215,6 +243,26 @@ export function ShiftScheduleTab() {
         </Button>
       </div>
 
+      {/* Tổng kết tuần */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="rounded-md border p-2 bg-blue-50 dark:bg-blue-950/30">
+          <div className="text-[10px] text-muted-foreground uppercase">Lượt đi làm</div>
+          <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{weekStats.working}</div>
+        </div>
+        <div className="rounded-md border p-2 bg-green-50 dark:bg-green-950/30">
+          <div className="text-[10px] text-muted-foreground uppercase">Nghỉ phép</div>
+          <div className="text-lg font-bold text-green-600 dark:text-green-400">{weekStats.excused}</div>
+        </div>
+        <div className="rounded-md border p-2 bg-red-50 dark:bg-red-950/30">
+          <div className="text-[10px] text-muted-foreground uppercase">Nghỉ KL</div>
+          <div className="text-lg font-bold text-red-600 dark:text-red-400">{weekStats.unexcused}</div>
+        </div>
+        <div className="rounded-md border p-2 bg-muted/40">
+          <div className="text-[10px] text-muted-foreground uppercase">Chưa xếp / trống</div>
+          <div className="text-lg font-bold text-muted-foreground">{weekStats.empty}</div>
+        </div>
+      </div>
+
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : (
@@ -237,6 +285,17 @@ export function ShiftScheduleTab() {
                         <br />
                         <span className="text-sm">{format(day, 'dd')}</span>
                       </CardTitle>
+                      {(() => {
+                        const s = getDayStats(dateStr);
+                        return (
+                          <div className="flex flex-wrap items-center justify-center gap-0.5 mt-1 text-[9px] leading-tight">
+                            <span className="px-1 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" title="Đi làm">✓{s.working}</span>
+                            {s.excused > 0 && <span className="px-1 rounded bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" title="Nghỉ phép">P{s.excused}</span>}
+                            {s.unexcused > 0 && <span className="px-1 rounded bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" title="Nghỉ KL">✗{s.unexcused}</span>}
+                            {s.empty > 0 && <span className="px-1 rounded bg-muted text-muted-foreground" title="Chưa xếp">−{s.empty}</span>}
+                          </div>
+                        );
+                      })()}
                     </CardHeader>
                     <CardContent className="p-1.5 pt-0 space-y-1 min-h-[80px]">
                       {dayAssignments.map((a: any) => {
