@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Loader2, Calculator, Lock, FileSpreadsheet, ChevronRight, Search, Users, DollarSign, Gift, AlertTriangle, Download, ArrowUpDown, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import { usePayrollPeriods, useCreatePayrollPeriod, useCalculatePayroll, usePayrollRecords, useLockPayrollPeriod } from '@/hooks/usePayroll';
 import { usePlatformUser } from '@/hooks/useTenant';
+import { useTenantStaffList } from '@/hooks/useTenantStaffList';
+import { useBranches } from '@/hooks/useBranches';
 import { formatNumber } from '@/lib/formatNumber';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -39,6 +41,18 @@ export function PayrollPeriodsTab() {
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const { data: records } = usePayrollRecords(selectedPeriodId || undefined);
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+
+  // Map user_id → branch name (for display only)
+  const { data: staffList } = useTenantStaffList();
+  const { data: branches } = useBranches();
+  const branchByUserId = useMemo(() => {
+    const branchMap = new Map((branches || []).map((b: any) => [b.id, b.name]));
+    const m = new Map<string, string>();
+    for (const s of (staffList || [])) {
+      if (s.user_id) m.set(s.user_id, s.branch_id ? (branchMap.get(s.branch_id) || '—') : '—');
+    }
+    return m;
+  }, [staffList, branches]);
 
   // Filters & search
   const [searchQuery, setSearchQuery] = useState('');
