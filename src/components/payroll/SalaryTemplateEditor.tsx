@@ -496,7 +496,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                       <>
                         <div className="space-y-1">
                           <Label className="text-xs">Hệ số lương (%)</Label>
-                          <Input type="number" className="h-8 text-xs" value={o.value} onChange={e => { const n = [...overtimes]; n[i].value = Number(e.target.value); setOvertimes(n); }} />
+                          <NumberInput className="h-8 text-xs" value={o.value} onChangeNumber={v => { const n = [...overtimes]; n[i].value = v; setOvertimes(n); }} />
                         </div>
                         <div className="col-span-2">
                           <p className="text-xs text-muted-foreground">
@@ -511,7 +511,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                       <>
                         <div className="space-y-1">
                           <Label className="text-xs">Số tiền mỗi giờ OT (VNĐ)</Label>
-                          <Input type="number" className="h-8 text-xs" value={o.value} onChange={e => { const n = [...overtimes]; n[i].value = Number(e.target.value); setOvertimes(n); }} />
+                          <NumberInput className="h-8 text-xs" value={o.value} onChangeNumber={v => { const n = [...overtimes]; n[i].value = v; setOvertimes(n); }} />
                         </div>
                         <div className="col-span-2">
                           <p className="text-xs text-muted-foreground">
