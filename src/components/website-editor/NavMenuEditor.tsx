@@ -307,6 +307,7 @@ export function NavMenuEditor({ templateId, customNavItems, onChange }: NavMenuE
                       </div>
                     ))}
                   </div>
+                  </>)}
 
                   {/* Installment rates editor */}
                   {pageView === 'installment' && (() => {
