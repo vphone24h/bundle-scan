@@ -303,6 +303,7 @@ export function useCreateStockCount() {
         hasImei: boolean;
         importPrice: number;
         imeis: string[];
+        systemQuantity: number;
       }>();
 
       products?.forEach((product) => {
@@ -316,13 +317,18 @@ export function useCreateStockCount() {
             hasImei: true,
             importPrice: product.import_price,
             imeis: [product.imei],
+            systemQuantity: 1,
           });
         } else {
           // Non-IMEI product - group by name+sku
           const key = `noImei:${product.name}:${product.sku}`;
           const existing = itemsMap.get(key);
+          const parsedQuantity = Number(product.quantity);
+          const quantity = Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
+
           if (existing) {
-            existing.imeis.push(product.id); // Use as count
+            existing.imeis.push(product.id);
+            existing.systemQuantity += quantity;
           } else {
             itemsMap.set(key, {
               productId: null,
@@ -331,6 +337,7 @@ export function useCreateStockCount() {
               hasImei: false,
               importPrice: product.import_price,
               imeis: [product.id],
+              systemQuantity: quantity,
             });
           }
         }
@@ -344,9 +351,9 @@ export function useCreateStockCount() {
         sku: item.sku,
         imei: item.hasImei ? item.imeis[0] : null,
         has_imei: item.hasImei,
-        system_quantity: item.hasImei ? 1 : item.imeis.length,
+        system_quantity: item.systemQuantity,
         actual_quantity: 0,
-        variance: item.hasImei ? -1 : -item.imeis.length,
+        variance: -item.systemQuantity,
         status: 'pending' as const,
         is_checked: false,
         import_price: item.importPrice,
