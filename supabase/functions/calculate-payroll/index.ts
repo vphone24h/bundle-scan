@@ -208,6 +208,19 @@ Deno.serve(async (req) => {
       return set;
     }
 
+    // Load product import_price for gross_profit bonus calculation
+    const productIdsInSales = [...new Set(allSaleItems.map((it: any) => it.product_id).filter(Boolean))];
+    const productImportPriceMap = new Map<string, number>();
+    if (productIdsInSales.length > 0) {
+      const { data: prods } = await supabase
+        .from("products")
+        .select("id, import_price")
+        .in("id", productIdsInSales);
+      for (const p of (prods || [])) {
+        productImportPriceMap.set((p as any).id, Number((p as any).import_price || 0));
+      }
+    }
+
     // Build per-user maps of dates with approved late_arrival / early_leave waivers
     // Key: user_id + "_" + date(yyyy-MM-dd)
     const approvedLateArrivalKeys = new Set<string>();
