@@ -133,6 +133,7 @@ export function PayrollPeriodsTab() {
       const rec = r as any;
       return {
         'Nhân viên': r.user_name || r.user_id,
+        'Chi nhánh': branchByUserId.get(r.user_id) || '—',
         'Công chuẩn': rec.expected_work_days || 0,
         'Ngày công': r.total_work_days,
         'Giờ công': r.total_work_hours,
