@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Loader2, Calculator, Lock, FileSpreadsheet, ChevronRight, Search, Users, DollarSign, Gift, AlertTriangle, Download, ArrowUpDown, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import { usePayrollPeriods, useCreatePayrollPeriod, useCalculatePayroll, usePayrollRecords, useLockPayrollPeriod } from '@/hooks/usePayroll';
 import { usePlatformUser } from '@/hooks/useTenant';
+import { useTenantStaffList } from '@/hooks/useTenantStaffList';
+import { useBranches } from '@/hooks/useBranches';
 import { formatNumber } from '@/lib/formatNumber';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -39,6 +41,18 @@ export function PayrollPeriodsTab() {
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const { data: records } = usePayrollRecords(selectedPeriodId || undefined);
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+
+  // Map user_id → branch name (for display only)
+  const { data: staffList } = useTenantStaffList();
+  const { data: branches } = useBranches();
+  const branchByUserId = useMemo(() => {
+    const branchMap = new Map((branches || []).map((b: any) => [b.id, b.name]));
+    const m = new Map<string, string>();
+    for (const s of (staffList || [])) {
+      if (s.user_id) m.set(s.user_id, s.branch_id ? (branchMap.get(s.branch_id) || '—') : '—');
+    }
+    return m;
+  }, [staffList, branches]);
 
   // Filters & search
   const [searchQuery, setSearchQuery] = useState('');
@@ -119,6 +133,7 @@ export function PayrollPeriodsTab() {
       const rec = r as any;
       return {
         'Nhân viên': r.user_name || r.user_id,
+        'Chi nhánh': branchByUserId.get(r.user_id) || '—',
         'Công chuẩn': rec.expected_work_days || 0,
         'Ngày công': r.total_work_days,
         'Giờ công': r.total_work_hours,
@@ -490,6 +505,7 @@ export function PayrollPeriodsTab() {
                 <TableRow>
                   <TableHead className="text-xs w-8"></TableHead>
                   <TableHead className="text-xs">Nhân viên</TableHead>
+                  <TableHead className="text-xs">Chi nhánh</TableHead>
                   <TableHead className="text-xs text-center">Ngày công</TableHead>
                   <TableHead className="text-xs text-center">Giờ công</TableHead>
                   <TableHead className="text-xs text-right">Lương chính</TableHead>
@@ -516,6 +532,7 @@ export function PayrollPeriodsTab() {
                           {isExpanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
                         </TableCell>
                         <TableCell className="text-xs font-medium max-w-[120px] truncate">{r.user_name || r.user_id?.slice(0, 8)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">{branchByUserId.get(r.user_id) || '—'}</TableCell>
                         <TableCell className="text-xs text-center">
                           <span className="font-medium">{r.total_work_days}</span>
                           <span className="text-muted-foreground">/{rec.expected_work_days || '-'}</span>
@@ -535,7 +552,7 @@ export function PayrollPeriodsTab() {
                       </TableRow>
                       {isExpanded && (
                         <TableRow key={`${r.id}-detail`}>
-                          <TableCell colSpan={11} className="p-0 bg-muted/30">
+                          <TableCell colSpan={12} className="p-0 bg-muted/30">
                             <InlinePayrollBreakdown record={r} periodName={period?.name} onExport={() => handleExportSingle(r)} />
                           </TableCell>
                         </TableRow>
