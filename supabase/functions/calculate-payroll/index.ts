@@ -435,7 +435,26 @@ Deno.serve(async (req) => {
       if (!isPayrollReady) {
         baseSalary = 0;
       } else if (salaryType === "fixed") {
-        baseSalary = baseAmount;
+        // Prorate theo ngày công + ngày phép có lương đã dùng
+        // Công thức: base × (ngày công thực + min(quota phép, ngày vắng)) / ngày công chuẩn
+        const expected = expectedWorkDays || 22;
+        // Đếm số ngày vắng (gồm absent có record + scheduled days không có record)
+        const absentRecorded = userAttendance.filter((a: any) => a.status === "absent").length;
+        let absentNoShow = 0;
+        for (const dateStr of scheduledDates) {
+          const hasRecord = userAttendance.some((a: any) => a.date === dateStr);
+          if (hasRecord) continue;
+          const dateObj = new Date(dateStr);
+          const today = new Date();
+          today.setHours(23, 59, 59, 999);
+          if (dateObj > today) continue;
+          absentNoShow++;
+        }
+        const totalAbsent = absentRecorded + absentNoShow;
+        const paidLeaveUsed = Math.min(paidLeaveDaysPerMonth, totalAbsent);
+        const paidWorkDays = workDays + paidLeaveUsed;
+        const ratio = Math.min(1, paidWorkDays / expected);
+        baseSalary = Math.round(baseAmount * ratio);
       } else if (salaryType === "daily") {
         // Lương theo ngày: base_amount = lương/ngày × số ngày có mặt
         baseSalary = baseAmount * workDays;
