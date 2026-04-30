@@ -578,6 +578,36 @@ function InlinePayrollBreakdown({ record, periodName, onExport }: { record: any;
   const penaltyDetails = rec.penalty_details || [];
   const holidayDetails = rec.holiday_details || [];
   const overtimeDetails = configSnapshot.overtime_details || [];
+  const attendanceDetails = rec.attendance_details || [];
+
+  // Build per-day overtime breakdown (from attendance) for "Tăng ca" section
+  const overtimeByDay = attendanceDetails
+    .filter((d: any) => (d.overtime_minutes || 0) > 0)
+    .map((d: any) => ({
+      date: d.date,
+      hours: Math.round((d.overtime_minutes / 60) * 100) / 100,
+    }));
+
+  // Helpers to describe base salary calculation
+  const baseAmt = Number(configSnapshot.base_amount || 0);
+  const salaryType = configSnapshot.salary_type;
+  const expectedDays = rec.expected_work_days || 0;
+  const workDays = rec.total_work_days || 0;
+  const workHours = rec.total_work_hours || 0;
+  let baseFormula = '';
+  if (salaryType === 'fixed') {
+    if (expectedDays > 0 && workDays < expectedDays) {
+      baseFormula = `${formatNumber(baseAmt)}đ ÷ ${expectedDays} ngày × ${workDays} ngày công`;
+    } else {
+      baseFormula = `Cố định ${formatNumber(baseAmt)}đ/tháng`;
+    }
+  } else if (salaryType === 'daily') {
+    baseFormula = `${formatNumber(baseAmt)}đ/ngày × ${workDays} ngày công`;
+  } else if (salaryType === 'hourly') {
+    baseFormula = `${formatNumber(baseAmt)}đ/giờ × ${workHours}h`;
+  } else if (salaryType === 'shift') {
+    baseFormula = `${formatNumber(baseAmt)}đ/ca × ${workDays} ca`;
+  }
 
   return (
     <div className="p-4 space-y-4">
@@ -627,8 +657,8 @@ function InlinePayrollBreakdown({ record, periodName, onExport }: { record: any;
           {/* Base salary */}
           <BreakdownSection icon="💰" title="Lương chính" total={rec.base_salary}>
             <BreakdownItem
-              label={configSnapshot.salary_type === 'hourly' ? 'Theo giờ' : configSnapshot.salary_type === 'daily' ? 'Theo ngày' : configSnapshot.salary_type === 'shift' ? 'Theo ca' : 'Cố định tháng'}
-              detail={configSnapshot.base_amount ? `Mức: ${formatNumber(configSnapshot.base_amount)}đ` : ''}
+              label={salaryType === 'hourly' ? 'Theo giờ' : salaryType === 'daily' ? 'Theo ngày' : salaryType === 'shift' ? 'Theo ca' : 'Cố định tháng'}
+              detail={baseFormula}
               amount={rec.base_salary}
             />
           </BreakdownSection>
@@ -636,7 +666,13 @@ function InlinePayrollBreakdown({ record, periodName, onExport }: { record: any;
           {/* Bonuses */}
           <BreakdownSection icon="🎁" title="Thưởng" total={rec.total_bonus || 0}>
             {bonusDetails.length > 0 ? bonusDetails.map((b: any, i: number) => (
-              <BreakdownItem key={i} label={b.name} detail={b.type || ''} amount={b.amount} positive />
+              <BreakdownItem
+                key={i}
+                label={b.name}
+                detail={describeBonus(b)}
+                amount={b.amount}
+                positive
+              />
             )) : (
               <p className="text-[11px] text-muted-foreground italic">Không có khoản thưởng</p>
             )}
@@ -645,7 +681,13 @@ function InlinePayrollBreakdown({ record, periodName, onExport }: { record: any;
           {/* Commissions */}
           <BreakdownSection icon="📊" title="Hoa hồng" total={rec.total_commission || 0}>
             {commissionDetails.length > 0 ? commissionDetails.map((c: any, i: number) => (
-              <BreakdownItem key={i} label={c.name || c.product_name || 'Hoa hồng'} detail={c.type || ''} amount={c.amount} positive />
+              <BreakdownItem
+                key={i}
+                label={c.name || c.product_name || 'Hoa hồng'}
+                detail={describeCommission(c)}
+                amount={c.amount}
+                positive
+              />
             )) : (
               <p className="text-[11px] text-muted-foreground italic">Không có hoa hồng</p>
             )}
@@ -654,7 +696,13 @@ function InlinePayrollBreakdown({ record, periodName, onExport }: { record: any;
           {/* Allowances */}
           <BreakdownSection icon="📋" title="Phụ cấp" total={rec.total_allowance || 0}>
             {allowanceDetails.length > 0 ? allowanceDetails.map((a: any, i: number) => (
-              <BreakdownItem key={i} label={a.name} amount={a.amount} positive />
+              <BreakdownItem
+                key={i}
+                label={a.name}
+                detail={a.type === 'per_day' && a.days ? `Theo ngày × ${a.days} ngày công` : a.type === 'fixed' ? 'Cố định' : ''}
+                amount={a.amount}
+                positive
+              />
             )) : (
               <p className="text-[11px] text-muted-foreground italic">Không có phụ cấp</p>
             )}
@@ -675,16 +723,41 @@ function InlinePayrollBreakdown({ record, periodName, onExport }: { record: any;
           {/* Overtime */}
           <BreakdownSection icon="⏰" title="Tăng ca" total={rec.overtime_pay || 0}>
             {overtimeDetails.length > 0 ? overtimeDetails.map((o: any, i: number) => (
-              <BreakdownItem key={i} label={o.name} detail={o.type === 'full_day' ? `${o.count} ngày` : `${o.hours}h`} amount={o.amount} positive />
+              <BreakdownItem
+                key={i}
+                label={o.name}
+                detail={o.type === 'full_day' ? `${o.count} ngày tăng ca` : `${o.hours}h tăng ca`}
+                amount={o.amount}
+                positive
+              />
             )) : (
               <p className="text-[11px] text-muted-foreground italic">Không có tăng ca</p>
+            )}
+            {overtimeByDay.length > 0 && (
+              <div className="mt-1.5 pt-1.5 border-t border-dashed">
+                <p className="text-[10px] text-muted-foreground mb-0.5">Chi tiết theo ngày:</p>
+                <div className="space-y-0.5 max-h-32 overflow-y-auto pr-1">
+                  {overtimeByDay.map((d: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between text-[11px]">
+                      <span className="text-muted-foreground">{format(new Date(d.date), 'dd/MM')}</span>
+                      <span className="font-medium">{d.hours}h</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </BreakdownSection>
 
           {/* Penalties */}
           <BreakdownSection icon="⚠️" title="Phạt" total={rec.total_penalty || 0} isDeduction>
             {penaltyDetails.length > 0 ? penaltyDetails.map((p: any, i: number) => (
-              <BreakdownItem key={i} label={p.name} detail={`×${p.count} lần`} amount={p.amount} negative />
+              <BreakdownItem
+                key={i}
+                label={p.name}
+                detail={p.detail || (p.per_amount ? `×${p.count} lần × ${formatNumber(p.per_amount)}đ` : `×${p.count} lần`)}
+                amount={p.amount}
+                negative
+              />
             )) : (
               <p className="text-[11px] text-muted-foreground italic">Không có khoản phạt</p>
             )}
