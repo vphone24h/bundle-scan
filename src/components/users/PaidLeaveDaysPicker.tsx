@@ -77,9 +77,6 @@ export function PaidLeaveDaysPicker({ requiredDays, selectedDays, referenceMonth
   };
 
   const saveAsDefault = () => {
-    if (selectedSet.has(day)) {
-      return;
-    }
     onChange({
       defaultDays: activeDays,
       referenceMonth,
