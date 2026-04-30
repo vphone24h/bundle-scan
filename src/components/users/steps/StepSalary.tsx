@@ -37,14 +37,19 @@ export function StepSalary({ salaryData, onChange, templates }: Props) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('salary_templates')
-        .select('paid_leave_days_per_month')
+        .select('paid_leave_days_per_month, salary_type')
         .eq('id', salaryData.templateId!)
         .maybeSingle();
       if (error) throw error;
       return data;
     },
   });
-  const requiredLeaveDays = (templateMeta as any)?.paid_leave_days_per_month || 0;
+  const templateSalaryType = (templateMeta as any)?.salary_type;
+  // Chỉ lương cố định theo tháng mới có chế độ nghỉ có lương.
+  // Lương theo giờ/ngày/ca chỉ trả khi đi làm thực tế.
+  const requiredLeaveDays = templateSalaryType === 'fixed'
+    ? ((templateMeta as any)?.paid_leave_days_per_month || 0)
+    : 0;
 
   const addItem = (type: 'allowances' | 'deductions') => {
     onChange({ ...salaryData, [type]: [...salaryData[type], { name: '', amount: 0 }] });
