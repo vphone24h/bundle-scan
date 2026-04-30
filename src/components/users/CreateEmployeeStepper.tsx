@@ -51,6 +51,7 @@ export interface SalaryData {
   customBaseAmount?: number;
   allowances: { name: string; amount: number }[];
   deductions: { name: string; amount: number }[];
+  paidLeaveDaysOfMonth?: number[];
 }
 
 export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEmployeeStepperProps) {
