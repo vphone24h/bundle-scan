@@ -8,7 +8,7 @@ import { PageItemConfig, DEFAULT_PAGE_ITEMS, InstallmentRateConfig, DEFAULT_INST
 import {
   Wrench, RefreshCw, CreditCard, Headphones, BarChart3, DollarSign,
   Calendar, MapPin, Phone, Mail, Clock, CheckCircle, ArrowRight,
-  Package, Star, Shield, ChevronRight, Users, FileText
+  Package, Star, Shield, ChevronRight, Users, FileText, Info
 } from 'lucide-react';
 
 interface SystemPageProps {
@@ -20,6 +20,12 @@ interface SystemPageProps {
   onNavigateProducts?: () => void;
   pageItems?: PageItemConfig[];
   installmentRates?: InstallmentRateConfig[];
+  /** Price list articles (used by PriceListPage) */
+  priceListArticles?: { id: string; title: string; thumbnail_url?: string | null; summary?: string | null }[];
+  /** Pre-selected article id from menu config (used by PriceListPage) */
+  selectedArticleId?: string | null;
+  /** Open an article when user clicks an item */
+  onSelectArticle?: (articleId: string) => void;
 }
 
 // === REPAIR PAGE ===
@@ -383,28 +389,65 @@ export function InstallmentPage({ accentColor, storeName, storePhone, zaloUrl, o
 }
 
 // === PRICE LIST PAGE ===
-export function PriceListPage({ accentColor, storeName, storePhone }: SystemPageProps) {
+export function PriceListPage({ accentColor, storePhone, priceListArticles, onSelectArticle }: SystemPageProps) {
+  const articles = priceListArticles || [];
+  const hasArticles = articles.length > 0;
+
   return (
-    <div className="max-w-[1200px] mx-auto px-4 py-8 space-y-10">
+    <div className="max-w-[1200px] mx-auto px-4 py-8 space-y-8">
       <ScrollReveal animation="fade-up">
         <div className="rounded-2xl p-8 text-white text-center" style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)` }}>
           <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-90" />
           <h1 className="text-2xl sm:text-3xl font-bold mb-2">Bảng giá</h1>
-          <p className="text-white/80 text-sm max-w-md mx-auto">Cập nhật mới nhất – Giá cạnh tranh nhất thị trường</p>
+          <p className="text-white/80 text-sm max-w-md mx-auto">
+            {hasArticles ? 'Chọn bảng giá bạn muốn xem' : 'Cập nhật bảng giá mới nhất'}
+          </p>
         </div>
       </ScrollReveal>
 
-      <ScrollReveal animation="fade-up" delay={100}>
-        <div className="rounded-2xl bg-[#f5f5f7] p-6 text-center space-y-3">
-          <p className="text-sm text-[#86868b]">Bảng giá được cập nhật theo thời gian thực từ kho hàng.</p>
-          <p className="text-sm text-[#86868b]">Vui lòng liên hệ để nhận báo giá chính xác nhất.</p>
-          {storePhone && (
-            <a href={`tel:${storePhone}`} className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-medium text-white" style={{ backgroundColor: accentColor }}>
-              <Phone className="h-4 w-4" /> Liên hệ báo giá
-            </a>
-          )}
-        </div>
-      </ScrollReveal>
+      {hasArticles ? (
+        <ScrollReveal animation="fade-up" delay={100}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {articles.map(a => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => onSelectArticle?.(a.id)}
+                className="text-left rounded-xl border bg-white hover:shadow-md transition-all p-4 flex gap-3 items-center"
+              >
+                {a.thumbnail_url ? (
+                  <img src={a.thumbnail_url} alt={a.title} className="h-14 w-14 rounded-lg object-cover shrink-0" />
+                ) : (
+                  <div className="h-14 w-14 rounded-lg shrink-0 flex items-center justify-center text-white" style={{ backgroundColor: accentColor }}>
+                    <DollarSign className="h-6 w-6" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm line-clamp-2">{a.title}</p>
+                  {a.summary && <p className="text-[11px] text-[#86868b] line-clamp-1 mt-0.5">{a.summary}</p>}
+                </div>
+                <ChevronRight className="h-4 w-4 text-[#86868b] shrink-0" />
+              </button>
+            ))}
+          </div>
+        </ScrollReveal>
+      ) : (
+        <ScrollReveal animation="fade-up" delay={100}>
+          <div className="rounded-2xl border-2 border-dashed bg-[#f5f5f7] p-6 text-center space-y-3">
+            <Info className="h-8 w-8 mx-auto" style={{ color: accentColor }} />
+            <h3 className="font-bold text-base">Chưa có bảng giá nào</h3>
+            <p className="text-sm text-[#86868b] max-w-md mx-auto leading-relaxed">
+              Vui lòng quay lại tab <b>Website bán hàng</b>, vào mục <b>Tin tức</b> và thêm một bài viết.
+              Sau đó vào lại menu <b>Bảng giá</b> để chọn bài viết hiển thị tại đây.
+            </p>
+            {storePhone && (
+              <a href={`tel:${storePhone}`} className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-medium text-white" style={{ backgroundColor: accentColor }}>
+                <Phone className="h-4 w-4" /> Liên hệ báo giá
+              </a>
+            )}
+          </div>
+        </ScrollReveal>
+      )}
     </div>
   );
 }

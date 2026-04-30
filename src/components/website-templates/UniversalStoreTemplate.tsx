@@ -530,6 +530,11 @@ export default function UniversalStoreTemplate({
 
   const handleNavClick = (item: NavItemConfig) => {
     if (item.type === 'page' && item.pageView) {
+      // Bảng giá: nếu menu đã chọn 1 bài viết thì mở thẳng bài viết đó
+      if (item.pageView === 'pricelist' && item.articleId && articlesData?.articles) {
+        const a = articlesData.articles.find(x => x.id === item.articleId);
+        if (a) { openArticle(a); return; }
+      }
       navigateTo(item.pageView as PageView);
     } else if (item.type === 'link' && item.url) {
       window.open(item.url, '_blank', 'noopener,noreferrer');
@@ -1066,7 +1071,7 @@ export default function UniversalStoreTemplate({
                     const pageId = (sectionId as string).replace(/^layout_\d+_/, '').replace(/^layout_/, '');
                     const page = SYSTEM_PAGES.find(p => p.id === pageId);
                     if (!page) return null;
-                    const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products') };
+                    const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products'), priceListArticles: articlesData?.articles, onSelectArticle: (id: string) => { const a = articlesData?.articles?.find(x => x.id === id); if (a) openArticle(a); } };
                     return (
                       <section key={sectionId} className="max-w-[1200px] mx-auto px-4">
                         <ScrollReveal animation="fade-up">
@@ -1355,7 +1360,7 @@ export default function UniversalStoreTemplate({
                       const pageId = section.id.replace(/^layout_\d+_/, '').replace(/^layout_/, '');
                       const page = SYSTEM_PAGES.find(p => p.id === pageId);
                       if (!page) return null;
-                      const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products') };
+                      const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products'), priceListArticles: articlesData?.articles, onSelectArticle: (id: string) => { const a = articlesData?.articles?.find(x => x.id === id); if (a) openArticle(a); } };
                       return (
                         <div key={section.id} className="mb-4">
                           <LayoutBannerCollapsible pageId={pageId} accentColor={accentColor}>
@@ -1644,7 +1649,7 @@ export default function UniversalStoreTemplate({
                           const pageId = section.id.replace(/^layout_\d+_/, '').replace(/^layout_/, '');
                           const page = SYSTEM_PAGES.find(p => p.id === pageId);
                           if (!page) return null;
-                          const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products') };
+                          const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products'), priceListArticles: articlesData?.articles, onSelectArticle: (id: string) => { const a = articlesData?.articles?.find(x => x.id === id); if (a) openArticle(a); } };
                           return (
                             <div key={section.id} className="mb-4">
                               <LayoutBannerCollapsible pageId={pageId} accentColor={accentColor}>
@@ -1891,6 +1896,12 @@ export default function UniversalStoreTemplate({
             onNavigateProducts: () => navigateTo('products'),
             pageItems: activeNav?.pageItems,
             installmentRates: activeNav?.installmentRates,
+            priceListArticles: articlesData?.articles,
+            selectedArticleId: activeNav?.articleId || null,
+            onSelectArticle: (id: string) => {
+              const a = articlesData?.articles?.find(x => x.id === id);
+              if (a) openArticle(a);
+            },
           };
 
           switch (pageView) {

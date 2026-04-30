@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Plus, X, Trash2, Sparkles, Eye, EyeOff, Menu as MenuIcon } from 'lucide-react';
 import { SortableList, SortableItem, DragHandle } from '@/components/shared/SortableList';
+import { useLandingArticles } from '@/hooks/useLandingArticles';
 
 interface NavMenuEditorProps {
   templateId: string;
@@ -17,6 +18,9 @@ export function NavMenuEditor({ templateId, customNavItems, onChange }: NavMenuE
   const defaultItems = getDefaultNavItems(config);
   const suggestedExtras = INDUSTRY_SUGGESTED_NAV[templateId] || [];
   const currentItems = customNavItems || [...defaultItems, ...suggestedExtras];
+
+  // Articles list (Tin tức) - for Bảng giá menu picker
+  const { data: articles = [] } = useLandingArticles();
 
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
@@ -152,7 +156,13 @@ export function NavMenuEditor({ templateId, customNavItems, onChange }: NavMenuE
   const hasEditableItems = (item: NavItemConfig) => {
     if (item.type !== 'page') return false;
     const pv = item.pageView || '';
-    return !!DEFAULT_PAGE_ITEMS[pv] || (item.pageItems && item.pageItems.length > 0) || pv === 'installment';
+    return !!DEFAULT_PAGE_ITEMS[pv] || (item.pageItems && item.pageItems.length > 0) || pv === 'installment' || pv === 'pricelist';
+  };
+
+  const handleArticleIdChange = (navIndex: number, articleId: string) => {
+    const updated = [...currentItems];
+    updated[navIndex] = { ...updated[navIndex], articleId: articleId || undefined };
+    onChange(updated);
   };
 
   return (
@@ -229,6 +239,34 @@ export function NavMenuEditor({ templateId, customNavItems, onChange }: NavMenuE
               {/* Expanded page items editor */}
               {isExpanded && canEditItems && (
                 <div className="border-t bg-muted/20 p-3 space-y-2">
+                  {/* Pricelist: chọn bài viết (Tin tức) để mở khi khách click menu */}
+                  {pageView === 'pricelist' && (
+                    <div className="rounded-lg border bg-background p-2.5 space-y-1.5">
+                      <Label className="text-xs font-medium">📰 Bài viết hiển thị khi khách nhấn "{item.label}"</Label>
+                      {articles.length === 0 ? (
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                          Chưa có bài viết nào. Vui lòng quay lại tab <b>Website bán hàng</b>, vào mục <b>Tin tức</b> và thêm một bài viết để hiển thị tại đây.
+                        </p>
+                      ) : (
+                        <>
+                          <select
+                            value={item.articleId || ''}
+                            onChange={(e) => handleArticleIdChange(i, e.target.value)}
+                            className="w-full h-8 text-xs border rounded-md px-2 bg-background"
+                          >
+                            <option value="">— Hiện danh sách tất cả bài viết —</option>
+                            {articles.map(a => (
+                              <option key={a.id} value={a.id}>{a.title}</option>
+                            ))}
+                          </select>
+                          <p className="text-[10px] text-muted-foreground">
+                            💡 Chọn 1 bài viết → khách bấm sẽ mở thẳng bài đó. Bỏ trống → hiển thị danh sách bài viết để khách chọn.
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-medium">Nội dung trang ({currentPageItems.length} mục)</Label>
                     <div className="flex gap-1">
