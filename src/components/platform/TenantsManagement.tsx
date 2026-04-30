@@ -926,6 +926,16 @@ export function TenantsManagement({ filterByCompanyId }: { filterByCompanyId?: s
                       disabled={togglingEinvoice === tenant.id}
                     />
                   </div>
+                  <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      💰 Tính lãi:
+                    </span>
+                    <Switch
+                      checked={!!(tenant as any).interest_enabled}
+                      onCheckedChange={(v) => handleToggleTenantInterest(tenant, v)}
+                      disabled={togglingInterest === tenant.id}
+                    />
+                  </div>
                 </div>
                 <div className="mt-3 overflow-x-auto -mx-4 px-4 pb-1" onClick={(e) => e.stopPropagation()}>
                   <div className="flex gap-2 min-w-max">
