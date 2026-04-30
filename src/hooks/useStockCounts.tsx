@@ -766,24 +766,34 @@ export function useConfirmStockCount() {
               note: 'Hao hụt - Kiểm kho',
             });
           } else {
-            // For non-IMEI, update N products to sold
-            const { data: productsToUpdate } = await supabase
+            // For non-IMEI, reduce quantity on the grouped stock row
+            const { data: productToUpdate } = await supabase
               .from('products')
-              .select('id')
+              .select('id, quantity, total_import_cost, import_price')
               .eq('name', item.product_name)
               .eq('sku', item.sku)
               .eq('status', 'in_stock')
               .is('imei', null)
               .eq('branch_id', stockCount.branch_id)
-              .limit(missingQty);
+              .maybeSingle();
 
-            if (productsToUpdate) {
-              for (const prod of productsToUpdate) {
-                await supabase
-                  .from('products')
-                  .update({ status: 'sold' })
-                  .eq('id', prod.id);
-              }
+            if (productToUpdate) {
+              const currentQty = Number(productToUpdate.quantity) || 0;
+              const newQuantity = Math.max(0, Math.round((currentQty - missingQty) * 1000) / 1000);
+              const currentTotalCost = Number(productToUpdate.total_import_cost || 0);
+              const avgPrice = currentQty > 0
+                ? currentTotalCost / currentQty
+                : Number(productToUpdate.import_price || item.import_price || 0);
+              const newTotalCost = Math.max(0, Math.round((currentTotalCost - avgPrice * missingQty) * 1000) / 1000);
+
+              await supabase
+                .from('products')
+                .update(
+                  newQuantity <= 0
+                    ? { status: 'sold', quantity: 0, total_import_cost: 0 }
+                    : { quantity: newQuantity, total_import_cost: newTotalCost }
+                )
+                .eq('id', productToUpdate.id);
             }
 
             await supabase.from('export_receipt_items').insert({
@@ -841,13 +851,37 @@ export function useConfirmStockCount() {
               note: `Bổ sung từ kiểm kho ${stockCount.code}`,
             });
           } else {
-            // Create N products for non-IMEI surplus
-            for (let i = 0; i < surplusQty; i++) {
+            // For non-IMEI, increase quantity on existing row or create a new grouped row
+            const { data: existingProduct } = await supabase
+              .from('products')
+              .select('id, quantity, total_import_cost')
+              .eq('name', item.product_name)
+              .eq('sku', item.sku)
+              .eq('status', 'in_stock')
+              .is('imei', null)
+              .eq('branch_id', stockCount.branch_id)
+              .maybeSingle();
+
+            if (existingProduct) {
+              const currentQty = Number(existingProduct.quantity) || 0;
+              const currentTotalCost = Number(existingProduct.total_import_cost || 0);
+              const addedCost = Math.round((Number(item.import_price || 0) * surplusQty) * 1000) / 1000;
+
+              await supabase
+                .from('products')
+                .update({
+                  quantity: Math.round((currentQty + surplusQty) * 1000) / 1000,
+                  total_import_cost: Math.round((currentTotalCost + addedCost) * 1000) / 1000,
+                })
+                .eq('id', existingProduct.id);
+            } else {
               await supabase.from('products').insert({
                 name: item.product_name,
                 sku: item.sku,
                 imei: null,
+                quantity: surplusQty,
                 import_price: item.import_price || 0,
+                total_import_cost: Math.round((Number(item.import_price || 0) * surplusQty) * 1000) / 1000,
                 import_date: new Date().toISOString(),
                 import_receipt_id: importReceipt.id,
                 branch_id: stockCount.branch_id,
