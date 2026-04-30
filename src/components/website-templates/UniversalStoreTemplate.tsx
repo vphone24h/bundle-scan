@@ -1896,6 +1896,12 @@ export default function UniversalStoreTemplate({
             onNavigateProducts: () => navigateTo('products'),
             pageItems: activeNav?.pageItems,
             installmentRates: activeNav?.installmentRates,
+            priceListArticles: articlesData?.articles,
+            selectedArticleId: activeNav?.articleId || null,
+            onSelectArticle: (id: string) => {
+              const a = articlesData?.articles?.find(x => x.id === id);
+              if (a) openArticle(a);
+            },
           };
 
           switch (pageView) {
