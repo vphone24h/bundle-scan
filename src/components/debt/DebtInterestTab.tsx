@@ -170,7 +170,13 @@ export function DebtInterestTab({ entityType, entityId, mergedEntityIds }: Props
       {/* Summary */}
       {isActive && (
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-4 space-y-3">
+            <div className="text-xs text-muted-foreground flex items-center justify-between gap-2 pb-2 border-b">
+              <span>Tính lãi trên dư nợ hiện tại:</span>
+              <span className="font-semibold text-foreground">
+                {formatNumber(Math.round(accrual.currentDebt))} đ
+              </span>
+            </div>
             <div className="grid grid-cols-3 gap-2 text-center text-sm">
               <div>
                 <p className="text-muted-foreground text-xs">Tổng lãi phát sinh</p>
@@ -226,30 +232,59 @@ export function DebtInterestTab({ entityType, entityId, mergedEntityIds }: Props
       {(payments?.length ?? 0) > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase">Lịch sử đóng lãi</p>
-          {(payments || []).map((p) => (
-            <div
-              key={p.id}
-              className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50/40 dark:bg-green-950/20 dark:border-green-900 p-3"
-            >
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-muted-foreground">
-                  {format(new Date(p.paid_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
-                </p>
-                {p.note && <p className="text-sm truncate">{p.note}</p>}
+          {(payments || []).map((p) => {
+            const detail = accrual.paymentBreakdown?.find((x) => x.id === p.id);
+            return (
+              <div
+                key={p.id}
+                className="rounded-lg border border-green-200 bg-green-50/40 dark:bg-green-950/20 dark:border-green-900 p-3 space-y-2"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(p.paid_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                    </p>
+                    {p.note && <p className="text-sm truncate">{p.note}</p>}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <p className="font-semibold text-green-600">-{formatNumber(p.amount)}</p>
+                    <button
+                      type="button"
+                      onClick={() => deletePayment.mutate(p.id)}
+                      className="p-1 rounded hover:bg-muted text-destructive"
+                      title="Xóa"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+                {detail && (
+                  <div className="text-xs space-y-0.5 pt-2 border-t border-green-200/60 dark:border-green-900/60">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Lãi phát sinh đến lúc đóng:</span>
+                      <span className="font-medium">{formatNumber(Math.round(detail.accruedAtTime))} đ</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Đã đóng lũy kế:</span>
+                      <span className="font-medium text-green-700 dark:text-green-400">
+                        {formatNumber(Math.round(detail.cumulativePaid))} đ
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Lãi còn lại sau lần đóng này:</span>
+                      <span
+                        className={`font-semibold ${
+                          detail.remainingAfter > 0 ? 'text-destructive' : 'text-green-600'
+                        }`}
+                      >
+                        {formatNumber(Math.round(detail.remainingAfter))} đ
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <p className="font-semibold text-green-600">-{formatNumber(p.amount)}</p>
-                <button
-                  type="button"
-                  onClick={() => deletePayment.mutate(p.id)}
-                  className="p-1 rounded hover:bg-muted text-destructive"
-                  title="Xóa"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

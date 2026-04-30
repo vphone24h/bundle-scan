@@ -232,13 +232,14 @@ export function useAccruedInterest(
         currentDebt: 0,
         config,
         startDate: config?.start_date || null,
+        paymentBreakdown: [] as Array<{ id: string; paid_at: string; amount: number; accruedAtTime: number; cumulativePaid: number; remainingAfter: number }>,
       };
     }
 
     const start = new Date(config.start_date).getTime();
     const now = Date.now();
     if (now <= start) {
-      return { accrued: 0, paidInterest: 0, remainingInterest: 0, currentDebt: 0, config, startDate: config.start_date };
+      return { accrued: 0, paidInterest: 0, remainingInterest: 0, currentDebt: 0, config, startDate: config.start_date, paymentBreakdown: [] };
     }
 
     // Build sorted events (addition +, payment -). Use balance_after if available.
@@ -260,24 +261,54 @@ export function useAccruedInterest(
     }
 
     const dailyRate = (Number(config.monthly_rate_percent) / 100) / 30;
-    let accrued = 0;
-    let cursor = start;
-    let balance = balanceAtStart;
 
-    for (let i = firstEventAfterStartIdx; i < events.length; i++) {
-      const ev = events[i];
-      const days = (ev.time - cursor) / (1000 * 60 * 60 * 24);
-      if (days > 0 && balance > 0) {
-        accrued += balance * dailyRate * days;
+    // Helper: compute accrued from start to a given timestamp `t`
+    const accruedUntil = (t: number) => {
+      if (t <= start) return 0;
+      let acc = 0;
+      let cursor = start;
+      let bal = balanceAtStart;
+      for (let i = firstEventAfterStartIdx; i < events.length; i++) {
+        const ev = events[i];
+        if (ev.time >= t) break;
+        const days = (ev.time - cursor) / (1000 * 60 * 60 * 24);
+        if (days > 0 && bal > 0) acc += bal * dailyRate * days;
+        cursor = ev.time;
+        bal = ev.balance_after;
       }
-      cursor = ev.time;
-      balance = ev.balance_after;
+      const daysLast = (t - cursor) / (1000 * 60 * 60 * 24);
+      if (daysLast > 0 && bal > 0) acc += bal * dailyRate * daysLast;
+      return acc;
+    };
+
+    const accrued = accruedUntil(now);
+
+    // Current balance = last event's balance_after (or balanceAtStart if no event after start)
+    let currentBalance = balanceAtStart;
+    for (let i = firstEventAfterStartIdx; i < events.length; i++) {
+      currentBalance = events[i].balance_after;
     }
-    // From last event to now
-    const daysLast = (now - cursor) / (1000 * 60 * 60 * 24);
-    if (daysLast > 0 && balance > 0) {
-      accrued += balance * dailyRate * daysLast;
-    }
+
+    // Build payment breakdown sorted ascending by paid_at
+    const sortedPayments = [...(payments || [])].sort(
+      (a, b) => new Date(a.paid_at).getTime() - new Date(b.paid_at).getTime()
+    );
+    let cumulativePaid = 0;
+    const paymentBreakdown = sortedPayments.map((p) => {
+      const t = new Date(p.paid_at).getTime();
+      const amt = Number(p.amount) || 0;
+      cumulativePaid += amt;
+      const accruedAtTime = accruedUntil(t);
+      const remainingAfter = Math.max(0, accruedAtTime - cumulativePaid);
+      return {
+        id: p.id,
+        paid_at: p.paid_at,
+        amount: amt,
+        accruedAtTime,
+        cumulativePaid,
+        remainingAfter,
+      };
+    });
 
     const paidInterest = (payments || []).reduce((s, p) => s + (Number(p.amount) || 0), 0);
     const remainingInterest = Math.max(0, accrued - paidInterest);
@@ -286,9 +317,10 @@ export function useAccruedInterest(
       accrued,
       paidInterest,
       remainingInterest,
-      currentDebt: balance,
+      currentDebt: currentBalance,
       config,
       startDate: config.start_date,
+      paymentBreakdown,
     };
   }, [config, history, payments]);
 }
