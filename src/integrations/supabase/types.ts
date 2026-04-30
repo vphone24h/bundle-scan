@@ -2714,6 +2714,81 @@ export type Database = {
           },
         ]
       }
+      debt_interest_configs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          is_active: boolean
+          monthly_rate_percent: number
+          start_date: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          is_active?: boolean
+          monthly_rate_percent?: number
+          start_date?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          is_active?: boolean
+          monthly_rate_percent?: number
+          start_date?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      debt_interest_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          note: string | null
+          paid_at: string
+          tenant_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          note?: string | null
+          paid_at?: string
+          tenant_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          note?: string | null
+          paid_at?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       debt_offsets: {
         Row: {
           created_at: string
@@ -9728,6 +9803,7 @@ export type Database = {
           email: string | null
           has_data_backup: boolean | null
           id: string
+          interest_enabled: boolean
           is_data_hidden: boolean | null
           locked_at: string | null
           locked_reason: string | null
@@ -9761,6 +9837,7 @@ export type Database = {
           email?: string | null
           has_data_backup?: boolean | null
           id?: string
+          interest_enabled?: boolean
           is_data_hidden?: boolean | null
           locked_at?: string | null
           locked_reason?: string | null
@@ -9794,6 +9871,7 @@ export type Database = {
           email?: string | null
           has_data_backup?: boolean | null
           id?: string
+          interest_enabled?: boolean
           is_data_hidden?: boolean | null
           locked_at?: string | null
           locked_reason?: string | null
