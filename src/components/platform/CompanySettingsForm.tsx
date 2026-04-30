@@ -266,30 +266,6 @@ export function CompanySettingsForm() {
 
       <Separator />
 
-      {/* Feature toggles */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Percent className="h-4 w-4" />
-            Tính lãi công nợ
-          </CardTitle>
-          <CardDescription className="text-xs">
-            Cho phép các shop trong công ty tính lãi suất trên công nợ khách/NCC. Mặc định tắt.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium">Cho phép tính lãi trên công nợ</p>
-            <p className="text-xs text-muted-foreground">
-              Khi tắt, shop vẫn thấy tab "Tính lãi" nhưng sẽ hiển thị SĐT công ty để liên hệ bật.
-            </p>
-          </div>
-          <Switch checked={interestEnabled} onCheckedChange={handleToggleInterest} />
-        </CardContent>
-      </Card>
-
-      <Separator />
-
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={upsert.isPending} className="gap-2">
           {upsert.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
