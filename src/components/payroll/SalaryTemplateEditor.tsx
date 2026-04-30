@@ -686,7 +686,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                 <Input className="h-8 text-xs flex-1" placeholder="Tên ngày lễ" value={h.holiday_name} onChange={e => { const n = [...holidays]; n[i].holiday_name = e.target.value; setHolidays(n); }} />
                 <Input className="h-8 text-xs w-20" placeholder="MM-DD" value={h.holiday_date} onChange={e => { const n = [...holidays]; n[i].holiday_date = e.target.value; setHolidays(n); }} />
                 <div className="flex items-center gap-1">
-                  <Input type="number" className="h-8 text-xs w-20" value={h.multiplier_percent} onChange={e => { const n = [...holidays]; n[i].multiplier_percent = Number(e.target.value); setHolidays(n); }} />
+                  <NumberInput className="h-8 text-xs w-20" value={h.multiplier_percent} onChangeNumber={v => { const n = [...holidays]; n[i].multiplier_percent = v; setHolidays(n); }} />
                   <span className="text-xs text-muted-foreground">%</span>
                 </div>
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setHolidays(holidays.filter((_, j) => j !== i))}>
