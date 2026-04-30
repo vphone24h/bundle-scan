@@ -172,20 +172,17 @@ export function CameraScanner({ onScan, onClose, isOpen, continuous = false, sho
         typeof navigator !== 'undefined' &&
         /Android/i.test(navigator.userAgent);
 
-      // Android WebView / some browsers need { exact: ... } for facingMode
-      const facingModeConstraint = isAndroid
-        ? { exact: currentFacingMode as 'environment' | 'user' }
-        : currentFacingMode;
-
+      // Use simple facingMode string by default — { exact: ... } often throws
+      // OverconstrainedError or generic errors on many Android devices/browsers.
       const preferredConstraints: MediaTrackConstraints = isIOS
         ? { facingMode: currentFacingMode }
         : {
-            facingMode: facingModeConstraint,
+            facingMode: currentFacingMode,
             width: { ideal: 1280 },
             height: { ideal: 720 },
           };
 
-      // Fallback uses simple string (most permissive)
+      // Fallback 1: most permissive — just facingMode as plain string
       const fallbackConstraints: MediaTrackConstraints = { facingMode: currentFacingMode };
 
       const fps = isIOS ? 15 : 20;
@@ -241,12 +238,30 @@ export function CameraScanner({ onScan, onClose, isOpen, continuous = false, sho
       try {
         await startWithConstraints(preferredConstraints);
       } catch (startErr: any) {
-        // Retry with minimal constraints on ANY failure (helps Android + Safari / iOS)
         console.warn('Camera start failed with preferred constraints, retrying with fallback:', startErr?.name, startErr?.message);
         try {
           await startWithConstraints(fallbackConstraints);
-        } catch (fallbackErr) {
-          throw fallbackErr;
+        } catch (fallbackErr: any) {
+          console.warn('Fallback failed, trying device enumeration:', fallbackErr?.name, fallbackErr?.message);
+          // Last resort: enumerate cameras and pick rear (or first) by deviceId.
+          // This helps Android browsers where facingMode constraints fail entirely.
+          try {
+            const cameras = await Html5Qrcode.getCameras();
+            if (!cameras || cameras.length === 0) {
+              throw new Error('Không tìm thấy camera nào trên thiết bị');
+            }
+            // Prefer back/rear camera
+            const rear = cameras.find((c: any) =>
+              /back|rear|environment|sau/i.test(c.label || '')
+            );
+            const target = currentFacingMode === 'environment'
+              ? (rear || cameras[cameras.length - 1])
+              : (cameras.find((c: any) => /front|user|truoc/i.test(c.label || '')) || cameras[0]);
+            await startWithConstraints({ deviceId: { exact: target.id } } as any);
+          } catch (enumErr: any) {
+            console.error('Device enumeration fallback also failed:', enumErr);
+            throw fallbackErr;
+          }
         }
       }
       
