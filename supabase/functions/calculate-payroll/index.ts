@@ -461,6 +461,9 @@ Deno.serve(async (req) => {
       const soldByProduct = new Map<string, { name: string; qty: number; revenue: number }>();
       const soldByCategory = new Map<string, { qty: number; revenue: number }>();
       const soldByCategoryName = new Map<string, { qty: number; revenue: number }>();
+      // Per-target product breakdown: list each product sold under a category/target
+      const productsByCategory = new Map<string, Map<string, { name: string; qty: number; revenue: number }>>();
+      const productsByCategoryName = new Map<string, Map<string, { name: string; qty: number; revenue: number }>>();
       let userGrossProfit = 0;
       for (const sale of userSales) {
         const items = saleItemsByReceipt[sale.id] || [];
@@ -491,12 +494,28 @@ Deno.serve(async (req) => {
               cExisting.revenue += lineTotal;
               soldByCategory.set(cid, cExisting);
 
+              // Per-product list for this category
+              let prodMap = productsByCategory.get(cid);
+              if (!prodMap) { prodMap = new Map(); productsByCategory.set(cid, prodMap); }
+              const prodKey = item.product_id || item.product_name;
+              const prodEx = prodMap.get(prodKey) || { name: item.product_name, qty: 0, revenue: 0 };
+              prodEx.qty += quantity;
+              prodEx.revenue += lineTotal;
+              prodMap.set(prodKey, prodEx);
+
               const categoryNameKey = normalizeText(categoryNameMap.get(cid));
               if (categoryNameKey) {
                 const byName = soldByCategoryName.get(categoryNameKey) || { qty: 0, revenue: 0 };
                 byName.qty += quantity;
                 byName.revenue += lineTotal;
                 soldByCategoryName.set(categoryNameKey, byName);
+
+                let prodMapN = productsByCategoryName.get(categoryNameKey);
+                if (!prodMapN) { prodMapN = new Map(); productsByCategoryName.set(categoryNameKey, prodMapN); }
+                const pEx = prodMapN.get(prodKey) || { name: item.product_name, qty: 0, revenue: 0 };
+                pEx.qty += quantity;
+                pEx.revenue += lineTotal;
+                prodMapN.set(prodKey, pEx);
               }
             }
           }
