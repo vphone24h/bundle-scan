@@ -56,6 +56,7 @@ import {
   StockCountItem,
 } from '@/hooks/useStockCounts';
 import { usePermissions } from '@/hooks/usePermissions';
+import { supabase } from '@/integrations/supabase/client';
 
 interface StockCountDetailProps {
   stockCountId: string;
@@ -83,6 +84,7 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
   const isAdmin = permissions?.canViewStockCheck ?? false;
   const items = data?.items || [];
   const hasSynced = useRef(false);
+  const hasFixedNonImeiSystemQty = useRef(false);
 
   // Auto-sync totals from items when detail view opens
   useEffect(() => {
@@ -116,6 +118,109 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
     } else {
       hasSynced.current = true;
     }
+  }, [stockCount, items]);
+
+  useEffect(() => {
+    if (!stockCount || !items.length || hasFixedNonImeiSystemQty.current) return;
+
+    const nonImeiItemsNeedingFix = items.filter((item) => !item.hasImei && item.productId);
+    if (nonImeiItemsNeedingFix.length === 0) {
+      hasFixedNonImeiSystemQty.current = true;
+      return;
+    }
+
+    let cancelled = false;
+
+    const syncNonImeiSystemQuantity = async () => {
+      const productIds = Array.from(new Set(nonImeiItemsNeedingFix.map((item) => item.productId!).filter(Boolean)));
+      const { data: products, error } = await supabase
+        .from('products')
+        .select('id, quantity')
+        .in('id', productIds);
+
+      if (error || cancelled) return;
+
+      const quantityMap = new Map(
+        (products || []).map((product) => {
+          const parsedQuantity = Number(product.quantity);
+          const quantity = Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
+          return [product.id, quantity] as const;
+        })
+      );
+
+      const updates = nonImeiItemsNeedingFix
+        .map((item) => {
+          const nextSystemQuantity = quantityMap.get(item.productId!);
+          if (nextSystemQuantity == null || nextSystemQuantity === item.systemQuantity) return null;
+
+          const nextVariance = item.actualQuantity - nextSystemQuantity;
+          const nextStatus = nextVariance === 0 ? 'ok' : nextVariance < 0 ? 'missing' : 'surplus';
+
+          return {
+            id: item.id,
+            system_quantity: nextSystemQuantity,
+            variance: nextVariance,
+            status: nextStatus,
+          };
+        })
+        .filter(Boolean) as Array<{
+          id: string;
+          system_quantity: number;
+          variance: number;
+          status: 'ok' | 'missing' | 'surplus';
+        }>;
+
+      if (updates.length === 0 || cancelled) {
+        hasFixedNonImeiSystemQty.current = true;
+        return;
+      }
+
+      await Promise.all(
+        updates.map((update) =>
+          supabase
+            .from('stock_count_items')
+            .update({
+              system_quantity: update.system_quantity,
+              variance: update.variance,
+              status: update.status,
+            })
+            .eq('id', update.id)
+        )
+      );
+
+      const { data: refreshedItems, error: refreshError } = await supabase
+        .from('stock_count_items')
+        .select('system_quantity, actual_quantity, variance')
+        .eq('stock_count_id', stockCount.id);
+
+      if (!refreshError && refreshedItems && !cancelled) {
+        const totals = refreshedItems.reduce(
+          (acc, row) => ({
+            system: acc.system + Number(row.system_quantity || 0),
+            actual: acc.actual + Number(row.actual_quantity || 0),
+            variance: acc.variance + Number(row.variance || 0),
+          }),
+          { system: 0, actual: 0, variance: 0 }
+        );
+
+        await supabase
+          .from('stock_counts')
+          .update({
+            total_system_quantity: totals.system,
+            total_actual_quantity: totals.actual,
+            total_variance: totals.variance,
+          })
+          .eq('id', stockCount.id);
+      }
+
+      hasFixedNonImeiSystemQty.current = true;
+    };
+
+    void syncNonImeiSystemQuantity();
+
+    return () => {
+      cancelled = true;
+    };
   }, [stockCount, items]);
 
   // Separate IMEI and non-IMEI items
