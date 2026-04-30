@@ -133,10 +133,21 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
         // Chỉ áp dụng cho lương cố định theo tháng
         const isFixed = (tpl as any)?.salary_type === 'fixed';
         const required = isFixed ? ((tpl as any)?.paid_leave_days_per_month || 0) : 0;
-        const chosen = salaryData.paidLeaveDaysOfMonth?.length || 0;
-        if (required > 0 && chosen !== required) {
-          toast.error(`Mẫu lương cho phép ${required} ngày nghỉ có lương/tháng. Bạn đang chọn ${chosen}. Vui lòng chọn đủ.`);
-          return false;
+        if (required > 0) {
+          // Chỉ validate THÁNG ĐANG XEM trong picker (referenceMonth).
+          const refMonth = salaryData.paidLeaveReferenceMonth || new Date().toISOString().slice(0, 7);
+          const [yy, mm] = refMonth.split('-').map(Number);
+          const monthDate = new Date(yy || new Date().getFullYear(), (mm || 1) - 1, 1);
+          const { getPaidLeaveDaysForMonth } = require('@/lib/paidLeaveSchedule');
+          const activeDays: number[] = getPaidLeaveDaysForMonth({
+            monthDate,
+            overrides: salaryData.paidLeaveOverrides || {},
+            defaultDays: salaryData.paidLeaveDaysOfMonth || [],
+          });
+          if (activeDays.length !== required) {
+            toast.error(`Mẫu lương cho phép ${required} ngày nghỉ có lương cho tháng ${refMonth}. Bạn đang chọn ${activeDays.length}. Vui lòng chọn đủ cho tháng đang xem.`);
+            return false;
+          }
         }
         return true;
       }
