@@ -304,10 +304,10 @@ export function useLockPayrollPeriod() {
         .eq('id', periodId);
       if (error) throw error;
       // Lock all records
-      if (status === 'finalized') {
+      if (status === 'paid') {
         const { error: lockErr } = await supabase
           .from('payroll_records')
-          .update({ status: 'finalized' })
+          .update({ status: 'paid' })
           .eq('payroll_period_id', periodId);
         if (lockErr) throw lockErr;
       }
