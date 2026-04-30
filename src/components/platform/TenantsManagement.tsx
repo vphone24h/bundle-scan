@@ -16,7 +16,6 @@ import {
   calculateRemainingDays 
 } from '@/hooks/useTenant';
 import { useCompanies } from '@/hooks/useCompanies';
-import { useQuery } from '@tanstack/react-query';
 import { Percent } from 'lucide-react';
 import { 
   Search, 
@@ -55,7 +54,7 @@ import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TenantProductsDialog } from './TenantProductsDialog';
 import { BulkEmailDialog } from './BulkEmailDialog';
 
