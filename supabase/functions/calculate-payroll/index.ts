@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
       .eq("tenant_id", tenant_id)
       .single();
     if (periodErr || !period) throw new Error("Period not found");
-    if (period.status === "finalized") throw new Error("Period already finalized");
+    if (period.status === "paid") throw new Error("Period already finalized");
 
     // Parallel fetch all needed data
     const [
@@ -1055,7 +1055,7 @@ Deno.serve(async (req) => {
           is_payroll_ready: isPayrollReady,
           missing_setup_reasons: missingSetupReasons,
         },
-        status: "draft",
+        status: "confirmed",
       });
     }
 
@@ -1067,7 +1067,7 @@ Deno.serve(async (req) => {
     // Update period status
     const { error: periodStatusErr } = await supabase
       .from("payroll_periods")
-      .update({ status: "calculated" })
+      .update({ status: "confirmed" })
       .eq("id", period_id);
     if (periodStatusErr) throw periodStatusErr;
 
