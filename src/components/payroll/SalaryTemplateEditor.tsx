@@ -519,7 +519,12 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                     {(c.target_type === 'product' || c.target_type === 'service') && (
                       <div className="space-y-1">
                         <Label className="text-xs">Tên {c.target_type === 'product' ? 'sản phẩm' : 'dịch vụ'}</Label>
-                        <Input className="h-8 text-xs" placeholder="Nhập tên..." value={c.target_name} onChange={e => { const n = [...commissions]; n[i].target_name = e.target.value; setCommissions(n); }} />
+                        <ProductPicker
+                          tenantId={tenantId}
+                          value={c.target_name}
+                          placeholder={`Chọn ${c.target_type === 'product' ? 'sản phẩm' : 'dịch vụ'}...`}
+                          onChange={(v) => { const n = [...commissions]; n[i].target_name = v; n[i].target_id = ''; setCommissions(n); }}
+                        />
                       </div>
                     )}
                     <div className="space-y-1">
