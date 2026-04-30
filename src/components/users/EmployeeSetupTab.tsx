@@ -20,7 +20,7 @@ import { StepSchedule } from './steps/StepSchedule';
 import { StepSalary } from './steps/StepSalary';
 import { StepAttendanceSetup, type AttendanceSetupData } from './steps/StepAttendanceSetup';
 import { buildRecurringShiftAssignments } from '@/lib/attendanceSchedule';
-import { buildPaidLeaveOverrideRows, getPaidLeaveMonthKey, mapPaidLeaveOverrideRows } from '@/lib/paidLeaveSchedule';
+import { buildPaidLeaveOverrideRows, getPaidLeaveDaysForMonth, getPaidLeaveMonthKey, mapPaidLeaveOverrideRows } from '@/lib/paidLeaveSchedule';
 import { toast } from 'sonner';
 import type { ScheduleData, SalaryData } from './CreateEmployeeStepper';
 
@@ -334,7 +334,6 @@ export function EmployeeSetupTab() {
             const refMonth = salaryData.paidLeaveReferenceMonth || new Date().toISOString().slice(0, 7);
             const [yy, mm] = refMonth.split('-').map(Number);
             const monthDate = new Date(yy || new Date().getFullYear(), (mm || 1) - 1, 1);
-            const { getPaidLeaveDaysForMonth } = await import('@/lib/paidLeaveSchedule');
             const activeDays = getPaidLeaveDaysForMonth({
               monthDate,
               overrides: salaryData.paidLeaveOverrides || {},
