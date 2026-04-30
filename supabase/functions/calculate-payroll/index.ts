@@ -242,6 +242,30 @@ Deno.serve(async (req) => {
     // Map sale items by receipt_id
     const saleItemsByReceipt = groupBy(allSaleItems, "receipt_id");
 
+    // Load category hierarchy so commission picked at parent category (e.g. "iPhone")
+    // also captures sales tagged with leaf categories (e.g. "iPhone 15", "iPhone 15 Pro").
+    const { data: categoriesData } = await supabase
+      .from("categories")
+      .select("id, parent_id")
+      .eq("tenant_id", tenant_id);
+    const categoryParentMap = new Map<string, string | null>();
+    for (const c of (categoriesData || [])) {
+      categoryParentMap.set((c as any).id, (c as any).parent_id || null);
+    }
+    /** Trả về tất cả id tổ tiên (bao gồm chính nó) của 1 category */
+    function getCategoryAncestors(catId: string | null | undefined): string[] {
+      if (!catId) return [];
+      const out: string[] = [];
+      let cur: string | null | undefined = catId;
+      const seen = new Set<string>();
+      while (cur && !seen.has(cur)) {
+        seen.add(cur);
+        out.push(cur);
+        cur = categoryParentMap.get(cur) || null;
+      }
+      return out;
+    }
+
     // Get template sub-configs including overtimes
     const templateIds = (templatesRes.data || []).map((t: any) => t.id);
     const [bonusRes, commRes, allowRes, holidayRes, penaltyRes, overtimeRes] = templateIds.length
