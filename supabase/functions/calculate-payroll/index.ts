@@ -451,13 +451,15 @@ Deno.serve(async (req) => {
       // Aggregate sold items by product & category
       const soldByProduct = new Map<string, { name: string; qty: number; revenue: number }>();
       const soldByCategory = new Map<string, { qty: number; revenue: number }>();
+      const soldByCategoryName = new Map<string, { qty: number; revenue: number }>();
       let userGrossProfit = 0;
       for (const sale of userSales) {
         const items = saleItemsByReceipt[sale.id] || [];
         for (const item of items) {
           const lineTotal = (item.sale_price || 0) * (item.quantity || 1);
           // Gross profit = (sale_price - import_price) * quantity
-          const importPrice = item.product_id ? (productImportPriceMap.get(item.product_id) || 0) : 0;
+          const productInfo = item.product_id ? productInfoMap.get(item.product_id) : null;
+          const importPrice = productInfo?.import_price || 0;
           if (importPrice > 0) {
             userGrossProfit += ((item.sale_price || 0) - importPrice) * (item.quantity || 1);
           }
@@ -469,13 +471,22 @@ Deno.serve(async (req) => {
           soldByProduct.set(pKey, existing);
           // By category — propagate to ALL ancestor categories so a commission rule
           // attached to a parent ("iPhone") includes sales of leaf categories ("iPhone 15 Pro", ...)
-          if (item.category_id) {
-            const ancestors = getCategoryAncestors(item.category_id);
+          const effectiveCategoryId = item.category_id || productInfo?.category_id || null;
+          if (effectiveCategoryId) {
+            const ancestors = getCategoryAncestors(effectiveCategoryId);
             for (const cid of ancestors) {
               const cExisting = soldByCategory.get(cid) || { qty: 0, revenue: 0 };
               cExisting.qty += item.quantity || 1;
               cExisting.revenue += lineTotal;
               soldByCategory.set(cid, cExisting);
+
+              const categoryNameKey = normalizeText(categoryNameMap.get(cid));
+              if (categoryNameKey) {
+                const byName = soldByCategoryName.get(categoryNameKey) || { qty: 0, revenue: 0 };
+                byName.qty += item.quantity || 1;
+                byName.revenue += lineTotal;
+                soldByCategoryName.set(categoryNameKey, byName);
+              }
             }
           }
         }
@@ -596,8 +607,9 @@ Deno.serve(async (req) => {
       // ===== 3. COMMISSION (from actual sales) =====
       let totalCommission = 0;
       const commissionDetails: any[] = [];
-      if (isPayrollReady && template?.commission_enabled) {
-        const tComms = commsByTemplate[templateId] || [];
+      const tComms = commsByTemplate[templateId] || [];
+      const runtimeCommissionEnabled = template?.commission_enabled ?? tComms.length > 0;
+      if (isPayrollReady && runtimeCommissionEnabled) {
         // Priority: product > category > general revenue
         const processedProducts = new Set<string>();
 
@@ -623,9 +635,10 @@ Deno.serve(async (req) => {
                 processedProducts.add(c.target_id);
               }
             }
-          } else if (c.target_type === "category" && c.target_id) {
+          } else if (c.target_type === "category" && (c.target_id || c.target_name)) {
             // Commission per category (excluding already-processed products)
-            const catSold = soldByCategory.get(c.target_id);
+            const catSold = (c.target_id ? soldByCategory.get(c.target_id) : undefined)
+              || soldByCategoryName.get(normalizeText(c.target_name));
             if (catSold && catSold.revenue > 0) {
               const amount = c.calc_type === "percentage"
                 ? catSold.revenue * c.value / 100
