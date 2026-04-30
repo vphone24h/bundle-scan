@@ -602,14 +602,51 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                         <Input className="h-8 text-xs" placeholder="VD: Không mặc đồng phục" value={p.description} onChange={e => { const n = [...penalties]; n[i].description = e.target.value; setPenalties(n); }} />
                       </div>
                     )}
+                    {p.penalty_type === 'kpi_not_met' && (
+                      <>
+                        <div className="space-y-1 col-span-2">
+                          <Label className="text-xs">Doanh số KPI mục tiêu (VNĐ)</Label>
+                          <Input type="number" className="h-8 text-xs" placeholder="VD: 100,000,000" value={p.kpi_target} onChange={e => { const n = [...penalties]; n[i].kpi_target = Number(e.target.value); setPenalties(n); }} />
+                          <p className="text-[10px] text-muted-foreground">💡 Doanh số NV phải đạt trong kỳ. Không đạt 100% sẽ bị phạt theo các mức bên dưới.</p>
+                        </div>
+                      </>
+                    )}
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive ml-1" onClick={() => setPenalties(penalties.filter((_, j) => j !== i))}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
+                {p.penalty_type === 'kpi_not_met' && (
+                  <div className="border-t pt-2 mt-2 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-medium">Mức phạt theo % KPI đạt được</Label>
+                      <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { const n = [...penalties]; n[i].tiers = [...(n[i].tiers || []), { percent_achieved: 50, penalty_amount: 0 }]; setPenalties(n); }}>
+                        <Plus className="h-3 w-3 mr-1" />Thêm mức phạt
+                      </Button>
+                    </div>
+                    {(p.tiers || []).map((t, ti) => (
+                      <div key={ti} className="grid grid-cols-12 gap-2 items-end">
+                        <div className="col-span-5 space-y-1">
+                          <Label className="text-[10px]">Đạt ≤ (% KPI)</Label>
+                          <Input type="number" className="h-8 text-xs" value={t.percent_achieved} onChange={e => { const n = [...penalties]; n[i].tiers[ti].percent_achieved = Number(e.target.value); setPenalties(n); }} />
+                        </div>
+                        <div className="col-span-6 space-y-1">
+                          <Label className="text-[10px]">Phạt (VNĐ)</Label>
+                          <Input type="number" className="h-8 text-xs" value={t.penalty_amount} onChange={e => { const n = [...penalties]; n[i].tiers[ti].penalty_amount = Number(e.target.value); setPenalties(n); }} />
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive col-span-1" onClick={() => { const n = [...penalties]; n[i].tiers = n[i].tiers.filter((_, j) => j !== ti); setPenalties(n); }}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                    {(p.tiers || []).length > 0 && (
+                      <p className="text-[10px] text-muted-foreground">💡 Hệ thống sẽ chọn mức phạt theo % KPI thực tế đạt được (chọn mức gần nhất ≥ % đạt). VD: đạt 45% → áp dụng mức "Đạt ≤ 50%".</p>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
-            <Button variant="outline" size="sm" onClick={() => setPenalties([...penalties, { penalty_type: 'late', name: 'Đi trễ', amount: 0, description: '', threshold_minutes: 0, full_day_absence_minutes: 0 }])}>
+            <Button variant="outline" size="sm" onClick={() => setPenalties([...penalties, { penalty_type: 'late', name: 'Đi trễ', amount: 0, description: '', threshold_minutes: 0, full_day_absence_minutes: 0, kpi_target: 0, tiers: [] }])}>
               <Plus className="h-3.5 w-3.5 mr-1" />Thêm phạt
             </Button>
           </CardContent>
