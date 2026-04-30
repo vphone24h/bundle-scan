@@ -172,11 +172,28 @@ export function EmployeeSetupTab() {
     setSelectedEmployee((prev) => prev && prev.userId === userId ? { ...prev, ...patch } : prev);
   };
 
-  const selectEmployee = (emp: EmployeeSetup) => {
+  const selectEmployee = async (emp: EmployeeSetup) => {
     setSelectedEmployee(emp);
     setSelectedShiftId(emp.shiftId || '');
     setScheduleData({ type: 'fixed', fixedShiftId: emp.shiftId });
-    setSalaryData({ allowances: [], deductions: [], templateId: emp.salaryConfig?.salary_template_id || undefined, customBaseAmount: emp.salaryConfig?.custom_base_amount || undefined });
+    // Load existing paid leave default dates
+    let existingLeaveDays: number[] = [];
+    if (tenantId) {
+      const { data } = await supabase
+        .from('paid_leave_default_dates')
+        .select('days_of_month')
+        .eq('tenant_id', tenantId)
+        .eq('user_id', emp.userId)
+        .maybeSingle();
+      existingLeaveDays = ((data as any)?.days_of_month as number[]) || [];
+    }
+    setSalaryData({
+      allowances: [],
+      deductions: [],
+      templateId: emp.salaryConfig?.salary_template_id || undefined,
+      customBaseAmount: emp.salaryConfig?.custom_base_amount || undefined,
+      paidLeaveDaysOfMonth: existingLeaveDays,
+    });
     setAttendanceData({ allowGps: true, allowQr: true, allowPos: false, maxDevices: 2, requireDeviceApproval: true });
     const firstIncomplete = [true, emp.hasShift, emp.hasSchedule, emp.hasSalary, emp.hasAttendance].findIndex(s => !s);
     setActiveStep(firstIncomplete === -1 ? 4 : firstIncomplete);
