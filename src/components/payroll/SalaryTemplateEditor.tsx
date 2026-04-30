@@ -596,7 +596,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                            ? 'Tỷ lệ (%) / mỗi đơn'
                            : 'Số tiền VNĐ / 1 sản phẩm bán ra'}
                        </Label>
-                       <Input type="number" className="h-8 text-xs" value={c.value} onChange={e => { const n = [...commissions]; n[i].value = Number(e.target.value); setCommissions(n); }} />
+                       <NumberInput className="h-8 text-xs" value={c.value} onChangeNumber={v => { const n = [...commissions]; n[i].value = v; setCommissions(n); }} />
                        {c.calc_type === 'fixed_amount' && (
                          <p className="text-[10px] text-muted-foreground">
                            💡 Nhân với số lượng sản phẩm thuộc {c.target_type === 'category' ? 'danh mục' : c.target_type === 'service' ? 'dịch vụ' : 'sản phẩm'} này NV bán được trong kỳ.
