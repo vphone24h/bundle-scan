@@ -42,6 +42,7 @@ const PENALTY_TYPES = [
   { value: 'early_leave', label: 'Về sớm' },
   { value: 'absent_no_permission', label: 'Nghỉ không phép' },
   { value: 'violation', label: 'Vi phạm nội quy' },
+  { value: 'kpi_not_met', label: 'Không đạt KPI doanh thu' },
 ];
 
 const VN_HOLIDAYS = [
@@ -60,11 +61,13 @@ const ALLOWANCE_PRESETS = [
   { type: 'responsibility', name: 'Trách nhiệm' },
 ];
 
-interface BonusRow { bonus_type: string; name: string; calc_type: string; value: number; threshold: number; }
+interface BonusTier { percent_over: number; calc_type: 'fixed_amount' | 'percentage'; value: number; }
+interface BonusRow { bonus_type: string; name: string; calc_type: string; value: number; threshold: number; tiers: BonusTier[]; }
 interface CommissionRow { target_type: string; target_id: string; target_name: string; calc_type: string; value: number; }
 interface AllowanceRow { allowance_type: string; name: string; amount: number; is_fixed: boolean; }
 interface HolidayRow { holiday_name: string; holiday_date: string; multiplier_percent: number; }
-interface PenaltyRow { penalty_type: string; name: string; amount: number; description: string; threshold_minutes: number; full_day_absence_minutes: number; }
+interface PenaltyTier { percent_achieved: number; penalty_amount: number; }
+interface PenaltyRow { penalty_type: string; name: string; amount: number; description: string; threshold_minutes: number; full_day_absence_minutes: number; kpi_target: number; tiers: PenaltyTier[]; }
 interface OvertimeRow { overtime_type: string; name: string; calc_type: string; value: number; description: string; }
 
 interface Props {
@@ -129,11 +132,11 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
     }
   }, [existing]);
 
-  useEffect(() => { if (exBonuses?.length) setBonuses(exBonuses.map(b => ({ bonus_type: b.bonus_type, name: b.name, calc_type: b.calc_type, value: Number(b.value), threshold: Number(b.threshold || 0) }))); }, [exBonuses]);
+  useEffect(() => { if (exBonuses?.length) setBonuses(exBonuses.map(b => ({ bonus_type: b.bonus_type, name: b.name, calc_type: b.calc_type, value: Number(b.value), threshold: Number(b.threshold || 0), tiers: Array.isArray((b as any).tiers) ? (b as any).tiers : [] }))); }, [exBonuses]);
   useEffect(() => { if (exCommissions?.length) setCommissions(exCommissions.map(c => ({ target_type: c.target_type, target_id: c.target_id || '', target_name: c.target_name, calc_type: c.calc_type, value: Number(c.value) }))); }, [exCommissions]);
   useEffect(() => { if (exAllowances?.length) setAllowances(exAllowances.map(a => ({ allowance_type: a.allowance_type, name: a.name, amount: Number(a.amount), is_fixed: a.is_fixed }))); }, [exAllowances]);
   useEffect(() => { if (exHolidays?.length) setHolidays(exHolidays.map(h => ({ holiday_name: h.holiday_name, holiday_date: h.holiday_date, multiplier_percent: Number(h.multiplier_percent) }))); }, [exHolidays]);
-  useEffect(() => { if (exPenalties?.length) setPenalties(exPenalties.map(p => ({ penalty_type: p.penalty_type, name: p.name, amount: Number(p.amount), description: p.description || '', threshold_minutes: (p as any).threshold_minutes || 0, full_day_absence_minutes: (p as any).full_day_absence_minutes || 0 }))); }, [exPenalties]);
+  useEffect(() => { if (exPenalties?.length) setPenalties(exPenalties.map(p => ({ penalty_type: p.penalty_type, name: p.name, amount: Number(p.amount), description: p.description || '', threshold_minutes: (p as any).threshold_minutes || 0, full_day_absence_minutes: (p as any).full_day_absence_minutes || 0, kpi_target: Number((p as any).kpi_target || 0), tiers: Array.isArray((p as any).tiers) ? (p as any).tiers : [] }))); }, [exPenalties]);
   useEffect(() => { if (exOvertimes?.length) setOvertimes(exOvertimes.map(o => ({ overtime_type: o.overtime_type, name: o.name, calc_type: o.calc_type, value: Number(o.value), description: o.description || '' }))); }, [exOvertimes]);
 
   const handleSave = async () => {
