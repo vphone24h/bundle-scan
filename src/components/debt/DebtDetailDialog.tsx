@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, History, Phone, Building2, Filter, Pencil, ChevronDown, ChevronRight, Package, Wallet, Plus, X, Trash2 } from 'lucide-react';
+import { FileText, History, Phone, Building2, Filter, Pencil, ChevronDown, ChevronRight, Package, Wallet, Plus, X, Trash2, Percent } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { EditCustomerDebtDialog } from './EditCustomerDebtDialog';
@@ -33,6 +33,7 @@ import { DebtPaymentDialog } from './DebtPaymentDialog';
 import { DebtAdditionDialog } from './DebtAdditionDialog';
 import { DebtPaymentEditDialog } from './DebtPaymentEditDialog';
 import { DebtPaymentDeleteDialog } from './DebtPaymentDeleteDialog';
+import { DebtInterestTab } from './DebtInterestTab';
 import {
   Select,
   SelectContent,
@@ -263,7 +264,7 @@ export function DebtDetailDialog({
 
         {/* Tabs */}
         <Tabs defaultValue="orders" className="flex flex-col">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-xl grid-cols-3">
             <TabsTrigger value="orders" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Đơn hàng phát sinh</span>
@@ -275,6 +276,10 @@ export function DebtDetailDialog({
                 Lịch sử {entityType === 'customer' ? 'thu' : 'trả'} nợ
               </span>
               <span className="sm:hidden">Lịch sử</span>
+            </TabsTrigger>
+            <TabsTrigger value="interest" className="flex items-center gap-2">
+              <Percent className="h-4 w-4" />
+              <span>Tính lãi</span>
             </TabsTrigger>
           </TabsList>
 
