@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useLandingProductCategories,
   useCreateLandingProductCategory,
@@ -27,6 +28,7 @@ import {
 } from '@/hooks/useLandingProducts';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings } from '@/hooks/useTenantLanding';
+import { useAdminTenantReviewStats } from '@/hooks/useLandingProductReviews';
 import { getIndustryConfig } from '@/lib/industryConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -286,6 +288,8 @@ export function LandingProductsTab() {
   const deleteCat = useDeleteLandingProductCategory();
   const updateCat = useUpdateLandingProductCategory();
   const { data: products, isLoading: prodLoading } = useLandingProducts(tenantId);
+  const { data: reviewStatsMap = {} } = useAdminTenantReviewStats(tenantId);
+  const queryClient = useQueryClient();
   const createProduct = useCreateLandingProduct();
   const updateProduct = useUpdateLandingProduct();
   const deleteProduct = useDeleteLandingProduct();
@@ -479,6 +483,10 @@ export function LandingProductsTab() {
 
       toast({ title: `✅ Đã tạo ${rows.length} đánh giá ảo` });
       setFakeReviewCounts({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
+      queryClient.invalidateQueries({ queryKey: ['admin-landing-review-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-landing-reviews'] });
+      queryClient.invalidateQueries({ queryKey: ['public-landing-rating-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['public-landing-reviews'] });
     } catch (e: any) {
       toast({ title: 'Lỗi tạo đánh giá ảo', description: e?.message, variant: 'destructive' });
     } finally {
@@ -1110,6 +1118,29 @@ export function LandingProductsTab() {
                             )}
                           </div>
                         )}
+                        {/* Review count badge — hiển thị tổng + tách thật/ảo cho dễ quản lý */}
+                        {(() => {
+                          const st = reviewStatsMap[p.id];
+                          if (!st || st.total === 0) return null;
+                          return (
+                            <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-yellow-400 text-yellow-700 font-medium gap-0.5">
+                                <Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />
+                                {st.total} đánh giá
+                              </Badge>
+                              {st.real > 0 && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-green-300 text-green-700">
+                                  Thật: {st.real}
+                                </Badge>
+                              )}
+                              {st.fake > 0 && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-orange-300 text-orange-600">
+                                  Ảo: {st.fake}
+                                </Badge>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 justify-end">
@@ -1987,6 +2018,34 @@ export function LandingProductsTab() {
                   <Badge variant="outline" className="text-[10px]">Lưu sản phẩm trước</Badge>
                 )}
               </div>
+              {/* Tổng số đánh giá hiện tại của sản phẩm đang sửa */}
+              {editingProductId && (() => {
+                const st = reviewStatsMap[editingProductId];
+                const total = st?.total || 0;
+                return (
+                  <div className="flex flex-wrap items-center gap-1.5 rounded-md bg-background/60 border p-2">
+                    <span className="text-[11px] font-medium text-muted-foreground">Hiện có:</span>
+                    <Badge variant="outline" className="text-[10px] gap-0.5 border-yellow-400 text-yellow-700">
+                      <Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />
+                      {total} đánh giá
+                    </Badge>
+                    {total > 0 && (
+                      <>
+                        {([5, 4, 3, 2, 1] as const).map(s => (
+                          st!.byStar[s] > 0 ? (
+                            <Badge key={s} variant="outline" className="text-[10px] gap-0.5">
+                              {s}<Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400" />: {st!.byStar[s]}
+                            </Badge>
+                          ) : null
+                        ))}
+                        <span className="mx-0.5 text-muted-foreground">|</span>
+                        <Badge variant="outline" className="text-[10px] border-green-300 text-green-700">Thật: {st!.real}</Badge>
+                        <Badge variant="outline" className="text-[10px] border-orange-300 text-orange-600">Ảo: {st!.fake}</Badge>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
               <p className="text-[11px] text-muted-foreground">
                 Nhập số lượng đánh giá theo từng mức sao. Hệ thống tự sinh tên + nội dung ngẫu nhiên (phong cách 7x/8x), không trùng tên đã có.
               </p>
