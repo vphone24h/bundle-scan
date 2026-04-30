@@ -69,9 +69,9 @@ export function PayrollPeriodsTab() {
     });
   };
 
-  const handleLock = (periodId: string) => {
+  const handleLock = (periodId: string, status: 'paid' = 'paid') => {
     if (!confirm('Chốt bảng lương? Sau khi chốt sẽ không thể chỉnh sửa.')) return;
-    lockPeriod.mutate({ periodId, status: 'finalized' });
+    lockPeriod.mutate({ periodId, status });
   };
 
   // Filtered & sorted records
