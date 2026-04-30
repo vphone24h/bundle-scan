@@ -609,7 +609,7 @@ Deno.serve(async (req) => {
             }
             amount = baseAmt + tierAmt;
             (b as any)._breakdown = { baseAmt: Math.round(baseAmt), tierAmt: Math.round(tierAmt), matchedTier, baseValue: b.value, baseCalcType: b.calc_type };
-          } else if (b.bonus_type === "kpi_branch") {
+          } else if (b.bonus_type === "kpi_branch" || b.bonus_type === "branch_revenue") {
             // KPI chi nhánh: so sánh doanh thu chi nhánh (theo branch của NV) với ngưỡng
             // CỘNG DỒN: thưởng cơ bản + tier vượt cao nhất (giống kpi_personal)
             const threshold = b.threshold || 0;
