@@ -107,6 +107,49 @@ export function CameraScanner({ onScan, onClose, isOpen, continuous = false, sho
 
       if (!isMountedRef.current) return;
 
+      // ===== Pre-flight checks (giúp hiện lỗi cụ thể trên Android) =====
+      // 1) Phải chạy trên HTTPS hoặc localhost
+      if (typeof window !== 'undefined' && window.isSecureContext === false) {
+        setError('Camera chỉ hoạt động trên HTTPS. Vui lòng truy cập bằng https://...');
+        setIsStarting(false);
+        return;
+      }
+      // 2) Trình duyệt phải hỗ trợ mediaDevices
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        setError('Trình duyệt không hỗ trợ camera. Hãy thử Chrome/Safari mới nhất.');
+        setIsStarting(false);
+        return;
+      }
+      // 3) Xin quyền camera trực tiếp để lấy được error name chính xác
+      try {
+        const probeStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: currentFacingMode },
+          audio: false,
+        });
+        // Đóng ngay — html5-qrcode sẽ tự mở lại
+        probeStream.getTracks().forEach(t => t.stop());
+      } catch (permErr: any) {
+        console.warn('Permission probe failed:', permErr?.name, permErr?.message);
+        const name = permErr?.name || '';
+        if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+          setError('Bạn đã từ chối quyền camera. Vào Cài đặt trình duyệt → Quyền site → cho phép Camera, rồi thử lại.');
+        } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+          setError('Không tìm thấy camera trên thiết bị.');
+        } else if (name === 'NotReadableError' || name === 'TrackStartError') {
+          setError('Camera đang bị ứng dụng khác (Zalo/FB/Camera) chiếm. Hãy đóng app đó rồi thử lại.');
+        } else if (name === 'OverconstrainedError') {
+          // sẽ thử lại với fallback ở dưới — không return
+        } else if (name === 'SecurityError') {
+          setError('Trình duyệt chặn camera vì lý do bảo mật. Hãy mở trang bằng HTTPS.');
+        } else {
+          setError('Không thể truy cập camera: ' + (permErr?.message || name || 'Lỗi không xác định'));
+        }
+        if (name !== 'OverconstrainedError') {
+          setIsStarting(false);
+          return;
+        }
+      }
+
       // Dynamic import html5-qrcode
       if (!html5QrcodeModuleRef.current) {
         try {
