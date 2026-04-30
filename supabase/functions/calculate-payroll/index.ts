@@ -431,6 +431,20 @@ Deno.serve(async (req) => {
             if (userRevenue >= threshold && threshold > 0) {
               amount = b.calc_type === "percentage" ? userRevenue * b.value / 100 : b.value;
             }
+            // Tiered KPI bonus: vượt X% → thưởng thêm
+            const tiers = Array.isArray(b.tiers) ? b.tiers : [];
+            if (tiers.length > 0 && threshold > 0 && userRevenue > threshold) {
+              const overPercent = ((userRevenue - threshold) / threshold) * 100;
+              // Find the highest tier whose percent_over <= overPercent
+              const sortedTiers = [...tiers].sort((a: any, b2: any) => Number(b2.percent_over) - Number(a.percent_over));
+              const matched = sortedTiers.find((t: any) => overPercent >= Number(t.percent_over || 0));
+              if (matched) {
+                const tierAmt = matched.calc_type === "percentage"
+                  ? userRevenue * Number(matched.value || 0) / 100
+                  : Number(matched.value || 0);
+                amount += tierAmt;
+              }
+            }
           } else if (b.bonus_type === "kpi_branch") {
             // KPI chi nhánh: so sánh doanh thu chi nhánh với ngưỡng
             const threshold = b.threshold || 0;
