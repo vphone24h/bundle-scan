@@ -725,18 +725,18 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                     {p.penalty_type !== 'kpi_not_met' && (
                       <div className="space-y-1">
                         <Label className="text-xs">Số tiền phạt (VNĐ)</Label>
-                        <Input type="number" className="h-8 text-xs" value={p.amount} onChange={e => { const n = [...penalties]; n[i].amount = Number(e.target.value); setPenalties(n); }} />
+                        <NumberInput className="h-8 text-xs" value={p.amount} onChangeNumber={v => { const n = [...penalties]; n[i].amount = v; setPenalties(n); }} />
                       </div>
                     )}
                     {(p.penalty_type === 'late' || p.penalty_type === 'early_leave') && (
                       <>
                         <div className="space-y-1">
                           <Label className="text-xs">{p.penalty_type === 'late' ? 'Trễ từ (phút)' : 'Về sớm từ (phút)'}</Label>
-                          <Input type="number" className="h-8 text-xs" placeholder="0 = phạt ngay" value={p.threshold_minutes || ''} onChange={e => { const n = [...penalties]; n[i].threshold_minutes = Number(e.target.value); setPenalties(n); }} />
+                          <NumberInput className="h-8 text-xs" placeholder="0 = phạt ngay" value={p.threshold_minutes || ''} onChangeNumber={v => { const n = [...penalties]; n[i].threshold_minutes = v; setPenalties(n); }} />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">{p.penalty_type === 'late' ? 'Trễ ≥ (phút) = nghỉ ngày' : 'Sớm ≥ (phút) = nghỉ ngày'}</Label>
-                          <Input type="number" className="h-8 text-xs" placeholder="0 = không áp dụng" value={p.full_day_absence_minutes || ''} onChange={e => { const n = [...penalties]; n[i].full_day_absence_minutes = Number(e.target.value); setPenalties(n); }} />
+                          <NumberInput className="h-8 text-xs" placeholder="0 = không áp dụng" value={p.full_day_absence_minutes || ''} onChangeNumber={v => { const n = [...penalties]; n[i].full_day_absence_minutes = v; setPenalties(n); }} />
                         </div>
                         <div className="col-span-2">
                           <p className="text-xs text-muted-foreground">
@@ -758,7 +758,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                       <>
                         <div className="space-y-1 col-span-2">
                           <Label className="text-xs">Doanh số KPI mục tiêu (VNĐ)</Label>
-                          <Input type="number" className="h-8 text-xs" placeholder="VD: 100,000,000" value={p.kpi_target} onChange={e => { const n = [...penalties]; n[i].kpi_target = Number(e.target.value); setPenalties(n); }} />
+                          <NumberInput className="h-8 text-xs" placeholder="VD: 100 000 000" value={p.kpi_target} onChangeNumber={v => { const n = [...penalties]; n[i].kpi_target = v; setPenalties(n); }} />
                           <p className="text-[10px] text-muted-foreground">💡 Doanh số NV phải đạt trong kỳ. Không đạt 100% sẽ bị phạt theo các mức bên dưới.</p>
                         </div>
                       </>
@@ -780,11 +780,11 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                       <div key={ti} className="grid grid-cols-12 gap-2 items-end">
                         <div className="col-span-5 space-y-1">
                           <Label className="text-[10px]">Đạt ≤ (% KPI)</Label>
-                          <Input type="number" className="h-8 text-xs" value={t.percent_achieved} onChange={e => { const n = [...penalties]; n[i].tiers[ti].percent_achieved = Number(e.target.value); setPenalties(n); }} />
+                          <NumberInput className="h-8 text-xs" value={t.percent_achieved} onChangeNumber={v => { const n = [...penalties]; n[i].tiers[ti].percent_achieved = v; setPenalties(n); }} />
                         </div>
                         <div className="col-span-6 space-y-1">
                           <Label className="text-[10px]">Phạt (VNĐ)</Label>
-                          <Input type="number" className="h-8 text-xs" value={t.penalty_amount} onChange={e => { const n = [...penalties]; n[i].tiers[ti].penalty_amount = Number(e.target.value); setPenalties(n); }} />
+                          <NumberInput className="h-8 text-xs" value={t.penalty_amount} onChangeNumber={v => { const n = [...penalties]; n[i].tiers[ti].penalty_amount = v; setPenalties(n); }} />
                         </div>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive col-span-1" onClick={() => { const n = [...penalties]; n[i].tiers = n[i].tiers.filter((_, j) => j !== ti); setPenalties(n); }}>
                           <Trash2 className="h-3.5 w-3.5" />
