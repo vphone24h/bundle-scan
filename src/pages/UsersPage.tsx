@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Shield, Edit2, UserPlus, Info, ChevronDown, ChevronUp, Star, ExternalLink, Settings2, Fingerprint, CreditCard } from 'lucide-react';
+import { Shield, Edit2, UserPlus, Info, ChevronDown, ChevronUp, Star, ExternalLink, Settings2, Fingerprint, CreditCard, HelpCircle } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions, UserRole } from '@/hooks/usePermissions';
@@ -41,6 +41,7 @@ import { AttendanceLocksTab } from '@/components/attendance/AttendanceLocksTab';
 import { AttendanceReportTab } from '@/components/attendance/AttendanceReportTab';
 import { CorrectionRequestsTab } from '@/components/attendance/CorrectionRequestsTab';
 import { PosCheckInTab } from '@/components/attendance/PosCheckInTab';
+import { AttendanceGuideDialog } from '@/components/attendance/AttendanceGuideDialog';
 // Payroll tabs
 import { SalaryTemplatesTab } from '@/components/payroll/SalaryTemplatesTab';
 import { PayrollPeriodsTab } from '@/components/payroll/PayrollPeriodsTab';
