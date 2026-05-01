@@ -286,7 +286,7 @@ export default function InvoiceTemplatePage() {
   };
 
   const updateSetting = <K extends keyof InvoiceTemplate>(key: K, value: InvoiceTemplate[K]) => {
-    setSettings({ ...settings, [key]: value });
+    setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
   // Sync store info from branch
@@ -947,8 +947,11 @@ export default function InvoiceTemplatePage() {
                     value={(currentSettings as any).bank_bin || ''}
                     onValueChange={(bin) => {
                       const bank = VIETNAMESE_BANKS.find((b) => b.bin === bin);
-                      updateSetting('bank_bin' as any, bin as any);
-                      if (bank) updateSetting('bank_name' as any, bank.name as any);
+                      setSettings((prev) => ({
+                        ...prev,
+                        bank_bin: bin as any,
+                        ...(bank ? { bank_name: bank.name as any } : {}),
+                      }));
                     }}
                   >
                     <SelectTrigger>
