@@ -79,6 +79,7 @@ export const DYNAMIC_FIELDS = [
     { key: 'discount', label: 'Giảm giá' },
     { key: 'total_quantity', label: 'Tổng số lượng' },
     { key: 'payment_method', label: 'Phương thức thanh toán' },
+    { key: 'bank_qr', label: 'QR chuyển khoản' },
   ]},
 ];
 
