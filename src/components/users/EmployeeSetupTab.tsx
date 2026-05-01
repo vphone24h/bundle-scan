@@ -266,8 +266,28 @@ export function EmployeeSetupTab() {
         });
         toast.success('Đã lưu bước tạo ca!');
       } else if (activeStep === 2) {
-        if (scheduleData.type !== 'weekly' && !selectedShiftId) {
+        if (scheduleData.type !== 'weekly' && scheduleData.type !== 'flexible' && !selectedShiftId) {
           throw new Error('Vui lòng chọn ca trước khi xếp lịch');
+        }
+
+        // Flexible: xóa toàn bộ shift_assignments — nhân viên làm theo giờ tự do
+        if (scheduleData.type === 'flexible') {
+          const { error: deleteError } = await supabase
+            .from('shift_assignments')
+            .delete()
+            .eq('tenant_id', tenantId)
+            .eq('user_id', selectedEmployee.userId);
+          if (deleteError) throw deleteError;
+
+          updateEmployeeProgress(selectedEmployee.userId, {
+            hasShift: true,
+            hasSchedule: true,
+            shiftId: undefined,
+          });
+          toast.success('Đã thiết lập chế độ làm việc theo giờ tự do!');
+          await qc.refetchQueries({ queryKey: ['employee-setup-configs', tenantId] });
+          if (activeStep < 4) setActiveStep((prev) => prev + 1);
+          return;
         }
 
         const inserts = buildRecurringShiftAssignments({
