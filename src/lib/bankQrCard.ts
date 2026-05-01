@@ -154,16 +154,15 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
 export async function generateBankQrCard(opts: BankQrCardOptions): Promise<string> {
   if (!opts.bankBin || !opts.accountNumber) throw new Error('Thiếu thông tin ngân hàng / số TK');
 
-  // Encode QR theo chuẩn VietQR sử dụng URL ảnh - nhưng để in được offline,
-  // ta encode thành QR text dạng vietqr URL mà các app banking VN nhận diện được.
-  // Cách đơn giản & ổn định: encode chính URL VietQR. Hầu hết app sẽ tự đọc.
-  // Thực tế chuẩn EMVCo là chuỗi dài, nhưng để giữ in offline, ta dùng URL.
-  const qrPayload = buildVietQrUrl({
+  // Encode QR theo CHUẨN EMVCo / NAPAS 247 (VietQR) — chuỗi này
+  // mới được app banking (MoMo, VCB, MB, OCB...) nhận diện và tự
+  // điền số tiền + nội dung. KHÔNG dùng URL img.vietqr.io vì khi
+  // quét app banking sẽ báo "Mã không được hỗ trợ thanh toán".
+  const qrPayload = buildVietQrPayload({
     bankBin: opts.bankBin,
     accountNumber: opts.accountNumber,
     amount: opts.amount,
     addInfo: opts.addInfo,
-    accountHolder: opts.accountHolder,
   });
 
   // Tạo QR từ payload (dùng qrcode lib - hoạt động offline, không phụ thuộc img.vietqr.io khi in)
