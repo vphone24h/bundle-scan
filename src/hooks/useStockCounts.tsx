@@ -695,14 +695,27 @@ export function useConfirmStockCount() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (stockCountId: string) => {
+    mutationFn: async (params: string | { stockCountId: string; allowPartial?: boolean }) => {
       if (!user) throw new Error('User not authenticated');
+
+      const stockCountId = typeof params === 'string' ? params : params.stockCountId;
+      const allowPartial = typeof params === 'string' ? false : !!params.allowPartial;
 
       const { data, error } = await (supabase as any).rpc('confirm_stock_count', {
         p_stock_count_id: stockCountId,
+        p_allow_partial: allowPartial,
       });
 
       if (error) throw error;
+
+      // Trường hợp cần xác nhận lại do thiếu tồn kho
+      if (!data?.success && data?.needsConfirmation) {
+        const err: any = new Error(data?.message || 'Cần xác nhận thêm');
+        err.needsConfirmation = true;
+        err.unresolvedMissing = data?.unresolvedMissing || [];
+        err.totalUnresolved = data?.totalUnresolved || 0;
+        throw err;
+      }
       if (!data?.success) {
         throw new Error(data?.message || 'Xác nhận kiểm kho thất bại');
       }
@@ -717,7 +730,9 @@ export function useConfirmStockCount() {
         description: 'Phiếu kiểm kho đã được xác nhận và tồn kho đã cập nhật',
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      // Không toast nếu đây là tín hiệu cần xác nhận thêm — UI sẽ tự xử lý
+      if (error?.needsConfirmation) return;
       toast({
         title: 'Lỗi',
         description: error.message,

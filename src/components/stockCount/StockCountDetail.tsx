@@ -75,6 +75,11 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('_all_');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showInsufficientDialog, setShowInsufficientDialog] = useState(false);
+  const [insufficientInfo, setInsufficientInfo] = useState<{
+    items: Array<{ productName: string; sku: string; shortage: number }>;
+    total: number;
+  } | null>(null);
   const [manualImei, setManualImei] = useState('');
   const [manualProductName, setManualProductName] = useState('');
   const [manualSku, setManualSku] = useState('');
@@ -449,7 +454,29 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
       onSuccess: () => {
         setShowConfirmDialog(false);
       },
+      onError: (err: any) => {
+        if (err?.needsConfirmation) {
+          setShowConfirmDialog(false);
+          setInsufficientInfo({
+            items: err.unresolvedMissing || [],
+            total: err.totalUnresolved || 0,
+          });
+          setShowInsufficientDialog(true);
+        }
+      },
     });
+  };
+
+  const handleConfirmAllowPartial = () => {
+    confirmMutation.mutate(
+      { stockCountId, allowPartial: true },
+      {
+        onSuccess: () => {
+          setShowInsufficientDialog(false);
+          setInsufficientInfo(null);
+        },
+      }
+    );
   };
 
   const getStatusIcon = (status: string) => {
@@ -990,6 +1017,44 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
             <AlertDialogAction onClick={handleConfirm} disabled={confirmMutation.isPending}>
               {confirmMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Xác nhận
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog: thiếu tồn kho - cho phép xác nhận và ghi nhận */}
+      <AlertDialog open={showInsufficientDialog} onOpenChange={setShowInsufficientDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">
+              Vẫn còn thiếu sản phẩm
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Hệ thống không đủ tồn kho để trừ <strong>{insufficientInfo?.total ?? 0}</strong> sản phẩm sau:
+              </p>
+              <ul className="list-disc list-inside text-sm space-y-1 max-h-40 overflow-y-auto">
+                {insufficientInfo?.items?.map((it, idx) => (
+                  <li key={idx}>
+                    <strong>{it.productName}</strong> ({it.sku}) — thiếu {it.shortage}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-sm">
+                Nếu <strong>Đồng ý</strong>: hệ thống chỉ ghi nhận thời điểm này thiếu, <u>không trừ thêm tồn kho</u>.
+                Sản phẩm vẫn còn trong kho và sẽ xuất hiện ở lần kiểm kho sau.
+              </p>
+              <p className="text-sm">Nếu <strong>Để xem lại</strong>: phiếu giữ nguyên trạng thái nháp.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Để xem lại</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmAllowPartial}
+              disabled={confirmMutation.isPending}
+            >
+              {confirmMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Đồng ý
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
