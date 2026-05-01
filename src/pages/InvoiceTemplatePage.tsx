@@ -63,6 +63,9 @@ import { useCustomDomains } from '@/hooks/useCustomDomains';
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from 'react-i18next';
 import { generateWarrantyQrCard } from '@/lib/warrantyQrCard';
+import { generateBankQrCard } from '@/lib/bankQrCard';
+import { VIETNAMESE_BANKS } from '@/lib/vietnameseBanks';
+import { Banknote } from 'lucide-react';
 
 interface SettingItemProps {
   icon: React.ReactNode;
@@ -179,6 +182,7 @@ export default function InvoiceTemplatePage() {
   const [settings, setSettings] = useState<Partial<InvoiceTemplate>>({});
   const [isUploading, setIsUploading] = useState(false);
   const [previewWarrantyQrCard, setPreviewWarrantyQrCard] = useState('');
+  const [previewBankQrCard, setPreviewBankQrCard] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Get current template based on selected branch
