@@ -38,6 +38,12 @@ export interface InvoiceTemplate {
   show_points_earned: boolean;
   show_warranty_qr: boolean;
   warranty_qr_label: string | null;
+  show_bank_qr: boolean;
+  bank_qr_label: string | null;
+  bank_bin: string | null;
+  bank_name: string | null;
+  bank_account_number: string | null;
+  bank_account_holder: string | null;
   thank_you_text: string | null;
   font_size: 'small' | 'medium' | 'large';
   text_align: TextAlign;
