@@ -268,6 +268,16 @@ export default function UsersPage() {
             Hướng dẫn
           </Button>
         )}
+        {attendanceEnabled && !isStaffOnly && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsAttendanceGuideOpen(true)}
+          >
+            <HelpCircle className="h-4 w-4 mr-1.5" />
+            Hướng dẫn chấm công
+          </Button>
+        )}
       </div>
 
       <Tabs value={effectiveTab} onValueChange={setActiveTab} className="space-y-4">
@@ -506,7 +516,7 @@ export default function UsersPage() {
 
         {/* Payroll Tab */}
         <TabsContent value="payroll" className="space-y-4">
-          <Tabs defaultValue="payroll-periods">
+          <Tabs value={payrollSubTab} onValueChange={setPayrollSubTab}>
             <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
               <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 h-auto p-1 gap-1">
                 <TabsTrigger value="payroll-periods" className="text-xs px-3 py-1.5">Bảng lương</TabsTrigger>
