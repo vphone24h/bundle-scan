@@ -41,7 +41,7 @@ const STEPS = [
 ] as const;
 
 export interface ScheduleData {
-  type: 'fixed' | 'custom' | 'weekly';
+  type: 'fixed' | 'custom' | 'weekly' | 'flexible';
   fixedShiftId?: string;
   customDays?: Record<string, string>; // day -> shiftId
   weeklyDays?: Record<string, string>; // date (yyyy-MM-dd) -> shiftId
