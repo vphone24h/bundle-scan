@@ -277,6 +277,7 @@ const Index = () => {
                   icon={<Package className="h-5 w-5 sm:h-6 sm:w-6" />}
                   onClick={() => navigate('/inventory')}
                   className="cursor-pointer hover:shadow-md transition-shadow"
+                  description="Tổng số lượng sản phẩm đã từng nhập vào kho (cộng dồn cả hàng đã bán). Trùng với 'Tổng tồn kho' bên trang Tồn kho khi tính theo số lượng."
                 />
                 <StatCard
                   title={t('pages.dashboard.inStock')}
@@ -284,6 +285,7 @@ const Index = () => {
                   icon={<TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />}
                   onClick={() => navigate('/inventory')}
                   className="cursor-pointer hover:shadow-md transition-shadow"
+                  description="Số bản ghi sản phẩm đang còn trong kho (mỗi IMEI = 1, mỗi lô nhập của hàng không IMEI = 1). Khác với 'Tổng sản phẩm' bên Tồn kho — bên đó gom theo Tên + SKU + Chi nhánh nên số dòng ít hơn."
                 />
                 {stockValueHidden ? (
                   <StatCard

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Package, AlertTriangle, XCircle, TrendingUp, Wallet, EyeOff } from 'lucide-react';
+import { Package, AlertTriangle, XCircle, TrendingUp, Wallet, EyeOff, Info } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
@@ -38,6 +39,7 @@ export function InventoryStats({
       color: 'text-primary',
       bgColor: 'bg-primary/10',
       hideForStaff: true,
+      description: "Số dòng sản phẩm hiển thị trong bảng Tồn kho — đã gom theo Tên + SKU + Chi nhánh. Khác với 'Đang tồn kho' ở Trang chủ (đếm từng bản ghi: mỗi IMEI hoặc mỗi lô nhập = 1).",
     },
     {
       titleKey: 'pages.inventory.totalStock',
@@ -46,6 +48,7 @@ export function InventoryStats({
       color: 'text-green-600',
       bgColor: 'bg-green-100',
       hideForStaff: true,
+      description: "Tổng số lượng tồn kho thực tế (cộng tất cả số lượng còn lại của các sản phẩm).",
     },
     {
       titleKey: 'pages.inventory.stockValue',
@@ -63,6 +66,7 @@ export function InventoryStats({
       icon: AlertTriangle,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100',
+      description: "Sản phẩm còn 1-2 cái — cần nhập thêm sớm.",
     },
     {
       titleKey: 'pages.inventory.outOfStock',
@@ -70,6 +74,7 @@ export function InventoryStats({
       icon: XCircle,
       color: 'text-destructive',
       bgColor: 'bg-destructive/10',
+      description: "Sản phẩm đã hết hàng (số lượng = 0).",
     },
   ];
 
@@ -95,7 +100,26 @@ export function InventoryStats({
                   <stat.icon className={`h-4 w-4 sm:h-5 sm:w-5 ${stat.color}`} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm text-muted-foreground truncate">{t(stat.titleKey)}</p>
+                  <div className="flex items-center gap-1">
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">{t(stat.titleKey)}</p>
+                    {stat.description && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={(e) => e.stopPropagation()}
+                            className="shrink-0 text-muted-foreground hover:text-foreground"
+                            aria-label="Mô tả"
+                          >
+                            <Info className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-[260px] text-xs">
+                          {stat.description}
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
                   <p className={`font-bold truncate ${stat.isLarge ? 'text-base sm:text-lg' : 'text-xl sm:text-2xl'}`}>
                     {stat.value}
                   </p>
