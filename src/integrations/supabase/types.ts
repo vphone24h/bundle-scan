@@ -4469,6 +4469,11 @@ export type Database = {
       }
       invoice_templates: {
         Row: {
+          bank_account_holder: string | null
+          bank_account_number: string | null
+          bank_bin: string | null
+          bank_name: string | null
+          bank_qr_label: string | null
           branch_id: string | null
           created_at: string
           custom_description_align: string | null
@@ -4488,6 +4493,7 @@ export type Database = {
           section3_align: string | null
           section4_align: string | null
           section5_align: string | null
+          show_bank_qr: boolean
           show_custom_description: boolean | null
           show_customer_info: boolean | null
           show_debt: boolean | null
@@ -4519,6 +4525,11 @@ export type Database = {
           warranty_qr_label: string | null
         }
         Insert: {
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
+          bank_bin?: string | null
+          bank_name?: string | null
+          bank_qr_label?: string | null
           branch_id?: string | null
           created_at?: string
           custom_description_align?: string | null
@@ -4538,6 +4549,7 @@ export type Database = {
           section3_align?: string | null
           section4_align?: string | null
           section5_align?: string | null
+          show_bank_qr?: boolean
           show_custom_description?: boolean | null
           show_customer_info?: boolean | null
           show_debt?: boolean | null
@@ -4569,6 +4581,11 @@ export type Database = {
           warranty_qr_label?: string | null
         }
         Update: {
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
+          bank_bin?: string | null
+          bank_name?: string | null
+          bank_qr_label?: string | null
           branch_id?: string | null
           created_at?: string
           custom_description_align?: string | null
@@ -4588,6 +4605,7 @@ export type Database = {
           section3_align?: string | null
           section4_align?: string | null
           section5_align?: string | null
+          show_bank_qr?: boolean
           show_custom_description?: boolean | null
           show_customer_info?: boolean | null
           show_debt?: boolean | null
