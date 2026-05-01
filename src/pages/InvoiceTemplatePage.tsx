@@ -223,6 +223,35 @@ export default function InvoiceTemplatePage() {
       .catch(() => setPreviewWarrantyQrCard(''));
   }, [currentSettings.show_warranty_qr, currentSettings.warranty_qr_label, hasCustomDomain, verifiedDomain]);
 
+  // Preview QR chuyển khoản
+  useEffect(() => {
+    const enabled = (currentSettings as any).show_bank_qr;
+    const bin = (currentSettings as any).bank_bin;
+    const acct = (currentSettings as any).bank_account_number;
+    if (!enabled || !bin || !acct) {
+      setPreviewBankQrCard('');
+      return;
+    }
+    generateBankQrCard({
+      bankBin: bin,
+      bankName: (currentSettings as any).bank_name,
+      accountNumber: acct,
+      accountHolder: (currentSettings as any).bank_account_holder,
+      amount: 1500000, // mẫu xem trước
+      addInfo: 'HD-MAU',
+      label: (currentSettings as any).bank_qr_label || 'Quét mã để chuyển khoản',
+    })
+      .then(setPreviewBankQrCard)
+      .catch(() => setPreviewBankQrCard(''));
+  }, [
+    (currentSettings as any).show_bank_qr,
+    (currentSettings as any).bank_bin,
+    (currentSettings as any).bank_name,
+    (currentSettings as any).bank_account_number,
+    (currentSettings as any).bank_account_holder,
+    (currentSettings as any).bank_qr_label,
+  ]);
+
   // Handle branch change - create template if needed
   const handleBranchChange = async (branchId: string) => {
     setSelectedBranchId(branchId);
