@@ -22,6 +22,7 @@ import type { InvoiceTemplate, TextAlign } from '@/hooks/useInvoiceTemplates';
 import { useActiveCustomPrintTemplates, type CustomPrintTemplate } from '@/hooks/useCustomPrintTemplates';
 import { renderCustomPrintHTML } from '@/components/print-templates/customPrintRenderer';
 import { generateWarrantyQrCard } from '@/lib/warrantyQrCard';
+import { generateBankQrCard } from '@/lib/bankQrCard';
 
 interface InvoicePrintDialogProps {
   open: boolean;
@@ -93,6 +94,48 @@ export function InvoicePrintDialog({
       .catch(() => setWarrantyQrDataUrl(''));
   }, [template?.warranty_qr_label, warrantyQrUrl]);
 
+  // Bank QR — số tiền tự điền theo công nợ còn lại của hoá đơn
+  const bankQrAmount = useMemo(() => {
+    if (!receipt) return 0;
+    const total = Number(receipt.total_amount) || 0;
+    const paid = receipt.paid_amount != null
+      ? Number(receipt.paid_amount) || 0
+      : (receipt.payments || [])
+          .filter((p: any) => p.payment_type !== 'debt')
+          .reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0);
+    const remaining = total - paid;
+    // Nếu đã thanh toán đủ → dùng tổng tiền (để khách quét thanh toán lại nếu cần)
+    return remaining > 0 ? remaining : total;
+  }, [receipt]);
+
+  const [bankQrDataUrl, setBankQrDataUrl] = useState<string>('');
+  useEffect(() => {
+    const enabled = (template as any)?.show_bank_qr;
+    const bin = (template as any)?.bank_bin;
+    const acct = (template as any)?.bank_account_number;
+    if (!enabled || !bin || !acct) { setBankQrDataUrl(''); return; }
+    generateBankQrCard({
+      bankBin: bin,
+      bankName: (template as any)?.bank_name || null,
+      accountNumber: acct,
+      accountHolder: (template as any)?.bank_account_holder || null,
+      amount: bankQrAmount,
+      addInfo: receipt?.code || null,
+      label: (template as any)?.bank_qr_label || 'Quét mã để chuyển khoản',
+    })
+      .then(setBankQrDataUrl)
+      .catch(() => setBankQrDataUrl(''));
+  }, [
+    (template as any)?.show_bank_qr,
+    (template as any)?.bank_bin,
+    (template as any)?.bank_name,
+    (template as any)?.bank_account_number,
+    (template as any)?.bank_account_holder,
+    (template as any)?.bank_qr_label,
+    bankQrAmount,
+    receipt?.code,
+  ]);
+
   // 'thermal' = old template, or custom template ID
   const [printMode, setPrintMode] = useState<string>('thermal');
 
@@ -126,6 +169,8 @@ export function InvoicePrintDialog({
       const html = renderCustomPrintHTML(selectedCustomTemplate, receipt, branchInfo, {
         warrantyQrDataUrl,
         warrantyQrLabel: template?.warranty_qr_label || 'Quét mã để tra cứu bảo hành',
+        bankQrDataUrl,
+        bankQrLabel: (template as any)?.bank_qr_label || 'Quét mã để chuyển khoản',
       });
       const iframe = document.createElement('iframe');
       iframe.style.position = 'fixed';
