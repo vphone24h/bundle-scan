@@ -1,6 +1,91 @@
 import QRCode from 'qrcode';
 
 /**
+ * Tính CRC16-CCITT (FALSE) — chuẩn dùng cho VietQR / EMVCo.
+ */
+function crc16CCITT(input: string): string {
+  let crc = 0xffff;
+  for (let i = 0; i < input.length; i++) {
+    crc ^= input.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      if (crc & 0x8000) crc = ((crc << 1) ^ 0x1021) & 0xffff;
+      else crc = (crc << 1) & 0xffff;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+
+/** TLV helper: id (2) + length (2) + value */
+function tlv(id: string, value: string): string {
+  const len = value.length.toString().padStart(2, '0');
+  return `${id}${len}${value}`;
+}
+
+/**
+ * Build chuỗi VietQR theo chuẩn EMVCo (NAPAS 247) — chuỗi này
+ * khi encode thành QR thì các app banking VN (MoMo, Vietcombank,
+ * MB, Techcombank, OCB...) sẽ tự nhận diện và điền sẵn TK + số tiền.
+ *
+ * Tham khảo: https://vietqr.net/portal-service/resources/icons/CDTT_QR.pdf
+ */
+export function buildVietQrPayload(opts: {
+  bankBin: string;            // BIN NAPAS, vd 970448 = OCB
+  accountNumber: string;
+  amount?: number | null;
+  addInfo?: string | null;    // nội dung chuyển khoản
+  serviceCode?: 'QRIBFTTA' | 'QRIBFTTC'; // TA = chuyển TK, TC = chuyển thẻ
+}): string {
+  const service = opts.serviceCode || 'QRIBFTTA';
+
+  // Merchant Account Information (id 38) cho NAPAS
+  // 00: GUID = "A000000727"
+  // 01: Beneficiary Org = TLV( 00=acquirerBIN, 01=accountNumber )
+  // 02: Service code
+  const guid = tlv('00', 'A000000727');
+  const beneficiary = tlv(
+    '01',
+    tlv('00', opts.bankBin) + tlv('01', opts.accountNumber),
+  );
+  const svc = tlv('02', service);
+  const merchantAccountInfo = tlv('38', guid + beneficiary + svc);
+
+  const payloadFormat = tlv('00', '01');
+  // 11 = static (không có amount), 12 = dynamic (có amount). Ta dùng 12 nếu có amount.
+  const hasAmount = !!(opts.amount && opts.amount > 0);
+  const pointOfInit = tlv('01', hasAmount ? '12' : '11');
+  const currency = tlv('53', '704'); // VND
+  const amountField = hasAmount ? tlv('54', String(Math.round(opts.amount as number))) : '';
+  const country = tlv('58', 'VN');
+
+  // Additional data (id 62) — 08: nội dung chuyển khoản
+  let additional = '';
+  if (opts.addInfo) {
+    // chỉ giữ ASCII, tránh dấu tiếng Việt làm app banking từ chối
+    const safe = opts.addInfo
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
+      .replace(/[^\x20-\x7e]/g, '')
+      .slice(0, 25);
+    if (safe) additional = tlv('62', tlv('08', safe));
+  }
+
+  const base =
+    payloadFormat +
+    pointOfInit +
+    merchantAccountInfo +
+    currency +
+    amountField +
+    country +
+    additional +
+    '6304'; // CRC tag + length placeholder
+
+  const crc = crc16CCITT(base);
+  return base + crc;
+}
+
+/**
  * Tạo URL VietQR động theo chuẩn img.vietqr.io.
  * - bankBin: BIN ngân hàng (vd 970436 = VCB)
  * - accountNumber: số tài khoản
