@@ -698,6 +698,10 @@ export function useConfirmStockCount() {
     mutationFn: async (stockCountId: string) => {
       if (!user) throw new Error('User not authenticated');
 
+      const { data: tenantId, error: tenantError } = await supabase.rpc('get_user_tenant_id_secure');
+      if (tenantError) throw tenantError;
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
       // Get stock count and items
       const { data: stockCount, error: scError } = await supabase
         .from('stock_counts')
@@ -728,6 +732,7 @@ export function useConfirmStockCount() {
           .from('export_receipts')
           .insert({
             code: exportCode,
+            tenant_id: tenantId,
             branch_id: stockCount.branch_id,
             export_date: new Date().toISOString(),
             created_by: user.id,
@@ -750,12 +755,14 @@ export function useConfirmStockCount() {
 
           if (item.has_imei && item.product_id) {
             // Update specific IMEI product to sold (missing)
-            await supabase
+            const { error: updateProductError } = await supabase
               .from('products')
               .update({ status: 'sold' })
               .eq('id', item.product_id);
 
-            await supabase.from('export_receipt_items').insert({
+            if (updateProductError) throw updateProductError;
+
+            const { error: exportItemError } = await supabase.from('export_receipt_items').insert({
               receipt_id: exportReceipt.id,
               product_id: item.product_id,
               product_name: item.product_name,
@@ -765,6 +772,8 @@ export function useConfirmStockCount() {
               status: 'sold',
               note: 'Hao hụt - Kiểm kho',
             });
+
+            if (exportItemError) throw exportItemError;
           } else {
             // For non-IMEI, reduce quantity on the grouped stock row
             const { data: productToUpdate } = await supabase
@@ -786,7 +795,7 @@ export function useConfirmStockCount() {
                 : Number(productToUpdate.import_price || item.import_price || 0);
               const newTotalCost = Math.max(0, Math.round((currentTotalCost - avgPrice * missingQty) * 1000) / 1000);
 
-              await supabase
+              const { error: updateProductError } = await supabase
                 .from('products')
                 .update(
                   newQuantity <= 0
@@ -794,9 +803,11 @@ export function useConfirmStockCount() {
                     : { quantity: newQuantity, total_import_cost: newTotalCost }
                 )
                 .eq('id', productToUpdate.id);
+
+              if (updateProductError) throw updateProductError;
             }
 
-            await supabase.from('export_receipt_items').insert({
+            const { error: exportItemError } = await supabase.from('export_receipt_items').insert({
               receipt_id: exportReceipt.id,
               product_id: null,
               product_name: item.product_name,
@@ -806,6 +817,8 @@ export function useConfirmStockCount() {
               status: 'sold',
               note: `Hao hụt ${missingQty} sản phẩm - Kiểm kho`,
             });
+
+            if (exportItemError) throw exportItemError;
           }
         }
       }
@@ -817,6 +830,7 @@ export function useConfirmStockCount() {
           .from('import_receipts')
           .insert({
             code: importCode,
+            tenant_id: tenantId,
             branch_id: stockCount.branch_id,
             import_date: new Date().toISOString(),
             created_by: user.id,
@@ -839,7 +853,8 @@ export function useConfirmStockCount() {
 
           if (item.has_imei && item.imei) {
             // Create new IMEI product
-            await supabase.from('products').insert({
+            const { error: insertProductError } = await supabase.from('products').insert({
+              tenant_id: tenantId,
               name: item.product_name,
               sku: item.sku,
               imei: item.imei,
@@ -850,6 +865,8 @@ export function useConfirmStockCount() {
               status: 'in_stock',
               note: `Bổ sung từ kiểm kho ${stockCount.code}`,
             });
+
+            if (insertProductError) throw insertProductError;
           } else {
             // For non-IMEI, increase quantity on existing row or create a new grouped row
             const { data: existingProduct } = await supabase
@@ -867,15 +884,18 @@ export function useConfirmStockCount() {
               const currentTotalCost = Number(existingProduct.total_import_cost || 0);
               const addedCost = Math.round((Number(item.import_price || 0) * surplusQty) * 1000) / 1000;
 
-              await supabase
+              const { error: updateProductError } = await supabase
                 .from('products')
                 .update({
                   quantity: Math.round((currentQty + surplusQty) * 1000) / 1000,
                   total_import_cost: Math.round((currentTotalCost + addedCost) * 1000) / 1000,
                 })
                 .eq('id', existingProduct.id);
+
+              if (updateProductError) throw updateProductError;
             } else {
-              await supabase.from('products').insert({
+              const { error: insertProductError } = await supabase.from('products').insert({
+                tenant_id: tenantId,
                 name: item.product_name,
                 sku: item.sku,
                 imei: null,
@@ -888,6 +908,8 @@ export function useConfirmStockCount() {
                 status: 'in_stock',
                 note: `Bổ sung từ kiểm kho ${stockCount.code}`,
               });
+
+              if (insertProductError) throw insertProductError;
             }
           }
         }
@@ -908,7 +930,8 @@ export function useConfirmStockCount() {
       if (updateError) throw updateError;
 
       // Log to audit
-      await supabase.from('audit_logs').insert({
+      const { error: auditError } = await supabase.from('audit_logs').insert({
+        tenant_id: tenantId,
         user_id: user.id,
         action_type: 'CONFIRM_STOCK_COUNT',
         table_name: 'stock_counts',
@@ -921,6 +944,8 @@ export function useConfirmStockCount() {
           surplusCount: surplusItems.length,
         },
       });
+
+      if (auditError) throw auditError;
 
       return { stockCountId, adjustmentImportReceiptId, adjustmentExportReceiptId };
     },
