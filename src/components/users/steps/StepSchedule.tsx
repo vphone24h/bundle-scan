@@ -138,18 +138,35 @@ export function StepSchedule({ scheduleData, onChange, shifts, selectedShiftId, 
         <Label className="text-xs">Kiểu lịch trình</Label>
         <Select
           value={scheduleData.type}
-          onValueChange={(v: 'fixed' | 'custom' | 'weekly') => onChange({ ...scheduleData, type: v })}
+          onValueChange={(v: 'fixed' | 'custom' | 'weekly' | 'flexible') => onChange({ ...scheduleData, type: v })}
         >
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="fixed">Cố định (cùng ca mỗi ngày)</SelectItem>
             <SelectItem value="custom">Tùy chỉnh (khác ca mỗi ngày)</SelectItem>
             <SelectItem value="weekly">Theo lịch cụ thể (Tuần/Tháng/Năm)</SelectItem>
+            <SelectItem value="flexible">Tự do — Theo giờ (không cần xếp lịch)</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {scheduleData.type === 'fixed' ? (
+      {scheduleData.type === 'flexible' ? (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2">
+          <p className="text-sm font-semibold text-primary">⏱️ Chế độ làm việc theo giờ tự do</p>
+          <p className="text-xs text-muted-foreground">
+            Phù hợp cho nhân viên <strong>part-time / lương theo giờ</strong>. Nhân viên không cần được xếp lịch trước:
+          </p>
+          <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
+            <li>Đến cửa hàng <strong>check-in</strong> → bắt đầu tính giờ.</li>
+            <li>Khi về <strong>check-out</strong> → kết thúc tính giờ.</li>
+            <li>Hệ thống tự cộng tổng số giờ làm trong kỳ và <strong>tính lương = số giờ × đơn giá/giờ</strong> trong mẫu lương.</li>
+            <li>Không có khái niệm đi muộn / vắng mặt — chỉ tính theo giờ thực tế.</li>
+          </ul>
+          <p className="text-[11px] text-muted-foreground italic">
+            💡 Hãy đảm bảo mẫu lương ở bước sau có loại <strong>"Lương theo giờ"</strong> và <strong>tắt tăng ca</strong>.
+          </p>
+        </div>
+      ) : scheduleData.type === 'fixed' ? (
         <div className="rounded-lg border p-4 bg-muted/30">
           <p className="text-sm font-medium mb-2">Ca cố định</p>
           {selectedShift ? (
