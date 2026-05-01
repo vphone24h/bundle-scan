@@ -1281,6 +1281,17 @@ export default function InvoiceTemplatePage() {
                   </div>
                 )}
 
+                {/* Bank QR - giữa warranty QR và thank you */}
+                {((currentSettings as any).show_bank_qr ?? false) && previewBankQrCard && (
+                  <div className="mt-3 text-center">
+                    <img
+                      src={previewBankQrCard}
+                      alt="QR chuyển khoản"
+                      style={{ width: 130, height: 'auto', margin: '0 auto' }}
+                    />
+                  </div>
+                )}
+
                 {/* Thank you - NOW AFTER Custom description */}
                 {(currentSettings.show_thank_you ?? true) && (
                   <div className="mt-4 text-center italic">
