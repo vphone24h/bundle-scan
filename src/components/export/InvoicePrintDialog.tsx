@@ -459,6 +459,12 @@ export function InvoicePrintDialog({
                         }
                         return `<div style="${style}; display:flex; align-items:center; justify-content:center; border:1px dashed #999; color:#999; font-size:8px; text-align:center;">QR bảo hành</div>`;
                       }
+                      if (el.field === 'bank_qr') {
+                        if (bankQrDataUrl) {
+                          return `<div style="${style}; display:flex; align-items:center; justify-content:center;"><img src="${bankQrDataUrl}" style="max-width:100%;max-height:100%;object-fit:contain;" /></div>`;
+                        }
+                        return `<div style="${style}; display:flex; align-items:center; justify-content:center; border:1px dashed #999; color:#999; font-size:8px; text-align:center;">QR chuyển khoản</div>`;
+                      }
                       const val = resolveFieldPreview(el.field, receipt, branchInfo);
                       return `<div style="${style}">${val}</div>`;
                     }
