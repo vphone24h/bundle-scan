@@ -10662,7 +10662,10 @@ export type Database = {
         Args: { _company_id: string; _config_key: string }
         Returns: boolean
       }
-      confirm_stock_count: { Args: { p_stock_count_id: string }; Returns: Json }
+      confirm_stock_count: {
+        Args: { p_allow_partial?: boolean; p_stock_count_id: string }
+        Returns: Json
+      }
       create_care_reminder_notifications: { Args: never; Returns: undefined }
       decrypt_api_key: { Args: { _ciphertext: string }; Returns: string }
       delete_branch_safe: { Args: { _branch_id: string }; Returns: undefined }
