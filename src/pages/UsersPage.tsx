@@ -563,6 +563,27 @@ export default function UsersPage() {
         onOpenChange={setIsCreateOpen}
         branches={branches}
       />
+
+      <AttendanceGuideDialog
+        open={isAttendanceGuideOpen}
+        onOpenChange={setIsAttendanceGuideOpen}
+        onGoPayrollTemplates={() => {
+          setActiveTab('payroll');
+          setPayrollSubTab('payroll-templates');
+        }}
+        onGoEmployeeSetup={() => {
+          setActiveTab('setup');
+        }}
+        onGoLocations={() => {
+          setActiveTab('attendance');
+          setAttendanceSubTab('locations');
+        }}
+        onGoDevices={() => {
+          setActiveTab('attendance');
+          setAttendanceSubTab('devices');
+        }}
+        videoUrl={null}
+      />
     </MainLayout>
   );
 }
