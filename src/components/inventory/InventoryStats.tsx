@@ -39,7 +39,7 @@ export function InventoryStats({
       color: 'text-primary',
       bgColor: 'bg-primary/10',
       hideForStaff: true,
-      description: "Số dòng sản phẩm hiển thị trong bảng Tồn kho — đã gom theo Tên + SKU + Chi nhánh. Khác với 'Đang tồn kho' ở Trang chủ (đếm từng bản ghi: mỗi IMEI hoặc mỗi lô nhập = 1).",
+      description: "Số dòng sản phẩm sau khi gom theo Tên + SKU + Chi nhánh. Ví dụ: 2 sản phẩm cùng tên nhưng khác IMEI sẽ gom lại thành 1 dòng. Còn 'Đang tồn kho' ở Trang chủ đếm riêng từng cái nên số nhiều hơn.",
     },
     {
       titleKey: 'pages.inventory.totalStock',

@@ -285,7 +285,7 @@ const Index = () => {
                   icon={<TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />}
                   onClick={() => navigate('/inventory')}
                   className="cursor-pointer hover:shadow-md transition-shadow"
-                  description="Số bản ghi sản phẩm đang còn trong kho (mỗi IMEI = 1, mỗi lô nhập của hàng không IMEI = 1). Khác với 'Tổng sản phẩm' bên Tồn kho — bên đó gom theo Tên + SKU + Chi nhánh nên số dòng ít hơn."
+                  description="Đếm từng sản phẩm riêng lẻ. Ví dụ: 2 sản phẩm cùng tên nhưng khác IMEI sẽ tính là 2. Còn bên Tồn kho thì gom 2 cái đó lại làm 1 dòng (theo Tên + SKU + Chi nhánh) nên số ít hơn."
                 />
                 {stockValueHidden ? (
                   <StatCard
