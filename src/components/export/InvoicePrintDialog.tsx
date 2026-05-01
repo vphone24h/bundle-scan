@@ -369,6 +369,8 @@ export function InvoicePrintDialog({
     custom_description_image_url: null as string | null,
     show_warranty_qr: false,
     warranty_qr_label: 'Quét mã để tra cứu bảo hành',
+    show_bank_qr: false,
+    bank_qr_label: 'Quét mã để chuyển khoản',
     thank_you_text: 'Cảm ơn quý khách!',
     section1_align: 'center' as TextAlign,
     section2_align: 'center' as TextAlign,
@@ -680,6 +682,32 @@ export function InvoicePrintDialog({
                   style={{
                     display: 'block',
                     width: '120px',
+                    height: 'auto',
+                    margin: '0 auto',
+                    verticalAlign: 'top',
+                  }}
+                />
+              </div>
+            )}
+
+            {(settings as any).show_bank_qr && bankQrDataUrl && (
+              <div
+                className="bank-qr-box"
+                style={{
+                  width: '100%',
+                  marginTop: '12px',
+                  textAlign: 'center',
+                  pageBreakInside: 'avoid',
+                  breakInside: 'avoid',
+                  overflow: 'hidden',
+                }}
+              >
+                <img
+                  src={bankQrDataUrl}
+                  alt="QR chuyển khoản"
+                  style={{
+                    display: 'block',
+                    width: '140px',
                     height: 'auto',
                     margin: '0 auto',
                     verticalAlign: 'top',
