@@ -1,5 +1,7 @@
 import { forwardRef, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface StatCardProps {
   title: string;
@@ -11,10 +13,11 @@ interface StatCardProps {
   };
   className?: string;
   onClick?: () => void;
+  description?: string;
 }
 
 export const StatCard = forwardRef<HTMLDivElement, StatCardProps>(
-  ({ title, value, icon, trend, className, onClick }, ref) => {
+  ({ title, value, icon, trend, className, onClick, description }, ref) => {
     // Check if value is a long currency string (for mobile optimization)
     const valueStr = String(value);
     const isLongValue = valueStr.length > 10;
@@ -23,7 +26,26 @@ export const StatCard = forwardRef<HTMLDivElement, StatCardProps>(
       <div ref={ref} className={cn('stat-card p-3 sm:p-4 lg:p-6', className)} onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] sm:text-xs lg:text-sm font-medium text-muted-foreground line-clamp-1">{title}</p>
+            <div className="flex items-center gap-1">
+              <p className="text-[10px] sm:text-xs lg:text-sm font-medium text-muted-foreground line-clamp-1">{title}</p>
+              {description && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={(e) => e.stopPropagation()}
+                      className="shrink-0 text-muted-foreground hover:text-foreground"
+                      aria-label="Mô tả"
+                    >
+                      <Info className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[260px] text-xs">
+                    {description}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
             <p 
               className={cn(
                 'mt-1 sm:mt-2 font-bold text-foreground break-all',
