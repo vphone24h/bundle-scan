@@ -7,6 +7,8 @@ import type { CustomPrintTemplate } from '@/hooks/useCustomPrintTemplates';
 interface RenderExtras {
   warrantyQrDataUrl?: string;
   warrantyQrLabel?: string;
+  bankQrDataUrl?: string;
+  bankQrLabel?: string;
 }
 
 function resolveField(key: string, receipt: any, branchInfo?: any, extras?: RenderExtras): string {
@@ -165,6 +167,13 @@ function renderElement(el: TemplateElement, receipt: any, branchInfo?: any, extr
         const qrSrc = extras?.warrantyQrDataUrl;
         if (!qrSrc) {
           return `<div style="${style}; display:flex; align-items:center; justify-content:center; border:1px dashed #999; color:#999; font-size:10px; text-align:center;">QR bảo hành<br/>(chưa có IMEI/SĐT hoặc tên miền)</div>`;
+        }
+        return `<div style="${style}; display:flex; align-items:center; justify-content:center;"><img src="${qrSrc}" style="max-width:100%;max-height:100%;object-fit:contain;" /></div>`;
+      }
+      if (el.field === 'bank_qr') {
+        const qrSrc = extras?.bankQrDataUrl;
+        if (!qrSrc) {
+          return `<div style="${style}; display:flex; align-items:center; justify-content:center; border:1px dashed #999; color:#999; font-size:10px; text-align:center;">QR chuyển khoản<br/>(chưa cấu hình STK)</div>`;
         }
         return `<div style="${style}; display:flex; align-items:center; justify-content:center;"><img src="${qrSrc}" style="max-width:100%;max-height:100%;object-fit:contain;" /></div>`;
       }

@@ -63,6 +63,9 @@ import { useCustomDomains } from '@/hooks/useCustomDomains';
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from 'react-i18next';
 import { generateWarrantyQrCard } from '@/lib/warrantyQrCard';
+import { generateBankQrCard } from '@/lib/bankQrCard';
+import { VIETNAMESE_BANKS } from '@/lib/vietnameseBanks';
+import { Banknote } from 'lucide-react';
 
 interface SettingItemProps {
   icon: React.ReactNode;
@@ -179,6 +182,7 @@ export default function InvoiceTemplatePage() {
   const [settings, setSettings] = useState<Partial<InvoiceTemplate>>({});
   const [isUploading, setIsUploading] = useState(false);
   const [previewWarrantyQrCard, setPreviewWarrantyQrCard] = useState('');
+  const [previewBankQrCard, setPreviewBankQrCard] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Get current template based on selected branch
@@ -218,6 +222,35 @@ export default function InvoiceTemplatePage() {
       .then(setPreviewWarrantyQrCard)
       .catch(() => setPreviewWarrantyQrCard(''));
   }, [currentSettings.show_warranty_qr, currentSettings.warranty_qr_label, hasCustomDomain, verifiedDomain]);
+
+  // Preview QR chuyển khoản
+  useEffect(() => {
+    const enabled = (currentSettings as any).show_bank_qr;
+    const bin = (currentSettings as any).bank_bin;
+    const acct = (currentSettings as any).bank_account_number;
+    if (!enabled || !bin || !acct) {
+      setPreviewBankQrCard('');
+      return;
+    }
+    generateBankQrCard({
+      bankBin: bin,
+      bankName: (currentSettings as any).bank_name,
+      accountNumber: acct,
+      accountHolder: (currentSettings as any).bank_account_holder,
+      amount: 1500000, // mẫu xem trước
+      addInfo: 'HD-MAU',
+      label: (currentSettings as any).bank_qr_label || 'Quét mã để chuyển khoản',
+    })
+      .then(setPreviewBankQrCard)
+      .catch(() => setPreviewBankQrCard(''));
+  }, [
+    (currentSettings as any).show_bank_qr,
+    (currentSettings as any).bank_bin,
+    (currentSettings as any).bank_name,
+    (currentSettings as any).bank_account_number,
+    (currentSettings as any).bank_account_holder,
+    (currentSettings as any).bank_qr_label,
+  ]);
 
   // Handle branch change - create template if needed
   const handleBranchChange = async (branchId: string) => {
@@ -902,6 +935,70 @@ export default function InvoiceTemplatePage() {
             </SettingItem>
 
             <SettingItem
+              icon={<Banknote className="h-4 w-4" />}
+              label="QR Chuyển khoản"
+              checked={(currentSettings as any).show_bank_qr ?? false}
+              onCheckedChange={(v) => updateSetting('show_bank_qr' as any, v as any)}
+            >
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Ngân hàng</Label>
+                  <Select
+                    value={(currentSettings as any).bank_bin || ''}
+                    onValueChange={(bin) => {
+                      const bank = VIETNAMESE_BANKS.find((b) => b.bin === bin);
+                      updateSetting('bank_bin' as any, bin as any);
+                      if (bank) updateSetting('bank_name' as any, bank.name as any);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn ngân hàng" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {VIETNAMESE_BANKS.map((b) => (
+                        <SelectItem key={b.bin} value={b.bin}>
+                          {b.shortName ? `${b.shortName} — ` : ''}{b.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Số tài khoản</Label>
+                  <Input
+                    placeholder="Ví dụ: 0123456789"
+                    inputMode="numeric"
+                    value={(currentSettings as any).bank_account_number || ''}
+                    onChange={(e) => updateSetting('bank_account_number' as any, e.target.value.replace(/\s+/g, '') as any)}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Tên chủ tài khoản</Label>
+                  <Input
+                    placeholder="NGUYEN VAN A"
+                    value={(currentSettings as any).bank_account_holder || ''}
+                    onChange={(e) => updateSetting('bank_account_holder' as any, e.target.value as any)}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Chú thích dưới QR</Label>
+                  <Input
+                    placeholder="Quét mã để chuyển khoản"
+                    value={(currentSettings as any).bank_qr_label || ''}
+                    onChange={(e) => updateSetting('bank_qr_label' as any, e.target.value as any)}
+                  />
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  Khi in hoá đơn, QR sẽ tự động điền <span className="font-semibold">số tiền cần thanh toán</span> và mã hoá đơn — khách quét là điền sẵn, chỉ cần xác nhận.
+                </p>
+              </div>
+            </SettingItem>
+
+            <SettingItem
               icon={<Heart className="h-4 w-4" />}
               label="Lời cảm ơn"
               checked={currentSettings.show_thank_you ?? true}
@@ -1180,6 +1277,17 @@ export default function InvoiceTemplatePage() {
                       src={previewWarrantyQrCard}
                       alt="QR bảo hành và hướng dẫn tra cứu"
                       style={{ width: 108, height: 'auto', margin: '0 auto' }}
+                    />
+                  </div>
+                )}
+
+                {/* Bank QR - giữa warranty QR và thank you */}
+                {((currentSettings as any).show_bank_qr ?? false) && previewBankQrCard && (
+                  <div className="mt-3 text-center">
+                    <img
+                      src={previewBankQrCard}
+                      alt="QR chuyển khoản"
+                      style={{ width: 130, height: 'auto', margin: '0 auto' }}
                     />
                   </div>
                 )}
