@@ -75,6 +75,11 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('_all_');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showInsufficientDialog, setShowInsufficientDialog] = useState(false);
+  const [insufficientInfo, setInsufficientInfo] = useState<{
+    items: Array<{ productName: string; sku: string; shortage: number }>;
+    total: number;
+  } | null>(null);
   const [manualImei, setManualImei] = useState('');
   const [manualProductName, setManualProductName] = useState('');
   const [manualSku, setManualSku] = useState('');
@@ -449,7 +454,29 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
       onSuccess: () => {
         setShowConfirmDialog(false);
       },
+      onError: (err: any) => {
+        if (err?.needsConfirmation) {
+          setShowConfirmDialog(false);
+          setInsufficientInfo({
+            items: err.unresolvedMissing || [],
+            total: err.totalUnresolved || 0,
+          });
+          setShowInsufficientDialog(true);
+        }
+      },
     });
+  };
+
+  const handleConfirmAllowPartial = () => {
+    confirmMutation.mutate(
+      { stockCountId, allowPartial: true },
+      {
+        onSuccess: () => {
+          setShowInsufficientDialog(false);
+          setInsufficientInfo(null);
+        },
+      }
+    );
   };
 
   const getStatusIcon = (status: string) => {
