@@ -1,5 +1,5 @@
 interface ScheduleLike {
-  type: 'fixed' | 'custom' | 'weekly';
+  type: 'fixed' | 'custom' | 'weekly' | 'flexible';
   fixedShiftId?: string;
   customDays?: Record<string, string>;
   weeklyDays?: Record<string, string>; // date (yyyy-MM-dd) -> shiftId
@@ -28,6 +28,12 @@ export function buildRecurringShiftAssignments({
   selectedShiftId,
   scheduleData,
 }: BuildRecurringShiftAssignmentsOptions) {
+  // Flexible mode: nhân viên làm theo giờ tự do — không xếp lịch.
+  // Cứ check-in/check-out là tính giờ. Trả về mảng rỗng để không tạo shift_assignments.
+  if (scheduleData.type === 'flexible') {
+    return [];
+  }
+
   const fixedShiftId = selectedShiftId || scheduleData.fixedShiftId;
 
   if (scheduleData.type === 'weekly') {
