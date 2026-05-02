@@ -741,7 +741,7 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
                 className="mt-2 h-7 text-[11px] w-full"
                 onClick={() => setShowTips(true)}
               >
-                <Sparkles className="h-3 w-3" /> Cách đạt KPI
+                <Sparkles className="h-3 w-3" /> Làm ngay
               </Button>
             )}
             {s.done && (
