@@ -252,6 +252,20 @@ export default function MyAttendancePage() {
   const unreadNotifs = notifications?.filter(n => !n.is_read).length || 0;
   const shiftInfo = todayShift?.work_shifts as any;
 
+  // Mark notifications as read when user opens the notifications tab
+  const markNotificationsRead = async (tabValue: string) => {
+    if (tabValue !== 'notifications' || !user?.id || unreadNotifs === 0) return;
+    const unreadIds = (notifications || []).filter(n => !n.is_read).map(n => n.id);
+    if (unreadIds.length === 0) return;
+    const { error } = await supabase
+      .from('crm_notifications')
+      .update({ is_read: true })
+      .in('id', unreadIds);
+    if (!error) {
+      qc.invalidateQueries({ queryKey: ['my-attendance-notifications', user.id] });
+    }
+  };
+
   useEffect(() => {
     if (!user?.id || !tenantId) return;
 
