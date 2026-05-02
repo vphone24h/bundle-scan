@@ -14,6 +14,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
 import { toast } from 'sonner';
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 
 function useTenantId() {
   const { data: pu } = usePlatformUser();
@@ -232,6 +234,19 @@ export function OvertimeReviewsTab() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked, unlock } = useSecurityUnlock('overtime-review');
+  const [showPwd, setShowPwd] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{ item: any; approved: boolean; note: string } | null>(null);
+  const guardedReview = (payload: { item: any; approved: boolean; note: string }) => {
+    if (hasSecurityPassword && !unlocked) {
+      setPendingAction(payload);
+      setShowPwd(true);
+      return;
+    }
+    reviewMutation.mutate(payload);
+  };
+
   const pendingCount = allItems.filter(i => !i.status || i.status === 'pending' || i.auto_detected).length;
 
   return (
@@ -369,7 +384,7 @@ export function OvertimeReviewsTab() {
               size="sm"
               variant={reviewDialog?.action === 'approve' ? 'default' : 'destructive'}
               disabled={reviewMutation.isPending}
-              onClick={() => reviewMutation.mutate({
+              onClick={() => guardedReview({
                 item: reviewDialog,
                 approved: reviewDialog?.action === 'approve',
                 note: reviewNote,
@@ -381,6 +396,19 @@ export function OvertimeReviewsTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <SecurityPasswordDialog
+        open={showPwd}
+        onOpenChange={setShowPwd}
+        onSuccess={() => {
+          unlock();
+          if (pendingAction) {
+            reviewMutation.mutate(pendingAction);
+            setPendingAction(null);
+          }
+        }}
+        title="Xác thực duyệt tăng ca"
+        description="Nhập mật khẩu bảo mật để duyệt yêu cầu tăng ca"
+      />
     </div>
   );
 }
