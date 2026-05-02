@@ -7689,6 +7689,7 @@ export type Database = {
       salary_template_commissions: {
         Row: {
           calc_type: string
+          count_in_revenue_kpi: boolean
           created_at: string
           display_order: number
           id: string
@@ -7702,6 +7703,7 @@ export type Database = {
         }
         Insert: {
           calc_type?: string
+          count_in_revenue_kpi?: boolean
           created_at?: string
           display_order?: number
           id?: string
@@ -7715,6 +7717,7 @@ export type Database = {
         }
         Update: {
           calc_type?: string
+          count_in_revenue_kpi?: boolean
           created_at?: string
           display_order?: number
           id?: string
