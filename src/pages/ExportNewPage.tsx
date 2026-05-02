@@ -189,6 +189,8 @@ export default function ExportNewPage() {
 
   // Sales staff
   const [salesStaffId, setSalesStaffId] = useState<string | null>(null);
+  // "Đơn này khách của nhân viên" — cộng hoa hồng tự bán
+  const [isSelfSold, setIsSelfSold] = useState<boolean>(false);
 
   // Payment dialog
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -1057,6 +1059,7 @@ export default function ExportNewPage() {
     const savedTaxAmount = taxAmount;
     const savedSubtotalAmount = subtotalAmount;
     const savedSalesStaffId = isSuperAdmin ? salesStaffId : user?.id || null;
+    const savedIsSelfSold = isSelfSold;
     const savedExportDate = exportDate || null;
     const savedReceiptNote = receiptNote || null;
     const savedAppliedDepositIds = appliedDeposits.map(d => d.id);
@@ -1072,6 +1075,7 @@ export default function ExportNewPage() {
     setCustomerBirthday(undefined);
     setSelectedCustomer(null);
     setSalesStaffId(null);
+    setIsSelfSold(false);
     setTaxEnabled(false);
     setTaxRate(null);
     setCustomTaxRate('');
