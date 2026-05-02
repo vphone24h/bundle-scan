@@ -15,6 +15,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Loader2, Search, CheckCircle, XCircle, Clock, CalendarOff, AlertTriangle, LogIn, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, parseISO, eachDayOfInterval, differenceInCalendarDays } from 'date-fns';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 
 function useTenantId() {
   const { data: pu } = usePlatformUser();
@@ -31,6 +33,10 @@ export function LeaveApprovalsTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [reviewDialog, setReviewDialog] = useState<any>(null);
   const [reviewNote, setReviewNote] = useState('');
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked, unlock } = useSecurityUnlock('leave-approval-review');
+  const [showPwd, setShowPwd] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{ id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string } | null>(null);
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ['leave-requests-admin', tenantId, filterStatus],
@@ -115,6 +121,15 @@ export function LeaveApprovalsTab() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const guardedReview = (payload: { id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string }) => {
+    if (hasSecurityPassword && !unlocked) {
+      setPendingAction(payload);
+      setShowPwd(true);
+      return;
+    }
+    reviewMutation.mutate(payload);
+  };
 
   const filtered = useMemo(() => {
     if (!searchQuery) return requests || [];
@@ -341,7 +356,7 @@ export function LeaveApprovalsTab() {
                 <>
                   <Button
                     className="w-full bg-green-600 hover:bg-green-700"
-                    onClick={() => reviewMutation.mutate({ id: reviewDialog.id, action: 'approved', note: reviewNote })}
+                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'approved', note: reviewNote })}
                     disabled={reviewMutation.isPending}
                   >
                     {reviewMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
@@ -350,7 +365,7 @@ export function LeaveApprovalsTab() {
                   <Button
                     variant="destructive"
                     className="w-full"
-                    onClick={() => reviewMutation.mutate({ id: reviewDialog.id, action: 'rejected', note: reviewNote })}
+                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'rejected', note: reviewNote })}
                     disabled={reviewMutation.isPending}
                   >
                     <XCircle className="h-4 w-4 mr-1" /> Từ chối (vẫn tính phạt)
@@ -360,7 +375,7 @@ export function LeaveApprovalsTab() {
                 <>
                   <Button
                     className="w-full bg-green-600 hover:bg-green-700"
-                    onClick={() => reviewMutation.mutate({ id: reviewDialog.id, action: 'approved', note: reviewNote })}
+                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'approved', note: reviewNote })}
                     disabled={reviewMutation.isPending}
                   >
                     {reviewMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
@@ -369,7 +384,7 @@ export function LeaveApprovalsTab() {
                   <Button
                     variant="outline"
                     className="w-full border-orange-400 text-orange-600 hover:bg-orange-50"
-                    onClick={() => reviewMutation.mutate({ id: reviewDialog.id, action: 'unexcused', note: reviewNote })}
+                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'unexcused', note: reviewNote })}
                     disabled={reviewMutation.isPending}
                   >
                     <AlertTriangle className="h-4 w-4 mr-1" /> Duyệt không phép
@@ -377,7 +392,7 @@ export function LeaveApprovalsTab() {
                   <Button
                     variant="destructive"
                     className="w-full"
-                    onClick={() => reviewMutation.mutate({ id: reviewDialog.id, action: 'rejected', note: reviewNote })}
+                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'rejected', note: reviewNote })}
                     disabled={reviewMutation.isPending}
                   >
                     <XCircle className="h-4 w-4 mr-1" /> Từ chối (không được nghỉ)
@@ -389,6 +404,19 @@ export function LeaveApprovalsTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <SecurityPasswordDialog
+        open={showPwd}
+        onOpenChange={setShowPwd}
+        onSuccess={() => {
+          unlock();
+          if (pendingAction) {
+            reviewMutation.mutate(pendingAction);
+            setPendingAction(null);
+          }
+        }}
+        title="Xác thực duyệt nghỉ phép"
+        description="Nhập mật khẩu bảo mật để duyệt yêu cầu nghỉ phép"
+      />
     </div>
   );
 }

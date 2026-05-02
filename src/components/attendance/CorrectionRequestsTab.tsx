@@ -12,6 +12,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 
 const statusMap: Record<string, { label: string; class: string }> = {
   pending: { label: 'Chờ duyệt', class: 'bg-yellow-100 text-yellow-800' },
@@ -33,6 +35,19 @@ export function CorrectionRequestsTab() {
   const qc = useQueryClient();
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [reviewNote, setReviewNote] = useState('');
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked, unlock } = useSecurityUnlock('attendance-correction-review');
+  const [showPwd, setShowPwd] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{ id: string; status: 'approved' | 'rejected'; request: any } | null>(null);
+
+  const guardedReview = (payload: { id: string; status: 'approved' | 'rejected'; request: any }) => {
+    if (hasSecurityPassword && !unlocked) {
+      setPendingAction(payload);
+      setShowPwd(true);
+      return;
+    }
+    reviewMutation.mutate(payload);
+  };
 
   useEffect(() => {
     if (!tenantId) return;
@@ -337,7 +352,7 @@ export function CorrectionRequestsTab() {
                           <Button
                             size="sm" variant="outline"
                             className="gap-1 text-xs h-7 text-green-700"
-                            onClick={() => reviewMutation.mutate({ id: r.id, status: 'approved', request: r })}
+                            onClick={() => guardedReview({ id: r.id, status: 'approved', request: r })}
                             disabled={reviewMutation.isPending}
                           >
                             <CheckCircle2 className="h-3 w-3" /> Duyệt
@@ -352,7 +367,7 @@ export function CorrectionRequestsTab() {
                               <DialogHeader><DialogTitle>Từ chối yêu cầu</DialogTitle></DialogHeader>
                               <Textarea placeholder="Lý do từ chối..." value={reviewNote} onChange={e => setReviewNote(e.target.value)} />
                               <DialogFooter>
-                                <Button variant="destructive" size="sm" onClick={() => reviewMutation.mutate({ id: r.id, status: 'rejected', request: r })} disabled={!reviewNote.trim()}>
+                                <Button variant="destructive" size="sm" onClick={() => guardedReview({ id: r.id, status: 'rejected', request: r })} disabled={!reviewNote.trim()}>
                                   Xác nhận từ chối
                                 </Button>
                               </DialogFooter>
@@ -426,6 +441,19 @@ export function CorrectionRequestsTab() {
           )}
         </div>
       )}
+      <SecurityPasswordDialog
+        open={showPwd}
+        onOpenChange={setShowPwd}
+        onSuccess={() => {
+          unlock();
+          if (pendingAction) {
+            reviewMutation.mutate(pendingAction);
+            setPendingAction(null);
+          }
+        }}
+        title="Xác thực duyệt sửa công"
+        description="Nhập mật khẩu bảo mật để duyệt/từ chối yêu cầu sửa công"
+      />
     </div>
   );
 }
