@@ -691,28 +691,29 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         tone: 'good',
         title: `Đã đạt ${k.name}`,
         description: tierDescs.length > 0
-          ? `Bạn sẽ nhận thêm khi vượt KPI: ${tierDescs.join(' · ')}`
+          ? `Bạn sẽ nhận thêm khi vượt KPI:`
           : `Vượt thêm doanh số sẽ mở các mức thưởng tier cao hơn.`,
+        tierLines: tierDescs,
         progress: 100,
         current: fmtShort(current),
         target: fmtShort(target),
         potential: 0,
         done: true,
+        showKpiTips: true,
       });
     } else {
       const baseDesc = `Bạn sẽ nhận thêm ${fmt(reachReward)} khi đạt KPI ${fmtShort(target)} (còn thiếu ${fmtShort(remain)}).`;
-      const fullDesc = tierDescs.length > 0
-        ? `${baseDesc} Các mức vượt: ${tierDescs.join(' · ')}.`
-        : baseDesc;
       out.push({
         icon: <Target className="h-4 w-4 text-blue-600" />,
         tone: 'warn',
         title: `${isBranch ? 'KPI chi nhánh' : 'KPI cá nhân'}: ${k.name}`,
-        description: fullDesc,
+        description: baseDesc,
+        tierLines: tierDescs,
         progress: pct,
         current: fmtShort(current),
         target: fmtShort(target),
         potential: reachReward,
+        showKpiTips: true,
       });
     }
   }
