@@ -777,9 +777,23 @@ Deno.serve(async (req) => {
                   calc_type: c.calc_type,
                   amount: Math.round(amount),
                   products: [{ name: sold.name, qty: sold.qty, revenue: sold.revenue }],
+                  only_self_sold: onlySS,
                 });
                 processedProducts.add(c.target_id);
               }
+            } else if (onlySS) {
+              // Hiển thị quy tắc tự bán dù chưa có đơn nào tick → 0đ
+              commissionDetails.push({
+                name: (c.target_name || "Sản phẩm") + " (chỉ đơn tự bán)",
+                target_type: c.target_type,
+                qty: 0,
+                revenue: 0,
+                rate: c.value,
+                calc_type: c.calc_type,
+                amount: 0,
+                products: [],
+                only_self_sold: true,
+              });
             }
           } else if (c.target_type === "category" && (c.target_id || c.target_name)) {
             // Commission per category (excluding already-processed products)
@@ -807,8 +821,21 @@ Deno.serve(async (req) => {
                   calc_type: c.calc_type,
                   amount: Math.round(amount),
                   products: productList,
+                  only_self_sold: onlySS,
                 });
               }
+            } else if (onlySS) {
+              commissionDetails.push({
+                name: (c.target_name || "Danh mục") + " (chỉ đơn tự bán)",
+                target_type: "category",
+                qty: 0,
+                revenue: 0,
+                rate: c.value,
+                calc_type: c.calc_type,
+                amount: 0,
+                products: [],
+                only_self_sold: true,
+              });
             }
           } else if (c.target_type === "revenue") {
             // General revenue commission
@@ -829,8 +856,20 @@ Deno.serve(async (req) => {
                   calc_type: c.calc_type,
                   amount: Math.round(amount),
                   products: allProducts,
+                  only_self_sold: onlySS,
                 });
               }
+            } else if (onlySS) {
+              commissionDetails.push({
+                name: (c.target_name || "Doanh thu") + " (chỉ đơn tự bán)",
+                target_type: "revenue",
+                revenue: 0,
+                rate: c.value,
+                calc_type: c.calc_type,
+                amount: 0,
+                products: [],
+                only_self_sold: true,
+              });
             }
           } else if (c.target_type === "self_sale") {
             // Commission cho đơn nhân viên tự bán (đã tick is_self_sold)
