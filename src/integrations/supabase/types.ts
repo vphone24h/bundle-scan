@@ -3861,6 +3861,7 @@ export type Database = {
           export_date_modified: boolean
           id: string
           is_repair: boolean | null
+          is_self_sold: boolean
           note: string | null
           original_debt_amount: number | null
           paid_amount: number
@@ -3889,6 +3890,7 @@ export type Database = {
           export_date_modified?: boolean
           id?: string
           is_repair?: boolean | null
+          is_self_sold?: boolean
           note?: string | null
           original_debt_amount?: number | null
           paid_amount?: number
@@ -3917,6 +3919,7 @@ export type Database = {
           export_date_modified?: boolean
           id?: string
           is_repair?: boolean | null
+          is_self_sold?: boolean
           note?: string | null
           original_debt_amount?: number | null
           paid_amount?: number

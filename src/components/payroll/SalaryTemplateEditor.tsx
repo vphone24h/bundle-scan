@@ -76,6 +76,8 @@ const COMMISSION_TYPES = [
   { value: 'product', label: 'Sản phẩm' },
   { value: 'service', label: 'Dịch vụ' },
   { value: 'category', label: 'Danh mục' },
+  { value: 'self_sale', label: 'Tự bán (đơn của nhân viên)' },
+  { value: 'revenue', label: 'Tổng doanh thu cá nhân' },
 ];
 
 const PENALTY_TYPES = [
@@ -593,13 +595,30 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                      <div className="space-y-1">
                        <Label className="text-xs">
                          {c.calc_type === 'percentage'
-                           ? 'Tỷ lệ (%) / mỗi đơn'
-                           : 'Số tiền VNĐ / 1 sản phẩm bán ra'}
+                           ? (c.target_type === 'self_sale'
+                               ? 'Tỷ lệ (%) trên đơn tự bán'
+                               : c.target_type === 'revenue'
+                                 ? 'Tỷ lệ (%) trên tổng doanh thu cá nhân'
+                                 : 'Tỷ lệ (%) / mỗi đơn')
+                           : (c.target_type === 'self_sale'
+                               ? 'Số tiền VNĐ / mỗi đơn tự bán'
+                               : c.target_type === 'revenue'
+                                 ? 'Số tiền VNĐ cố định / kỳ (khi có doanh thu)'
+                                 : 'Số tiền VNĐ / 1 sản phẩm bán ra')}
                        </Label>
                        <NumberInput className="h-8 text-xs" value={c.value} onChangeNumber={v => { const n = [...commissions]; n[i].value = v; setCommissions(n); }} />
                        {c.calc_type === 'fixed_amount' && (
                          <p className="text-[10px] text-muted-foreground">
-                           💡 Nhân với số lượng sản phẩm thuộc {c.target_type === 'category' ? 'danh mục' : c.target_type === 'service' ? 'dịch vụ' : 'sản phẩm'} này NV bán được trong kỳ.
+                           💡 {c.target_type === 'self_sale'
+                                 ? 'Cộng vào hoa hồng MỖI khi nhân viên tick "Đơn này khách của nhân viên" lúc xuất hàng.'
+                                 : c.target_type === 'revenue'
+                                   ? 'Cộng cố định 1 lần trong kỳ khi nhân viên có doanh thu.'
+                                   : `Nhân với số lượng sản phẩm thuộc ${c.target_type === 'category' ? 'danh mục' : c.target_type === 'service' ? 'dịch vụ' : 'sản phẩm'} này NV bán được trong kỳ.`}
+                         </p>
+                       )}
+                       {c.target_type === 'self_sale' && c.calc_type === 'percentage' && (
+                         <p className="text-[10px] text-muted-foreground">
+                           💡 Cộng % tổng tiền của mỗi đơn nhân viên đã tick "Đơn này khách của nhân viên".
                          </p>
                        )}
                      </div>

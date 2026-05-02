@@ -189,6 +189,8 @@ export default function ExportNewPage() {
 
   // Sales staff
   const [salesStaffId, setSalesStaffId] = useState<string | null>(null);
+  // "Đơn này khách của nhân viên" — cộng hoa hồng tự bán
+  const [isSelfSold, setIsSelfSold] = useState<boolean>(false);
 
   // Payment dialog
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -1057,6 +1059,7 @@ export default function ExportNewPage() {
     const savedTaxAmount = taxAmount;
     const savedSubtotalAmount = subtotalAmount;
     const savedSalesStaffId = isSuperAdmin ? salesStaffId : user?.id || null;
+    const savedIsSelfSold = isSelfSold;
     const savedExportDate = exportDate || null;
     const savedReceiptNote = receiptNote || null;
     const savedAppliedDepositIds = appliedDeposits.map(d => d.id);
@@ -1072,6 +1075,7 @@ export default function ExportNewPage() {
     setCustomerBirthday(undefined);
     setSelectedCustomer(null);
     setSalesStaffId(null);
+    setIsSelfSold(false);
     setTaxEnabled(false);
     setTaxRate(null);
     setCustomTaxRate('');
@@ -1102,6 +1106,7 @@ export default function ExportNewPage() {
         vatRate: savedEffectiveTaxRate,
         vatAmount: savedTaxAmount,
         salesStaffId: savedSalesStaffId,
+        isSelfSold: savedIsSelfSold,
         skipCashBook,
         exportDate: savedExportDate ? new Date(savedExportDate).toISOString() : undefined,
         note: savedReceiptNote || undefined,
@@ -1794,6 +1799,23 @@ export default function ExportNewPage() {
                    </p>
                  </div>
                 )}
+
+                {/* Đơn này khách của nhân viên — cộng hoa hồng tự bán */}
+                <div className="space-y-1.5 pt-2 border-t">
+                  <label className="flex items-start gap-2 cursor-pointer select-none">
+                    <Checkbox
+                      checked={isSelfSold}
+                      onCheckedChange={(v) => setIsSelfSold(v === true)}
+                      className="mt-0.5"
+                    />
+                    <span className="flex-1">
+                      <span className="text-sm font-medium">Đơn này khách của nhân viên</span>
+                      <span className="block text-[11px] text-muted-foreground mt-0.5">
+                        Tick để cộng thêm <b>hoa hồng tự bán</b> cho nhân viên (theo cấu hình "Tự bán" trong bảng lương).
+                      </span>
+                    </span>
+                  </label>
+                </div>
 
                 {/* Export Date - compact, hidden picker until clicked */}
                 <div className="space-y-1.5 pt-2 border-t">

@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
       supabase.from("absence_reviews").select("*").eq("tenant_id", tenant_id).gte("absence_date", period.start_date).lte("absence_date", period.end_date),
       supabase.from("overtime_requests").select("*").eq("tenant_id", tenant_id).eq("status", "approved").gte("request_date", period.start_date).lte("request_date", period.end_date),
       supabase.from("export_receipts")
-        .select("id, created_by, sales_staff_id, total_amount, branch_id, status")
+        .select("id, created_by, sales_staff_id, total_amount, branch_id, status, is_self_sold")
         .eq("tenant_id", tenant_id)
         .gte("created_at", period.start_date)
         .lte("created_at", period.end_date + "T23:59:59")
@@ -788,6 +788,29 @@ Deno.serve(async (req) => {
                   calc_type: c.calc_type,
                   amount: Math.round(amount),
                   products: allProducts,
+                });
+              }
+            }
+          } else if (c.target_type === "self_sale") {
+            // Commission cho đơn nhân viên tự bán (đã tick is_self_sold)
+            const selfSales = userSales.filter((s: any) => s.is_self_sold === true);
+            const selfRevenue = selfSales.reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0);
+            const selfCount = selfSales.length;
+            if (selfCount > 0) {
+              const amount = c.calc_type === "percentage"
+                ? selfRevenue * c.value / 100
+                : c.value * selfCount;
+              if (amount > 0) {
+                totalCommission += amount;
+                commissionDetails.push({
+                  name: c.target_name || "Đơn tự bán",
+                  target_type: "self_sale",
+                  qty: selfCount,
+                  revenue: selfRevenue,
+                  rate: c.value,
+                  calc_type: c.calc_type,
+                  amount: Math.round(amount),
+                  products: [],
                 });
               }
             }

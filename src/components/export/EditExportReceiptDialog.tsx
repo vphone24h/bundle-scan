@@ -16,6 +16,7 @@ import type { ExportReceipt, ExportReceiptItemDetail } from '@/hooks/useExportRe
 import { CustomerFormDialog } from '@/components/customers/CustomerFormDialog';
 import { useStaffList } from '@/hooks/useCRM';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface EditExportReceiptDialogProps {
   receipt: ExportReceipt | null;
@@ -64,6 +65,8 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
   const [editingCustomerData, setEditingCustomerData] = useState<any>(null);
   // Sales staff
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [originalIsSelfSold, setOriginalIsSelfSold] = useState<boolean>(false);
+  const [isSelfSold, setIsSelfSold] = useState<boolean>(false);
   const [originalStaffId, setOriginalStaffId] = useState<string | null>(null);
   // Items
   const [editableItems, setEditableItems] = useState<EditableItem[]>([]);
@@ -102,6 +105,9 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
       const staffId = (receipt as any).sales_staff_id || null;
       setSelectedStaffId(staffId);
       setOriginalStaffId(staffId);
+      const ss = !!(receipt as any).is_self_sold;
+      setIsSelfSold(ss);
+      setOriginalIsSelfSold(ss);
       const note = (receipt as any).note || '';
       setReceiptNote(note);
       setOriginalReceiptNote(note);
@@ -199,11 +205,12 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
   const dateChanged = exportDate && exportDate !== originalExportDate;
   const customerChanged = selectedCustomerId !== originalCustomerId;
   const staffChanged = selectedStaffId !== originalStaffId;
+  const selfSoldChanged = isSelfSold !== originalIsSelfSold;
   const priceChanges = editableItems.filter(i => i.sale_price !== i.original_sale_price);
   const hasPriceChanges = priceChanges.length > 0;
   const newTotal = editableItems.reduce((sum, i) => sum + (i.sale_price * i.quantity), 0);
   const noteChanged = receiptNote !== originalReceiptNote;
-  const hasChanges = dateChanged || customerChanged || hasPriceChanges || staffChanged || noteChanged;
+  const hasChanges = dateChanged || customerChanged || hasPriceChanges || staffChanged || noteChanged || selfSoldChanged;
 
   const updateReceipt = useMutation({
     mutationFn: async () => {
@@ -276,6 +283,18 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
         oldData.note = originalReceiptNote || null;
         newData.note = receiptNote || null;
         changes.push(`Ghi chú: "${originalReceiptNote || '(trống)'}" → "${receiptNote || '(trống)'}"`);
+      }
+
+      // 3b. Update self-sold flag (đơn của nhân viên)
+      if (selfSoldChanged) {
+        const { error } = await supabase
+          .from('export_receipts')
+          .update({ is_self_sold: isSelfSold })
+          .eq('id', receipt.id);
+        if (error) throw error;
+        oldData.is_self_sold = originalIsSelfSold;
+        newData.is_self_sold = isSelfSold;
+        changes.push(`Đơn của NV: ${originalIsSelfSold ? 'Có' : 'Không'} → ${isSelfSold ? 'Có' : 'Không'}`);
       }
 
       if (hasPriceChanges) {
@@ -487,6 +506,26 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
                   <p className="text-xs text-green-600 font-medium">
                     ⚠ Nhân viên bán đã thay đổi
                   </p>
+                )}
+              </div>
+
+              {/* Đơn này khách của nhân viên */}
+              <div className="space-y-1.5">
+                <label className="flex items-start gap-2 cursor-pointer select-none">
+                  <Checkbox
+                    checked={isSelfSold}
+                    onCheckedChange={(v) => setIsSelfSold(v === true)}
+                    className={cn('mt-0.5', selfSoldChanged && 'border-green-500 ring-1 ring-green-500/30')}
+                  />
+                  <span className="flex-1">
+                    <span className="text-sm font-medium">Đơn này khách của nhân viên</span>
+                    <span className="block text-[11px] text-muted-foreground mt-0.5">
+                      Tick để cộng thêm <b>hoa hồng tự bán</b> cho nhân viên (theo cấu hình "Tự bán" trong bảng lương).
+                    </span>
+                  </span>
+                </label>
+                {selfSoldChanged && (
+                  <p className="text-xs text-green-600 font-medium">⚠ Trạng thái đơn của NV đã thay đổi</p>
                 )}
               </div>
 
