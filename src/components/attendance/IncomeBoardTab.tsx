@@ -627,11 +627,36 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
             )}
             {s.progress != null && (
               <div className="mt-2">
-                <Progress value={s.progress} className="h-1.5" />
-                <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5">
-                  <span>{s.current}</span>
-                  <span>{s.target}</span>
-                </div>
+                {s.showKpiTips ? (
+                  <div className="rounded-lg bg-background/70 border border-amber-300 dark:border-amber-700 p-2.5">
+                    <div className="flex items-baseline justify-between mb-1.5">
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Tiến độ KPI</span>
+                      <span className={`text-2xl font-extrabold tabular-nums ${
+                        s.progress >= 100 ? 'text-emerald-600 dark:text-emerald-400'
+                        : s.progress >= 50 ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-orange-600 dark:text-orange-400'
+                      }`}>
+                        {Math.min(100, Math.round(s.progress))}%
+                      </span>
+                    </div>
+                    <Progress
+                      value={Math.min(100, s.progress)}
+                      className={`h-3 ${s.progress >= 100 ? '[&>div]:bg-emerald-500' : s.progress >= 50 ? '[&>div]:bg-amber-500' : '[&>div]:bg-orange-500'}`}
+                    />
+                    <div className="flex justify-between text-[11px] font-medium mt-1">
+                      <span className="text-foreground">{s.current}</span>
+                      <span className="text-muted-foreground">Mục tiêu: <span className="font-semibold text-foreground">{s.target}</span></span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <Progress value={s.progress} className="h-1.5" />
+                    <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5">
+                      <span>{s.current}</span>
+                      <span>{s.target}</span>
+                    </div>
+                  </>
+                )}
               </div>
             )}
             {s.showKpiTips && (
