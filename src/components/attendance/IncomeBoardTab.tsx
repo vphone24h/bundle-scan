@@ -31,6 +31,7 @@ import {
   CheckCircle2,
   XCircle,
   Gift,
+  ArrowDown,
 } from 'lucide-react';
 
 function fmt(n: number | undefined | null) {
@@ -495,6 +496,10 @@ function salaryTypeLabel(t?: string) {
 function BoostSalaryDialog({ open, onOpenChange, record, today, periodEnd }: { open: boolean; onOpenChange: (b: boolean) => void; record: any; today?: string; periodEnd?: string }) {
   const suggestions = useMemo(() => buildSuggestions(record, today, periodEnd), [record, today, periodEnd]);
   const totalPotential = suggestions.reduce((s, x) => s + (x.potential || 0), 0);
+  const detailsRef = React.useRef<HTMLDivElement>(null);
+  const scrollToDetails = () => {
+    detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -512,9 +517,19 @@ function BoostSalaryDialog({ open, onOpenChange, record, today, periodEnd }: { o
           <p className="text-base font-semibold leading-snug text-orange-600 dark:text-orange-400 mt-1 uppercase">
             Đạt KPI và hoa hồng càng nhiều thì thu nhập càng nhiều….
           </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={scrollToDetails}
+            className="mt-3 w-full border-orange-300 text-orange-700 hover:bg-orange-50 hover:text-orange-800 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-950/40"
+          >
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Xem chi tiết KPI & hoa hồng
+            <ArrowDown className="h-4 w-4 ml-2" />
+          </Button>
         </div>
 
-        <div className="space-y-2 mt-2">
+        <div ref={detailsRef} className="space-y-2 mt-2 scroll-mt-4">
           {suggestions.length === 0 ? (
             <Card>
               <CardContent className="p-6 text-center">
