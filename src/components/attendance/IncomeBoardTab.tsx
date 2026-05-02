@@ -355,21 +355,45 @@ function SalaryDetailDialog({ open, onOpenChange, record }: { open: boolean; onO
 
           {/* Commission */}
           <Section title="3. Hoa hồng theo doanh số" amount={record.total_commission}>
-            {(record.commission_details || []).length === 0 ? (
-              <Empty />
-            ) : (
-              (record.commission_details || []).map((c: any, i: number) => (
-                <div key={i} className="border-l-2 border-blue-400 pl-2 py-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="font-medium">{c.name}</span>
-                    <span className="text-green-600 font-semibold">+{fmt(c.amount)}</span>
+            {(() => {
+              // Hợp nhất: ưu tiên commissions_all (đầy đủ rules từ template), fallback commission_details
+              const allComms: any[] = (cs.commissions_all && cs.commissions_all.length > 0)
+                ? cs.commissions_all.map((c: any) => ({
+                    name: c.name,
+                    target_type: c.target_type,
+                    calc_type: c.calc_type,
+                    rate: Number(c.value || 0),
+                    qty: Number(c.current_qty || 0),
+                    revenue: Number(c.current_revenue || 0),
+                    amount: Number(c.earned || 0),
+                    only_self_sold: !!c.only_self_sold,
+                  }))
+                : (record.commission_details || []);
+              if (allComms.length === 0) return <Empty />;
+              return allComms.map((c: any, i: number) => {
+                const isPct = c.calc_type === 'percentage';
+                const earned = Number(c.amount || 0);
+                const unitLabel = c.target_type === 'self_sale' ? 'đơn tự bán'
+                  : c.target_type === 'revenue' ? 'kỳ'
+                  : c.target_type === 'category' ? 'sản phẩm danh mục'
+                  : 'sản phẩm';
+                return (
+                  <div key={i} className="border-l-2 border-blue-400 pl-2 py-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="font-medium">{c.name}{c.only_self_sold ? ' (chỉ đơn tự bán)' : ''}</span>
+                      <span className={earned > 0 ? 'text-green-600 font-semibold' : 'text-muted-foreground'}>
+                        {earned > 0 ? `+${fmt(earned)}` : '0đ'}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      {isPct
+                        ? `${c.rate}% × ${fmtShort(c.revenue || 0)}`
+                        : `${fmt(c.rate || 0)}/${unitLabel} × ${c.qty || 0}`}
+                    </p>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">
-                    {c.calc_type === 'percentage' ? `${c.value}% × ${fmtShort(c.revenue || 0)}` : `${fmt(c.value || c.rate)}/đơn × ${c.qty || 0}`}
-                  </p>
-                </div>
-              ))
-            )}
+                );
+              });
+            })()}
           </Section>
 
           {/* Allowance */}
