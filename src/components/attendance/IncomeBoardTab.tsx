@@ -634,7 +634,26 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
                 {s.showKpiTips ? (
                   <div className="rounded-lg bg-background/70 border border-amber-300 dark:border-amber-700 p-2.5">
                     <div className="flex items-baseline justify-between mb-1.5">
-                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Tiến độ KPI</span>
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                        Tiến độ KPI
+                        <HelpTip
+                          iconSize="h-3 w-3"
+                          content={`Công thức: % hoàn thành = (Hiện tại ÷ Mục tiêu) × 100. Hiện tại: ${s.current ?? '0'}. Mục tiêu: ${s.target ?? '0'}. Khi đạt 100% bạn nhận đủ tiền thưởng KPI; vượt mốc còn được cộng thêm theo các mức "vượt KPI" (nếu có).`}
+                        />
+                        {(() => {
+                          const p = s.progress ?? 0;
+                          if (p >= 100) {
+                            return <Badge className="ml-1 h-4 px-1.5 text-[9px] gap-0.5 bg-emerald-500 hover:bg-emerald-500 text-white border-0"><Star className="h-2.5 w-2.5" /> Xuất sắc</Badge>;
+                          }
+                          if (p >= 80) {
+                            return <Badge className="ml-1 h-4 px-1.5 text-[9px] gap-0.5 bg-amber-500 hover:bg-amber-500 text-white border-0"><Flame className="h-2.5 w-2.5" /> Sắp đạt</Badge>;
+                          }
+                          if (p >= 50) {
+                            return <Badge className="ml-1 h-4 px-1.5 text-[9px] gap-0.5 bg-amber-400 hover:bg-amber-400 text-white border-0"><CheckCircle2 className="h-2.5 w-2.5" /> Đạt nửa chặng</Badge>;
+                          }
+                          return <Badge className="ml-1 h-4 px-1.5 text-[9px] gap-0.5 bg-orange-500 hover:bg-orange-500 text-white border-0"><TrendingDown className="h-2.5 w-2.5" /> Cần cải thiện</Badge>;
+                        })()}
+                      </span>
                       <span className={`text-2xl font-extrabold tabular-nums ${
                         s.progress >= 100 ? 'text-emerald-600 dark:text-emerald-400'
                         : s.progress >= 50 ? 'text-amber-600 dark:text-amber-400'
@@ -651,6 +670,34 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
                       <span className="text-foreground">{s.current}</span>
                       <span className="text-muted-foreground">Mục tiêu: <span className="font-semibold text-foreground">{s.target}</span></span>
                     </div>
+                    {(() => {
+                      const p = s.progress ?? 0;
+                      if (p >= 100) {
+                        return (
+                          <div className="mt-2 flex items-center gap-1.5 rounded-md bg-emerald-100 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 px-2 py-1.5">
+                            <Trophy className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                            <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">🎉 Đã đạt 100% KPI! Tiếp tục vượt mốc để nhận thêm thưởng.</span>
+                          </div>
+                        );
+                      }
+                      if (p >= 90) {
+                        return (
+                          <div className="mt-2 flex items-center gap-1.5 rounded-md bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 px-2 py-1.5">
+                            <Zap className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                            <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">⚡ Chỉ còn {100 - Math.round(p)}% là chạm mốc 100% — cố lên!</span>
+                          </div>
+                        );
+                      }
+                      if (p >= 40 && p < 50) {
+                        return (
+                          <div className="mt-2 flex items-center gap-1.5 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-2 py-1.5">
+                            <Flame className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                            <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">🔥 Sắp chạm mốc 50% — đẩy mạnh để qua nửa chặng!</span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 ) : (
                   <>
