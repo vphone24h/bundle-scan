@@ -1002,6 +1002,18 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
           ? `Hoa hồng tự bán`
         : `Hoa hồng ${targetLabel}`;
 
+    // Headline ngắn gọn, hấp dẫn để hiển thị trên card
+    const perUnitAmt = !isPct ? fmt(c.value) : `${c.value}%`;
+    const headline = c.target_type === 'self_sale'
+      ? `Tự bán 1 đơn nhận ngay ${perUnitAmt}`
+      : c.target_type === 'category'
+        ? `Chốt 1 đơn ${c.name} nhận thêm ${perUnitAmt}`
+        : c.target_type === 'product'
+          ? `Bán 1 ${c.name} nhận thêm ${perUnitAmt}`
+          : c.target_type === 'service'
+            ? `Mỗi dịch vụ ${c.name} nhận thêm ${perUnitAmt}`
+            : `Đạt doanh thu nhận thêm ${perUnitAmt}`;
+
     if (c.achieved && Number(c.earned) > 0) {
       const detail = c.target_type === 'revenue'
         ? `Doanh thu hiện tại ${fmt(c.current_revenue)} × ${rateDesc}`
@@ -1009,24 +1021,30 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
           ? `Đã có ${c.current_qty} đơn tự bán (${fmt(c.current_revenue)}) × ${rateDesc}`
         : `Đã bán ${c.current_qty} ${targetLabel === 'doanh thu' ? 'đơn' : targetLabel} (${fmt(c.current_revenue)}) × ${rateDesc}`;
       const ssNote = c.only_self_sold ? ' Chỉ tính trên đơn bạn đã tick "Đơn này khách của nhân viên".' : '';
+      const fullDesc = `Đang nhận ${fmt(c.earned)}. ${detail}.${ssNote} Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu' : `thêm ${targetLabel}`} để tăng hoa hồng.`;
       out.push({
         icon: <PiggyBank className="h-4 w-4 text-pink-600" />,
         tone: 'good',
         title: `${titlePrefix}: ${c.name}`,
-        description: `Đang nhận ${fmt(c.earned)}. ${detail}.${ssNote} Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu' : `thêm ${targetLabel}`} để tăng hoa hồng.`,
+        description: fullDesc,
+        headline,
+        detailDescription: fullDesc,
         potential: isPct ? 0 : Number(c.value || 0),
         done: true,
       });
     } else {
+      const fullDesc = c.target_type === 'self_sale'
+        ? `Mức hoa hồng: ${rateDesc}. Điều kiện: tick "Đơn này khách của nhân viên" khi xuất hàng để được cộng.`
+        : c.only_self_sold
+          ? `Mức hoa hồng: ${rateDesc}. CHỈ tính cho đơn bạn đã tick "Đơn này khách của nhân viên" lúc xuất hàng. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu trong kỳ' : `${targetLabel} "${c.name}"`} VÀ tick là đơn của bạn.`
+          : `Mức hoa hồng: ${rateDesc}. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu trong kỳ' : `${targetLabel} "${c.name}"`} để bắt đầu nhận.`;
       out.push({
         icon: <PiggyBank className="h-4 w-4 text-pink-600" />,
         tone: 'warn',
         title: `${titlePrefix}: ${c.name}`,
-        description: c.target_type === 'self_sale'
-          ? `Mức hoa hồng: ${rateDesc}. Điều kiện: tick "Đơn này khách của nhân viên" khi xuất hàng để được cộng.`
-          : c.only_self_sold
-            ? `Mức hoa hồng: ${rateDesc}. CHỈ tính cho đơn bạn đã tick "Đơn này khách của nhân viên" lúc xuất hàng. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu trong kỳ' : `${targetLabel} "${c.name}"`} VÀ tick là đơn của bạn.`
-            : `Mức hoa hồng: ${rateDesc}. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu trong kỳ' : `${targetLabel} "${c.name}"`} để bắt đầu nhận.`,
+        description: fullDesc,
+        headline,
+        detailDescription: fullDesc,
         potential: isPct ? 0 : Number(c.value || 0),
       });
     }
