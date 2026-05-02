@@ -372,19 +372,28 @@ export function ImportHistoricalOrdersSection() {
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rawData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
 
-      // Auto-detect flat vs legacy format
-      const useFlat = rawData.length > 0 && isFlat(rawData[0]);
-      const startRow = rawData.length > 0 && (useFlat || typeof rawData[0][4] !== 'number') ? 1 : 0;
+      // Auto-detect: KiotViet > Flat > Legacy VPhone
+      const useKv = rawData.length > 0 && isKiotViet(rawData[0]);
+      const useFlat = !useKv && rawData.length > 0 && isFlat(rawData[0]);
+      const startRow = rawData.length > 0 && (useKv || useFlat || typeof rawData[0][4] !== 'number') ? 1 : 0;
 
-      console.log(`[FORMAT] ${useFlat ? 'FLAT' : 'LEGACY'}, startRow=${startRow}, totalRows=${rawData.length}`);
+      console.log(`[FORMAT] ${useKv ? 'KIOTVIET' : useFlat ? 'FLAT' : 'LEGACY'}, startRow=${startRow}, totalRows=${rawData.length}`);
 
-      autoOrderCounter = 0; // Reset counter for each file
-      const orders: ParsedOrder[] = [];
-      for (let i = startRow; i < rawData.length; i++) {
-        const row = rawData[i];
-        if (!row || row.length < (useFlat ? 5 : 7)) continue;
-        const parsed = useFlat ? parseFlatRow(row) : parseVPhoneRow(row);
-        if (parsed) orders.push(parsed);
+      autoOrderCounter = 0;
+      let orders: ParsedOrder[] = [];
+      if (useKv) {
+        // Read again with cellDates to get Date objects
+        const wb2 = XLSX.read(buffer, { type: 'array', cellDates: true });
+        const sh2 = wb2.Sheets[wb2.SheetNames[0]];
+        const rows2: any[][] = XLSX.utils.sheet_to_json(sh2, { header: 1, defval: '', raw: true });
+        orders = parseKiotVietRows(rows2, startRow);
+      } else {
+        for (let i = startRow; i < rawData.length; i++) {
+          const row = rawData[i];
+          if (!row || row.length < (useFlat ? 5 : 7)) continue;
+          const parsed = useFlat ? parseFlatRow(row) : parseVPhoneRow(row);
+          if (parsed) orders.push(parsed);
+        }
       }
 
       // DEBUG: Log price distribution
