@@ -612,6 +612,7 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
   const amountClass = s.tone === 'bad' ? 'text-destructive' : 'text-green-600 dark:text-green-400';
   const [showTips, setShowTips] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
+  const [showTiers, setShowTiers] = useState(false);
   const hasDetail = !!s.detailDescription;
   const displayTitle = s.headline || s.title;
 
@@ -656,15 +657,24 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
             )}
             {s.tierLines && s.tierLines.length > 0 && (
               <div className="mt-1.5 rounded bg-background/60 border border-border/50 p-2">
-                <p className="text-[10px] font-semibold text-muted-foreground mb-1">Các mức vượt KPI:</p>
-                <ul className="space-y-0.5">
-                  {s.tierLines.map((line, idx) => (
-                    <li key={idx} className="text-[11px] flex items-start gap-1.5">
-                      <span className="text-emerald-600 mt-0.5">▸</span>
-                      <span>{line}</span>
-                    </li>
-                  ))}
-                </ul>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setShowTiers(v => !v); }}
+                  className="w-full flex items-center justify-between text-[10px] font-semibold text-muted-foreground"
+                >
+                  <span>Các mức vượt KPI ({s.tierLines.length})</span>
+                  <ChevronRight className={`h-3 w-3 transition-transform ${showTiers ? 'rotate-90' : ''}`} />
+                </button>
+                {showTiers && (
+                  <ul className="space-y-0.5 mt-1.5">
+                    {s.tierLines.map((line, idx) => (
+                      <li key={idx} className="text-[11px] flex items-start gap-1.5">
+                        <span className="text-emerald-600 mt-0.5">▸</span>
+                        <span>{line}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
             {s.progress != null && !hasDetail && (
