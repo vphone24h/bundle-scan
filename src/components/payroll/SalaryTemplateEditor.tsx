@@ -634,10 +634,10 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                           />
                           <div className="space-y-0.5">
                             <Label htmlFor={`count-kpi-${i}`} className="text-xs font-medium cursor-pointer">
-                              Tính doanh số đơn tự bán vào KPI thưởng
+                              Tính đơn tự bán (doanh số KPI + hoa hồng)
                             </Label>
                             <p className="text-[10px] text-muted-foreground">
-                              Khi BẬT (mặc định): doanh thu các đơn tự bán vẫn được cộng vào KPI cá nhân/chi nhánh để xét thưởng. Khi TẮT: các đơn tự bán chỉ tính hoa hồng riêng, KHÔNG cộng vào doanh số xét thưởng KPI.
+                              Khi BẬT (mặc định): các đơn tự bán VẪN được cộng vào doanh số xét KPI thưởng VÀ vẫn được tính hoa hồng theo rule này. Khi TẮT: bỏ qua hoàn toàn — KHÔNG cộng KPI, KHÔNG tính hoa hồng cho các đơn tự bán đó.
                             </p>
                           </div>
                         </div>
