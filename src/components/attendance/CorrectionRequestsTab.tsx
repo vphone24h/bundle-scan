@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,43 @@ export function CorrectionRequestsTab() {
   const qc = useQueryClient();
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [reviewNote, setReviewNote] = useState('');
+
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const channel = supabase
+      .channel(`attendance-corrections-${tenantId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'attendance_correction_requests',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        () => {
+          qc.invalidateQueries({ queryKey: ['correction-requests'] });
+          qc.invalidateQueries({ queryKey: ['pending-approvals-count'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'attendance_records',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        () => {
+          qc.invalidateQueries({ queryKey: ['attendance-records'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tenantId, qc]);
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ['correction-requests', tenantId],
@@ -73,19 +110,16 @@ export function CorrectionRequestsTab() {
         .eq('id', id);
       if (error) throw error;
 
-      // If approving a remote check-in, create the attendance record
-      if (status === 'approved' && request?.request_type === 'remote_checkin' && request.requested_check_in) {
-        const checkInTime = new Date(request.requested_check_in);
-        
-        // Determine late status
-        let recordStatus = 'on_time';
-        let lateMinutes = 0;
-        
-        // Try to find the user's shift for that day
-        const dayOfWeek = checkInTime.getDay();
+      const buildAttendanceUpdates = async () => {
+        const hasCheckIn = !!request?.requested_check_in;
+        const hasCheckOut = !!request?.requested_check_out;
+        if (!hasCheckIn && !hasCheckOut) return null;
+
+        const baseTime = new Date(request.requested_check_in || request.requested_check_out);
+        const dayOfWeek = baseTime.getDay();
         const { data: shift } = await supabase
           .from('shift_assignments')
-          .select('*, work_shifts(start_time, late_threshold_minutes)')
+          .select('*, work_shifts(start_time, end_time, late_threshold_minutes)')
           .eq('user_id', request.user_id)
           .eq('tenant_id', request.tenant_id)
           .eq('is_active', true)
@@ -93,28 +127,74 @@ export function CorrectionRequestsTab() {
           .limit(1)
           .maybeSingle();
 
-        if (shift?.work_shifts) {
+        let recordStatus = 'on_time';
+        let lateMinutes = 0;
+        let earlyLeaveMinutes = 0;
+        let overtimeMinutes = 0;
+        let totalMinutes = 0;
+
+        if (hasCheckIn && shift?.work_shifts) {
           const ws = shift.work_shifts as any;
           const [h, m] = ws.start_time.split(':').map(Number);
-          const shiftStart = new Date(checkInTime);
+          const shiftStart = new Date(request.requested_check_in);
           shiftStart.setHours(h, m, 0, 0);
           const threshold = (ws.late_threshold_minutes || 15) * 60 * 1000;
-          const diff = checkInTime.getTime() - shiftStart.getTime();
+          const diff = new Date(request.requested_check_in).getTime() - shiftStart.getTime();
           if (diff > threshold) {
             recordStatus = 'late';
             lateMinutes = Math.round(diff / 60000);
           }
         }
 
+        if (hasCheckIn && hasCheckOut) {
+          const checkInTime = new Date(request.requested_check_in);
+          const checkOutTime = new Date(request.requested_check_out);
+          totalMinutes = Math.max(0, Math.round((checkOutTime.getTime() - checkInTime.getTime()) / 60000));
+
+          if (shift?.work_shifts) {
+            const ws = shift.work_shifts as any;
+            const [eh, em] = ws.end_time.split(':').map(Number);
+            const shiftEnd = new Date(checkOutTime);
+            shiftEnd.setHours(eh, em, 0, 0);
+            const diffFromEnd = Math.round((checkOutTime.getTime() - shiftEnd.getTime()) / 60000);
+            if (diffFromEnd > 0) overtimeMinutes = diffFromEnd;
+            if (diffFromEnd < 0) {
+              earlyLeaveMinutes = Math.abs(diffFromEnd);
+              if (recordStatus === 'on_time') recordStatus = 'early_leave';
+            }
+          }
+        }
+
+        return {
+          shiftId: shift?.shift_id || null,
+          updates: {
+            check_in_time: request.requested_check_in || null,
+            check_out_time: request.requested_check_out || null,
+            check_in_method: hasCheckIn ? 'manual' : undefined,
+            check_out_method: hasCheckOut ? 'manual' : undefined,
+            status: hasCheckIn ? recordStatus : undefined,
+            late_minutes: lateMinutes,
+            early_leave_minutes: earlyLeaveMinutes,
+            overtime_minutes: overtimeMinutes,
+            total_work_minutes: totalMinutes,
+            note: `✅ Sửa công được duyệt bởi admin. Lý do: ${request.reason}`,
+          },
+        };
+      };
+
+      // If approving a remote check-in, create the attendance record
+      if (status === 'approved' && request?.request_type === 'remote_checkin' && request.requested_check_in) {
+        const attendancePayload = await buildAttendanceUpdates();
+
         const { error: insertError } = await supabase.from('attendance_records').insert([{
           tenant_id: request.tenant_id,
           user_id: request.user_id,
           date: request.request_date,
-          shift_id: shift?.shift_id || null,
+          shift_id: attendancePayload?.shiftId || null,
           check_in_time: request.requested_check_in,
-          check_in_method: 'remote_approved',
-          status: recordStatus,
-          late_minutes: lateMinutes,
+          check_in_method: 'manual',
+          status: attendancePayload?.updates.status || 'on_time',
+          late_minutes: attendancePayload?.updates.late_minutes || 0,
           note: `✅ Check-in từ xa được duyệt bởi admin. Lý do: ${request.reason}`,
         }]);
         if (insertError) throw insertError;
@@ -144,9 +224,49 @@ export function CorrectionRequestsTab() {
           if (updateError) throw updateError;
         }
       }
+
+      if (status === 'approved' && request?.request_type === 'correction') {
+        const attendancePayload = await buildAttendanceUpdates();
+        if (!attendancePayload) return;
+
+        const { data: existingRecord } = await supabase
+          .from('attendance_records')
+          .select('*')
+          .eq('tenant_id', request.tenant_id)
+          .eq('user_id', request.user_id)
+          .eq('date', request.request_date)
+          .maybeSingle();
+
+        const updates = Object.fromEntries(
+          Object.entries(attendancePayload.updates).filter(([, value]) => value !== undefined)
+        );
+
+        if (existingRecord) {
+          const { error: updateError } = await supabase
+            .from('attendance_records')
+            .update({
+              ...updates,
+              note: existingRecord.note
+                ? `${existingRecord.note} | ✅ Sửa công được duyệt bởi admin. Lý do: ${request.reason}`
+                : `✅ Sửa công được duyệt bởi admin. Lý do: ${request.reason}`,
+            })
+            .eq('id', existingRecord.id);
+          if (updateError) throw updateError;
+        } else {
+          const { error: insertError } = await supabase.from('attendance_records').insert([{
+            tenant_id: request.tenant_id,
+            user_id: request.user_id,
+            date: request.request_date,
+            shift_id: attendancePayload.shiftId,
+            ...updates,
+          }]);
+          if (insertError) throw insertError;
+        }
+      }
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['correction-requests'] });
+      qc.invalidateQueries({ queryKey: ['pending-approvals-count'] });
       qc.invalidateQueries({ queryKey: ['attendance-records'] });
       qc.invalidateQueries({ queryKey: ['my-attendance-today'] });
       const isRemote = vars.request?.request_type?.startsWith('remote_');
