@@ -501,21 +501,22 @@ export default function MyAttendancePage() {
         {(() => {
           const rec = previewPayroll?.record;
           const cs = rec?.config_snapshot || {};
-          const bonuses = (rec?.bonus_details || []) as any[];
-          const kpiList = bonuses
-            .filter((b: any) => {
-              const t = b.type;
-              return (t === 'kpi_personal' || t === 'kpi_branch' || t === 'branch_revenue' || t === 'gross_profit')
-                && Number(b.threshold || 0) > 0;
-            })
+          // Lấy từ kpi_bonuses_all (có cả KPI chưa đạt). Fallback bonus_details (đã đạt).
+          const allKpis = (cs.kpi_bonuses_all && cs.kpi_bonuses_all.length > 0)
+            ? cs.kpi_bonuses_all
+            : (rec?.bonus_details || []).filter((b: any) =>
+                ['kpi_personal','kpi_branch','branch_revenue','gross_profit'].includes(b.type)
+              );
+          const kpiList = (allKpis as any[])
+            .filter((b: any) => Number(b.threshold || 0) > 0)
             .map((b: any) => {
               const t = b.type;
               const isBranch = t === 'kpi_branch' || t === 'branch_revenue';
               const isGP = t === 'gross_profit';
-              const current = isBranch
-                ? Number(cs.branch_revenue || 0)
-                : isGP
-                  ? Number(cs.user_gross_profit || 0)
+              const current = b.current != null
+                ? Number(b.current)
+                : isBranch ? Number(cs.branch_revenue || 0)
+                  : isGP ? Number(cs.user_gross_profit || 0)
                   : Number(cs.user_revenue || 0);
               const target = Number(b.threshold || 0);
               const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
