@@ -586,6 +586,7 @@ type Suggestion = {
   target?: string;
   potential: number; // tiền có thể tăng
   done?: boolean;
+  earned?: number; // tiền thực nhận (khi done=true thì ưu tiên hiển thị)
   tierLines?: string[]; // chi tiết các mức vượt KPI, mỗi dòng 1 mức
   showKpiTips?: boolean; // hiển thị nút "Cách đạt KPI"
 };
@@ -607,7 +608,7 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-medium">{s.title}</p>
               <span className={`text-sm font-bold tabular-nums ${amountClass}`}>
-                {s.tone === 'bad' ? '-' : '+'}{fmt(s.potential)}
+                {s.tone === 'bad' ? '-' : '+'}{fmt(s.done && s.earned ? s.earned : s.potential)}
               </span>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">{s.description}</p>
