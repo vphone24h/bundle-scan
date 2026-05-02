@@ -608,7 +608,7 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-medium">{s.title}</p>
               <span className={`text-sm font-bold tabular-nums ${amountClass}`}>
-                {s.tone === 'bad' ? '-' : '+'}{fmt(s.done && s.earned ? s.earned : s.potential)}
+                {s.tone === 'bad' ? '-' : '+'}{fmt(s.potential)}
               </span>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">{s.description}</p>
@@ -896,8 +896,7 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         tone: 'good',
         title: `${titlePrefix}: ${c.name}`,
         description: `Đang nhận ${fmt(c.earned)}. ${detail}.${ssNote} Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu' : `thêm ${targetLabel}`} để tăng hoa hồng.`,
-        potential: 0,
-        earned: Number(c.earned || 0),
+        potential: isPct ? 0 : Number(c.value || 0),
         done: true,
       });
     } else {
