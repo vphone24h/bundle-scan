@@ -1155,13 +1155,23 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
     }
 
     if (isLost) {
-      // Đã mất phụ cấp do vắng quá giới hạn
+      // Đã mất phụ cấp do vắng quá giới hạn → vẫn hiển thị dạng action "Nhận phụ cấp"
+      const reqDaysText = requiredWorkDays > 0 ? `${requiredWorkDays} ngày công` : 'đủ ngày công';
+      const headline = `Nhận phụ cấp ${fmt(configured)} khi làm ${reqDaysText}`;
+      const detail =
+        `Phụ cấp chuyên cần: ${a.name}\n\n` +
+        `Bạn sẽ được nhận thêm ${fmt(configured)} nếu làm đủ ${reqDaysText}` +
+        (standardDays > 0 && maxAbsent > 0
+          ? ` (= ${standardDays} công chuẩn − ${maxAbsent} ngày được phép vắng).`
+          : '.') +
+        `\n\nHiện tại: đã đi ${actualWorkDays} ngày.\n⚠ ${a.skipped_reason}`;
       out.push({
-        icon: <Gift className="h-4 w-4 text-destructive" />,
-        tone: 'bad',
-        title: `Mất phụ cấp: ${a.name}`,
-        description: `${amountDesc}.${conditionDesc} ⚠ ${a.skipped_reason}`,
-        potential: configured, // số tiền lẽ ra được nhận
+        icon: <Gift className="h-4 w-4 text-purple-600" />,
+        tone: 'warn',
+        title: headline,
+        description: 'Nhấn để xem chi tiết',
+        detailDescription: detail,
+        potential: configured,
       });
     } else if (isReceiving) {
       // Đang nhận đủ
