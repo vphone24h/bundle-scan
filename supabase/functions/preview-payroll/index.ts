@@ -709,6 +709,11 @@ Deno.serve(async (req) => {
                 calc_type: bd.matchedTier.calc_type,
                 value: Number(bd.matchedTier.value || 0),
               } : null,
+              tiers: Array.isArray(b.tiers) ? b.tiers.map((t: any) => ({
+                percent_over: Number(t.percent_over || 0),
+                calc_type: t.calc_type,
+                value: Number(t.value || 0),
+              })) : [],
               products: bonusProducts,
             });
           }
@@ -1173,6 +1178,12 @@ Deno.serve(async (req) => {
           user_revenue: userRevenue,
           branch_revenue: branchRevenue,
           overtime_details: overtimeDetails,
+          overtime_rules: (tOvertimes || []).map((ot: any) => ({
+            name: ot.name,
+            type: ot.overtime_type,
+            calc_type: ot.calc_type,
+            value: Number(ot.value || 0),
+          })),
           sale_count: userSales.length,
           is_payroll_ready: isPayrollReady,
           missing_setup_reasons: missingSetupReasons,
