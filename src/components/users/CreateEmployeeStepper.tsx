@@ -128,26 +128,8 @@ export function CreateEmployeeStepper({ open, onOpenChange, branches }: CreateEm
       case 1: return true; // optional
       case 2: return true; // optional
       case 3: {
-        // Validate ngày nghỉ có lương phải bằng số ngày trong template
-        const tpl = salaryTemplates?.find(t => t.id === salaryData.templateId);
-        // Chỉ áp dụng cho lương cố định theo tháng
-        const isFixed = (tpl as any)?.salary_type === 'fixed';
-        const required = isFixed ? ((tpl as any)?.paid_leave_days_per_month || 0) : 0;
-        if (required > 0) {
-          // Chỉ validate THÁNG ĐANG XEM trong picker (referenceMonth).
-          const refMonth = salaryData.paidLeaveReferenceMonth || new Date().toISOString().slice(0, 7);
-          const [yy, mm] = refMonth.split('-').map(Number);
-          const monthDate = new Date(yy || new Date().getFullYear(), (mm || 1) - 1, 1);
-          const activeDays: number[] = getPaidLeaveDaysForMonth({
-            monthDate,
-            overrides: salaryData.paidLeaveOverrides || {},
-            defaultDays: salaryData.paidLeaveDaysOfMonth || [],
-          });
-          if (activeDays.length !== required) {
-            toast.error(`Mẫu lương cho phép ${required} ngày nghỉ có lương cho tháng ${refMonth}. Bạn đang chọn ${activeDays.length}. Vui lòng chọn đủ cho tháng đang xem.`);
-            return false;
-          }
-        }
+        // Ngày nghỉ có lương là TÙY CHỌN — không bắt buộc chọn trước.
+        // Hệ thống tự ghi nhận khi NV xin nghỉ; ngày dư tự cộng vào tăng ca.
         return true;
       }
       default: return true;

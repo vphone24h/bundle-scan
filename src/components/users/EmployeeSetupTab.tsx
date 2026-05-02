@@ -344,25 +344,9 @@ export function EmployeeSetupTab() {
             toast.warning('Tăng ca đang tắt — lịch làm việc đã xếp sẽ không được dùng để tính lương. Hệ thống chỉ tính theo giờ check-in/check-out thực tế.');
           }
 
-          // Validate ngày nghỉ có lương phải bằng số ngày trong template
-          // Chỉ áp dụng cho lương cố định theo tháng (fixed). Lương theo giờ/ngày/ca không có chế độ nghỉ có lương.
-          const isFixedSalary = (selectedTemplate as any)?.salary_type === 'fixed';
-          const requiredLeaveDays = isFixedSalary ? ((selectedTemplate as any)?.paid_leave_days_per_month || 0) : 0;
-          if (requiredLeaveDays > 0) {
-            // Chỉ validate cho THÁNG ĐANG XEM trong picker (referenceMonth).
-            // Các tháng khác chưa cấu hình sẽ tự động dùng default — không chặn lưu.
-            const refMonth = salaryData.paidLeaveReferenceMonth || new Date().toISOString().slice(0, 7);
-            const [yy, mm] = refMonth.split('-').map(Number);
-            const monthDate = new Date(yy || new Date().getFullYear(), (mm || 1) - 1, 1);
-            const activeDays = getPaidLeaveDaysForMonth({
-              monthDate,
-              overrides: salaryData.paidLeaveOverrides || {},
-              defaultDays: salaryData.paidLeaveDaysOfMonth || [],
-            });
-            if (activeDays.length !== requiredLeaveDays) {
-              throw new Error(`Mẫu lương cho phép ${requiredLeaveDays} ngày nghỉ có lương cho tháng ${refMonth}. Bạn đang chọn ${activeDays.length}. Vui lòng chọn đủ trong phần "Ngày nghỉ có lương" cho tháng đang xem.`);
-            }
-          }
+          // Ngày nghỉ có lương là TÙY CHỌN — không bắt buộc.
+          // NV xin nghỉ qua "Công của tôi" → hệ thống tự ghi nhận.
+          // Nếu đi làm full không nghỉ → số ngày dư tự cộng vào tăng ca theo hệ số.
         }
 
         const salaryPayload = {
