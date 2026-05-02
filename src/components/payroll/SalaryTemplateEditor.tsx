@@ -109,7 +109,7 @@ interface CommissionRow { target_type: string; target_id: string; target_name: s
 interface AllowanceRow { allowance_type: string; name: string; amount: number; is_fixed: boolean; max_absent_days: number; }
 interface HolidayRow { holiday_name: string; holiday_date: string; multiplier_percent: number; }
 interface PenaltyTier { percent_achieved: number; penalty_amount: number; }
-interface PenaltyRow { penalty_type: string; name: string; amount: number; description: string; threshold_minutes: number; full_day_absence_minutes: number; kpi_target: number; tiers: PenaltyTier[]; }
+interface PenaltyRow { penalty_type: string; name: string; amount: number; description: string; threshold_minutes: number; full_day_absence_minutes: number; kpi_target: number; tiers: PenaltyTier[]; linked_bonus_key?: string; }
 interface OvertimeRow { overtime_type: string; name: string; calc_type: string; value: number; description: string; }
 
 interface Props {
