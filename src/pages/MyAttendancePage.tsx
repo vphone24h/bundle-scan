@@ -13,6 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, TrendingUp, ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertTriangle, DollarSign, Bell, FileText, Briefcase, Banknote, FileEdit, CalendarDays, ShoppingBag, CalendarOff } from 'lucide-react';
+import { Target, Trophy, Flame } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { useNavigate } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
@@ -37,6 +39,7 @@ export default function MyAttendancePage() {
   const qc = useQueryClient();
   const [showSalesDialog, setShowSalesDialog] = useState(false);
   const [expandedSaleId, setExpandedSaleId] = useState<string | null>(null);
+  const [tabValue, setTabValue] = useState<string>('income');
 
   const { data: expandedItems, isLoading: itemsLoading } = useQuery({
     queryKey: ['my-sale-items', expandedSaleId],
