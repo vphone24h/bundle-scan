@@ -83,6 +83,8 @@ export function CorrectionRequestsTab() {
       return data || [];
     },
     enabled: !!tenantId,
+    refetchInterval: 10000,
+    staleTime: 5000,
   });
 
   const userIds = [...new Set(requests?.map(r => r.user_id) || [])];
@@ -98,18 +100,6 @@ export function CorrectionRequestsTab() {
 
   const reviewMutation = useMutation({
     mutationFn: async ({ id, status, request }: { id: string; status: string; request?: any }) => {
-      // Update the request status
-      const { error } = await supabase
-        .from('attendance_correction_requests')
-        .update({
-          status,
-          reviewed_by: user?.id,
-          reviewed_at: new Date().toISOString(),
-          review_note: reviewNote || null,
-        })
-        .eq('id', id);
-      if (error) throw error;
-
       const buildAttendanceUpdates = async (currentRecord?: any) => {
         const effectiveCheckIn = request?.requested_check_in || currentRecord?.check_in_time || null;
         const effectiveCheckOut = request?.requested_check_out || currentRecord?.check_out_time || null;
@@ -265,6 +255,17 @@ export function CorrectionRequestsTab() {
           if (insertError) throw insertError;
         }
       }
+
+      const { error } = await supabase
+        .from('attendance_correction_requests')
+        .update({
+          status,
+          reviewed_by: user?.id,
+          reviewed_at: new Date().toISOString(),
+          review_note: reviewNote || null,
+        })
+        .eq('id', id);
+      if (error) throw error;
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['correction-requests'] });
