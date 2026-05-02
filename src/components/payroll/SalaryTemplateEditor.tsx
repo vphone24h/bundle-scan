@@ -250,7 +250,23 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
   useEffect(() => { if (exCommissions?.length) setCommissions(exCommissions.map((c: any) => ({ target_type: c.target_type, target_id: c.target_id || '', target_name: c.target_name, calc_type: c.calc_type, value: Number(c.value), only_self_sold: !!c.only_self_sold, count_in_revenue_kpi: c.count_in_revenue_kpi !== false }))); }, [exCommissions]);
   useEffect(() => { if (exAllowances?.length) setAllowances(exAllowances.map(a => ({ allowance_type: a.allowance_type, name: a.name, amount: Number(a.amount), is_fixed: a.is_fixed, max_absent_days: Number((a as any).max_absent_days || 0) }))); }, [exAllowances]);
   useEffect(() => { if (exHolidays?.length) setHolidays(exHolidays.map(h => ({ holiday_name: h.holiday_name, holiday_date: h.holiday_date, multiplier_percent: Number(h.multiplier_percent) }))); }, [exHolidays]);
-  useEffect(() => { if (exPenalties?.length) setPenalties(exPenalties.map(p => ({ penalty_type: p.penalty_type, name: p.name, amount: Number(p.amount), description: p.description || '', threshold_minutes: (p as any).threshold_minutes || 0, full_day_absence_minutes: (p as any).full_day_absence_minutes || 0, kpi_target: Number((p as any).kpi_target || 0), tiers: Array.isArray((p as any).tiers) ? (p as any).tiers : [] }))); }, [exPenalties]);
+  useEffect(() => {
+    if (exPenalties?.length) setPenalties(exPenalties.map(p => {
+      const rawDesc = p.description || '';
+      const m = rawDesc.match(/^\[bonus:([^\]]+)\]\s*/);
+      return {
+        penalty_type: p.penalty_type,
+        name: p.name,
+        amount: Number(p.amount),
+        description: m ? rawDesc.replace(m[0], '') : rawDesc,
+        threshold_minutes: (p as any).threshold_minutes || 0,
+        full_day_absence_minutes: (p as any).full_day_absence_minutes || 0,
+        kpi_target: Number((p as any).kpi_target || 0),
+        tiers: Array.isArray((p as any).tiers) ? (p as any).tiers : [],
+        linked_bonus_key: m ? m[1] : undefined,
+      };
+    }));
+  }, [exPenalties]);
   useEffect(() => { if (exOvertimes?.length) setOvertimes(exOvertimes.map(o => ({ overtime_type: o.overtime_type, name: o.name, calc_type: o.calc_type, value: Number(o.value), description: o.description || '' }))); }, [exOvertimes]);
 
   const handleSave = async () => {
