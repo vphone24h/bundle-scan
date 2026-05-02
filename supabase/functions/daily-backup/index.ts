@@ -512,12 +512,16 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
     XLSX.utils.book_append_sheet(wb, wsImpProd, "Nhập theo sản phẩm");
 
     // Sheet 4: Inventory
-    const invRows: any[][] = [["STT", "Tên sản phẩm", "SKU", "Giá nhập", "Giá bán"]];
+    const invRows: any[][] = [["STT", "Tên sản phẩm", "SKU", "IMEI", "SL tồn", "Giá nhập", "Giá vốn tồn", "Giá bán"]];
     products.forEach((p: any, idx: number) => {
-      invRows.push([idx + 1, p.name || "", p.sku || "", p.import_price || 0, p.sale_price || 0]);
+      const qty = p.imei ? 1 : (Number(p.quantity) || 1);
+      const tic = p.imei
+        ? (Number(p.import_price) || 0)
+        : (Number(p.total_import_cost) || (Number(p.import_price) || 0) * qty);
+      invRows.push([idx + 1, p.name || "", p.sku || "", p.imei || "", qty, p.import_price || 0, tic, p.sale_price || 0]);
     });
     const wsInv = XLSX.utils.aoa_to_sheet(invRows);
-    wsInv["!cols"] = [{ wch: 5 }, { wch: 35 }, { wch: 15 }, { wch: 12 }, { wch: 12 }];
+    wsInv["!cols"] = [{ wch: 5 }, { wch: 35 }, { wch: 15 }, { wch: 18 }, { wch: 8 }, { wch: 12 }, { wch: 14 }, { wch: 12 }];
     XLSX.utils.book_append_sheet(wb, wsInv, "Tồn kho");
 
     const xlsxBuffer = XLSX.write(wb, { type: "array", bookType: "xlsx" });
