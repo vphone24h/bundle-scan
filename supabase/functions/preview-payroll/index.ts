@@ -554,6 +554,9 @@ Deno.serve(async (req) => {
 
       // ===== 1. BASE SALARY =====
       let baseSalary = 0;
+      // For UI breakdown
+      let paidLeaveUsedSnapshot = 0;
+      let totalAbsentSnapshot = 0;
       if (!isPayrollReady) {
         baseSalary = 0;
       } else if (salaryType === "fixed") {
@@ -577,6 +580,8 @@ Deno.serve(async (req) => {
         const paidWorkDays = workDays + paidLeaveUsed;
         const ratio = Math.min(1, paidWorkDays / expected);
         baseSalary = Math.round(baseAmount * ratio);
+        paidLeaveUsedSnapshot = paidLeaveUsed;
+        totalAbsentSnapshot = totalAbsent;
       } else if (salaryType === "daily") {
         // Lương theo ngày: base_amount = lương/ngày × số ngày có mặt
         baseSalary = baseAmount * workDays;
@@ -1216,6 +1221,12 @@ Deno.serve(async (req) => {
           sale_count: userSales.length,
           is_payroll_ready: isPayrollReady,
           missing_setup_reasons: missingSetupReasons,
+          paid_leave_quota: paidLeaveDaysPerMonth,
+          paid_leave_used: paidLeaveUsedSnapshot,
+          total_absent: totalAbsentSnapshot,
+          daily_rate: salaryType === "fixed"
+            ? Math.round(baseAmount / (expectedWorkDays || 22))
+            : (salaryType === "daily" || salaryType === "shift" ? Math.round(baseAmount) : null),
         },
         status: "confirmed",
       });

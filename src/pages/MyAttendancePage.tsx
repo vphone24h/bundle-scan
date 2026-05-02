@@ -224,9 +224,19 @@ export default function MyAttendancePage() {
     staleTime: 30_000,
   });
 
-  const estimatedSalary = previewPayroll?.record?.net_salary != null
-    ? Math.round(Number(previewPayroll.record.net_salary))
-    : estimatedSalaryFallback;
+  const estimatedSalary = (() => {
+    const rec = previewPayroll?.record;
+    if (rec?.net_salary == null) return estimatedSalaryFallback;
+    // Ẩn phạt KPI trước ngày 25 — đồng bộ với tab "Bảng thu nhập realtime"
+    const isAfterDay25 = new Date().getDate() >= 25;
+    const hiddenKpi = (rec.penalty_details || [])
+      .filter((p: any) => {
+        const isKpi = p.type === 'kpi_not_met' || /kpi/i.test(String(p.name || ''));
+        return isKpi && !isAfterDay25;
+      })
+      .reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+    return Math.round(Number(rec.net_salary) + hiddenKpi);
+  })();
 
   const prevMonth = () => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
   const nextMonth = () => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
