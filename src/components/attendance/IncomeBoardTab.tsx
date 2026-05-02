@@ -760,14 +760,16 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
               </div>
             )}
             {s.showKpiTips && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-2 h-7 text-[11px] w-full text-primary hover:text-primary"
-                onClick={() => setShowTips(true)}
-              >
-                Nhận ngay
-              </Button>
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <span className="text-[11px] text-muted-foreground">Nhấn để xem chi tiết</span>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setShowTips(true); }}
+                  className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground shadow-sm hover:opacity-90"
+                >
+                  Nhận ngay <ChevronRight className="h-3 w-3" />
+                </button>
+              </div>
             )}
             {s.done && (
               <Badge variant="outline" className="mt-1 h-4 text-[9px] gap-0.5"><CheckCircle2 className="h-2.5 w-2.5 text-green-600" /> Hoàn thành</Badge>
