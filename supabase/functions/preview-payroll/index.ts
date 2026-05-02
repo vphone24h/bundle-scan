@@ -1221,6 +1221,12 @@ Deno.serve(async (req) => {
           sale_count: userSales.length,
           is_payroll_ready: isPayrollReady,
           missing_setup_reasons: missingSetupReasons,
+          paid_leave_quota: paidLeaveDaysPerMonth,
+          paid_leave_used: paidLeaveUsedSnapshot,
+          total_absent: totalAbsentSnapshot,
+          daily_rate: salaryType === "fixed"
+            ? Math.round(baseAmount / (expectedWorkDays || 22))
+            : (salaryType === "daily" || salaryType === "shift" ? Math.round(baseAmount) : null),
         },
         status: "confirmed",
       });
