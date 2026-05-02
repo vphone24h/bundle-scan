@@ -625,6 +625,23 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                            </p>
                          </div>
                      </div>
+                      {c.only_self_sold && (
+                        <div className="col-span-2 flex items-start gap-2 rounded-md border border-dashed border-blue-300 bg-blue-50/60 p-2">
+                          <Switch
+                            id={`count-kpi-${i}`}
+                            checked={c.count_in_revenue_kpi !== false}
+                            onCheckedChange={(v) => { const n = [...commissions]; n[i].count_in_revenue_kpi = v; setCommissions(n); }}
+                          />
+                          <div className="space-y-0.5">
+                            <Label htmlFor={`count-kpi-${i}`} className="text-xs font-medium cursor-pointer">
+                              Tính doanh số đơn tự bán vào KPI thưởng
+                            </Label>
+                            <p className="text-[10px] text-muted-foreground">
+                              Khi BẬT (mặc định): doanh thu các đơn tự bán vẫn được cộng vào KPI cá nhân/chi nhánh để xét thưởng. Khi TẮT: các đơn tự bán chỉ tính hoa hồng riêng, KHÔNG cộng vào doanh số xét thưởng KPI.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive ml-1" onClick={() => setCommissions(commissions.filter((_, j) => j !== i))}>
                     <Trash2 className="h-3.5 w-3.5" />
@@ -632,7 +649,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                 </div>
               </div>
             ))}
-            <Button variant="outline" size="sm" onClick={() => setCommissions([...commissions, { target_type: 'product', target_id: '', target_name: '', calc_type: 'percentage', value: 0, only_self_sold: false }])}>
+            <Button variant="outline" size="sm" onClick={() => setCommissions([...commissions, { target_type: 'product', target_id: '', target_name: '', calc_type: 'percentage', value: 0, only_self_sold: false, count_in_revenue_kpi: true }])}>
               <Plus className="h-3.5 w-3.5 mr-1" />Thêm hoa hồng
             </Button>
           </CardContent>
