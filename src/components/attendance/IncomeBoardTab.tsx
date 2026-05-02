@@ -629,7 +629,7 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-semibold leading-snug">{displayTitle}</p>
               <span className={`text-sm font-bold tabular-nums ${amountClass}`}>
-                {s.tone === 'bad' ? '-' : '+'}{fmt(s.potential)}
+                {s.tone === "bad" ? "-" : "+"}{fmt(s.potential)}{s.amountSuffix ?? ""}
               </span>
             </div>
             {hasDetail ? (
@@ -784,7 +784,7 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
                 {s.icon}
                 <span className="flex-1">{s.title}</span>
                 <span className={`text-base font-bold tabular-nums ${amountClass}`}>
-                  {s.tone === 'bad' ? '-' : '+'}{fmt(s.potential)}
+                  {s.tone === "bad" ? "-" : "+"}{fmt(s.potential)}{s.amountSuffix ?? ""}
                 </span>
               </DialogTitle>
             </DialogHeader>
