@@ -122,6 +122,15 @@ export function LeaveApprovalsTab() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const guardedReview = (payload: { id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string }) => {
+    if (hasSecurityPassword && !unlocked) {
+      setPendingAction(payload);
+      setShowPwd(true);
+      return;
+    }
+    reviewMutation.mutate(payload);
+  };
+
   const filtered = useMemo(() => {
     if (!searchQuery) return requests || [];
     const q = searchQuery.toLowerCase();
