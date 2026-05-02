@@ -404,6 +404,19 @@ export function LeaveApprovalsTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <SecurityPasswordDialog
+        open={showPwd}
+        onOpenChange={setShowPwd}
+        onSuccess={() => {
+          unlock();
+          if (pendingAction) {
+            reviewMutation.mutate(pendingAction);
+            setPendingAction(null);
+          }
+        }}
+        title="Xác thực duyệt nghỉ phép"
+        description="Nhập mật khẩu bảo mật để duyệt yêu cầu nghỉ phép"
+      />
     </div>
   );
 }
