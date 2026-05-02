@@ -783,6 +783,7 @@ Deno.serve(async (req) => {
 
         for (const c of tComms) {
           const onlySS = c.only_self_sold === true;
+          if (onlySS && c.count_in_revenue_kpi === false) continue;
           const _soldByProduct = onlySS ? soldByProductSS : soldByProduct;
           const _soldByCategory = onlySS ? soldByCategorySS : soldByCategory;
           const _soldByCategoryName = onlySS ? soldByCategoryNameSS : soldByCategoryName;
