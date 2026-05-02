@@ -1236,6 +1236,36 @@ Deno.serve(async (req) => {
                 };
               })
             : [],
+          // ALL bonuses (fixed/overtime/kpi/...) — for transparent listing in Income Board
+          bonuses_all: (template?.bonus_enabled && templateId)
+            ? (bonusesByTemplate[templateId] || []).map((b: any) => {
+                const isRevenueBased = ['kpi_personal','kpi_branch','branch_revenue','gross_profit'].includes(b.bonus_type);
+                const cur = b.bonus_type === 'kpi_personal' ? userRevenue
+                  : (b.bonus_type === 'kpi_branch' || b.bonus_type === 'branch_revenue') ? branchRevenue
+                  : b.bonus_type === 'gross_profit' ? userGrossProfit
+                  : 0;
+                const threshold = Number(b.threshold || 0);
+                const reachReward = isRevenueBased
+                  ? (b.calc_type === 'percentage' ? Math.round(threshold * Number(b.value || 0) / 100) : Number(b.value || 0))
+                  : Number(b.value || 0);
+                return {
+                  name: b.name,
+                  type: b.bonus_type,
+                  calc_type: b.calc_type,
+                  value: Number(b.value || 0),
+                  threshold,
+                  current: cur,
+                  reach_reward: reachReward,
+                  is_revenue_based: isRevenueBased,
+                  achieved: isRevenueBased ? (threshold > 0 && cur >= threshold) : true,
+                  tiers: Array.isArray(b.tiers) ? b.tiers.map((t: any) => ({
+                    percent_over: Number(t.percent_over || 0),
+                    calc_type: t.calc_type,
+                    value: Number(t.value || 0),
+                  })) : [],
+                };
+              })
+            : [],
           sale_count: userSales.length,
           is_payroll_ready: isPayrollReady,
           missing_setup_reasons: missingSetupReasons,
