@@ -5,6 +5,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
+function fail(error: string, errorCode: string, extra: Record<string, unknown> = {}) {
+  return new Response(
+    JSON.stringify({ ok: false, success: false, error, errorCode, ...extra }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
 function getClientIP(req: Request): string {
   return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
     || req.headers.get('cf-connecting-ip') 
@@ -28,10 +35,7 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Không có quyền truy cập' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return fail('Không có quyền truy cập. Vui lòng đăng nhập lại.', 'UNAUTHORIZED')
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -51,10 +55,7 @@ Deno.serve(async (req) => {
     })
 
     if (!allowed) {
-      return new Response(
-        JSON.stringify({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return fail('Quá nhiều yêu cầu tạo nhân viên. Vui lòng thử lại sau 1 giờ.', 'RATE_LIMIT')
     }
 
     // Verify the caller is a super_admin
@@ -64,10 +65,7 @@ Deno.serve(async (req) => {
 
     const { data: { user: caller }, error: callerError } = await supabaseClient.auth.getUser()
     if (callerError || !caller) {
-      return new Response(
-        JSON.stringify({ error: 'Không thể xác thực người dùng' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return fail('Không thể xác thực người dùng. Vui lòng đăng nhập lại.', 'AUTH_FAILED')
     }
 
     const { data: callerRole, error: roleError } = await supabaseAdmin
@@ -77,10 +75,7 @@ Deno.serve(async (req) => {
       .single()
 
     if (roleError || callerRole?.user_role !== 'super_admin') {
-      return new Response(
-        JSON.stringify({ error: 'Chỉ Admin Tổng mới có quyền tạo tài khoản' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return fail('Chỉ Admin Tổng mới có quyền tạo tài khoản nhân viên.', 'FORBIDDEN')
     }
 
     const callerTenantId = callerRole.tenant_id
@@ -94,24 +89,15 @@ Deno.serve(async (req) => {
     const branchId = body.branchId || null
 
     if (!email || !password || !displayName) {
-      return new Response(
-        JSON.stringify({ error: 'Thiếu thông tin bắt buộc' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return fail('Thiếu thông tin bắt buộc (email, mật khẩu hoặc tên hiển thị).', 'MISSING_FIELDS')
     }
 
     if (!validateEmail(email)) {
-      return new Response(
-        JSON.stringify({ error: 'Định dạng email không hợp lệ' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return fail('Định dạng email không hợp lệ.', 'INVALID_EMAIL')
     }
 
     if (password.length < 6 || password.length > 128) {
-      return new Response(
-        JSON.stringify({ error: 'Mật khẩu phải từ 6-128 ký tự' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return fail('Mật khẩu phải từ 6 đến 128 ký tự.', 'INVALID_PASSWORD')
     }
 
     // Check member limit for tenant
@@ -123,10 +109,7 @@ Deno.serve(async (req) => {
 
     if (tenantError) {
       console.error('Tenant fetch error:', tenantError)
-      return new Response(
-        JSON.stringify({ error: 'Không thể kiểm tra thông tin cửa hàng' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return fail('Không thể kiểm tra thông tin cửa hàng: ' + tenantError.message, 'TENANT_FETCH_FAILED')
     }
 
     const maxUsers = tenantData?.max_users || 5
@@ -139,10 +122,7 @@ Deno.serve(async (req) => {
 
     if (countError) {
       console.error('User count error:', countError)
-      return new Response(
-        JSON.stringify({ error: 'Không thể kiểm tra số lượng thành viên' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return fail('Không thể kiểm tra số lượng thành viên: ' + countError.message, 'USER_COUNT_FAILED')
     }
 
     if ((currentUserCount || 0) >= maxUsers) {
@@ -160,28 +140,19 @@ Deno.serve(async (req) => {
 
     // Không cho phép tạo super_admin
     if (role === 'super_admin') {
-      return new Response(
-        JSON.stringify({ error: 'Không thể tạo thêm tài khoản Admin Tổng' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return fail('Không thể tạo thêm tài khoản Admin Tổng.', 'CANNOT_CREATE_SUPER_ADMIN')
     }
 
     // Validate role is an allowed value
     const allowedRoles = ['branch_admin', 'cashier', 'staff']
     if (!allowedRoles.includes(role)) {
-      return new Response(
-        JSON.stringify({ error: 'Vai trò không hợp lệ' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return fail(`Vai trò không hợp lệ: "${role}". Phải là một trong: ${allowedRoles.join(', ')}.`, 'INVALID_ROLE')
     }
 
     const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers()
     if (listError) {
       console.error('List users error:', listError)
-      return new Response(
-        JSON.stringify({ error: 'Không thể kiểm tra email' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return fail('Không thể kiểm tra email: ' + listError.message, 'LIST_USERS_FAILED')
     }
 
     const existingUser = existingUsers.users.find(u => u.email?.toLowerCase() === email)
@@ -195,11 +166,9 @@ Deno.serve(async (req) => {
         .maybeSingle()
 
       if (existingRoleInTenant) {
-        return new Response(
-          JSON.stringify({ 
-            error: `Email này đã được sử dụng trong cửa hàng của bạn (vai trò: ${existingRoleInTenant.user_role})` 
-          }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        return fail(
+          `Email "${email}" đã tồn tại trong cửa hàng với vai trò: ${existingRoleInTenant.user_role}.`,
+          'EMAIL_EXISTS_IN_TENANT'
         )
       }
 
@@ -214,10 +183,7 @@ Deno.serve(async (req) => {
 
       if (insertRoleError) {
         console.error('Insert role error:', insertRoleError)
-        return new Response(
-          JSON.stringify({ error: 'Không thể thêm vai trò cho người dùng' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+        return fail('Không thể thêm vai trò cho người dùng: ' + insertRoleError.message, 'INSERT_ROLE_FAILED')
       }
 
       if (phone) {
@@ -248,15 +214,15 @@ Deno.serve(async (req) => {
     if (createError) {
       console.error('Create user error:', createError)
       let errorMessage = createError.message
+      let errorCode = 'CREATE_USER_FAILED'
       if (createError.message.includes('already been registered')) {
-        errorMessage = 'Email này đã được sử dụng cho tài khoản khác'
+        errorMessage = `Email "${email}" đã được đăng ký ở một tài khoản khác trong hệ thống. Vui lòng dùng email khác.`
+        errorCode = 'EMAIL_ALREADY_REGISTERED'
       } else if (createError.message.includes('password')) {
-        errorMessage = 'Mật khẩu không hợp lệ'
+        errorMessage = 'Mật khẩu không hợp lệ: ' + createError.message
+        errorCode = 'INVALID_PASSWORD'
       }
-      return new Response(
-        JSON.stringify({ error: errorMessage }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return fail(errorMessage, errorCode)
     }
 
     const profileUpdateData: Record<string, any> = { tenant_id: callerTenantId }
@@ -292,10 +258,7 @@ Deno.serve(async (req) => {
 
     if (roleUpdateError) {
       console.error('Role update error:', roleUpdateError)
-      return new Response(
-        JSON.stringify({ error: 'Không thể cập nhật quyền người dùng' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return fail('Không thể cập nhật quyền người dùng: ' + roleUpdateError.message, 'ROLE_UPDATE_FAILED')
     }
 
     return new Response(
@@ -308,9 +271,6 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Unexpected error:', error)
-    return new Response(
-      JSON.stringify({ error: 'Lỗi hệ thống' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return fail('Lỗi hệ thống: ' + ((error as Error)?.message || String(error)), 'UNEXPECTED_ERROR')
   }
 })
