@@ -596,6 +596,7 @@ type Suggestion = {
   current?: string;
   target?: string;
   potential: number; // tiền có thể tăng
+  amountSuffix?: string; // hậu tố sau số tiền (vd: "/h")
   done?: boolean;
   earned?: number; // tiền thực nhận (khi done=true thì ưu tiên hiển thị)
   tierLines?: string[]; // chi tiết các mức vượt KPI, mỗi dòng 1 mức
@@ -628,7 +629,7 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-semibold leading-snug">{displayTitle}</p>
               <span className={`text-sm font-bold tabular-nums ${amountClass}`}>
-                {s.tone === 'bad' ? '-' : '+'}{fmt(s.potential)}
+                {s.tone === "bad" ? "-" : "+"}{fmt(s.potential)}{s.amountSuffix ?? ""}
               </span>
             </div>
             {hasDetail ? (
@@ -783,7 +784,7 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
                 {s.icon}
                 <span className="flex-1">{s.title}</span>
                 <span className={`text-base font-bold tabular-nums ${amountClass}`}>
-                  {s.tone === 'bad' ? '-' : '+'}{fmt(s.potential)}
+                  {s.tone === "bad" ? "-" : "+"}{fmt(s.potential)}{s.amountSuffix ?? ""}
                 </span>
               </DialogTitle>
             </DialogHeader>
@@ -1123,8 +1124,8 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
       ? Math.round(hourlyBaseRate * value / 100)
       : value;
     return {
-      desc: `Mỗi giờ tăng ca = ${fmt(perHour)} (${isPct ? `${value}% lương giờ` : 'cố định'}). Tăng ca 10h ≈ +${fmt(perHour * 10)}.`,
-      sample: perHour * 10,
+      desc: `Mỗi giờ tăng ca = ${fmt(perHour)}/h (${isPct ? `${value}% lương giờ` : 'cố định'}).`,
+      sample: perHour,
     };
   };
 
@@ -1138,6 +1139,7 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         title: ruleType === 'full_day' ? `Tăng ca cả ngày: ${rule.name || 'OT'}` : `Tăng ca theo giờ: ${rule.name || 'OT'}`,
         description: desc,
         potential: Math.round(sample),
+        amountSuffix: ruleType === 'full_day' ? undefined : '/h',
       });
     }
   } else if (hourlyBaseRate > 0) {
