@@ -95,6 +95,17 @@ export function IncomeBoardTab() {
   const cs = r.config_snapshot || {};
   const isReady = cs.is_payroll_ready !== false;
 
+  // Ẩn phạt KPI trước ngày 25 — đồng bộ với popup chi tiết và tab "Tăng thêm lương"
+  const isAfterDay25 = new Date().getDate() >= 25;
+  const hiddenKpiPenalty = (r.penalty_details || [])
+    .filter((p: any) => {
+      const isKpi = p.type === 'kpi_not_met' || /kpi/i.test(String(p.name || ''));
+      return isKpi && !isAfterDay25;
+    })
+    .reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+  const visiblePenalty = (r.total_penalty || 0) - hiddenKpiPenalty;
+  const visibleNetSalary = (r.net_salary || 0) + hiddenKpiPenalty;
+
   return (
     <div className="space-y-3">
       {/* HEADER: Lương tạm tính realtime */}
@@ -127,11 +138,14 @@ export function IncomeBoardTab() {
           >
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-bold text-primary tabular-nums">
-                {fmt(r.net_salary)}
+                {fmt(visibleNetSalary)}
               </span>
               <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
             </div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Thực nhận tạm tính (chạm xem chi tiết)</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Thực nhận tạm tính (chạm xem chi tiết)
+              {hiddenKpiPenalty > 0 && <span className="block text-[10px] italic">Chưa tính phạt KPI – chốt sau ngày 25</span>}
+            </p>
           </button>
 
           {!isReady && (
@@ -149,7 +163,7 @@ export function IncomeBoardTab() {
             <Stat label="Thưởng" value={fmt(r.total_bonus + (r.holiday_bonus || 0))} positive />
             <Stat label="Phụ cấp" value={fmt(r.total_allowance)} positive />
             <Stat label="Tăng ca" value={fmt(r.overtime_pay)} positive />
-            <Stat label="Khấu trừ" value={fmt(r.total_penalty + (r.advance_deduction || 0))} negative />
+            <Stat label="Khấu trừ" value={fmt(visiblePenalty + (r.advance_deduction || 0))} negative />
           </div>
 
           <div className="mt-3 grid grid-cols-2 gap-2">
