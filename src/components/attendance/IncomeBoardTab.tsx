@@ -631,12 +631,26 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
               </span>
             </div>
             {hasDetail ? (
-              <div className="mt-1.5 flex items-center justify-between gap-2">
-                <span className="text-[11px] text-muted-foreground">Nhấn để xem chi tiết</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground shadow-sm">
-                  Nhận ngay <ChevronRight className="h-3 w-3" />
-                </span>
-              </div>
+              <>
+                {(s.current || s.target) && (
+                  <p className="text-[11px] text-foreground mt-1 font-medium">
+                    {s.current}
+                    {s.target ? <span className="text-muted-foreground"> / {s.target}</span> : null}
+                  </p>
+                )}
+                {s.progress != null && !s.showKpiTips && (
+                  <Progress
+                    value={Math.min(100, s.progress)}
+                    className={`h-1.5 mt-1.5 ${s.progress >= 100 ? '[&>div]:bg-emerald-500' : s.progress >= 50 ? '[&>div]:bg-amber-500' : '[&>div]:bg-orange-500'}`}
+                  />
+                )}
+                <div className="mt-1.5 flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-muted-foreground">Nhấn để xem chi tiết</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground shadow-sm">
+                    Nhận ngay <ChevronRight className="h-3 w-3" />
+                  </span>
+                </div>
+              </>
             ) : (
               <p className="text-[11px] text-muted-foreground mt-0.5">{s.description}</p>
             )}
@@ -653,7 +667,7 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
                 </ul>
               </div>
             )}
-            {s.progress != null && (
+            {s.progress != null && !hasDetail && (
               <div className="mt-2">
                 {s.showKpiTips ? (
                   <div className="rounded-lg bg-background/70 border border-amber-300 dark:border-amber-700 p-2.5">
@@ -1039,6 +1053,8 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
               ? `Đã bán được: ${c.current_qty} dịch vụ ${c.name}`
               : `Đã bán được: ${c.current_qty} sản phẩm bán ra`;
       const fullDesc = `${rateLine}.\n${progress}.\nĐang nhận: ${fmt(c.earned)}.\nBán thêm để tăng hoa hồng.`;
+      const curQty = Number(c.current_qty || 0);
+      const curRev = Number(c.current_revenue || 0);
       out.push({
         icon: <PiggyBank className="h-4 w-4 text-pink-600" />,
         tone: 'good',
@@ -1048,6 +1064,7 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         detailDescription: fullDesc,
         potential: isPct ? 0 : Number(c.value || 0),
         done: true,
+        current: c.target_type === 'revenue' ? fmt(curRev) : `Đã bán: ${curQty}`,
       });
     } else {
       const condition = isSelfFound
@@ -1056,6 +1073,8 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
           ? 'Điều kiện: có doanh thu cho cửa hàng trong kỳ.'
           : `Chốt 1 đơn hàng cho khách của cửa hàng thuộc ${groupLabel} ${c.name} sẽ nhận ${fmt(c.value)}.`;
       const fullDesc = `${rateLine}.\n${condition}`;
+      const curQty = Number(c.current_qty || 0);
+      const curRev = Number(c.current_revenue || 0);
       out.push({
         icon: <PiggyBank className="h-4 w-4 text-pink-600" />,
         tone: 'warn',
@@ -1064,6 +1083,7 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         headline,
         detailDescription: fullDesc,
         potential: isPct ? 0 : Number(c.value || 0),
+        current: c.target_type === 'revenue' ? `Doanh thu: ${fmt(curRev)}` : `Đã bán: ${curQty}`,
       });
     }
   }
@@ -1165,6 +1185,7 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
           ? ` (= ${standardDays} công chuẩn − ${maxAbsent} ngày được phép vắng).`
           : '.') +
         `\n\nHiện tại: đã đi ${actualWorkDays} ngày.\n⚠ ${a.skipped_reason}`;
+      const pct = requiredWorkDays > 0 ? Math.round((actualWorkDays / requiredWorkDays) * 100) : 0;
       out.push({
         icon: <Gift className="h-4 w-4 text-purple-600" />,
         tone: 'warn',
@@ -1172,6 +1193,9 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         description: 'Nhấn để xem chi tiết',
         detailDescription: detail,
         potential: configured,
+        progress: pct,
+        current: `${actualWorkDays} ngày`,
+        target: `${requiredWorkDays} ngày`,
       });
     } else if (isReceiving) {
       // Đang nhận đủ
