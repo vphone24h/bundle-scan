@@ -948,32 +948,21 @@ Deno.serve(async (req) => {
       let totalAllowance = 0;
       const allowanceDetailsV2: any[] = [];
       if (isPayrollReady && template?.allowance_enabled) {
-        // Tính tổng số ngày vắng (recorded absent + scheduled no-show) cho rule max_absent_days
-        const absentRecordedForAllow = userAttendance.filter((a: any) => a.status === "absent").length;
-        let absentNoShowForAllow = 0;
-        for (const dateStr of scheduledDates) {
-          const hasRecord = userAttendance.some((a: any) => a.date === dateStr);
-          if (hasRecord) continue;
-          const dateObj = new Date(dateStr);
-          const today = new Date();
-          today.setHours(23, 59, 59, 999);
-          if (dateObj > today) continue;
-          absentNoShowForAllow++;
-        }
-        const totalAbsentForAllow = absentRecordedForAllow + absentNoShowForAllow;
+        // Logic: phụ cấp chỉ được nhận khi NV đi đủ (công chuẩn - max_absent_days) ngày.
+        const standardDaysForAllow = scheduledDates.size;
 
         const tAllows = allowsByTemplate[templateId] || [];
         for (const a of tAllows) {
           let amount = 0;
           const maxAbsent = Number((a as any).max_absent_days || 0);
-          // Nếu cấu hình giới hạn vắng và NV vắng vượt → bỏ phụ cấp này
-          if (maxAbsent > 0 && totalAbsentForAllow > maxAbsent) {
+          const requiredWorkDays = Math.max(0, standardDaysForAllow - maxAbsent);
+          if (maxAbsent > 0 && workDays < requiredWorkDays) {
             allowanceDetailsV2.push({
               name: a.name,
               amount: 0,
               type: a.is_fixed ? "fixed" : "per_day",
               days: a.is_fixed ? null : workDays,
-              skipped_reason: `Vắng ${totalAbsentForAllow} ngày > ${maxAbsent} ngày cho phép`,
+              skipped_reason: `Cần đi ≥ ${requiredWorkDays}/${standardDaysForAllow} ngày (đã đi ${workDays})`,
             });
             continue;
           }
