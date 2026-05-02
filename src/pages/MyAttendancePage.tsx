@@ -734,8 +734,8 @@ function EmployeeCorrectionRequests({ userId, tenantId }: { userId?: string; ten
         tenant_id: tenantId!,
         user_id: userId!,
         request_date: requestDate,
-        requested_check_in: checkIn ? `${requestDate}T${checkIn}:00` : null,
-        requested_check_out: checkOut ? `${requestDate}T${checkOut}:00` : null,
+        requested_check_in: checkIn ? `${requestDate}T${checkIn}:00+07:00` : null,
+        requested_check_out: checkOut ? `${requestDate}T${checkOut}:00+07:00` : null,
         reason,
       });
       if (error) throw error;
