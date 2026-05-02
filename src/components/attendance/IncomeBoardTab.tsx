@@ -487,6 +487,8 @@ type Suggestion = {
   target?: string;
   potential: number; // tiền có thể tăng
   done?: boolean;
+  tierLines?: string[]; // chi tiết các mức vượt KPI, mỗi dòng 1 mức
+  showKpiTips?: boolean; // hiển thị nút "Cách đạt KPI"
 };
 
 function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
@@ -495,6 +497,7 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
       : s.tone === 'warn' ? 'border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800'
       : 'border-emerald-200 bg-emerald-50/40 dark:bg-emerald-950/10 dark:border-emerald-800';
   const amountClass = s.tone === 'bad' ? 'text-destructive' : 'text-green-600 dark:text-green-400';
+  const [showTips, setShowTips] = useState(false);
 
   return (
     <Card className={toneClass}>
@@ -509,6 +512,19 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
               </span>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">{s.description}</p>
+            {s.tierLines && s.tierLines.length > 0 && (
+              <div className="mt-1.5 rounded bg-background/60 border border-border/50 p-2">
+                <p className="text-[10px] font-semibold text-muted-foreground mb-1">Các mức vượt KPI:</p>
+                <ul className="space-y-0.5">
+                  {s.tierLines.map((line, idx) => (
+                    <li key={idx} className="text-[11px] flex items-start gap-1.5">
+                      <span className="text-emerald-600 mt-0.5">▸</span>
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {s.progress != null && (
               <div className="mt-2">
                 <Progress value={s.progress} className="h-1.5" />
@@ -518,13 +534,64 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
                 </div>
               </div>
             )}
+            {s.showKpiTips && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2 h-7 text-[11px] w-full"
+                onClick={() => setShowTips(true)}
+              >
+                <Sparkles className="h-3 w-3" /> Cách đạt KPI
+              </Button>
+            )}
             {s.done && (
               <Badge variant="outline" className="mt-1 h-4 text-[9px] gap-0.5"><CheckCircle2 className="h-2.5 w-2.5 text-green-600" /> Hoàn thành</Badge>
             )}
           </div>
         </div>
       </CardContent>
+      <KpiTipsDialog open={showTips} onOpenChange={setShowTips} kpiName={s.title} />
     </Card>
+  );
+}
+
+/** Popup hướng dẫn cách đạt KPI */
+function KpiTipsDialog({ open, onOpenChange, kpiName }: { open: boolean; onOpenChange: (b: boolean) => void; kpiName: string }) {
+  const tips = [
+    'Check tin nhắn liên tục của shop để không bỏ lỡ khách',
+    'Đăng bài bán hàng trên TikTok và Facebook mỗi ngày ít nhất 2-3 bài',
+    'Nhắn tin hỏi thăm khách cũ để chăm sóc tái tiêu dùng',
+    'Theo dõi bám sát những khách có ý định mua hàng',
+    'Tư vấn nhiệt tình, am hiểu sản phẩm để tăng tỷ lệ chốt đơn',
+    'Up-sell / cross-sell phụ kiện kèm theo mỗi đơn',
+    'Xin đánh giá 5 sao + giới thiệu bạn bè sau khi bán',
+  ];
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-amber-500" /> Cách đạt KPI
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">Để hoàn thành <span className="font-medium text-foreground">{kpiName}</span>, bạn nên:</p>
+          <ul className="space-y-2 mt-2">
+            {tips.map((tip, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm">
+                <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
+                <span>{tip}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-3 p-2 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+            <p className="text-[11px] text-amber-800 dark:text-amber-200">
+              💡 Càng vượt KPI nhiều, mức thưởng tier càng cao. Cố gắng lên nhé!
+            </p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -624,28 +691,29 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         tone: 'good',
         title: `Đã đạt ${k.name}`,
         description: tierDescs.length > 0
-          ? `Bạn sẽ nhận thêm khi vượt KPI: ${tierDescs.join(' · ')}`
+          ? `Bạn sẽ nhận thêm khi vượt KPI:`
           : `Vượt thêm doanh số sẽ mở các mức thưởng tier cao hơn.`,
+        tierLines: tierDescs,
         progress: 100,
         current: fmtShort(current),
         target: fmtShort(target),
         potential: 0,
         done: true,
+        showKpiTips: true,
       });
     } else {
       const baseDesc = `Bạn sẽ nhận thêm ${fmt(reachReward)} khi đạt KPI ${fmtShort(target)} (còn thiếu ${fmtShort(remain)}).`;
-      const fullDesc = tierDescs.length > 0
-        ? `${baseDesc} Các mức vượt: ${tierDescs.join(' · ')}.`
-        : baseDesc;
       out.push({
         icon: <Target className="h-4 w-4 text-blue-600" />,
         tone: 'warn',
         title: `${isBranch ? 'KPI chi nhánh' : 'KPI cá nhân'}: ${k.name}`,
-        description: fullDesc,
+        description: baseDesc,
+        tierLines: tierDescs,
         progress: pct,
         current: fmtShort(current),
         target: fmtShort(target),
         potential: reachReward,
+        showKpiTips: true,
       });
     }
   }
