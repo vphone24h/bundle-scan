@@ -935,20 +935,62 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
       const reachReward = Number(k.reach_reward || 0);
 
       if (current >= target) {
-        out.push({
-          icon: <Trophy className="h-4 w-4 text-amber-500" />,
-          tone: 'good',
-          title: `Đã đạt ${k.name}`,
-          description: `Điều kiện: ${metric} ≥ ${fmtShort(target)} (hiện ${fmtShort(current)}). Bạn đã nhận ${fmt(reachReward)}.`,
-          tierLines: tierDescs.length > 0 ? ['Các mức vượt KPI:', ...tierDescs] : [],
-          progress: 100,
-          current: fmtShort(current),
-          target: fmtShort(target),
-          potential: 0,
-          done: true,
-          earned: reachReward,
-          showKpiTips: true,
-        });
+        // Đã đạt KPI — tìm mốc vượt KPI tiếp theo để hiển thị tiến độ
+        const sortedTiers = [...tiers]
+          .filter((t: any) => Number(t.percent_over) > 0)
+          .sort((a: any, b: any) => Number(a.percent_over) - Number(b.percent_over));
+        // Mốc tier đã đạt (tier có ngưỡng <= current) → cộng dồn reward
+        let earnedFromTiers = 0;
+        let nextTier: any = null;
+        let prevThreshold = target;
+        for (const t of sortedTiers) {
+          const tierThreshold = Math.round(target * (1 + Number(t.percent_over) / 100));
+          const tierAmt = t.calc_type === 'percentage'
+            ? Math.round(current * Number(t.value || 0) / 100)
+            : Number(t.value || 0);
+          if (current >= tierThreshold) {
+            earnedFromTiers = tierAmt; // các tier sau ghi đè (admin thường set cumulative bậc thang)
+            prevThreshold = tierThreshold;
+          } else if (!nextTier) {
+            nextTier = { ...t, threshold: tierThreshold, amt: tierAmt, prevThreshold };
+          }
+        }
+
+        if (nextTier) {
+          const span = nextTier.threshold - nextTier.prevThreshold;
+          const done = current - nextTier.prevThreshold;
+          const tierPct = span > 0 ? Math.min(100, Math.round((done / span) * 100)) : 0;
+          const remainTier = Math.max(0, nextTier.threshold - current);
+          out.push({
+            icon: <Trophy className="h-4 w-4 text-amber-500" />,
+            tone: 'good',
+            title: `${k.name} — Vượt +${nextTier.percent_over}%`,
+            description: `Đã đạt KPI ${fmtShort(target)} (nhận ${fmt(reachReward + earnedFromTiers)}). Vượt thêm ${fmtShort(remainTier)} để nhận thêm ${fmt(nextTier.amt)} ở mốc ${fmtShort(nextTier.threshold)}.`,
+            tierLines: tierDescs.length > 0 ? ['Các mức vượt KPI:', ...tierDescs] : [],
+            progress: tierPct,
+            current: fmtShort(current),
+            target: fmtShort(nextTier.threshold),
+            potential: nextTier.amt,
+            earned: reachReward + earnedFromTiers,
+            showKpiTips: true,
+          });
+        } else {
+          // Đã vượt hết các mốc
+          out.push({
+            icon: <Trophy className="h-4 w-4 text-amber-500" />,
+            tone: 'good',
+            title: `Đã đạt ${k.name}`,
+            description: `Điều kiện: ${metric} ≥ ${fmtShort(target)} (hiện ${fmtShort(current)}). Bạn đã nhận ${fmt(reachReward + earnedFromTiers)}.`,
+            tierLines: tierDescs.length > 0 ? ['Các mức vượt KPI:', ...tierDescs] : [],
+            progress: 100,
+            current: fmtShort(current),
+            target: fmtShort(target),
+            potential: 0,
+            done: true,
+            earned: reachReward + earnedFromTiers,
+            showKpiTips: true,
+          });
+        }
       } else {
         out.push({
           icon: <Target className="h-4 w-4 text-blue-600" />,
