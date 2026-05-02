@@ -40,6 +40,113 @@ function isFlat(headerRow: any[]): boolean {
   );
 }
 
+// Detect KiotViet "DanhSachChiTietHoaDon" format
+function isKiotViet(headerRow: any[]): boolean {
+  if (!headerRow || headerRow.length < 15) return false;
+  const h0 = String(headerRow[0] || '').trim().toLowerCase();
+  const h1 = String(headerRow[1] || '').trim().toLowerCase();
+  return h0.includes('mã hóa đơn') && (h1.includes('thời gian') || h1.includes('thoi gian'));
+}
+
+// Convert datetime to Vietnam ISO string preserving exact time
+function toVNIso(value: any): string {
+  if (!value) return '';
+  if (value instanceof Date) {
+    // Format yyyy-MM-ddTHH:mm:ss+07:00 from local components (file already in GMT+7)
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${value.getUTCFullYear()}-${pad(value.getUTCMonth() + 1)}-${pad(value.getUTCDate())}T${pad(value.getUTCHours())}:${pad(value.getUTCMinutes())}:${pad(value.getUTCSeconds())}+07:00`;
+  }
+  const s = String(value).trim();
+  // dd/MM/yyyy HH:mm[:ss]
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (m) {
+    const [, dd, mm, yyyy, hh, mi, ss] = m;
+    return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}T${(hh || '00').padStart(2, '0')}:${(mi || '00').padStart(2, '0')}:${(ss || '00').padStart(2, '0')}+07:00`;
+  }
+  return s;
+}
+
+interface KvItem {
+  productName: string;
+  sku: string;
+  imei: string;
+  salePrice: number;
+  quantity: number;
+  warranty: string;
+  note: string;
+}
+
+// Parse KiotViet rows: many rows can share same orderId → group by orderId
+function parseKiotVietRows(rows: any[][], startRow: number): ParsedOrder[] {
+  const map = new Map<string, ParsedOrder & { items: KvItem[] }>();
+  for (let i = startRow; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || r.length < 15) continue;
+    const orderId = String(r[0] || '').trim();
+    if (!orderId) continue;
+
+    const orderDate = toVNIso(r[1]);
+    const customerName = String(r[4] || '').trim() || 'Khách lẻ';
+    const customerPhone = String(r[5] || '').replace(/\s/g, '');
+    const customerAddress = String(r[6] || '').trim();
+    const totalInvoice = Number(r[10]) || Number(r[8]) || 0;
+
+    const productCode = String(r[14] || '').trim();
+    const productName = String(r[15] || '').trim() || 'Sản phẩm';
+    const imei = String(r[18] || '').trim();
+    const productNote = String(r[19] || '').trim();
+    const quantity = Number(r[20]) || 1;
+    const salePriceUnit = Number(r[24]) || Number(r[21]) || 0;
+    const lineTotal = Number(r[25]) || (salePriceUnit * quantity);
+    const warranty = String(r[26] || '').trim();
+
+    const item: KvItem = {
+      productName,
+      sku: productCode,
+      imei,
+      salePrice: quantity > 0 ? Math.round(lineTotal / quantity) : salePriceUnit,
+      quantity,
+      warranty,
+      note: productNote,
+    };
+
+    const existing = map.get(orderId);
+    if (existing) {
+      existing.items.push(item);
+      // Sum totals
+      (existing as any).__total = ((existing as any).__total || 0) + lineTotal;
+    } else {
+      map.set(orderId, {
+        orderId,
+        imei,
+        customerName,
+        customerPhone,
+        customerEmail: '',
+        customerAddress,
+        productName,
+        productVariant: productCode,
+        salePrice: totalInvoice || lineTotal,
+        note: '',
+        orderDate,
+        status: 'Hoàn tất', // KiotViet export = đã thanh toán
+        warranty,
+        items: [item],
+        ...({ __total: lineTotal } as any),
+      });
+    }
+  }
+
+  // Finalize: salePrice = sum of items if no totalInvoice
+  return [...map.values()].map(o => {
+    const totalCalc = (o as any).__total || 0;
+    return {
+      ...o,
+      salePrice: o.salePrice || totalCalc,
+      totalAmount: o.salePrice || totalCalc,
+    } as ParsedOrder;
+  });
+}
+
 let autoOrderCounter = 0;
 const STORAGE_KEY_PREFIX = 'import-historical-orders-state';
 
@@ -84,6 +191,8 @@ interface ParsedOrder {
   orderDate: string;
   status: string;
   warranty: string;
+  items?: KvItem[];
+  totalAmount?: number;
 }
 
 interface ImportResult {
