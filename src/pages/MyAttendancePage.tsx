@@ -440,21 +440,52 @@ export default function MyAttendancePage() {
                 mySales?.map(sale => (
                   <Card key={sale.id} className="shadow-none">
                     <CardContent className="p-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium">{(sale as any).code || sale.id.slice(0, 8)}</span>
-                        <span className="text-sm font-bold text-green-700 dark:text-green-300">
-                          {formatMoney(sale.total_amount || 0)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span>{format(new Date(sale.export_date), 'dd/MM HH:mm')}</span>
-                        {(sale.customers as any)?.name && (
-                          <span>KH: {(sale.customers as any).name}</span>
-                        )}
-                        {(sale.branches as any)?.name && (
-                          <Badge variant="outline" className="text-[10px] h-4">{(sale.branches as any).name}</Badge>
-                        )}
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedSaleId(expandedSaleId === sale.id ? null : sale.id)}
+                        className="w-full text-left"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium text-primary underline-offset-2 hover:underline">
+                            {(sale as any).code || sale.id.slice(0, 8)}
+                          </span>
+                          <span className="text-sm font-bold text-green-700 dark:text-green-300">
+                            {formatMoney(sale.total_amount || 0)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span>{format(new Date(sale.export_date), 'dd/MM HH:mm')}</span>
+                          {(sale.customers as any)?.name && (
+                            <span>KH: {(sale.customers as any).name}</span>
+                          )}
+                          {(sale.branches as any)?.name && (
+                            <Badge variant="outline" className="text-[10px] h-4">{(sale.branches as any).name}</Badge>
+                          )}
+                        </div>
+                      </button>
+                      {expandedSaleId === sale.id && (
+                        <div className="mt-2 pt-2 border-t space-y-1">
+                          {itemsLoading ? (
+                            <p className="text-xs text-muted-foreground">Đang tải sản phẩm...</p>
+                          ) : expandedItems && expandedItems.length > 0 ? (
+                            expandedItems.map((it: any) => (
+                              <div key={it.id} className="flex items-start justify-between gap-2 text-xs">
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium truncate">{it.product_name}</p>
+                                  <p className="text-muted-foreground text-[10px]">
+                                    {it.imei ? `IMEI: ${it.imei}` : `SKU: ${it.sku}`} · SL: {Number(it.quantity || 1)} {it.unit || ''}
+                                  </p>
+                                </div>
+                                <span className="text-green-700 dark:text-green-300 font-medium tabular-nums shrink-0">
+                                  {formatMoney(Number(it.sale_price || 0) * Number(it.quantity || 1))}
+                                </span>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-xs text-muted-foreground">Không có sản phẩm</p>
+                          )}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))
