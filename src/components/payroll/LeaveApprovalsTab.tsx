@@ -38,15 +38,6 @@ export function LeaveApprovalsTab() {
   const [showPwd, setShowPwd] = useState(false);
   const [pendingAction, setPendingAction] = useState<{ id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string } | null>(null);
 
-  const guardedReview = (payload: { id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string }) => {
-    if (hasSecurityPassword && !unlocked) {
-      setPendingAction(payload);
-      setShowPwd(true);
-      return;
-    }
-    reviewMutationRef(payload);
-  };
-
   const { data: requests, isLoading } = useQuery({
     queryKey: ['leave-requests-admin', tenantId, filterStatus],
     queryFn: async () => {
