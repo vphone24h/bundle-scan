@@ -1218,6 +1218,26 @@ Deno.serve(async (req) => {
             });
           }
         }
+
+        // ===== 7b. PHÉP CÓ LƯƠNG DƯ → QUY ĐỔI TĂNG CA =====
+        // Nếu NV đi làm full / nghỉ ít hơn quota → số ngày phép dư được quy đổi thành OT
+        // theo hệ số full_day OT đầu tiên trong template (nếu có).
+        if (paidLeaveLeftover > 0) {
+          const otFullDay = tOvertimes.find((o: any) => o.overtime_type === "full_day");
+          if (otFullDay) {
+            const isPct = otFullDay.calc_type === "percentage" || otFullDay.calc_type === "multiplier";
+            const amount = isPct
+              ? dailyRate * otFullDay.value / 100 * paidLeaveLeftover
+              : otFullDay.value * paidLeaveLeftover;
+            overtimePay += amount;
+            overtimeDetails.push({
+              name: `Phép dư quy đổi tăng ca (${otFullDay.name})`,
+              type: "paid_leave_leftover",
+              count: paidLeaveLeftover,
+              amount: Math.round(amount),
+            });
+          }
+        }
       } else if (isPayrollReady) {
         // Fallback: 150% OT rate if no config
         if (overtimeHours > 0) {
