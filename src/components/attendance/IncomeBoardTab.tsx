@@ -896,6 +896,7 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         title: `${titlePrefix}: ${c.name}`,
         description: `Đang nhận ${fmt(c.earned)}. ${detail}.${ssNote} Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu' : `thêm ${targetLabel}`} để tăng hoa hồng.`,
         potential: 0,
+        earned: Number(c.earned || 0),
         done: true,
       });
     } else {
