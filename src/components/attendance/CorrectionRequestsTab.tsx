@@ -441,6 +441,19 @@ export function CorrectionRequestsTab() {
           )}
         </div>
       )}
+      <SecurityPasswordDialog
+        open={showPwd}
+        onOpenChange={setShowPwd}
+        onSuccess={() => {
+          unlock();
+          if (pendingAction) {
+            reviewMutation.mutate(pendingAction);
+            setPendingAction(null);
+          }
+        }}
+        title="Xác thực duyệt sửa công"
+        description="Nhập mật khẩu bảo mật để duyệt/từ chối yêu cầu sửa công"
+      />
     </div>
   );
 }
