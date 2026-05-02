@@ -109,7 +109,7 @@ interface CommissionRow { target_type: string; target_id: string; target_name: s
 interface AllowanceRow { allowance_type: string; name: string; amount: number; is_fixed: boolean; max_absent_days: number; }
 interface HolidayRow { holiday_name: string; holiday_date: string; multiplier_percent: number; }
 interface PenaltyTier { percent_achieved: number; penalty_amount: number; }
-interface PenaltyRow { penalty_type: string; name: string; amount: number; description: string; threshold_minutes: number; full_day_absence_minutes: number; kpi_target: number; tiers: PenaltyTier[]; }
+interface PenaltyRow { penalty_type: string; name: string; amount: number; description: string; threshold_minutes: number; full_day_absence_minutes: number; kpi_target: number; tiers: PenaltyTier[]; linked_bonus_key?: string; }
 interface OvertimeRow { overtime_type: string; name: string; calc_type: string; value: number; description: string; }
 
 interface Props {
@@ -250,7 +250,23 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
   useEffect(() => { if (exCommissions?.length) setCommissions(exCommissions.map((c: any) => ({ target_type: c.target_type, target_id: c.target_id || '', target_name: c.target_name, calc_type: c.calc_type, value: Number(c.value), only_self_sold: !!c.only_self_sold, count_in_revenue_kpi: c.count_in_revenue_kpi !== false }))); }, [exCommissions]);
   useEffect(() => { if (exAllowances?.length) setAllowances(exAllowances.map(a => ({ allowance_type: a.allowance_type, name: a.name, amount: Number(a.amount), is_fixed: a.is_fixed, max_absent_days: Number((a as any).max_absent_days || 0) }))); }, [exAllowances]);
   useEffect(() => { if (exHolidays?.length) setHolidays(exHolidays.map(h => ({ holiday_name: h.holiday_name, holiday_date: h.holiday_date, multiplier_percent: Number(h.multiplier_percent) }))); }, [exHolidays]);
-  useEffect(() => { if (exPenalties?.length) setPenalties(exPenalties.map(p => ({ penalty_type: p.penalty_type, name: p.name, amount: Number(p.amount), description: p.description || '', threshold_minutes: (p as any).threshold_minutes || 0, full_day_absence_minutes: (p as any).full_day_absence_minutes || 0, kpi_target: Number((p as any).kpi_target || 0), tiers: Array.isArray((p as any).tiers) ? (p as any).tiers : [] }))); }, [exPenalties]);
+  useEffect(() => {
+    if (exPenalties?.length) setPenalties(exPenalties.map(p => {
+      const rawDesc = p.description || '';
+      const m = rawDesc.match(/^\[bonus:([^\]]+)\]\s*/);
+      return {
+        penalty_type: p.penalty_type,
+        name: p.name,
+        amount: Number(p.amount),
+        description: m ? rawDesc.replace(m[0], '') : rawDesc,
+        threshold_minutes: (p as any).threshold_minutes || 0,
+        full_day_absence_minutes: (p as any).full_day_absence_minutes || 0,
+        kpi_target: Number((p as any).kpi_target || 0),
+        tiers: Array.isArray((p as any).tiers) ? (p as any).tiers : [],
+        linked_bonus_key: m ? m[1] : undefined,
+      };
+    }));
+  }, [exPenalties]);
   useEffect(() => { if (exOvertimes?.length) setOvertimes(exOvertimes.map(o => ({ overtime_type: o.overtime_type, name: o.name, calc_type: o.calc_type, value: Number(o.value), description: o.description || '' }))); }, [exOvertimes]);
 
   const handleSave = async () => {
@@ -288,7 +304,11 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
           commissions: commissionEnabled ? commissions : [],
           allowances: allowanceEnabled ? allowances : [],
           holidays: holidayEnabled ? holidays : [],
-          penalties: penaltyEnabled ? penalties : [],
+          penalties: penaltyEnabled ? penalties.map(p => {
+            const { linked_bonus_key, description, ...rest } = p;
+            const desc = linked_bonus_key ? `[bonus:${linked_bonus_key}] ${description || ''}`.trim() : description;
+            return { ...rest, description: desc };
+          }) : [],
           overtimes: overtimeEnabled ? overtimes : [],
         });
 
@@ -796,9 +816,58 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                     {p.penalty_type === 'kpi_not_met' && (
                       <>
                         <div className="space-y-1 col-span-2">
-                          <Label className="text-xs">Doanh số KPI mục tiêu (VNĐ)</Label>
-                          <NumberInput className="h-8 text-xs" placeholder="VD: 100 000 000" value={p.kpi_target} onChangeNumber={v => { const n = [...penalties]; n[i].kpi_target = v; setPenalties(n); }} />
-                          <p className="text-[10px] text-muted-foreground">💡 Doanh số NV phải đạt trong kỳ. Không đạt 100% sẽ bị phạt theo các mức bên dưới.</p>
+                          <Label className="text-xs">Liên kết KPI từ mục Thưởng</Label>
+                          {(() => {
+                            const kpiBonuses = bonuses
+                              .map((b, idx) => ({ b, idx }))
+                              .filter(({ b }) => ['kpi_personal', 'branch_revenue', 'gross_profit'].includes(b.bonus_type));
+                            const usedKeys = new Set(
+                              penalties
+                                .filter((pp, j) => j !== i && pp.penalty_type === 'kpi_not_met' && pp.linked_bonus_key)
+                                .map(pp => pp.linked_bonus_key!)
+                            );
+                            if (!bonusEnabled || kpiBonuses.length === 0) {
+                              return (
+                                <>
+                                  <p className="text-[10px] text-amber-600 border border-amber-300 bg-amber-50 rounded p-2">
+                                    ⚠️ Chưa có KPI nào ở mục <strong>2. Thưởng</strong>. Vui lòng bật & cấu hình KPI cá nhân / chi nhánh / lợi nhuận gộp ở trên trước.
+                                  </p>
+                                  <NumberInput className="h-8 text-xs mt-2" placeholder="Hoặc nhập KPI thủ công (VNĐ)" value={p.kpi_target} onChangeNumber={v => { const n = [...penalties]; n[i].kpi_target = v; setPenalties(n); }} />
+                                </>
+                              );
+                            }
+                            return (
+                              <Select
+                                value={p.linked_bonus_key || ''}
+                                onValueChange={(v) => {
+                                  const n = [...penalties];
+                                  const picked = kpiBonuses.find(({ b, idx }) => `${b.bonus_type}:${idx}` === v);
+                                  n[i].linked_bonus_key = v;
+                                  if (picked) n[i].kpi_target = Number(picked.b.threshold || 0);
+                                  setPenalties(n);
+                                }}
+                              >
+                                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Chọn KPI cấu hình ở mục Thưởng..." /></SelectTrigger>
+                                <SelectContent>
+                                  {kpiBonuses.map(({ b, idx }) => {
+                                    const key = `${b.bonus_type}:${idx}`;
+                                    const disabled = usedKeys.has(key) && key !== p.linked_bonus_key;
+                                    const typeLabel = BONUS_TYPES.find(t => t.value === b.bonus_type)?.label || b.bonus_type;
+                                    return (
+                                      <SelectItem key={key} value={key} disabled={disabled}>
+                                        {typeLabel} – Mục tiêu: {formatNumber(b.threshold || 0)}đ {disabled && '(đã chọn)'}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
+                            );
+                          })()}
+                          {p.linked_bonus_key && (
+                            <p className="text-[10px] text-muted-foreground">
+                              💡 KPI mục tiêu đã đồng bộ: <strong>{formatNumber(p.kpi_target)}đ</strong>. Không đạt 100% sẽ bị phạt theo các mức bên dưới.
+                            </p>
+                          )}
                         </div>
                       </>
                     )}
