@@ -755,7 +755,7 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
                 className="mt-2 h-7 text-[11px] w-full text-primary hover:text-primary"
                 onClick={() => setShowTips(true)}
               >
-                <Sparkles className="h-3 w-3" /> Làm ngay
+                Nhận ngay
               </Button>
             )}
             {s.done && (
@@ -767,7 +767,7 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
       <KpiTipsDialog open={showTips} onOpenChange={setShowTips} kpiName={s.title} />
       {hasDetail && (
         <Dialog open={showDetail} onOpenChange={setShowDetail}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md" onClick={(e) => e.stopPropagation()}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 pr-8">
                 {s.icon}
