@@ -803,6 +803,7 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
           target: fmtShort(target),
           potential: 0,
           done: true,
+          earned: reachReward,
           showKpiTips: true,
         });
       } else {
