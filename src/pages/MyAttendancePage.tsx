@@ -765,6 +765,8 @@ function EmployeeCorrectionRequests({ userId, tenantId }: { userId?: string; ten
       return data || [];
     },
     enabled: !!userId,
+    refetchInterval: 10000,
+    staleTime: 5000,
   });
 
   const createMutation = useMutation({
