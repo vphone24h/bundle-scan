@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -496,7 +496,7 @@ function salaryTypeLabel(t?: string) {
 function BoostSalaryDialog({ open, onOpenChange, record, today, periodEnd }: { open: boolean; onOpenChange: (b: boolean) => void; record: any; today?: string; periodEnd?: string }) {
   const suggestions = useMemo(() => buildSuggestions(record, today, periodEnd), [record, today, periodEnd]);
   const totalPotential = suggestions.reduce((s, x) => s + (x.potential || 0), 0);
-  const detailsRef = React.useRef<HTMLDivElement>(null);
+  const detailsRef = useRef<HTMLDivElement>(null);
   const scrollToDetails = () => {
     detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
