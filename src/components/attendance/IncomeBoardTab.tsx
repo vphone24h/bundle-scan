@@ -667,7 +667,7 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
                 </ul>
               </div>
             )}
-            {s.progress != null && (
+            {s.progress != null && !hasDetail && (
               <div className="mt-2">
                 {s.showKpiTips ? (
                   <div className="rounded-lg bg-background/70 border border-amber-300 dark:border-amber-700 p-2.5">
