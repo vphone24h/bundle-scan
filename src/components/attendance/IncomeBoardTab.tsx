@@ -1123,8 +1123,8 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
       ? Math.round(hourlyBaseRate * value / 100)
       : value;
     return {
-      desc: `Mỗi giờ tăng ca = ${fmt(perHour)} (${isPct ? `${value}% lương giờ` : 'cố định'}). Tăng ca 10h ≈ +${fmt(perHour * 10)}.`,
-      sample: perHour * 10,
+      desc: `Mỗi giờ tăng ca = ${fmt(perHour)}/h (${isPct ? `${value}% lương giờ` : 'cố định'}).`,
+      sample: perHour,
     };
   };
 
