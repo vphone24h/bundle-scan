@@ -568,7 +568,20 @@ Deno.serve(async (req) => {
       const branchSales = userBranchId
         ? allSales.filter((s: any) => s.branch_id === userBranchId)
         : [];
-      const branchRevenue = branchSales.reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0);
+      let branchRevenue = branchSales.reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0);
+
+      // Loại trừ doanh số đơn tự bán khỏi KPI nếu rule yêu cầu (count_in_revenue_kpi=false)
+      const _tCommsForKpi = (commsByTemplate[templateId] || []) as any[];
+      const _excludeSelfSoldFromKpi = _tCommsForKpi.some(
+        (c: any) => c.only_self_sold === true && c.count_in_revenue_kpi === false
+      );
+      if (_excludeSelfSoldFromKpi && selfRevenueOnly > 0) {
+        userRevenue = Math.max(0, userRevenue - selfRevenueOnly);
+        const branchSelfSoldRevenue = branchSales
+          .filter((s: any) => s.is_self_sold === true && (s.sales_staff_id || s.created_by) === employee.user_id)
+          .reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0);
+        branchRevenue = Math.max(0, branchRevenue - branchSelfSoldRevenue);
+      }
 
       // Branch-wide product breakdown + branch gross profit (for branch_revenue popup)
       const soldByBranchProduct = new Map<string, { name: string; qty: number; revenue: number }>();
