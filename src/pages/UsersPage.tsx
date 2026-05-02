@@ -582,7 +582,7 @@ export default function UsersPage() {
           setActiveTab('attendance');
           setAttendanceSubTab('devices');
         }}
-        videoUrl={null}
+        videoUrl="https://youtu.be/E7r2lb2iwNQ?si=fuydJ8gD0bpscswq"
       />
     </MainLayout>
   );
