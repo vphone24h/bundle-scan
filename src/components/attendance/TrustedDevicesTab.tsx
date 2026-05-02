@@ -52,19 +52,43 @@ export function TrustedDevicesTab() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge variant={st.variant}>{st.label}</Badge>
-                      {d.status === 'pending' && (
-                        <div className="flex gap-1">
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600" onClick={() => approve.mutate(d.id)}>
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => reject.mutate(d.id)}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
+                     <div className="flex items-center gap-2 shrink-0">
+                       <Badge variant={st.variant}>{st.label}</Badge>
+                       {d.status === 'pending' && (
+                         <div className="flex gap-1">
+                           <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600" onClick={() => approve.mutate(d.id)} title="Duyệt">
+                             <Check className="h-4 w-4" />
+                           </Button>
+                           <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => reject.mutate(d.id)} title="Từ chối">
+                             <X className="h-4 w-4" />
+                           </Button>
+                         </div>
+                       )}
+                       {(d.status === 'rejected' || d.status === 'revoked') && (
+                         <Button
+                           size="sm"
+                           variant="outline"
+                           className="h-8 text-green-600 border-green-600/40 hover:bg-green-50"
+                           onClick={() => approve.mutate(d.id)}
+                           disabled={approve.isPending}
+                         >
+                           <Check className="h-3.5 w-3.5 mr-1" />
+                           Duyệt lại
+                         </Button>
+                       )}
+                       {d.status === 'approved' && (
+                         <Button
+                           size="icon"
+                           variant="ghost"
+                           className="h-8 w-8 text-destructive"
+                           onClick={() => reject.mutate(d.id)}
+                           title="Thu hồi / Từ chối"
+                           disabled={reject.isPending}
+                         >
+                           <X className="h-4 w-4" />
+                         </Button>
+                       )}
+                     </div>
                   </div>
                 </CardContent>
               </Card>
