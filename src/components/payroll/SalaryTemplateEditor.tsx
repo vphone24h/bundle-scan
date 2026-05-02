@@ -304,7 +304,11 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
           commissions: commissionEnabled ? commissions : [],
           allowances: allowanceEnabled ? allowances : [],
           holidays: holidayEnabled ? holidays : [],
-          penalties: penaltyEnabled ? penalties : [],
+          penalties: penaltyEnabled ? penalties.map(p => {
+            const { linked_bonus_key, description, ...rest } = p;
+            const desc = linked_bonus_key ? `[bonus:${linked_bonus_key}] ${description || ''}`.trim() : description;
+            return { ...rest, description: desc };
+          }) : [],
           overtimes: overtimeEnabled ? overtimes : [],
         });
 
