@@ -622,6 +622,23 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                          </p>
                        )}
                      </div>
+                     {c.target_type !== 'self_sale' && (
+                       <div className="col-span-2 flex items-start gap-2 rounded-md border border-dashed border-orange-300 bg-orange-50/60 p-2">
+                         <Switch
+                           id={`only-self-sold-${i}`}
+                           checked={!!c.only_self_sold}
+                           onCheckedChange={(v) => { const n = [...commissions]; n[i].only_self_sold = v; setCommissions(n); }}
+                         />
+                         <div className="space-y-0.5">
+                           <Label htmlFor={`only-self-sold-${i}`} className="text-xs font-medium cursor-pointer">
+                             Chỉ áp dụng cho đơn của nhân viên (tự bán)
+                           </Label>
+                           <p className="text-[10px] text-muted-foreground">
+                             Khi bật: hoa hồng này CHỈ tính cho đơn mà nhân viên đã tick "Đơn này khách của nhân viên" lúc xuất hàng. Khi tắt: tính cho TẤT CẢ đơn nhân viên bán.
+                           </p>
+                         </div>
+                       </div>
+                     )}
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive ml-1" onClick={() => setCommissions(commissions.filter((_, j) => j !== i))}>
                     <Trash2 className="h-3.5 w-3.5" />
