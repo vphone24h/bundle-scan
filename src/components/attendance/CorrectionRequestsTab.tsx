@@ -367,7 +367,7 @@ export function CorrectionRequestsTab() {
                               <DialogHeader><DialogTitle>Từ chối yêu cầu</DialogTitle></DialogHeader>
                               <Textarea placeholder="Lý do từ chối..." value={reviewNote} onChange={e => setReviewNote(e.target.value)} />
                               <DialogFooter>
-                                <Button variant="destructive" size="sm" onClick={() => reviewMutation.mutate({ id: r.id, status: 'rejected', request: r })} disabled={!reviewNote.trim()}>
+                                <Button variant="destructive" size="sm" onClick={() => guardedReview({ id: r.id, status: 'rejected', request: r })} disabled={!reviewNote.trim()}>
                                   Xác nhận từ chối
                                 </Button>
                               </DialogFooter>
