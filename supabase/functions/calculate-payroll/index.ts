@@ -1109,11 +1109,24 @@ Deno.serve(async (req) => {
             count = 0; // manual
           }
           else if (p.penalty_type === "kpi_not_met") {
-            // KPI không đạt: so sánh userRevenue với kpi_target
+            // KPI không đạt: parse [bonus:type:idx] từ description để chọn đúng nguồn KPI
+            // Mặc định = userRevenue (KPI cá nhân) nếu không có liên kết bonus.
+            const desc = String(p.description || "");
+            const linkMatch = desc.match(/^\[bonus:([^:]+):(\d+)\]/);
+            const linkedType = linkMatch ? linkMatch[1] : "kpi_personal";
+            let kpiSource = userRevenue;
+            let kpiSourceLabel = "Doanh thu cá nhân";
+            if (linkedType === "branch_revenue" || linkedType === "kpi_branch") {
+              kpiSource = branchRevenue;
+              kpiSourceLabel = "Doanh thu chi nhánh";
+            } else if (linkedType === "gross_profit") {
+              kpiSource = userGrossProfit;
+              kpiSourceLabel = "Lợi nhuận gộp cá nhân";
+            }
             const target = Number(p.kpi_target || 0);
             const tiers = Array.isArray(p.tiers) ? p.tiers : [];
             if (target > 0) {
-              const achievedPct = (userRevenue / target) * 100;
+              const achievedPct = (kpiSource / target) * 100;
               if (achievedPct < 100) {
                 let penaltyAmt = 0;
                 if (tiers.length > 0) {
@@ -1132,7 +1145,7 @@ Deno.serve(async (req) => {
                     count: 1,
                     per_amount: penaltyAmt,
                     amount: Math.round(penaltyAmt),
-                    detail: `KPI đạt ${achievedPct.toFixed(1)}% (${Math.round(userRevenue).toLocaleString('vi-VN')}đ / ${target.toLocaleString('vi-VN')}đ)`,
+                    detail: `${kpiSourceLabel} đạt ${achievedPct.toFixed(1)}% (${Math.round(kpiSource).toLocaleString('vi-VN')}đ / ${target.toLocaleString('vi-VN')}đ)`,
                   });
                 }
               }
