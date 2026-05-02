@@ -1031,7 +1031,13 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
     if (c.achieved && Number(c.earned) > 0) {
       const progress = c.target_type === 'revenue'
         ? `Doanh thu hiện tại: ${fmt(c.current_revenue)}`
-        : `Đã bán: ${c.current_qty} ${groupLabel === 'doanh thu' ? 'đơn' : groupLabel} (${fmt(c.current_revenue)})`;
+        : c.target_type === 'category'
+          ? `Đã bán được: ${c.current_qty} sản phẩm thuộc danh mục ${c.name}`
+          : c.target_type === 'product'
+            ? `Đã bán được: ${c.current_qty} sản phẩm ${c.name}`
+            : c.target_type === 'service'
+              ? `Đã bán được: ${c.current_qty} dịch vụ ${c.name}`
+              : `Đã bán được: ${c.current_qty} sản phẩm bán ra`;
       const fullDesc = `${rateLine}.\n${progress}.\nĐang nhận: ${fmt(c.earned)}.\nBán thêm để tăng hoa hồng.`;
       out.push({
         icon: <PiggyBank className="h-4 w-4 text-pink-600" />,
@@ -1045,10 +1051,10 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
       });
     } else {
       const condition = isSelfFound
-        ? `Điều kiện: tick "Đơn này khách của nhân viên" khi xuất hàng${c.target_type !== 'self_sale' && c.target_type !== 'revenue' ? ` và bán ${groupLabel} "${c.name}"` : ''}.`
+        ? `Nhận ${fmt(c.value)} đối với khách hàng nhân viên tự tìm cho 1 sản phẩm bán ra thuộc ${groupLabel} ${c.name} (${customerSrc}).`
         : c.target_type === 'revenue'
           ? 'Điều kiện: có doanh thu cho cửa hàng trong kỳ.'
-          : `Điều kiện: bán ${groupLabel} "${c.name}" cho khách của cửa hàng.`;
+          : `Chốt 1 đơn hàng cho khách của cửa hàng thuộc ${groupLabel} ${c.name} sẽ nhận ${fmt(c.value)}.`;
       const fullDesc = `${rateLine}.\n${condition}`;
       out.push({
         icon: <PiggyBank className="h-4 w-4 text-pink-600" />,
