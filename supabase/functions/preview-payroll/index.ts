@@ -870,6 +870,9 @@ Deno.serve(async (req) => {
               amount: 0,
               type: a.is_fixed ? "fixed" : "per_day",
               days: a.is_fixed ? null : workDays,
+              configured_amount: Number(a.amount || 0),
+              max_absent_days: maxAbsent,
+              total_absent: totalAbsentForAllow,
               skipped_reason: `Vắng ${totalAbsentForAllow} ngày > ${maxAbsent} ngày cho phép`,
             });
             continue;
@@ -887,6 +890,21 @@ Deno.serve(async (req) => {
               amount: Math.round(amount),
               type: a.is_fixed ? "fixed" : "per_day",
               days: a.is_fixed ? null : workDays,
+              configured_amount: Number(a.amount || 0),
+              max_absent_days: maxAbsent,
+              total_absent: totalAbsentForAllow,
+            });
+          }
+          // Trường hợp per_day với 0 ngày công vẫn cần ghi nhận để hiển thị "Tăng thêm lương"
+          else if (!a.is_fixed) {
+            allowanceDetailsV2.push({
+              name: a.name,
+              amount: 0,
+              type: "per_day",
+              days: workDays,
+              configured_amount: Number(a.amount || 0),
+              max_absent_days: maxAbsent,
+              total_absent: totalAbsentForAllow,
             });
           }
         }
