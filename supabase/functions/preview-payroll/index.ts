@@ -1336,17 +1336,22 @@ Deno.serve(async (req) => {
           commissions_all: (runtimeCommissionEnabled && tComms.length > 0)
             ? tComms.map((c: any) => {
                 const targetType = c.target_type;
+                const onlySS = c.only_self_sold === true;
+                const _spbp = onlySS ? soldByProductSS : soldByProduct;
+                const _spbc = onlySS ? soldByCategorySS : soldByCategory;
+                const _spbcn = onlySS ? soldByCategoryNameSS : soldByCategoryName;
+                const _userRev = onlySS ? selfRevenueOnly : userRevenue;
                 let currentQty = 0;
                 let currentRevenue = 0;
                 if ((targetType === 'product' || targetType === 'service') && c.target_id) {
-                  const sold = soldByProduct.get(c.target_id);
+                  const sold = _spbp.get(c.target_id);
                   if (sold) { currentQty = sold.qty; currentRevenue = sold.revenue; }
                 } else if (targetType === 'category') {
-                  const catSold = (c.target_id ? soldByCategory.get(c.target_id) : undefined)
-                    || soldByCategoryName.get(normalizeText(c.target_name));
+                  const catSold = (c.target_id ? _spbc.get(c.target_id) : undefined)
+                    || _spbcn.get(normalizeText(c.target_name));
                   if (catSold) { currentQty = catSold.qty; currentRevenue = catSold.revenue; }
                 } else if (targetType === 'revenue') {
-                  currentRevenue = userRevenue;
+                  currentRevenue = _userRev;
                 }
                 else if (targetType === 'self_sale') {
                   const selfSales = userSales.filter((s: any) => s.is_self_sold === true);
@@ -1358,8 +1363,9 @@ Deno.serve(async (req) => {
                   ? Math.round(currentRevenue * value / 100)
                   : Math.round(value * (targetType === 'revenue' ? 1 : currentQty));
                 return {
-                  name: c.target_name || (targetType === 'revenue' ? 'Doanh thu' : 'Hoa hồng'),
+                  name: (c.target_name || (targetType === 'revenue' ? 'Doanh thu' : 'Hoa hồng')) + (onlySS ? ' (chỉ đơn tự bán)' : ''),
                   target_type: targetType,
+                  only_self_sold: onlySS,
                   calc_type: c.calc_type,
                   value,
                   current_qty: currentQty,
