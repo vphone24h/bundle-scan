@@ -209,7 +209,7 @@ export function CorrectionRequestsTab() {
           
           const { error: updateError } = await supabase.from('attendance_records').update({
             check_out_time: request.requested_check_out,
-            check_out_method: 'remote_approved',
+            check_out_method: 'manual',
             total_work_minutes: totalMinutes,
             note: (record.note ? record.note + ' | ' : '') + `✅ Check-out từ xa được duyệt bởi admin.`,
           }).eq('id', record.id);
