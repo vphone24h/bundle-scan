@@ -36,6 +36,22 @@ export default function MyAttendancePage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [showSalesDialog, setShowSalesDialog] = useState(false);
+  const [expandedSaleId, setExpandedSaleId] = useState<string | null>(null);
+
+  const { data: expandedItems, isLoading: itemsLoading } = useQuery({
+    queryKey: ['my-sale-items', expandedSaleId],
+    queryFn: async () => {
+      if (!expandedSaleId) return [];
+      const { data, error } = await supabase
+        .from('export_receipt_items')
+        .select('id, product_name, sku, imei, sale_price, quantity, unit')
+        .eq('receipt_id', expandedSaleId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!expandedSaleId,
+  });
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const monthStart = startOfMonth(currentMonth);
