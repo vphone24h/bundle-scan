@@ -1004,24 +1004,32 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
 
     // Headline ngắn gọn, hấp dẫn để hiển thị trên card
     const perUnitAmt = !isPct ? fmt(c.value) : `${c.value}%`;
-    const headline = c.target_type === 'self_sale'
-      ? `Tự bán 1 đơn nhận ngay ${perUnitAmt}`
-      : c.target_type === 'category'
-        ? `Chốt 1 đơn ${c.name} nhận thêm ${perUnitAmt}`
-        : c.target_type === 'product'
-          ? `Bán 1 ${c.name} nhận thêm ${perUnitAmt}`
-          : c.target_type === 'service'
-            ? `Mỗi dịch vụ ${c.name} nhận thêm ${perUnitAmt}`
-            : `Đạt doanh thu nhận thêm ${perUnitAmt}`;
+    // Đối tượng khách: tick "đơn tự bán" / "only_self_sold" → khách nhân viên tự tìm; ngược lại → khách của cửa hàng
+    const isSelfFound = c.target_type === 'self_sale' || !!c.only_self_sold;
+    const customerSrc = isSelfFound ? 'khách nhân viên tự tìm' : 'khách của cửa hàng';
+    // Nhãn nhóm để mô tả: danh mục / sản phẩm / dịch vụ / doanh thu
+    const groupLabel = c.target_type === 'category' ? 'danh mục'
+      : c.target_type === 'product' ? 'sản phẩm'
+      : c.target_type === 'service' ? 'dịch vụ'
+      : c.target_type === 'self_sale' ? 'đơn'
+      : 'doanh thu';
+
+    const headline = c.target_type === 'revenue'
+      ? `Đạt doanh thu nhận thêm ${perUnitAmt}`
+      : `Chốt đơn hàng ${groupLabel} ${c.name} sẽ nhận ${perUnitAmt} cho mỗi ${c.target_type === 'service' ? 'dịch vụ' : 'sản phẩm'} (${customerSrc})`;
+
+    // Mô tả chi tiết theo format mới yêu cầu
+    const rateLine = isPct
+      ? `Mức hoa hồng: ${c.value}% doanh số (${customerSrc})`
+      : c.target_type === 'revenue'
+        ? `Mức hoa hồng: ${fmt(c.value)}/kỳ (${customerSrc})`
+        : `Mức hoa hồng: ${fmt(c.value)}/sản phẩm bán ra (${customerSrc})`;
 
     if (c.achieved && Number(c.earned) > 0) {
-      const detail = c.target_type === 'revenue'
-        ? `Doanh thu hiện tại ${fmt(c.current_revenue)} × ${rateDesc}`
-        : c.target_type === 'self_sale'
-          ? `Đã có ${c.current_qty} đơn tự bán (${fmt(c.current_revenue)}) × ${rateDesc}`
-        : `Đã bán ${c.current_qty} ${targetLabel === 'doanh thu' ? 'đơn' : targetLabel} (${fmt(c.current_revenue)}) × ${rateDesc}`;
-      const ssNote = c.only_self_sold ? ' Chỉ tính trên đơn bạn đã tick "Đơn này khách của nhân viên".' : '';
-      const fullDesc = `Đang nhận ${fmt(c.earned)}. ${detail}.${ssNote} Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu' : `thêm ${targetLabel}`} để tăng hoa hồng.`;
+      const progress = c.target_type === 'revenue'
+        ? `Doanh thu hiện tại: ${fmt(c.current_revenue)}`
+        : `Đã bán: ${c.current_qty} ${groupLabel === 'doanh thu' ? 'đơn' : groupLabel} (${fmt(c.current_revenue)})`;
+      const fullDesc = `${rateLine}.\n${progress}.\nĐang nhận: ${fmt(c.earned)}.\nBán thêm để tăng hoa hồng.`;
       out.push({
         icon: <PiggyBank className="h-4 w-4 text-pink-600" />,
         tone: 'good',
@@ -1033,11 +1041,12 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         done: true,
       });
     } else {
-      const fullDesc = c.target_type === 'self_sale'
-        ? `Mức hoa hồng: ${rateDesc}. Điều kiện: tick "Đơn này khách của nhân viên" khi xuất hàng để được cộng.`
-        : c.only_self_sold
-          ? `Mức hoa hồng: ${rateDesc}. CHỈ tính cho đơn bạn đã tick "Đơn này khách của nhân viên" lúc xuất hàng. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu trong kỳ' : `${targetLabel} "${c.name}"`} VÀ tick là đơn của bạn.`
-          : `Mức hoa hồng: ${rateDesc}. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu trong kỳ' : `${targetLabel} "${c.name}"`} để bắt đầu nhận.`;
+      const condition = isSelfFound
+        ? `Điều kiện: tick "Đơn này khách của nhân viên" khi xuất hàng${c.target_type !== 'self_sale' && c.target_type !== 'revenue' ? ` và bán ${groupLabel} "${c.name}"` : ''}.`
+        : c.target_type === 'revenue'
+          ? 'Điều kiện: có doanh thu cho cửa hàng trong kỳ.'
+          : `Điều kiện: bán ${groupLabel} "${c.name}" cho khách của cửa hàng.`;
+      const fullDesc = `${rateLine}.\n${condition}`;
       out.push({
         icon: <PiggyBank className="h-4 w-4 text-pink-600" />,
         tone: 'warn',
