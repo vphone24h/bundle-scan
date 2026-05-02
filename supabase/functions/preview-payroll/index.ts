@@ -1307,6 +1307,11 @@ Deno.serve(async (req) => {
                 } else if (targetType === 'revenue') {
                   currentRevenue = userRevenue;
                 }
+                else if (targetType === 'self_sale') {
+                  const selfSales = userSales.filter((s: any) => s.is_self_sold === true);
+                  currentQty = selfSales.length;
+                  currentRevenue = selfSales.reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0);
+                }
                 const value = Number(c.value || 0);
                 const earned = c.calc_type === 'percentage'
                   ? Math.round(currentRevenue * value / 100)
