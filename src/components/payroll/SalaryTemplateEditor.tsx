@@ -76,7 +76,6 @@ const COMMISSION_TYPES = [
   { value: 'product', label: 'Sản phẩm' },
   { value: 'service', label: 'Dịch vụ' },
   { value: 'category', label: 'Danh mục' },
-  { value: 'self_sale', label: 'Tự bán (đơn của nhân viên)' },
   { value: 'revenue', label: 'Tổng doanh thu cá nhân' },
 ];
 
@@ -595,35 +594,23 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                      <div className="space-y-1">
                        <Label className="text-xs">
                          {c.calc_type === 'percentage'
-                           ? (c.target_type === 'self_sale'
-                               ? 'Tỷ lệ (%) trên đơn tự bán'
-                               : c.target_type === 'revenue'
-                                 ? 'Tỷ lệ (%) trên tổng doanh thu cá nhân'
-                                 : 'Tỷ lệ (%) / mỗi đơn')
-                           : (c.target_type === 'self_sale'
-                               ? 'Số tiền VNĐ / mỗi đơn tự bán'
-                               : c.target_type === 'revenue'
-                                 ? 'Số tiền VNĐ cố định / kỳ (khi có doanh thu)'
-                                 : 'Số tiền VNĐ / 1 sản phẩm bán ra')}
+                           ? (c.target_type === 'revenue'
+                               ? 'Tỷ lệ (%) trên tổng doanh thu cá nhân'
+                               : 'Tỷ lệ (%) / mỗi đơn')
+                           : (c.target_type === 'revenue'
+                               ? 'Số tiền VNĐ cố định / kỳ (khi có doanh thu)'
+                               : 'Số tiền VNĐ / 1 sản phẩm bán ra')}
                        </Label>
                        <NumberInput className="h-8 text-xs" value={c.value} onChangeNumber={v => { const n = [...commissions]; n[i].value = v; setCommissions(n); }} />
                        {c.calc_type === 'fixed_amount' && (
                          <p className="text-[10px] text-muted-foreground">
-                           💡 {c.target_type === 'self_sale'
-                                 ? 'Cộng vào hoa hồng MỖI khi nhân viên tick "Đơn này khách của nhân viên" lúc xuất hàng.'
-                                 : c.target_type === 'revenue'
-                                   ? 'Cộng cố định 1 lần trong kỳ khi nhân viên có doanh thu.'
-                                   : `Nhân với số lượng sản phẩm thuộc ${c.target_type === 'category' ? 'danh mục' : c.target_type === 'service' ? 'dịch vụ' : 'sản phẩm'} này NV bán được trong kỳ.`}
-                         </p>
-                       )}
-                       {c.target_type === 'self_sale' && c.calc_type === 'percentage' && (
-                         <p className="text-[10px] text-muted-foreground">
-                           💡 Cộng % tổng tiền của mỗi đơn nhân viên đã tick "Đơn này khách của nhân viên".
+                           💡 {c.target_type === 'revenue'
+                                 ? 'Cộng cố định 1 lần trong kỳ khi nhân viên có doanh thu.'
+                                 : `Nhân với số lượng sản phẩm thuộc ${c.target_type === 'category' ? 'danh mục' : c.target_type === 'service' ? 'dịch vụ' : 'sản phẩm'} này NV bán được trong kỳ.`}
                          </p>
                        )}
                      </div>
-                     {c.target_type !== 'self_sale' && (
-                       <div className="col-span-2 flex items-start gap-2 rounded-md border border-dashed border-orange-300 bg-orange-50/60 p-2">
+                     <div className="col-span-2 flex items-start gap-2 rounded-md border border-dashed border-orange-300 bg-orange-50/60 p-2">
                          <Switch
                            id={`only-self-sold-${i}`}
                            checked={!!c.only_self_sold}
@@ -631,14 +618,13 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                          />
                          <div className="space-y-0.5">
                            <Label htmlFor={`only-self-sold-${i}`} className="text-xs font-medium cursor-pointer">
-                             Chỉ áp dụng cho đơn của nhân viên (tự bán)
+                             Chỉ áp dụng cho đơn của nhân viên
                            </Label>
                            <p className="text-[10px] text-muted-foreground">
                              Khi bật: hoa hồng này CHỈ tính cho đơn mà nhân viên đã tick "Đơn này khách của nhân viên" lúc xuất hàng. Khi tắt: tính cho TẤT CẢ đơn nhân viên bán.
                            </p>
                          </div>
-                       </div>
-                     )}
+                     </div>
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive ml-1" onClick={() => setCommissions(commissions.filter((_, j) => j !== i))}>
                     <Trash2 className="h-3.5 w-3.5" />
