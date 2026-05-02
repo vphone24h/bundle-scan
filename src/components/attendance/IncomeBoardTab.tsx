@@ -1039,7 +1039,7 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
   const penalties = (record.penalty_details || []) as any[];
   for (const p of penalties) {
     if (p.amount > 0) {
-      const isKpiPenalty = p.type === 'kpi_penalty' || p.type === 'kpi_miss' ||
+      const isKpiPenalty = p.type === 'kpi_not_met' || p.type === 'kpi_penalty' || p.type === 'kpi_miss' ||
         /kpi/i.test(String(p.name || '')) || /không đạt kpi/i.test(String(p.detail || ''));
       // Ẩn phạt KPI trước ngày 25 để nhân viên còn cơ hội đạt
       if (isKpiPenalty && !isAfterDay25) continue;
