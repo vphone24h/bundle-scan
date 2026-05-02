@@ -497,6 +497,104 @@ export default function MyAttendancePage() {
           </DialogContent>
         </Dialog>
 
+        {/* KPI Progress Card — chạm để mở "Tăng thêm lương" */}
+        {(() => {
+          const rec = previewPayroll?.record;
+          const cs = rec?.config_snapshot || {};
+          const bonuses = (rec?.bonus_details || []) as any[];
+          const kpiList = bonuses
+            .filter((b: any) => {
+              const t = b.type;
+              return (t === 'kpi_personal' || t === 'kpi_branch' || t === 'branch_revenue' || t === 'gross_profit')
+                && Number(b.threshold || 0) > 0;
+            })
+            .map((b: any) => {
+              const t = b.type;
+              const isBranch = t === 'kpi_branch' || t === 'branch_revenue';
+              const isGP = t === 'gross_profit';
+              const current = isBranch
+                ? Number(cs.branch_revenue || 0)
+                : isGP
+                  ? Number(cs.user_gross_profit || 0)
+                  : Number(cs.user_revenue || 0);
+              const target = Number(b.threshold || 0);
+              const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+              return {
+                name: b.name || (isBranch ? 'KPI chi nhánh' : isGP ? 'Lợi nhuận gộp' : 'KPI cá nhân'),
+                kind: isBranch ? 'branch' : isGP ? 'gp' : 'personal',
+                current, target, pct,
+                reward: Number(b.reach_reward || b.amount || 0),
+              };
+            });
+
+          if (kpiList.length === 0) return null;
+
+          const goBoost = () => {
+            setTabValue('income');
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('open-boost-salary'));
+              const el = document.getElementById('income-tab-anchor');
+              el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+          };
+
+          return (
+            <Card
+              className="border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50/60 to-orange-50/40 dark:from-amber-950/20 dark:to-orange-950/20 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={goBoost}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') goBoost(); }}
+            >
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-amber-600" />
+                    <p className="text-sm font-bold">Tiến độ KPI</p>
+                    <Badge variant="outline" className="h-5 text-[10px]">{kpiList.length} KPI</Badge>
+                  </div>
+                  <span className="text-[11px] font-medium text-amber-700 dark:text-amber-300 flex items-center gap-0.5">
+                    <Flame className="h-3 w-3" /> Tăng thêm lương <ChevronRight className="h-3 w-3" />
+                  </span>
+                </div>
+
+                <div className="space-y-2.5">
+                  {kpiList.map((k, idx) => {
+                    const colorText = k.pct >= 100
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : k.pct >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-orange-600 dark:text-orange-400';
+                    const colorBar = k.pct >= 100
+                      ? '[&>div]:bg-emerald-500'
+                      : k.pct >= 50 ? '[&>div]:bg-amber-500' : '[&>div]:bg-orange-500';
+                    return (
+                      <div key={idx}>
+                        <div className="flex items-baseline justify-between gap-2 mb-1">
+                          <span className="text-xs font-medium truncate flex items-center gap-1">
+                            <Target className="h-3 w-3 text-muted-foreground shrink-0" />
+                            {k.name}
+                          </span>
+                          <span className={`text-base font-extrabold tabular-nums ${colorText}`}>
+                            {k.pct}%
+                          </span>
+                        </div>
+                        <Progress value={k.pct} className={`h-2.5 ${colorBar}`} />
+                        <div className="flex justify-between text-[10px] mt-0.5">
+                          <span className="text-muted-foreground tabular-nums">
+                            {formatMoney(k.current)} / <span className="font-semibold text-foreground">{formatMoney(k.target)}</span>
+                          </span>
+                          {k.reward > 0 && (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">+{formatMoney(k.reward)}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         {/* Estimated Salary Card */}
         {estimatedSalary !== null && (
           <Card className="border-primary/30 bg-primary/5">
