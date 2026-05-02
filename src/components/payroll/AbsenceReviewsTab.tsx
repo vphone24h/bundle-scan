@@ -14,6 +14,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
 import { toast } from 'sonner';
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 
 function useTenantId() {
   const { data: pu } = usePlatformUser();
@@ -43,6 +45,10 @@ export function AbsenceReviewsTab() {
   const [reviewDialog, setReviewDialog] = useState<AbsentDay | null>(null);
   const [isExcused, setIsExcused] = useState(true);
   const [reviewNote, setReviewNote] = useState('');
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked, unlock } = useSecurityUnlock('absence-review');
+  const [showPwd, setShowPwd] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{ userId: string; date: string; excused: boolean; note: string } | null>(null);
 
   // Fetch attendance records with absent status in the month
   const { data: absentRecords, isLoading: loadingAbsent } = useQuery({
@@ -145,6 +151,15 @@ export function AbsenceReviewsTab() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const guardedSave = (payload: { userId: string; date: string; excused: boolean; note: string }) => {
+    if (hasSecurityPassword && !unlocked) {
+      setPendingAction(payload);
+      setShowPwd(true);
+      return;
+    }
+    saveReview.mutate(payload);
+  };
 
   // Build absent days list
   const absentDays = useMemo(() => {
@@ -405,7 +420,7 @@ export function AbsenceReviewsTab() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setReviewDialog(null)}>Hủy</Button>
             <Button
-              onClick={() => reviewDialog && saveReview.mutate({
+              onClick={() => reviewDialog && guardedSave({
                 userId: reviewDialog.user_id,
                 date: reviewDialog.date,
                 excused: isExcused,
@@ -419,6 +434,19 @@ export function AbsenceReviewsTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <SecurityPasswordDialog
+        open={showPwd}
+        onOpenChange={setShowPwd}
+        onSuccess={() => {
+          unlock();
+          if (pendingAction) {
+            saveReview.mutate(pendingAction);
+            setPendingAction(null);
+          }
+        }}
+        title="Xác thực duyệt nghỉ"
+        description="Nhập mật khẩu bảo mật để duyệt trạng thái nghỉ"
+      />
     </div>
   );
 }
