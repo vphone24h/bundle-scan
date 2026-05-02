@@ -20,10 +20,35 @@ interface OrderRow {
   orderDate: string;
   status: string;
   warranty: string;
+  // Optional multi-item support (KiotViet style: 1 invoice = many products)
+  items?: Array<{
+    productName: string;
+    sku?: string;
+    imei?: string;
+    salePrice: number;
+    quantity?: number;
+    warranty?: string;
+    note?: string;
+  }>;
+  totalAmount?: number; // explicit invoice total (overrides salePrice if provided)
 }
 
 function parseDate(dateStr: string): string {
   try {
+    if (!dateStr) return new Date().toISOString();
+    // Already ISO datetime → keep as-is (preserves exact time)
+    if (/^\d{4}-\d{2}-\d{2}T/.test(dateStr)) {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) return d.toISOString();
+    }
+    // dd/mm/yyyy [hh:mm[:ss]]
+    const m = dateStr.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+    if (m) {
+      const [, dd, mm, yyyy, hh, mi, ss] = m;
+      const iso = `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T${(hh || "12").padStart(2, "0")}:${(mi || "00").padStart(2, "0")}:${(ss || "00").padStart(2, "0")}+07:00`;
+      const d = new Date(iso);
+      if (!isNaN(d.getTime())) return d.toISOString();
+    }
     const parts = dateStr.split("/");
     if (parts.length === 3) {
       return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}T12:00:00+07:00`;
@@ -176,14 +201,19 @@ Deno.serve(async (req) => {
 
       const receiptRows = chunk.map(order => {
         const cleanPhone = order.customerPhone?.replace(/\s+/g, "") || "";
+        const total = typeof order.totalAmount === "number" && order.totalAmount > 0
+          ? order.totalAmount
+          : (order.items && order.items.length
+              ? order.items.reduce((s, it) => s + (Number(it.salePrice) || 0) * (Number(it.quantity) || 1), 0)
+              : (order.salePrice || 0));
         return {
           code: `${sourceId.toUpperCase()}-${order.orderId.slice(-8)}`,
           tenant_id: tenantId,
           customer_id: customerIdMap.get(cleanPhone) || null,
           branch_id: defaultBranchId,
           export_date: parseDate(order.orderDate),
-          total_amount: order.salePrice || 0,
-          paid_amount: order.salePrice || 0,
+          total_amount: total,
+          paid_amount: total,
           debt_amount: 0,
           vat_amount: 0,
           vat_rate: 0,
@@ -208,23 +238,37 @@ Deno.serve(async (req) => {
       const codeToId = new Map(insertedReceipts.map(r => [r.code, r.id]));
 
       // Build items
-      const itemRows = chunk
-        .map(order => {
-          const code = `${sourceId.toUpperCase()}-${order.orderId.slice(-8)}`;
-          const receiptId = codeToId.get(code);
-          if (!receiptId) return null;
-          return {
-            receipt_id: receiptId,
-            product_name: order.productName || "Sản phẩm",
-            sku: order.productVariant || "",
-            imei: cleanImei(order.imei),
-            sale_price: order.salePrice || 0,
-            status: "sold",
-            warranty: order.warranty || null,
-            note: order.note || null,
-          };
-        })
-        .filter(Boolean);
+      const itemRows: any[] = [];
+      for (const order of chunk) {
+        const code = `${sourceId.toUpperCase()}-${order.orderId.slice(-8)}`;
+        const receiptId = codeToId.get(code);
+        if (!receiptId) continue;
+        const list = order.items && order.items.length
+          ? order.items
+          : [{
+              productName: order.productName,
+              sku: order.productVariant,
+              imei: order.imei,
+              salePrice: order.salePrice,
+              warranty: order.warranty,
+              note: order.note,
+            }];
+        for (const it of list) {
+          const qty = Math.max(1, Number(it.quantity) || 1);
+          for (let q = 0; q < qty; q++) {
+            itemRows.push({
+              receipt_id: receiptId,
+              product_name: it.productName || "Sản phẩm",
+              sku: it.sku || "",
+              imei: cleanImei(it.imei),
+              sale_price: Number(it.salePrice) || 0,
+              status: "sold",
+              warranty: it.warranty || null,
+              note: it.note || null,
+            });
+          }
+        }
+      }
 
       if (itemRows.length > 0) {
         const { error: itemErr } = await adminClient
