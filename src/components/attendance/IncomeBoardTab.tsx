@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { HelpTip } from '@/components/ui/help-tip';
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,9 @@ import {
   XCircle,
   Gift,
   ArrowDown,
+  Zap,
+  Star,
+  TrendingDown,
 } from 'lucide-react';
 
 function fmt(n: number | undefined | null) {
