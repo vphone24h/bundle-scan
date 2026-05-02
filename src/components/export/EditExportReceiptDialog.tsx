@@ -16,6 +16,7 @@ import type { ExportReceipt, ExportReceiptItemDetail } from '@/hooks/useExportRe
 import { CustomerFormDialog } from '@/components/customers/CustomerFormDialog';
 import { useStaffList } from '@/hooks/useCRM';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface EditExportReceiptDialogProps {
   receipt: ExportReceipt | null;
@@ -64,6 +65,8 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
   const [editingCustomerData, setEditingCustomerData] = useState<any>(null);
   // Sales staff
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [originalIsSelfSold, setOriginalIsSelfSold] = useState<boolean>(false);
+  const [isSelfSold, setIsSelfSold] = useState<boolean>(false);
   const [originalStaffId, setOriginalStaffId] = useState<string | null>(null);
   // Items
   const [editableItems, setEditableItems] = useState<EditableItem[]>([]);
