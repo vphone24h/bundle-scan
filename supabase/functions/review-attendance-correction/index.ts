@@ -214,12 +214,16 @@ Deno.serve(async (req) => {
       return ok({ success: true })
     }
 
-    const { data: existingRecord, error: existingRecordError } = await supabaseAdmin
+    let existingRecordQuery = supabaseAdmin
       .from('attendance_records')
       .select('*')
       .eq('tenant_id', request.tenant_id)
-      .eq('user_id', request.user_id)
-      .eq('date', request.request_date)
+
+    existingRecordQuery = request.attendance_id
+      ? existingRecordQuery.eq('id', request.attendance_id)
+      : existingRecordQuery.eq('user_id', request.user_id).eq('date', request.request_date)
+
+    const { data: existingRecord, error: existingRecordError } = await existingRecordQuery
       .limit(1)
       .maybeSingle()
 
@@ -236,6 +240,10 @@ Deno.serve(async (req) => {
     const attendancePayload = await buildAttendancePayload(supabaseAdmin, request as CorrectionRequest, existingRecord)
     if (!attendancePayload) {
       return fail('Yêu cầu không có dữ liệu chấm công để cập nhật', 'NO_ATTENDANCE_DATA')
+    }
+
+    if (!existingRecord && !attendancePayload.updates.check_in_time) {
+      return fail('Không thể tạo bản ghi mới khi thiếu giờ check-in', 'MISSING_CHECKIN')
     }
 
     const noteByType: Record<string, string> = {
