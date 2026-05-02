@@ -555,10 +555,10 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         icon: <CalendarCheck className="h-4 w-4 text-emerald-600" />,
         tone: 'good',
         title: `Đi làm đủ công`,
-        description: `Mỗi ngày công = ${fmt(dailyRate)}. Còn ${remainingDays} ngày để đạt ${expected} công chuẩn.`,
+        description: `Mỗi ngày công = ${fmt(dailyRate)}. Còn thiếu ${remainingDays} công để đạt ${expected} công chuẩn của tháng này.`,
         progress: Math.round((workDays / expected) * 100),
-        current: `${workDays} công`,
-        target: `${expected} công`,
+        current: `${workDays}/${expected} công`,
+        target: `${expected} công chuẩn`,
         potential: Math.round(dailyRate * Math.min(remainingDays, daysRemaining || remainingDays)),
       });
     } else {
@@ -581,7 +581,7 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
     });
   }
 
-  // 2. KPI BONUSES — còn thiếu để đạt
+  // 2. KPI BONUSES — còn thiếu để đạt + chi tiết tier vượt
   const bonuses = (record.bonus_details || []) as any[];
   for (const b of bonuses) {
     if (b.type === 'kpi_personal' || b.type === 'gross_profit' || b.type === 'kpi_branch' || b.type === 'branch_revenue') {
@@ -594,13 +594,25 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
       const isBranch = b.type === 'kpi_branch' || b.type === 'branch_revenue';
       const reachReward = b.calc_type === 'percentage' ? Math.round(target * Number(b.value) / 100) : Number(b.value || 0);
 
+      // Build tier description (mức vượt %)
+      const tiers = (b.tiers || []) as any[];
+      const tierDescs = tiers
+        .filter((t: any) => Number(t.percent_over) > 0)
+        .map((t: any) => {
+          const tierAmt = t.calc_type === 'percentage'
+            ? `${t.value}% doanh số`
+            : fmt(t.value);
+          return `Vượt +${t.percent_over}%: ${tierAmt}`;
+        });
+
       if (current >= target) {
-        // đã đạt → còn tier vượt?
         out.push({
           icon: <Trophy className="h-4 w-4 text-amber-500" />,
           tone: 'good',
           title: `Đã đạt ${b.name}`,
-          description: `Vượt thêm doanh số sẽ mở các mức thưởng tier cao hơn.`,
+          description: tierDescs.length > 0
+            ? `Bạn sẽ nhận thêm khi vượt KPI: ${tierDescs.join(' · ')}`
+            : `Vượt thêm doanh số sẽ mở các mức thưởng tier cao hơn.`,
           progress: Math.min(100, Math.round((current / target) * 100)),
           current: fmtShort(current),
           target: fmtShort(target),
@@ -608,11 +620,15 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
           done: true,
         });
       } else {
+        const baseDesc = `Bạn sẽ nhận thêm ${fmt(reachReward)} khi đạt KPI ${fmtShort(target)} (còn thiếu ${fmtShort(remain)}).`;
+        const fullDesc = tierDescs.length > 0
+          ? `${baseDesc} Khi vượt: ${tierDescs.join(' · ')}.`
+          : baseDesc;
         out.push({
           icon: <Target className="h-4 w-4 text-blue-600" />,
           tone: 'warn',
           title: `${isBranch ? 'KPI chi nhánh' : 'KPI cá nhân'}: ${b.name}`,
-          description: `Còn thiếu ${fmtShort(remain)} để đạt mốc ${fmtShort(target)} → nhận ${fmt(reachReward)} thưởng.`,
+          description: fullDesc,
           progress: pct,
           current: fmtShort(current),
           target: fmtShort(target),
@@ -651,27 +667,56 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
     }
   }
 
-  // 4. OVERTIME — tăng ca thêm bao nhiêu giờ = bao nhiêu tiền
-  const otDetails = (cs.overtime_details || []) as any[];
-  const hourlyOTRate = (() => {
-    if (otDetails.length === 0) {
-      // fallback 150%
-      const dailyRate = cs.salary_type === 'fixed' ? baseAmount / expected : baseAmount;
-      return (dailyRate / 8) * 1.5;
+  // 4. OVERTIME — hiển thị chi tiết từng loại tăng ca admin đã cấu hình
+  // Lấy rules đã cấu hình (không phải records đã làm)
+  const otRules = (cs.overtime_rules || []) as any[];
+  const dailyRateForOT = cs.salary_type === 'fixed' && expected > 0 ? baseAmount / expected : baseAmount;
+  const hourlyBaseRate = dailyRateForOT > 0 ? dailyRateForOT / 8 : 0;
+
+  const buildOTDescription = (rule: any): { desc: string; sample: number } => {
+    const ruleType = rule.type || rule.ot_type; // 'hourly' | 'full_day'
+    const calcType = rule.calc_type || 'percentage';
+    const value = Number(rule.value || rule.rate || 0);
+    if (ruleType === 'full_day') {
+      const perDay = calcType === 'percentage'
+        ? Math.round(dailyRateForOT * value / 100)
+        : value;
+      return {
+        desc: `Mỗi ngày tăng ca = ${fmt(perDay)} (${calcType === 'percentage' ? `${value}% lương ngày` : 'cố định'}).`,
+        sample: perDay,
+      };
     }
-    const hourlyOT = otDetails.find((o: any) => o.type === 'hourly');
-    if (hourlyOT && hourlyOT.hours > 0) return hourlyOT.amount / hourlyOT.hours;
-    const fullDay = otDetails.find((o: any) => o.type === 'full_day');
-    if (fullDay && fullDay.count > 0) return (fullDay.amount / fullDay.count) / 8;
-    return 0;
-  })();
-  if (hourlyOTRate > 0) {
+    // hourly
+    const perHour = calcType === 'percentage'
+      ? Math.round(hourlyBaseRate * value / 100)
+      : value;
+    return {
+      desc: `Mỗi giờ tăng ca = ${fmt(perHour)} (${calcType === 'percentage' ? `${value}% lương giờ` : 'cố định'}). Tăng ca 10h ≈ +${fmt(perHour * 10)}.`,
+      sample: perHour * 10,
+    };
+  };
+
+  if (otRules.length > 0) {
+    for (const rule of otRules) {
+      const { desc, sample } = buildOTDescription(rule);
+      const ruleType = rule.type || rule.ot_type;
+      out.push({
+        icon: <Clock className="h-4 w-4 text-orange-600" />,
+        tone: 'good',
+        title: ruleType === 'full_day' ? `Tăng ca cả ngày: ${rule.name || 'OT'}` : `Tăng ca theo giờ: ${rule.name || 'OT'}`,
+        description: desc,
+        potential: Math.round(sample),
+      });
+    }
+  } else if (hourlyBaseRate > 0) {
+    // Fallback nếu admin chưa cấu hình rule cụ thể
+    const fallbackHourly = hourlyBaseRate * 1.5;
     out.push({
       icon: <Clock className="h-4 w-4 text-orange-600" />,
       tone: 'good',
       title: 'Tăng ca thêm',
-      description: `Mỗi giờ tăng ca = ${fmt(hourlyOTRate)}. Tăng ca 10h ≈ +${fmt(hourlyOTRate * 10)}.`,
-      potential: Math.round(hourlyOTRate * 10),
+      description: `Mỗi giờ tăng ca ≈ ${fmt(fallbackHourly)} (ước tính 150% lương giờ). Tăng ca 10h ≈ +${fmt(fallbackHourly * 10)}.`,
+      potential: Math.round(fallbackHourly * 10),
     });
   }
 
@@ -688,15 +733,25 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
   }
 
   // 6. PENALTY — cảnh báo phạt đang có
+  // Quy tắc: phạt KPI (chưa đạt) chỉ hiện sau ngày 25 để nhân viên còn cơ hội chạy
+  const todayDate = today ? new Date(today) : new Date();
+  const dayOfMonth = todayDate.getDate();
+  const isAfterDay25 = dayOfMonth >= 25;
+
   const penalties = (record.penalty_details || []) as any[];
   for (const p of penalties) {
     if (p.amount > 0) {
+      const isKpiPenalty = p.type === 'kpi_penalty' || p.type === 'kpi_miss' ||
+        /kpi/i.test(String(p.name || '')) || /không đạt kpi/i.test(String(p.detail || ''));
+      // Ẩn phạt KPI trước ngày 25 để nhân viên còn cơ hội đạt
+      if (isKpiPenalty && !isAfterDay25) continue;
+
       out.push({
         icon: <AlertTriangle className="h-4 w-4 text-destructive" />,
         tone: 'bad',
         title: `Đang bị phạt: ${p.name}`,
         description: p.detail || `${p.count} lần × ${fmt(p.per_amount)}`,
-        potential: p.amount, // số tiền bị mất
+        potential: p.amount,
       });
     }
   }
