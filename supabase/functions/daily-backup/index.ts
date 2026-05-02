@@ -324,7 +324,7 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
           .eq("status", "completed")
           .order("import_date", { ascending: false }), 1500),
         fetchRows(admin, () => admin.from("products")
-          .select("id, name, sku, import_price, sale_price")
+          .select("id, name, sku, imei, import_price, sale_price, quantity, total_import_cost")
           .eq("tenant_id", tenantId)
           .eq("status", "in_stock")
           .order("name"), 3000),
@@ -344,7 +344,7 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
           .gte("import_date", dayStart).lte("import_date", dayEnd)
           .eq("status", "completed").order("import_date").limit(1000),
         admin.from("products")
-          .select("id, name, sku, import_price, sale_price")
+          .select("id, name, sku, imei, import_price, sale_price, quantity, total_import_cost")
           .eq("tenant_id", tenantId)
           .eq("status", "in_stock")
           .order("name").limit(3000),
@@ -358,20 +358,30 @@ async function runBackup(admin: any, tenantId: string, dateStr: string, mode: st
     const exportIds = exports.map((e: any) => e.id);
     const importIds = imports.map((e: any) => e.id);
 
-    const [exportItemsMap, importItemsMap, customerMap, supplierMap] = await Promise.all([
+    const [exportItemsMap, importItemsMapRaw, customerMap, supplierMap] = await Promise.all([
       fetchItemsBatched(admin, "export_receipt_items", exportIds, "receipt_id, product_name, sku, imei, sale_price"),
-      fetchItemsBatched(admin, "import_receipt_items", importIds, "receipt_id, product_name, sku, imei, import_price, quantity"),
+      fetchImportItemsBatched(admin, importIds),
       fetchNameMap(admin, "customers", exports.map((e: any) => e.customer_id)),
       fetchNameMap(admin, "suppliers", imports.map((e: any) => e.supplier_id)),
     ]);
+    const importItemsMap = importItemsMapRaw;
 
     // Build workbook
     const wb = XLSX.utils.book_new();
 
     const totalSales = exports.reduce((s: number, e: any) => s + (e.total_amount || 0), 0);
     const totalImports = imports.reduce((s: number, e: any) => s + (e.total_amount || 0), 0);
-    const totalInvValue = products.reduce((s: number, p: any) => s + (p.import_price || 0), 0);
-    const totalInvSale = products.reduce((s: number, p: any) => s + (p.sale_price || 0), 0);
+    // IMEI: import_price (mỗi row 1 SP). Non-IMEI: total_import_cost (đã = qty * giá nhập).
+    const totalInvValue = products.reduce((s: number, p: any) => {
+      if (p.imei) return s + (Number(p.import_price) || 0);
+      const tic = Number(p.total_import_cost) || (Number(p.import_price) || 0) * (Number(p.quantity) || 1);
+      return s + tic;
+    }, 0);
+    const totalInvSale = products.reduce((s: number, p: any) => {
+      const sale = Number(p.sale_price) || 0;
+      const qty = p.imei ? 1 : (Number(p.quantity) || 1);
+      return s + sale * qty;
+    }, 0);
 
     // Sheet 1: Summary
     const wsSummary = XLSX.utils.aoa_to_sheet([
