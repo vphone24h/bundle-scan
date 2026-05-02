@@ -8,7 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { CheckCircle2, XCircle, Clock, FileEdit, Send, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlatformUser } from '@/hooks/useTenant';
-import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -28,7 +27,6 @@ const typeLabels: Record<string, { label: string; icon: typeof FileEdit }> = {
 };
 
 export function CorrectionRequestsTab() {
-  const { user } = useAuth();
   const { data: pu } = usePlatformUser();
   const tenantId = pu?.tenant_id;
   const isAdmin = pu?.platform_role === 'tenant_admin' || pu?.platform_role === 'company_admin' || pu?.platform_role === 'platform_admin';
