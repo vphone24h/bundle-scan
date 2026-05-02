@@ -110,12 +110,14 @@ export function CorrectionRequestsTab() {
         .eq('id', id);
       if (error) throw error;
 
-      const buildAttendanceUpdates = async () => {
-        const hasCheckIn = !!request?.requested_check_in;
-        const hasCheckOut = !!request?.requested_check_out;
+      const buildAttendanceUpdates = async (currentRecord?: any) => {
+        const effectiveCheckIn = request?.requested_check_in || currentRecord?.check_in_time || null;
+        const effectiveCheckOut = request?.requested_check_out || currentRecord?.check_out_time || null;
+        const hasCheckIn = !!effectiveCheckIn;
+        const hasCheckOut = !!effectiveCheckOut;
         if (!hasCheckIn && !hasCheckOut) return null;
 
-        const baseTime = new Date(request.requested_check_in || request.requested_check_out);
+        const baseTime = new Date(effectiveCheckIn || effectiveCheckOut);
         const dayOfWeek = baseTime.getDay();
         const { data: shift } = await supabase
           .from('shift_assignments')
@@ -136,10 +138,10 @@ export function CorrectionRequestsTab() {
         if (hasCheckIn && shift?.work_shifts) {
           const ws = shift.work_shifts as any;
           const [h, m] = ws.start_time.split(':').map(Number);
-          const shiftStart = new Date(request.requested_check_in);
+          const shiftStart = new Date(effectiveCheckIn);
           shiftStart.setHours(h, m, 0, 0);
           const threshold = (ws.late_threshold_minutes || 15) * 60 * 1000;
-          const diff = new Date(request.requested_check_in).getTime() - shiftStart.getTime();
+          const diff = new Date(effectiveCheckIn).getTime() - shiftStart.getTime();
           if (diff > threshold) {
             recordStatus = 'late';
             lateMinutes = Math.round(diff / 60000);
@@ -147,8 +149,8 @@ export function CorrectionRequestsTab() {
         }
 
         if (hasCheckIn && hasCheckOut) {
-          const checkInTime = new Date(request.requested_check_in);
-          const checkOutTime = new Date(request.requested_check_out);
+          const checkInTime = new Date(effectiveCheckIn);
+          const checkOutTime = new Date(effectiveCheckOut);
           totalMinutes = Math.max(0, Math.round((checkOutTime.getTime() - checkInTime.getTime()) / 60000));
 
           if (shift?.work_shifts) {
@@ -168,10 +170,10 @@ export function CorrectionRequestsTab() {
         return {
           shiftId: shift?.shift_id || null,
           updates: {
-            check_in_time: request.requested_check_in || null,
-            check_out_time: request.requested_check_out || null,
-            check_in_method: hasCheckIn ? 'manual' : undefined,
-            check_out_method: hasCheckOut ? 'manual' : undefined,
+            check_in_time: request.requested_check_in ?? undefined,
+            check_out_time: request.requested_check_out ?? undefined,
+            check_in_method: request?.requested_check_in ? 'manual' : undefined,
+            check_out_method: request?.requested_check_out ? 'manual' : undefined,
             status: hasCheckIn ? recordStatus : undefined,
             late_minutes: lateMinutes,
             early_leave_minutes: earlyLeaveMinutes,
@@ -226,9 +228,6 @@ export function CorrectionRequestsTab() {
       }
 
       if (status === 'approved' && request?.request_type === 'correction') {
-        const attendancePayload = await buildAttendanceUpdates();
-        if (!attendancePayload) return;
-
         const { data: existingRecord } = await supabase
           .from('attendance_records')
           .select('*')
@@ -236,6 +235,9 @@ export function CorrectionRequestsTab() {
           .eq('user_id', request.user_id)
           .eq('date', request.request_date)
           .maybeSingle();
+
+        const attendancePayload = await buildAttendanceUpdates(existingRecord);
+        if (!attendancePayload) return;
 
         const updates = Object.fromEntries(
           Object.entries(attendancePayload.updates).filter(([, value]) => value !== undefined)
