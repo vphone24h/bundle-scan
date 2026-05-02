@@ -596,6 +596,7 @@ type Suggestion = {
   current?: string;
   target?: string;
   potential: number; // tiền có thể tăng
+  amountSuffix?: string; // hậu tố sau số tiền (vd: "/h")
   done?: boolean;
   earned?: number; // tiền thực nhận (khi done=true thì ưu tiên hiển thị)
   tierLines?: string[]; // chi tiết các mức vượt KPI, mỗi dòng 1 mức
