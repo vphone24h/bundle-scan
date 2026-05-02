@@ -191,7 +191,7 @@ export default function MyAttendancePage() {
   }, [records, monthStart, monthEnd]);
 
   // Estimated salary
-  const estimatedSalary = useMemo(() => {
+  const estimatedSalaryFallback = useMemo(() => {
     if (!salaryConfig) return null;
     const template = salaryConfig.salary_templates as any;
     const baseAmount = salaryConfig.custom_base_amount || template?.base_amount || 0;
@@ -207,6 +207,26 @@ export default function MyAttendancePage() {
     if (salaryType === 'hourly') return Math.round(baseAmount * (stats.totalMinutes / 60));
     return baseAmount;
   }, [salaryConfig, stats, monthStart, monthEnd]);
+
+  // Đồng bộ "Lương tạm tính" với engine preview-payroll (giống tab "Bảng thu nhập realtime")
+  const { data: previewPayroll } = useQuery({
+    queryKey: ['preview-payroll', user?.id, tenantId],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('preview-payroll', {
+        body: { tenant_id: tenantId, user_id: user!.id },
+      });
+      if (error) throw error;
+      if (data?.error || !data?.success) return null;
+      return data;
+    },
+    enabled: !!user?.id && !!tenantId,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+
+  const estimatedSalary = previewPayroll?.record?.net_salary != null
+    ? Math.round(Number(previewPayroll.record.net_salary))
+    : estimatedSalaryFallback;
 
   const prevMonth = () => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
   const nextMonth = () => setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
