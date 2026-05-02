@@ -461,7 +461,7 @@ Deno.serve(async (req) => {
 
       // ===== SALES DATA =====
       const userSales = allSales.filter((s: any) => (s.sales_staff_id || s.created_by) === employee.user_id);
-      const userRevenue = userSales.reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0);
+      let userRevenue = userSales.reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0);
       const selfSoldSet = new Set<string>(userSales.filter((s: any) => s.is_self_sold === true).map((s: any) => s.id));
       const selfRevenueOnly = userSales.filter((s: any) => s.is_self_sold === true).reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0);
       const userSaleIds = new Set(userSales.map((s: any) => s.id));
