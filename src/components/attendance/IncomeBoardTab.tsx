@@ -600,6 +600,8 @@ type Suggestion = {
   earned?: number; // tiền thực nhận (khi done=true thì ưu tiên hiển thị)
   tierLines?: string[]; // chi tiết các mức vượt KPI, mỗi dòng 1 mức
   showKpiTips?: boolean; // hiển thị nút "Cách đạt KPI"
+  headline?: string; // tiêu đề ngắn hấp dẫn (override title hiển thị trên card)
+  detailDescription?: string; // mô tả chi tiết cho popup khi nhấn vào card
 };
 
 function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
