@@ -469,7 +469,11 @@ export default function MyAttendancePage() {
         )}
 
         {/* Tabs */}
-        <Tabs defaultValue="income" className="space-y-3">
+        <Tabs
+          defaultValue="income"
+          className="space-y-3"
+          onValueChange={(v) => { void markNotificationsRead(v); }}
+        >
           <TabsList className="w-full grid grid-cols-9">
             <TabsTrigger value="income" className="text-xs px-1">
               <DollarSign className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">TN</span>
