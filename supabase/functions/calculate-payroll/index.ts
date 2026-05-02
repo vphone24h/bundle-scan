@@ -384,8 +384,8 @@ Deno.serve(async (req) => {
         if (approvedEarlyCheckinMap.has(a.date)) mins += (approvedEarlyCheckinMap.get(a.date) || 0);
         return s + mins;
       }, 0) : 0;
-      const overtimeMinutes = approvedOvertimeMinutes;
-      const overtimeHours = Math.round(overtimeMinutes / 60 * 10) / 10;
+      let overtimeMinutes = approvedOvertimeMinutes;
+      let overtimeHours = Math.round(overtimeMinutes / 60 * 10) / 10;
       const expectedWorkDays = getExpectedWorkDays(employee.user_id);
 
       // Build absence review map for this user
@@ -447,6 +447,19 @@ Deno.serve(async (req) => {
         const isDayOff = !scheduledDates.has(a.date) || paidLeaveDatesSet.has(a.date);
         return isDayOff && approvedDayOffDates.has(a.date);
       }).length;
+
+      // Loại trừ giờ tăng ca trên ngày lễ (vì lễ tết tính riêng ở mục 6)
+      if (enableOvertime && holidayDatesSet.size > 0) {
+        const overtimeOnHoliday = userAttendance.reduce((s: number, a: any) => {
+          if (!holidayDatesSet.has(a.date)) return s;
+          let mins = 0;
+          if (approvedExtraHoursDates.has(a.date)) mins += (a.overtime_minutes || 0);
+          if (approvedEarlyCheckinMap.has(a.date)) mins += (approvedEarlyCheckinMap.get(a.date) || 0);
+          return s + mins;
+        }, 0);
+        overtimeMinutes = Math.max(0, overtimeMinutes - overtimeOnHoliday);
+        overtimeHours = Math.round(overtimeMinutes / 60 * 10) / 10;
+      }
 
       // Build day-by-day attendance details
       const attendanceDetails = userAttendance.map((a: any) => {
