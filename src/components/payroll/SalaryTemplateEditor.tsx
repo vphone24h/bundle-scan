@@ -694,7 +694,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                 <div className="flex items-center gap-2 pl-1">
                   <Label className="text-[11px] text-muted-foreground whitespace-nowrap">Vắng quá (ngày) → mất phụ cấp:</Label>
                   <NumberInput min={0} className="h-7 text-xs w-20" placeholder="0 = không áp dụng" value={a.max_absent_days || ''} onChangeNumber={v => { const n = [...allowances]; n[i].max_absent_days = v; setAllowances(n); }} />
-                  <span className="text-[10px] text-muted-foreground">{a.max_absent_days > 0 ? `Vắng > ${a.max_absent_days} ngày sẽ KHÔNG nhận phụ cấp này` : 'Luôn nhận phụ cấp'}</span>
+                  <span className="text-[10px] text-muted-foreground">{a.max_absent_days > 0 ? `Phải đi đủ ≥ (số ngày tháng − ${a.max_absent_days}) ngày mới nhận phụ cấp này` : 'Luôn nhận phụ cấp'}</span>
                 </div>
               </div>
             ))}

@@ -946,26 +946,17 @@ Deno.serve(async (req) => {
       let totalAllowance = 0;
       const allowanceDetailsV2: any[] = [];
       if (isPayrollReady && template?.allowance_enabled) {
-        // Tính tổng số ngày vắng (recorded absent + scheduled no-show) cho rule max_absent_days
-        const absentRecordedForAllow = userAttendance.filter((a: any) => a.status === "absent").length;
-        let absentNoShowForAllow = 0;
-        for (const dateStr of scheduledDates) {
-          const hasRecord = userAttendance.some((a: any) => a.date === dateStr);
-          if (hasRecord) continue;
-          const dateObj = new Date(dateStr);
-          const today = new Date();
-          today.setHours(23, 59, 59, 999);
-          if (dateObj > today) continue;
-          absentNoShowForAllow++;
-        }
-        const totalAbsentForAllow = absentRecordedForAllow + absentNoShowForAllow;
+        // Logic mới: phụ cấp chỉ được nhận khi NV đi đủ (công chuẩn - max_absent_days).
+        // VD: tháng có 31 công chuẩn, max_absent_days = 3 → phải đi >= 28 ngày mới nhận phụ cấp.
+        const standardDaysForAllow = scheduledDates.size;
 
         const tAllows = allowsByTemplate[templateId] || [];
         for (const a of tAllows) {
           let amount = 0;
           const maxAbsent = Number((a as any).max_absent_days || 0);
-          // Nếu cấu hình giới hạn vắng và NV vắng vượt → bỏ phụ cấp này
-          if (maxAbsent > 0 && totalAbsentForAllow > maxAbsent) {
+          const requiredWorkDays = Math.max(0, standardDaysForAllow - maxAbsent);
+          // Nếu cấu hình max_absent_days và NV chưa đi đủ ngày yêu cầu → chưa được nhận phụ cấp
+          if (maxAbsent > 0 && workDays < requiredWorkDays) {
             allowanceDetailsV2.push({
               name: a.name,
               amount: 0,
@@ -973,8 +964,10 @@ Deno.serve(async (req) => {
               days: a.is_fixed ? null : workDays,
               configured_amount: Number(a.amount || 0),
               max_absent_days: maxAbsent,
-              total_absent: totalAbsentForAllow,
-              skipped_reason: `Vắng ${totalAbsentForAllow} ngày > ${maxAbsent} ngày cho phép`,
+              required_work_days: requiredWorkDays,
+              actual_work_days: workDays,
+              standard_days: standardDaysForAllow,
+              skipped_reason: `Cần đi ≥ ${requiredWorkDays}/${standardDaysForAllow} ngày (đã đi ${workDays})`,
             });
             continue;
           }
@@ -993,7 +986,9 @@ Deno.serve(async (req) => {
               days: a.is_fixed ? null : workDays,
               configured_amount: Number(a.amount || 0),
               max_absent_days: maxAbsent,
-              total_absent: totalAbsentForAllow,
+              required_work_days: requiredWorkDays,
+              actual_work_days: workDays,
+              standard_days: standardDaysForAllow,
             });
           }
           // Trường hợp per_day với 0 ngày công vẫn cần ghi nhận để hiển thị "Tăng thêm lương"
@@ -1005,7 +1000,9 @@ Deno.serve(async (req) => {
               days: workDays,
               configured_amount: Number(a.amount || 0),
               max_absent_days: maxAbsent,
-              total_absent: totalAbsentForAllow,
+              required_work_days: requiredWorkDays,
+              actual_work_days: workDays,
+              standard_days: standardDaysForAllow,
             });
           }
         }

@@ -942,7 +942,9 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
   for (const a of allAllowances) {
     const configured = Number(a.configured_amount || 0);
     const maxAbsent = Number(a.max_absent_days || 0);
-    const totalAbsent = Number(a.total_absent || 0);
+    const standardDays = Number(a.standard_days || 0);
+    const requiredWorkDays = Number(a.required_work_days || Math.max(0, standardDays - maxAbsent));
+    const actualWorkDays = Number(a.actual_work_days ?? a.days ?? 0);
     const isPerDay = a.type === 'per_day';
     const isLost = !!a.skipped_reason;
     const isReceiving = Number(a.amount || 0) > 0;
@@ -960,7 +962,9 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
     // Mô tả điều kiện
     let conditionDesc = '';
     if (maxAbsent > 0) {
-      conditionDesc = ` · Điều kiện: nghỉ tối đa ${maxAbsent} ngày/tháng (hiện vắng ${totalAbsent} ngày).`;
+      conditionDesc = standardDays > 0
+        ? ` · Điều kiện: đi đủ ≥ ${requiredWorkDays}/${standardDays} ngày (đã đi ${actualWorkDays}).`
+        : ` · Điều kiện: vắng tối đa ${maxAbsent} ngày/tháng.`;
     } else if (maxAbsent === 0) {
       conditionDesc = ` · Không giới hạn ngày nghỉ.`;
     }
@@ -977,7 +981,7 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
     } else if (isReceiving) {
       // Đang nhận đủ
       const reminder = maxAbsent > 0
-        ? ` Giữ vắng ≤ ${maxAbsent} ngày để không mất phụ cấp này.`
+        ? ` Giữ đi làm ≥ ${requiredWorkDays} ngày để không mất phụ cấp này.`
         : '';
       out.push({
         icon: <Gift className="h-4 w-4 text-purple-600" />,
