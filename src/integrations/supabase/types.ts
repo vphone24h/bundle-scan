@@ -7692,6 +7692,7 @@ export type Database = {
           created_at: string
           display_order: number
           id: string
+          only_self_sold: boolean
           target_id: string | null
           target_name: string
           target_type: string
@@ -7704,6 +7705,7 @@ export type Database = {
           created_at?: string
           display_order?: number
           id?: string
+          only_self_sold?: boolean
           target_id?: string | null
           target_name?: string
           target_type?: string
@@ -7716,6 +7718,7 @@ export type Database = {
           created_at?: string
           display_order?: number
           id?: string
+          only_self_sold?: boolean
           target_id?: string | null
           target_name?: string
           target_type?: string

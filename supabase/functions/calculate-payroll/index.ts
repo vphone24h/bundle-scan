@@ -455,6 +455,8 @@ Deno.serve(async (req) => {
       // ===== SALES DATA =====
       const userSales = allSales.filter((s: any) => (s.sales_staff_id || s.created_by) === employee.user_id);
       const userRevenue = userSales.reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0);
+      const selfSoldSet = new Set<string>(userSales.filter((s: any) => s.is_self_sold === true).map((s: any) => s.id));
+      const selfRevenueOnly = userSales.filter((s: any) => s.is_self_sold === true).reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0);
       const userSaleIds = new Set(userSales.map((s: any) => s.id));
 
       // Aggregate sold items by product & category
@@ -464,9 +466,16 @@ Deno.serve(async (req) => {
       // Per-target product breakdown: list each product sold under a category/target
       const productsByCategory = new Map<string, Map<string, { name: string; qty: number; revenue: number }>>();
       const productsByCategoryName = new Map<string, Map<string, { name: string; qty: number; revenue: number }>>();
+      // Self-sold-only mirrors (for commission rules with only_self_sold = true)
+      const soldByProductSS = new Map<string, { name: string; qty: number; revenue: number }>();
+      const soldByCategorySS = new Map<string, { qty: number; revenue: number }>();
+      const soldByCategoryNameSS = new Map<string, { qty: number; revenue: number }>();
+      const productsByCategorySS = new Map<string, Map<string, { name: string; qty: number; revenue: number }>>();
+      const productsByCategoryNameSS = new Map<string, Map<string, { name: string; qty: number; revenue: number }>>();
       let userGrossProfit = 0;
       for (const sale of userSales) {
         const items = saleItemsByReceipt[sale.id] || [];
+        const isSS = selfSoldSet.has(sale.id);
         for (const item of items) {
           const quantity = Number(item.quantity ?? 1) || 0;
           const salePrice = Number(item.sale_price || 0);
@@ -483,6 +492,11 @@ Deno.serve(async (req) => {
           existing.qty += quantity;
           existing.revenue += lineTotal;
           soldByProduct.set(pKey, existing);
+          if (isSS) {
+            const exSS = soldByProductSS.get(pKey) || { name: item.product_name, qty: 0, revenue: 0 };
+            exSS.qty += quantity; exSS.revenue += lineTotal;
+            soldByProductSS.set(pKey, exSS);
+          }
           // By category — propagate to ALL ancestor categories so a commission rule
           // attached to a parent ("iPhone") includes sales of leaf categories ("iPhone 15 Pro", ...)
           const effectiveCategoryId = item.category_id || productInfo?.category_id || null;
@@ -516,6 +530,26 @@ Deno.serve(async (req) => {
                 pEx.qty += quantity;
                 pEx.revenue += lineTotal;
                 prodMapN.set(prodKey, pEx);
+              }
+              if (isSS) {
+                const cSS = soldByCategorySS.get(cid) || { qty: 0, revenue: 0 };
+                cSS.qty += quantity; cSS.revenue += lineTotal;
+                soldByCategorySS.set(cid, cSS);
+                let pmSS = productsByCategorySS.get(cid);
+                if (!pmSS) { pmSS = new Map(); productsByCategorySS.set(cid, pmSS); }
+                const peSS = pmSS.get(prodKey) || { name: item.product_name, qty: 0, revenue: 0 };
+                peSS.qty += quantity; peSS.revenue += lineTotal;
+                pmSS.set(prodKey, peSS);
+                if (categoryNameKey) {
+                  const cnSS = soldByCategoryNameSS.get(categoryNameKey) || { qty: 0, revenue: 0 };
+                  cnSS.qty += quantity; cnSS.revenue += lineTotal;
+                  soldByCategoryNameSS.set(categoryNameKey, cnSS);
+                  let pmnSS = productsByCategoryNameSS.get(categoryNameKey);
+                  if (!pmnSS) { pmnSS = new Map(); productsByCategoryNameSS.set(categoryNameKey, pmnSS); }
+                  const peNSS = pmnSS.get(prodKey) || { name: item.product_name, qty: 0, revenue: 0 };
+                  peNSS.qty += quantity; peNSS.revenue += lineTotal;
+                  pmnSS.set(prodKey, peNSS);
+                }
               }
             }
           }
@@ -718,9 +752,16 @@ Deno.serve(async (req) => {
         const processedProducts = new Set<string>();
 
         for (const c of tComms) {
+          const onlySS = c.only_self_sold === true;
+          const _soldByProduct = onlySS ? soldByProductSS : soldByProduct;
+          const _soldByCategory = onlySS ? soldByCategorySS : soldByCategory;
+          const _soldByCategoryName = onlySS ? soldByCategoryNameSS : soldByCategoryName;
+          const _productsByCategory = onlySS ? productsByCategorySS : productsByCategory;
+          const _productsByCategoryName = onlySS ? productsByCategoryNameSS : productsByCategoryName;
+          const _userRevenue = onlySS ? selfRevenueOnly : userRevenue;
           if ((c.target_type === "product" || c.target_type === "service") && c.target_id) {
             // Commission per specific product
-            const sold = soldByProduct.get(c.target_id);
+            const sold = _soldByProduct.get(c.target_id);
             if (sold && sold.revenue > 0) {
               const amount = c.calc_type === "percentage"
                 ? sold.revenue * c.value / 100
@@ -728,7 +769,7 @@ Deno.serve(async (req) => {
               if (amount > 0) {
                 totalCommission += amount;
                 commissionDetails.push({
-                  name: c.target_name || sold.name,
+                  name: (c.target_name || sold.name) + (onlySS ? " (chỉ đơn tự bán)" : ""),
                   target_type: c.target_type,
                   qty: sold.qty,
                   revenue: sold.revenue,
@@ -742,10 +783,10 @@ Deno.serve(async (req) => {
             }
           } else if (c.target_type === "category" && (c.target_id || c.target_name)) {
             // Commission per category (excluding already-processed products)
-            const catSold = (c.target_id ? soldByCategory.get(c.target_id) : undefined)
-              || soldByCategoryName.get(normalizeText(c.target_name));
-            const prodMap = (c.target_id ? productsByCategory.get(c.target_id) : undefined)
-              || productsByCategoryName.get(normalizeText(c.target_name));
+            const catSold = (c.target_id ? _soldByCategory.get(c.target_id) : undefined)
+              || _soldByCategoryName.get(normalizeText(c.target_name));
+            const prodMap = (c.target_id ? _productsByCategory.get(c.target_id) : undefined)
+              || _productsByCategoryName.get(normalizeText(c.target_name));
             if (catSold && catSold.revenue > 0) {
               const amount = c.calc_type === "percentage"
                 ? catSold.revenue * c.value / 100
@@ -758,7 +799,7 @@ Deno.serve(async (req) => {
                       .map(p => ({ name: p.name, qty: p.qty, revenue: p.revenue }))
                   : [];
                 commissionDetails.push({
-                  name: c.target_name || "Danh mục",
+                  name: (c.target_name || "Danh mục") + (onlySS ? " (chỉ đơn tự bán)" : ""),
                   target_type: "category",
                   qty: catSold.qty,
                   revenue: catSold.revenue,
@@ -771,19 +812,19 @@ Deno.serve(async (req) => {
             }
           } else if (c.target_type === "revenue") {
             // General revenue commission
-            if (userRevenue > 0) {
+            if (_userRevenue > 0) {
               const amount = c.calc_type === "percentage"
-                ? userRevenue * c.value / 100
+                ? _userRevenue * c.value / 100
                 : c.value;
               if (amount > 0) {
                 totalCommission += amount;
-                const allProducts = Array.from(soldByProduct.values())
+                const allProducts = Array.from(_soldByProduct.values())
                   .sort((a, b) => b.revenue - a.revenue)
                   .map(p => ({ name: p.name, qty: p.qty, revenue: p.revenue }));
                 commissionDetails.push({
-                  name: c.target_name || "Doanh thu",
+                  name: (c.target_name || "Doanh thu") + (onlySS ? " (chỉ đơn tự bán)" : ""),
                   target_type: "revenue",
-                  revenue: userRevenue,
+                  revenue: _userRevenue,
                   rate: c.value,
                   calc_type: c.calc_type,
                   amount: Math.round(amount),

@@ -106,7 +106,7 @@ const ALLOWANCE_PRESETS = [
 
 interface BonusTier { percent_over: number; calc_type: 'fixed_amount' | 'percentage'; value: number; }
 interface BonusRow { bonus_type: string; name: string; calc_type: string; value: number; threshold: number; tiers: BonusTier[]; }
-interface CommissionRow { target_type: string; target_id: string; target_name: string; calc_type: string; value: number; }
+interface CommissionRow { target_type: string; target_id: string; target_name: string; calc_type: string; value: number; only_self_sold?: boolean; }
 interface AllowanceRow { allowance_type: string; name: string; amount: number; is_fixed: boolean; max_absent_days: number; }
 interface HolidayRow { holiday_name: string; holiday_date: string; multiplier_percent: number; }
 interface PenaltyTier { percent_achieved: number; penalty_amount: number; }
@@ -248,7 +248,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
   }, [existing]);
 
   useEffect(() => { if (exBonuses?.length) setBonuses(exBonuses.map(b => ({ bonus_type: b.bonus_type, name: b.name, calc_type: b.calc_type, value: Number(b.value), threshold: Number(b.threshold || 0), tiers: Array.isArray((b as any).tiers) ? (b as any).tiers : [] }))); }, [exBonuses]);
-  useEffect(() => { if (exCommissions?.length) setCommissions(exCommissions.map(c => ({ target_type: c.target_type, target_id: c.target_id || '', target_name: c.target_name, calc_type: c.calc_type, value: Number(c.value) }))); }, [exCommissions]);
+  useEffect(() => { if (exCommissions?.length) setCommissions(exCommissions.map((c: any) => ({ target_type: c.target_type, target_id: c.target_id || '', target_name: c.target_name, calc_type: c.calc_type, value: Number(c.value), only_self_sold: !!c.only_self_sold }))); }, [exCommissions]);
   useEffect(() => { if (exAllowances?.length) setAllowances(exAllowances.map(a => ({ allowance_type: a.allowance_type, name: a.name, amount: Number(a.amount), is_fixed: a.is_fixed, max_absent_days: Number((a as any).max_absent_days || 0) }))); }, [exAllowances]);
   useEffect(() => { if (exHolidays?.length) setHolidays(exHolidays.map(h => ({ holiday_name: h.holiday_name, holiday_date: h.holiday_date, multiplier_percent: Number(h.multiplier_percent) }))); }, [exHolidays]);
   useEffect(() => { if (exPenalties?.length) setPenalties(exPenalties.map(p => ({ penalty_type: p.penalty_type, name: p.name, amount: Number(p.amount), description: p.description || '', threshold_minutes: (p as any).threshold_minutes || 0, full_day_absence_minutes: (p as any).full_day_absence_minutes || 0, kpi_target: Number((p as any).kpi_target || 0), tiers: Array.isArray((p as any).tiers) ? (p as any).tiers : [] }))); }, [exPenalties]);
@@ -622,6 +622,23 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                          </p>
                        )}
                      </div>
+                     {c.target_type !== 'self_sale' && (
+                       <div className="col-span-2 flex items-start gap-2 rounded-md border border-dashed border-orange-300 bg-orange-50/60 p-2">
+                         <Switch
+                           id={`only-self-sold-${i}`}
+                           checked={!!c.only_self_sold}
+                           onCheckedChange={(v) => { const n = [...commissions]; n[i].only_self_sold = v; setCommissions(n); }}
+                         />
+                         <div className="space-y-0.5">
+                           <Label htmlFor={`only-self-sold-${i}`} className="text-xs font-medium cursor-pointer">
+                             Chỉ áp dụng cho đơn của nhân viên (tự bán)
+                           </Label>
+                           <p className="text-[10px] text-muted-foreground">
+                             Khi bật: hoa hồng này CHỈ tính cho đơn mà nhân viên đã tick "Đơn này khách của nhân viên" lúc xuất hàng. Khi tắt: tính cho TẤT CẢ đơn nhân viên bán.
+                           </p>
+                         </div>
+                       </div>
+                     )}
                   </div>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive ml-1" onClick={() => setCommissions(commissions.filter((_, j) => j !== i))}>
                     <Trash2 className="h-3.5 w-3.5" />
@@ -629,7 +646,7 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                 </div>
               </div>
             ))}
-            <Button variant="outline" size="sm" onClick={() => setCommissions([...commissions, { target_type: 'product', target_id: '', target_name: '', calc_type: 'percentage', value: 0 }])}>
+            <Button variant="outline" size="sm" onClick={() => setCommissions([...commissions, { target_type: 'product', target_id: '', target_name: '', calc_type: 'percentage', value: 0, only_self_sold: false }])}>
               <Plus className="h-3.5 w-3.5 mr-1" />Thêm hoa hồng
             </Button>
           </CardContent>
