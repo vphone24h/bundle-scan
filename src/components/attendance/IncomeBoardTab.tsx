@@ -1014,9 +1014,12 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
       : c.target_type === 'self_sale' ? 'đơn'
       : 'doanh thu';
 
+    // Headline ngắn gọn ngoài card — chi tiết để dành cho popup
     const headline = c.target_type === 'revenue'
-      ? `Đạt doanh thu nhận thêm ${perUnitAmt}`
-      : `Chốt đơn hàng ${groupLabel} ${c.name} sẽ nhận ${perUnitAmt} cho mỗi ${c.target_type === 'service' ? 'dịch vụ' : 'sản phẩm'} (${customerSrc})`;
+      ? `Đạt doanh thu nhận ngay ${perUnitAmt}`
+      : isSelfFound
+        ? `Bán 1 đơn hàng nhận ngay ${perUnitAmt}`
+        : `Chốt 1 đơn hàng nhận ngay ${perUnitAmt}`;
 
     // Mô tả chi tiết theo format mới yêu cầu
     const rateLine = isPct
