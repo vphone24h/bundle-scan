@@ -783,6 +783,7 @@ Deno.serve(async (req) => {
 
         for (const c of tComms) {
           const onlySS = c.only_self_sold === true;
+          if (onlySS && c.count_in_revenue_kpi === false) continue;
           const _soldByProduct = onlySS ? soldByProductSS : soldByProduct;
           const _soldByCategory = onlySS ? soldByCategorySS : soldByCategory;
           const _soldByCategoryName = onlySS ? soldByCategoryNameSS : soldByCategoryName;
@@ -1374,6 +1375,7 @@ Deno.serve(async (req) => {
             ? tComms.map((c: any) => {
                 const targetType = c.target_type;
                 const onlySS = c.only_self_sold === true;
+                const ssDisabled = onlySS && c.count_in_revenue_kpi === false;
                 const _spbp = onlySS ? soldByProductSS : soldByProduct;
                 const _spbc = onlySS ? soldByCategorySS : soldByCategory;
                 const _spbcn = onlySS ? soldByCategoryNameSS : soldByCategoryName;
@@ -1396,19 +1398,23 @@ Deno.serve(async (req) => {
                   currentRevenue = selfSales.reduce((s: number, r: any) => s + Number(r.total_amount || 0), 0);
                 }
                 const value = Number(c.value || 0);
-                const earned = c.calc_type === 'percentage'
+                const earnedRaw = c.calc_type === 'percentage'
                   ? Math.round(currentRevenue * value / 100)
                   : Math.round(value * (targetType === 'revenue' ? 1 : currentQty));
+                const earned = ssDisabled ? 0 : earnedRaw;
                 return {
-                  name: (c.target_name || (targetType === 'revenue' ? 'Doanh thu' : 'Hoa hồng')) + (onlySS ? ' (chỉ đơn tự bán)' : ''),
+                  name: (c.target_name || (targetType === 'revenue' ? 'Doanh thu' : 'Hoa hồng'))
+                    + (onlySS ? ' (chỉ đơn tự bán)' : '')
+                    + (ssDisabled ? ' — đã tắt' : ''),
                   target_type: targetType,
                   only_self_sold: onlySS,
+                  disabled: ssDisabled,
                   calc_type: c.calc_type,
                   value,
                   current_qty: currentQty,
                   current_revenue: currentRevenue,
                   earned,
-                  achieved: earned > 0,
+                  achieved: !ssDisabled && earned > 0,
                 };
               })
             : [],

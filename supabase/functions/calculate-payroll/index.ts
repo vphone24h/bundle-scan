@@ -767,6 +767,9 @@ Deno.serve(async (req) => {
 
         for (const c of tComms) {
           const onlySS = c.only_self_sold === true;
+          // Khi rule "Chỉ đơn của nhân viên" mà admin TẮT toggle "Tính doanh số/hoa hồng đơn tự bán"
+          // → bỏ qua hoàn toàn rule này (không tính hoa hồng, không cộng KPI).
+          if (onlySS && c.count_in_revenue_kpi === false) continue;
           const _soldByProduct = onlySS ? soldByProductSS : soldByProduct;
           const _soldByCategory = onlySS ? soldByCategorySS : soldByCategory;
           const _soldByCategoryName = onlySS ? soldByCategoryNameSS : soldByCategoryName;
