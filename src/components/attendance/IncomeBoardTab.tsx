@@ -836,21 +836,28 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
     const targetLabel = c.target_type === 'product' ? 'sản phẩm'
       : c.target_type === 'service' ? 'dịch vụ'
       : c.target_type === 'category' ? 'danh mục'
+      : c.target_type === 'self_sale' ? 'đơn tự bán'
       : 'doanh thu';
     const rateDesc = isPct
       ? `${c.value}% doanh số`
       : c.target_type === 'revenue'
         ? `${fmt(c.value)}/kỳ`
+        : c.target_type === 'self_sale'
+          ? `${fmt(c.value)}/đơn tự bán`
         : `${fmt(c.value)}/sản phẩm bán ra`;
     const titlePrefix = c.target_type === 'revenue'
       ? 'Hoa hồng doanh thu'
       : c.target_type === 'category'
         ? `Hoa hồng danh mục`
+        : c.target_type === 'self_sale'
+          ? `Hoa hồng tự bán`
         : `Hoa hồng ${targetLabel}`;
 
     if (c.achieved && Number(c.earned) > 0) {
       const detail = c.target_type === 'revenue'
         ? `Doanh thu hiện tại ${fmt(c.current_revenue)} × ${rateDesc}`
+        : c.target_type === 'self_sale'
+          ? `Đã có ${c.current_qty} đơn tự bán (${fmt(c.current_revenue)}) × ${rateDesc}`
         : `Đã bán ${c.current_qty} ${targetLabel === 'doanh thu' ? 'đơn' : targetLabel} (${fmt(c.current_revenue)}) × ${rateDesc}`;
       out.push({
         icon: <PiggyBank className="h-4 w-4 text-pink-600" />,
@@ -865,7 +872,9 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         icon: <PiggyBank className="h-4 w-4 text-pink-600" />,
         tone: 'warn',
         title: `${titlePrefix}: ${c.name}`,
-        description: `Mức hoa hồng: ${rateDesc}. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu trong kỳ' : `${targetLabel} "${c.name}"`} để bắt đầu nhận.`,
+        description: c.target_type === 'self_sale'
+          ? `Mức hoa hồng: ${rateDesc}. Điều kiện: tick "Đơn này khách của nhân viên" khi xuất hàng để được cộng.`
+          : `Mức hoa hồng: ${rateDesc}. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu trong kỳ' : `${targetLabel} "${c.name}"`} để bắt đầu nhận.`,
         potential: isPct ? 0 : Number(c.value || 0),
       });
     }
