@@ -505,13 +505,14 @@ function BoostSalaryDialog({ open, onOpenChange, record, today, periodEnd }: { o
           </DialogTitle>
         </DialogHeader>
 
-        <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 dark:border-orange-800">
-          <CardContent className="p-3">
-            <p className="text-[11px] text-muted-foreground">Bạn có thể tăng thêm tối đa</p>
-            <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 tabular-nums">+{fmt(totalPotential)}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">Hoàn thành các nhiệm vụ dưới đây để mở khoá</p>
-          </CardContent>
-        </Card>
+        <div className="px-1 py-2">
+          <p className="text-lg font-bold leading-snug text-foreground">
+            Thu nhập của bạn phụ thuộc vào năng lực của bạn…
+          </p>
+          <p className="text-base font-semibold leading-snug text-orange-600 dark:text-orange-400 mt-1 uppercase">
+            Đạt KPI và hoa hồng càng nhiều thì thu nhập càng nhiều….
+          </p>
+        </div>
 
         <div className="space-y-2 mt-2">
           {suggestions.length === 0 ? (
