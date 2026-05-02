@@ -430,8 +430,20 @@ Deno.serve(async (req) => {
       // Only count full-day OT if the day-off work was approved
       // Ngày nghỉ có lương cũng được coi như day-off: đi làm phải có duyệt OT mới được tính.
       const paidLeaveDatesSet = getPaidLeaveDatesForUser(employee.user_id);
+
+      // Build holiday dates set (YYYY-MM-DD) for this user's template — để LOẠI TRỪ
+      // khỏi tăng ca thường (mục 5) vì lễ tết đã tính riêng ở mục 6.
+      const tHolidaysForExclude = (template?.id ? (holidaysByTemplate[template.id] || []) : []) as any[];
+      const holidayMmddSet = new Set<string>(tHolidaysForExclude.map((h: any) => h.holiday_date));
+      const holidayDatesSet = new Set<string>(
+        userAttendance
+          .filter((a: any) => holidayMmddSet.has((a.date || "").slice(5)))
+          .map((a: any) => a.date)
+      );
+
       const fullDayOTCount = userAttendance.filter((a: any) => {
         if (!a.check_in_time || a.status === "absent") return false;
+        if (holidayDatesSet.has(a.date)) return false; // ngày lễ → đã tính ở mục 6
         const isDayOff = !scheduledDates.has(a.date) || paidLeaveDatesSet.has(a.date);
         return isDayOff && approvedDayOffDates.has(a.date);
       }).length;
