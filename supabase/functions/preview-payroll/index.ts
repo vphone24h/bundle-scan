@@ -769,9 +769,16 @@ Deno.serve(async (req) => {
         const processedProducts = new Set<string>();
 
         for (const c of tComms) {
+          const onlySS = c.only_self_sold === true;
+          const _soldByProduct = onlySS ? soldByProductSS : soldByProduct;
+          const _soldByCategory = onlySS ? soldByCategorySS : soldByCategory;
+          const _soldByCategoryName = onlySS ? soldByCategoryNameSS : soldByCategoryName;
+          const _productsByCategory = onlySS ? productsByCategorySS : productsByCategory;
+          const _productsByCategoryName = onlySS ? productsByCategoryNameSS : productsByCategoryName;
+          const _userRevenue = onlySS ? selfRevenueOnly : userRevenue;
           if ((c.target_type === "product" || c.target_type === "service") && c.target_id) {
             // Commission per specific product
-            const sold = soldByProduct.get(c.target_id);
+            const sold = _soldByProduct.get(c.target_id);
             if (sold && sold.revenue > 0) {
               const amount = c.calc_type === "percentage"
                 ? sold.revenue * c.value / 100
@@ -779,7 +786,7 @@ Deno.serve(async (req) => {
               if (amount > 0) {
                 totalCommission += amount;
                 commissionDetails.push({
-                  name: c.target_name || sold.name,
+                  name: (c.target_name || sold.name) + (onlySS ? " (chỉ đơn tự bán)" : ""),
                   target_type: c.target_type,
                   qty: sold.qty,
                   revenue: sold.revenue,
@@ -793,10 +800,10 @@ Deno.serve(async (req) => {
             }
           } else if (c.target_type === "category" && (c.target_id || c.target_name)) {
             // Commission per category (excluding already-processed products)
-            const catSold = (c.target_id ? soldByCategory.get(c.target_id) : undefined)
-              || soldByCategoryName.get(normalizeText(c.target_name));
-            const prodMap = (c.target_id ? productsByCategory.get(c.target_id) : undefined)
-              || productsByCategoryName.get(normalizeText(c.target_name));
+            const catSold = (c.target_id ? _soldByCategory.get(c.target_id) : undefined)
+              || _soldByCategoryName.get(normalizeText(c.target_name));
+            const prodMap = (c.target_id ? _productsByCategory.get(c.target_id) : undefined)
+              || _productsByCategoryName.get(normalizeText(c.target_name));
             if (catSold && catSold.revenue > 0) {
               const amount = c.calc_type === "percentage"
                 ? catSold.revenue * c.value / 100
@@ -809,7 +816,7 @@ Deno.serve(async (req) => {
                       .map(p => ({ name: p.name, qty: p.qty, revenue: p.revenue }))
                   : [];
                 commissionDetails.push({
-                  name: c.target_name || "Danh mục",
+                  name: (c.target_name || "Danh mục") + (onlySS ? " (chỉ đơn tự bán)" : ""),
                   target_type: "category",
                   qty: catSold.qty,
                   revenue: catSold.revenue,
@@ -822,19 +829,19 @@ Deno.serve(async (req) => {
             }
           } else if (c.target_type === "revenue") {
             // General revenue commission
-            if (userRevenue > 0) {
+            if (_userRevenue > 0) {
               const amount = c.calc_type === "percentage"
-                ? userRevenue * c.value / 100
+                ? _userRevenue * c.value / 100
                 : c.value;
               if (amount > 0) {
                 totalCommission += amount;
-                const allProducts = Array.from(soldByProduct.values())
+                const allProducts = Array.from(_soldByProduct.values())
                   .sort((a, b) => b.revenue - a.revenue)
                   .map(p => ({ name: p.name, qty: p.qty, revenue: p.revenue }));
                 commissionDetails.push({
-                  name: c.target_name || "Doanh thu",
+                  name: (c.target_name || "Doanh thu") + (onlySS ? " (chỉ đơn tự bán)" : ""),
                   target_type: "revenue",
-                  revenue: userRevenue,
+                  revenue: _userRevenue,
                   rate: c.value,
                   calc_type: c.calc_type,
                   amount: Math.round(amount),
