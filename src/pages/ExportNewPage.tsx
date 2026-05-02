@@ -1800,6 +1800,23 @@ export default function ExportNewPage() {
                  </div>
                 )}
 
+                {/* Đơn này khách của nhân viên — cộng hoa hồng tự bán */}
+                <div className="space-y-1.5 pt-2 border-t">
+                  <label className="flex items-start gap-2 cursor-pointer select-none">
+                    <Checkbox
+                      checked={isSelfSold}
+                      onCheckedChange={(v) => setIsSelfSold(v === true)}
+                      className="mt-0.5"
+                    />
+                    <span className="flex-1">
+                      <span className="text-sm font-medium">Đơn này khách của nhân viên</span>
+                      <span className="block text-[11px] text-muted-foreground mt-0.5">
+                        Tick để cộng thêm <b>hoa hồng tự bán</b> cho nhân viên (theo cấu hình "Tự bán" trong bảng lương).
+                      </span>
+                    </span>
+                  </label>
+                </div>
+
                 {/* Export Date - compact, hidden picker until clicked */}
                 <div className="space-y-1.5 pt-2 border-t">
                   <Label className="flex items-center gap-1.5 text-sm">
