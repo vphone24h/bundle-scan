@@ -9,7 +9,7 @@ import { vi } from 'date-fns/locale';
 import { getPaidLeaveDaysForMonth, getPaidLeaveMonthKey, type PaidLeaveOverrideMap } from '@/lib/paidLeaveSchedule';
 
 interface Props {
-  /** Số ngày nghỉ có lương / tháng yêu cầu (từ mẫu lương) */
+  /** Số ngày nghỉ có lương / tháng cho phép (từ mẫu lương). Đây là HẠN MỨC, không bắt buộc chọn đủ. */
   requiredDays: number;
   /** Mảng ngày mặc định 1-31 đã chọn */
   selectedDays: number[];
@@ -40,7 +40,6 @@ export function PaidLeaveDaysPicker({ requiredDays, selectedDays, referenceMonth
     [monthDate, overrides, selectedDays]
   );
   const selectedSet = useMemo(() => new Set(activeDays), [activeDays]);
-  const isComplete = activeDays.length === requiredDays;
   const isOver = activeDays.length > requiredDays;
 
   const toggle = (day: number) => {
@@ -94,13 +93,13 @@ export function PaidLeaveDaysPicker({ requiredDays, selectedDays, referenceMonth
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <Label className="text-xs flex items-center gap-1.5">
           <CalendarDays className="h-3.5 w-3.5" />
-          Ngày nghỉ có lương theo tháng
+          Ngày nghỉ có lương theo tháng (tuỳ chọn)
         </Label>
         <Badge
-          variant={isComplete ? 'default' : isOver ? 'destructive' : 'outline'}
+          variant={isOver ? 'destructive' : 'outline'}
           className="text-[10px]"
         >
-          Đã chọn {activeDays.length}/{requiredDays}
+          Đã chọn {activeDays.length}/{requiredDays} (tối đa)
         </Badge>
       </div>
       <div className="flex items-center justify-between gap-2 rounded-md border bg-background/80 p-2">
@@ -116,8 +115,9 @@ export function PaidLeaveDaysPicker({ requiredDays, selectedDays, referenceMonth
         </Button>
       </div>
       <p className="text-[11px] text-muted-foreground leading-relaxed">
-        Mẫu lương cho phép nghỉ <strong>{requiredDays}</strong> ngày có lương/tháng. Chọn đúng <strong>{requiredDays}</strong> ngày cho <strong>{format(monthDate, "MM/yyyy")}</strong>.
-        Hệ thống sẽ lưu lại theo tháng đang chọn và đồng bộ sang tổng quan xếp ca.
+        Mẫu lương cho phép tối đa <strong>{requiredDays}</strong> ngày nghỉ có lương/tháng. Bạn <strong>không bắt buộc</strong> chọn trước —
+        khi nhân viên xin nghỉ trong "Công của tôi", hệ thống sẽ tự ghi nhận. Nếu nhân viên đi làm full không nghỉ ngày nào,
+        số ngày phép dư sẽ tự cộng vào tăng ca theo hệ số đã cấu hình.
       </p>
 
       <div className="grid grid-cols-7 gap-1.5 pt-1">
@@ -148,10 +148,10 @@ export function PaidLeaveDaysPicker({ requiredDays, selectedDays, referenceMonth
         </Button>
       </div>
 
-      {!isComplete && (
-        <div className="flex items-start gap-1.5 text-[11px] text-amber-600 dark:text-amber-400 pt-1">
+      {isOver && (
+        <div className="flex items-start gap-1.5 text-[11px] text-destructive pt-1">
           <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
-          <span>Vui lòng chọn đúng {requiredDays} ngày trước khi lưu.</span>
+          <span>Đã vượt quá {requiredDays} ngày cho phép. Hệ thống sẽ chỉ tính tối đa {requiredDays} ngày.</span>
         </div>
       )}
     </div>

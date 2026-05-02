@@ -604,6 +604,8 @@ Deno.serve(async (req) => {
       // For UI breakdown
       let paidLeaveUsedSnapshot = 0;
       let totalAbsentSnapshot = 0;
+      // Số ngày phép có lương "dư" (chưa dùng) — sẽ quy đổi thành tăng ca theo hệ số full_day OT.
+      let paidLeaveLeftover = 0;
       if (!isPayrollReady) {
         baseSalary = 0;
       } else if (salaryType === "fixed") {
@@ -629,6 +631,8 @@ Deno.serve(async (req) => {
         baseSalary = Math.round(baseAmount * ratio);
         paidLeaveUsedSnapshot = paidLeaveUsed;
         totalAbsentSnapshot = totalAbsent;
+        // Phép dư = quota - đã dùng.
+        paidLeaveLeftover = Math.max(0, paidLeaveDaysPerMonth - paidLeaveUsed);
       } else if (salaryType === "daily") {
         // Lương theo ngày: base_amount = lương/ngày × số ngày có mặt
         baseSalary = baseAmount * workDays;
@@ -1234,6 +1238,26 @@ Deno.serve(async (req) => {
               name: ot.name,
               type: "hourly",
               hours: overtimeHours,
+              amount: Math.round(amount),
+            });
+          }
+        }
+
+        // ===== 7b. PHÉP CÓ LƯƠNG DƯ → QUY ĐỔI TĂNG CA =====
+        // Nếu NV đi làm full / nghỉ ít hơn quota → ngày phép dư quy đổi thành OT
+        // theo hệ số full_day OT đầu tiên trong template (nếu có).
+        if (paidLeaveLeftover > 0) {
+          const otFullDay = tOvertimes.find((o: any) => o.overtime_type === "full_day");
+          if (otFullDay) {
+            const isPct = otFullDay.calc_type === "percentage" || otFullDay.calc_type === "multiplier";
+            const amount = isPct
+              ? dailyRate * otFullDay.value / 100 * paidLeaveLeftover
+              : otFullDay.value * paidLeaveLeftover;
+            overtimePay += amount;
+            overtimeDetails.push({
+              name: `Phép dư quy đổi tăng ca (${otFullDay.name})`,
+              type: "paid_leave_leftover",
+              count: paidLeaveLeftover,
               amount: Math.round(amount),
             });
           }
