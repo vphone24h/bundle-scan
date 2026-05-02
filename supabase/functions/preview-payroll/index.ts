@@ -604,6 +604,8 @@ Deno.serve(async (req) => {
       // For UI breakdown
       let paidLeaveUsedSnapshot = 0;
       let totalAbsentSnapshot = 0;
+      // Số ngày phép có lương "dư" (chưa dùng) — sẽ quy đổi thành tăng ca theo hệ số full_day OT.
+      let paidLeaveLeftover = 0;
       if (!isPayrollReady) {
         baseSalary = 0;
       } else if (salaryType === "fixed") {
@@ -629,6 +631,8 @@ Deno.serve(async (req) => {
         baseSalary = Math.round(baseAmount * ratio);
         paidLeaveUsedSnapshot = paidLeaveUsed;
         totalAbsentSnapshot = totalAbsent;
+        // Phép dư = quota - đã dùng.
+        paidLeaveLeftover = Math.max(0, paidLeaveDaysPerMonth - paidLeaveUsed);
       } else if (salaryType === "daily") {
         // Lương theo ngày: base_amount = lương/ngày × số ngày có mặt
         baseSalary = baseAmount * workDays;
