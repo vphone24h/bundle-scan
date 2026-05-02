@@ -54,6 +54,61 @@ export function useUpdateSalaryTemplate() {
   });
 }
 
+// ============ Duplicate Salary Template ============
+export function useDuplicateSalaryTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (templateId: string) => {
+      // 1. Fetch source template
+      const { data: src, error: srcErr } = await supabase
+        .from('salary_templates').select('*').eq('id', templateId).single();
+      if (srcErr) throw srcErr;
+
+      const { id, created_at, updated_at, name, ...rest } = src as any;
+      const newName = `${name} (Copy)`;
+
+      // 2. Insert new template
+      const { data: created, error: insErr } = await supabase
+        .from('salary_templates')
+        .insert([{ ...rest, name: newName, is_active: true }])
+        .select().single();
+      if (insErr) throw insErr;
+      const newId = (created as any).id;
+      const tenantId = (created as any).tenant_id;
+
+      // 3. Clone sub-configs
+      const subTables = [
+        'salary_template_bonuses',
+        'salary_template_commissions',
+        'salary_template_allowances',
+        'salary_template_holidays',
+        'salary_template_penalties',
+        'salary_template_overtimes',
+      ] as const;
+
+      for (const tbl of subTables) {
+        const { data: rows, error: e1 } = await supabase
+          .from(tbl).select('*').eq('template_id', templateId);
+        if (e1) throw e1;
+        if (!rows || rows.length === 0) continue;
+        const cloned = rows.map((r: any) => {
+          const { id: _id, created_at: _c, updated_at: _u, ...rr } = r;
+          return { ...rr, template_id: newId, tenant_id: tenantId };
+        });
+        const { error: e2 } = await supabase.from(tbl).insert(cloned);
+        if (e2) throw e2;
+      }
+
+      return created;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['salary-templates'] });
+      toast.success('Đã nhân bản mẫu lương');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 // ============ Template Sub-configs ============
 export function useTemplateBonuses(templateId?: string) {
   return useQuery({
