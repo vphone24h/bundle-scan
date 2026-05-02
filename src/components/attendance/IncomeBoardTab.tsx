@@ -631,12 +631,26 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
               </span>
             </div>
             {hasDetail ? (
-              <div className="mt-1.5 flex items-center justify-between gap-2">
-                <span className="text-[11px] text-muted-foreground">Nhấn để xem chi tiết</span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground shadow-sm">
-                  Nhận ngay <ChevronRight className="h-3 w-3" />
-                </span>
-              </div>
+              <>
+                {(s.current || s.target) && (
+                  <p className="text-[11px] text-foreground mt-1 font-medium">
+                    {s.current}
+                    {s.target ? <span className="text-muted-foreground"> / {s.target}</span> : null}
+                  </p>
+                )}
+                {s.progress != null && !s.showKpiTips && (
+                  <Progress
+                    value={Math.min(100, s.progress)}
+                    className={`h-1.5 mt-1.5 ${s.progress >= 100 ? '[&>div]:bg-emerald-500' : s.progress >= 50 ? '[&>div]:bg-amber-500' : '[&>div]:bg-orange-500'}`}
+                  />
+                )}
+                <div className="mt-1.5 flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-muted-foreground">Nhấn để xem chi tiết</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground shadow-sm">
+                    Nhận ngay <ChevronRight className="h-3 w-3" />
+                  </span>
+                </div>
+              </>
             ) : (
               <p className="text-[11px] text-muted-foreground mt-0.5">{s.description}</p>
             )}
