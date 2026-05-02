@@ -33,6 +33,19 @@ export function LeaveApprovalsTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [reviewDialog, setReviewDialog] = useState<any>(null);
   const [reviewNote, setReviewNote] = useState('');
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked, unlock } = useSecurityUnlock('leave-approval-review');
+  const [showPwd, setShowPwd] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{ id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string } | null>(null);
+
+  const guardedReview = (payload: { id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string }) => {
+    if (hasSecurityPassword && !unlocked) {
+      setPendingAction(payload);
+      setShowPwd(true);
+      return;
+    }
+    reviewMutationRef(payload);
+  };
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ['leave-requests-admin', tenantId, filterStatus],
