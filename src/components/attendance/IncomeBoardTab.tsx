@@ -1139,6 +1139,7 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         title: ruleType === 'full_day' ? `Tăng ca cả ngày: ${rule.name || 'OT'}` : `Tăng ca theo giờ: ${rule.name || 'OT'}`,
         description: desc,
         potential: Math.round(sample),
+        amountSuffix: ruleType === 'full_day' ? undefined : '/h',
       });
     }
   } else if (hourlyBaseRate > 0) {
