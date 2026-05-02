@@ -12,6 +12,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 
 const statusMap: Record<string, { label: string; class: string }> = {
   pending: { label: 'Chờ duyệt', class: 'bg-yellow-100 text-yellow-800' },
@@ -33,6 +35,19 @@ export function CorrectionRequestsTab() {
   const qc = useQueryClient();
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [reviewNote, setReviewNote] = useState('');
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked, unlock } = useSecurityUnlock('attendance-correction-review');
+  const [showPwd, setShowPwd] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{ id: string; status: 'approved' | 'rejected'; request: any } | null>(null);
+
+  const guardedReview = (payload: { id: string; status: 'approved' | 'rejected'; request: any }) => {
+    if (hasSecurityPassword && !unlocked) {
+      setPendingAction(payload);
+      setShowPwd(true);
+      return;
+    }
+    reviewMutation.mutate(payload);
+  };
 
   useEffect(() => {
     if (!tenantId) return;
