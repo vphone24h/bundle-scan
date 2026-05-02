@@ -816,9 +816,58 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
                     {p.penalty_type === 'kpi_not_met' && (
                       <>
                         <div className="space-y-1 col-span-2">
-                          <Label className="text-xs">Doanh số KPI mục tiêu (VNĐ)</Label>
-                          <NumberInput className="h-8 text-xs" placeholder="VD: 100 000 000" value={p.kpi_target} onChangeNumber={v => { const n = [...penalties]; n[i].kpi_target = v; setPenalties(n); }} />
-                          <p className="text-[10px] text-muted-foreground">💡 Doanh số NV phải đạt trong kỳ. Không đạt 100% sẽ bị phạt theo các mức bên dưới.</p>
+                          <Label className="text-xs">Liên kết KPI từ mục Thưởng</Label>
+                          {(() => {
+                            const kpiBonuses = bonuses
+                              .map((b, idx) => ({ b, idx }))
+                              .filter(({ b }) => ['kpi_personal', 'branch_revenue', 'gross_profit'].includes(b.bonus_type));
+                            const usedKeys = new Set(
+                              penalties
+                                .filter((pp, j) => j !== i && pp.penalty_type === 'kpi_not_met' && pp.linked_bonus_key)
+                                .map(pp => pp.linked_bonus_key!)
+                            );
+                            if (!bonusEnabled || kpiBonuses.length === 0) {
+                              return (
+                                <>
+                                  <p className="text-[10px] text-amber-600 border border-amber-300 bg-amber-50 rounded p-2">
+                                    ⚠️ Chưa có KPI nào ở mục <strong>2. Thưởng</strong>. Vui lòng bật & cấu hình KPI cá nhân / chi nhánh / lợi nhuận gộp ở trên trước.
+                                  </p>
+                                  <NumberInput className="h-8 text-xs mt-2" placeholder="Hoặc nhập KPI thủ công (VNĐ)" value={p.kpi_target} onChangeNumber={v => { const n = [...penalties]; n[i].kpi_target = v; setPenalties(n); }} />
+                                </>
+                              );
+                            }
+                            return (
+                              <Select
+                                value={p.linked_bonus_key || ''}
+                                onValueChange={(v) => {
+                                  const n = [...penalties];
+                                  const picked = kpiBonuses.find(({ b, idx }) => `${b.bonus_type}:${idx}` === v);
+                                  n[i].linked_bonus_key = v;
+                                  if (picked) n[i].kpi_target = Number(picked.b.threshold || 0);
+                                  setPenalties(n);
+                                }}
+                              >
+                                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Chọn KPI cấu hình ở mục Thưởng..." /></SelectTrigger>
+                                <SelectContent>
+                                  {kpiBonuses.map(({ b, idx }) => {
+                                    const key = `${b.bonus_type}:${idx}`;
+                                    const disabled = usedKeys.has(key) && key !== p.linked_bonus_key;
+                                    const typeLabel = BONUS_TYPES.find(t => t.value === b.bonus_type)?.label || b.bonus_type;
+                                    return (
+                                      <SelectItem key={key} value={key} disabled={disabled}>
+                                        {typeLabel} – Mục tiêu: {formatNumber(b.threshold || 0)}đ {disabled && '(đã chọn)'}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
+                            );
+                          })()}
+                          {p.linked_bonus_key && (
+                            <p className="text-[10px] text-muted-foreground">
+                              💡 KPI mục tiêu đã đồng bộ: <strong>{formatNumber(p.kpi_target)}đ</strong>. Không đạt 100% sẽ bị phạt theo các mức bên dưới.
+                            </p>
+                          )}
                         </div>
                       </>
                     )}
