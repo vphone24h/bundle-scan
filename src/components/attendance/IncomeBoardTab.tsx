@@ -631,9 +631,12 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
               </span>
             </div>
             {hasDetail ? (
-              <p className="text-[11px] text-primary/80 mt-1 flex items-center gap-1 font-medium">
-                Nhấn để xem chi tiết <ChevronRight className="h-3 w-3" />
-              </p>
+              <div className="mt-1.5 flex items-center justify-between gap-2">
+                <span className="text-[11px] text-muted-foreground">Nhấn để xem chi tiết</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground shadow-sm">
+                  Nhận ngay <ChevronRight className="h-3 w-3" />
+                </span>
+              </div>
             ) : (
               <p className="text-[11px] text-muted-foreground mt-0.5">{s.description}</p>
             )}
@@ -762,9 +765,6 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
             </DialogHeader>
             <div className="space-y-3">
               <p className="text-sm leading-relaxed whitespace-pre-line">{s.detailDescription}</p>
-              {s.done && (
-                <Badge variant="outline" className="gap-1"><CheckCircle2 className="h-3 w-3 text-green-600" /> Đã hoàn thành</Badge>
-              )}
             </div>
           </DialogContent>
         </Dialog>
