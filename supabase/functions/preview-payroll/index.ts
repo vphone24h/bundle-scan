@@ -402,6 +402,11 @@ Deno.serve(async (req) => {
       // Paid leave days from template
       const paidLeaveDaysPerMonth = template?.paid_leave_days_per_month || 0;
 
+      // Kỳ lương đã thực sự kết thúc chưa? (chỉ quy đổi phép dư khi đã hết kỳ)
+      const periodEndedAt = new Date(period.end_date);
+      periodEndedAt.setHours(23, 59, 59, 999);
+      const isPeriodEnded = new Date() > periodEndedAt;
+
       // Days with overtime (full-day OT = worked on unscheduled day, only if approved)
       const scheduledDates = new Set<string>();
       const userAssignments = shiftAssignments.filter((sa: any) => sa.user_id === employee.user_id);
@@ -632,7 +637,10 @@ Deno.serve(async (req) => {
         paidLeaveUsedSnapshot = paidLeaveUsed;
         totalAbsentSnapshot = totalAbsent;
         // Phép dư = quota - đã dùng.
-        paidLeaveLeftover = Math.max(0, paidLeaveDaysPerMonth - paidLeaveUsed);
+        // CHỈ quy đổi khi kỳ lương ĐÃ KẾT THÚC để tránh "phép dư ảo" giữa kỳ.
+        paidLeaveLeftover = isPeriodEnded
+          ? Math.max(0, paidLeaveDaysPerMonth - paidLeaveUsed)
+          : 0;
       } else if (salaryType === "daily") {
         // Lương theo ngày: base_amount = lương/ngày × số ngày có mặt
         baseSalary = baseAmount * workDays;
