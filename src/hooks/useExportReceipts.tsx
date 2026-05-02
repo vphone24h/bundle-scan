@@ -330,6 +330,7 @@ export function useCreateExportReceipt() {
       vatRate = 0,
       vatAmount = 0,
       salesStaffId,
+      isSelfSold,
       skipCashBook,
       exportDate,
     }: {
@@ -344,6 +345,7 @@ export function useCreateExportReceipt() {
       vatRate?: number;
       vatAmount?: number;
       salesStaffId?: string | null;
+      isSelfSold?: boolean;
       skipCashBook?: boolean;
       exportDate?: string;
     }) => {
@@ -435,6 +437,7 @@ export function useCreateExportReceipt() {
             note,
             created_by: user?.id,
             sales_staff_id: salesStaffId || user?.id,
+            is_self_sold: !!isSelfSold,
             tenant_id: tenantId,
             ...(exportDate ? { export_date: exportDate } : {}),
           },
