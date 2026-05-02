@@ -702,72 +702,101 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
     });
   }
 
-  // 2. KPI BONUSES — còn thiếu để đạt + chi tiết tier vượt
-  // Lấy từ kpi_bonuses_all (chứa cả KPI chưa đạt) — fallback bonus_details cho version cũ
-  const kpiAll = (cs.kpi_bonuses_all && cs.kpi_bonuses_all.length > 0)
-    ? cs.kpi_bonuses_all as any[]
-    : (record.bonus_details || []).filter((b: any) =>
-        ['kpi_personal','kpi_branch','branch_revenue','gross_profit'].includes(b.type)
-      ).map((b: any) => ({
-        name: b.name, type: b.type,
-        threshold: Number(b.threshold || 0),
-        current: Number(b.revenue || 0),
-        calc_type: b.calc_type, value: Number(b.value || 0),
-        reach_reward: b.calc_type === 'percentage'
-          ? Math.round(Number(b.threshold || 0) * Number(b.value || 0) / 100)
-          : Number(b.value || 0),
-        tiers: b.tiers || [],
-      }));
+  // 2. ALL BONUSES — hiển thị tất cả thưởng được cấu hình + điều kiện đạt
+  // Ưu tiên bonuses_all (đầy đủ); fallback kpi_bonuses_all (chỉ KPI revenue)
+  const bonusesAll: any[] = (cs.bonuses_all && cs.bonuses_all.length > 0)
+    ? cs.bonuses_all
+    : (cs.kpi_bonuses_all && cs.kpi_bonuses_all.length > 0)
+      ? (cs.kpi_bonuses_all as any[]).map((k: any) => ({ ...k, is_revenue_based: true, achieved: Number(k.current || 0) >= Number(k.threshold || 0) }))
+      : (record.bonus_details || []).map((b: any) => ({
+          name: b.name, type: b.type,
+          calc_type: b.calc_type, value: Number(b.value || 0),
+          threshold: Number(b.threshold || 0),
+          current: Number(b.revenue || 0),
+          reach_reward: b.calc_type === 'percentage'
+            ? Math.round(Number(b.threshold || 0) * Number(b.value || 0) / 100)
+            : Number(b.value || 0),
+          is_revenue_based: ['kpi_personal','kpi_branch','branch_revenue','gross_profit'].includes(b.type),
+          achieved: Number(b.amount || 0) > 0,
+          tiers: b.tiers || [],
+        }));
 
-  for (const k of kpiAll) {
-    const target = Number(k.threshold || 0);
-    const current = Number(k.current || 0);
-    if (target <= 0) continue;
-
-    const pct = Math.min(100, Math.round((current / target) * 100));
-    const remain = Math.max(0, target - current);
-    const isBranch = k.type === 'kpi_branch' || k.type === 'branch_revenue';
-    const reachReward = Number(k.reach_reward || 0);
-
+  for (const k of bonusesAll) {
+    const type = k.type;
+    const isRev = !!k.is_revenue_based;
     const tiers = (k.tiers || []) as any[];
     const tierDescs = tiers
       .filter((t: any) => Number(t.percent_over) > 0)
       .map((t: any) => {
-        const tierAmt = t.calc_type === 'percentage'
-          ? `${t.value}% doanh số`
-          : fmt(t.value);
+        const tierAmt = t.calc_type === 'percentage' ? `${t.value}% doanh số` : fmt(t.value);
         return `Vượt +${t.percent_over}%: +${tierAmt}`;
       });
 
-    if (current >= target) {
+    if (isRev) {
+      // KPI / doanh thu / lợi nhuận
+      const target = Number(k.threshold || 0);
+      const current = Number(k.current || 0);
+      if (target <= 0) continue;
+      const pct = Math.min(100, Math.round((current / target) * 100));
+      const remain = Math.max(0, target - current);
+      const isBranch = type === 'kpi_branch' || type === 'branch_revenue';
+      const isGP = type === 'gross_profit';
+      const labelType = isBranch ? 'KPI chi nhánh' : isGP ? 'Lợi nhuận gộp' : 'KPI cá nhân';
+      const metric = isBranch ? 'doanh thu chi nhánh' : isGP ? 'lợi nhuận gộp' : 'doanh thu cá nhân';
+      const reachReward = Number(k.reach_reward || 0);
+
+      if (current >= target) {
+        out.push({
+          icon: <Trophy className="h-4 w-4 text-amber-500" />,
+          tone: 'good',
+          title: `Đã đạt ${k.name}`,
+          description: `Điều kiện: ${metric} ≥ ${fmtShort(target)} (hiện ${fmtShort(current)}). Bạn đã nhận ${fmt(reachReward)}.`,
+          tierLines: tierDescs.length > 0 ? ['Các mức vượt KPI:', ...tierDescs] : [],
+          progress: 100,
+          current: fmtShort(current),
+          target: fmtShort(target),
+          potential: 0,
+          done: true,
+          showKpiTips: true,
+        });
+      } else {
+        out.push({
+          icon: <Target className="h-4 w-4 text-blue-600" />,
+          tone: 'warn',
+          title: `${labelType}: ${k.name}`,
+          description: `Bạn sẽ nhận thêm ${fmt(reachReward)} khi đạt KPI ${fmtShort(target)} (còn thiếu ${fmtShort(remain)}). Điều kiện: ${metric} ≥ ${fmtShort(target)}.`,
+          tierLines: tierDescs.length > 0 ? ['Các mức vượt KPI:', ...tierDescs] : [],
+          progress: pct,
+          current: fmtShort(current),
+          target: fmtShort(target),
+          potential: reachReward,
+          showKpiTips: true,
+        });
+      }
+    } else if (type === 'fixed') {
+      // Thưởng cố định — đủ điều kiện ngay khi có lương cơ bản
+      const amt = k.calc_type === 'percentage'
+        ? `${k.value}% lương cơ bản`
+        : fmt(Number(k.value || 0));
       out.push({
-        icon: <Trophy className="h-4 w-4 text-amber-500" />,
+        icon: <Gift className="h-4 w-4 text-emerald-600" />,
         tone: 'good',
-        title: `Đã đạt ${k.name}`,
-        description: tierDescs.length > 0
-          ? `Bạn sẽ nhận thêm khi vượt KPI:`
-          : `Vượt thêm doanh số sẽ mở các mức thưởng tier cao hơn.`,
-        tierLines: tierDescs,
-        progress: 100,
-        current: fmtShort(current),
-        target: fmtShort(target),
-        potential: 0,
+        title: `Thưởng cố định: ${k.name}`,
+        description: `Bạn sẽ nhận ${amt} mỗi tháng. Điều kiện: có lương cơ bản trong tháng.`,
+        potential: k.calc_type === 'percentage' ? 0 : Number(k.value || 0),
         done: true,
-        showKpiTips: true,
       });
-    } else {
-      const baseDesc = `Bạn sẽ nhận thêm ${fmt(reachReward)} khi đạt KPI ${fmtShort(target)} (còn thiếu ${fmtShort(remain)}).`;
+    } else if (type === 'overtime') {
+      // Thưởng theo giờ tăng ca
+      const amt = k.calc_type === 'percentage'
+        ? `${k.value}% lương giờ × số giờ tăng ca`
+        : `${fmt(Number(k.value || 0))} × số giờ tăng ca`;
       out.push({
-        icon: <Target className="h-4 w-4 text-blue-600" />,
-        tone: 'warn',
-        title: `${isBranch ? 'KPI chi nhánh' : 'KPI cá nhân'}: ${k.name}`,
-        description: baseDesc,
-        tierLines: tierDescs,
-        progress: pct,
-        current: fmtShort(current),
-        target: fmtShort(target),
-        potential: reachReward,
-        showKpiTips: true,
+        icon: <Clock className="h-4 w-4 text-orange-600" />,
+        tone: 'good',
+        title: `Thưởng tăng ca: ${k.name}`,
+        description: `Mỗi giờ tăng ca = ${amt}. Điều kiện: có giờ tăng ca được duyệt.`,
+        potential: Number(k.value || 0),
       });
     }
   }
