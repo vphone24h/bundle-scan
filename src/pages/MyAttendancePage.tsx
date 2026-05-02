@@ -21,6 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { SalaryAdvancesTab } from '@/components/payroll/SalaryAdvancesTab';
 import { EmployeeLeaveRequests } from '@/components/attendance/EmployeeLeaveRequests';
+import { IncomeBoardTab } from '@/components/attendance/IncomeBoardTab';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 function formatMoney(n: number) {
@@ -386,7 +387,10 @@ export default function MyAttendancePage() {
 
         {/* Tabs */}
         <Tabs defaultValue="history" className="space-y-3">
-          <TabsList className="w-full grid grid-cols-8">
+          <TabsList className="w-full grid grid-cols-9">
+            <TabsTrigger value="income" className="text-xs px-1">
+              <DollarSign className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">TN</span>
+            </TabsTrigger>
             <TabsTrigger value="history" className="text-xs px-1">
               <Calendar className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Công</span>
             </TabsTrigger>
@@ -417,6 +421,11 @@ export default function MyAttendancePage() {
               )}
             </TabsTrigger>
           </TabsList>
+
+          {/* Income Board Tab */}
+          <TabsContent value="income">
+            <IncomeBoardTab />
+          </TabsContent>
 
           {/* History Tab */}
           <TabsContent value="history" className="space-y-2">
