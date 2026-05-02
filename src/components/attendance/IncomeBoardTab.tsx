@@ -260,6 +260,23 @@ function ProgressRow({ label, current, target, reward }: { label: string; curren
 /* ===================== DETAIL DIALOG ===================== */
 function SalaryDetailDialog({ open, onOpenChange, record }: { open: boolean; onOpenChange: (b: boolean) => void; record: any }) {
   const cs = record.config_snapshot || {};
+  const dailyRate = Number(cs.daily_rate || 0);
+  const paidLeaveUsed = Number(cs.paid_leave_used || 0);
+  const paidLeaveQuota = Number(cs.paid_leave_quota || 0);
+  const workDays = Number(record.total_work_days || 0);
+  const isAfterDay25 = new Date().getDate() >= 25;
+  const visiblePenalties = (record.penalty_details || []).filter((p: any) => {
+    const isKpi = p.type === 'kpi_not_met' || /kpi/i.test(String(p.name || ''));
+    return !(isKpi && !isAfterDay25);
+  });
+  const hiddenKpiPenaltyAmount = (record.penalty_details || [])
+    .filter((p: any) => {
+      const isKpi = p.type === 'kpi_not_met' || /kpi/i.test(String(p.name || ''));
+      return isKpi && !isAfterDay25;
+    })
+    .reduce((s: number, p: any) => s + Number(p.amount || 0), 0);
+  const visiblePenaltyTotal = (record.total_penalty || 0) - hiddenKpiPenaltyAmount;
+  const visibleNetSalary = (record.net_salary || 0) + hiddenKpiPenaltyAmount;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
@@ -282,7 +299,20 @@ function SalaryDetailDialog({ open, onOpenChange, record }: { open: boolean; onO
           </Card>
 
           {/* Base */}
-          <Section title="1. Lương cơ bản" amount={record.base_salary} />
+          <Section title="1. Lương cơ bản" amount={record.base_salary}>
+            {cs.salary_type === 'fixed' && dailyRate > 0 && (
+              <div className="text-[11px] text-muted-foreground space-y-0.5 pl-2 border-l-2 border-emerald-300">
+                <p>• Đi làm: <span className="font-medium text-foreground">{workDays} ngày</span> × {fmt(dailyRate)} = {fmt(workDays * dailyRate)}</p>
+                {paidLeaveUsed > 0 && (
+                  <p>• Phép có lương đã dùng: <span className="font-medium text-foreground">{paidLeaveUsed}/{paidLeaveQuota} ngày</span> × {fmt(dailyRate)} = {fmt(paidLeaveUsed * dailyRate)}</p>
+                )}
+                <p className="italic">Công thức: ({workDays} công + {paidLeaveUsed} phép) / {cs.expected_work_days} công chuẩn × {fmt(cs.base_amount)}</p>
+              </div>
+            )}
+            {cs.salary_type === 'daily' && dailyRate > 0 && (
+              <p className="text-[11px] text-muted-foreground pl-2">{workDays} ngày × {fmt(dailyRate)}</p>
+            )}
+          </Section>
 
           {/* Bonus */}
           <Section title="2. Thưởng & KPI" amount={record.total_bonus}>
@@ -378,11 +408,11 @@ function SalaryDetailDialog({ open, onOpenChange, record }: { open: boolean; onO
           )}
 
           {/* Penalty */}
-          <Section title="7. Khấu trừ & Phạt" amount={-record.total_penalty} negative>
-            {(record.penalty_details || []).length === 0 ? (
+          <Section title="7. Khấu trừ & Phạt" amount={-visiblePenaltyTotal} negative>
+            {visiblePenalties.length === 0 ? (
               <Empty text="Không có vi phạm 🎉" />
             ) : (
-              (record.penalty_details || []).map((p: any, i: number) => (
+              visiblePenalties.map((p: any, i: number) => (
                 <div key={i} className="border-l-2 border-destructive pl-2 py-1">
                   <div className="flex justify-between text-xs">
                     <span className="font-medium">{p.name}</span>
@@ -391,6 +421,11 @@ function SalaryDetailDialog({ open, onOpenChange, record }: { open: boolean; onO
                   {p.detail && <p className="text-[10px] text-muted-foreground">{p.detail}</p>}
                 </div>
               ))
+            )}
+            {hiddenKpiPenaltyAmount > 0 && (
+              <p className="text-[10px] text-muted-foreground italic pl-2 mt-1">
+                💡 Phạt KPI sẽ chốt sau ngày 25. Bạn vẫn còn cơ hội chạy doanh số!
+              </p>
             )}
           </Section>
 
@@ -401,8 +436,13 @@ function SalaryDetailDialog({ open, onOpenChange, record }: { open: boolean; onO
           <Separator />
           <div className="flex justify-between items-baseline">
             <span className="font-semibold">Thực nhận tạm tính</span>
-            <span className="text-xl font-bold text-primary tabular-nums">{fmt(record.net_salary)}</span>
+            <span className="text-xl font-bold text-primary tabular-nums">{fmt(visibleNetSalary)}</span>
           </div>
+          {hiddenKpiPenaltyAmount > 0 && (
+            <p className="text-[10px] text-muted-foreground text-right">
+              (chưa tính phạt KPI {fmt(hiddenKpiPenaltyAmount)} – sẽ chốt sau ngày 25)
+            </p>
+          )}
         </div>
       </DialogContent>
     </Dialog>
