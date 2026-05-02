@@ -1091,7 +1091,8 @@ Deno.serve(async (req) => {
         for (const ot of tOvertimes) {
           if (ot.overtime_type === "full_day" && fullDayOTCount > 0) {
             // Full-day OT: multiplier % of daily rate per OT day
-            const amount = ot.calc_type === "percentage"
+            const isPct = ot.calc_type === "percentage" || ot.calc_type === "multiplier";
+            const amount = isPct
               ? dailyRate * ot.value / 100 * fullDayOTCount
               : ot.value * fullDayOTCount;
             overtimePay += amount;
@@ -1103,7 +1104,8 @@ Deno.serve(async (req) => {
             });
           } else if (ot.overtime_type === "hourly" && overtimeHours > 0) {
             // Hourly OT: fixed amount per OT hour or % of hourly rate
-            const amount = ot.calc_type === "percentage"
+            const isPct = ot.calc_type === "percentage" || ot.calc_type === "multiplier";
+            const amount = isPct
               ? hourlyRate * ot.value / 100 * overtimeHours
               : ot.value * overtimeHours;
             overtimePay += amount;
@@ -1184,6 +1186,33 @@ Deno.serve(async (req) => {
             calc_type: ot.calc_type,
             value: Number(ot.value || 0),
           })),
+          kpi_bonuses_all: (template?.bonus_enabled && templateId)
+            ? (bonusesByTemplate[templateId] || [])
+              .filter((b: any) => ['kpi_personal','kpi_branch','branch_revenue','gross_profit'].includes(b.bonus_type))
+              .map((b: any) => {
+                const cur = b.bonus_type === 'kpi_personal' ? userRevenue
+                  : (b.bonus_type === 'kpi_branch' || b.bonus_type === 'branch_revenue') ? branchRevenue
+                  : userGrossProfit;
+                const threshold = Number(b.threshold || 0);
+                const reachReward = b.calc_type === 'percentage'
+                  ? Math.round(threshold * Number(b.value || 0) / 100)
+                  : Number(b.value || 0);
+                return {
+                  name: b.name,
+                  type: b.bonus_type,
+                  threshold,
+                  current: cur,
+                  calc_type: b.calc_type,
+                  value: Number(b.value || 0),
+                  reach_reward: reachReward,
+                  tiers: Array.isArray(b.tiers) ? b.tiers.map((t: any) => ({
+                    percent_over: Number(t.percent_over || 0),
+                    calc_type: t.calc_type,
+                    value: Number(t.value || 0),
+                  })) : [],
+                };
+              })
+            : [],
           sale_count: userSales.length,
           is_payroll_ready: isPayrollReady,
           missing_setup_reasons: missingSetupReasons,
