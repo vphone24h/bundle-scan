@@ -509,6 +509,26 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
                 )}
               </div>
 
+              {/* Đơn này khách của nhân viên */}
+              <div className="space-y-1.5">
+                <label className="flex items-start gap-2 cursor-pointer select-none">
+                  <Checkbox
+                    checked={isSelfSold}
+                    onCheckedChange={(v) => setIsSelfSold(v === true)}
+                    className={cn('mt-0.5', selfSoldChanged && 'border-green-500 ring-1 ring-green-500/30')}
+                  />
+                  <span className="flex-1">
+                    <span className="text-sm font-medium">Đơn này khách của nhân viên</span>
+                    <span className="block text-[11px] text-muted-foreground mt-0.5">
+                      Tick để cộng thêm <b>hoa hồng tự bán</b> cho nhân viên (theo cấu hình "Tự bán" trong bảng lương).
+                    </span>
+                  </span>
+                </label>
+                {selfSoldChanged && (
+                  <p className="text-xs text-green-600 font-medium">⚠ Trạng thái đơn của NV đã thay đổi</p>
+                )}
+              </div>
+
               {/* Receipt Note */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5">
