@@ -859,11 +859,12 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         : c.target_type === 'self_sale'
           ? `Đã có ${c.current_qty} đơn tự bán (${fmt(c.current_revenue)}) × ${rateDesc}`
         : `Đã bán ${c.current_qty} ${targetLabel === 'doanh thu' ? 'đơn' : targetLabel} (${fmt(c.current_revenue)}) × ${rateDesc}`;
+      const ssNote = c.only_self_sold ? ' Chỉ tính trên đơn bạn đã tick "Đơn này khách của nhân viên".' : '';
       out.push({
         icon: <PiggyBank className="h-4 w-4 text-pink-600" />,
         tone: 'good',
         title: `${titlePrefix}: ${c.name}`,
-        description: `Đang nhận ${fmt(c.earned)}. ${detail}. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu' : `thêm ${targetLabel}`} để tăng hoa hồng.`,
+        description: `Đang nhận ${fmt(c.earned)}. ${detail}.${ssNote} Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu' : `thêm ${targetLabel}`} để tăng hoa hồng.`,
         potential: 0,
         done: true,
       });
@@ -874,7 +875,9 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         title: `${titlePrefix}: ${c.name}`,
         description: c.target_type === 'self_sale'
           ? `Mức hoa hồng: ${rateDesc}. Điều kiện: tick "Đơn này khách của nhân viên" khi xuất hàng để được cộng.`
-          : `Mức hoa hồng: ${rateDesc}. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu trong kỳ' : `${targetLabel} "${c.name}"`} để bắt đầu nhận.`,
+          : c.only_self_sold
+            ? `Mức hoa hồng: ${rateDesc}. CHỈ tính cho đơn bạn đã tick "Đơn này khách của nhân viên" lúc xuất hàng. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu trong kỳ' : `${targetLabel} "${c.name}"`} VÀ tick là đơn của bạn.`
+            : `Mức hoa hồng: ${rateDesc}. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu trong kỳ' : `${targetLabel} "${c.name}"`} để bắt đầu nhận.`,
         potential: isPct ? 0 : Number(c.value || 0),
       });
     }
