@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -54,6 +54,13 @@ export function IncomeBoardTab() {
   const tenantId = pu?.tenant_id;
   const [showDetail, setShowDetail] = useState(false);
   const [showBoost, setShowBoost] = useState(false);
+
+  // Cho phép card "Tiến độ KPI" ở MyAttendancePage mở Boost dialog
+  useEffect(() => {
+    const handler = () => setShowBoost(true);
+    window.addEventListener('open-boost-salary', handler);
+    return () => window.removeEventListener('open-boost-salary', handler);
+  }, []);
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['preview-payroll', user?.id, tenantId],
