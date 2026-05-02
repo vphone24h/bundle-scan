@@ -738,7 +738,7 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
               <Button
                 size="sm"
                 variant="outline"
-                className="mt-2 h-7 text-[11px] w-full"
+                className="mt-2 h-7 text-[11px] w-full text-primary hover:text-primary"
                 onClick={() => setShowTips(true)}
               >
                 <Sparkles className="h-3 w-3" /> Làm ngay
@@ -755,7 +755,7 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
         <Dialog open={showDetail} onOpenChange={setShowDetail}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+              <DialogTitle className="flex items-center gap-2 pr-8">
                 {s.icon}
                 <span className="flex-1">{s.title}</span>
                 <span className={`text-base font-bold tabular-nums ${amountClass}`}>
