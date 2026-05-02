@@ -1039,6 +1039,8 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
               ? `Đã bán được: ${c.current_qty} dịch vụ ${c.name}`
               : `Đã bán được: ${c.current_qty} sản phẩm bán ra`;
       const fullDesc = `${rateLine}.\n${progress}.\nĐang nhận: ${fmt(c.earned)}.\nBán thêm để tăng hoa hồng.`;
+      const curQty = Number(c.current_qty || 0);
+      const curRev = Number(c.current_revenue || 0);
       out.push({
         icon: <PiggyBank className="h-4 w-4 text-pink-600" />,
         tone: 'good',
@@ -1048,6 +1050,7 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         detailDescription: fullDesc,
         potential: isPct ? 0 : Number(c.value || 0),
         done: true,
+        current: c.target_type === 'revenue' ? fmt(curRev) : `Đã bán: ${curQty}`,
       });
     } else {
       const condition = isSelfFound
@@ -1056,6 +1059,8 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
           ? 'Điều kiện: có doanh thu cho cửa hàng trong kỳ.'
           : `Chốt 1 đơn hàng cho khách của cửa hàng thuộc ${groupLabel} ${c.name} sẽ nhận ${fmt(c.value)}.`;
       const fullDesc = `${rateLine}.\n${condition}`;
+      const curQty = Number(c.current_qty || 0);
+      const curRev = Number(c.current_revenue || 0);
       out.push({
         icon: <PiggyBank className="h-4 w-4 text-pink-600" />,
         tone: 'warn',
@@ -1064,6 +1069,7 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         headline,
         detailDescription: fullDesc,
         potential: isPct ? 0 : Number(c.value || 0),
+        current: c.target_type === 'revenue' ? `Doanh thu: ${fmt(curRev)}` : `Đã bán: ${curQty}`,
       });
     }
   }
