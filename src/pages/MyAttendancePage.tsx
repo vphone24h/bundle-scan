@@ -618,9 +618,9 @@ export default function MyAttendancePage() {
 
         {/* Tabs */}
         <Tabs
-          defaultValue="income"
+          value={tabValue}
+          onValueChange={(v) => { setTabValue(v); void markNotificationsRead(v); }}
           className="space-y-3"
-          onValueChange={(v) => { void markNotificationsRead(v); }}
         >
           <TabsList className="w-full grid grid-cols-9">
             <TabsTrigger value="income" className="text-xs px-1">
@@ -659,6 +659,7 @@ export default function MyAttendancePage() {
 
           {/* Income Board Tab */}
           <TabsContent value="income">
+            <div id="income-tab-anchor" />
             <IncomeBoardTab />
           </TabsContent>
 
