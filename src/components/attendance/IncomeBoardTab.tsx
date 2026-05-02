@@ -611,20 +611,32 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
       : 'border-emerald-200 bg-emerald-50/40 dark:bg-emerald-950/10 dark:border-emerald-800';
   const amountClass = s.tone === 'bad' ? 'text-destructive' : 'text-green-600 dark:text-green-400';
   const [showTips, setShowTips] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
+  const hasDetail = !!s.detailDescription;
+  const displayTitle = s.headline || s.title;
 
   return (
-    <Card className={toneClass}>
+    <Card className={`${toneClass} ${hasDetail ? 'cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99]' : ''}`}
+      onClick={hasDetail ? () => setShowDetail(true) : undefined}
+      role={hasDetail ? 'button' : undefined}
+    >
       <CardContent className="p-3">
         <div className="flex items-start gap-2">
           <div className="mt-0.5 shrink-0">{s.icon}</div>
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <p className="text-sm font-medium">{s.title}</p>
+              <p className="text-sm font-semibold leading-snug">{displayTitle}</p>
               <span className={`text-sm font-bold tabular-nums ${amountClass}`}>
                 {s.tone === 'bad' ? '-' : '+'}{fmt(s.potential)}
               </span>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">{s.description}</p>
+            {hasDetail ? (
+              <p className="text-[11px] text-primary/80 mt-1 flex items-center gap-1 font-medium">
+                Nhấn để xem chi tiết <ChevronRight className="h-3 w-3" />
+              </p>
+            ) : (
+              <p className="text-[11px] text-muted-foreground mt-0.5">{s.description}</p>
+            )}
             {s.tierLines && s.tierLines.length > 0 && (
               <div className="mt-1.5 rounded bg-background/60 border border-border/50 p-2">
                 <p className="text-[10px] font-semibold text-muted-foreground mb-1">Các mức vượt KPI:</p>
@@ -736,6 +748,27 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
         </div>
       </CardContent>
       <KpiTipsDialog open={showTips} onOpenChange={setShowTips} kpiName={s.title} />
+      {hasDetail && (
+        <Dialog open={showDetail} onOpenChange={setShowDetail}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {s.icon}
+                <span className="flex-1">{s.title}</span>
+                <span className={`text-base font-bold tabular-nums ${amountClass}`}>
+                  {s.tone === 'bad' ? '-' : '+'}{fmt(s.potential)}
+                </span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <p className="text-sm leading-relaxed whitespace-pre-line">{s.detailDescription}</p>
+              {s.done && (
+                <Badge variant="outline" className="gap-1"><CheckCircle2 className="h-3 w-3 text-green-600" /> Đã hoàn thành</Badge>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </Card>
   );
 }
