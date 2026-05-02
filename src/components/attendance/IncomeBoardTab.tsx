@@ -438,9 +438,14 @@ function SalaryDetailDialog({ open, onOpenChange, record }: { open: boolean; onO
           {(record.holiday_bonus || 0) > 0 && (
             <Section title="6. Lễ tết" amount={record.holiday_bonus}>
               {(record.holiday_details || []).map((h: any, i: number) => (
-                <div key={i} className="flex justify-between text-xs">
-                  <span>{h.holiday} × {h.days} ngày ({h.multiplier}%)</span>
-                  <span className="text-green-600 font-semibold">+{fmt(h.extra)}</span>
+                <div key={i} className="space-y-0.5">
+                  <div className="flex justify-between text-xs">
+                    <span>{h.holiday} × {h.days} ngày ({h.multiplier}%)</span>
+                    <span className="text-green-600 font-semibold">+{fmt(h.extra)}</span>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground italic">
+                    Thưởng THÊM ngoài lương ngày ({h.multiplier}% − 100%)
+                  </div>
                 </div>
               ))}
             </Section>
