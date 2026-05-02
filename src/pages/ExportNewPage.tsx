@@ -1106,6 +1106,7 @@ export default function ExportNewPage() {
         vatRate: savedEffectiveTaxRate,
         vatAmount: savedTaxAmount,
         salesStaffId: savedSalesStaffId,
+        isSelfSold: savedIsSelfSold,
         skipCashBook,
         exportDate: savedExportDate ? new Date(savedExportDate).toISOString() : undefined,
         note: savedReceiptNote || undefined,
