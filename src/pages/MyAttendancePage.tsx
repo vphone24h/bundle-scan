@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { usePlatformUser } from '@/hooks/useTenant';
@@ -34,6 +34,7 @@ export default function MyAttendancePage() {
   const { data: pu } = usePlatformUser();
   const tenantId = pu?.tenant_id;
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [showSalesDialog, setShowSalesDialog] = useState(false);
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -250,6 +251,44 @@ export default function MyAttendancePage() {
 
   const unreadNotifs = notifications?.filter(n => !n.is_read).length || 0;
   const shiftInfo = todayShift?.work_shifts as any;
+
+  useEffect(() => {
+    if (!user?.id || !tenantId) return;
+
+    const channel = supabase
+      .channel(`my-attendance-sync-${tenantId}-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'attendance_records',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          qc.invalidateQueries({ queryKey: ['my-attendance-month'] });
+          qc.invalidateQueries({ queryKey: ['my-attendance-today'] });
+          qc.invalidateQueries({ queryKey: ['attendance-records'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'attendance_correction_requests',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          qc.invalidateQueries({ queryKey: ['my-correction-requests'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tenantId, user?.id, qc]);
 
   return (
     <MainLayout>
@@ -726,6 +765,8 @@ function EmployeeCorrectionRequests({ userId, tenantId }: { userId?: string; ten
       return data || [];
     },
     enabled: !!userId,
+    refetchInterval: 10000,
+    staleTime: 5000,
   });
 
   const createMutation = useMutation({
