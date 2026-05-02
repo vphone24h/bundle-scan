@@ -76,6 +76,8 @@ const COMMISSION_TYPES = [
   { value: 'product', label: 'Sản phẩm' },
   { value: 'service', label: 'Dịch vụ' },
   { value: 'category', label: 'Danh mục' },
+  { value: 'self_sale', label: 'Tự bán (đơn của nhân viên)' },
+  { value: 'revenue', label: 'Tổng doanh thu cá nhân' },
 ];
 
 const PENALTY_TYPES = [
