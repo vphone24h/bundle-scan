@@ -352,7 +352,7 @@ export function CorrectionRequestsTab() {
                           <Button
                             size="sm" variant="outline"
                             className="gap-1 text-xs h-7 text-green-700"
-                            onClick={() => reviewMutation.mutate({ id: r.id, status: 'approved', request: r })}
+                            onClick={() => guardedReview({ id: r.id, status: 'approved', request: r })}
                             disabled={reviewMutation.isPending}
                           >
                             <CheckCircle2 className="h-3 w-3" /> Duyệt
