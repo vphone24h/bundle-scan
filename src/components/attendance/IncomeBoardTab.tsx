@@ -600,6 +600,8 @@ type Suggestion = {
   earned?: number; // tiền thực nhận (khi done=true thì ưu tiên hiển thị)
   tierLines?: string[]; // chi tiết các mức vượt KPI, mỗi dòng 1 mức
   showKpiTips?: boolean; // hiển thị nút "Cách đạt KPI"
+  headline?: string; // tiêu đề ngắn hấp dẫn (override title hiển thị trên card)
+  detailDescription?: string; // mô tả chi tiết cho popup khi nhấn vào card
 };
 
 function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
@@ -609,20 +611,32 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
       : 'border-emerald-200 bg-emerald-50/40 dark:bg-emerald-950/10 dark:border-emerald-800';
   const amountClass = s.tone === 'bad' ? 'text-destructive' : 'text-green-600 dark:text-green-400';
   const [showTips, setShowTips] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
+  const hasDetail = !!s.detailDescription;
+  const displayTitle = s.headline || s.title;
 
   return (
-    <Card className={toneClass}>
+    <Card className={`${toneClass} ${hasDetail ? 'cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99]' : ''}`}
+      onClick={hasDetail ? () => setShowDetail(true) : undefined}
+      role={hasDetail ? 'button' : undefined}
+    >
       <CardContent className="p-3">
         <div className="flex items-start gap-2">
           <div className="mt-0.5 shrink-0">{s.icon}</div>
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <p className="text-sm font-medium">{s.title}</p>
+              <p className="text-sm font-semibold leading-snug">{displayTitle}</p>
               <span className={`text-sm font-bold tabular-nums ${amountClass}`}>
                 {s.tone === 'bad' ? '-' : '+'}{fmt(s.potential)}
               </span>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">{s.description}</p>
+            {hasDetail ? (
+              <p className="text-[11px] text-primary/80 mt-1 flex items-center gap-1 font-medium">
+                Nhấn để xem chi tiết <ChevronRight className="h-3 w-3" />
+              </p>
+            ) : (
+              <p className="text-[11px] text-muted-foreground mt-0.5">{s.description}</p>
+            )}
             {s.tierLines && s.tierLines.length > 0 && (
               <div className="mt-1.5 rounded bg-background/60 border border-border/50 p-2">
                 <p className="text-[10px] font-semibold text-muted-foreground mb-1">Các mức vượt KPI:</p>
@@ -734,6 +748,27 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
         </div>
       </CardContent>
       <KpiTipsDialog open={showTips} onOpenChange={setShowTips} kpiName={s.title} />
+      {hasDetail && (
+        <Dialog open={showDetail} onOpenChange={setShowDetail}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {s.icon}
+                <span className="flex-1">{s.title}</span>
+                <span className={`text-base font-bold tabular-nums ${amountClass}`}>
+                  {s.tone === 'bad' ? '-' : '+'}{fmt(s.potential)}
+                </span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <p className="text-sm leading-relaxed whitespace-pre-line">{s.detailDescription}</p>
+              {s.done && (
+                <Badge variant="outline" className="gap-1"><CheckCircle2 className="h-3 w-3 text-green-600" /> Đã hoàn thành</Badge>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </Card>
   );
 }
@@ -967,6 +1002,18 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
           ? `Hoa hồng tự bán`
         : `Hoa hồng ${targetLabel}`;
 
+    // Headline ngắn gọn, hấp dẫn để hiển thị trên card
+    const perUnitAmt = !isPct ? fmt(c.value) : `${c.value}%`;
+    const headline = c.target_type === 'self_sale'
+      ? `Tự bán 1 đơn nhận ngay ${perUnitAmt}`
+      : c.target_type === 'category'
+        ? `Chốt 1 đơn ${c.name} nhận thêm ${perUnitAmt}`
+        : c.target_type === 'product'
+          ? `Bán 1 ${c.name} nhận thêm ${perUnitAmt}`
+          : c.target_type === 'service'
+            ? `Mỗi dịch vụ ${c.name} nhận thêm ${perUnitAmt}`
+            : `Đạt doanh thu nhận thêm ${perUnitAmt}`;
+
     if (c.achieved && Number(c.earned) > 0) {
       const detail = c.target_type === 'revenue'
         ? `Doanh thu hiện tại ${fmt(c.current_revenue)} × ${rateDesc}`
@@ -974,24 +1021,30 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
           ? `Đã có ${c.current_qty} đơn tự bán (${fmt(c.current_revenue)}) × ${rateDesc}`
         : `Đã bán ${c.current_qty} ${targetLabel === 'doanh thu' ? 'đơn' : targetLabel} (${fmt(c.current_revenue)}) × ${rateDesc}`;
       const ssNote = c.only_self_sold ? ' Chỉ tính trên đơn bạn đã tick "Đơn này khách của nhân viên".' : '';
+      const fullDesc = `Đang nhận ${fmt(c.earned)}. ${detail}.${ssNote} Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu' : `thêm ${targetLabel}`} để tăng hoa hồng.`;
       out.push({
         icon: <PiggyBank className="h-4 w-4 text-pink-600" />,
         tone: 'good',
         title: `${titlePrefix}: ${c.name}`,
-        description: `Đang nhận ${fmt(c.earned)}. ${detail}.${ssNote} Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu' : `thêm ${targetLabel}`} để tăng hoa hồng.`,
+        description: fullDesc,
+        headline,
+        detailDescription: fullDesc,
         potential: isPct ? 0 : Number(c.value || 0),
         done: true,
       });
     } else {
+      const fullDesc = c.target_type === 'self_sale'
+        ? `Mức hoa hồng: ${rateDesc}. Điều kiện: tick "Đơn này khách của nhân viên" khi xuất hàng để được cộng.`
+        : c.only_self_sold
+          ? `Mức hoa hồng: ${rateDesc}. CHỈ tính cho đơn bạn đã tick "Đơn này khách của nhân viên" lúc xuất hàng. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu trong kỳ' : `${targetLabel} "${c.name}"`} VÀ tick là đơn của bạn.`
+          : `Mức hoa hồng: ${rateDesc}. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu trong kỳ' : `${targetLabel} "${c.name}"`} để bắt đầu nhận.`;
       out.push({
         icon: <PiggyBank className="h-4 w-4 text-pink-600" />,
         tone: 'warn',
         title: `${titlePrefix}: ${c.name}`,
-        description: c.target_type === 'self_sale'
-          ? `Mức hoa hồng: ${rateDesc}. Điều kiện: tick "Đơn này khách của nhân viên" khi xuất hàng để được cộng.`
-          : c.only_self_sold
-            ? `Mức hoa hồng: ${rateDesc}. CHỈ tính cho đơn bạn đã tick "Đơn này khách của nhân viên" lúc xuất hàng. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu trong kỳ' : `${targetLabel} "${c.name}"`} VÀ tick là đơn của bạn.`
-            : `Mức hoa hồng: ${rateDesc}. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu trong kỳ' : `${targetLabel} "${c.name}"`} để bắt đầu nhận.`,
+        description: fullDesc,
+        headline,
+        detailDescription: fullDesc,
         potential: isPct ? 0 : Number(c.value || 0),
       });
     }
