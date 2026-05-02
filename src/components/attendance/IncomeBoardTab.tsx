@@ -855,16 +855,69 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
     });
   }
 
-  // 5. ALLOWANCE — đang bị mất phụ cấp nào không?
-  const skippedAllow = (record.allowance_details_v2 || []).filter((a: any) => a.skipped_reason);
-  for (const a of skippedAllow) {
-    out.push({
-      icon: <Gift className="h-4 w-4 text-purple-600" />,
-      tone: 'bad',
-      title: `Mất phụ cấp: ${a.name}`,
-      description: a.skipped_reason,
-      potential: 0, // already lost; show 0 to keep total accurate
-    });
+  // 5. ALLOWANCE — liệt kê TẤT CẢ phụ cấp với số tiền cấu hình + điều kiện
+  const allAllowances = (record.allowance_details_v2 || []) as any[];
+  for (const a of allAllowances) {
+    const configured = Number(a.configured_amount || 0);
+    const maxAbsent = Number(a.max_absent_days || 0);
+    const totalAbsent = Number(a.total_absent || 0);
+    const isPerDay = a.type === 'per_day';
+    const isLost = !!a.skipped_reason;
+    const isReceiving = Number(a.amount || 0) > 0;
+
+    // Mô tả số tiền cấu hình
+    let amountDesc = '';
+    if (configured > 0) {
+      amountDesc = isPerDay
+        ? `Phụ cấp ${fmt(configured)}/ngày công`
+        : `Phụ cấp cố định ${fmt(configured)}/tháng`;
+    } else {
+      amountDesc = `Phụ cấp: ${a.name}`;
+    }
+
+    // Mô tả điều kiện
+    let conditionDesc = '';
+    if (maxAbsent > 0) {
+      conditionDesc = ` · Điều kiện: nghỉ tối đa ${maxAbsent} ngày/tháng (hiện vắng ${totalAbsent} ngày).`;
+    } else if (maxAbsent === 0) {
+      conditionDesc = ` · Không giới hạn ngày nghỉ.`;
+    }
+
+    if (isLost) {
+      // Đã mất phụ cấp do vắng quá giới hạn
+      out.push({
+        icon: <Gift className="h-4 w-4 text-destructive" />,
+        tone: 'bad',
+        title: `Mất phụ cấp: ${a.name}`,
+        description: `${amountDesc}.${conditionDesc} ⚠ ${a.skipped_reason}`,
+        potential: configured, // số tiền lẽ ra được nhận
+      });
+    } else if (isReceiving) {
+      // Đang nhận đủ
+      const reminder = maxAbsent > 0
+        ? ` Giữ vắng ≤ ${maxAbsent} ngày để không mất phụ cấp này.`
+        : '';
+      out.push({
+        icon: <Gift className="h-4 w-4 text-purple-600" />,
+        tone: 'good',
+        title: `Đang nhận phụ cấp: ${a.name}`,
+        description: `${amountDesc}${conditionDesc}${reminder}`,
+        potential: 0,
+        done: true,
+      });
+    } else {
+      // Chưa nhận (per_day với 0 ngày công)
+      const targetDesc = isPerDay
+        ? ` Đi làm thêm ngày công để tích luỹ phụ cấp này.`
+        : '';
+      out.push({
+        icon: <Gift className="h-4 w-4 text-purple-600" />,
+        tone: 'warn',
+        title: `Phụ cấp: ${a.name}`,
+        description: `${amountDesc}${conditionDesc}${targetDesc}`,
+        potential: configured,
+      });
+    }
   }
 
   // 6. PENALTY — cảnh báo phạt đang có
