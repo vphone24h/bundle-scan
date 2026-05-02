@@ -1165,6 +1165,7 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
           ? ` (= ${standardDays} công chuẩn − ${maxAbsent} ngày được phép vắng).`
           : '.') +
         `\n\nHiện tại: đã đi ${actualWorkDays} ngày.\n⚠ ${a.skipped_reason}`;
+      const pct = requiredWorkDays > 0 ? Math.round((actualWorkDays / requiredWorkDays) * 100) : 0;
       out.push({
         icon: <Gift className="h-4 w-4 text-purple-600" />,
         tone: 'warn',
@@ -1172,6 +1173,9 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         description: 'Nhấn để xem chi tiết',
         detailDescription: detail,
         potential: configured,
+        progress: pct,
+        current: `${actualWorkDays} ngày`,
+        target: `${requiredWorkDays} ngày`,
       });
     } else if (isReceiving) {
       // Đang nhận đủ
