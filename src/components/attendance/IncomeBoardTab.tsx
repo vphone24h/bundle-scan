@@ -586,6 +586,7 @@ type Suggestion = {
   target?: string;
   potential: number; // tiền có thể tăng
   done?: boolean;
+  earned?: number; // tiền thực nhận (khi done=true thì ưu tiên hiển thị)
   tierLines?: string[]; // chi tiết các mức vượt KPI, mỗi dòng 1 mức
   showKpiTips?: boolean; // hiển thị nút "Cách đạt KPI"
 };
@@ -607,7 +608,7 @@ function SuggestionCard({ suggestion: s }: { suggestion: Suggestion }) {
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-medium">{s.title}</p>
               <span className={`text-sm font-bold tabular-nums ${amountClass}`}>
-                {s.tone === 'bad' ? '-' : '+'}{fmt(s.potential)}
+                {s.tone === 'bad' ? '-' : '+'}{fmt(s.done && s.earned ? s.earned : s.potential)}
               </span>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">{s.description}</p>
@@ -802,6 +803,7 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
           target: fmtShort(target),
           potential: 0,
           done: true,
+          earned: reachReward,
           showKpiTips: true,
         });
       } else {
@@ -895,6 +897,7 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
         title: `${titlePrefix}: ${c.name}`,
         description: `Đang nhận ${fmt(c.earned)}. ${detail}.${ssNote} Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu' : `thêm ${targetLabel}`} để tăng hoa hồng.`,
         potential: 0,
+        earned: Number(c.earned || 0),
         done: true,
       });
     } else {
