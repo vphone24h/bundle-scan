@@ -285,6 +285,18 @@ export function EditExportReceiptDialog({ receipt, open, onOpenChange }: EditExp
         changes.push(`Ghi chú: "${originalReceiptNote || '(trống)'}" → "${receiptNote || '(trống)'}"`);
       }
 
+      // 3b. Update self-sold flag (đơn của nhân viên)
+      if (selfSoldChanged) {
+        const { error } = await supabase
+          .from('export_receipts')
+          .update({ is_self_sold: isSelfSold })
+          .eq('id', receipt.id);
+        if (error) throw error;
+        oldData.is_self_sold = originalIsSelfSold;
+        newData.is_self_sold = isSelfSold;
+        changes.push(`Đơn của NV: ${originalIsSelfSold ? 'Có' : 'Không'} → ${isSelfSold ? 'Có' : 'Không'}`);
+      }
+
       if (hasPriceChanges) {
         for (const item of priceChanges) {
           const { error } = await supabase
