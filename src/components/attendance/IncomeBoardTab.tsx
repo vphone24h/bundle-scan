@@ -801,31 +801,56 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
     }
   }
 
-  // 3. COMMISSIONS — bán thêm mỗi đơn được + bao nhiêu
-  const comms = (record.commission_details || []) as any[];
-  if (comms.length > 0 && saleCount > 0) {
-    // Average commission per sale
-    const totalComm = Number(record.total_commission || 0);
-    const perSale = totalComm / saleCount;
-    if (perSale > 0) {
+  // 3. COMMISSIONS — liệt kê TẤT CẢ hoa hồng admin đã cấu hình + điều kiện
+  const commissionsAll: any[] = (cs.commissions_all && cs.commissions_all.length > 0)
+    ? cs.commissions_all
+    : (record.commission_details || []).map((c: any) => ({
+        name: c.name,
+        target_type: c.target_type,
+        calc_type: c.calc_type,
+        value: Number(c.rate || 0),
+        current_qty: Number(c.qty || 0),
+        current_revenue: Number(c.revenue || 0),
+        earned: Number(c.amount || 0),
+        achieved: Number(c.amount || 0) > 0,
+      }));
+
+  for (const c of commissionsAll) {
+    const isPct = c.calc_type === 'percentage';
+    const targetLabel = c.target_type === 'product' ? 'sản phẩm'
+      : c.target_type === 'service' ? 'dịch vụ'
+      : c.target_type === 'category' ? 'danh mục'
+      : 'doanh thu';
+    const rateDesc = isPct
+      ? `${c.value}% doanh số`
+      : c.target_type === 'revenue'
+        ? `${fmt(c.value)}/kỳ`
+        : `${fmt(c.value)}/sản phẩm bán ra`;
+    const titlePrefix = c.target_type === 'revenue'
+      ? 'Hoa hồng doanh thu'
+      : c.target_type === 'category'
+        ? `Hoa hồng danh mục`
+        : `Hoa hồng ${targetLabel}`;
+
+    if (c.achieved && Number(c.earned) > 0) {
+      const detail = c.target_type === 'revenue'
+        ? `Doanh thu hiện tại ${fmt(c.current_revenue)} × ${rateDesc}`
+        : `Đã bán ${c.current_qty} ${targetLabel === 'doanh thu' ? 'đơn' : targetLabel} (${fmt(c.current_revenue)}) × ${rateDesc}`;
       out.push({
         icon: <PiggyBank className="h-4 w-4 text-pink-600" />,
         tone: 'good',
-        title: 'Bán thêm mỗi đơn',
-        description: `Trung bình mỗi đơn của bạn đem về ${fmt(perSale)} hoa hồng. Bán thêm 1 đơn ≈ +${fmt(perSale)}.`,
-        potential: Math.round(perSale),
+        title: `${titlePrefix}: ${c.name}`,
+        description: `Đang nhận ${fmt(c.earned)}. ${detail}. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu' : `thêm ${targetLabel}`} để tăng hoa hồng.`,
+        potential: 0,
+        done: true,
       });
-    }
-  } else if (comms.length === 0) {
-    // Has rules but no sales yet? Pull rule rates if exist
-    const firstRevRule = (record.commission_details || []).find((c: any) => c.target_type === 'revenue');
-    if (firstRevRule) {
+    } else {
       out.push({
         icon: <PiggyBank className="h-4 w-4 text-pink-600" />,
         tone: 'warn',
-        title: 'Bắt đầu bán hàng',
-        description: `${firstRevRule.calc_type === 'percentage' ? `${firstRevRule.value}% doanh số` : `${fmt(firstRevRule.value)}/đơn`} sẽ vào hoa hồng.`,
-        potential: 0,
+        title: `${titlePrefix}: ${c.name}`,
+        description: `Mức hoa hồng: ${rateDesc}. Điều kiện: bán ${targetLabel === 'doanh thu' ? 'có doanh thu trong kỳ' : `${targetLabel} "${c.name}"`} để bắt đầu nhận.`,
+        potential: isPct ? 0 : Number(c.value || 0),
       });
     }
   }

@@ -1269,6 +1269,38 @@ Deno.serve(async (req) => {
           sale_count: userSales.length,
           is_payroll_ready: isPayrollReady,
           missing_setup_reasons: missingSetupReasons,
+          // ALL configured commission rules — for transparent listing in Income Board
+          commissions_all: (runtimeCommissionEnabled && tComms.length > 0)
+            ? tComms.map((c: any) => {
+                const targetType = c.target_type;
+                let currentQty = 0;
+                let currentRevenue = 0;
+                if ((targetType === 'product' || targetType === 'service') && c.target_id) {
+                  const sold = soldByProduct.get(c.target_id);
+                  if (sold) { currentQty = sold.qty; currentRevenue = sold.revenue; }
+                } else if (targetType === 'category') {
+                  const catSold = (c.target_id ? soldByCategory.get(c.target_id) : undefined)
+                    || soldByCategoryName.get(normalizeText(c.target_name));
+                  if (catSold) { currentQty = catSold.qty; currentRevenue = catSold.revenue; }
+                } else if (targetType === 'revenue') {
+                  currentRevenue = userRevenue;
+                }
+                const value = Number(c.value || 0);
+                const earned = c.calc_type === 'percentage'
+                  ? Math.round(currentRevenue * value / 100)
+                  : Math.round(value * (targetType === 'revenue' ? 1 : currentQty));
+                return {
+                  name: c.target_name || (targetType === 'revenue' ? 'Doanh thu' : 'Hoa hồng'),
+                  target_type: targetType,
+                  calc_type: c.calc_type,
+                  value,
+                  current_qty: currentQty,
+                  current_revenue: currentRevenue,
+                  earned,
+                  achieved: earned > 0,
+                };
+              })
+            : [],
           paid_leave_quota: paidLeaveDaysPerMonth,
           paid_leave_used: paidLeaveUsedSnapshot,
           total_absent: totalAbsentSnapshot,
