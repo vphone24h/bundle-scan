@@ -1079,7 +1079,8 @@ Deno.serve(async (req) => {
         for (const ot of tOvertimes) {
           if (ot.overtime_type === "full_day" && fullDayOTCount > 0) {
             // Full-day OT: multiplier % of daily rate per OT day
-            const amount = ot.calc_type === "percentage"
+            const isPct = ot.calc_type === "percentage" || ot.calc_type === "multiplier";
+            const amount = isPct
               ? dailyRate * ot.value / 100 * fullDayOTCount
               : ot.value * fullDayOTCount;
             overtimePay += amount;
@@ -1091,7 +1092,8 @@ Deno.serve(async (req) => {
             });
           } else if (ot.overtime_type === "hourly" && overtimeHours > 0) {
             // Hourly OT: fixed amount per OT hour or % of hourly rate
-            const amount = ot.calc_type === "percentage"
+            const isPct = ot.calc_type === "percentage" || ot.calc_type === "multiplier";
+            const amount = isPct
               ? hourlyRate * ot.value / 100 * overtimeHours
               : ot.value * overtimeHours;
             overtimePay += amount;

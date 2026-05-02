@@ -582,59 +582,71 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
   }
 
   // 2. KPI BONUSES — còn thiếu để đạt + chi tiết tier vượt
-  const bonuses = (record.bonus_details || []) as any[];
-  for (const b of bonuses) {
-    if (b.type === 'kpi_personal' || b.type === 'gross_profit' || b.type === 'kpi_branch' || b.type === 'branch_revenue') {
-      const target = Number(b.threshold || 0);
-      const current = Number(b.revenue || 0);
-      if (target <= 0) continue;
+  // Lấy từ kpi_bonuses_all (chứa cả KPI chưa đạt) — fallback bonus_details cho version cũ
+  const kpiAll = (cs.kpi_bonuses_all && cs.kpi_bonuses_all.length > 0)
+    ? cs.kpi_bonuses_all as any[]
+    : (record.bonus_details || []).filter((b: any) =>
+        ['kpi_personal','kpi_branch','branch_revenue','gross_profit'].includes(b.type)
+      ).map((b: any) => ({
+        name: b.name, type: b.type,
+        threshold: Number(b.threshold || 0),
+        current: Number(b.revenue || 0),
+        calc_type: b.calc_type, value: Number(b.value || 0),
+        reach_reward: b.calc_type === 'percentage'
+          ? Math.round(Number(b.threshold || 0) * Number(b.value || 0) / 100)
+          : Number(b.value || 0),
+        tiers: b.tiers || [],
+      }));
 
-      const pct = Math.min(100, Math.round((current / target) * 100));
-      const remain = Math.max(0, target - current);
-      const isBranch = b.type === 'kpi_branch' || b.type === 'branch_revenue';
-      const reachReward = b.calc_type === 'percentage' ? Math.round(target * Number(b.value) / 100) : Number(b.value || 0);
+  for (const k of kpiAll) {
+    const target = Number(k.threshold || 0);
+    const current = Number(k.current || 0);
+    if (target <= 0) continue;
 
-      // Build tier description (mức vượt %)
-      const tiers = (b.tiers || []) as any[];
-      const tierDescs = tiers
-        .filter((t: any) => Number(t.percent_over) > 0)
-        .map((t: any) => {
-          const tierAmt = t.calc_type === 'percentage'
-            ? `${t.value}% doanh số`
-            : fmt(t.value);
-          return `Vượt +${t.percent_over}%: ${tierAmt}`;
-        });
+    const pct = Math.min(100, Math.round((current / target) * 100));
+    const remain = Math.max(0, target - current);
+    const isBranch = k.type === 'kpi_branch' || k.type === 'branch_revenue';
+    const reachReward = Number(k.reach_reward || 0);
 
-      if (current >= target) {
-        out.push({
-          icon: <Trophy className="h-4 w-4 text-amber-500" />,
-          tone: 'good',
-          title: `Đã đạt ${b.name}`,
-          description: tierDescs.length > 0
-            ? `Bạn sẽ nhận thêm khi vượt KPI: ${tierDescs.join(' · ')}`
-            : `Vượt thêm doanh số sẽ mở các mức thưởng tier cao hơn.`,
-          progress: Math.min(100, Math.round((current / target) * 100)),
-          current: fmtShort(current),
-          target: fmtShort(target),
-          potential: 0,
-          done: true,
-        });
-      } else {
-        const baseDesc = `Bạn sẽ nhận thêm ${fmt(reachReward)} khi đạt KPI ${fmtShort(target)} (còn thiếu ${fmtShort(remain)}).`;
-        const fullDesc = tierDescs.length > 0
-          ? `${baseDesc} Khi vượt: ${tierDescs.join(' · ')}.`
-          : baseDesc;
-        out.push({
-          icon: <Target className="h-4 w-4 text-blue-600" />,
-          tone: 'warn',
-          title: `${isBranch ? 'KPI chi nhánh' : 'KPI cá nhân'}: ${b.name}`,
-          description: fullDesc,
-          progress: pct,
-          current: fmtShort(current),
-          target: fmtShort(target),
-          potential: reachReward - Number(b.amount || 0),
-        });
-      }
+    const tiers = (k.tiers || []) as any[];
+    const tierDescs = tiers
+      .filter((t: any) => Number(t.percent_over) > 0)
+      .map((t: any) => {
+        const tierAmt = t.calc_type === 'percentage'
+          ? `${t.value}% doanh số`
+          : fmt(t.value);
+        return `Vượt +${t.percent_over}%: +${tierAmt}`;
+      });
+
+    if (current >= target) {
+      out.push({
+        icon: <Trophy className="h-4 w-4 text-amber-500" />,
+        tone: 'good',
+        title: `Đã đạt ${k.name}`,
+        description: tierDescs.length > 0
+          ? `Bạn sẽ nhận thêm khi vượt KPI: ${tierDescs.join(' · ')}`
+          : `Vượt thêm doanh số sẽ mở các mức thưởng tier cao hơn.`,
+        progress: 100,
+        current: fmtShort(current),
+        target: fmtShort(target),
+        potential: 0,
+        done: true,
+      });
+    } else {
+      const baseDesc = `Bạn sẽ nhận thêm ${fmt(reachReward)} khi đạt KPI ${fmtShort(target)} (còn thiếu ${fmtShort(remain)}).`;
+      const fullDesc = tierDescs.length > 0
+        ? `${baseDesc} Các mức vượt: ${tierDescs.join(' · ')}.`
+        : baseDesc;
+      out.push({
+        icon: <Target className="h-4 w-4 text-blue-600" />,
+        tone: 'warn',
+        title: `${isBranch ? 'KPI chi nhánh' : 'KPI cá nhân'}: ${k.name}`,
+        description: fullDesc,
+        progress: pct,
+        current: fmtShort(current),
+        target: fmtShort(target),
+        potential: reachReward,
+      });
     }
   }
 
@@ -677,21 +689,22 @@ function buildSuggestions(record: any, today?: string, periodEnd?: string): Sugg
     const ruleType = rule.type || rule.ot_type; // 'hourly' | 'full_day'
     const calcType = rule.calc_type || 'percentage';
     const value = Number(rule.value || rule.rate || 0);
+    const isPct = calcType === 'percentage' || calcType === 'multiplier';
     if (ruleType === 'full_day') {
-      const perDay = calcType === 'percentage'
+      const perDay = isPct
         ? Math.round(dailyRateForOT * value / 100)
         : value;
       return {
-        desc: `Mỗi ngày tăng ca = ${fmt(perDay)} (${calcType === 'percentage' ? `${value}% lương ngày` : 'cố định'}).`,
+        desc: `Mỗi ngày tăng ca = ${fmt(perDay)} (${isPct ? `${value}% lương ngày` : 'cố định'}).`,
         sample: perDay,
       };
     }
     // hourly
-    const perHour = calcType === 'percentage'
+    const perHour = isPct
       ? Math.round(hourlyBaseRate * value / 100)
       : value;
     return {
-      desc: `Mỗi giờ tăng ca = ${fmt(perHour)} (${calcType === 'percentage' ? `${value}% lương giờ` : 'cố định'}). Tăng ca 10h ≈ +${fmt(perHour * 10)}.`,
+      desc: `Mỗi giờ tăng ca = ${fmt(perHour)} (${isPct ? `${value}% lương giờ` : 'cố định'}). Tăng ca 10h ≈ +${fmt(perHour * 10)}.`,
       sample: perHour * 10,
     };
   };
