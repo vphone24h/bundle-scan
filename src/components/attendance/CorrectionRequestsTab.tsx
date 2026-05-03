@@ -251,16 +251,16 @@ export function CorrectionRequestsTab() {
       const ws = (shiftRes.data?.work_shifts as any) || null;
       const rawTh = (tenantRes.data as any)?.compensation_threshold_minutes;
       const compThreshold = rawTh == null ? 0 : Number(rawTh) || 0;
-      // Tính toán net mới sau khi áp giờ admin sửa
-      let estLate = 0, estEarly = 0;
+      // Tính diff đầu ca & cuối ca (phút). diffStart>0 = vào trễ, <0 = vào sớm.
+      // diffEnd>0 = ra trễ (OT), <0 = ra sớm.
+      let diffStart: number | null = null;
+      let diffEnd: number | null = null;
       if (ws && approveDialog.requested_check_in) {
         const [h, m] = String(ws.start_time).split(':').map(Number);
         const ci = new Date(approveDialog.requested_check_in);
         const ciVN = new Date(ci.getTime() + 7*60*60*1000);
         const shiftStart = new Date(Date.UTC(ciVN.getUTCFullYear(), ciVN.getUTCMonth(), ciVN.getUTCDate(), h, m) - 7*60*60*1000);
-        const threshold = (Number(ws.late_threshold_minutes) || 15) * 60000;
-        const diff = ci.getTime() - shiftStart.getTime();
-        if (diff > threshold) estLate = Math.round(diff / 60000);
+        diffStart = Math.round((ci.getTime() - shiftStart.getTime()) / 60000);
       }
       if (ws && approveDialog.requested_check_out) {
         const [eh, em] = String(ws.end_time).split(':').map(Number);
@@ -270,15 +270,38 @@ export function CorrectionRequestsTab() {
           : co;
         const refVN = new Date(refDate.getTime() + 7*60*60*1000);
         const shiftEnd = new Date(Date.UTC(refVN.getUTCFullYear(), refVN.getUTCMonth(), refVN.getUTCDate(), eh, em) - 7*60*60*1000);
-        const diffEnd = Math.round((co.getTime() - shiftEnd.getTime()) / 60000);
-        if (diffEnd < 0) estEarly = Math.abs(diffEnd);
+        diffEnd = Math.round((co.getTime() - shiftEnd.getTime()) / 60000);
       }
-      return { shift: ws, compThreshold, currentRec: currentRec.data, estLate, estEarly };
+      // Daily net: vào sớm (-diffStart) + ra trễ (diffEnd). Dương = dư, âm = thiếu.
+      // Chỉ tính net khi có cả 2 mốc; nếu thiếu 1 mốc, fallback theo từng phía.
+      let netMinutes = 0;
+      if (diffStart != null && diffEnd != null) {
+        netMinutes = (-diffStart) + diffEnd;
+      } else if (diffStart != null) {
+        netMinutes = -diffStart; // chỉ sửa giờ vào
+      } else if (diffEnd != null) {
+        netMinutes = diffEnd; // chỉ sửa giờ ra
+      }
+      // Áp ngưỡng bù trừ (compThreshold). Trong khoảng [-th, +th] coi như đủ.
+      let deficitMinutes = 0;
+      let surplusMinutes = 0;
+      if (netMinutes < -compThreshold) deficitMinutes = Math.abs(netMinutes) - compThreshold;
+      else if (netMinutes > compThreshold) surplusMinutes = netMinutes - compThreshold;
+      return {
+        shift: ws,
+        compThreshold,
+        currentRec: currentRec.data,
+        diffStart,
+        diffEnd,
+        netMinutes,
+        deficitMinutes,
+        surplusMinutes,
+      };
     },
     enabled: !!approveDialog && !!tenantId,
   });
 
-  const needPenaltyChoice = (approveContext?.estLate || 0) > 0 || (approveContext?.estEarly || 0) > 0;
+  const needPenaltyChoice = (approveContext?.deficitMinutes || 0) > 0;
 
   return (
     <div className="space-y-4">
@@ -525,13 +548,20 @@ export function CorrectionRequestsTab() {
               {needPenaltyChoice ? (
                 <div className="border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/20 rounded p-3 space-y-2">
                   <div className="font-semibold text-amber-800 dark:text-amber-200">
-                    ⚠️ Sau khi sửa, NV còn {approveContext?.estLate ? `đi trễ ${formatMinutes(approveContext.estLate)}` : `về sớm ${formatMinutes(approveContext?.estEarly || 0)}`}
+                    ⚠️ Sau khi sửa, NV còn thiếu {formatMinutes(approveContext?.deficitMinutes || 0)} (đã bù trừ trong ngày)
                   </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Net ngày: {(approveContext?.netMinutes ?? 0) >= 0 ? '+' : ''}{approveContext?.netMinutes || 0}p · Ngưỡng bù: {approveContext?.compThreshold || 0}p
+                  </p>
                   <p className="text-[11px] text-muted-foreground">Chọn cách xử lý phần thiếu giờ này:</p>
+                </div>
+              ) : (approveContext?.surplusMinutes || 0) > 0 ? (
+                <div className="border border-blue-300 bg-blue-50 dark:bg-blue-950/20 rounded p-3 text-blue-800 dark:text-blue-300 text-xs">
+                  ✅ Sau khi sửa: dư {formatMinutes(approveContext?.surplusMinutes || 0)} (sẽ tạo phiếu tăng ca pending nếu vượt ngưỡng).
                 </div>
               ) : (
                 <div className="border border-green-300 bg-green-50 dark:bg-green-950/20 rounded p-3 text-green-800 dark:text-green-300">
-                  ✅ Sau khi sửa: đủ giờ — không phát sinh phạt.
+                  ✅ Sau khi sửa: đủ giờ (net {(approveContext?.netMinutes ?? 0) >= 0 ? '+' : ''}{approveContext?.netMinutes || 0}p, trong ngưỡng bù ±{approveContext?.compThreshold || 0}p) — không phát sinh phạt.
                 </div>
               )}
 
