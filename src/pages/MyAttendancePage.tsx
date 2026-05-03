@@ -193,10 +193,17 @@ export default function MyAttendancePage() {
   // Stats
   const stats = useMemo(() => {
     if (!records) return { total: 0, onTime: 0, late: 0, absent: 0, totalMinutes: 0, totalOT: 0, totalLate: 0, totalEarlyLeave: 0, earlyLeaveCount: 0 };
-    const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd > new Date() ? new Date() : monthEnd });
-    const workDays = daysInMonth.filter(d => !isWeekend(d));
+    const today = new Date();
+    const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd > today ? today : monthEnd });
+    // Count every day from start of month up to today as a potential work day (no weekend exclusion).
+    // This ensures newly-created accounts also reflect all elapsed days of the current month.
     const workedDays = new Set(records.map(r => r.date));
-    const absentDays = workDays.filter(d => !workedDays.has(format(d, 'yyyy-MM-dd')) && d <= new Date()).length;
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const absentDays = daysInMonth.filter(d => {
+      const ds = format(d, 'yyyy-MM-dd');
+      // Exclude today itself (still in progress) and any worked days
+      return ds !== todayStr && !workedDays.has(ds);
+    }).length;
 
     return {
       total: records.length,
