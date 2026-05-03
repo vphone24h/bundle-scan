@@ -447,6 +447,7 @@ export function AttendanceHistoryTab() {
                       {r.attendance_locations?.name && <span className="flex items-center gap-0.5 text-muted-foreground"><MapPin className="h-3 w-3" />{r.attendance_locations.name}</span>}
                       {r.check_in_method && <span className="flex items-center gap-0.5 text-muted-foreground uppercase"><Smartphone className="h-3 w-3" />{r.check_in_method}</span>}
                     </div>
+                    {renderOTBadge(r) && <div className="pt-1">{renderOTBadge(r)}</div>}
                     {(lateExcuse || earlyExcuse) && (
                       <div className="text-[11px] text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30 rounded px-2 py-1">
                         Lý do xin phép: {(lateExcuse || earlyExcuse).reason}
