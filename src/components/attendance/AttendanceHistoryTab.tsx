@@ -28,6 +28,41 @@ const statusConfig: Record<string, { label: string; class: string }> = {
   day_off: { label: 'Nghỉ', class: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400' },
 };
 
+// Tính diff phút giữa check-in/out thực tế và ca chuẩn (start_time/end_time dạng "HH:mm:ss")
+function computeShiftDiff(record: any) {
+  const shift = record?.work_shifts;
+  if (!shift?.start_time || !shift?.end_time) return null;
+  const buildDate = (timeStr: string, baseISO: string | null) => {
+    if (!baseISO) return null;
+    const base = new Date(baseISO);
+    const [h, m, s] = String(timeStr).split(':').map(Number);
+    const d = new Date(base);
+    d.setHours(h || 0, m || 0, s || 0, 0);
+    return d;
+  };
+  const ci = record.check_in_time ? new Date(record.check_in_time) : null;
+  const co = record.check_out_time ? new Date(record.check_out_time) : null;
+  const shiftStart = buildDate(shift.start_time, record.check_in_time || record.check_out_time);
+  const shiftEnd = buildDate(shift.end_time, record.check_in_time || record.check_out_time);
+  // Ca qua đêm: end < start ⇒ end thuộc ngày hôm sau
+  if (shiftStart && shiftEnd && shiftEnd <= shiftStart) {
+    shiftEnd.setDate(shiftEnd.getDate() + 1);
+  }
+  const diffMin = (a: Date | null, b: Date | null) => (a && b ? Math.round((a.getTime() - b.getTime()) / 60000) : null);
+  const inDiff = diffMin(ci, shiftStart);   // âm = vào sớm, dương = đi trễ
+  const outDiff = diffMin(co, shiftEnd);    // âm = về sớm, dương = về trễ
+  return {
+    shiftStart, shiftEnd,
+    earlyIn: inDiff !== null && inDiff < 0 ? -inDiff : 0,
+    lateIn: inDiff !== null && inDiff > 0 ? inDiff : 0,
+    earlyOut: outDiff !== null && outDiff < 0 ? -outDiff : 0,
+    lateOut: outDiff !== null && outDiff > 0 ? outDiff : 0,
+    hasOut: !!co,
+  };
+}
+
+const fmtMin = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h${m % 60 ? (m % 60) + 'p' : ''}` : `${m}p`);
+
 interface EditForm {
   check_in_time: string;
   check_out_time: string;
@@ -369,11 +404,13 @@ export function AttendanceHistoryTab() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nhân viên</TableHead>
+                    <TableHead>Ca</TableHead>
                     <TableHead>Trạng thái</TableHead>
                     <TableHead>Check-in</TableHead>
                     <TableHead>Check-out</TableHead>
                     <TableHead>Giờ làm</TableHead>
-                    <TableHead>Trễ</TableHead>
+                    <TableHead>Vào (sớm/trễ)</TableHead>
+                    <TableHead>Ra (sớm/trễ)</TableHead>
                     <TableHead>Tăng ca</TableHead>
                     <TableHead>Địa điểm</TableHead>
                     <TableHead>PP</TableHead>
@@ -385,24 +422,46 @@ export function AttendanceHistoryTab() {
                     const st = statusConfig[r.status] || statusConfig.pending;
                     const lateExcuse = r.late_minutes > 0 ? getExcuse(r.user_id, r.date, 'late_arrival') : null;
                     const earlyExcuse = r.early_leave_minutes > 0 ? getExcuse(r.user_id, r.date, 'early_leave') : null;
+                    const diff = computeShiftDiff(r);
+                    const shiftLabel = r.work_shifts
+                      ? `${r.work_shifts.name || ''} ${r.work_shifts.start_time?.slice(0,5) || ''}-${r.work_shifts.end_time?.slice(0,5) || ''}`.trim()
+                      : '-';
                     return (
                       <TableRow key={r.id}>
                         <TableCell className="font-medium text-sm">{getStaffName(r.user_id)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{shiftLabel}</TableCell>
                         <TableCell><Badge className={`text-[10px] ${st.class}`}>{st.label}</Badge></TableCell>
                         <TableCell className="text-sm">{r.check_in_time ? format(new Date(r.check_in_time), 'HH:mm') : '--:--'}</TableCell>
                         <TableCell className="text-sm">{r.check_out_time ? format(new Date(r.check_out_time), 'HH:mm') : '--:--'}</TableCell>
                         <TableCell className="text-sm">
                           {r.total_work_minutes > 0 ? `${Math.floor(r.total_work_minutes / 60)}h${r.total_work_minutes % 60}p` : '-'}
                         </TableCell>
+                        {/* Vào: sớm hoặc trễ so với ca */}
                         <TableCell>
-                          {r.late_minutes > 0 ? (
+                          {diff?.lateIn ? (
                             <div className="flex flex-col gap-0.5">
-                              <span className={lateExcuse ? 'text-muted-foreground line-through text-sm' : 'text-yellow-600 text-sm'}>{r.late_minutes}p</span>
+                              <span className={lateExcuse ? 'text-muted-foreground line-through text-sm' : 'text-yellow-600 text-sm'}>Trễ {fmtMin(diff.lateIn)}</span>
                               {lateExcuse && (
                                 <Badge className="text-[9px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 w-fit" title={lateExcuse.reason}>Có xin phép</Badge>
                               )}
                             </div>
-                          ) : '-'}
+                          ) : diff?.earlyIn ? (
+                            <span className="text-blue-600 text-sm">Sớm {fmtMin(diff.earlyIn)}</span>
+                          ) : diff ? <span className="text-green-600 text-sm">Đúng giờ</span> : '-'}
+                        </TableCell>
+                        {/* Ra: sớm hoặc trễ so với ca */}
+                        <TableCell>
+                          {!diff?.hasOut ? <span className="text-muted-foreground text-sm">Chưa ra</span>
+                            : diff?.earlyOut ? (
+                              <div className="flex flex-col gap-0.5">
+                                <span className={earlyExcuse ? 'text-muted-foreground line-through text-sm' : 'text-orange-600 text-sm'}>Sớm {fmtMin(diff.earlyOut)}</span>
+                                {earlyExcuse && (
+                                  <Badge className="text-[9px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 w-fit" title={earlyExcuse.reason}>Có xin phép</Badge>
+                                )}
+                              </div>
+                            ) : diff?.lateOut ? (
+                              <span className="text-purple-600 text-sm">Trễ {fmtMin(diff.lateOut)}</span>
+                            ) : <span className="text-green-600 text-sm">Đúng giờ</span>}
                         </TableCell>
                         <TableCell>{renderOTBadge(r) || '-'}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">{r.attendance_locations?.name || '-'}</TableCell>
@@ -422,6 +481,10 @@ export function AttendanceHistoryTab() {
               const st = statusConfig[r.status] || statusConfig.pending;
               const lateExcuse = r.late_minutes > 0 ? getExcuse(r.user_id, r.date, 'late_arrival') : null;
               const earlyExcuse = r.early_leave_minutes > 0 ? getExcuse(r.user_id, r.date, 'early_leave') : null;
+              const diff = computeShiftDiff(r);
+              const shiftLabel = r.work_shifts
+                ? `${r.work_shifts.name || ''} ${r.work_shifts.start_time?.slice(0,5) || ''}-${r.work_shifts.end_time?.slice(0,5) || ''}`.trim()
+                : '';
               return (
                 <Card key={r.id}>
                   <CardContent className="p-3 space-y-1.5">
@@ -432,6 +495,7 @@ export function AttendanceHistoryTab() {
                         {renderEditBtn(r)}
                       </div>
                     </div>
+                    {shiftLabel && <div className="text-[11px] text-muted-foreground">Ca: {shiftLabel}</div>}
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -440,9 +504,16 @@ export function AttendanceHistoryTab() {
                       {r.total_work_minutes > 0 && <span className="font-medium text-foreground">{Math.floor(r.total_work_minutes / 60)}h{r.total_work_minutes % 60}p</span>}
                     </div>
                     <div className="flex items-center gap-2 text-xs flex-wrap">
-                      {r.late_minutes > 0 && (
-                        <span className={lateExcuse ? 'text-muted-foreground line-through' : 'text-yellow-600'}>Trễ {r.late_minutes}p</span>
-                      )}
+                      {diff?.lateIn ? (
+                        <span className={lateExcuse ? 'text-muted-foreground line-through' : 'text-yellow-600'}>Vào trễ {fmtMin(diff.lateIn)}</span>
+                      ) : diff?.earlyIn ? (
+                        <span className="text-blue-600">Vào sớm {fmtMin(diff.earlyIn)}</span>
+                      ) : null}
+                      {diff?.earlyOut ? (
+                        <span className={earlyExcuse ? 'text-muted-foreground line-through' : 'text-orange-600'}>Về sớm {fmtMin(diff.earlyOut)}</span>
+                      ) : diff?.lateOut ? (
+                        <span className="text-purple-600">Về trễ {fmtMin(diff.lateOut)}</span>
+                      ) : null}
                       {lateExcuse && (
                         <Badge className="text-[9px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Có xin phép · không phạt</Badge>
                       )}
