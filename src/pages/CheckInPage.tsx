@@ -396,6 +396,8 @@ export default function CheckInPage() {
       let overtimeMinutes = 0; // OT cuối ca (đã được duyệt = 0, chờ duyệt cộng vào pending)
       let earlyLeaveMinutes = 0;
       let extraPendingOT = 0; // OT cuối ca chờ duyệt
+      let accruedOffsetMinutes = 0; // Phút "vào sớm/về trễ ≤ngưỡng" CÒN DƯ cuối ngày → tích lũy quy đổi OT cuối kỳ
+      const earlyArrivalRecorded = (todayRecord as any)?.early_arrival_minutes || 0;
       if (shiftInfo) {
         const [eh, em] = shiftInfo.end_time.split(':').map(Number);
         const shiftEnd = new Date(); shiftEnd.setHours(eh, em, 0, 0);
@@ -411,12 +413,13 @@ export default function CheckInPage() {
           if (otRaw > compThreshold) {
             extraPendingOT = otRaw - compThreshold;
           }
+          // Tích lũy: vào sớm KHÔNG bị tiêu (vì không về sớm) + check-out trễ trong ngưỡng
+          accruedOffsetMinutes = earlyArrivalRecorded + Math.min(otRaw, compThreshold);
         } else if (diffFromEnd < 0) {
           // Về sớm so với mốc đã trừ waiver
           const earlyRaw = Math.abs(diffFromEnd);
           // Bù trừ với phần vào sớm đã ghi
-          const earlyArrival = (todayRecord as any)?.early_arrival_minutes || 0;
-          const offset = Math.min(earlyArrival, earlyRaw);
+          const offset = Math.min(earlyArrivalRecorded, earlyRaw);
           const remainder = earlyRaw - offset;
           // Phần dư còn trong ngưỡng compThreshold → cũng bù trừ tự động (về sớm hợp lệ)
           if (remainder <= compThreshold) {
@@ -424,6 +427,11 @@ export default function CheckInPage() {
           } else {
             earlyLeaveMinutes = remainder;
           }
+          // Tích lũy: phần early_arrival KHÔNG bị tiêu để bù
+          accruedOffsetMinutes = Math.max(0, earlyArrivalRecorded - offset);
+        } else {
+          // Về đúng mốc effectiveEnd → toàn bộ early_arrival là dư
+          accruedOffsetMinutes = earlyArrivalRecorded;
         }
       }
 
@@ -446,6 +454,7 @@ export default function CheckInPage() {
         early_leave_minutes: earlyLeaveMinutes,
         pending_overtime_minutes: totalPendingOT,
         overtime_status: newOTStatus,
+        accrued_offset_minutes: accruedOffsetMinutes,
       }).eq('id', todayRecord.id);
       if (error) throw error;
       let msg = `Check-out thành công! Tổng: ${Math.floor(totalMinutes/60)}h${totalMinutes%60}p`;
