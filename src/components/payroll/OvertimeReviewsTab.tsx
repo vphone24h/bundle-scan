@@ -320,7 +320,57 @@ export function OvertimeReviewsTab() {
         <Card><CardContent className="py-8 text-center text-muted-foreground text-sm">Không có yêu cầu tăng ca trong tháng này</CardContent></Card>
       ) : (
         <Card>
-          <div className="overflow-x-auto">
+          {/* Mobile card list */}
+          <div className="sm:hidden divide-y">
+            {filtered.map((item, idx) => {
+              const isPending = !item.status || item.status === 'pending' || item.auto_detected;
+              const att = attendanceMap.get(`${item.user_id}_${item.request_date}`);
+              const ws = att?.work_shifts;
+              return (
+                <div key={item.id || `m-auto-${idx}`} className="p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-medium text-sm">{profileMap.get(item.user_id) || item.user_id.slice(0, 8)}</div>
+                      <div className="text-xs text-muted-foreground">{item.request_date}</div>
+                    </div>
+                    <Badge variant={item.request_type === 'day_off' ? 'default' : 'secondary'} className="text-[10px]">
+                      {item.request_type === 'day_off' ? 'Ngày nghỉ' : item.request_type === 'early_checkin' ? 'Sớm ca' : 'Ngoài giờ'}
+                    </Badge>
+                  </div>
+                  {att ? (
+                    <div className="text-[11px] text-muted-foreground space-y-0.5">
+                      <div>Ca: <span className="font-mono text-foreground">{ws?.start_time?.slice(0,5) || '—'}–{ws?.end_time?.slice(0,5) || '—'}</span></div>
+                      <div>Vào <span className="font-mono text-foreground">{fmtTimeVN(att.check_in_time)}</span> · Ra <span className="font-mono text-foreground">{fmtTimeVN(att.check_out_time)}</span></div>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-muted-foreground italic">Chưa có chấm công</div>
+                  )}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs font-semibold text-amber-700 dark:text-amber-400">+{fmtMinutes(item.overtime_minutes || 0)}</div>
+                    {isPending ? (
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="outline" className="h-8 text-green-600 border-green-300" onClick={() => { setReviewDialog({ ...item, action: 'approve' }); setReviewNote(''); }}>
+                          <CheckCircle className="h-4 w-4 mr-1" /> Duyệt
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 text-destructive border-destructive/40" onClick={() => { setReviewDialog({ ...item, action: 'reject' }); setReviewNote(''); }}>
+                          <XCircle className="h-4 w-4 mr-1" /> Từ chối
+                        </Button>
+                      </div>
+                    ) : item.status === 'approved' ? (
+                      <Badge className="bg-green-100 text-green-700 text-[10px]">Đã duyệt</Badge>
+                    ) : (
+                      <Badge variant="destructive" className="text-[10px]">Từ chối</Badge>
+                    )}
+                  </div>
+                  {!isPending && item.review_note && (
+                    <div className="text-[10px] text-muted-foreground line-clamp-2">{item.review_note}</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {/* Desktop table */}
+          <div className="hidden sm:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
