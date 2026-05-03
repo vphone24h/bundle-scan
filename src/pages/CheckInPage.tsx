@@ -212,6 +212,31 @@ export default function CheckInPage() {
     enabled: !!user?.id,
   });
 
+  // Lấy waiver đã duyệt (xin trễ / xin về sớm) áp dụng cho hôm nay
+  const { data: todayWaivers } = useQuery({
+    queryKey: ['my-waivers-today', user?.id, tenantId, today],
+    queryFn: async () => {
+      if (!user?.id || !tenantId) return { late: 0, early: 0 };
+      const { data } = await supabase
+        .from('leave_requests')
+        .select('request_type, time_minutes')
+        .eq('user_id', user.id)
+        .eq('tenant_id', tenantId)
+        .eq('status', 'approved')
+        .in('request_type', ['late_arrival', 'early_leave'])
+        .lte('leave_date_from', today)
+        .gte('leave_date_to', today);
+      let late = 0, early = 0;
+      for (const r of data || []) {
+        const mins = (r as any).time_minutes || 0;
+        if (r.request_type === 'late_arrival') late = Math.max(late, mins);
+        else if (r.request_type === 'early_leave') early = Math.max(early, mins);
+      }
+      return { late, early };
+    },
+    enabled: !!user?.id && !!tenantId,
+  });
+
   const isInRange = nearestLocation && distance !== null && distance <= nearestLocation.radius_meters;
   const deviceOk = myDevice?.status === 'approved';
   const hasCheckedIn = !!todayRecord?.check_in_time;
