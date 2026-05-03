@@ -749,6 +749,71 @@ export function LeaveApprovalsTab() {
         title="Xác thực duyệt nghỉ phép"
         description="Nhập mật khẩu bảo mật để duyệt yêu cầu nghỉ phép"
       />
+
+      {/* Dialog duyệt ngày vắng (auto-detect) */}
+      <Dialog open={!!absenceDialog} onOpenChange={() => setAbsenceDialog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserX className="h-5 w-5" /> Duyệt ngày vắng
+            </DialogTitle>
+          </DialogHeader>
+          {absenceDialog && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Nhân viên</Label>
+                  <div className="font-medium">{absenceDialog.user_name}</div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Ngày vắng</Label>
+                  <div className="font-medium">{format(parseISO(absenceDialog.date), 'dd/MM/yyyy')}</div>
+                </div>
+              </div>
+              <div>
+                <Label>Phân loại</Label>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <Button
+                    variant={absenceExcused ? 'default' : 'outline'}
+                    className={absenceExcused ? 'bg-green-600 hover:bg-green-700' : ''}
+                    onClick={() => setAbsenceExcused(true)}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-1" /> Có phép
+                  </Button>
+                  <Button
+                    variant={!absenceExcused ? 'destructive' : 'outline'}
+                    onClick={() => setAbsenceExcused(false)}
+                  >
+                    <XCircle className="h-4 w-4 mr-1" /> Không phép
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {absenceExcused ? '💡 Có phép: Không trừ lương ngày này' : '⚠️ Không phép: Trừ 1 ngày lương'}
+                </p>
+              </div>
+              <div>
+                <Label>Ghi chú</Label>
+                <Textarea value={absenceNote} onChange={e => setAbsenceNote(e.target.value)} rows={3} placeholder="Lý do, ghi chú..." />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAbsenceDialog(null)}>Hủy</Button>
+            <Button
+              onClick={() => absenceDialog && saveAbsenceReview.mutate({
+                userId: absenceDialog.user_id,
+                date: absenceDialog.date,
+                excused: absenceExcused,
+                note: absenceNote,
+              })}
+              disabled={saveAbsenceReview.isPending}
+            >
+              {saveAbsenceReview.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Lưu
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
