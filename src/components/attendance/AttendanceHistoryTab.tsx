@@ -372,6 +372,7 @@ export function AttendanceHistoryTab() {
                     <TableHead>Check-out</TableHead>
                     <TableHead>Giờ làm</TableHead>
                     <TableHead>Trễ</TableHead>
+                    <TableHead>Tăng ca</TableHead>
                     <TableHead>Địa điểm</TableHead>
                     <TableHead>PP</TableHead>
                     <TableHead className="w-10"></TableHead>
@@ -401,6 +402,7 @@ export function AttendanceHistoryTab() {
                             </div>
                           ) : '-'}
                         </TableCell>
+                        <TableCell>{renderOTBadge(r) || '-'}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">{r.attendance_locations?.name || '-'}</TableCell>
                         <TableCell className="uppercase text-xs text-muted-foreground">{r.check_in_method || '-'}</TableCell>
                         <TableCell>{renderEditBtn(r)}</TableCell>
