@@ -459,9 +459,10 @@ export function AttendanceHistoryTab() {
                     const st = statusConfig[r.status] || statusConfig.pending;
                     const lateExcuse = r.late_minutes > 0 ? getExcuse(r.user_id, r.date, 'late_arrival') : null;
                     const earlyExcuse = r.early_leave_minutes > 0 ? getExcuse(r.user_id, r.date, 'early_leave') : null;
-                    const diff = computeShiftDiff(r);
-                    const shiftLabel = r.work_shifts
-                      ? `${r.work_shifts.name || ''} ${r.work_shifts.start_time?.slice(0,5) || ''}-${r.work_shifts.end_time?.slice(0,5) || ''}`.trim()
+                    const resolvedShift = resolveShift(r);
+                    const diff = computeShiftDiff(r, resolvedShift);
+                    const shiftLabel = resolvedShift
+                      ? `${resolvedShift.name || ''} ${resolvedShift.start_time?.slice(0,5) || ''}-${resolvedShift.end_time?.slice(0,5) || ''}`.trim()
                       : '-';
                     return (
                       <TableRow key={r.id}>
@@ -518,9 +519,10 @@ export function AttendanceHistoryTab() {
               const st = statusConfig[r.status] || statusConfig.pending;
               const lateExcuse = r.late_minutes > 0 ? getExcuse(r.user_id, r.date, 'late_arrival') : null;
               const earlyExcuse = r.early_leave_minutes > 0 ? getExcuse(r.user_id, r.date, 'early_leave') : null;
-              const diff = computeShiftDiff(r);
-              const shiftLabel = r.work_shifts
-                ? `${r.work_shifts.name || ''} ${r.work_shifts.start_time?.slice(0,5) || ''}-${r.work_shifts.end_time?.slice(0,5) || ''}`.trim()
+              const resolvedShift = resolveShift(r);
+              const diff = computeShiftDiff(r, resolvedShift);
+              const shiftLabel = resolvedShift
+                ? `${resolvedShift.name || ''} ${resolvedShift.start_time?.slice(0,5) || ''}-${resolvedShift.end_time?.slice(0,5) || ''}`.trim()
                 : '';
               return (
                 <Card key={r.id}>
