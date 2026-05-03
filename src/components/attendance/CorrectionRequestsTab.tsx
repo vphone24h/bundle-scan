@@ -42,6 +42,14 @@ function formatMinutes(mins: number): string {
   return `${m}p`;
 }
 
+// Format ISO time → "HH:mm" theo giờ VN (UTC+7)
+function fmtTimeVN(iso?: string | null) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const vn = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+  return `${String(vn.getUTCHours()).padStart(2, '0')}:${String(vn.getUTCMinutes()).padStart(2, '0')}`;
+}
+
 export function CorrectionRequestsTab() {
   const { data: pu } = usePlatformUser();
   const tenantId = pu?.tenant_id;
@@ -52,9 +60,11 @@ export function CorrectionRequestsTab() {
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
   const { unlocked, unlock } = useSecurityUnlock('attendance-correction-review');
   const [showPwd, setShowPwd] = useState(false);
-  const [pendingAction, setPendingAction] = useState<{ id: string; status: 'approved' | 'rejected'; request: any } | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ id: string; status: 'approved' | 'rejected'; request: any; penaltyAction?: 'waive' | 'deduct_ot' | 'penalize' } | null>(null);
+  // Dialog đối chiếu giờ ca khi duyệt yêu cầu sửa công
+  const [approveDialog, setApproveDialog] = useState<any | null>(null);
 
-  const guardedReview = (payload: { id: string; status: 'approved' | 'rejected'; request: any }) => {
+  const guardedReview = (payload: { id: string; status: 'approved' | 'rejected'; request: any; penaltyAction?: 'waive' | 'deduct_ot' | 'penalize' }) => {
     if (hasSecurityPassword && !unlocked) {
       setPendingAction(payload);
       setShowPwd(true);
@@ -175,12 +185,13 @@ export function CorrectionRequestsTab() {
   };
 
   const reviewMutation = useMutation({
-    mutationFn: async ({ id, status, request }: { id: string; status: string; request?: any }) => {
+    mutationFn: async ({ id, status, request, penaltyAction }: { id: string; status: string; request?: any; penaltyAction?: 'waive' | 'deduct_ot' | 'penalize' }) => {
       const { data, error } = await supabase.functions.invoke('review-attendance-correction', {
         body: {
           requestId: id,
           action: status,
           reviewNote: reviewNote || null,
+          penaltyAction: penaltyAction || null,
         },
       });
       if (error) throw error;
@@ -191,6 +202,8 @@ export function CorrectionRequestsTab() {
       qc.invalidateQueries({ queryKey: ['pending-approvals-count'] });
       qc.invalidateQueries({ queryKey: ['attendance-records'] });
       qc.invalidateQueries({ queryKey: ['my-attendance-today'] });
+      qc.invalidateQueries({ queryKey: ['leave-requests-admin'] });
+      qc.invalidateQueries({ queryKey: ['my-leave-requests'] });
       const isRemote = vars.request?.request_type?.startsWith('remote_');
       toast.success(
         vars.status === 'approved'
@@ -199,6 +212,7 @@ export function CorrectionRequestsTab() {
       );
       setReviewingId(null);
       setReviewNote('');
+      setApproveDialog(null);
     },
     onError: (e: Error) => toast.error(e.message),
   });
