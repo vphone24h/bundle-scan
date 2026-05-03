@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Clock, MapPin, Smartphone, Download, Loader2, Pencil } from 'lucide-react';
 import { useAttendanceRecords, useAttendanceLocations } from '@/hooks/useAttendance';
+import { useTenantStaffList } from '@/hooks/useTenantStaffList';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -53,6 +54,9 @@ export function AttendanceHistoryTab() {
   });
   const { data: locations } = useAttendanceLocations();
 
+  const { data: tenantStaff } = useTenantStaffList();
+  const staffNameMap = new Map((tenantStaff || []).map((s) => [s.user_id, s.display_name]));
+
   const userIds = [...new Set(records?.map(r => r.user_id) || [])];
   const { data: profiles } = useQuery({
     queryKey: ['profiles-batch', userIds],
@@ -63,6 +67,41 @@ export function AttendanceHistoryTab() {
     },
     enabled: userIds.length > 0,
   });
+
+  const getStaffName = (uid: string) =>
+    profiles?.[uid]?.name || staffNameMap.get(uid) || uid.slice(0, 8);
+
+  // Approved late/early leave requests covering the dates of these records
+  const recordDates = [...new Set(records?.map((r: any) => r.date) || [])];
+  const { data: approvedExcuses } = useQuery({
+    queryKey: ['approved-late-early-excuses', recordDates, userIds],
+    enabled: recordDates.length > 0 && userIds.length > 0,
+    queryFn: async () => {
+      const minDate = recordDates.reduce((a, b) => (a < b ? a : b));
+      const maxDate = recordDates.reduce((a, b) => (a > b ? a : b));
+      const { data } = await supabase
+        .from('leave_requests')
+        .select('user_id, leave_date_from, leave_date_to, request_type, reason, time_minutes')
+        .eq('status', 'approved')
+        .in('request_type', ['late_arrival', 'early_leave'])
+        .in('user_id', userIds)
+        .lte('leave_date_from', maxDate)
+        .gte('leave_date_to', minDate);
+      const map = new Map<string, any>();
+      for (const r of data || []) {
+        const from = new Date(r.leave_date_from);
+        const to = new Date(r.leave_date_to);
+        for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
+          const ds = d.toISOString().split('T')[0];
+          map.set(`${r.user_id}_${ds}_${r.request_type}`, r);
+        }
+      }
+      return map;
+    },
+  });
+
+  const getExcuse = (uid: string, date: string, kind: 'late_arrival' | 'early_leave') =>
+    approvedExcuses?.get(`${uid}_${date}_${kind}`);
 
   const { data: allProfiles } = useQuery({
     queryKey: ['all-tenant-profiles'],
@@ -77,7 +116,7 @@ export function AttendanceHistoryTab() {
     setExporting(true);
     try {
       const rows = records.map((r: any) => ({
-        'Nhân viên': profiles?.[r.user_id]?.name || r.user_id,
+        'Nhân viên': getStaffName(r.user_id),
         'Ngày': r.date,
         'Trạng thái': statusConfig[r.status]?.label || r.status,
         'Check-in': r.check_in_time ? format(new Date(r.check_in_time), 'HH:mm:ss') : '',
