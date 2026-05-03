@@ -152,10 +152,13 @@ export function LeaveApprovalsTab() {
         }
       }
     },
-    onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: ['leave-requests-admin'] });
+    onSuccess: async (_, vars) => {
+      await Promise.all([
+        qc.refetchQueries({ queryKey: ['leave-requests-admin'] }),
+        qc.refetchQueries({ queryKey: ['merged-absence-reviews'] }),
+        qc.refetchQueries({ queryKey: ['pending-approvals-count'] }),
+      ]);
       qc.invalidateQueries({ queryKey: ['my-leave-requests'] });
-      qc.invalidateQueries({ queryKey: ['pending-approvals-count'] });
       qc.invalidateQueries({ queryKey: ['absence-reviews'] });
       const msg = vars.action === 'approved' ? 'Đã duyệt có phép' : vars.action === 'unexcused' ? 'Đã duyệt không phép' : 'Đã từ chối đơn nghỉ';
       toast.success(msg);
