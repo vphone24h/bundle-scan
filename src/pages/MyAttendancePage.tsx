@@ -193,10 +193,12 @@ export default function MyAttendancePage() {
   // Stats
   const stats = useMemo(() => {
     if (!records) return { total: 0, onTime: 0, late: 0, absent: 0, totalMinutes: 0, totalOT: 0, totalLate: 0, totalEarlyLeave: 0, earlyLeaveCount: 0 };
-    const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd > new Date() ? new Date() : monthEnd });
-    const workDays = daysInMonth.filter(d => !isWeekend(d));
+    const today = new Date();
+    const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd > today ? today : monthEnd });
+    // Count every elapsed day of the current month (including today and weekends) as a potential work day.
+    // Days with no check-in record => absent. This auto-syncs for newly-created accounts as well.
     const workedDays = new Set(records.map(r => r.date));
-    const absentDays = workDays.filter(d => !workedDays.has(format(d, 'yyyy-MM-dd')) && d <= new Date()).length;
+    const absentDays = daysInMonth.filter(d => !workedDays.has(format(d, 'yyyy-MM-dd'))).length;
 
     return {
       total: records.length,
@@ -293,11 +295,11 @@ export default function MyAttendancePage() {
     if (statDetail === 'late') return records.filter((r: any) => (r.late_minutes || 0) > 0).sort((a: any, b: any) => a.date.localeCompare(b.date));
     if (statDetail === 'earlyLeave') return records.filter((r: any) => (r.early_leave_minutes || 0) > 0).sort((a: any, b: any) => a.date.localeCompare(b.date));
     if (statDetail === 'absent') {
-      const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd > new Date() ? new Date() : monthEnd });
-      const workDays = daysInMonth.filter(d => !isWeekend(d));
+      const today = new Date();
+      const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd > today ? today : monthEnd });
       const workedDays = new Set((records || []).map((r: any) => r.date));
-      return workDays
-        .filter(d => !workedDays.has(format(d, 'yyyy-MM-dd')) && d <= new Date())
+      return daysInMonth
+        .filter(d => !workedDays.has(format(d, 'yyyy-MM-dd')))
         .map(d => ({ date: format(d, 'yyyy-MM-dd'), _absent: true }));
     }
     return [];
