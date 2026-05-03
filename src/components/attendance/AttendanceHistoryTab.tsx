@@ -252,6 +252,73 @@ export function AttendanceHistoryTab() {
     );
   };
 
+  const reviewOvertime = async (r: any, action: 'approved' | 'rejected') => {
+    if (!r?.id) return;
+    setOtReviewing(r.id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const approvedMin = action === 'approved' ? (r.pending_overtime_minutes || 0) : 0;
+      const { error } = await supabase.from('attendance_records').update({
+        overtime_status: action,
+        overtime_approved_minutes: approvedMin,
+        overtime_reviewed_by: user?.id || null,
+        overtime_reviewed_at: new Date().toISOString(),
+      }).eq('id', r.id);
+      if (error) throw error;
+      await qc.refetchQueries({ queryKey: ['attendance-records'] });
+      toast.success(action === 'approved' ? `Đã duyệt ${approvedMin}p tăng ca` : 'Đã từ chối tăng ca');
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setOtReviewing(null);
+    }
+  };
+
+  const renderOTBadge = (r: any) => {
+    if (!r.pending_overtime_minutes || r.overtime_status === 'none') return null;
+    if (r.overtime_status === 'pending') {
+      return (
+        <div className="flex items-center gap-1 flex-wrap">
+          <Badge className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+            <Zap className="h-3 w-3 mr-0.5" /> OT chờ duyệt {r.pending_overtime_minutes}p
+          </Badge>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-6 w-6 text-green-600 hover:bg-green-100"
+            onClick={() => reviewOvertime(r, 'approved')}
+            disabled={otReviewing === r.id}
+            title="Duyệt tăng ca"
+          >
+            {otReviewing === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-6 w-6 text-destructive hover:bg-red-100"
+            onClick={() => reviewOvertime(r, 'rejected')}
+            disabled={otReviewing === r.id}
+            title="Từ chối tăng ca"
+          >
+            <XCircle className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      );
+    }
+    if (r.overtime_status === 'approved') {
+      return (
+        <Badge className="text-[10px] bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+          <Zap className="h-3 w-3 mr-0.5" /> OT {r.overtime_approved_minutes || r.pending_overtime_minutes}p đã duyệt
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="text-[10px] text-muted-foreground line-through">
+        OT {r.pending_overtime_minutes}p từ chối
+      </Badge>
+    );
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
