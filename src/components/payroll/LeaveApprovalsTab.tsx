@@ -200,7 +200,7 @@ export function LeaveApprovalsTab() {
   };
 
   // ==================== AUTO-DETECT VẮNG MẶT (gộp từ AbsenceReviewsTab) ====================
-  const monthStr = format(now_date(), 'yyyy-MM');
+  const monthStr = format(new Date(), 'yyyy-MM');
   const monthStart = format(startOfMonth(parseISO(monthStr + '-01')), 'yyyy-MM-dd');
   const monthEnd = format(endOfMonth(parseISO(monthStr + '-01')), 'yyyy-MM-dd');
 
