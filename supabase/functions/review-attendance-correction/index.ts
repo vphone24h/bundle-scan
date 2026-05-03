@@ -34,8 +34,14 @@ function appendNote(existingNote: string | null, extraNote: string) {
 }
 
 async function buildAttendancePayload(supabaseAdmin: ReturnType<typeof createClient>, request: CorrectionRequest, currentRecord?: any) {
-  const effectiveCheckIn = request.requested_check_in || currentRecord?.check_in_time || null
-  const effectiveCheckOut = request.requested_check_out || currentRecord?.check_out_time || null
+  // OVERWRITE MODE: Khi duyệt, dùng CHÍNH XÁC giờ trong request mới.
+  // Không merge với bản ghi cũ → cho phép admin sửa lại nếu lần duyệt trước sai.
+  // Với remote_checkout: vẫn giữ check_in_time cũ vì request loại này chỉ chứa check_out.
+  const isRemoteCheckout = request.request_type === 'remote_checkout'
+  const effectiveCheckIn = isRemoteCheckout
+    ? (currentRecord?.check_in_time || null)
+    : (request.requested_check_in || null)
+  const effectiveCheckOut = request.requested_check_out || null
   const hasCheckIn = !!effectiveCheckIn
   const hasCheckOut = !!effectiveCheckOut
 
@@ -103,11 +109,13 @@ async function buildAttendancePayload(supabaseAdmin: ReturnType<typeof createCli
   return {
     shiftId: shift?.shift_id || currentRecord?.shift_id || null,
     updates: {
-      check_in_time: request.requested_check_in ?? currentRecord?.check_in_time ?? null,
-      check_out_time: request.requested_check_out ?? currentRecord?.check_out_time ?? null,
-      check_in_method: request.requested_check_in ? 'manual' : currentRecord?.check_in_method,
-      check_out_method: request.requested_check_out ? 'manual' : currentRecord?.check_out_method,
-      status: hasCheckIn ? recordStatus : currentRecord?.status,
+      check_in_time: effectiveCheckIn,
+      check_out_time: effectiveCheckOut,
+      check_in_method: effectiveCheckIn
+        ? (isRemoteCheckout ? currentRecord?.check_in_method : 'manual')
+        : null,
+      check_out_method: effectiveCheckOut ? 'manual' : null,
+      status: hasCheckIn ? recordStatus : (currentRecord?.status || 'absent'),
       late_minutes: lateMinutes,
       early_leave_minutes: earlyLeaveMinutes,
       overtime_minutes: overtimeMinutes,
@@ -252,9 +260,17 @@ Deno.serve(async (req) => {
       remote_checkout: `✅ Check-out từ xa được duyệt bởi admin. Lý do: ${request.reason}`,
     }
 
+    // Loại bỏ các note "✅ ... được duyệt bởi admin" cũ để tránh chồng chất
+    // khi admin duyệt lại nhiều lần. Giữ lại các note khác (vd: ghi chú khi check-in).
+    const cleanedOldNote = (existingRecord?.note || '')
+      .split('|')
+      .map((s: string) => s.trim())
+      .filter((s: string) => s && !s.startsWith('✅'))
+      .join(' | ') || null
+
     const baseUpdates = {
       ...attendancePayload.updates,
-      note: appendNote(existingRecord?.note || null, noteByType[request.request_type] || noteByType.correction),
+      note: appendNote(cleanedOldNote, noteByType[request.request_type] || noteByType.correction),
     }
 
     let attendanceId = existingRecord?.id as string | undefined
