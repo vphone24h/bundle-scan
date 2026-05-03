@@ -377,6 +377,7 @@ export default function CheckInPage() {
             time_minutes: lateMinutes,
             reason: `[Tự động] Đi trễ ${lateMinutes}p — chờ admin duyệt`,
             status: 'pending',
+            is_auto_detected: true,
           });
           qc.invalidateQueries({ queryKey: ['my-leave-requests'] });
           qc.invalidateQueries({ queryKey: ['leave-requests-admin'] });
@@ -487,6 +488,7 @@ export default function CheckInPage() {
             time_minutes: earlyLeaveMinutes,
             reason: `[Tự động] Về sớm ${earlyLeaveMinutes}p — chờ admin duyệt`,
             status: 'pending',
+            is_auto_detected: true,
           });
           qc.invalidateQueries({ queryKey: ['my-leave-requests'] });
           qc.invalidateQueries({ queryKey: ['leave-requests-admin'] });
