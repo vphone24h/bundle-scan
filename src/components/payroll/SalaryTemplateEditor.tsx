@@ -229,6 +229,38 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
   const { data: exPenalties } = useTemplatePenalties(templateId || undefined);
   const { data: exOvertimes } = useTemplateOvertimes(templateId || undefined);
 
+  // ============ Ngưỡng "net" bù trừ trong ngày (thuộc cấu hình tenant, không thuộc template) ============
+  const { data: tenantCompSettings, refetch: refetchCompSettings } = useQuery({
+    queryKey: ['tenant-comp-threshold-editor', tenantId],
+    queryFn: async () => {
+      const { data } = await supabase.from('tenants').select('compensation_threshold_minutes').eq('id', tenantId!).maybeSingle();
+      return data;
+    },
+    enabled: !!tenantId,
+  });
+  const [compThreshold, setCompThreshold] = useState<string>('');
+  useEffect(() => {
+    const v = (tenantCompSettings as any)?.compensation_threshold_minutes;
+    setCompThreshold(v == null ? '' : String(v));
+  }, [tenantCompSettings]);
+  const [savingThreshold, setSavingThreshold] = useState(false);
+  const handleSaveThreshold = async () => {
+    if (!tenantId) return;
+    setSavingThreshold(true);
+    try {
+      const trimmed = compThreshold.trim();
+      const newVal = trimmed === '' ? null : Math.max(0, Number(trimmed) || 0);
+      const { error } = await supabase.from('tenants').update({ compensation_threshold_minutes: newVal }).eq('id', tenantId);
+      if (error) throw error;
+      toast.success(newVal == null ? 'Đã tắt bù trừ trong ngày' : `Đã đặt ngưỡng net = ${newVal} phút`);
+      await refetchCompSettings();
+    } catch (e: any) {
+      toast.error(e.message || 'Không lưu được ngưỡng');
+    } finally {
+      setSavingThreshold(false);
+    }
+  };
+
   useEffect(() => {
     if (existing) {
       setName(existing.name);
