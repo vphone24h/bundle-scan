@@ -96,18 +96,20 @@ export function usePendingApprovals() {
   const overtime = data?.overtime ?? 0;
   const absences = data?.absences ?? 0;
   const leaveRequests = data?.leaveRequests ?? 0;
+  // Gộp: badge "Duyệt xin nghỉ" hiển thị cả đơn pending + ngày vắng auto-detect chưa duyệt
+  const leaveCombined = leaveRequests + absences;
 
   return {
     corrections,
     overtime,
     absences,
-    leaveRequests,
+    leaveRequests: leaveCombined,
     /** Total pending for attendance parent tab (corrections + remote) */
     attendanceTotal: corrections,
     /** Total pending for payroll parent tab */
-    payrollTotal: overtime + absences + leaveRequests,
+    payrollTotal: overtime + leaveCombined,
     /** Grand total */
-    total: corrections + overtime + absences + leaveRequests,
+    total: corrections + overtime + leaveCombined,
   };
 }
 

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SalaryTemplatesTab } from '@/components/payroll/SalaryTemplatesTab';
 import { PayrollPeriodsTab } from '@/components/payroll/PayrollPeriodsTab';
-import { AbsenceReviewsTab } from '@/components/payroll/AbsenceReviewsTab';
 import { OvertimeReviewsTab } from '@/components/payroll/OvertimeReviewsTab';
 import { LeaveApprovalsTab } from '@/components/payroll/LeaveApprovalsTab';
 import { usePendingApprovals } from '@/hooks/usePendingApprovals';
@@ -26,7 +25,6 @@ export default function PayrollPage() {
             <TabsTrigger value="templates" className="text-xs px-3 py-1.5">Mẫu lương</TabsTrigger>
             <TabsTrigger value="periods" className="text-xs px-3 py-1.5">Bảng lương</TabsTrigger>
             <TabsTrigger value="leave" className="text-xs px-3 py-1.5">Duyệt xin nghỉ <PendingBadge count={pending.leaveRequests} /></TabsTrigger>
-            <TabsTrigger value="absences" className="text-xs px-3 py-1.5">Duyệt nghỉ phép <PendingBadge count={pending.absences} /></TabsTrigger>
             <TabsTrigger value="overtime" className="text-xs px-3 py-1.5">Duyệt tăng ca <PendingBadge count={pending.overtime} /></TabsTrigger>
           </TabsList>
         </div>
@@ -38,9 +36,6 @@ export default function PayrollPage() {
         </TabsContent>
         <TabsContent value="leave" className="mt-4">
           <LeaveApprovalsTab />
-        </TabsContent>
-        <TabsContent value="absences" className="mt-4">
-          <AbsenceReviewsTab />
         </TabsContent>
         <TabsContent value="overtime" className="mt-4">
           <OvertimeReviewsTab />
