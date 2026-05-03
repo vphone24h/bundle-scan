@@ -328,7 +328,16 @@ export function CorrectionRequestsTab() {
                           <Button
                             size="sm" variant="outline"
                             className="gap-1 text-xs h-7 text-green-700"
-                            onClick={() => guardedReview({ id: r.id, status: 'approved', request: r })}
+                            onClick={() => {
+                              // Yêu cầu sửa công thường → mở dialog đối chiếu để admin chọn cách xử lý phạt
+                              // Yêu cầu remote_checkin/checkout → duyệt thẳng (không phát sinh phạt)
+                              if (r.request_type === 'correction') {
+                                setApproveDialog(r);
+                                setReviewNote('');
+                              } else {
+                                guardedReview({ id: r.id, status: 'approved', request: r });
+                              }
+                            }}
                             disabled={reviewMutation.isPending}
                           >
                             <CheckCircle2 className="h-3 w-3" /> Duyệt
