@@ -58,7 +58,7 @@ export function LeaveApprovalsTab() {
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
   const { unlocked, unlock } = useSecurityUnlock('leave-approval-review');
   const [showPwd, setShowPwd] = useState(false);
-  const [pendingAction, setPendingAction] = useState<{ id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string; deduct?: boolean } | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ ids: string[]; action: 'approved' | 'unexcused' | 'rejected'; note: string; deduct?: boolean } | null>(null);
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ['leave-requests-admin', tenantId, filterStatus],
@@ -97,7 +97,8 @@ export function LeaveApprovalsTab() {
   // Lấy bản ghi chấm công ngày của đơn đang mở để admin đối chiếu giờ ca vs thực tế.
   const reviewDate = reviewDialog?.leave_date_from || null;
   const reviewUserId = reviewDialog?.user_id || null;
-  const isTimeRequest = reviewDialog?.request_type === 'late_arrival' || reviewDialog?.request_type === 'early_leave';
+  const reviewItems = reviewDialog?.grouped_requests || (reviewDialog ? [reviewDialog] : []);
+  const isTimeRequest = reviewItems.some((item: any) => item?.request_type === 'late_arrival' || item?.request_type === 'early_leave');
   const { data: reviewAttendance } = useQuery({
     queryKey: ['leave-review-attendance', tenantId, reviewUserId, reviewDate],
     queryFn: async () => {
@@ -116,7 +117,7 @@ export function LeaveApprovalsTab() {
 
   // 3 actions: approved (có phép), unexcused (không phép but still off), rejected (không được nghỉ)
   const reviewMutation = useMutation({
-    mutationFn: async ({ id, action, note, deduct }: { id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string; deduct?: boolean }) => {
+    mutationFn: async ({ ids, action, note, deduct }: { ids: string[]; action: 'approved' | 'unexcused' | 'rejected'; note: string; deduct?: boolean }) => {
       const { error } = await supabase
         .from('leave_requests')
         .update({
@@ -126,30 +127,27 @@ export function LeaveApprovalsTab() {
           review_note: note || null,
           deduct_salary: deduct === true,
         })
-        .eq('id', id);
+        .in('id', ids);
       if (error) throw error;
 
-      const req = requests?.find(r => r.id === id);
-      if (!req) return;
+      const matchedRequests = (requests || []).filter(r => ids.includes(r.id));
+      for (const req of matchedRequests) {
+        const reqType = (req as any).request_type || 'full_day';
 
-      const reqType = (req as any).request_type || 'full_day';
-
-      // For approved & unexcused FULL-DAY leaves: create absence_reviews for each day
-      // late_arrival / early_leave handled separately by payroll engine (waives late/early minutes)
-      if ((action === 'approved' || action === 'unexcused') && reqType === 'full_day') {
-        const days = eachDayOfInterval({ start: parseISO(req.leave_date_from), end: parseISO(req.leave_date_to) });
-        
-        for (const day of days) {
-          const dateStr = format(day, 'yyyy-MM-dd');
-          await supabase.from('absence_reviews').upsert({
-            tenant_id: tenantId!,
-            user_id: req.user_id,
-            absence_date: dateStr,
-            is_excused: action === 'approved',
-            review_note: `${action === 'approved' ? 'Nghỉ có phép' : 'Nghỉ không phép'}: ${note || req.reason}`,
-            reviewed_by: user?.id,
-            reviewed_at: new Date().toISOString(),
-          }, { onConflict: 'tenant_id,user_id,absence_date' });
+        if ((action === 'approved' || action === 'unexcused') && reqType === 'full_day') {
+          const days = eachDayOfInterval({ start: parseISO(req.leave_date_from), end: parseISO(req.leave_date_to) });
+          for (const day of days) {
+            const dateStr = format(day, 'yyyy-MM-dd');
+            await supabase.from('absence_reviews').upsert({
+              tenant_id: tenantId!,
+              user_id: req.user_id,
+              absence_date: dateStr,
+              is_excused: action === 'approved',
+              review_note: `${action === 'approved' ? 'Nghỉ có phép' : 'Nghỉ không phép'}: ${note || req.reason}`,
+              reviewed_by: user?.id,
+              reviewed_at: new Date().toISOString(),
+            }, { onConflict: 'tenant_id,user_id,absence_date' });
+          }
         }
       }
     },
@@ -173,7 +171,7 @@ export function LeaveApprovalsTab() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const guardedReview = (payload: { id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string; deduct?: boolean }) => {
+  const guardedReview = (payload: { ids: string[]; action: 'approved' | 'unexcused' | 'rejected'; note: string; deduct?: boolean }) => {
     if (hasSecurityPassword && !unlocked) {
       setPendingAction(payload);
       setShowPwd(true);
@@ -193,10 +191,48 @@ export function LeaveApprovalsTab() {
 
   // Phân chia: phiếu tự động (do hệ thống tạo khi auto-detect đi trễ/về sớm)
   // vs phiếu thủ công (NV tự gửi đơn xin phép)
-  const autoRequests = useMemo(
-    () => filtered.filter((r: any) => r.is_auto_detected === true),
-    [filtered]
-  );
+  const autoRequests = useMemo(() => {
+    const groups = new Map<string, any>();
+    for (const req of filtered.filter((r: any) => r.is_auto_detected === true)) {
+      const key = `${req.user_id}_${req.leave_date_from}_${req.leave_date_to}`;
+      const current = groups.get(key) || {
+        id: key,
+        user_id: req.user_id,
+        tenant_id: req.tenant_id,
+        leave_date_from: req.leave_date_from,
+        leave_date_to: req.leave_date_to,
+        is_auto_detected: true,
+        created_at: req.created_at,
+        grouped_requests: [],
+        review_ids: [],
+      };
+      current.grouped_requests.push(req);
+      current.review_ids.push(req.id);
+      current.created_at = current.created_at > req.created_at ? current.created_at : req.created_at;
+      groups.set(key, current);
+    }
+
+    return Array.from(groups.values()).map((group: any) => {
+      const groupedRequests = [...group.grouped_requests].sort((a: any, b: any) => {
+        const order = (type: string) => (type === 'late_arrival' ? 0 : type === 'early_leave' ? 1 : 2);
+        return order(a.request_type) - order(b.request_type);
+      });
+      const first = groupedRequests[0];
+      const mixed = groupedRequests.length > 1;
+      return {
+        ...group,
+        grouped_requests: groupedRequests,
+        request_type: mixed ? 'combined_time' : (first?.request_type || 'full_day'),
+        time_minutes: mixed ? null : (first?.time_minutes || 0),
+        reason: groupedRequests.map((r: any) => r.reason).filter(Boolean).join(' • '),
+        review_note: groupedRequests.map((r: any) => r.review_note).filter(Boolean).join(' • ') || null,
+        status: groupedRequests.every((r: any) => r.status === groupedRequests[0].status) ? groupedRequests[0].status : 'pending',
+        deduct_salary: groupedRequests.some((r: any) => r.deduct_salary === true),
+        late_minutes: groupedRequests.find((r: any) => r.request_type === 'late_arrival')?.time_minutes || 0,
+        early_leave_minutes: groupedRequests.find((r: any) => r.request_type === 'early_leave')?.time_minutes || 0,
+      };
+    }).sort((a: any, b: any) => b.created_at.localeCompare(a.created_at));
+  }, [filtered]);
   const manualRequests = useMemo(
     () => filtered.filter((r: any) => r.is_auto_detected !== true),
     [filtered]
