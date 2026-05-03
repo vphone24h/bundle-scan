@@ -9,6 +9,7 @@ import { useUnreadReviewCount } from '@/hooks/useUnreadReviews';
 import { useUnreadSocialNotifCount } from '@/hooks/useSocial';
 import { useUnreadArticleCount } from '@/hooks/useUnreadArticles';
 import { useCompletedRepairCount } from '@/hooks/useCompletedRepairCount';
+import { usePendingApprovals } from '@/hooks/usePendingApprovals';
 import {
   LayoutDashboard,
   Package,
@@ -180,6 +181,7 @@ export function AppSidebar() {
   const { data: unreadArticleCount } = useUnreadArticleCount(shouldLoadSidebarExtras);
   const completedRepairCount = useCompletedRepairCount(shouldLoadSidebarExtras);
   const { enabled: attendanceEnabled } = useAttendanceEnabled();
+  const { total: pendingApprovalsTotal } = usePendingApprovals();
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -382,6 +384,11 @@ export function AppSidebar() {
                 {item.href === '/guides' && (unreadArticleCount || 0) > 0 && (
                   <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1 animate-pulse">
                     {unreadArticleCount}
+                  </span>
+                )}
+                {item.href === '/users' && pendingApprovalsTotal > 0 && (
+                  <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1 animate-pulse">
+                    {pendingApprovalsTotal > 99 ? '99+' : pendingApprovalsTotal}
                   </span>
                 )}
               </Link>
