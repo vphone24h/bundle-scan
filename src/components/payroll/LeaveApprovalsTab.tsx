@@ -333,10 +333,25 @@ export function LeaveApprovalsTab() {
                     <Textarea value={reviewNote} onChange={e => setReviewNote(e.target.value)} placeholder="Ghi chú..." rows={2} />
                   </div>
                   {(reviewDialog.request_type === 'late_arrival' || reviewDialog.request_type === 'early_leave') ? (
-                    <div className="bg-muted/50 p-3 rounded text-xs space-y-1.5">
-                      <p>✅ <strong>Duyệt</strong>: <strong>Không tính phạt</strong> phút {reviewDialog.request_type === 'late_arrival' ? 'đi muộn' : 'về sớm'} của ngày đó.</p>
-                      <p>❌ <strong>Từ chối</strong>: Hệ thống vẫn <strong>tính phạt</strong> theo quy định công ty.</p>
-                    </div>
+                    <>
+                      <div className="bg-muted/50 p-3 rounded text-xs space-y-1.5">
+                        <p>✅ <strong>Duyệt</strong>: Bỏ qua phạt phút {reviewDialog.request_type === 'late_arrival' ? 'đi muộn' : 'về sớm'} của ngày đó.</p>
+                        <p>❌ <strong>Từ chối</strong>: Hệ thống vẫn <strong>tính phạt</strong> theo quy định công ty.</p>
+                      </div>
+                      <label className="flex items-start gap-2 p-2 rounded border border-amber-300 bg-amber-50 dark:bg-amber-950/20 cursor-pointer">
+                        <Checkbox
+                          checked={deductSalary}
+                          onCheckedChange={(v) => setDeductSalary(v === true)}
+                          className="mt-0.5"
+                        />
+                        <div className="text-xs">
+                          <div className="font-medium text-amber-800 dark:text-amber-200">Trừ lương {reviewDialog.time_minutes || 0} phút này</div>
+                          <div className="text-muted-foreground mt-0.5">
+                            Mặc định <strong>KHÔNG trừ</strong>. Tick nếu muốn trừ lương theo đơn giá tăng ca/giờ trong bảng lương NV.
+                          </div>
+                        </div>
+                      </label>
+                    </>
                   ) : (
                     <div className="bg-muted/50 p-3 rounded text-xs space-y-1.5">
                       <p>✅ <strong>Có phép</strong>: Nghỉ có phép — nếu còn hạn mức nghỉ có lương thì không trừ lương, hết hạn mức chỉ trừ ngày công.</p>
