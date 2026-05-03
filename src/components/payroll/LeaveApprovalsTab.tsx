@@ -199,6 +199,154 @@ export function LeaveApprovalsTab() {
     setDeductSalary(req?.deduct_salary === true);
   };
 
+  // ==================== AUTO-DETECT VẮNG MẶT (gộp từ AbsenceReviewsTab) ====================
+  const monthStr = format(now_date(), 'yyyy-MM');
+  const monthStart = format(startOfMonth(parseISO(monthStr + '-01')), 'yyyy-MM-dd');
+  const monthEnd = format(endOfMonth(parseISO(monthStr + '-01')), 'yyyy-MM-dd');
+
+  const { data: absentRecords } = useQuery({
+    queryKey: ['merged-absent-records', tenantId, monthStr],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('attendance_records')
+        .select('user_id, date, status')
+        .eq('tenant_id', tenantId!)
+        .gte('date', monthStart)
+        .lte('date', monthEnd)
+        .eq('status', 'absent');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!tenantId,
+  });
+
+  const { data: shiftAssignments } = useQuery({
+    queryKey: ['merged-shift-assignments', tenantId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('shift_assignments')
+        .select('user_id, assignment_type, day_of_week, specific_date')
+        .eq('tenant_id', tenantId!)
+        .eq('is_active', true);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!tenantId,
+  });
+
+  const { data: allAttendance } = useQuery({
+    queryKey: ['merged-all-attendance', tenantId, monthStr],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('attendance_records')
+        .select('user_id, date')
+        .eq('tenant_id', tenantId!)
+        .gte('date', monthStart)
+        .lte('date', monthEnd);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!tenantId,
+  });
+
+  const { data: absenceReviews } = useQuery({
+    queryKey: ['merged-absence-reviews', tenantId, monthStr],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('absence_reviews')
+        .select('*')
+        .eq('tenant_id', tenantId!)
+        .gte('absence_date', monthStart)
+        .lte('absence_date', monthEnd);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!tenantId,
+  });
+
+  // Build danh sách ngày vắng tự động (chưa duyệt + không có đơn xin nghỉ)
+  const autoAbsences = useMemo(() => {
+    if (!platformUsers || !shiftAssignments || !allAttendance) return [];
+    const userMap = new Map(platformUsers.map(u => [u.user_id, u.display_name || u.email || u.user_id.slice(0, 8)]));
+    const reviewMap = new Map((absenceReviews || []).map((r: any) => [`${r.user_id}_${r.absence_date}`, r]));
+    const attendanceSet = new Set((allAttendance || []).map(a => `${a.user_id}_${a.date}`));
+
+    // Loại trừ ngày đã có đơn xin nghỉ (full_day, status != rejected)
+    const leaveCovered = new Set<string>();
+    for (const r of (requests || [])) {
+      if (r.status === 'rejected') continue;
+      if ((r as any).request_type && (r as any).request_type !== 'full_day') continue;
+      try {
+        const days = eachDayOfInterval({ start: parseISO(r.leave_date_from), end: parseISO(r.leave_date_to) });
+        for (const d of days) leaveCovered.add(`${r.user_id}_${format(d, 'yyyy-MM-dd')}`);
+      } catch {}
+    }
+
+    const result: { user_id: string; user_name: string; date: string; review?: any }[] = [];
+    const today = new Date(); today.setHours(23, 59, 59, 999);
+
+    for (const rec of (absentRecords || [])) {
+      const key = `${rec.user_id}_${rec.date}`;
+      if (leaveCovered.has(key)) continue;
+      result.push({ user_id: rec.user_id, user_name: userMap.get(rec.user_id) || rec.user_id.slice(0, 8), date: rec.date, review: reviewMap.get(key) });
+    }
+
+    const start = new Date(monthStart);
+    const end = new Date(monthEnd);
+    for (const u of platformUsers) {
+      const ua = shiftAssignments.filter(sa => sa.user_id === u.user_id);
+      if (!ua.length) continue;
+      for (let d = new Date(start); d <= end && d <= today; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        const dow = d.getDay();
+        const scheduled = ua.some(sa => (sa.assignment_type === 'fixed' && sa.day_of_week === dow) || sa.specific_date === dateStr);
+        if (!scheduled) continue;
+        const k = `${u.user_id}_${dateStr}`;
+        if (attendanceSet.has(k)) continue;
+        if (leaveCovered.has(k)) continue;
+        if (result.some(r => r.user_id === u.user_id && r.date === dateStr)) continue;
+        result.push({ user_id: u.user_id, user_name: userMap.get(u.user_id) || u.user_id.slice(0, 8), date: dateStr, review: reviewMap.get(k) });
+      }
+    }
+    return result.sort((a, b) => b.date.localeCompare(a.date) || a.user_name.localeCompare(b.user_name));
+  }, [absentRecords, shiftAssignments, allAttendance, platformUsers, absenceReviews, requests, monthStart, monthEnd]);
+
+  const pendingAutoAbsences = useMemo(() => autoAbsences.filter(a => !a.review), [autoAbsences]);
+
+  const [absenceDialog, setAbsenceDialog] = useState<{ user_id: string; user_name: string; date: string; review?: any } | null>(null);
+  const [absenceExcused, setAbsenceExcused] = useState(true);
+  const [absenceNote, setAbsenceNote] = useState('');
+
+  const saveAbsenceReview = useMutation({
+    mutationFn: async ({ userId, date, excused, note }: { userId: string; date: string; excused: boolean; note: string }) => {
+      const { error } = await supabase.from('absence_reviews').upsert({
+        tenant_id: tenantId!,
+        user_id: userId,
+        absence_date: date,
+        is_excused: excused,
+        review_note: note || null,
+        reviewed_by: user?.id,
+        reviewed_at: new Date().toISOString(),
+      }, { onConflict: 'tenant_id,user_id,absence_date' });
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        qc.refetchQueries({ queryKey: ['merged-absence-reviews'] }),
+        qc.refetchQueries({ queryKey: ['pending-approvals-count'] }),
+      ]);
+      toast.success('Đã cập nhật trạng thái nghỉ');
+      setAbsenceDialog(null);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const openAbsence = (a: any) => {
+    setAbsenceDialog(a);
+    setAbsenceExcused(a.review?.is_excused ?? true);
+    setAbsenceNote(a.review?.review_note || '');
+  };
+
   const formatDateRange = (from: string, to: string) => {
     const f = format(parseISO(from), 'dd/MM/yyyy');
     const t = format(parseISO(to), 'dd/MM/yyyy');
