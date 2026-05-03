@@ -75,6 +75,8 @@ async function buildAttendancePayload(supabaseAdmin: ReturnType<typeof createCli
   let earlyLeaveMinutes = 0
   let overtimeMinutes = 0
   let totalMinutes = currentRecord?.total_work_minutes || 0
+  let earlyArrivalMinutes = 0
+  let lateOutMinutes = 0
 
   if (hasCheckIn && shift?.work_shifts) {
     const ws = shift.work_shifts as any
@@ -93,6 +95,9 @@ async function buildAttendancePayload(supabaseAdmin: ReturnType<typeof createCli
     if (diff > threshold) {
       recordStatus = 'late'
       lateMinutes = Math.round(diff / 60000)
+    } else if (diff < 0) {
+      earlyArrivalMinutes = Math.round(Math.abs(diff) / 60000)
+      recordStatus = 'on_time'
     } else {
       recordStatus = 'on_time'
     }
@@ -116,11 +121,49 @@ async function buildAttendancePayload(supabaseAdmin: ReturnType<typeof createCli
       ) - VN_OFFSET_MS
       const shiftEnd = new Date(shiftEndUTCms)
       const diffFromEnd = Math.round((checkOutTime.getTime() - shiftEnd.getTime()) / 60000)
-      if (diffFromEnd > 0) overtimeMinutes = diffFromEnd
+      if (diffFromEnd > 0) lateOutMinutes = diffFromEnd
       if (diffFromEnd < 0) {
         earlyLeaveMinutes = Math.abs(diffFromEnd)
-        if (recordStatus === 'on_time') recordStatus = 'early_leave'
       }
+    }
+
+    // 🆕 Bù trừ NET trong ngày: vào sớm bù về sớm, ra trễ bù vào trễ.
+    // Áp ngưỡng compensation_threshold_minutes (NULL = 0, bù trừ tối thiểu).
+    const { data: tenantRow } = await supabaseAdmin
+      .from('tenants')
+      .select('compensation_threshold_minutes')
+      .eq('id', request.tenant_id)
+      .maybeSingle()
+    const rawTh = (tenantRow as any)?.compensation_threshold_minutes
+    const compThreshold = rawTh == null ? 0 : Number(rawTh) || 0
+
+    // net = (vào sớm + ra trễ) - (vào trễ + ra sớm). Dương = dư, âm = thiếu.
+    const netMinutes = (earlyArrivalMinutes + lateOutMinutes) - (lateMinutes + earlyLeaveMinutes)
+    if (netMinutes >= 0) {
+      // Đủ hoặc dư: không tính trễ/sớm. Phần dư vượt ngưỡng bù → OT.
+      lateMinutes = 0
+      earlyLeaveMinutes = 0
+      overtimeMinutes = netMinutes > compThreshold ? (netMinutes - compThreshold) : 0
+      if (recordStatus === 'late') recordStatus = 'on_time'
+    } else {
+      // Thiếu: phân bổ phần thiếu (sau bù) vào late/early theo tỷ lệ gốc.
+      const deficit = Math.abs(netMinutes)
+      // Thiếu trong ngưỡng → coi như đủ; vượt ngưỡng mới ghi nhận.
+      const effectiveDeficit = deficit > compThreshold ? (deficit - compThreshold) : 0
+      const totalRaw = lateMinutes + earlyLeaveMinutes
+      if (effectiveDeficit === 0) {
+        lateMinutes = 0
+        earlyLeaveMinutes = 0
+        if (recordStatus === 'late') recordStatus = 'on_time'
+      } else if (totalRaw > 0) {
+        const lateShare = Math.round(effectiveDeficit * (lateMinutes / totalRaw))
+        const earlyShare = effectiveDeficit - lateShare
+        lateMinutes = lateShare
+        earlyLeaveMinutes = earlyShare
+        if (lateMinutes > 0) recordStatus = 'late'
+        else if (earlyLeaveMinutes > 0 && recordStatus === 'on_time') recordStatus = 'early_leave'
+      }
+      overtimeMinutes = 0
     }
   }
 
