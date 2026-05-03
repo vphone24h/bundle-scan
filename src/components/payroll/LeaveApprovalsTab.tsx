@@ -12,7 +12,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, Search, CheckCircle, XCircle, Clock, CalendarOff, AlertTriangle, LogIn, LogOut, UserX } from 'lucide-react';
+import { Loader2, Search, CheckCircle, XCircle, Clock, CalendarOff, AlertTriangle, LogIn, LogOut, UserX, Bot, User } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { format, parseISO, eachDayOfInterval, differenceInCalendarDays, startOfMonth, endOfMonth } from 'date-fns';
@@ -189,6 +190,18 @@ export function LeaveApprovalsTab() {
       return name.toLowerCase().includes(q) || r.reason.toLowerCase().includes(q);
     });
   }, [requests, searchQuery, userMap]);
+
+  // Phân chia: phiếu tự động (do hệ thống tạo khi auto-detect đi trễ/về sớm)
+  // vs phiếu thủ công (NV tự gửi đơn xin phép)
+  const autoRequests = useMemo(
+    () => filtered.filter((r: any) => r.is_auto_detected === true),
+    [filtered]
+  );
+  const manualRequests = useMemo(
+    () => filtered.filter((r: any) => r.is_auto_detected !== true),
+    [filtered]
+  );
+  const [subTab, setSubTab] = useState<'auto' | 'manual'>('auto');
 
   const stats = useMemo(() => {
     const all = requests || [];
@@ -452,50 +465,84 @@ export function LeaveApprovalsTab() {
       </div>
 
       {/* Table */}
-      {isLoading ? (
-        <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
-      ) : filtered.length === 0 ? (
-        <Card><CardContent className="py-10 text-center text-muted-foreground">Không có đơn xin nghỉ nào</CardContent></Card>
-      ) : (
-        <Card>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nhân viên</TableHead>
-                  <TableHead>Loại</TableHead>
-                  <TableHead>Ngày nghỉ</TableHead>
-                  <TableHead>Lý do</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead>Ngày gửi</TableHead>
-                  <TableHead className="text-right">Thao tác</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map(req => (
-                  <TableRow key={req.id}>
-                    <TableCell className="font-medium text-sm">{userMap.get(req.user_id) || req.user_id.slice(0, 8)}</TableCell>
-                    <TableCell>{requestTypeBadge(req)}</TableCell>
-                    <TableCell className="text-sm">{formatDateRange(req.leave_date_from, req.leave_date_to)}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{req.reason}</TableCell>
-                    <TableCell>{statusBadge(req.status)}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{format(parseISO(req.created_at), 'dd/MM HH:mm')}</TableCell>
-                    <TableCell className="text-right">
-                      {req.status === 'pending' ? (
-                        <Button size="sm" variant="outline" onClick={() => openReview(req)}>Duyệt</Button>
-                      ) : (
-                        <Button size="sm" variant="ghost" onClick={() => openReview(req)}>Chi tiết</Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>
-      )}
+      {/* Sub-tabs: Phiếu tự động (do hệ thống tạo) vs Phiếu thủ công (NV gửi) */}
+      {(() => {
+        const renderTable = (rows: any[], emptyText: string) => {
+          if (isLoading) return <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+          if (rows.length === 0) return <Card><CardContent className="py-10 text-center text-muted-foreground">{emptyText}</CardContent></Card>;
+          return (
+            <Card>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nhân viên</TableHead>
+                      <TableHead>Loại</TableHead>
+                      <TableHead>Ngày nghỉ</TableHead>
+                      <TableHead>Lý do</TableHead>
+                      <TableHead>Trạng thái</TableHead>
+                      <TableHead>Ngày gửi</TableHead>
+                      <TableHead className="text-right">Thao tác</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((req: any) => (
+                      <TableRow key={req.id}>
+                        <TableCell className="font-medium text-sm">{userMap.get(req.user_id) || req.user_id.slice(0, 8)}</TableCell>
+                        <TableCell>{requestTypeBadge(req)}</TableCell>
+                        <TableCell className="text-sm">{formatDateRange(req.leave_date_from, req.leave_date_to)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{req.reason}</TableCell>
+                        <TableCell>{statusBadge(req.status)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{format(parseISO(req.created_at), 'dd/MM HH:mm')}</TableCell>
+                        <TableCell className="text-right">
+                          {req.status === 'pending' ? (
+                            <Button size="sm" variant="outline" onClick={() => openReview(req)}>Duyệt</Button>
+                          ) : (
+                            <Button size="sm" variant="ghost" onClick={() => openReview(req)}>Chi tiết</Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
+          );
+        };
+        const autoPending = autoRequests.filter((r: any) => r.status === 'pending').length + pendingAutoAbsences.length;
+        const manualPending = manualRequests.filter((r: any) => r.status === 'pending').length;
+        return (
+          <Tabs value={subTab} onValueChange={(v) => setSubTab(v as 'auto' | 'manual')}>
+            <TabsList>
+              <TabsTrigger value="auto" className="gap-1.5">
+                <Bot className="h-3.5 w-3.5" />
+                Phiếu tự động
+                {autoPending > 0 && <Badge variant="destructive" className="h-4 px-1.5 text-[10px] ml-1">{autoPending}</Badge>}
+              </TabsTrigger>
+              <TabsTrigger value="manual" className="gap-1.5">
+                <User className="h-3.5 w-3.5" />
+                Phiếu thủ công
+                {manualPending > 0 && <Badge variant="destructive" className="h-4 px-1.5 text-[10px] ml-1">{manualPending}</Badge>}
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="auto" className="mt-3 space-y-4">
+              <div className="text-xs text-muted-foreground italic">
+                Phiếu do hệ thống tự tạo khi NV check-in trễ / check-out sớm. Nếu NV gửi đơn thủ công cùng ngày + cùng loại, phiếu auto sẽ tự động bị gộp.
+              </div>
+              {renderTable(autoRequests, 'Không có phiếu tự động nào')}
+            </TabsContent>
+            <TabsContent value="manual" className="mt-3">
+              <div className="text-xs text-muted-foreground italic mb-3">
+                Phiếu do NV chủ động gửi từ trang chấm công cá nhân.
+              </div>
+              {renderTable(manualRequests, 'Không có phiếu thủ công nào')}
+            </TabsContent>
+          </Tabs>
+        );
+      })()}
 
       {/* Ngày vắng tự động phát hiện (gộp từ Duyệt nghỉ phép) */}
+      {subTab === 'auto' && (
       <Card className="border-orange-200 dark:border-orange-900">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -561,6 +608,7 @@ export function LeaveApprovalsTab() {
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Review Dialog */}
       <Dialog open={!!reviewDialog} onOpenChange={() => setReviewDialog(null)}>
