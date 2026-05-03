@@ -117,7 +117,7 @@ export function AttendanceHistoryTab() {
       const maxDate = recordDates.reduce((a, b) => (a > b ? a : b));
       const { data } = await supabase
         .from('leave_requests')
-        .select('user_id, leave_date_from, leave_date_to, request_type, reason, time_minutes')
+        .select('user_id, leave_date_from, leave_date_to, request_type, reason, review_note, time_minutes')
         .eq('status', 'approved')
         .in('request_type', ['late_arrival', 'early_leave'])
         .in('user_id', userIds)
@@ -127,9 +127,13 @@ export function AttendanceHistoryTab() {
       for (const r of data || []) {
         const from = new Date(r.leave_date_from);
         const to = new Date(r.leave_date_to);
+        const entry = {
+          ...r,
+          reason: r.review_note || r.reason,
+        };
         for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
           const ds = d.toISOString().split('T')[0];
-          map.set(`${r.user_id}_${ds}_${r.request_type}`, r);
+          map.set(`${r.user_id}_${ds}_${r.request_type}`, entry);
         }
       }
       return map;
