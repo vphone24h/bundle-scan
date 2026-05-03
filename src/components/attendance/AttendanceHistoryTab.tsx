@@ -146,12 +146,25 @@ export function AttendanceHistoryTab() {
     queryFn: async () => {
       const minDate = recordDates.reduce((a, b) => (a < b ? a : b));
       const maxDate = recordDates.reduce((a, b) => (a > b ? a : b));
-      const { data, error } = await supabase
+      // Lấy fixed (theo day_of_week) cho toàn bộ user
+      const { data: fixedRows, error: fixedErr } = await supabase
         .from('shift_assignments')
         .select('user_id, shift_id, assignment_type, day_of_week, specific_date, is_active, work_shifts(name, start_time, end_time)')
         .in('user_id', userIds)
-        .eq('is_active', true);
-      if (error) throw error;
+        .eq('is_active', true)
+        .eq('assignment_type', 'fixed');
+      if (fixedErr) throw fixedErr;
+      // Lấy daily CHỈ trong khoảng ngày đang xem (tránh chạm limit 1000 của Supabase)
+      const { data: dailyRows, error: dailyErr } = await supabase
+        .from('shift_assignments')
+        .select('user_id, shift_id, assignment_type, day_of_week, specific_date, is_active, work_shifts(name, start_time, end_time)')
+        .in('user_id', userIds)
+        .eq('is_active', true)
+        .eq('assignment_type', 'daily')
+        .gte('specific_date', minDate)
+        .lte('specific_date', maxDate);
+      if (dailyErr) throw dailyErr;
+      const data = [...(fixedRows || []), ...(dailyRows || [])];
       // Index: specific theo (uid|date), fixed theo (uid|dow)
       const specific = new Map<string, any>();
       const fixed = new Map<string, any>();
