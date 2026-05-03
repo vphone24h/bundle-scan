@@ -222,6 +222,64 @@ export function CorrectionRequestsTab() {
 
   const getTypeInfo = (type: string) => typeLabels[type] || typeLabels.correction;
 
+  // Fetch shift + ngưỡng net cho yêu cầu đang mở dialog (để đối chiếu)
+  const { data: approveContext } = useQuery({
+    queryKey: ['correction-approve-context', tenantId, approveDialog?.id],
+    queryFn: async () => {
+      if (!approveDialog || !tenantId) return null;
+      const baseTime = approveDialog.requested_check_in || approveDialog.requested_check_out;
+      const dayOfWeek = baseTime ? new Date(new Date(baseTime).getTime() + 7*60*60*1000).getUTCDay() : 0;
+      const [shiftRes, tenantRes, currentRec] = await Promise.all([
+        supabase
+          .from('shift_assignments')
+          .select('work_shifts(name, start_time, end_time, late_threshold_minutes)')
+          .eq('user_id', approveDialog.user_id)
+          .eq('tenant_id', tenantId)
+          .eq('is_active', true)
+          .or(`specific_date.eq.${approveDialog.request_date},and(assignment_type.eq.fixed,day_of_week.eq.${dayOfWeek})`)
+          .limit(1)
+          .maybeSingle(),
+        supabase.from('tenants').select('compensation_threshold_minutes').eq('id', tenantId).maybeSingle(),
+        supabase
+          .from('attendance_records')
+          .select('check_in_time, check_out_time, late_minutes, early_leave_minutes, status')
+          .eq('tenant_id', tenantId)
+          .eq('user_id', approveDialog.user_id)
+          .eq('date', approveDialog.request_date)
+          .maybeSingle(),
+      ]);
+      const ws = (shiftRes.data?.work_shifts as any) || null;
+      const rawTh = (tenantRes.data as any)?.compensation_threshold_minutes;
+      const compThreshold = rawTh == null ? 0 : Number(rawTh) || 0;
+      // Tính toán net mới sau khi áp giờ admin sửa
+      let estLate = 0, estEarly = 0;
+      if (ws && approveDialog.requested_check_in) {
+        const [h, m] = String(ws.start_time).split(':').map(Number);
+        const ci = new Date(approveDialog.requested_check_in);
+        const ciVN = new Date(ci.getTime() + 7*60*60*1000);
+        const shiftStart = new Date(Date.UTC(ciVN.getUTCFullYear(), ciVN.getUTCMonth(), ciVN.getUTCDate(), h, m) - 7*60*60*1000);
+        const threshold = (Number(ws.late_threshold_minutes) || 15) * 60000;
+        const diff = ci.getTime() - shiftStart.getTime();
+        if (diff > threshold) estLate = Math.round(diff / 60000);
+      }
+      if (ws && approveDialog.requested_check_out) {
+        const [eh, em] = String(ws.end_time).split(':').map(Number);
+        const co = new Date(approveDialog.requested_check_out);
+        const refDate = approveDialog.requested_check_in
+          ? new Date(approveDialog.requested_check_in)
+          : co;
+        const refVN = new Date(refDate.getTime() + 7*60*60*1000);
+        const shiftEnd = new Date(Date.UTC(refVN.getUTCFullYear(), refVN.getUTCMonth(), refVN.getUTCDate(), eh, em) - 7*60*60*1000);
+        const diffEnd = Math.round((co.getTime() - shiftEnd.getTime()) / 60000);
+        if (diffEnd < 0) estEarly = Math.abs(diffEnd);
+      }
+      return { shift: ws, compThreshold, currentRec: currentRec.data, estLate, estEarly };
+    },
+    enabled: !!approveDialog && !!tenantId,
+  });
+
+  const needPenaltyChoice = (approveContext?.estLate || 0) > 0 || (approveContext?.estEarly || 0) > 0;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
