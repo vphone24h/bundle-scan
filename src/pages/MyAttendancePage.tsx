@@ -218,7 +218,7 @@ export default function MyAttendancePage() {
     queryFn: async () => {
       const { data } = await supabase
         .from('leave_requests')
-        .select('id, leave_date_from, leave_date_to, request_type, reason, time_minutes, time_from, time_to')
+        .select('id, leave_date_from, leave_date_to, request_type, reason, time_minutes')
         .eq('user_id', user!.id)
         .eq('status', 'approved')
         .lte('leave_date_from', endStr)
