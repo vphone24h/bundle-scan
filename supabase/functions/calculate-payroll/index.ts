@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
         .lte("created_at", period.end_date + "T23:59:59")
         .in("status", ["completed", "paid"]),
       supabase.from("leave_requests")
-        .select("user_id, leave_date_from, leave_date_to, status, request_type")
+        .select("user_id, leave_date_from, leave_date_to, status, request_type, deduct_salary")
         .eq("tenant_id", tenant_id)
         .eq("status", "approved")
         .lte("leave_date_from", period.end_date)
@@ -237,17 +237,27 @@ Deno.serve(async (req) => {
     // Key: user_id + "_" + date(yyyy-MM-dd)
     const approvedLateArrivalKeys = new Set<string>();
     const approvedEarlyLeaveKeys = new Set<string>();
+    // Subset: waivers approved BUT admin chose to still deduct salary
+    // → these days will be deducted at OVERTIME rate (lighter than late penalty)
+    const lateArrivalDeductKeys = new Set<string>();
+    const earlyLeaveDeductKeys = new Set<string>();
     for (const lr of approvedLeaveRequests) {
       const rType = (lr as any).request_type || 'full_day';
       if (rType !== 'late_arrival' && rType !== 'early_leave') continue;
+      const deduct = (lr as any).deduct_salary === true;
       // Iterate dates from -> to
       const start = new Date(lr.leave_date_from);
       const end = new Date(lr.leave_date_to);
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         const ds = d.toISOString().split("T")[0];
         const key = `${lr.user_id}_${ds}`;
-        if (rType === 'late_arrival') approvedLateArrivalKeys.add(key);
-        else approvedEarlyLeaveKeys.add(key);
+        if (rType === 'late_arrival') {
+          approvedLateArrivalKeys.add(key);
+          if (deduct) lateArrivalDeductKeys.add(key);
+        } else {
+          approvedEarlyLeaveKeys.add(key);
+          if (deduct) earlyLeaveDeductKeys.add(key);
+        }
       }
     }
 
