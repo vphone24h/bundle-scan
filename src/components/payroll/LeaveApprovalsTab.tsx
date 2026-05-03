@@ -670,7 +670,7 @@ export function LeaveApprovalsTab() {
 
       {/* Review Dialog */}
       <Dialog open={!!reviewDialog} onOpenChange={() => setReviewDialog(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarOff className="h-5 w-5" /> Duyệt đơn xin phép
