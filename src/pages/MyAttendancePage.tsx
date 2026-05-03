@@ -218,7 +218,7 @@ export default function MyAttendancePage() {
     queryFn: async () => {
       const { data } = await supabase
         .from('leave_requests')
-        .select('id, leave_date_from, leave_date_to, request_type, reason, time_minutes')
+        .select('id, leave_date_from, leave_date_to, request_type, reason, review_note, time_minutes')
         .eq('user_id', user!.id)
         .eq('status', 'approved')
         .lte('leave_date_from', endStr)
@@ -249,18 +249,28 @@ export default function MyAttendancePage() {
     for (const r of myExcuses || []) {
       const from = new Date(r.leave_date_from);
       const to = new Date(r.leave_date_to);
+      const requestType = r.request_type || 'full_day';
+      const keys = requestType === 'full_day'
+        ? ['full_day', 'leave', 'sick_leave', 'personal_leave']
+        : [requestType];
+      const entry = {
+        ...r,
+        reason: r.review_note || r.reason,
+      };
       for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
         const ds = format(d, 'yyyy-MM-dd');
-        map.set(`${ds}_${r.request_type}`, r);
+        for (const key of keys) {
+          map.set(`${ds}_${key}`, entry);
+        }
       }
     }
     // Coi absence_reviews đã duyệt "có phép" như là leave full-day có phép
     for (const r of myAbsenceReviews || []) {
       const ds = r.absence_date as string;
-      const entry = { reason: r.review_note || 'Đã duyệt có phép', request_type: 'leave' };
-      if (!map.has(`${ds}_leave`)) map.set(`${ds}_leave`, entry);
-      if (!map.has(`${ds}_sick_leave`)) map.set(`${ds}_sick_leave`, entry);
-      if (!map.has(`${ds}_personal_leave`)) map.set(`${ds}_personal_leave`, entry);
+      const entry = { reason: r.review_note || 'Đã duyệt có phép', request_type: 'full_day' };
+      for (const key of ['full_day', 'leave', 'sick_leave', 'personal_leave']) {
+        if (!map.has(`${ds}_${key}`)) map.set(`${ds}_${key}`, entry);
+      }
     }
     return map;
   }, [myExcuses, myAbsenceReviews]);
@@ -405,6 +415,31 @@ export default function MyAttendancePage() {
         },
         () => {
           qc.invalidateQueries({ queryKey: ['my-correction-requests'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leave_requests',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          qc.invalidateQueries({ queryKey: ['my-leave-requests'] });
+          qc.invalidateQueries({ queryKey: ['my-approved-excuses'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'absence_reviews',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          qc.invalidateQueries({ queryKey: ['my-absence-reviews'] });
         }
       )
       .subscribe();

@@ -159,7 +159,12 @@ export function LeaveApprovalsTab() {
         qc.refetchQueries({ queryKey: ['pending-approvals-count'] }),
       ]);
       qc.invalidateQueries({ queryKey: ['my-leave-requests'] });
+      qc.invalidateQueries({ queryKey: ['my-approved-excuses'] });
+      qc.invalidateQueries({ queryKey: ['my-absence-reviews'] });
+      qc.invalidateQueries({ queryKey: ['approved-late-early-excuses'] });
       qc.invalidateQueries({ queryKey: ['absence-reviews'] });
+      qc.invalidateQueries({ queryKey: ['attendance-records'] });
+      qc.invalidateQueries({ queryKey: ['my-attendance-month'] });
       const msg = vars.action === 'approved' ? 'Đã duyệt có phép' : vars.action === 'unexcused' ? 'Đã duyệt không phép' : 'Đã từ chối đơn nghỉ';
       toast.success(msg);
       setReviewDialog(null);
@@ -338,6 +343,9 @@ export function LeaveApprovalsTab() {
         qc.refetchQueries({ queryKey: ['merged-absence-reviews'] }),
         qc.refetchQueries({ queryKey: ['pending-approvals-count'] }),
       ]);
+      qc.invalidateQueries({ queryKey: ['my-absence-reviews'] });
+      qc.invalidateQueries({ queryKey: ['attendance-records'] });
+      qc.invalidateQueries({ queryKey: ['my-attendance-month'] });
       toast.success('Đã cập nhật trạng thái nghỉ');
       setAbsenceDialog(null);
     },
