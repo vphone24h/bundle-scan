@@ -19,6 +19,25 @@ import { format, parseISO, eachDayOfInterval, differenceInCalendarDays } from 'd
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 
+// Format ISO time → "HH:mm" theo giờ VN (UTC+7).
+function fmtTimeVN(iso?: string | null) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const vn = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+  const hh = String(vn.getUTCHours()).padStart(2, '0');
+  const mm = String(vn.getUTCMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+function fmtMins(mins: number) {
+  const sign = mins < 0 ? '-' : '';
+  const m = Math.abs(mins);
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  if (h && r) return `${sign}${h}h${r}p`;
+  if (h) return `${sign}${h}h`;
+  return `${sign}${r}p`;
+}
+
 function useTenantId() {
   const { data: pu } = usePlatformUser();
   const { data: ct } = useCurrentTenant();
@@ -73,6 +92,26 @@ export function LeaveApprovalsTab() {
   const userMap = useMemo(() => {
     return new Map((platformUsers || []).map(u => [u.user_id, u.display_name || u.email || u.user_id.slice(0, 8)]));
   }, [platformUsers]);
+
+  // Lấy bản ghi chấm công ngày của đơn đang mở để admin đối chiếu giờ ca vs thực tế.
+  const reviewDate = reviewDialog?.leave_date_from || null;
+  const reviewUserId = reviewDialog?.user_id || null;
+  const isTimeRequest = reviewDialog?.request_type === 'late_arrival' || reviewDialog?.request_type === 'early_leave';
+  const { data: reviewAttendance } = useQuery({
+    queryKey: ['leave-review-attendance', tenantId, reviewUserId, reviewDate],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('attendance_records')
+        .select('check_in_time, check_out_time, late_minutes, early_leave_minutes, total_work_minutes, work_shifts(name, start_time, end_time)')
+        .eq('tenant_id', tenantId!)
+        .eq('user_id', reviewUserId!)
+        .eq('date', reviewDate!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!tenantId && !!reviewUserId && !!reviewDate && !!isTimeRequest,
+  });
 
   // 3 actions: approved (có phép), unexcused (không phép but still off), rejected (không được nghỉ)
   const reviewMutation = useMutation({
