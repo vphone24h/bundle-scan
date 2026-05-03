@@ -1153,9 +1153,14 @@ function EmployeeCorrectionRequests({ userId, tenantId }: { userId?: string; ten
                   onChange={e => setRequestDate(e.target.value)}
                   className="h-8 text-sm"
                 />
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  Chỉ được sửa công từ hôm qua trở về trước. Hôm nay chưa hết ca, dùng tab "Nghỉ" để xin trễ/về sớm.
-                </p>
+                <div className="mt-1 space-y-1">
+                  <p className="text-[10px] text-muted-foreground">
+                    Chỉ được sửa công từ hôm qua trở về trước.
+                  </p>
+                  <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                    💡 Nếu muốn xin về sớm hoặc đi trễ hôm nay, vui lòng tạo phiếu ở tab <strong>"Nghỉ"</strong>.
+                  </p>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
