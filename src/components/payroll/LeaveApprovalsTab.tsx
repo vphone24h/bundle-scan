@@ -375,16 +375,16 @@ export function LeaveApprovalsTab() {
                 <>
                   <Button
                     className="w-full bg-green-600 hover:bg-green-700"
-                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'approved', note: reviewNote })}
+                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'approved', note: reviewNote, deduct: deductSalary })}
                     disabled={reviewMutation.isPending}
                   >
                     {reviewMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
-                    Duyệt (miễn phạt)
+                    Duyệt {deductSalary ? '(trừ lương)' : '(miễn phạt)'}
                   </Button>
                   <Button
                     variant="destructive"
                     className="w-full"
-                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'rejected', note: reviewNote })}
+                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'rejected', note: reviewNote, deduct: false })}
                     disabled={reviewMutation.isPending}
                   >
                     <XCircle className="h-4 w-4 mr-1" /> Từ chối (vẫn tính phạt)
@@ -394,7 +394,7 @@ export function LeaveApprovalsTab() {
                 <>
                   <Button
                     className="w-full bg-green-600 hover:bg-green-700"
-                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'approved', note: reviewNote })}
+                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'approved', note: reviewNote, deduct: false })}
                     disabled={reviewMutation.isPending}
                   >
                     {reviewMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
@@ -403,7 +403,7 @@ export function LeaveApprovalsTab() {
                   <Button
                     variant="outline"
                     className="w-full border-orange-400 text-orange-600 hover:bg-orange-50"
-                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'unexcused', note: reviewNote })}
+                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'unexcused', note: reviewNote, deduct: false })}
                     disabled={reviewMutation.isPending}
                   >
                     <AlertTriangle className="h-4 w-4 mr-1" /> Duyệt không phép
@@ -411,7 +411,7 @@ export function LeaveApprovalsTab() {
                   <Button
                     variant="destructive"
                     className="w-full"
-                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'rejected', note: reviewNote })}
+                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'rejected', note: reviewNote, deduct: false })}
                     disabled={reviewMutation.isPending}
                   >
                     <XCircle className="h-4 w-4 mr-1" /> Từ chối (không được nghỉ)
