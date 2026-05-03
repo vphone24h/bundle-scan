@@ -854,6 +854,7 @@ export type Database = {
           check_out_time: string | null
           created_at: string
           date: string
+          early_arrival_minutes: number
           early_leave_minutes: number | null
           id: string
           is_auto_checkout: boolean | null
@@ -861,7 +862,13 @@ export type Database = {
           late_minutes: number | null
           location_id: string | null
           note: string | null
+          overtime_approved_minutes: number
           overtime_minutes: number | null
+          overtime_review_note: string | null
+          overtime_reviewed_at: string | null
+          overtime_reviewed_by: string | null
+          overtime_status: string
+          pending_overtime_minutes: number
           shift_id: string | null
           status: string
           tenant_id: string
@@ -887,6 +894,7 @@ export type Database = {
           check_out_time?: string | null
           created_at?: string
           date: string
+          early_arrival_minutes?: number
           early_leave_minutes?: number | null
           id?: string
           is_auto_checkout?: boolean | null
@@ -894,7 +902,13 @@ export type Database = {
           late_minutes?: number | null
           location_id?: string | null
           note?: string | null
+          overtime_approved_minutes?: number
           overtime_minutes?: number | null
+          overtime_review_note?: string | null
+          overtime_reviewed_at?: string | null
+          overtime_reviewed_by?: string | null
+          overtime_status?: string
+          pending_overtime_minutes?: number
           shift_id?: string | null
           status?: string
           tenant_id: string
@@ -920,6 +934,7 @@ export type Database = {
           check_out_time?: string | null
           created_at?: string
           date?: string
+          early_arrival_minutes?: number
           early_leave_minutes?: number | null
           id?: string
           is_auto_checkout?: boolean | null
@@ -927,7 +942,13 @@ export type Database = {
           late_minutes?: number | null
           location_id?: string | null
           note?: string | null
+          overtime_approved_minutes?: number
           overtime_minutes?: number | null
+          overtime_review_note?: string | null
+          overtime_reviewed_at?: string | null
+          overtime_reviewed_by?: string | null
+          overtime_status?: string
+          pending_overtime_minutes?: number
           shift_id?: string | null
           status?: string
           tenant_id?: string
@@ -5391,6 +5412,7 @@ export type Database = {
       leave_requests: {
         Row: {
           created_at: string
+          deduct_salary: boolean
           id: string
           leave_date_from: string
           leave_date_to: string
@@ -5407,6 +5429,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deduct_salary?: boolean
           id?: string
           leave_date_from: string
           leave_date_to: string
@@ -5423,6 +5446,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deduct_salary?: boolean
           id?: string
           leave_date_from?: string
           leave_date_to?: string
@@ -9828,6 +9852,7 @@ export type Database = {
           business_need: string | null
           business_type: string | null
           company_id: string | null
+          compensation_threshold_minutes: number
           created_at: string
           einvoice_enabled: boolean
           email: string | null
@@ -9862,6 +9887,7 @@ export type Database = {
           business_need?: string | null
           business_type?: string | null
           company_id?: string | null
+          compensation_threshold_minutes?: number
           created_at?: string
           einvoice_enabled?: boolean
           email?: string | null
@@ -9896,6 +9922,7 @@ export type Database = {
           business_need?: string | null
           business_type?: string | null
           company_id?: string | null
+          compensation_threshold_minutes?: number
           created_at?: string
           einvoice_enabled?: boolean
           email?: string | null

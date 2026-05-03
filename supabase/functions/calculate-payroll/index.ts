@@ -378,10 +378,13 @@ Deno.serve(async (req) => {
       const approvedEarlyCheckinMap = new Map(userOTRequests.filter((r: any) => r.request_type === "early_checkin").map((r: any) => [r.request_date, r.overtime_minutes || 0]));
 
       // Only count overtime minutes from approved extra_hours + early_checkin requests
+      // PLUS overtime đã được admin duyệt inline (overtime_status='approved')
       const approvedOvertimeMinutes = enableOvertime ? userAttendance.reduce((s: number, a: any) => {
         let mins = 0;
         if (approvedExtraHoursDates.has(a.date)) mins += (a.overtime_minutes || 0);
         if (approvedEarlyCheckinMap.has(a.date)) mins += (approvedEarlyCheckinMap.get(a.date) || 0);
+        // Inline-approved OT từ check-in sớm/check-out trễ vượt ngưỡng bù trừ
+        if (a.overtime_status === 'approved') mins += (a.overtime_approved_minutes || 0);
         return s + mins;
       }, 0) : 0;
       let overtimeMinutes = approvedOvertimeMinutes;
@@ -459,6 +462,7 @@ Deno.serve(async (req) => {
           let mins = 0;
           if (approvedExtraHoursDates.has(a.date)) mins += (a.overtime_minutes || 0);
           if (approvedEarlyCheckinMap.has(a.date)) mins += (approvedEarlyCheckinMap.get(a.date) || 0);
+          if (a.overtime_status === 'approved') mins += (a.overtime_approved_minutes || 0);
           return s + mins;
         }, 0);
         overtimeMinutes = Math.max(0, overtimeMinutes - overtimeOnHoliday);

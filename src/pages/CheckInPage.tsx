@@ -237,6 +237,21 @@ export default function CheckInPage() {
     enabled: !!user?.id && !!tenantId,
   });
 
+  // Ngưỡng bù trừ vào sớm/về trễ (mặc định 60p)
+  const { data: tenantSettings } = useQuery({
+    queryKey: ['tenant-comp-threshold', tenantId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('tenants')
+        .select('compensation_threshold_minutes')
+        .eq('id', tenantId!)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!tenantId,
+  });
+  const compThreshold = (tenantSettings as any)?.compensation_threshold_minutes ?? 60;
+
   const isInRange = nearestLocation && distance !== null && distance <= nearestLocation.radius_meters;
   const deviceOk = myDevice?.status === 'approved';
   const hasCheckedIn = !!todayRecord?.check_in_time;
@@ -294,6 +309,9 @@ export default function CheckInPage() {
     try {
       let status = 'on_time';
       let lateMinutes = 0;
+      let earlyArrivalMinutes = 0;
+      let pendingOvertimeMinutes = 0;
+      let overtimeStatus = 'none';
       const now = new Date();
       if (shiftInfo) {
         const [h, m] = shiftInfo.start_time.split(':').map(Number);
@@ -303,7 +321,20 @@ export default function CheckInPage() {
         const effectiveStart = new Date(shiftStart.getTime() + waiverLateMin * 60000);
         const threshold = (shiftInfo.late_threshold_minutes || 15) * 60 * 1000;
         const diff = now.getTime() - effectiveStart.getTime();
-        if (diff > threshold) { status = 'late'; lateMinutes = Math.round(diff / 60000); }
+        if (diff > threshold) {
+          status = 'late';
+          lateMinutes = Math.round(diff / 60000);
+        } else if (diff < 0) {
+          // Vào sớm: tách phần trong ngưỡng bù trừ và phần dư (OT cần admin duyệt)
+          const earlyTotal = Math.round(-diff / 60000);
+          if (earlyTotal <= compThreshold) {
+            earlyArrivalMinutes = earlyTotal;
+          } else {
+            earlyArrivalMinutes = compThreshold;
+            pendingOvertimeMinutes = earlyTotal - compThreshold;
+            overtimeStatus = 'pending';
+          }
+        }
       }
 
       const { error } = await supabase.from('attendance_records').insert([{
@@ -322,15 +353,24 @@ export default function CheckInPage() {
         check_in_ip: null,
         status,
         late_minutes: lateMinutes,
+        early_arrival_minutes: earlyArrivalMinutes,
+        pending_overtime_minutes: pendingOvertimeMinutes,
+        overtime_status: overtimeStatus,
         note: gpsFraudWarning.length > 0 ? `⚠️ GPS flags: ${gpsFraudWarning.join(', ')}` : null,
       }]);
       if (error) throw error;
       const waiverLateMin = todayWaivers?.late || 0;
-      toast.success(
-        status === 'late'
-          ? `Check-in thành công (trễ ${lateMinutes} phút${waiverLateMin > 0 ? ` — đã trừ ${waiverLateMin}p xin phép` : ''})`
-          : waiverLateMin > 0 ? `Check-in thành công (trong khung xin trễ ${waiverLateMin}p)` : 'Check-in thành công!'
-      );
+      let msg = 'Check-in thành công!';
+      if (status === 'late') {
+        msg = `Check-in thành công (trễ ${lateMinutes} phút${waiverLateMin > 0 ? ` — đã trừ ${waiverLateMin}p xin phép` : ''})`;
+      } else if (pendingOvertimeMinutes > 0) {
+        msg = `Check-in sớm ${earlyArrivalMinutes + pendingOvertimeMinutes}p. ${earlyArrivalMinutes}p sẽ bù trừ tự động, ${pendingOvertimeMinutes}p tăng ca chờ admin duyệt.`;
+      } else if (earlyArrivalMinutes > 0) {
+        msg = `Check-in sớm ${earlyArrivalMinutes}p — sẽ tự bù trừ nếu về sớm trong ngưỡng.`;
+      } else if (waiverLateMin > 0) {
+        msg = `Check-in thành công (trong khung xin trễ ${waiverLateMin}p)`;
+      }
+      toast.success(msg);
       qc.invalidateQueries({ queryKey: ['my-attendance-today'] });
       qc.invalidateQueries({ queryKey: ['attendance-records'] });
       // Random post-checkin verification (20% chance)
@@ -342,7 +382,7 @@ export default function CheckInPage() {
     } finally {
       setChecking(false);
     }
-  }, [user?.id, tenantId, gpsPos, nearestLocation, myDevice, todayShift, shiftInfo, today, qc, deviceOk, gpsFraudWarning, todayWaivers]);
+  }, [user?.id, tenantId, gpsPos, nearestLocation, myDevice, todayShift, shiftInfo, today, qc, deviceOk, gpsFraudWarning, todayWaivers, compThreshold]);
 
   const handleCheckOut = useCallback(async () => {
     if (!todayRecord?.id || !gpsPos || !deviceOk) return;
@@ -353,8 +393,9 @@ export default function CheckInPage() {
       const totalMinutes = Math.round((now.getTime() - checkInTime.getTime()) / 60000);
 
       // Calculate overtime & early leave based on shift times
-      let overtimeMinutes = 0;
+      let overtimeMinutes = 0; // OT cuối ca (đã được duyệt = 0, chờ duyệt cộng vào pending)
       let earlyLeaveMinutes = 0;
+      let extraPendingOT = 0; // OT cuối ca chờ duyệt
       if (shiftInfo) {
         const [eh, em] = shiftInfo.end_time.split(':').map(Number);
         const shiftEnd = new Date(); shiftEnd.setHours(eh, em, 0, 0);
@@ -363,12 +404,35 @@ export default function CheckInPage() {
         const effectiveEnd = new Date(shiftEnd.getTime() - waiverEarlyMin * 60000);
         const diffFromEnd = Math.round((now.getTime() - effectiveEnd.getTime()) / 60000);
         if (diffFromEnd > 0) {
-          // Vẫn so OT theo shiftEnd gốc, không tính OT phần được xin về sớm
-          overtimeMinutes = Math.max(0, Math.round((now.getTime() - shiftEnd.getTime()) / 60000));
+          // OT cuối ca = phần ra sau shiftEnd gốc
+          const otRaw = Math.max(0, Math.round((now.getTime() - shiftEnd.getTime()) / 60000));
+          // Trong ngưỡng compThreshold đầu tiên: tự bù trừ (không tính OT, không trừ về sớm)
+          // Vượt ngưỡng: phần dư là OT pending cần admin duyệt
+          if (otRaw > compThreshold) {
+            extraPendingOT = otRaw - compThreshold;
+          }
         } else if (diffFromEnd < 0) {
-          earlyLeaveMinutes = Math.abs(diffFromEnd); // về sớm so với mốc đã trừ waiver
+          // Về sớm so với mốc đã trừ waiver
+          const earlyRaw = Math.abs(diffFromEnd);
+          // Bù trừ với phần vào sớm đã ghi
+          const earlyArrival = (todayRecord as any)?.early_arrival_minutes || 0;
+          const offset = Math.min(earlyArrival, earlyRaw);
+          const remainder = earlyRaw - offset;
+          // Phần dư còn trong ngưỡng compThreshold → cũng bù trừ tự động (về sớm hợp lệ)
+          if (remainder <= compThreshold) {
+            earlyLeaveMinutes = 0;
+          } else {
+            earlyLeaveMinutes = remainder;
+          }
         }
       }
+
+      // Cộng OT pending cuối ca với pending từ check-in (vào sớm vượt ngưỡng)
+      const existingPending = (todayRecord as any)?.pending_overtime_minutes || 0;
+      const totalPendingOT = existingPending + extraPendingOT;
+      const newOTStatus = totalPendingOT > 0
+        ? ((todayRecord as any)?.overtime_status === 'approved' ? 'approved' : 'pending')
+        : ((todayRecord as any)?.overtime_status || 'none');
 
       const { error } = await supabase.from('attendance_records').update({
         check_out_time: now.toISOString(),
@@ -380,9 +444,17 @@ export default function CheckInPage() {
         total_work_minutes: totalMinutes,
         overtime_minutes: overtimeMinutes,
         early_leave_minutes: earlyLeaveMinutes,
+        pending_overtime_minutes: totalPendingOT,
+        overtime_status: newOTStatus,
       }).eq('id', todayRecord.id);
       if (error) throw error;
-      toast.success(`Check-out thành công! Tổng: ${Math.floor(totalMinutes/60)}h${totalMinutes%60}p`);
+      let msg = `Check-out thành công! Tổng: ${Math.floor(totalMinutes/60)}h${totalMinutes%60}p`;
+      if (totalPendingOT > 0) {
+        msg += ` — ${totalPendingOT}p tăng ca chờ admin duyệt.`;
+      } else if (earlyLeaveMinutes > 0) {
+        msg += ` — Về sớm ${earlyLeaveMinutes}p.`;
+      }
+      toast.success(msg);
       qc.invalidateQueries({ queryKey: ['my-attendance-today'] });
       qc.invalidateQueries({ queryKey: ['attendance-records'] });
     } catch (e: any) {
@@ -390,7 +462,7 @@ export default function CheckInPage() {
     } finally {
       setChecking(false);
     }
-  }, [todayRecord, gpsPos, myDevice, qc, deviceOk, shiftInfo, todayWaivers]);
+  }, [todayRecord, gpsPos, myDevice, qc, deviceOk, shiftInfo, todayWaivers, compThreshold]);
 
   // Send remote check-in/out request to admin
   const handleSendRemoteRequest = useCallback(async (type: 'remote_checkin' | 'remote_checkout') => {

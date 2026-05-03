@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Loader2, Search, CheckCircle, XCircle, Clock, CalendarOff, AlertTriangle, LogIn, LogOut } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { format, parseISO, eachDayOfInterval, differenceInCalendarDays } from 'date-fns';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
@@ -33,10 +34,11 @@ export function LeaveApprovalsTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [reviewDialog, setReviewDialog] = useState<any>(null);
   const [reviewNote, setReviewNote] = useState('');
+  const [deductSalary, setDeductSalary] = useState(false);
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
   const { unlocked, unlock } = useSecurityUnlock('leave-approval-review');
   const [showPwd, setShowPwd] = useState(false);
-  const [pendingAction, setPendingAction] = useState<{ id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string } | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string; deduct?: boolean } | null>(null);
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ['leave-requests-admin', tenantId, filterStatus],
@@ -74,7 +76,7 @@ export function LeaveApprovalsTab() {
 
   // 3 actions: approved (có phép), unexcused (không phép but still off), rejected (không được nghỉ)
   const reviewMutation = useMutation({
-    mutationFn: async ({ id, action, note }: { id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string }) => {
+    mutationFn: async ({ id, action, note, deduct }: { id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string; deduct?: boolean }) => {
       const { error } = await supabase
         .from('leave_requests')
         .update({
@@ -82,6 +84,7 @@ export function LeaveApprovalsTab() {
           reviewed_by: user?.id,
           reviewed_at: new Date().toISOString(),
           review_note: note || null,
+          deduct_salary: deduct === true,
         })
         .eq('id', id);
       if (error) throw error;
@@ -122,7 +125,7 @@ export function LeaveApprovalsTab() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const guardedReview = (payload: { id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string }) => {
+  const guardedReview = (payload: { id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string; deduct?: boolean }) => {
     if (hasSecurityPassword && !unlocked) {
       setPendingAction(payload);
       setShowPwd(true);
@@ -154,6 +157,7 @@ export function LeaveApprovalsTab() {
   const openReview = (req: any) => {
     setReviewDialog(req);
     setReviewNote('');
+    setDeductSalary(req?.deduct_salary === true);
   };
 
   const formatDateRange = (from: string, to: string) => {
@@ -329,10 +333,25 @@ export function LeaveApprovalsTab() {
                     <Textarea value={reviewNote} onChange={e => setReviewNote(e.target.value)} placeholder="Ghi chú..." rows={2} />
                   </div>
                   {(reviewDialog.request_type === 'late_arrival' || reviewDialog.request_type === 'early_leave') ? (
-                    <div className="bg-muted/50 p-3 rounded text-xs space-y-1.5">
-                      <p>✅ <strong>Duyệt</strong>: <strong>Không tính phạt</strong> phút {reviewDialog.request_type === 'late_arrival' ? 'đi muộn' : 'về sớm'} của ngày đó.</p>
-                      <p>❌ <strong>Từ chối</strong>: Hệ thống vẫn <strong>tính phạt</strong> theo quy định công ty.</p>
-                    </div>
+                    <>
+                      <div className="bg-muted/50 p-3 rounded text-xs space-y-1.5">
+                        <p>✅ <strong>Duyệt</strong>: Bỏ qua phạt phút {reviewDialog.request_type === 'late_arrival' ? 'đi muộn' : 'về sớm'} của ngày đó.</p>
+                        <p>❌ <strong>Từ chối</strong>: Hệ thống vẫn <strong>tính phạt</strong> theo quy định công ty.</p>
+                      </div>
+                      <label className="flex items-start gap-2 p-2 rounded border border-amber-300 bg-amber-50 dark:bg-amber-950/20 cursor-pointer">
+                        <Checkbox
+                          checked={deductSalary}
+                          onCheckedChange={(v) => setDeductSalary(v === true)}
+                          className="mt-0.5"
+                        />
+                        <div className="text-xs">
+                          <div className="font-medium text-amber-800 dark:text-amber-200">Trừ lương {reviewDialog.time_minutes || 0} phút này</div>
+                          <div className="text-muted-foreground mt-0.5">
+                            Mặc định <strong>KHÔNG trừ</strong>. Tick nếu muốn trừ lương theo đơn giá tăng ca/giờ trong bảng lương NV.
+                          </div>
+                        </div>
+                      </label>
+                    </>
                   ) : (
                     <div className="bg-muted/50 p-3 rounded text-xs space-y-1.5">
                       <p>✅ <strong>Có phép</strong>: Nghỉ có phép — nếu còn hạn mức nghỉ có lương thì không trừ lương, hết hạn mức chỉ trừ ngày công.</p>
@@ -356,16 +375,16 @@ export function LeaveApprovalsTab() {
                 <>
                   <Button
                     className="w-full bg-green-600 hover:bg-green-700"
-                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'approved', note: reviewNote })}
+                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'approved', note: reviewNote, deduct: deductSalary })}
                     disabled={reviewMutation.isPending}
                   >
                     {reviewMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
-                    Duyệt (miễn phạt)
+                    Duyệt {deductSalary ? '(trừ lương)' : '(miễn phạt)'}
                   </Button>
                   <Button
                     variant="destructive"
                     className="w-full"
-                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'rejected', note: reviewNote })}
+                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'rejected', note: reviewNote, deduct: false })}
                     disabled={reviewMutation.isPending}
                   >
                     <XCircle className="h-4 w-4 mr-1" /> Từ chối (vẫn tính phạt)
@@ -375,7 +394,7 @@ export function LeaveApprovalsTab() {
                 <>
                   <Button
                     className="w-full bg-green-600 hover:bg-green-700"
-                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'approved', note: reviewNote })}
+                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'approved', note: reviewNote, deduct: false })}
                     disabled={reviewMutation.isPending}
                   >
                     {reviewMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
@@ -384,7 +403,7 @@ export function LeaveApprovalsTab() {
                   <Button
                     variant="outline"
                     className="w-full border-orange-400 text-orange-600 hover:bg-orange-50"
-                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'unexcused', note: reviewNote })}
+                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'unexcused', note: reviewNote, deduct: false })}
                     disabled={reviewMutation.isPending}
                   >
                     <AlertTriangle className="h-4 w-4 mr-1" /> Duyệt không phép
@@ -392,7 +411,7 @@ export function LeaveApprovalsTab() {
                   <Button
                     variant="destructive"
                     className="w-full"
-                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'rejected', note: reviewNote })}
+                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'rejected', note: reviewNote, deduct: false })}
                     disabled={reviewMutation.isPending}
                   >
                     <XCircle className="h-4 w-4 mr-1" /> Từ chối (không được nghỉ)
