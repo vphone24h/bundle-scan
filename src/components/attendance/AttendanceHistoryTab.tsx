@@ -28,6 +28,41 @@ const statusConfig: Record<string, { label: string; class: string }> = {
   day_off: { label: 'Nghỉ', class: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400' },
 };
 
+// Tính diff phút giữa check-in/out thực tế và ca chuẩn (start_time/end_time dạng "HH:mm:ss")
+function computeShiftDiff(record: any) {
+  const shift = record?.work_shifts;
+  if (!shift?.start_time || !shift?.end_time) return null;
+  const buildDate = (timeStr: string, baseISO: string | null) => {
+    if (!baseISO) return null;
+    const base = new Date(baseISO);
+    const [h, m, s] = String(timeStr).split(':').map(Number);
+    const d = new Date(base);
+    d.setHours(h || 0, m || 0, s || 0, 0);
+    return d;
+  };
+  const ci = record.check_in_time ? new Date(record.check_in_time) : null;
+  const co = record.check_out_time ? new Date(record.check_out_time) : null;
+  const shiftStart = buildDate(shift.start_time, record.check_in_time || record.check_out_time);
+  const shiftEnd = buildDate(shift.end_time, record.check_in_time || record.check_out_time);
+  // Ca qua đêm: end < start ⇒ end thuộc ngày hôm sau
+  if (shiftStart && shiftEnd && shiftEnd <= shiftStart) {
+    shiftEnd.setDate(shiftEnd.getDate() + 1);
+  }
+  const diffMin = (a: Date | null, b: Date | null) => (a && b ? Math.round((a.getTime() - b.getTime()) / 60000) : null);
+  const inDiff = diffMin(ci, shiftStart);   // âm = vào sớm, dương = đi trễ
+  const outDiff = diffMin(co, shiftEnd);    // âm = về sớm, dương = về trễ
+  return {
+    shiftStart, shiftEnd,
+    earlyIn: inDiff !== null && inDiff < 0 ? -inDiff : 0,
+    lateIn: inDiff !== null && inDiff > 0 ? inDiff : 0,
+    earlyOut: outDiff !== null && outDiff < 0 ? -outDiff : 0,
+    lateOut: outDiff !== null && outDiff > 0 ? outDiff : 0,
+    hasOut: !!co,
+  };
+}
+
+const fmtMin = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h${m % 60 ? (m % 60) + 'p' : ''}` : `${m}p`);
+
 interface EditForm {
   check_in_time: string;
   check_out_time: string;
