@@ -164,7 +164,14 @@ export function CorrectionRequestsTab() {
     let detail = '';
     if (rec.status === 'late' && rec.late_minutes) detail = `${formatMinutes(rec.late_minutes)}`;
     else if (rec.status === 'early_leave' && rec.early_leave_minutes) detail = `${formatMinutes(rec.early_leave_minutes)}`;
-    return { ...st, detail };
+    return {
+      ...st,
+      detail,
+      checkIn: rec.check_in_time ? format(new Date(rec.check_in_time), 'HH:mm') : null,
+      checkOut: rec.check_out_time ? format(new Date(rec.check_out_time), 'HH:mm') : null,
+      lateMin: rec.late_minutes || 0,
+      earlyMin: rec.early_leave_minutes || 0,
+    };
   };
 
   const reviewMutation = useMutation({
@@ -311,9 +318,18 @@ export function CorrectionRequestsTab() {
                               <div className="flex flex-col gap-1">
                                 <Badge className={`text-[10px] w-fit ${st.class}`}>{st.label}</Badge>
                                 {attSt && (
-                                  <Badge className={`text-[10px] w-fit ${attSt.class}`}>
-                                    {attSt.label}{attSt.detail ? ` ${attSt.detail}` : ''} • Có phép
-                                  </Badge>
+                                  <>
+                                    <Badge className={`text-[10px] w-fit ${attSt.class}`}>
+                                      {attSt.label}
+                                      {attSt.lateMin > 0 ? ` • Trễ ${formatMinutes(attSt.lateMin)}` : ''}
+                                      {attSt.earlyMin > 0 ? ` • Về sớm ${formatMinutes(attSt.earlyMin)}` : ''}
+                                      {' '}• Có phép
+                                    </Badge>
+                                    <span className="text-[11px] text-muted-foreground">
+                                      Vào: <strong className="text-foreground">{attSt.checkIn || '--:--'}</strong>
+                                      {' '}· Ra: <strong className="text-foreground">{attSt.checkOut || '--:--'}</strong>
+                                    </span>
+                                  </>
                                 )}
                               </div>
                             </TableCell>
@@ -340,9 +356,18 @@ export function CorrectionRequestsTab() {
                         </div>
                         <p className="text-xs text-muted-foreground">{format(new Date(r.request_date), 'dd/MM/yyyy')} - {r.reason}</p>
                         {attSt && (
-                          <Badge className={`text-[10px] ${attSt.class}`}>
-                            {attSt.label}{attSt.detail ? ` ${attSt.detail}` : ''} • Có phép
-                          </Badge>
+                          <div className="space-y-1">
+                            <Badge className={`text-[10px] ${attSt.class}`}>
+                              {attSt.label}
+                              {attSt.lateMin > 0 ? ` • Trễ ${formatMinutes(attSt.lateMin)}` : ''}
+                              {attSt.earlyMin > 0 ? ` • Về sớm ${formatMinutes(attSt.earlyMin)}` : ''}
+                              {' '}• Có phép
+                            </Badge>
+                            <p className="text-[11px] text-muted-foreground">
+                              Vào: <strong className="text-foreground">{attSt.checkIn || '--:--'}</strong>
+                              {' '}· Ra: <strong className="text-foreground">{attSt.checkOut || '--:--'}</strong>
+                            </p>
+                          </div>
                         )}
                         {r.review_note && <p className="text-xs text-muted-foreground italic">"{r.review_note}"</p>}
                       </div>
