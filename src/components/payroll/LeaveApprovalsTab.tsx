@@ -530,7 +530,32 @@ export function LeaveApprovalsTab() {
           if (rows.length === 0) return <Card><CardContent className="py-10 text-center text-muted-foreground">{emptyText}</CardContent></Card>;
           return (
             <Card>
-              <div className="overflow-x-auto">
+              {/* Mobile card list */}
+              <div className="sm:hidden divide-y">
+                {rows.map((req: any) => (
+                  <div key={req.id} className="p-3 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="font-medium text-sm">{userMap.get(req.user_id) || req.user_id.slice(0, 8)}</div>
+                      {statusBadge(req.status)}
+                    </div>
+                    <div>{requestTypeBadge(req)}</div>
+                    <div className="text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">{formatDateRange(req.leave_date_from, req.leave_date_to)}</span>
+                      {' · '}gửi {format(parseISO(req.created_at), 'dd/MM HH:mm')}
+                    </div>
+                    {req.reason && <div className="text-xs text-muted-foreground line-clamp-2">{req.reason}</div>}
+                    <div className="flex justify-end">
+                      {req.status === 'pending' ? (
+                        <Button size="sm" variant="outline" onClick={() => openReview(req)}>Duyệt</Button>
+                      ) : (
+                        <Button size="sm" variant="ghost" onClick={() => openReview(req)}>Chi tiết</Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -619,7 +644,35 @@ export function LeaveApprovalsTab() {
           {autoAbsences.length === 0 ? (
             <div className="text-center text-xs text-muted-foreground py-4">Không có ngày vắng nào trong tháng</div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              {/* Mobile card list */}
+              <div className="sm:hidden divide-y rounded border">
+                {autoAbsences.map((a, i) => (
+                  <div key={`m-${a.user_id}_${a.date}_${i}`} className="p-3 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-medium text-sm">{a.user_name}</div>
+                        <div className="text-xs text-muted-foreground">{format(parseISO(a.date), 'dd/MM/yyyy')}</div>
+                      </div>
+                      {!a.review ? (
+                        <Badge variant="outline" className="text-orange-600 border-orange-300 text-[10px]"><AlertTriangle className="h-3 w-3 mr-1" />Chưa duyệt</Badge>
+                      ) : a.review.is_excused ? (
+                        <Badge className="bg-green-100 text-green-800 text-[10px]"><CheckCircle className="h-3 w-3 mr-1" />Có phép</Badge>
+                      ) : (
+                        <Badge variant="destructive" className="text-[10px]"><XCircle className="h-3 w-3 mr-1" />Không phép</Badge>
+                      )}
+                    </div>
+                    {a.review?.review_note && <div className="text-xs text-muted-foreground line-clamp-2">{a.review.review_note}</div>}
+                    <div className="flex justify-end">
+                      <Button size="sm" variant={a.review ? 'ghost' : 'outline'} onClick={() => openAbsence(a)}>
+                        {a.review ? 'Sửa' : 'Duyệt'}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -662,7 +715,8 @@ export function LeaveApprovalsTab() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -670,7 +724,7 @@ export function LeaveApprovalsTab() {
 
       {/* Review Dialog */}
       <Dialog open={!!reviewDialog} onOpenChange={() => setReviewDialog(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarOff className="h-5 w-5" /> Duyệt đơn xin phép
@@ -869,7 +923,7 @@ export function LeaveApprovalsTab() {
 
       {/* Dialog duyệt ngày vắng (auto-detect) */}
       <Dialog open={!!absenceDialog} onOpenChange={() => setAbsenceDialog(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UserX className="h-5 w-5" /> Duyệt ngày vắng
