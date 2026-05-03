@@ -14,6 +14,26 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
 import { toast } from 'sonner';
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
+
+// Format ISO time → "HH:mm" theo giờ VN (UTC+7).
+// Browser hiển thị theo local nhưng để chắc chắn cho admin nước ngoài, tự offset.
+function fmtTimeVN(iso?: string | null) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const vn = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+  const hh = String(vn.getUTCHours()).padStart(2, '0');
+  const mm = String(vn.getUTCMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+function fmtMinutes(mins: number) {
+  const sign = mins < 0 ? '-' : '';
+  const m = Math.abs(mins);
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  if (h && r) return `${sign}${h}h${r}p`;
+  if (h) return `${sign}${h}h`;
+  return `${sign}${r}p`;
+}
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 
@@ -110,6 +130,13 @@ export function OvertimeReviewsTab() {
   });
 
   const profileMap = useMemo(() => new Map((profiles || []).map(p => [p.user_id, p.display_name])), [profiles]);
+
+  // Map attendance theo key user|date để dialog/row tra cứu nhanh giờ check-in/out + ca.
+  const attendanceMap = useMemo(() => {
+    const m = new Map<string, any>();
+    (attendanceRecords || []).forEach(a => m.set(`${a.user_id}_${a.date}`, a));
+    return m;
+  }, [attendanceRecords]);
 
   // Build auto-detected overtime items
   const detectedItems = useMemo(() => {
@@ -300,7 +327,8 @@ export function OvertimeReviewsTab() {
                   <TableHead className="text-xs">Nhân viên</TableHead>
                   <TableHead className="text-xs">Ngày</TableHead>
                   <TableHead className="text-xs">Loại</TableHead>
-                  <TableHead className="text-xs">Thời gian</TableHead>
+                  <TableHead className="text-xs">Đối chiếu ca</TableHead>
+                  <TableHead className="text-xs">Dư/OT</TableHead>
                   <TableHead className="text-xs">Trạng thái</TableHead>
                   <TableHead className="text-xs w-24"></TableHead>
                 </TableRow>
@@ -308,8 +336,8 @@ export function OvertimeReviewsTab() {
               <TableBody>
                 {filtered.map((item, idx) => {
                   const isPending = !item.status || item.status === 'pending' || item.auto_detected;
-                  const hours = Math.floor((item.overtime_minutes || 0) / 60);
-                  const mins = (item.overtime_minutes || 0) % 60;
+                  const att = attendanceMap.get(`${item.user_id}_${item.request_date}`);
+                  const ws = att?.work_shifts;
                   return (
                     <TableRow key={item.id || `auto-${idx}`}>
                       <TableCell className="text-xs font-medium">{profileMap.get(item.user_id) || item.user_id.slice(0, 8)}</TableCell>
@@ -319,8 +347,23 @@ export function OvertimeReviewsTab() {
                           {item.request_type === 'day_off' ? 'Ngày nghỉ' : item.request_type === 'early_checkin' ? 'Sớm ca' : 'Ngoài giờ'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs">
-                        {hours > 0 ? `${hours}h` : ''}{mins > 0 ? `${mins}p` : hours === 0 ? '0p' : ''}
+                      <TableCell className="text-[11px] leading-tight">
+                        {att ? (
+                          <div className="space-y-0.5">
+                            <div className="text-muted-foreground">
+                              Ca: <span className="font-mono">{ws?.start_time?.slice(0,5) || '—'}–{ws?.end_time?.slice(0,5) || '—'}</span>
+                            </div>
+                            <div>
+                              Vào: <span className="font-mono font-medium">{fmtTimeVN(att.check_in_time)}</span>
+                              {' · '}Ra: <span className="font-mono font-medium">{fmtTimeVN(att.check_out_time)}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground italic">Chưa có chấm công</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                        +{fmtMinutes(item.overtime_minutes || 0)}
                       </TableCell>
                       <TableCell className="text-xs">
                         {isPending ? (
@@ -372,7 +415,49 @@ export function OvertimeReviewsTab() {
             <p><strong>NV:</strong> {profileMap.get(reviewDialog?.user_id) || ''}</p>
             <p><strong>Ngày:</strong> {reviewDialog?.request_date}</p>
             <p><strong>Loại:</strong> {reviewDialog?.request_type === 'day_off' ? 'Làm ngày nghỉ' : reviewDialog?.request_type === 'early_checkin' ? 'Check-in sớm trước ca' : 'Làm thêm ngoài giờ'}</p>
-            <p><strong>Thời gian:</strong> {Math.floor((reviewDialog?.overtime_minutes || 0) / 60)}h{(reviewDialog?.overtime_minutes || 0) % 60}p</p>
+
+            {(() => {
+              if (!reviewDialog) return null;
+              const att = attendanceMap.get(`${reviewDialog.user_id}_${reviewDialog.request_date}`);
+              const ws = att?.work_shifts;
+              return (
+                <div className="rounded border bg-muted/40 p-3 space-y-1.5 text-xs">
+                  <div className="font-semibold text-foreground">📋 Đối chiếu chấm công</div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                    <div className="text-muted-foreground">Ca làm:</div>
+                    <div className="font-mono">{ws ? `${ws.start_time?.slice(0,5)} – ${ws.end_time?.slice(0,5)} (${ws.name || ''})` : 'Không xếp ca'}</div>
+                    <div className="text-muted-foreground">Check-in thực tế:</div>
+                    <div className="font-mono font-medium">{fmtTimeVN(att?.check_in_time)}</div>
+                    <div className="text-muted-foreground">Check-out thực tế:</div>
+                    <div className="font-mono font-medium">{fmtTimeVN(att?.check_out_time)}</div>
+                    <div className="text-muted-foreground">Tổng giờ làm:</div>
+                    <div className="font-medium">{att?.total_work_minutes ? fmtMinutes(att.total_work_minutes) : '—'}</div>
+                  </div>
+                  <div className="border-t pt-1.5 mt-1.5 flex justify-between items-center">
+                    <span className="text-muted-foreground">Phần dư xin tăng ca:</span>
+                    <span className="font-bold text-amber-700 dark:text-amber-400 text-sm">
+                      +{fmtMinutes(reviewDialog?.overtime_minutes || 0)}
+                    </span>
+                  </div>
+                  {reviewDialog?.request_type === 'early_checkin' && (
+                    <p className="text-[11px] text-muted-foreground italic">
+                      NV vào sớm hơn ca {fmtMinutes(reviewDialog?.overtime_minutes || 0)} (vượt ngưỡng bù trừ tự động).
+                    </p>
+                  )}
+                  {reviewDialog?.request_type === 'extra_hours' && (
+                    <p className="text-[11px] text-muted-foreground italic">
+                      NV ra ca trễ hơn giờ kết thúc {fmtMinutes(reviewDialog?.overtime_minutes || 0)} (vượt ngưỡng bù trừ tự động).
+                    </p>
+                  )}
+                  {reviewDialog?.request_type === 'day_off' && (
+                    <p className="text-[11px] text-muted-foreground italic">
+                      NV đi làm ngày không có lịch ca → toàn bộ thời gian tính tăng ca.
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+
             <div className="space-y-1.5">
               <Label className="text-xs">Ghi chú</Label>
               <Textarea value={reviewNote} onChange={e => setReviewNote(e.target.value)} placeholder="Ghi chú..." rows={2} />
