@@ -47,13 +47,38 @@ export function CategoryManageDialog({ open, onOpenChange, type, onCategorySelec
 
   const handleAdd = async () => {
     if (!newName.trim()) return;
+    const trimmed = newName.trim();
+    // Pre-check duplicate within this tenant + type for a friendly message
+    const dup = categories?.find(
+      (c) => c.name.trim().toLowerCase() === trimmed.toLowerCase()
+    );
+    if (dup) {
+      toast({
+        title: 'Danh mục đã tồn tại',
+        description: `Danh mục "${dup.name}" đã có trong danh sách ${typeLabel}${
+          dup.is_default ? ' (mặc định hệ thống)' : ''
+        }. Vui lòng chọn tên khác.`,
+        variant: 'destructive',
+      });
+      return;
+    }
     try {
-      await createCategory.mutateAsync({ name: newName.trim(), type });
-      toast({ title: `Đã thêm danh mục "${newName.trim()}"` });
-      if (onCategorySelect) onCategorySelect(newName.trim());
+      await createCategory.mutateAsync({ name: trimmed, type });
+      toast({ title: `Đã thêm danh mục "${trimmed}"` });
+      if (onCategorySelect) onCategorySelect(trimmed);
       setNewName('');
     } catch (e: any) {
-      toast({ title: 'Lỗi', description: e.message, variant: 'destructive' });
+      const raw = e?.message || '';
+      const isDup =
+        e?.code === '23505' ||
+        /duplicate key|unique constraint|cannot coerce/i.test(raw);
+      toast({
+        title: isDup ? 'Danh mục đã tồn tại' : 'Lỗi tạo danh mục',
+        description: isDup
+          ? `Tên "${trimmed}" đã tồn tại trong danh sách ${typeLabel}. Vui lòng chọn tên khác.`
+          : raw || 'Không thể tạo danh mục. Vui lòng thử lại.',
+        variant: 'destructive',
+      });
     }
   };
 
