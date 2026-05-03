@@ -29,8 +29,8 @@ const statusConfig: Record<string, { label: string; class: string }> = {
 };
 
 // Tính diff phút giữa check-in/out thực tế và ca chuẩn (start_time/end_time dạng "HH:mm:ss")
-function computeShiftDiff(record: any) {
-  const shift = record?.work_shifts;
+function computeShiftDiff(record: any, overrideShift?: any) {
+  const shift = overrideShift || record?.work_shifts;
   if (!shift?.start_time || !shift?.end_time) return null;
   const buildDate = (timeStr: string, baseISO: string | null) => {
     if (!baseISO) return null;
@@ -138,6 +138,43 @@ export function AttendanceHistoryTab() {
 
   const getExcuse = (uid: string, date: string, kind: 'late_arrival' | 'early_leave') =>
     approvedExcuses?.get(`${uid}_${date}_${kind}`);
+
+  // Lấy shift_assignments cho đúng các user/ngày trong danh sách để đối chiếu ca theo lịch xếp
+  const { data: assignmentsData } = useQuery({
+    queryKey: ['history-shift-assignments', userIds, recordDates],
+    enabled: userIds.length > 0 && recordDates.length > 0,
+    queryFn: async () => {
+      const minDate = recordDates.reduce((a, b) => (a < b ? a : b));
+      const maxDate = recordDates.reduce((a, b) => (a > b ? a : b));
+      const { data, error } = await supabase
+        .from('shift_assignments')
+        .select('user_id, shift_id, assignment_type, day_of_week, specific_date, is_active, work_shifts(name, start_time, end_time)')
+        .in('user_id', userIds)
+        .eq('is_active', true);
+      if (error) throw error;
+      // Index: specific theo (uid|date), fixed theo (uid|dow)
+      const specific = new Map<string, any>();
+      const fixed = new Map<string, any>();
+      for (const a of data || []) {
+        if (a.assignment_type === 'daily' && a.specific_date) {
+          if (a.specific_date >= minDate && a.specific_date <= maxDate) {
+            specific.set(`${a.user_id}|${a.specific_date}`, a);
+          }
+        } else if (a.assignment_type === 'fixed' && a.day_of_week !== null && a.day_of_week !== undefined) {
+          fixed.set(`${a.user_id}|${a.day_of_week}`, a);
+        }
+      }
+      return { specific, fixed };
+    },
+  });
+
+  const resolveShift = (r: any) => {
+    if (!assignmentsData) return r.work_shifts;
+    const dow = new Date(r.date + 'T00:00:00').getDay();
+    const a = assignmentsData.specific.get(`${r.user_id}|${r.date}`)
+      || assignmentsData.fixed.get(`${r.user_id}|${dow}`);
+    return a?.work_shifts || r.work_shifts;
+  };
 
   const { data: allProfiles } = useQuery({
     queryKey: ['all-tenant-profiles'],
@@ -422,9 +459,10 @@ export function AttendanceHistoryTab() {
                     const st = statusConfig[r.status] || statusConfig.pending;
                     const lateExcuse = r.late_minutes > 0 ? getExcuse(r.user_id, r.date, 'late_arrival') : null;
                     const earlyExcuse = r.early_leave_minutes > 0 ? getExcuse(r.user_id, r.date, 'early_leave') : null;
-                    const diff = computeShiftDiff(r);
-                    const shiftLabel = r.work_shifts
-                      ? `${r.work_shifts.name || ''} ${r.work_shifts.start_time?.slice(0,5) || ''}-${r.work_shifts.end_time?.slice(0,5) || ''}`.trim()
+                    const resolvedShift = resolveShift(r);
+                    const diff = computeShiftDiff(r, resolvedShift);
+                    const shiftLabel = resolvedShift
+                      ? `${resolvedShift.name || ''} ${resolvedShift.start_time?.slice(0,5) || ''}-${resolvedShift.end_time?.slice(0,5) || ''}`.trim()
                       : '-';
                     return (
                       <TableRow key={r.id}>
@@ -481,9 +519,10 @@ export function AttendanceHistoryTab() {
               const st = statusConfig[r.status] || statusConfig.pending;
               const lateExcuse = r.late_minutes > 0 ? getExcuse(r.user_id, r.date, 'late_arrival') : null;
               const earlyExcuse = r.early_leave_minutes > 0 ? getExcuse(r.user_id, r.date, 'early_leave') : null;
-              const diff = computeShiftDiff(r);
-              const shiftLabel = r.work_shifts
-                ? `${r.work_shifts.name || ''} ${r.work_shifts.start_time?.slice(0,5) || ''}-${r.work_shifts.end_time?.slice(0,5) || ''}`.trim()
+              const resolvedShift = resolveShift(r);
+              const diff = computeShiftDiff(r, resolvedShift);
+              const shiftLabel = resolvedShift
+                ? `${resolvedShift.name || ''} ${resolvedShift.start_time?.slice(0,5) || ''}-${resolvedShift.end_time?.slice(0,5) || ''}`.trim()
                 : '';
               return (
                 <Card key={r.id}>
