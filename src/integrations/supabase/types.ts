@@ -5417,6 +5417,7 @@ export type Database = {
           created_at: string
           deduct_salary: boolean
           id: string
+          is_auto_detected: boolean
           leave_date_from: string
           leave_date_to: string
           reason: string
@@ -5434,6 +5435,7 @@ export type Database = {
           created_at?: string
           deduct_salary?: boolean
           id?: string
+          is_auto_detected?: boolean
           leave_date_from: string
           leave_date_to: string
           reason: string
@@ -5451,6 +5453,7 @@ export type Database = {
           created_at?: string
           deduct_salary?: boolean
           id?: string
+          is_auto_detected?: boolean
           leave_date_from?: string
           leave_date_to?: string
           reason?: string
