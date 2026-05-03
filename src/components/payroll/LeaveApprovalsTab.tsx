@@ -530,7 +530,32 @@ export function LeaveApprovalsTab() {
           if (rows.length === 0) return <Card><CardContent className="py-10 text-center text-muted-foreground">{emptyText}</CardContent></Card>;
           return (
             <Card>
-              <div className="overflow-x-auto">
+              {/* Mobile card list */}
+              <div className="sm:hidden divide-y">
+                {rows.map((req: any) => (
+                  <div key={req.id} className="p-3 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="font-medium text-sm">{userMap.get(req.user_id) || req.user_id.slice(0, 8)}</div>
+                      {statusBadge(req.status)}
+                    </div>
+                    <div>{requestTypeBadge(req)}</div>
+                    <div className="text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">{formatDateRange(req.leave_date_from, req.leave_date_to)}</span>
+                      {' · '}gửi {format(parseISO(req.created_at), 'dd/MM HH:mm')}
+                    </div>
+                    {req.reason && <div className="text-xs text-muted-foreground line-clamp-2">{req.reason}</div>}
+                    <div className="flex justify-end">
+                      {req.status === 'pending' ? (
+                        <Button size="sm" variant="outline" onClick={() => openReview(req)}>Duyệt</Button>
+                      ) : (
+                        <Button size="sm" variant="ghost" onClick={() => openReview(req)}>Chi tiết</Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
