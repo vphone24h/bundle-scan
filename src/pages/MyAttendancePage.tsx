@@ -433,37 +433,45 @@ export default function MyAttendancePage() {
           </Button>
         </div>
 
-        {/* Summary Cards */}
+        {/* Excused-late banner */}
+        {hasApprovedLateThisMonth && (
+          <div className="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 px-3 py-2 text-xs text-green-800 dark:text-green-300 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <span>Đi trễ đã được phép, không trừ lương. Bấm vào ô "Đi trễ" để xem chi tiết.</span>
+          </div>
+        )}
+
+        {/* Summary Cards (clickable) */}
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-          <Card>
+          <Card role="button" onClick={() => setStatDetail('total')} className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]">
             <CardContent className="p-3 text-center">
               <CheckCircle2 className="h-5 w-5 text-green-600 mx-auto mb-1" />
               <p className="text-lg font-bold">{stats.total}</p>
               <p className="text-[10px] text-muted-foreground">Ngày công</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card role="button" onClick={() => setStatDetail('onTime')} className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]">
             <CardContent className="p-3 text-center">
               <Clock className="h-5 w-5 text-primary mx-auto mb-1" />
               <p className="text-lg font-bold">{stats.onTime}</p>
               <p className="text-[10px] text-muted-foreground">Đúng giờ</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card role="button" onClick={() => setStatDetail('late')} className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]">
             <CardContent className="p-3 text-center">
               <AlertTriangle className="h-5 w-5 text-yellow-600 mx-auto mb-1" />
               <p className="text-lg font-bold">{stats.late}</p>
               <p className="text-[10px] text-muted-foreground">Đi trễ</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card role="button" onClick={() => setStatDetail('earlyLeave')} className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]">
             <CardContent className="p-3 text-center">
               <Clock className="h-5 w-5 text-orange-500 mx-auto mb-1" />
               <p className="text-lg font-bold">{stats.earlyLeaveCount}</p>
               <p className="text-[10px] text-muted-foreground">Về sớm</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card role="button" onClick={() => setStatDetail('absent')} className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]">
             <CardContent className="p-3 text-center">
               <XCircle className="h-5 w-5 text-destructive mx-auto mb-1" />
               <p className="text-lg font-bold">{stats.absent}</p>
@@ -471,6 +479,92 @@ export default function MyAttendancePage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Stat Detail Dialog */}
+        <Dialog open={!!statDetail} onOpenChange={(v) => !v && setStatDetail(null)}>
+          <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{statDetailTitle} — {format(currentMonth, 'MM/yyyy')}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+              {statDetailData.length === 0 ? (
+                <p className="text-center py-6 text-sm text-muted-foreground">Không có dữ liệu</p>
+              ) : statDetailData.map((r: any, idx: number) => {
+                const dateStr = format(new Date(r.date), 'EEEE, dd/MM/yyyy', { locale: vi });
+                if (r._absent) {
+                  const ex = getExcuse(r.date, 'leave') || getExcuse(r.date, 'sick_leave') || getExcuse(r.date, 'personal_leave');
+                  return (
+                    <div key={idx} className="rounded-md border p-2.5 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium capitalize">{dateStr}</span>
+                        {ex ? (
+                          <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-[10px]">Có phép</Badge>
+                        ) : (
+                          <Badge variant="destructive" className="text-[10px]">Không phép</Badge>
+                        )}
+                      </div>
+                      {ex?.reason && <p className="text-xs text-muted-foreground mt-1">Lý do: {ex.reason}</p>}
+                    </div>
+                  );
+                }
+                const lateExcuse = (r.late_minutes || 0) > 0 ? getExcuse(r.date, 'late_arrival') : null;
+                const earlyExcuse = (r.early_leave_minutes || 0) > 0 ? getExcuse(r.date, 'early_leave') : null;
+                const checkIn = r.check_in_time ? format(new Date(r.check_in_time), 'HH:mm') : '--:--';
+                const checkOut = r.check_out_time ? format(new Date(r.check_out_time), 'HH:mm') : '--:--';
+                return (
+                  <div key={idx} className="rounded-md border p-2.5 text-sm space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium capitalize">{dateStr}</span>
+                      {statusBadge(r.status)}
+                    </div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                      <span>Vào: <span className="text-foreground font-medium">{checkIn}</span></span>
+                      <span>Ra: <span className="text-foreground font-medium">{checkOut}</span></span>
+                      {r.total_work_minutes > 0 && (
+                        <span>Tổng: <span className="text-foreground font-medium">{Math.floor(r.total_work_minutes / 60)}h{r.total_work_minutes % 60}p</span></span>
+                      )}
+                    </div>
+                    {(r.late_minutes || 0) > 0 && (
+                      <div className="flex items-center gap-2 text-xs flex-wrap">
+                        <span className={lateExcuse ? 'text-muted-foreground line-through' : 'text-yellow-700 dark:text-yellow-400'}>
+                          Trễ {r.late_minutes}p
+                        </span>
+                        {lateExcuse ? (
+                          <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-[10px]">Có phép · không phạt</Badge>
+                        ) : (
+                          <Badge variant="destructive" className="text-[10px]">Không phép</Badge>
+                        )}
+                      </div>
+                    )}
+                    {lateExcuse?.reason && (
+                      <p className="text-[11px] text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30 rounded px-2 py-1">
+                        Lý do trễ: {lateExcuse.reason}
+                      </p>
+                    )}
+                    {(r.early_leave_minutes || 0) > 0 && (
+                      <div className="flex items-center gap-2 text-xs flex-wrap">
+                        <span className={earlyExcuse ? 'text-muted-foreground line-through' : 'text-orange-700 dark:text-orange-400'}>
+                          Về sớm {r.early_leave_minutes}p (ra lúc {checkOut})
+                        </span>
+                        {earlyExcuse ? (
+                          <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-[10px]">Có phép · không phạt</Badge>
+                        ) : (
+                          <Badge variant="destructive" className="text-[10px]">Không phép</Badge>
+                        )}
+                      </div>
+                    )}
+                    {earlyExcuse?.reason && (
+                      <p className="text-[11px] text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30 rounded px-2 py-1">
+                        Lý do về sớm: {earlyExcuse.reason}
+                      </p>
+                    )}
+                    {r.note && <p className="text-[11px] text-muted-foreground italic">Ghi chú: {r.note}</p>}
+                  </div>
+                );
+              })}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Sales Revenue Card */}
         <Card className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20 cursor-pointer hover:shadow-md transition-shadow"
