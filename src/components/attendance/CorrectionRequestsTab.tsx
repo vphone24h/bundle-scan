@@ -26,6 +26,22 @@ const typeLabels: Record<string, { label: string; icon: typeof FileEdit }> = {
   remote_checkout: { label: 'Check-out từ xa', icon: MapPin },
 };
 
+const attendanceStatusMap: Record<string, { label: string; class: string }> = {
+  on_time: { label: 'Đúng giờ', class: 'bg-green-100 text-green-800' },
+  late: { label: 'Trễ', class: 'bg-orange-100 text-orange-800' },
+  early_leave: { label: 'Về sớm', class: 'bg-amber-100 text-amber-800' },
+  absent: { label: 'Vắng', class: 'bg-red-100 text-red-800' },
+};
+
+function formatMinutes(mins: number): string {
+  if (!mins || mins <= 0) return '';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h > 0 && m > 0) return `${h}h${m}p`;
+  if (h > 0) return `${h}h`;
+  return `${m}p`;
+}
+
 export function CorrectionRequestsTab() {
   const { data: pu } = usePlatformUser();
   const tenantId = pu?.tenant_id;
@@ -110,6 +126,46 @@ export function CorrectionRequestsTab() {
     },
     enabled: userIds.length > 0,
   });
+
+  // Lấy bản ghi chấm công tương ứng cho các request đã duyệt
+  // để hiển thị trạng thái thực tế (đúng giờ / trễ / về sớm) sau khi duyệt
+  const approvedKeys = (requests || [])
+    .filter(r => r.status === 'approved')
+    .map(r => ({ user_id: r.user_id, date: r.request_date }));
+  const approvedKeysSig = JSON.stringify(approvedKeys);
+
+  const { data: attendanceMap } = useQuery({
+    queryKey: ['correction-attendance-map', tenantId, approvedKeysSig],
+    queryFn: async () => {
+      if (!approvedKeys.length || !tenantId) return {};
+      const uniqueUserIds = [...new Set(approvedKeys.map(k => k.user_id))];
+      const uniqueDates = [...new Set(approvedKeys.map(k => k.date))];
+      const { data } = await supabase
+        .from('attendance_records')
+        .select('user_id, date, status, late_minutes, early_leave_minutes, check_in_time, check_out_time')
+        .eq('tenant_id', tenantId)
+        .in('user_id', uniqueUserIds)
+        .in('date', uniqueDates);
+      const map: Record<string, any> = {};
+      (data || []).forEach((rec: any) => {
+        map[`${rec.user_id}_${rec.date}`] = rec;
+      });
+      return map;
+    },
+    enabled: !!tenantId && approvedKeys.length > 0,
+    staleTime: 5000,
+  });
+
+  const getAttendanceStatus = (r: any) => {
+    if (r.status !== 'approved') return null;
+    const rec = attendanceMap?.[`${r.user_id}_${r.request_date}`];
+    if (!rec) return null;
+    const st = attendanceStatusMap[rec.status] || attendanceStatusMap.on_time;
+    let detail = '';
+    if (rec.status === 'late' && rec.late_minutes) detail = `${formatMinutes(rec.late_minutes)}`;
+    else if (rec.status === 'early_leave' && rec.early_leave_minutes) detail = `${formatMinutes(rec.early_leave_minutes)}`;
+    return { ...st, detail };
+  };
 
   const reviewMutation = useMutation({
     mutationFn: async ({ id, status, request }: { id: string; status: string; request?: any }) => {
@@ -244,13 +300,23 @@ export function CorrectionRequestsTab() {
                       {otherRequests.map(r => {
                         const st = statusMap[r.status] || statusMap.pending;
                         const typeInfo = getTypeInfo(r.request_type);
+                        const attSt = getAttendanceStatus(r);
                         return (
                           <TableRow key={r.id}>
                             <TableCell className="font-medium text-sm">{profiles?.[r.user_id] || r.user_id.slice(0, 8)}</TableCell>
                             <TableCell><Badge variant="outline" className="text-[10px]">{typeInfo.label}</Badge></TableCell>
                             <TableCell className="text-sm">{format(new Date(r.request_date), 'dd/MM/yyyy')}</TableCell>
                             <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">{r.reason}</TableCell>
-                            <TableCell><Badge className={`text-[10px] ${st.class}`}>{st.label}</Badge></TableCell>
+                            <TableCell>
+                              <div className="flex flex-col gap-1">
+                                <Badge className={`text-[10px] w-fit ${st.class}`}>{st.label}</Badge>
+                                {attSt && (
+                                  <Badge className={`text-[10px] w-fit ${attSt.class}`}>
+                                    {attSt.label}{attSt.detail ? ` ${attSt.detail}` : ''} • Có phép
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
                             <TableCell className="text-xs text-muted-foreground">{r.review_note || '-'}</TableCell>
                           </TableRow>
                         );
@@ -262,6 +328,7 @@ export function CorrectionRequestsTab() {
                   {otherRequests.map(r => {
                     const st = statusMap[r.status] || statusMap.pending;
                     const typeInfo = getTypeInfo(r.request_type);
+                    const attSt = getAttendanceStatus(r);
                     return (
                       <div key={r.id} className="border rounded-lg p-2.5 space-y-1">
                         <div className="flex items-center justify-between">
@@ -272,6 +339,11 @@ export function CorrectionRequestsTab() {
                           <Badge className={`text-[10px] ${st.class}`}>{st.label}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">{format(new Date(r.request_date), 'dd/MM/yyyy')} - {r.reason}</p>
+                        {attSt && (
+                          <Badge className={`text-[10px] ${attSt.class}`}>
+                            {attSt.label}{attSt.detail ? ` ${attSt.detail}` : ''} • Có phép
+                          </Badge>
+                        )}
                         {r.review_note && <p className="text-xs text-muted-foreground italic">"{r.review_note}"</p>}
                       </div>
                     );
