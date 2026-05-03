@@ -359,6 +359,37 @@ export default function CheckInPage() {
         note: gpsFraudWarning.length > 0 ? `⚠️ GPS flags: ${gpsFraudWarning.join(', ')}` : null,
       }]);
       if (error) throw error;
+
+      // Auto-tạo phiếu xin đi trễ nếu vượt ngưỡng và chưa có phiếu nào cho ngày này.
+      // Admin có 3 lựa chọn: duyệt miễn phạt / duyệt trừ theo OT / từ chối → áp phạt cấu hình.
+      if (status === 'late' && lateMinutes > 0) {
+        const { data: existing } = await supabase
+          .from('leave_requests')
+          .select('id')
+          .eq('tenant_id', tenantId)
+          .eq('user_id', user.id)
+          .eq('request_type', 'late_arrival')
+          .eq('leave_date_from', today)
+          .in('status', ['pending', 'approved'])
+          .limit(1)
+          .maybeSingle();
+        if (!existing) {
+          await supabase.from('leave_requests').insert({
+            tenant_id: tenantId,
+            user_id: user.id,
+            request_type: 'late_arrival',
+            leave_date_from: today,
+            leave_date_to: today,
+            time_minutes: lateMinutes,
+            reason: `[Tự động] Đi trễ ${lateMinutes}p — chờ admin duyệt`,
+            status: 'pending',
+          });
+          qc.invalidateQueries({ queryKey: ['my-leave-requests'] });
+          qc.invalidateQueries({ queryKey: ['leave-requests-admin'] });
+          qc.invalidateQueries({ queryKey: ['pending-approvals-count'] });
+        }
+      }
+
       const waiverLateMin = todayWaivers?.late || 0;
       let msg = 'Check-in thành công!';
       if (status === 'late') {
