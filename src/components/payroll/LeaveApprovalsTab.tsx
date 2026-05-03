@@ -542,6 +542,7 @@ export function LeaveApprovalsTab() {
       })()}
 
       {/* Ngày vắng tự động phát hiện (gộp từ Duyệt nghỉ phép) */}
+      {subTab === 'auto' && (
       <Card className="border-orange-200 dark:border-orange-900">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -607,6 +608,7 @@ export function LeaveApprovalsTab() {
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Review Dialog */}
       <Dialog open={!!reviewDialog} onOpenChange={() => setReviewDialog(null)}>
