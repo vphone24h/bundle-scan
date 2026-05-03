@@ -49,8 +49,12 @@ async function buildAttendancePayload(supabaseAdmin: ReturnType<typeof createCli
     return null
   }
 
+  // Toàn bộ tính toán dùng timezone Việt Nam (UTC+7) vì shift start/end lưu theo giờ VN.
+  // Deno chạy ở UTC nên cần offset thủ công.
+  const VN_OFFSET_MS = 7 * 60 * 60 * 1000
   const baseTime = new Date(effectiveCheckIn || effectiveCheckOut)
-  const dayOfWeek = baseTime.getDay()
+  // dayOfWeek phải tính theo giờ VN
+  const dayOfWeek = new Date(baseTime.getTime() + VN_OFFSET_MS).getUTCDay()
 
   const { data: shift, error: shiftError } = await supabaseAdmin
     .from('shift_assignments')
@@ -75,8 +79,15 @@ async function buildAttendancePayload(supabaseAdmin: ReturnType<typeof createCli
   if (hasCheckIn && shift?.work_shifts) {
     const ws = shift.work_shifts as any
     const [h, m] = String(ws.start_time || '00:00').split(':').map(Number)
-    const shiftStart = new Date(effectiveCheckIn)
-    shiftStart.setHours(h, m, 0, 0)
+    // Lấy ngày theo VN từ effectiveCheckIn, rồi build shiftStart UTC = ngày VN + giờ ca - 7h
+    const checkInVN = new Date(new Date(effectiveCheckIn).getTime() + VN_OFFSET_MS)
+    const shiftStartUTCms = Date.UTC(
+      checkInVN.getUTCFullYear(),
+      checkInVN.getUTCMonth(),
+      checkInVN.getUTCDate(),
+      h, m, 0, 0,
+    ) - VN_OFFSET_MS
+    const shiftStart = new Date(shiftStartUTCms)
     const threshold = (Number(ws.late_threshold_minutes) || 15) * 60 * 1000
     const diff = new Date(effectiveCheckIn).getTime() - shiftStart.getTime()
     if (diff > threshold) {
@@ -95,8 +106,15 @@ async function buildAttendancePayload(supabaseAdmin: ReturnType<typeof createCli
     if (shift?.work_shifts) {
       const ws = shift.work_shifts as any
       const [eh, em] = String(ws.end_time || '00:00').split(':').map(Number)
-      const shiftEnd = new Date(checkOutTime)
-      shiftEnd.setHours(eh, em, 0, 0)
+      // shiftEnd theo giờ VN của ngày check-in
+      const checkInVN2 = new Date(new Date(effectiveCheckIn).getTime() + VN_OFFSET_MS)
+      const shiftEndUTCms = Date.UTC(
+        checkInVN2.getUTCFullYear(),
+        checkInVN2.getUTCMonth(),
+        checkInVN2.getUTCDate(),
+        eh, em, 0, 0,
+      ) - VN_OFFSET_MS
+      const shiftEnd = new Date(shiftEndUTCms)
       const diffFromEnd = Math.round((checkOutTime.getTime() - shiftEnd.getTime()) / 60000)
       if (diffFromEnd > 0) overtimeMinutes = diffFromEnd
       if (diffFromEnd < 0) {
