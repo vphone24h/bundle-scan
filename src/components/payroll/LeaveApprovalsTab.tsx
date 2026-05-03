@@ -484,6 +484,73 @@ export function LeaveApprovalsTab() {
         </Card>
       )}
 
+      {/* Ngày vắng tự động phát hiện (gộp từ Duyệt nghỉ phép) */}
+      <Card className="border-orange-200 dark:border-orange-900">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <UserX className="h-5 w-5 text-orange-600" />
+              <div>
+                <div className="font-semibold text-sm">Ngày vắng tự phát hiện ({format(new Date(), 'MM/yyyy')})</div>
+                <div className="text-xs text-muted-foreground">NV không đi làm vào ngày đã xếp ca, chưa có đơn xin nghỉ</div>
+              </div>
+            </div>
+            <Badge variant={pendingAutoAbsences.length > 0 ? 'destructive' : 'secondary'} className="text-xs">
+              Chưa duyệt: {pendingAutoAbsences.length} / {autoAbsences.length}
+            </Badge>
+          </div>
+
+          {autoAbsences.length === 0 ? (
+            <div className="text-center text-xs text-muted-foreground py-4">Không có ngày vắng nào trong tháng</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nhân viên</TableHead>
+                    <TableHead>Ngày vắng</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead>Ghi chú</TableHead>
+                    <TableHead className="text-right">Thao tác</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {autoAbsences.map((a, i) => (
+                    <TableRow key={`${a.user_id}_${a.date}_${i}`}>
+                      <TableCell className="font-medium text-sm">{a.user_name}</TableCell>
+                      <TableCell className="text-sm">{format(parseISO(a.date), 'dd/MM/yyyy')}</TableCell>
+                      <TableCell>
+                        {!a.review ? (
+                          <Badge variant="outline" className="text-orange-600 border-orange-300 text-[10px]">
+                            <AlertTriangle className="h-3 w-3 mr-1" />Chưa duyệt
+                          </Badge>
+                        ) : a.review.is_excused ? (
+                          <Badge className="bg-green-100 text-green-800 text-[10px]">
+                            <CheckCircle className="h-3 w-3 mr-1" />Có phép
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive" className="text-[10px]">
+                            <XCircle className="h-3 w-3 mr-1" />Không phép
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">
+                        {a.review?.review_note || '-'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant={a.review ? 'ghost' : 'outline'} onClick={() => openAbsence(a)}>
+                          {a.review ? 'Sửa' : 'Duyệt'}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Review Dialog */}
       <Dialog open={!!reviewDialog} onOpenChange={() => setReviewDialog(null)}>
         <DialogContent className="max-w-md">
