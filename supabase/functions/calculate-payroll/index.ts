@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
         .lte("created_at", period.end_date + "T23:59:59")
         .in("status", ["completed", "paid"]),
       supabase.from("leave_requests")
-        .select("user_id, leave_date_from, leave_date_to, status, request_type")
+        .select("user_id, leave_date_from, leave_date_to, status, request_type, deduct_salary")
         .eq("tenant_id", tenant_id)
         .eq("status", "approved")
         .lte("leave_date_from", period.end_date)
@@ -237,17 +237,27 @@ Deno.serve(async (req) => {
     // Key: user_id + "_" + date(yyyy-MM-dd)
     const approvedLateArrivalKeys = new Set<string>();
     const approvedEarlyLeaveKeys = new Set<string>();
+    // Subset: waivers approved BUT admin chose to still deduct salary
+    // → these days will be deducted at OVERTIME rate (lighter than late penalty)
+    const lateArrivalDeductKeys = new Set<string>();
+    const earlyLeaveDeductKeys = new Set<string>();
     for (const lr of approvedLeaveRequests) {
       const rType = (lr as any).request_type || 'full_day';
       if (rType !== 'late_arrival' && rType !== 'early_leave') continue;
+      const deduct = (lr as any).deduct_salary === true;
       // Iterate dates from -> to
       const start = new Date(lr.leave_date_from);
       const end = new Date(lr.leave_date_to);
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         const ds = d.toISOString().split("T")[0];
         const key = `${lr.user_id}_${ds}`;
-        if (rType === 'late_arrival') approvedLateArrivalKeys.add(key);
-        else approvedEarlyLeaveKeys.add(key);
+        if (rType === 'late_arrival') {
+          approvedLateArrivalKeys.add(key);
+          if (deduct) lateArrivalDeductKeys.add(key);
+        } else {
+          approvedEarlyLeaveKeys.add(key);
+          if (deduct) earlyLeaveDeductKeys.add(key);
+        }
       }
     }
 
@@ -1304,6 +1314,47 @@ Deno.serve(async (req) => {
           overtimePay = Math.round(overtimeHours * dailyRateForOT * 1.5);
           if (overtimePay > 0) {
             overtimeDetails.push({ name: "Tăng ca (mặc định 150%)", type: "hourly", hours: overtimeHours, amount: overtimePay });
+          }
+        }
+      }
+
+      // ===== 7c. TRỪ LƯƠNG ĐI TRỄ/VỀ SỚM CÓ PHIẾU XIN PHÉP (deduct_salary=true) =====
+      // Trừ theo ĐƠN GIÁ TĂNG CA (nhẹ hơn phạt đi trễ thông thường)
+      // Logic: NV xin phép → admin duyệt + tick "Trừ lương" → trừ theo OT rate
+      // (Không trùng với penalty vì các key này đã skip ở khối penalty)
+      if (isPayrollReady) {
+        let waivedDeductMinutes = 0;
+        for (const a of userAttendance) {
+          const key = `${employee.user_id}_${a.date}`;
+          if (lateArrivalDeductKeys.has(key)) waivedDeductMinutes += (a.late_minutes || 0);
+          if (earlyLeaveDeductKeys.has(key)) waivedDeductMinutes += (a.early_leave_minutes || 0);
+        }
+        if (waivedDeductMinutes > 0) {
+          // Lấy đơn giá OT/giờ: ưu tiên config "hourly" trong template, fallback hourlyRate gốc
+          const tOvertimes = overtimesByTemplate[templateId] || [];
+          const otHourly = tOvertimes.find((o: any) => o.overtime_type === "hourly");
+          const baseHourlyRate = salaryType === "fixed"
+            ? (baseAmount / (expectedWorkDays || 22)) / 8
+            : baseAmount / 8;
+          let otRatePerHour = baseHourlyRate * 1.5; // fallback
+          if (otHourly) {
+            const isPct = otHourly.calc_type === "percentage" || otHourly.calc_type === "multiplier";
+            otRatePerHour = isPct
+              ? baseHourlyRate * (otHourly.value || 0) / 100
+              : (otHourly.value || 0);
+          }
+          const hours = waivedDeductMinutes / 60;
+          const deduction = Math.round(hours * otRatePerHour);
+          if (deduction > 0) {
+            totalPenalty += deduction;
+            penaltyDetails.push({
+              name: "Trừ lương trễ/sớm có xin phép (theo đơn giá tăng ca)",
+              type: "waiver_deduct_ot_rate",
+              count: 1,
+              per_amount: Math.round(otRatePerHour),
+              amount: deduction,
+              detail: `${waivedDeductMinutes} phút (${hours.toFixed(2)}h) x ${Math.round(otRatePerHour)}đ/h`,
+            });
           }
         }
       }
