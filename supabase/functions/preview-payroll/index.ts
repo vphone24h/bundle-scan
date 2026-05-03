@@ -406,6 +406,10 @@ Deno.serve(async (req) => {
       const periodEndedAt = new Date(period.end_date);
       periodEndedAt.setHours(23, 59, 59, 999);
       const isPeriodEnded = new Date() > periodEndedAt;
+      // Phép có lương CHỈ bắt đầu cộng dồn vào lương cơ bản từ ngày 25 hàng tháng trở đi.
+      // Trước ngày 25 → coi như chưa dùng phép (paidLeaveUsed = 0) để tránh "ảo" đầu kỳ.
+      const paidLeaveActiveFrom = 25;
+      const isPaidLeaveActive = isPeriodEnded || new Date().getDate() >= paidLeaveActiveFrom;
 
       // Days with overtime (full-day OT = worked on unscheduled day, only if approved)
       const scheduledDates = new Set<string>();
@@ -655,7 +659,9 @@ Deno.serve(async (req) => {
           absentNoShow++;
         }
         const totalAbsent = absentRecorded + absentNoShow;
-        const paidLeaveUsed = Math.min(paidLeaveDaysPerMonth, totalAbsent);
+        const paidLeaveUsed = isPaidLeaveActive
+          ? Math.min(paidLeaveDaysPerMonth, totalAbsent)
+          : 0;
         const paidWorkDays = workDays + paidLeaveUsed;
         const ratio = Math.min(1, paidWorkDays / expected);
         baseSalary = Math.round(baseAmount * ratio);
