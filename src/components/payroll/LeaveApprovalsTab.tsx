@@ -191,6 +191,18 @@ export function LeaveApprovalsTab() {
     });
   }, [requests, searchQuery, userMap]);
 
+  // Phân chia: phiếu tự động (do hệ thống tạo khi auto-detect đi trễ/về sớm)
+  // vs phiếu thủ công (NV tự gửi đơn xin phép)
+  const autoRequests = useMemo(
+    () => filtered.filter((r: any) => r.is_auto_detected === true),
+    [filtered]
+  );
+  const manualRequests = useMemo(
+    () => filtered.filter((r: any) => r.is_auto_detected !== true),
+    [filtered]
+  );
+  const [subTab, setSubTab] = useState<'auto' | 'manual'>('auto');
+
   const stats = useMemo(() => {
     const all = requests || [];
     return {
