@@ -311,8 +311,6 @@ export default function CheckInPage() {
       let status = 'on_time';
       let lateMinutes = 0;
       let earlyArrivalMinutes = 0;
-      let pendingOvertimeMinutes = 0;
-      let overtimeStatus = 'none';
       const now = new Date();
       if (shiftInfo) {
         const [h, m] = shiftInfo.start_time.split(':').map(Number);
@@ -326,15 +324,10 @@ export default function CheckInPage() {
           status = 'late';
           lateMinutes = Math.round(diff / 60000);
         } else if (diff < 0) {
-          // Vào sớm: tách phần trong ngưỡng bù trừ và phần dư (OT cần admin duyệt)
-          const earlyTotal = Math.round(-diff / 60000);
-          if (earlyTotal <= compThreshold) {
-            earlyArrivalMinutes = earlyTotal;
-          } else {
-            earlyArrivalMinutes = compThreshold;
-            pendingOvertimeMinutes = earlyTotal - compThreshold;
-            overtimeStatus = 'pending';
-          }
+          // Lưu NGUYÊN số phút vào sớm thực tế. Không tạo OT pending tại check-in
+          // vì chưa biết NV có về sớm để bù trừ không. Toàn bộ tính bù trừ + OT pending
+          // + early_leave sẽ chạy ở handleCheckOut sau khi có cả 2 mốc giờ.
+          earlyArrivalMinutes = Math.round(-diff / 60000);
         }
       }
 
@@ -355,8 +348,8 @@ export default function CheckInPage() {
         status,
         late_minutes: lateMinutes,
         early_arrival_minutes: earlyArrivalMinutes,
-        pending_overtime_minutes: pendingOvertimeMinutes,
-        overtime_status: overtimeStatus,
+        pending_overtime_minutes: 0,
+        overtime_status: 'none',
         note: gpsFraudWarning.length > 0 ? `⚠️ GPS flags: ${gpsFraudWarning.join(', ')}` : null,
       }]);
       if (error) throw error;
@@ -395,10 +388,8 @@ export default function CheckInPage() {
       let msg = 'Check-in thành công!';
       if (status === 'late') {
         msg = `Check-in thành công (trễ ${lateMinutes} phút${waiverLateMin > 0 ? ` — đã trừ ${waiverLateMin}p xin phép` : ''})`;
-      } else if (pendingOvertimeMinutes > 0) {
-        msg = `Check-in sớm ${earlyArrivalMinutes + pendingOvertimeMinutes}p. ${earlyArrivalMinutes}p sẽ bù trừ tự động, ${pendingOvertimeMinutes}p tăng ca chờ admin duyệt.`;
       } else if (earlyArrivalMinutes > 0) {
-        msg = `Check-in sớm ${earlyArrivalMinutes}p — sẽ tự bù trừ nếu về sớm trong ngưỡng.`;
+        msg = `Check-in sớm ${earlyArrivalMinutes}p — sẽ bù trừ với giờ về cuối ca.`;
       } else if (waiverLateMin > 0) {
         msg = `Check-in thành công (trong khung xin trễ ${waiverLateMin}p)`;
       }
@@ -424,10 +415,10 @@ export default function CheckInPage() {
       const checkInTime = new Date(todayRecord.check_in_time);
       const totalMinutes = Math.round((now.getTime() - checkInTime.getTime()) / 60000);
 
-      // Calculate overtime & early leave based on shift times
-      let overtimeMinutes = 0; // OT cuối ca (đã được duyệt = 0, chờ duyệt cộng vào pending)
+      // Tính bù trừ NET trong ngày dựa trên cả vào sớm + về trễ/sớm
+      let overtimeMinutes = 0;
       let earlyLeaveMinutes = 0;
-      let extraPendingOT = 0; // OT cuối ca chờ duyệt
+      let extraPendingOT = 0; // OT pending chờ duyệt (vượt ngưỡng net về phía DƯƠNG)
       const earlyArrivalRecorded = (todayRecord as any)?.early_arrival_minutes || 0;
       if (shiftInfo) {
         const [eh, em] = shiftInfo.end_time.split(':').map(Number);
@@ -438,25 +429,23 @@ export default function CheckInPage() {
         const diffFromEnd = Math.round((now.getTime() - effectiveEnd.getTime()) / 60000);
 
         // BÙ TRỪ 2 CHIỀU TRONG NGÀY:
-        // net > 0 = nhân viên làm dư (vào sớm + về trễ)
-        // net < 0 = nhân viên làm thiếu (về sớm nhiều hơn vào sớm)
-        // |net| ≤ compThreshold (60p) → coi như đủ công, không thưởng/không phạt
-        // |net| >  compThreshold → phần vượt ngưỡng:
-        //    + nếu dư → OT pending chờ duyệt
-        //    + nếu thiếu → tính về sớm để trừ lương
-        const net = earlyArrivalRecorded + diffFromEnd; // phút dư (>0) hoặc thiếu (<0)
+        // net = (vào sớm) + (về trễ HOẶC -về sớm) — đã trừ phần xin phép.
+        // VD: vào sớm 30p + về sớm 45p → net = 30 + (-45) = -15p (làm thiếu 15p)
+        //     vào sớm 30p + về sớm 15p → net = 30 + (-15) = +15p (làm dư 15p)
+        //     vào sớm 60p + về sớm 60p → net = 0 (đủ công)
+        // |net| ≤ compThreshold → coi như đủ công, không thưởng/không phạt.
+        // net > compThreshold → phần dư → OT pending chờ admin duyệt.
+        // net < -compThreshold → phần thiếu → tự tạo phiếu xin về sớm chờ admin xử lý.
+        const net = earlyArrivalRecorded + diffFromEnd;
 
         if (net > compThreshold) {
           extraPendingOT = net - compThreshold;
         } else if (net < -compThreshold) {
           earlyLeaveMinutes = Math.abs(net) - compThreshold;
         }
-        // |net| ≤ compThreshold → tự bù trừ, không làm gì
       }
 
-      // Cộng OT pending cuối ca với pending từ check-in (vào sớm vượt ngưỡng)
-      const existingPending = (todayRecord as any)?.pending_overtime_minutes || 0;
-      const totalPendingOT = existingPending + extraPendingOT;
+      const totalPendingOT = extraPendingOT;
       const newOTStatus = totalPendingOT > 0
         ? ((todayRecord as any)?.overtime_status === 'approved' ? 'approved' : 'pending')
         : ((todayRecord as any)?.overtime_status || 'none');
