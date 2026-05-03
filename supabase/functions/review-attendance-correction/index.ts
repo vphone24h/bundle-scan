@@ -176,10 +176,19 @@ Deno.serve(async (req) => {
       })
     }
 
-    const { requestId, action, reviewNote } = await req.json()
+    const { requestId, action, reviewNote, penaltyAction } = await req.json()
     if (!requestId || !['approved', 'rejected'].includes(action)) {
       return fail('Thiếu thông tin duyệt sửa công', 'INVALID_PAYLOAD')
     }
+    // penaltyAction (chỉ áp dụng khi action='approved' và sau khi cập nhật còn trễ/về sớm):
+    //   'waive'      → tự tạo phiếu xin phép APPROVED + deduct_salary=false (miễn phạt)
+    //   'deduct_ot'  → tự tạo phiếu APPROVED + deduct_salary=true (trừ theo đơn giá tăng ca/giờ)
+    //   'penalize'   → KHÔNG tạo phiếu → calculate-payroll áp phạt nặng theo cấu hình
+    //   undefined    → không tự tạo phiếu (giữ flow cũ)
+    const validPenaltyActions = new Set(['waive', 'deduct_ot', 'penalize'])
+    const effectivePenalty = penaltyAction && validPenaltyActions.has(String(penaltyAction))
+      ? String(penaltyAction)
+      : null
 
     const { data: request, error: requestError } = await supabaseAdmin
       .from('attendance_correction_requests')
@@ -329,7 +338,57 @@ Deno.serve(async (req) => {
 
     if (approveError) throw approveError
 
-    return ok({ success: true, attendanceId })
+    // 🆕 Tự đồng bộ với hệ thống lương khi admin sửa giờ gây trễ / về sớm.
+    // Đảm bảo calculate-payroll hiểu đúng admin đã chọn miễn phạt / trừ OT / phạt nặng.
+    let createdLeaveId: string | null = null
+    const finalLate = Number(attendancePayload.updates.late_minutes || 0)
+    const finalEarly = Number(attendancePayload.updates.early_leave_minutes || 0)
+
+    if (effectivePenalty && (finalLate > 0 || finalEarly > 0)) {
+      const reqType = finalLate > 0 ? 'late_arrival' : 'early_leave'
+      const mins = finalLate > 0 ? finalLate : finalEarly
+
+      // Xoá mọi phiếu auto-tạo trước đó cho user+ngày+loại để admin đổi quyết định
+      // mà không bị trùng phiếu (vd: trước duyệt waive, giờ đổi sang deduct_ot).
+      await supabaseAdmin
+        .from('leave_requests')
+        .delete()
+        .eq('tenant_id', request.tenant_id)
+        .eq('user_id', request.user_id)
+        .eq('request_type', reqType)
+        .eq('leave_date_from', request.request_date)
+        .eq('leave_date_to', request.request_date)
+        .like('reason', '[Admin sửa công]%')
+
+      if (effectivePenalty === 'waive' || effectivePenalty === 'deduct_ot') {
+        const reasonText = effectivePenalty === 'waive'
+          ? `[Admin sửa công] Miễn phạt ${reqType === 'late_arrival' ? 'đi trễ' : 'về sớm'} ${mins}p — ${request.reason}`
+          : `[Admin sửa công] Trừ theo đơn giá tăng ca ${mins}p — ${request.reason}`
+        const { data: inserted, error: leaveErr } = await supabaseAdmin
+          .from('leave_requests')
+          .insert({
+            tenant_id: request.tenant_id,
+            user_id: request.user_id,
+            request_type: reqType,
+            leave_date_from: request.request_date,
+            leave_date_to: request.request_date,
+            time_minutes: mins,
+            reason: reasonText,
+            status: 'approved',
+            deduct_salary: effectivePenalty === 'deduct_ot',
+            reviewed_by: caller.id,
+            reviewed_at: new Date().toISOString(),
+            review_note: reviewNote || (effectivePenalty === 'waive' ? 'Miễn phạt theo quyết định sửa công' : 'Trừ theo đơn giá tăng ca'),
+          })
+          .select('id')
+          .single()
+        if (leaveErr) throw leaveErr
+        createdLeaveId = inserted?.id || null
+      }
+      // 'penalize' → không tạo phiếu, để payroll áp phạt nặng
+    }
+
+    return ok({ success: true, attendanceId, createdLeaveId, penaltyAction: effectivePenalty })
   } catch (error) {
     console.error('review-attendance-correction error:', error)
     return new Response(JSON.stringify({
