@@ -160,6 +160,12 @@ export function AttendanceHistoryTab() {
     if (!editRecord) return;
     if (!editForm.securityPin.trim()) { toast.error('Vui lòng nhập mật khẩu bảo mật'); return; }
     if (!editForm.reason.trim()) { toast.error('Vui lòng nhập lý do sửa'); return; }
+    // Không cho sửa bản ghi của hôm nay/tương lai (chưa hết ca, dữ liệu chưa hoàn chỉnh)
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    if (editRecord.date >= todayStr) {
+      toast.error('Chỉ được sửa công từ hôm qua trở về trước. Hôm nay chưa hết ca.');
+      return;
+    }
 
     setSaving(true);
     try {
