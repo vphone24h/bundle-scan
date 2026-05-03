@@ -164,7 +164,14 @@ export function CorrectionRequestsTab() {
     let detail = '';
     if (rec.status === 'late' && rec.late_minutes) detail = `${formatMinutes(rec.late_minutes)}`;
     else if (rec.status === 'early_leave' && rec.early_leave_minutes) detail = `${formatMinutes(rec.early_leave_minutes)}`;
-    return { ...st, detail };
+    return {
+      ...st,
+      detail,
+      checkIn: rec.check_in_time ? format(new Date(rec.check_in_time), 'HH:mm') : null,
+      checkOut: rec.check_out_time ? format(new Date(rec.check_out_time), 'HH:mm') : null,
+      lateMin: rec.late_minutes || 0,
+      earlyMin: rec.early_leave_minutes || 0,
+    };
   };
 
   const reviewMutation = useMutation({
