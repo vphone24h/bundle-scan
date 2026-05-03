@@ -19,6 +19,25 @@ import { format, parseISO, eachDayOfInterval, differenceInCalendarDays } from 'd
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
 import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 
+// Format ISO time → "HH:mm" theo giờ VN (UTC+7).
+function fmtTimeVN(iso?: string | null) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const vn = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+  const hh = String(vn.getUTCHours()).padStart(2, '0');
+  const mm = String(vn.getUTCMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+function fmtMins(mins: number) {
+  const sign = mins < 0 ? '-' : '';
+  const m = Math.abs(mins);
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  if (h && r) return `${sign}${h}h${r}p`;
+  if (h) return `${sign}${h}h`;
+  return `${sign}${r}p`;
+}
+
 function useTenantId() {
   const { data: pu } = usePlatformUser();
   const { data: ct } = useCurrentTenant();
@@ -73,6 +92,26 @@ export function LeaveApprovalsTab() {
   const userMap = useMemo(() => {
     return new Map((platformUsers || []).map(u => [u.user_id, u.display_name || u.email || u.user_id.slice(0, 8)]));
   }, [platformUsers]);
+
+  // Lấy bản ghi chấm công ngày của đơn đang mở để admin đối chiếu giờ ca vs thực tế.
+  const reviewDate = reviewDialog?.leave_date_from || null;
+  const reviewUserId = reviewDialog?.user_id || null;
+  const isTimeRequest = reviewDialog?.request_type === 'late_arrival' || reviewDialog?.request_type === 'early_leave';
+  const { data: reviewAttendance } = useQuery({
+    queryKey: ['leave-review-attendance', tenantId, reviewUserId, reviewDate],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('attendance_records')
+        .select('check_in_time, check_out_time, late_minutes, early_leave_minutes, total_work_minutes, work_shifts(name, start_time, end_time)')
+        .eq('tenant_id', tenantId!)
+        .eq('user_id', reviewUserId!)
+        .eq('date', reviewDate!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!tenantId && !!reviewUserId && !!reviewDate && !!isTimeRequest,
+  });
 
   // 3 actions: approved (có phép), unexcused (không phép but still off), rejected (không được nghỉ)
   const reviewMutation = useMutation({
@@ -334,6 +373,49 @@ export function LeaveApprovalsTab() {
                   </div>
                   {(reviewDialog.request_type === 'late_arrival' || reviewDialog.request_type === 'early_leave') ? (
                     <>
+                      {/* Đối chiếu chấm công thực tế ngày xin phép */}
+                      {(() => {
+                        const ws = (reviewAttendance as any)?.work_shifts;
+                        const reqMin = reviewDialog.time_minutes || 0;
+                        return (
+                          <div className="rounded border bg-muted/40 p-3 space-y-1.5 text-xs">
+                            <div className="font-semibold text-foreground">📋 Đối chiếu chấm công ngày này</div>
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                              <div className="text-muted-foreground">Ca làm:</div>
+                              <div className="font-mono">
+                                {ws ? `${ws.start_time?.slice(0,5)} – ${ws.end_time?.slice(0,5)}${ws.name ? ` (${ws.name})` : ''}` : 'Không xếp ca'}
+                              </div>
+                              <div className="text-muted-foreground">Check-in thực tế:</div>
+                              <div className="font-mono font-medium">{fmtTimeVN(reviewAttendance?.check_in_time)}</div>
+                              <div className="text-muted-foreground">Check-out thực tế:</div>
+                              <div className="font-mono font-medium">{fmtTimeVN(reviewAttendance?.check_out_time)}</div>
+                              {reviewDialog.request_type === 'late_arrival' && (reviewAttendance as any)?.late_minutes != null && (
+                                <>
+                                  <div className="text-muted-foreground">Đi trễ thực tế:</div>
+                                  <div className="font-medium text-destructive">{fmtMins((reviewAttendance as any).late_minutes || 0)}</div>
+                                </>
+                              )}
+                              {reviewDialog.request_type === 'early_leave' && (reviewAttendance as any)?.early_leave_minutes != null && (
+                                <>
+                                  <div className="text-muted-foreground">Về sớm thực tế:</div>
+                                  <div className="font-medium text-destructive">{fmtMins((reviewAttendance as any).early_leave_minutes || 0)}</div>
+                                </>
+                              )}
+                            </div>
+                            <div className="border-t pt-1.5 mt-1.5 flex justify-between items-center">
+                              <span className="text-muted-foreground">NV xin phép:</span>
+                              <span className="font-bold text-amber-700 dark:text-amber-400 text-sm">
+                                {reviewDialog.request_type === 'late_arrival' ? 'Đi trễ' : 'Về sớm'} {fmtMins(reqMin)}
+                              </span>
+                            </div>
+                            {!reviewAttendance && (
+                              <p className="text-[11px] text-muted-foreground italic">
+                                Chưa có bản ghi chấm công ngày này — đối chiếu lại sau khi NV check-in/out xong.
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
                       <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 p-3 rounded text-xs space-y-2">
                         <div className="font-semibold text-blue-900 dark:text-blue-200 mb-1">
                           📋 3 trường hợp xử lý {reviewDialog.request_type === 'late_arrival' ? 'đi trễ' : 'về sớm'} ({reviewDialog.time_minutes || 0} phút):
