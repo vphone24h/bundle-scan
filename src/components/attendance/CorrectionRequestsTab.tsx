@@ -548,13 +548,20 @@ export function CorrectionRequestsTab() {
               {needPenaltyChoice ? (
                 <div className="border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/20 rounded p-3 space-y-2">
                   <div className="font-semibold text-amber-800 dark:text-amber-200">
-                    ⚠️ Sau khi sửa, NV còn {approveContext?.estLate ? `đi trễ ${formatMinutes(approveContext.estLate)}` : `về sớm ${formatMinutes(approveContext?.estEarly || 0)}`}
+                    ⚠️ Sau khi sửa, NV còn thiếu {formatMinutes(approveContext?.deficitMinutes || 0)} (đã bù trừ trong ngày)
                   </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Net ngày: {(approveContext?.netMinutes ?? 0) >= 0 ? '+' : ''}{approveContext?.netMinutes || 0}p · Ngưỡng bù: {approveContext?.compThreshold || 0}p
+                  </p>
                   <p className="text-[11px] text-muted-foreground">Chọn cách xử lý phần thiếu giờ này:</p>
+                </div>
+              ) : (approveContext?.surplusMinutes || 0) > 0 ? (
+                <div className="border border-blue-300 bg-blue-50 dark:bg-blue-950/20 rounded p-3 text-blue-800 dark:text-blue-300 text-xs">
+                  ✅ Sau khi sửa: dư {formatMinutes(approveContext?.surplusMinutes || 0)} (sẽ tạo phiếu tăng ca pending nếu vượt ngưỡng).
                 </div>
               ) : (
                 <div className="border border-green-300 bg-green-50 dark:bg-green-950/20 rounded p-3 text-green-800 dark:text-green-300">
-                  ✅ Sau khi sửa: đủ giờ — không phát sinh phạt.
+                  ✅ Sau khi sửa: đủ giờ (net {(approveContext?.netMinutes ?? 0) >= 0 ? '+' : ''}{approveContext?.netMinutes || 0}p, trong ngưỡng bù ±{approveContext?.compThreshold || 0}p) — không phát sinh phạt.
                 </div>
               )}
 
