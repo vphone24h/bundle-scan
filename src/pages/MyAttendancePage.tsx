@@ -40,6 +40,7 @@ export default function MyAttendancePage() {
   const [showSalesDialog, setShowSalesDialog] = useState(false);
   const [expandedSaleId, setExpandedSaleId] = useState<string | null>(null);
   const [tabValue, setTabValue] = useState<string>('income');
+  const [statDetail, setStatDetail] = useState<null | 'total' | 'onTime' | 'late' | 'earlyLeave' | 'absent'>(null);
 
   const { data: expandedItems, isLoading: itemsLoading } = useQuery({
     queryKey: ['my-sale-items', expandedSaleId],
@@ -209,6 +210,72 @@ export default function MyAttendancePage() {
       earlyLeaveCount: records.filter(r => (r.early_leave_minutes || 0) > 0).length,
     };
   }, [records, monthStart, monthEnd]);
+
+  // Approved leave requests for this user in current month (late_arrival, early_leave, full-day leave)
+  const { data: myExcuses } = useQuery({
+    queryKey: ['my-approved-excuses', user?.id, startStr, endStr],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('leave_requests')
+        .select('id, leave_date_from, leave_date_to, request_type, reason, time_minutes, time_from, time_to')
+        .eq('user_id', user!.id)
+        .eq('status', 'approved')
+        .lte('leave_date_from', endStr)
+        .gte('leave_date_to', startStr);
+      return data || [];
+    },
+  });
+
+  // Build a Map: `${date}_${type}` -> excuse
+  const excuseMap = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const r of myExcuses || []) {
+      const from = new Date(r.leave_date_from);
+      const to = new Date(r.leave_date_to);
+      for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
+        const ds = format(d, 'yyyy-MM-dd');
+        map.set(`${ds}_${r.request_type}`, r);
+      }
+    }
+    return map;
+  }, [myExcuses]);
+
+  const getExcuse = (date: string, kind: 'late_arrival' | 'early_leave' | 'leave' | 'sick_leave' | 'personal_leave') =>
+    excuseMap.get(`${date}_${kind}`);
+
+  // Has any approved late excuse this month? -> show banner
+  const hasApprovedLateThisMonth = useMemo(() => {
+    return (records || []).some((r: any) => r.late_minutes > 0 && getExcuse(r.date, 'late_arrival'));
+  }, [records, excuseMap]);
+
+  // Build details for popup
+  const statDetailData = useMemo(() => {
+    if (!records) return [] as any[];
+    if (statDetail === 'total') {
+      return [...records].sort((a: any, b: any) => a.date.localeCompare(b.date));
+    }
+    if (statDetail === 'onTime') return records.filter((r: any) => r.status === 'on_time').sort((a: any, b: any) => a.date.localeCompare(b.date));
+    if (statDetail === 'late') return records.filter((r: any) => (r.late_minutes || 0) > 0).sort((a: any, b: any) => a.date.localeCompare(b.date));
+    if (statDetail === 'earlyLeave') return records.filter((r: any) => (r.early_leave_minutes || 0) > 0).sort((a: any, b: any) => a.date.localeCompare(b.date));
+    if (statDetail === 'absent') {
+      const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd > new Date() ? new Date() : monthEnd });
+      const workDays = daysInMonth.filter(d => !isWeekend(d));
+      const workedDays = new Set((records || []).map((r: any) => r.date));
+      return workDays
+        .filter(d => !workedDays.has(format(d, 'yyyy-MM-dd')) && d <= new Date())
+        .map(d => ({ date: format(d, 'yyyy-MM-dd'), _absent: true }));
+    }
+    return [];
+  }, [records, statDetail, monthStart, monthEnd]);
+
+  const statDetailTitle = ({
+    total: 'Chi tiết ngày công',
+    onTime: 'Chi tiết ngày đúng giờ',
+    late: 'Chi tiết ngày đi trễ',
+    earlyLeave: 'Chi tiết ngày về sớm',
+    absent: 'Chi tiết ngày vắng',
+  } as Record<string, string>)[statDetail || 'total'];
 
   // Estimated salary
   const estimatedSalaryFallback = useMemo(() => {
