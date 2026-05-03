@@ -1075,7 +1075,9 @@ function MiniCalendar({ month, records }: { month: Date; records: any[] }) {
 // Employee correction requests component
 function EmployeeCorrectionRequests({ userId, tenantId }: { userId?: string; tenantId?: string | null }) {
   const [showForm, setShowForm] = useState(false);
-  const [requestDate, setRequestDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  // Mặc định ngày hôm qua — không cho sửa hôm nay vì chưa hết ca
+  const yesterdayStr = format(new Date(Date.now() - 86400000), 'yyyy-MM-dd');
+  const [requestDate, setRequestDate] = useState(yesterdayStr);
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [reason, setReason] = useState('');
@@ -1100,6 +1102,10 @@ function EmployeeCorrectionRequests({ userId, tenantId }: { userId?: string; ten
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      // Chặn sửa công cho hôm nay hoặc tương lai
+      if (requestDate >= format(new Date(), 'yyyy-MM-dd')) {
+        throw new Error('Chỉ được sửa công từ hôm qua trở về trước');
+      }
       const { error } = await supabase.from('attendance_correction_requests').insert({
         tenant_id: tenantId!,
         user_id: userId!,
