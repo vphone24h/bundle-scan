@@ -309,6 +309,9 @@ export default function CheckInPage() {
     try {
       let status = 'on_time';
       let lateMinutes = 0;
+      let earlyArrivalMinutes = 0;
+      let pendingOvertimeMinutes = 0;
+      let overtimeStatus = 'none';
       const now = new Date();
       if (shiftInfo) {
         const [h, m] = shiftInfo.start_time.split(':').map(Number);
@@ -318,7 +321,20 @@ export default function CheckInPage() {
         const effectiveStart = new Date(shiftStart.getTime() + waiverLateMin * 60000);
         const threshold = (shiftInfo.late_threshold_minutes || 15) * 60 * 1000;
         const diff = now.getTime() - effectiveStart.getTime();
-        if (diff > threshold) { status = 'late'; lateMinutes = Math.round(diff / 60000); }
+        if (diff > threshold) {
+          status = 'late';
+          lateMinutes = Math.round(diff / 60000);
+        } else if (diff < 0) {
+          // Vào sớm: tách phần trong ngưỡng bù trừ và phần dư (OT cần admin duyệt)
+          const earlyTotal = Math.round(-diff / 60000);
+          if (earlyTotal <= compThreshold) {
+            earlyArrivalMinutes = earlyTotal;
+          } else {
+            earlyArrivalMinutes = compThreshold;
+            pendingOvertimeMinutes = earlyTotal - compThreshold;
+            overtimeStatus = 'pending';
+          }
+        }
       }
 
       const { error } = await supabase.from('attendance_records').insert([{
@@ -337,15 +353,24 @@ export default function CheckInPage() {
         check_in_ip: null,
         status,
         late_minutes: lateMinutes,
+        early_arrival_minutes: earlyArrivalMinutes,
+        pending_overtime_minutes: pendingOvertimeMinutes,
+        overtime_status: overtimeStatus,
         note: gpsFraudWarning.length > 0 ? `⚠️ GPS flags: ${gpsFraudWarning.join(', ')}` : null,
       }]);
       if (error) throw error;
       const waiverLateMin = todayWaivers?.late || 0;
-      toast.success(
-        status === 'late'
-          ? `Check-in thành công (trễ ${lateMinutes} phút${waiverLateMin > 0 ? ` — đã trừ ${waiverLateMin}p xin phép` : ''})`
-          : waiverLateMin > 0 ? `Check-in thành công (trong khung xin trễ ${waiverLateMin}p)` : 'Check-in thành công!'
-      );
+      let msg = 'Check-in thành công!';
+      if (status === 'late') {
+        msg = `Check-in thành công (trễ ${lateMinutes} phút${waiverLateMin > 0 ? ` — đã trừ ${waiverLateMin}p xin phép` : ''})`;
+      } else if (pendingOvertimeMinutes > 0) {
+        msg = `Check-in sớm ${earlyArrivalMinutes + pendingOvertimeMinutes}p. ${earlyArrivalMinutes}p sẽ bù trừ tự động, ${pendingOvertimeMinutes}p tăng ca chờ admin duyệt.`;
+      } else if (earlyArrivalMinutes > 0) {
+        msg = `Check-in sớm ${earlyArrivalMinutes}p — sẽ tự bù trừ nếu về sớm trong ngưỡng.`;
+      } else if (waiverLateMin > 0) {
+        msg = `Check-in thành công (trong khung xin trễ ${waiverLateMin}p)`;
+      }
+      toast.success(msg);
       qc.invalidateQueries({ queryKey: ['my-attendance-today'] });
       qc.invalidateQueries({ queryKey: ['attendance-records'] });
       // Random post-checkin verification (20% chance)
@@ -357,7 +382,7 @@ export default function CheckInPage() {
     } finally {
       setChecking(false);
     }
-  }, [user?.id, tenantId, gpsPos, nearestLocation, myDevice, todayShift, shiftInfo, today, qc, deviceOk, gpsFraudWarning, todayWaivers]);
+  }, [user?.id, tenantId, gpsPos, nearestLocation, myDevice, todayShift, shiftInfo, today, qc, deviceOk, gpsFraudWarning, todayWaivers, compThreshold]);
 
   const handleCheckOut = useCallback(async () => {
     if (!todayRecord?.id || !gpsPos || !deviceOk) return;
