@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Clock, MapPin, Smartphone, Download, Loader2, Pencil } from 'lucide-react';
+import { Clock, MapPin, Smartphone, Download, Loader2, Pencil, CheckCircle, XCircle, Zap } from 'lucide-react';
 import { useAttendanceRecords, useAttendanceLocations } from '@/hooks/useAttendance';
 import { useTenantStaffList } from '@/hooks/useTenantStaffList';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,6 +45,7 @@ export function AttendanceHistoryTab() {
   const [editRecord, setEditRecord] = useState<any>(null);
   const [editForm, setEditForm] = useState<EditForm>({ check_in_time: '', check_out_time: '', status: '', note: '', securityPin: '', reason: '' });
   const [saving, setSaving] = useState(false);
+  const [otReviewing, setOtReviewing] = useState<string | null>(null);
   const qc = useQueryClient();
 
   const { data: records, isLoading } = useAttendanceRecords({
