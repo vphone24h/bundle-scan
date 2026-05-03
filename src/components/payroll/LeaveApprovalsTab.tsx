@@ -256,6 +256,18 @@ export function LeaveApprovalsTab() {
     setDeductSalary(req?.deduct_salary === true);
   };
 
+  const reviewTargetIds = reviewDialog?.review_ids || (reviewDialog?.id ? [reviewDialog.id] : []);
+  const isCombinedTimeReview = reviewDialog?.request_type === 'combined_time';
+  const isTimeReviewDialog = reviewDialog?.request_type === 'late_arrival' || reviewDialog?.request_type === 'early_leave' || isCombinedTimeReview;
+  const timeReviewLabel = reviewDialog?.request_type === 'late_arrival'
+    ? 'đi trễ'
+    : reviewDialog?.request_type === 'early_leave'
+      ? 'về sớm'
+      : 'đi trễ / về sớm';
+  const timeReviewMinutes = isCombinedTimeReview
+    ? `${reviewDialog?.late_minutes || 0}p trễ • ${reviewDialog?.early_leave_minutes || 0}p sớm`
+    : fmtMins(reviewDialog?.time_minutes || 0);
+
   // ==================== AUTO-DETECT VẮNG MẶT (gộp từ AbsenceReviewsTab) ====================
   const monthStr = format(new Date(), 'yyyy-MM');
   const monthStart = format(startOfMonth(parseISO(monthStr + '-01')), 'yyyy-MM-dd');
@@ -417,6 +429,16 @@ export function LeaveApprovalsTab() {
 
   const requestTypeBadge = (req: any) => {
     const t = req.request_type || 'full_day';
+    if (t === 'combined_time') return (
+      <div className="flex flex-wrap gap-1">
+        <Badge variant="outline" className="text-[10px] border-blue-300 text-blue-700">
+          <LogIn className="h-3 w-3 mr-1" />Đi muộn {req.late_minutes || 0}'
+        </Badge>
+        <Badge variant="outline" className="text-[10px] border-purple-300 text-purple-700">
+          <LogOut className="h-3 w-3 mr-1" />Về sớm {req.early_leave_minutes || 0}'
+        </Badge>
+      </div>
+    );
     if (t === 'late_arrival') return (
       <Badge variant="outline" className="text-[10px] border-blue-300 text-blue-700">
         <LogIn className="h-3 w-3 mr-1" />Đi muộn {req.time_minutes || 0}'
@@ -681,7 +703,7 @@ export function LeaveApprovalsTab() {
                     <Label>Ghi chú duyệt</Label>
                     <Textarea value={reviewNote} onChange={e => setReviewNote(e.target.value)} placeholder="Ghi chú..." rows={2} />
                   </div>
-                  {(reviewDialog.request_type === 'late_arrival' || reviewDialog.request_type === 'early_leave') ? (
+                  {isTimeReviewDialog ? (
                     <>
                       {/* Đối chiếu chấm công thực tế ngày xin phép */}
                       {(() => {
@@ -699,13 +721,13 @@ export function LeaveApprovalsTab() {
                               <div className="font-mono font-medium">{fmtTimeVN(reviewAttendance?.check_in_time)}</div>
                               <div className="text-muted-foreground">Check-out thực tế:</div>
                               <div className="font-mono font-medium">{fmtTimeVN(reviewAttendance?.check_out_time)}</div>
-                              {reviewDialog.request_type === 'late_arrival' && (reviewAttendance as any)?.late_minutes != null && (
+                              {((reviewDialog.request_type === 'late_arrival') || isCombinedTimeReview) && (reviewAttendance as any)?.late_minutes != null && (
                                 <>
                                   <div className="text-muted-foreground">Đi trễ thực tế:</div>
                                   <div className="font-medium text-destructive">{fmtMins((reviewAttendance as any).late_minutes || 0)}</div>
                                 </>
                               )}
-                              {reviewDialog.request_type === 'early_leave' && (reviewAttendance as any)?.early_leave_minutes != null && (
+                              {((reviewDialog.request_type === 'early_leave') || isCombinedTimeReview) && (reviewAttendance as any)?.early_leave_minutes != null && (
                                 <>
                                   <div className="text-muted-foreground">Về sớm thực tế:</div>
                                   <div className="font-medium text-destructive">{fmtMins((reviewAttendance as any).early_leave_minutes || 0)}</div>
@@ -715,7 +737,7 @@ export function LeaveApprovalsTab() {
                             <div className="border-t pt-1.5 mt-1.5 flex justify-between items-center">
                               <span className="text-muted-foreground">NV xin phép:</span>
                               <span className="font-bold text-amber-700 dark:text-amber-400 text-sm">
-                                {reviewDialog.request_type === 'late_arrival' ? 'Đi trễ' : 'Về sớm'} {fmtMins(reqMin)}
+                                {timeReviewLabel} {timeReviewMinutes}
                               </span>
                             </div>
                             {!reviewAttendance && (
@@ -728,7 +750,7 @@ export function LeaveApprovalsTab() {
                       })()}
                       <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 p-3 rounded text-xs space-y-2">
                         <div className="font-semibold text-blue-900 dark:text-blue-200 mb-1">
-                          📋 3 trường hợp xử lý {reviewDialog.request_type === 'late_arrival' ? 'đi trễ' : 'về sớm'} ({reviewDialog.time_minutes || 0} phút):
+                          📋 3 trường hợp xử lý {timeReviewLabel} ({timeReviewMinutes}):
                         </div>
                         <div className="pl-2 border-l-2 border-green-500">
                           <p className="font-medium text-green-700 dark:text-green-400">✅ Duyệt + KHÔNG tick "Trừ lương"</p>
@@ -740,7 +762,7 @@ export function LeaveApprovalsTab() {
                         </div>
                         <div className="pl-2 border-l-2 border-red-500">
                           <p className="font-medium text-red-700 dark:text-red-400">❌ Từ chối</p>
-                          <p className="text-muted-foreground">→ Trừ theo <strong>đơn giá phạt {reviewDialog.request_type === 'late_arrival' ? 'đi trễ' : 'về sớm'}</strong> trong cấu hình bảng lương (nặng nhất).</p>
+                          <p className="text-muted-foreground">→ Trừ theo <strong>đơn giá phạt {timeReviewLabel}</strong> trong cấu hình bảng lương (nặng nhất).</p>
                         </div>
                       </div>
                       <label className="flex items-start gap-2 p-3 rounded border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/20 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors">
@@ -751,11 +773,11 @@ export function LeaveApprovalsTab() {
                         />
                         <div className="text-xs">
                           <div className="font-semibold text-amber-800 dark:text-amber-200">
-                            Trừ lương {reviewDialog.time_minutes || 0} phút này (theo đơn giá tăng ca)
+                            Trừ lương phần thời gian này (theo đơn giá tăng ca)
                           </div>
                           <div className="text-muted-foreground mt-1">
                             • <strong>Bỏ trống</strong> = Miễn phạt 100% (NV được nghỉ có lương).<br/>
-                            • <strong>Tick</strong> = Trừ lương phần phút này theo đơn giá tăng ca/giờ trong bảng lương NV (nhẹ hơn phạt {reviewDialog.request_type === 'late_arrival' ? 'đi trễ' : 'về sớm'} thông thường).
+                            • <strong>Tick</strong> = Trừ lương phần phút này theo đơn giá tăng ca/giờ trong bảng lương NV (nhẹ hơn phạt {timeReviewLabel} thông thường).
                           </div>
                         </div>
                       </label>
@@ -779,11 +801,11 @@ export function LeaveApprovalsTab() {
           )}
           <DialogFooter className="flex-col gap-2 sm:flex-col">
             {reviewDialog?.status === 'pending' && (
-              (reviewDialog.request_type === 'late_arrival' || reviewDialog.request_type === 'early_leave') ? (
+              isTimeReviewDialog ? (
                 <>
                   <Button
                     className="w-full bg-green-600 hover:bg-green-700"
-                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'approved', note: reviewNote, deduct: deductSalary })}
+                    onClick={() => guardedReview({ ids: reviewTargetIds, action: 'approved', note: reviewNote, deduct: deductSalary })}
                     disabled={reviewMutation.isPending}
                   >
                     {reviewMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
@@ -792,7 +814,7 @@ export function LeaveApprovalsTab() {
                   <Button
                     variant="destructive"
                     className="w-full"
-                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'rejected', note: reviewNote, deduct: false })}
+                    onClick={() => guardedReview({ ids: reviewTargetIds, action: 'rejected', note: reviewNote, deduct: false })}
                     disabled={reviewMutation.isPending}
                   >
                     <XCircle className="h-4 w-4 mr-1" /> Từ chối (vẫn tính phạt)
@@ -802,7 +824,7 @@ export function LeaveApprovalsTab() {
                 <>
                   <Button
                     className="w-full bg-green-600 hover:bg-green-700"
-                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'approved', note: reviewNote, deduct: false })}
+                    onClick={() => guardedReview({ ids: reviewTargetIds, action: 'approved', note: reviewNote, deduct: false })}
                     disabled={reviewMutation.isPending}
                   >
                     {reviewMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
@@ -811,7 +833,7 @@ export function LeaveApprovalsTab() {
                   <Button
                     variant="outline"
                     className="w-full border-orange-400 text-orange-600 hover:bg-orange-50"
-                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'unexcused', note: reviewNote, deduct: false })}
+                    onClick={() => guardedReview({ ids: reviewTargetIds, action: 'unexcused', note: reviewNote, deduct: false })}
                     disabled={reviewMutation.isPending}
                   >
                     <AlertTriangle className="h-4 w-4 mr-1" /> Duyệt không phép
@@ -819,7 +841,7 @@ export function LeaveApprovalsTab() {
                   <Button
                     variant="destructive"
                     className="w-full"
-                    onClick={() => guardedReview({ id: reviewDialog.id, action: 'rejected', note: reviewNote, deduct: false })}
+                    onClick={() => guardedReview({ ids: reviewTargetIds, action: 'rejected', note: reviewNote, deduct: false })}
                     disabled={reviewMutation.isPending}
                   >
                     <XCircle className="h-4 w-4 mr-1" /> Từ chối (không được nghỉ)
