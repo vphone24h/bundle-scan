@@ -311,8 +311,6 @@ export default function CheckInPage() {
       let status = 'on_time';
       let lateMinutes = 0;
       let earlyArrivalMinutes = 0;
-      let pendingOvertimeMinutes = 0;
-      let overtimeStatus = 'none';
       const now = new Date();
       if (shiftInfo) {
         const [h, m] = shiftInfo.start_time.split(':').map(Number);
@@ -326,15 +324,10 @@ export default function CheckInPage() {
           status = 'late';
           lateMinutes = Math.round(diff / 60000);
         } else if (diff < 0) {
-          // Vào sớm: tách phần trong ngưỡng bù trừ và phần dư (OT cần admin duyệt)
-          const earlyTotal = Math.round(-diff / 60000);
-          if (earlyTotal <= compThreshold) {
-            earlyArrivalMinutes = earlyTotal;
-          } else {
-            earlyArrivalMinutes = compThreshold;
-            pendingOvertimeMinutes = earlyTotal - compThreshold;
-            overtimeStatus = 'pending';
-          }
+          // Lưu NGUYÊN số phút vào sớm thực tế. Không tạo OT pending tại check-in
+          // vì chưa biết NV có về sớm để bù trừ không. Toàn bộ tính bù trừ + OT pending
+          // + early_leave sẽ chạy ở handleCheckOut sau khi có cả 2 mốc giờ.
+          earlyArrivalMinutes = Math.round(-diff / 60000);
         }
       }
 
@@ -355,8 +348,8 @@ export default function CheckInPage() {
         status,
         late_minutes: lateMinutes,
         early_arrival_minutes: earlyArrivalMinutes,
-        pending_overtime_minutes: pendingOvertimeMinutes,
-        overtime_status: overtimeStatus,
+        pending_overtime_minutes: 0,
+        overtime_status: 'none',
         note: gpsFraudWarning.length > 0 ? `⚠️ GPS flags: ${gpsFraudWarning.join(', ')}` : null,
       }]);
       if (error) throw error;
@@ -395,10 +388,8 @@ export default function CheckInPage() {
       let msg = 'Check-in thành công!';
       if (status === 'late') {
         msg = `Check-in thành công (trễ ${lateMinutes} phút${waiverLateMin > 0 ? ` — đã trừ ${waiverLateMin}p xin phép` : ''})`;
-      } else if (pendingOvertimeMinutes > 0) {
-        msg = `Check-in sớm ${earlyArrivalMinutes + pendingOvertimeMinutes}p. ${earlyArrivalMinutes}p sẽ bù trừ tự động, ${pendingOvertimeMinutes}p tăng ca chờ admin duyệt.`;
       } else if (earlyArrivalMinutes > 0) {
-        msg = `Check-in sớm ${earlyArrivalMinutes}p — sẽ tự bù trừ nếu về sớm trong ngưỡng.`;
+        msg = `Check-in sớm ${earlyArrivalMinutes}p — sẽ bù trừ với giờ về cuối ca.`;
       } else if (waiverLateMin > 0) {
         msg = `Check-in thành công (trong khung xin trễ ${waiverLateMin}p)`;
       }
