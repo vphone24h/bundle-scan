@@ -260,9 +260,17 @@ Deno.serve(async (req) => {
       remote_checkout: `✅ Check-out từ xa được duyệt bởi admin. Lý do: ${request.reason}`,
     }
 
+    // Loại bỏ các note "✅ ... được duyệt bởi admin" cũ để tránh chồng chất
+    // khi admin duyệt lại nhiều lần. Giữ lại các note khác (vd: ghi chú khi check-in).
+    const cleanedOldNote = (existingRecord?.note || '')
+      .split('|')
+      .map((s: string) => s.trim())
+      .filter((s: string) => s && !s.startsWith('✅'))
+      .join(' | ') || null
+
     const baseUpdates = {
       ...attendancePayload.updates,
-      note: appendNote(existingRecord?.note || null, noteByType[request.request_type] || noteByType.correction),
+      note: appendNote(cleanedOldNote, noteByType[request.request_type] || noteByType.correction),
     }
 
     let attendanceId = existingRecord?.id as string | undefined
