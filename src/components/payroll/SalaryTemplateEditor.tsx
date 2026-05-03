@@ -229,6 +229,38 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
   const { data: exPenalties } = useTemplatePenalties(templateId || undefined);
   const { data: exOvertimes } = useTemplateOvertimes(templateId || undefined);
 
+  // ============ Ngưỡng "net" bù trừ trong ngày (thuộc cấu hình tenant, không thuộc template) ============
+  const { data: tenantCompSettings, refetch: refetchCompSettings } = useQuery({
+    queryKey: ['tenant-comp-threshold-editor', tenantId],
+    queryFn: async () => {
+      const { data } = await supabase.from('tenants').select('compensation_threshold_minutes').eq('id', tenantId!).maybeSingle();
+      return data;
+    },
+    enabled: !!tenantId,
+  });
+  const [compThreshold, setCompThreshold] = useState<string>('');
+  useEffect(() => {
+    const v = (tenantCompSettings as any)?.compensation_threshold_minutes;
+    setCompThreshold(v == null ? '' : String(v));
+  }, [tenantCompSettings]);
+  const [savingThreshold, setSavingThreshold] = useState(false);
+  const handleSaveThreshold = async () => {
+    if (!tenantId) return;
+    setSavingThreshold(true);
+    try {
+      const trimmed = compThreshold.trim();
+      const newVal = trimmed === '' ? null : Math.max(0, Number(trimmed) || 0);
+      const { error } = await supabase.from('tenants').update({ compensation_threshold_minutes: newVal }).eq('id', tenantId);
+      if (error) throw error;
+      toast.success(newVal == null ? 'Đã tắt bù trừ trong ngày' : `Đã đặt ngưỡng net = ${newVal} phút`);
+      await refetchCompSettings();
+    } catch (e: any) {
+      toast.error(e.message || 'Không lưu được ngưỡng');
+    } finally {
+      setSavingThreshold(false);
+    }
+  };
+
   useEffect(() => {
     if (existing) {
       setName(existing.name);
@@ -770,6 +802,49 @@ export function SalaryTemplateEditor({ templateId, tenantId, onClose, onSaved }:
         </CardHeader>
         {penaltyEnabled && (
           <CardContent className="space-y-3">
+            {/* === Cấu hình ngưỡng "net" bù trừ trong ngày === */}
+            <div className="border-2 border-blue-300 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-950/20 rounded-lg p-3 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-xs font-semibold text-blue-900 dark:text-blue-200">
+                  ⏱️ Ngưỡng bù trừ trong ngày (net)
+                </Label>
+                <div className="flex items-center gap-2">
+                  <NumberInput
+                    className="h-8 text-xs w-20"
+                    placeholder="Trống = tắt"
+                    value={compThreshold}
+                    onChangeNumber={(v) => setCompThreshold(v ? String(v) : '')}
+                  />
+                  <span className="text-[11px] text-muted-foreground">phút</span>
+                  <Button size="sm" className="h-8 text-xs" onClick={handleSaveThreshold} disabled={savingThreshold}>
+                    {savingThreshold ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Lưu ngưỡng'}
+                  </Button>
+                </div>
+              </div>
+              <div className="text-[11px] text-muted-foreground space-y-1.5 leading-relaxed">
+                <p>
+                  <strong className="text-foreground">Cách hoạt động:</strong> Hệ thống tự đối chiếu giờ <em>check-in/out</em> với ca làm để tính <em>net = (vào sớm + về trễ) − (vào trễ + về sớm)</em>.
+                </p>
+                <p>
+                  • <strong>net &gt; 0</strong> (làm dư): Nếu vượt ngưỡng → tự tạo <strong>phiếu tăng ca chờ duyệt</strong> (admin có duyệt mới được thưởng theo đơn giá OT).
+                </p>
+                <p>
+                  • <strong>net &lt; 0</strong> (làm thiếu): Nếu vượt ngưỡng → tự tạo <strong>phiếu xin đi trễ/về sớm chờ duyệt</strong>, admin chọn 1 trong 3:
+                </p>
+                <ul className="ml-5 list-disc space-y-0.5">
+                  <li><strong className="text-green-700 dark:text-green-400">❌ Không trừ lương</strong> (miễn phạt — vd đi giao hàng cho shop)</li>
+                  <li><strong className="text-amber-700 dark:text-amber-400">💰 Trừ theo đơn giá tăng ca</strong> (lý do việc riêng — nhẹ hơn phạt)</li>
+                  <li><strong className="text-red-700 dark:text-red-400">⚠️ Phạt theo cấu hình bên dưới</strong> (lý do không chính đáng — nặng nhất)</li>
+                </ul>
+                <p className="pt-1 italic">
+                  💡 Để <strong>trống</strong> = tắt bù trừ, mọi chênh lệch dù 1 phút cũng phải xin phép/tăng ca. Đặt VD <strong>15p</strong> = chênh trong 15 phút coi như đủ công.
+                </p>
+                <p className="text-[10px]">
+                  Khi admin <strong>sửa giờ check-in/out</strong> trong tab "Sửa công" mà NV còn trễ/về sớm, hệ thống cũng hiện 3 nút trên để bạn chọn cách xử lý.
+                </p>
+              </div>
+            </div>
+
             {penalties.map((p, i) => (
               <div key={i} className="border rounded-lg p-3 space-y-2 bg-muted/30">
                 <div className="flex justify-between items-start">

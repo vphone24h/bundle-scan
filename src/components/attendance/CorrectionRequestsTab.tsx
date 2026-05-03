@@ -42,6 +42,14 @@ function formatMinutes(mins: number): string {
   return `${m}p`;
 }
 
+// Format ISO time → "HH:mm" theo giờ VN (UTC+7)
+function fmtTimeVN(iso?: string | null) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const vn = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+  return `${String(vn.getUTCHours()).padStart(2, '0')}:${String(vn.getUTCMinutes()).padStart(2, '0')}`;
+}
+
 export function CorrectionRequestsTab() {
   const { data: pu } = usePlatformUser();
   const tenantId = pu?.tenant_id;
@@ -52,9 +60,11 @@ export function CorrectionRequestsTab() {
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
   const { unlocked, unlock } = useSecurityUnlock('attendance-correction-review');
   const [showPwd, setShowPwd] = useState(false);
-  const [pendingAction, setPendingAction] = useState<{ id: string; status: 'approved' | 'rejected'; request: any } | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ id: string; status: 'approved' | 'rejected'; request: any; penaltyAction?: 'waive' | 'deduct_ot' | 'penalize' } | null>(null);
+  // Dialog đối chiếu giờ ca khi duyệt yêu cầu sửa công
+  const [approveDialog, setApproveDialog] = useState<any | null>(null);
 
-  const guardedReview = (payload: { id: string; status: 'approved' | 'rejected'; request: any }) => {
+  const guardedReview = (payload: { id: string; status: 'approved' | 'rejected'; request: any; penaltyAction?: 'waive' | 'deduct_ot' | 'penalize' }) => {
     if (hasSecurityPassword && !unlocked) {
       setPendingAction(payload);
       setShowPwd(true);
@@ -175,12 +185,13 @@ export function CorrectionRequestsTab() {
   };
 
   const reviewMutation = useMutation({
-    mutationFn: async ({ id, status, request }: { id: string; status: string; request?: any }) => {
+    mutationFn: async ({ id, status, request, penaltyAction }: { id: string; status: string; request?: any; penaltyAction?: 'waive' | 'deduct_ot' | 'penalize' }) => {
       const { data, error } = await supabase.functions.invoke('review-attendance-correction', {
         body: {
           requestId: id,
           action: status,
           reviewNote: reviewNote || null,
+          penaltyAction: penaltyAction || null,
         },
       });
       if (error) throw error;
@@ -191,6 +202,8 @@ export function CorrectionRequestsTab() {
       qc.invalidateQueries({ queryKey: ['pending-approvals-count'] });
       qc.invalidateQueries({ queryKey: ['attendance-records'] });
       qc.invalidateQueries({ queryKey: ['my-attendance-today'] });
+      qc.invalidateQueries({ queryKey: ['leave-requests-admin'] });
+      qc.invalidateQueries({ queryKey: ['my-leave-requests'] });
       const isRemote = vars.request?.request_type?.startsWith('remote_');
       toast.success(
         vars.status === 'approved'
@@ -199,6 +212,7 @@ export function CorrectionRequestsTab() {
       );
       setReviewingId(null);
       setReviewNote('');
+      setApproveDialog(null);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -207,6 +221,64 @@ export function CorrectionRequestsTab() {
   const otherRequests = requests?.filter(r => r.status !== 'pending') || [];
 
   const getTypeInfo = (type: string) => typeLabels[type] || typeLabels.correction;
+
+  // Fetch shift + ngưỡng net cho yêu cầu đang mở dialog (để đối chiếu)
+  const { data: approveContext } = useQuery({
+    queryKey: ['correction-approve-context', tenantId, approveDialog?.id],
+    queryFn: async () => {
+      if (!approveDialog || !tenantId) return null;
+      const baseTime = approveDialog.requested_check_in || approveDialog.requested_check_out;
+      const dayOfWeek = baseTime ? new Date(new Date(baseTime).getTime() + 7*60*60*1000).getUTCDay() : 0;
+      const [shiftRes, tenantRes, currentRec] = await Promise.all([
+        supabase
+          .from('shift_assignments')
+          .select('work_shifts(name, start_time, end_time, late_threshold_minutes)')
+          .eq('user_id', approveDialog.user_id)
+          .eq('tenant_id', tenantId)
+          .eq('is_active', true)
+          .or(`specific_date.eq.${approveDialog.request_date},and(assignment_type.eq.fixed,day_of_week.eq.${dayOfWeek})`)
+          .limit(1)
+          .maybeSingle(),
+        supabase.from('tenants').select('compensation_threshold_minutes').eq('id', tenantId).maybeSingle(),
+        supabase
+          .from('attendance_records')
+          .select('check_in_time, check_out_time, late_minutes, early_leave_minutes, status')
+          .eq('tenant_id', tenantId)
+          .eq('user_id', approveDialog.user_id)
+          .eq('date', approveDialog.request_date)
+          .maybeSingle(),
+      ]);
+      const ws = (shiftRes.data?.work_shifts as any) || null;
+      const rawTh = (tenantRes.data as any)?.compensation_threshold_minutes;
+      const compThreshold = rawTh == null ? 0 : Number(rawTh) || 0;
+      // Tính toán net mới sau khi áp giờ admin sửa
+      let estLate = 0, estEarly = 0;
+      if (ws && approveDialog.requested_check_in) {
+        const [h, m] = String(ws.start_time).split(':').map(Number);
+        const ci = new Date(approveDialog.requested_check_in);
+        const ciVN = new Date(ci.getTime() + 7*60*60*1000);
+        const shiftStart = new Date(Date.UTC(ciVN.getUTCFullYear(), ciVN.getUTCMonth(), ciVN.getUTCDate(), h, m) - 7*60*60*1000);
+        const threshold = (Number(ws.late_threshold_minutes) || 15) * 60000;
+        const diff = ci.getTime() - shiftStart.getTime();
+        if (diff > threshold) estLate = Math.round(diff / 60000);
+      }
+      if (ws && approveDialog.requested_check_out) {
+        const [eh, em] = String(ws.end_time).split(':').map(Number);
+        const co = new Date(approveDialog.requested_check_out);
+        const refDate = approveDialog.requested_check_in
+          ? new Date(approveDialog.requested_check_in)
+          : co;
+        const refVN = new Date(refDate.getTime() + 7*60*60*1000);
+        const shiftEnd = new Date(Date.UTC(refVN.getUTCFullYear(), refVN.getUTCMonth(), refVN.getUTCDate(), eh, em) - 7*60*60*1000);
+        const diffEnd = Math.round((co.getTime() - shiftEnd.getTime()) / 60000);
+        if (diffEnd < 0) estEarly = Math.abs(diffEnd);
+      }
+      return { shift: ws, compThreshold, currentRec: currentRec.data, estLate, estEarly };
+    },
+    enabled: !!approveDialog && !!tenantId,
+  });
+
+  const needPenaltyChoice = (approveContext?.estLate || 0) > 0 || (approveContext?.estEarly || 0) > 0;
 
   return (
     <div className="space-y-4">
@@ -256,7 +328,16 @@ export function CorrectionRequestsTab() {
                           <Button
                             size="sm" variant="outline"
                             className="gap-1 text-xs h-7 text-green-700"
-                            onClick={() => guardedReview({ id: r.id, status: 'approved', request: r })}
+                            onClick={() => {
+                              // Yêu cầu sửa công thường → mở dialog đối chiếu để admin chọn cách xử lý phạt
+                              // Yêu cầu remote_checkin/checkout → duyệt thẳng (không phát sinh phạt)
+                              if (r.request_type === 'correction') {
+                                setApproveDialog(r);
+                                setReviewNote('');
+                              } else {
+                                guardedReview({ id: r.id, status: 'approved', request: r });
+                              }
+                            }}
                             disabled={reviewMutation.isPending}
                           >
                             <CheckCircle2 className="h-3 w-3" /> Duyệt
@@ -392,6 +473,118 @@ export function CorrectionRequestsTab() {
         title="Xác thực duyệt sửa công"
         description="Nhập mật khẩu bảo mật để duyệt/từ chối yêu cầu sửa công"
       />
+
+      {/* Dialog đối chiếu giờ ca + chọn cách xử lý phạt khi duyệt sửa công */}
+      <Dialog open={!!approveDialog} onOpenChange={(o) => { if (!o) setApproveDialog(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Duyệt sửa công — đối chiếu ca làm</DialogTitle>
+          </DialogHeader>
+          {approveDialog && (
+            <div className="space-y-3 text-xs">
+              <div className="bg-muted/40 rounded p-3 space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Nhân viên:</span>
+                  <strong>{profiles?.[approveDialog.user_id] || approveDialog.user_id.slice(0, 8)}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Ngày:</span>
+                  <strong>{format(new Date(approveDialog.request_date), 'dd/MM/yyyy')}</strong>
+                </div>
+                {approveContext?.shift && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Ca làm:</span>
+                    <strong>{approveContext.shift.name} ({approveContext.shift.start_time}–{approveContext.shift.end_time})</strong>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="border rounded p-2">
+                  <div className="text-[10px] text-muted-foreground mb-1">Giờ admin sửa</div>
+                  <div className="font-mono text-xs">
+                    Vào: <strong>{fmtTimeVN(approveDialog.requested_check_in)}</strong>
+                  </div>
+                  <div className="font-mono text-xs">
+                    Ra: <strong>{fmtTimeVN(approveDialog.requested_check_out)}</strong>
+                  </div>
+                </div>
+                <div className="border rounded p-2">
+                  <div className="text-[10px] text-muted-foreground mb-1">Hiện đang lưu</div>
+                  <div className="font-mono text-xs">
+                    Vào: <strong>{fmtTimeVN(approveContext?.currentRec?.check_in_time)}</strong>
+                  </div>
+                  <div className="font-mono text-xs">
+                    Ra: <strong>{fmtTimeVN(approveContext?.currentRec?.check_out_time)}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-muted-foreground">Lý do NV: <em>{approveDialog.reason}</em></p>
+
+              {needPenaltyChoice ? (
+                <div className="border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/20 rounded p-3 space-y-2">
+                  <div className="font-semibold text-amber-800 dark:text-amber-200">
+                    ⚠️ Sau khi sửa, NV còn {approveContext?.estLate ? `đi trễ ${formatMinutes(approveContext.estLate)}` : `về sớm ${formatMinutes(approveContext?.estEarly || 0)}`}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">Chọn cách xử lý phần thiếu giờ này:</p>
+                </div>
+              ) : (
+                <div className="border border-green-300 bg-green-50 dark:bg-green-950/20 rounded p-3 text-green-800 dark:text-green-300">
+                  ✅ Sau khi sửa: đủ giờ — không phát sinh phạt.
+                </div>
+              )}
+
+              <Textarea
+                placeholder="Ghi chú (tuỳ chọn)..."
+                value={reviewNote}
+                onChange={e => setReviewNote(e.target.value)}
+                className="text-xs"
+                rows={2}
+              />
+            </div>
+          )}
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            {approveDialog && (
+              needPenaltyChoice ? (
+                <>
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700 text-white text-xs h-9"
+                    onClick={() => guardedReview({ id: approveDialog.id, status: 'approved', request: approveDialog, penaltyAction: 'waive' })}
+                    disabled={reviewMutation.isPending}
+                  >
+                    ❌ Không trừ lương (miễn phạt — vd đi giao hàng)
+                  </Button>
+                  <Button
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-white text-xs h-9"
+                    onClick={() => guardedReview({ id: approveDialog.id, status: 'approved', request: approveDialog, penaltyAction: 'deduct_ot' })}
+                    disabled={reviewMutation.isPending}
+                  >
+                    💰 Trừ theo đơn giá tăng ca (việc riêng)
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="w-full text-xs h-9"
+                    onClick={() => guardedReview({ id: approveDialog.id, status: 'approved', request: approveDialog, penaltyAction: 'penalize' })}
+                    disabled={reviewMutation.isPending}
+                  >
+                    ⚠️ Phạt theo cấu hình (nặng — lý do không chính đáng)
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => guardedReview({ id: approveDialog.id, status: 'approved', request: approveDialog })}
+                  disabled={reviewMutation.isPending}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-1" /> Duyệt sửa công
+                </Button>
+              )
+            )}
+            <Button variant="outline" className="w-full" onClick={() => setApproveDialog(null)}>Đóng</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -9855,7 +9855,7 @@ export type Database = {
           business_need: string | null
           business_type: string | null
           company_id: string | null
-          compensation_threshold_minutes: number
+          compensation_threshold_minutes: number | null
           created_at: string
           einvoice_enabled: boolean
           email: string | null
@@ -9890,7 +9890,7 @@ export type Database = {
           business_need?: string | null
           business_type?: string | null
           company_id?: string | null
-          compensation_threshold_minutes?: number
+          compensation_threshold_minutes?: number | null
           created_at?: string
           einvoice_enabled?: boolean
           email?: string | null
@@ -9925,7 +9925,7 @@ export type Database = {
           business_need?: string | null
           business_type?: string | null
           company_id?: string | null
-          compensation_threshold_minutes?: number
+          compensation_threshold_minutes?: number | null
           created_at?: string
           einvoice_enabled?: boolean
           email?: string | null

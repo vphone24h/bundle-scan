@@ -237,7 +237,7 @@ export default function CheckInPage() {
     enabled: !!user?.id && !!tenantId,
   });
 
-  // Ngưỡng bù trừ vào sớm/về trễ (mặc định 60p)
+  // Ngưỡng bù trừ vào sớm/về trễ (mặc định = 0 nếu admin chưa cấu hình → KHÔNG bù trừ)
   const { data: tenantSettings } = useQuery({
     queryKey: ['tenant-comp-threshold', tenantId],
     queryFn: async () => {
@@ -250,7 +250,8 @@ export default function CheckInPage() {
     },
     enabled: !!tenantId,
   });
-  const compThreshold = (tenantSettings as any)?.compensation_threshold_minutes ?? 60;
+  const rawThreshold = (tenantSettings as any)?.compensation_threshold_minutes;
+  const compThreshold = rawThreshold == null ? 0 : Number(rawThreshold) || 0;
 
   const isInRange = nearestLocation && distance !== null && distance <= nearestLocation.radius_meters;
   const deviceOk = myDevice?.status === 'approved';
