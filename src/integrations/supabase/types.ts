@@ -837,6 +837,7 @@ export type Database = {
       }
       attendance_records: {
         Row: {
+          accrued_offset_minutes: number
           branch_id: string | null
           check_in_accuracy: number | null
           check_in_device_id: string | null
@@ -877,6 +878,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          accrued_offset_minutes?: number
           branch_id?: string | null
           check_in_accuracy?: number | null
           check_in_device_id?: string | null
@@ -917,6 +919,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          accrued_offset_minutes?: number
           branch_id?: string | null
           check_in_accuracy?: number | null
           check_in_device_id?: string | null
