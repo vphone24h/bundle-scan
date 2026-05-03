@@ -481,6 +481,10 @@ export function AttendanceHistoryTab() {
               const st = statusConfig[r.status] || statusConfig.pending;
               const lateExcuse = r.late_minutes > 0 ? getExcuse(r.user_id, r.date, 'late_arrival') : null;
               const earlyExcuse = r.early_leave_minutes > 0 ? getExcuse(r.user_id, r.date, 'early_leave') : null;
+              const diff = computeShiftDiff(r);
+              const shiftLabel = r.work_shifts
+                ? `${r.work_shifts.name || ''} ${r.work_shifts.start_time?.slice(0,5) || ''}-${r.work_shifts.end_time?.slice(0,5) || ''}`.trim()
+                : '';
               return (
                 <Card key={r.id}>
                   <CardContent className="p-3 space-y-1.5">
@@ -491,6 +495,7 @@ export function AttendanceHistoryTab() {
                         {renderEditBtn(r)}
                       </div>
                     </div>
+                    {shiftLabel && <div className="text-[11px] text-muted-foreground">Ca: {shiftLabel}</div>}
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -499,9 +504,16 @@ export function AttendanceHistoryTab() {
                       {r.total_work_minutes > 0 && <span className="font-medium text-foreground">{Math.floor(r.total_work_minutes / 60)}h{r.total_work_minutes % 60}p</span>}
                     </div>
                     <div className="flex items-center gap-2 text-xs flex-wrap">
-                      {r.late_minutes > 0 && (
-                        <span className={lateExcuse ? 'text-muted-foreground line-through' : 'text-yellow-600'}>Trễ {r.late_minutes}p</span>
-                      )}
+                      {diff?.lateIn ? (
+                        <span className={lateExcuse ? 'text-muted-foreground line-through' : 'text-yellow-600'}>Vào trễ {fmtMin(diff.lateIn)}</span>
+                      ) : diff?.earlyIn ? (
+                        <span className="text-blue-600">Vào sớm {fmtMin(diff.earlyIn)}</span>
+                      ) : null}
+                      {diff?.earlyOut ? (
+                        <span className={earlyExcuse ? 'text-muted-foreground line-through' : 'text-orange-600'}>Về sớm {fmtMin(diff.earlyOut)}</span>
+                      ) : diff?.lateOut ? (
+                        <span className="text-purple-600">Về trễ {fmtMin(diff.lateOut)}</span>
+                      ) : null}
                       {lateExcuse && (
                         <Badge className="text-[9px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Có xin phép · không phạt</Badge>
                       )}
