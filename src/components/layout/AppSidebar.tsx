@@ -181,6 +181,7 @@ export function AppSidebar() {
   const { data: unreadArticleCount } = useUnreadArticleCount(shouldLoadSidebarExtras);
   const completedRepairCount = useCompletedRepairCount(shouldLoadSidebarExtras);
   const { enabled: attendanceEnabled } = useAttendanceEnabled();
+  const { total: pendingApprovalsTotal } = usePendingApprovals();
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches) {
