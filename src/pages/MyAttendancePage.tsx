@@ -1146,7 +1146,16 @@ function EmployeeCorrectionRequests({ userId, tenantId }: { userId?: string; ten
             <div className="space-y-3">
               <div>
                 <Label className="text-xs">Ngày cần sửa</Label>
-                <Input type="date" value={requestDate} onChange={e => setRequestDate(e.target.value)} className="h-8 text-sm" />
+                <Input
+                  type="date"
+                  value={requestDate}
+                  max={yesterdayStr}
+                  onChange={e => setRequestDate(e.target.value)}
+                  className="h-8 text-sm"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Chỉ được sửa công từ hôm qua trở về trước. Hôm nay chưa hết ca, dùng tab "Nghỉ" để xin trễ/về sớm.
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
