@@ -334,20 +334,36 @@ export function LeaveApprovalsTab() {
                   </div>
                   {(reviewDialog.request_type === 'late_arrival' || reviewDialog.request_type === 'early_leave') ? (
                     <>
-                      <div className="bg-muted/50 p-3 rounded text-xs space-y-1.5">
-                        <p>✅ <strong>Duyệt</strong>: Bỏ qua phạt phút {reviewDialog.request_type === 'late_arrival' ? 'đi muộn' : 'về sớm'} của ngày đó.</p>
-                        <p>❌ <strong>Từ chối</strong>: Hệ thống vẫn <strong>tính phạt</strong> theo quy định công ty.</p>
+                      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 p-3 rounded text-xs space-y-2">
+                        <div className="font-semibold text-blue-900 dark:text-blue-200 mb-1">
+                          📋 3 trường hợp xử lý {reviewDialog.request_type === 'late_arrival' ? 'đi trễ' : 'về sớm'} ({reviewDialog.time_minutes || 0} phút):
+                        </div>
+                        <div className="pl-2 border-l-2 border-green-500">
+                          <p className="font-medium text-green-700 dark:text-green-400">✅ Duyệt + KHÔNG tick "Trừ lương"</p>
+                          <p className="text-muted-foreground">→ <strong>Miễn phạt hoàn toàn</strong>. NV không bị trừ đồng nào.</p>
+                        </div>
+                        <div className="pl-2 border-l-2 border-amber-500">
+                          <p className="font-medium text-amber-700 dark:text-amber-400">⚠️ Duyệt + CÓ tick "Trừ lương"</p>
+                          <p className="text-muted-foreground">→ Trừ theo <strong>đơn giá tăng ca/giờ</strong> (nhẹ hơn phạt thông thường).</p>
+                        </div>
+                        <div className="pl-2 border-l-2 border-red-500">
+                          <p className="font-medium text-red-700 dark:text-red-400">❌ Từ chối</p>
+                          <p className="text-muted-foreground">→ Trừ theo <strong>đơn giá phạt {reviewDialog.request_type === 'late_arrival' ? 'đi trễ' : 'về sớm'}</strong> trong cấu hình bảng lương (nặng nhất).</p>
+                        </div>
                       </div>
-                      <label className="flex items-start gap-2 p-2 rounded border border-amber-300 bg-amber-50 dark:bg-amber-950/20 cursor-pointer">
+                      <label className="flex items-start gap-2 p-3 rounded border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/20 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors">
                         <Checkbox
                           checked={deductSalary}
                           onCheckedChange={(v) => setDeductSalary(v === true)}
                           className="mt-0.5"
                         />
                         <div className="text-xs">
-                          <div className="font-medium text-amber-800 dark:text-amber-200">Trừ lương {reviewDialog.time_minutes || 0} phút này</div>
-                          <div className="text-muted-foreground mt-0.5">
-                            Mặc định <strong>KHÔNG trừ</strong>. Tick nếu muốn trừ lương theo đơn giá tăng ca/giờ trong bảng lương NV.
+                          <div className="font-semibold text-amber-800 dark:text-amber-200">
+                            Trừ lương {reviewDialog.time_minutes || 0} phút này (theo đơn giá tăng ca)
+                          </div>
+                          <div className="text-muted-foreground mt-1">
+                            • <strong>Bỏ trống</strong> = Miễn phạt 100% (NV được nghỉ có lương).<br/>
+                            • <strong>Tick</strong> = Trừ lương phần phút này theo đơn giá tăng ca/giờ trong bảng lương NV (nhẹ hơn phạt {reviewDialog.request_type === 'late_arrival' ? 'đi trễ' : 'về sớm'} thông thường).
                           </div>
                         </div>
                       </label>
