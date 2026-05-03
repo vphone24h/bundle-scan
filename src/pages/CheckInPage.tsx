@@ -298,8 +298,11 @@ export default function CheckInPage() {
       if (shiftInfo) {
         const [h, m] = shiftInfo.start_time.split(':').map(Number);
         const shiftStart = new Date(); shiftStart.setHours(h, m, 0, 0);
+        // Nếu có đơn xin đi trễ đã duyệt N phút → mốc giờ vào ca dời thêm N phút
+        const waiverLateMin = todayWaivers?.late || 0;
+        const effectiveStart = new Date(shiftStart.getTime() + waiverLateMin * 60000);
         const threshold = (shiftInfo.late_threshold_minutes || 15) * 60 * 1000;
-        const diff = now.getTime() - shiftStart.getTime();
+        const diff = now.getTime() - effectiveStart.getTime();
         if (diff > threshold) { status = 'late'; lateMinutes = Math.round(diff / 60000); }
       }
 
@@ -322,7 +325,12 @@ export default function CheckInPage() {
         note: gpsFraudWarning.length > 0 ? `⚠️ GPS flags: ${gpsFraudWarning.join(', ')}` : null,
       }]);
       if (error) throw error;
-      toast.success(status === 'late' ? `Check-in thành công (trễ ${lateMinutes} phút)` : 'Check-in thành công!');
+      const waiverLateMin = todayWaivers?.late || 0;
+      toast.success(
+        status === 'late'
+          ? `Check-in thành công (trễ ${lateMinutes} phút${waiverLateMin > 0 ? ` — đã trừ ${waiverLateMin}p xin phép` : ''})`
+          : waiverLateMin > 0 ? `Check-in thành công (trong khung xin trễ ${waiverLateMin}p)` : 'Check-in thành công!'
+      );
       qc.invalidateQueries({ queryKey: ['my-attendance-today'] });
       qc.invalidateQueries({ queryKey: ['attendance-records'] });
       // Random post-checkin verification (20% chance)
@@ -334,7 +342,7 @@ export default function CheckInPage() {
     } finally {
       setChecking(false);
     }
-  }, [user?.id, tenantId, gpsPos, nearestLocation, myDevice, todayShift, shiftInfo, today, qc, deviceOk, gpsFraudWarning]);
+  }, [user?.id, tenantId, gpsPos, nearestLocation, myDevice, todayShift, shiftInfo, today, qc, deviceOk, gpsFraudWarning, todayWaivers]);
 
   const handleCheckOut = useCallback(async () => {
     if (!todayRecord?.id || !gpsPos || !deviceOk) return;
@@ -350,11 +358,15 @@ export default function CheckInPage() {
       if (shiftInfo) {
         const [eh, em] = shiftInfo.end_time.split(':').map(Number);
         const shiftEnd = new Date(); shiftEnd.setHours(eh, em, 0, 0);
-        const diffFromEnd = Math.round((now.getTime() - shiftEnd.getTime()) / 60000);
+        // Nếu có đơn xin về sớm đã duyệt N phút → mốc giờ ra ca dời sớm N phút
+        const waiverEarlyMin = todayWaivers?.early || 0;
+        const effectiveEnd = new Date(shiftEnd.getTime() - waiverEarlyMin * 60000);
+        const diffFromEnd = Math.round((now.getTime() - effectiveEnd.getTime()) / 60000);
         if (diffFromEnd > 0) {
-          overtimeMinutes = diffFromEnd; // checked out after shift end
+          // Vẫn so OT theo shiftEnd gốc, không tính OT phần được xin về sớm
+          overtimeMinutes = Math.max(0, Math.round((now.getTime() - shiftEnd.getTime()) / 60000));
         } else if (diffFromEnd < 0) {
-          earlyLeaveMinutes = Math.abs(diffFromEnd); // checked out before shift end
+          earlyLeaveMinutes = Math.abs(diffFromEnd); // về sớm so với mốc đã trừ waiver
         }
       }
 
@@ -378,7 +390,7 @@ export default function CheckInPage() {
     } finally {
       setChecking(false);
     }
-  }, [todayRecord, gpsPos, myDevice, qc, deviceOk, shiftInfo]);
+  }, [todayRecord, gpsPos, myDevice, qc, deviceOk, shiftInfo, todayWaivers]);
 
   // Send remote check-in/out request to admin
   const handleSendRemoteRequest = useCallback(async (type: 'remote_checkin' | 'remote_checkout') => {
