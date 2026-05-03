@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Loader2, Search, CheckCircle, XCircle, Clock, CalendarOff, AlertTriangle, LogIn, LogOut } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { format, parseISO, eachDayOfInterval, differenceInCalendarDays } from 'date-fns';
 import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
@@ -33,10 +34,11 @@ export function LeaveApprovalsTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [reviewDialog, setReviewDialog] = useState<any>(null);
   const [reviewNote, setReviewNote] = useState('');
+  const [deductSalary, setDeductSalary] = useState(false);
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
   const { unlocked, unlock } = useSecurityUnlock('leave-approval-review');
   const [showPwd, setShowPwd] = useState(false);
-  const [pendingAction, setPendingAction] = useState<{ id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string } | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string; deduct?: boolean } | null>(null);
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ['leave-requests-admin', tenantId, filterStatus],
@@ -74,7 +76,7 @@ export function LeaveApprovalsTab() {
 
   // 3 actions: approved (có phép), unexcused (không phép but still off), rejected (không được nghỉ)
   const reviewMutation = useMutation({
-    mutationFn: async ({ id, action, note }: { id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string }) => {
+    mutationFn: async ({ id, action, note, deduct }: { id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string; deduct?: boolean }) => {
       const { error } = await supabase
         .from('leave_requests')
         .update({
@@ -82,6 +84,7 @@ export function LeaveApprovalsTab() {
           reviewed_by: user?.id,
           reviewed_at: new Date().toISOString(),
           review_note: note || null,
+          deduct_salary: deduct === true,
         })
         .eq('id', id);
       if (error) throw error;
@@ -122,7 +125,7 @@ export function LeaveApprovalsTab() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const guardedReview = (payload: { id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string }) => {
+  const guardedReview = (payload: { id: string; action: 'approved' | 'unexcused' | 'rejected'; note: string; deduct?: boolean }) => {
     if (hasSecurityPassword && !unlocked) {
       setPendingAction(payload);
       setShowPwd(true);
@@ -154,6 +157,7 @@ export function LeaveApprovalsTab() {
   const openReview = (req: any) => {
     setReviewDialog(req);
     setReviewNote('');
+    setDeductSalary(req?.deduct_salary === true);
   };
 
   const formatDateRange = (from: string, to: string) => {
