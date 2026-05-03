@@ -404,27 +404,22 @@ export default function CheckInPage() {
         const waiverEarlyMin = todayWaivers?.early || 0;
         const effectiveEnd = new Date(shiftEnd.getTime() - waiverEarlyMin * 60000);
         const diffFromEnd = Math.round((now.getTime() - effectiveEnd.getTime()) / 60000);
-        if (diffFromEnd > 0) {
-          // OT cuối ca = phần ra sau shiftEnd gốc
-          const otRaw = Math.max(0, Math.round((now.getTime() - shiftEnd.getTime()) / 60000));
-          // Trong ngưỡng compThreshold đầu tiên: tự bù trừ (không tính OT, không trừ về sớm)
-          // Vượt ngưỡng: phần dư là OT pending cần admin duyệt
-          if (otRaw > compThreshold) {
-            extraPendingOT = otRaw - compThreshold;
-          }
-        } else if (diffFromEnd < 0) {
-          // Về sớm so với mốc đã trừ waiver
-          const earlyRaw = Math.abs(diffFromEnd);
-          // Bù trừ với phần vào sớm đã ghi
-          const offset = Math.min(earlyArrivalRecorded, earlyRaw);
-          const remainder = earlyRaw - offset;
-          // Phần dư còn trong ngưỡng compThreshold → cũng bù trừ tự động (về sớm hợp lệ)
-          if (remainder <= compThreshold) {
-            earlyLeaveMinutes = 0;
-          } else {
-            earlyLeaveMinutes = remainder;
-          }
+
+        // BÙ TRỪ 2 CHIỀU TRONG NGÀY:
+        // net > 0 = nhân viên làm dư (vào sớm + về trễ)
+        // net < 0 = nhân viên làm thiếu (về sớm nhiều hơn vào sớm)
+        // |net| ≤ compThreshold (60p) → coi như đủ công, không thưởng/không phạt
+        // |net| >  compThreshold → phần vượt ngưỡng:
+        //    + nếu dư → OT pending chờ duyệt
+        //    + nếu thiếu → tính về sớm để trừ lương
+        const net = earlyArrivalRecorded + diffFromEnd; // phút dư (>0) hoặc thiếu (<0)
+
+        if (net > compThreshold) {
+          extraPendingOT = net - compThreshold;
+        } else if (net < -compThreshold) {
+          earlyLeaveMinutes = Math.abs(net) - compThreshold;
         }
+        // |net| ≤ compThreshold → tự bù trừ, không làm gì
       }
 
       // Cộng OT pending cuối ca với pending từ check-in (vào sớm vượt ngưỡng)
