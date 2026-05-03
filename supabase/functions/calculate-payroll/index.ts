@@ -1359,40 +1359,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // ===== 7d. TÍCH LŨY THỜI GIAN DƯ (vào sớm/về trễ ≤ngưỡng không bù trừ) → QUY ĐỔI OT =====
-      // Cộng dồn accrued_offset_minutes trong toàn kỳ → quy đổi thành tăng ca theo đơn giá OT/giờ
-      if (isPayrollReady) {
-        const accruedTotalMinutes = userAttendance.reduce(
-          (s: number, a: any) => s + (a.accrued_offset_minutes || 0), 0
-        );
-        if (accruedTotalMinutes > 0) {
-          const tOvertimes = overtimesByTemplate[templateId] || [];
-          const otHourly = tOvertimes.find((o: any) => o.overtime_type === "hourly");
-          const baseHourlyRate = salaryType === "fixed"
-            ? (baseAmount / (expectedWorkDays || 22)) / 8
-            : baseAmount / 8;
-          let otRatePerHour = baseHourlyRate * 1.5; // fallback 150%
-          if (otHourly) {
-            const isPct = otHourly.calc_type === "percentage" || otHourly.calc_type === "multiplier";
-            otRatePerHour = isPct
-              ? baseHourlyRate * (otHourly.value || 0) / 100
-              : (otHourly.value || 0);
-          }
-          const accruedHours = accruedTotalMinutes / 60;
-          const accruedPay = Math.round(accruedHours * otRatePerHour);
-          if (accruedPay > 0) {
-            overtimePay += accruedPay;
-            overtimeDetails.push({
-              name: "Tích lũy vào sớm/về trễ trong ngưỡng (quy đổi OT)",
-              type: "accrued_offset",
-              hours: Math.round(accruedHours * 100) / 100,
-              amount: accruedPay,
-              detail: `${accruedTotalMinutes} phút (${accruedHours.toFixed(2)}h) x ${Math.round(otRatePerHour)}đ/h`,
-            });
-          }
-        }
-      }
-
       // ===== ADVANCES =====
       const userAdvances = advances.filter((a: any) => a.user_id === employee.user_id);
       const totalAdvances = isPayrollReady
