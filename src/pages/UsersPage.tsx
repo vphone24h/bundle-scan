@@ -160,6 +160,19 @@ export default function UsersPage() {
   const [payrollSubTab, setPayrollSubTab] = useState('payroll-periods');
   const [isAttendanceGuideOpen, setIsAttendanceGuideOpen] = useState(false);
 
+  // Auto-jump to pending sub-tab when user opens parent tab with pending items
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === 'attendance' && pending.corrections > 0) {
+      setAttendanceSubTab('corrections');
+    } else if (value === 'payroll') {
+      // Priority: leave > absences > overtime
+      if (pending.leaveRequests > 0) setPayrollSubTab('payroll-leave');
+      else if (pending.absences > 0) setPayrollSubTab('payroll-absences');
+      else if (pending.overtime > 0) setPayrollSubTab('payroll-overtime');
+    }
+  };
+
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['users-with-roles', currentTenant?.id, permissions?.role, permissions?.branchId],
@@ -280,7 +293,7 @@ export default function UsersPage() {
         )}
       </div>
 
-      <Tabs value={effectiveTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs value={effectiveTab} onValueChange={handleTabChange} className="space-y-4">
         {!isStaffOnly && (
           <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
             <TabsList className="inline-flex w-auto min-w-full sm:min-w-0 h-auto p-1 gap-1">
