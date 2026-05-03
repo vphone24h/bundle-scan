@@ -386,6 +386,11 @@ export function AppSidebar() {
                     {unreadArticleCount}
                   </span>
                 )}
+                {item.href === '/users' && pendingApprovalsTotal > 0 && (
+                  <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1 animate-pulse">
+                    {pendingApprovalsTotal > 99 ? '99+' : pendingApprovalsTotal}
+                  </span>
+                )}
               </Link>
             )}
           </div>
