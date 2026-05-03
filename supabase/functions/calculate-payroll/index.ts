@@ -1318,6 +1318,47 @@ Deno.serve(async (req) => {
         }
       }
 
+      // ===== 7c. TRỪ LƯƠNG ĐI TRỄ/VỀ SỚM CÓ PHIẾU XIN PHÉP (deduct_salary=true) =====
+      // Trừ theo ĐƠN GIÁ TĂNG CA (nhẹ hơn phạt đi trễ thông thường)
+      // Logic: NV xin phép → admin duyệt + tick "Trừ lương" → trừ theo OT rate
+      // (Không trùng với penalty vì các key này đã skip ở khối penalty)
+      if (isPayrollReady) {
+        let waivedDeductMinutes = 0;
+        for (const a of userAttendance) {
+          const key = `${employee.user_id}_${a.date}`;
+          if (lateArrivalDeductKeys.has(key)) waivedDeductMinutes += (a.late_minutes || 0);
+          if (earlyLeaveDeductKeys.has(key)) waivedDeductMinutes += (a.early_leave_minutes || 0);
+        }
+        if (waivedDeductMinutes > 0) {
+          // Lấy đơn giá OT/giờ: ưu tiên config "hourly" trong template, fallback hourlyRate gốc
+          const tOvertimes = overtimesByTemplate[templateId] || [];
+          const otHourly = tOvertimes.find((o: any) => o.overtime_type === "hourly");
+          const baseHourlyRate = salaryType === "fixed"
+            ? (baseAmount / (expectedWorkDays || 22)) / 8
+            : baseAmount / 8;
+          let otRatePerHour = baseHourlyRate * 1.5; // fallback
+          if (otHourly) {
+            const isPct = otHourly.calc_type === "percentage" || otHourly.calc_type === "multiplier";
+            otRatePerHour = isPct
+              ? baseHourlyRate * (otHourly.value || 0) / 100
+              : (otHourly.value || 0);
+          }
+          const hours = waivedDeductMinutes / 60;
+          const deduction = Math.round(hours * otRatePerHour);
+          if (deduction > 0) {
+            totalPenalty += deduction;
+            penaltyDetails.push({
+              name: "Trừ lương trễ/sớm có xin phép (theo đơn giá tăng ca)",
+              type: "waiver_deduct_ot_rate",
+              count: 1,
+              per_amount: Math.round(otRatePerHour),
+              amount: deduction,
+              detail: `${waivedDeductMinutes} phút (${hours.toFixed(2)}h) x ${Math.round(otRatePerHour)}đ/h`,
+            });
+          }
+        }
+      }
+
       // ===== ADVANCES =====
       const userAdvances = advances.filter((a: any) => a.user_id === employee.user_id);
       const totalAdvances = isPayrollReady
