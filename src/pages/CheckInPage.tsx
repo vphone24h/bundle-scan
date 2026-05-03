@@ -463,30 +463,6 @@ export default function CheckInPage() {
       setChecking(false);
     }
   }, [todayRecord, gpsPos, myDevice, qc, deviceOk, shiftInfo, todayWaivers, compThreshold]);
-        }
-      }
-
-      const { error } = await supabase.from('attendance_records').update({
-        check_out_time: now.toISOString(),
-        check_out_lat: gpsPos.lat,
-        check_out_lng: gpsPos.lng,
-        check_out_accuracy: gpsPos.accuracy,
-        check_out_device_id: myDevice?.id || null,
-        check_out_method: 'gps',
-        total_work_minutes: totalMinutes,
-        overtime_minutes: overtimeMinutes,
-        early_leave_minutes: earlyLeaveMinutes,
-      }).eq('id', todayRecord.id);
-      if (error) throw error;
-      toast.success(`Check-out thành công! Tổng: ${Math.floor(totalMinutes/60)}h${totalMinutes%60}p`);
-      qc.invalidateQueries({ queryKey: ['my-attendance-today'] });
-      qc.invalidateQueries({ queryKey: ['attendance-records'] });
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setChecking(false);
-    }
-  }, [todayRecord, gpsPos, myDevice, qc, deviceOk, shiftInfo, todayWaivers]);
 
   // Send remote check-in/out request to admin
   const handleSendRemoteRequest = useCallback(async (type: 'remote_checkin' | 'remote_checkout') => {
