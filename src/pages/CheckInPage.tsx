@@ -237,6 +237,21 @@ export default function CheckInPage() {
     enabled: !!user?.id && !!tenantId,
   });
 
+  // Ngưỡng bù trừ vào sớm/về trễ (mặc định 60p)
+  const { data: tenantSettings } = useQuery({
+    queryKey: ['tenant-comp-threshold', tenantId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('tenants')
+        .select('compensation_threshold_minutes')
+        .eq('id', tenantId!)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!tenantId,
+  });
+  const compThreshold = (tenantSettings as any)?.compensation_threshold_minutes ?? 60;
+
   const isInRange = nearestLocation && distance !== null && distance <= nearestLocation.radius_meters;
   const deviceOk = myDevice?.status === 'approved';
   const hasCheckedIn = !!todayRecord?.check_in_time;
