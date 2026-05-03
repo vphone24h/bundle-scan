@@ -474,6 +474,36 @@ export default function CheckInPage() {
         overtime_status: newOTStatus,
       }).eq('id', todayRecord.id);
       if (error) throw error;
+
+      // Auto-tạo phiếu xin về sớm nếu vượt ngưỡng bù trừ và chưa có phiếu nào cho ngày này.
+      if (earlyLeaveMinutes > 0) {
+        const { data: existing } = await supabase
+          .from('leave_requests')
+          .select('id')
+          .eq('tenant_id', (todayRecord as any).tenant_id)
+          .eq('user_id', (todayRecord as any).user_id)
+          .eq('request_type', 'early_leave')
+          .eq('leave_date_from', (todayRecord as any).date)
+          .in('status', ['pending', 'approved'])
+          .limit(1)
+          .maybeSingle();
+        if (!existing) {
+          await supabase.from('leave_requests').insert({
+            tenant_id: (todayRecord as any).tenant_id,
+            user_id: (todayRecord as any).user_id,
+            request_type: 'early_leave',
+            leave_date_from: (todayRecord as any).date,
+            leave_date_to: (todayRecord as any).date,
+            time_minutes: earlyLeaveMinutes,
+            reason: `[Tự động] Về sớm ${earlyLeaveMinutes}p — chờ admin duyệt`,
+            status: 'pending',
+          });
+          qc.invalidateQueries({ queryKey: ['my-leave-requests'] });
+          qc.invalidateQueries({ queryKey: ['leave-requests-admin'] });
+          qc.invalidateQueries({ queryKey: ['pending-approvals-count'] });
+        }
+      }
+
       let msg = `Check-out thành công! Tổng: ${Math.floor(totalMinutes/60)}h${totalMinutes%60}p`;
       if (totalPendingOT > 0) {
         msg += ` — ${totalPendingOT}p tăng ca chờ admin duyệt.`;
