@@ -160,6 +160,12 @@ export function AttendanceHistoryTab() {
     if (!editRecord) return;
     if (!editForm.securityPin.trim()) { toast.error('Vui lòng nhập mật khẩu bảo mật'); return; }
     if (!editForm.reason.trim()) { toast.error('Vui lòng nhập lý do sửa'); return; }
+    // Không cho sửa bản ghi của hôm nay/tương lai (chưa hết ca, dữ liệu chưa hoàn chỉnh)
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    if (editRecord.date >= todayStr) {
+      toast.error('Chỉ được sửa công từ hôm qua trở về trước. Hôm nay chưa hết ca.');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -228,11 +234,22 @@ export function AttendanceHistoryTab() {
     }
   };
 
-  const renderEditBtn = (r: any) => (
-    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(r)} title="Sửa công">
-      <Pencil className="h-3.5 w-3.5" />
-    </Button>
-  );
+  const renderEditBtn = (r: any) => {
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const locked = r.date >= todayStr;
+    return (
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7"
+        onClick={() => openEdit(r)}
+        disabled={locked}
+        title={locked ? 'Chỉ sửa được từ hôm qua trở về trước' : 'Sửa công'}
+      >
+        <Pencil className="h-3.5 w-3.5" />
+      </Button>
+    );
+  };
 
   return (
     <div className="space-y-4">

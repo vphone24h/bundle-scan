@@ -1075,7 +1075,9 @@ function MiniCalendar({ month, records }: { month: Date; records: any[] }) {
 // Employee correction requests component
 function EmployeeCorrectionRequests({ userId, tenantId }: { userId?: string; tenantId?: string | null }) {
   const [showForm, setShowForm] = useState(false);
-  const [requestDate, setRequestDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  // Mặc định ngày hôm qua — không cho sửa hôm nay vì chưa hết ca
+  const yesterdayStr = format(new Date(Date.now() - 86400000), 'yyyy-MM-dd');
+  const [requestDate, setRequestDate] = useState(yesterdayStr);
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [reason, setReason] = useState('');
@@ -1100,6 +1102,10 @@ function EmployeeCorrectionRequests({ userId, tenantId }: { userId?: string; ten
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      // Chặn sửa công cho hôm nay hoặc tương lai
+      if (requestDate >= format(new Date(), 'yyyy-MM-dd')) {
+        throw new Error('Chỉ được sửa công từ hôm qua trở về trước');
+      }
       const { error } = await supabase.from('attendance_correction_requests').insert({
         tenant_id: tenantId!,
         user_id: userId!,
@@ -1140,7 +1146,16 @@ function EmployeeCorrectionRequests({ userId, tenantId }: { userId?: string; ten
             <div className="space-y-3">
               <div>
                 <Label className="text-xs">Ngày cần sửa</Label>
-                <Input type="date" value={requestDate} onChange={e => setRequestDate(e.target.value)} className="h-8 text-sm" />
+                <Input
+                  type="date"
+                  value={requestDate}
+                  max={yesterdayStr}
+                  onChange={e => setRequestDate(e.target.value)}
+                  className="h-8 text-sm"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Chỉ được sửa công từ hôm qua trở về trước. Hôm nay chưa hết ca, dùng tab "Nghỉ" để xin trễ/về sớm.
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
