@@ -405,7 +405,7 @@ export function OvertimeReviewsTab() {
 
       {/* Review Dialog */}
       <Dialog open={!!reviewDialog} onOpenChange={o => !o && setReviewDialog(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-base">
               {reviewDialog?.action === 'approve' ? 'Duyệt tăng ca' : 'Từ chối tăng ca'}
