@@ -368,7 +368,7 @@ export default function CheckInPage() {
           .limit(1)
           .maybeSingle();
         if (!existing) {
-          await supabase.from('leave_requests').insert({
+          const { error: autoLateError } = await supabase.from('leave_requests').insert({
             tenant_id: tenantId,
             user_id: user.id,
             request_type: 'late_arrival',
@@ -379,6 +379,7 @@ export default function CheckInPage() {
             status: 'pending',
             is_auto_detected: true,
           });
+          if (autoLateError) throw autoLateError;
           qc.invalidateQueries({ queryKey: ['my-leave-requests'] });
           qc.invalidateQueries({ queryKey: ['leave-requests-admin'] });
           qc.invalidateQueries({ queryKey: ['pending-approvals-count'] });
@@ -479,7 +480,7 @@ export default function CheckInPage() {
           .limit(1)
           .maybeSingle();
         if (!existing) {
-          await supabase.from('leave_requests').insert({
+          const { error: autoEarlyError } = await supabase.from('leave_requests').insert({
             tenant_id: (todayRecord as any).tenant_id,
             user_id: (todayRecord as any).user_id,
             request_type: 'early_leave',
@@ -490,6 +491,7 @@ export default function CheckInPage() {
             status: 'pending',
             is_auto_detected: true,
           });
+          if (autoEarlyError) throw autoEarlyError;
           qc.invalidateQueries({ queryKey: ['my-leave-requests'] });
           qc.invalidateQueries({ queryKey: ['leave-requests-admin'] });
           qc.invalidateQueries({ queryKey: ['pending-approvals-count'] });
