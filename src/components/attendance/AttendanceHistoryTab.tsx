@@ -29,8 +29,8 @@ const statusConfig: Record<string, { label: string; class: string }> = {
 };
 
 // Tính diff phút giữa check-in/out thực tế và ca chuẩn (start_time/end_time dạng "HH:mm:ss")
-function computeShiftDiff(record: any) {
-  const shift = record?.work_shifts;
+function computeShiftDiff(record: any, overrideShift?: any) {
+  const shift = overrideShift || record?.work_shifts;
   if (!shift?.start_time || !shift?.end_time) return null;
   const buildDate = (timeStr: string, baseISO: string | null) => {
     if (!baseISO) return null;
