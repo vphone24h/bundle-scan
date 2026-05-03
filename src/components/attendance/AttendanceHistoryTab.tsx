@@ -295,16 +295,27 @@ export function AttendanceHistoryTab() {
                 <TableBody>
                   {records.map((r: any) => {
                     const st = statusConfig[r.status] || statusConfig.pending;
+                    const lateExcuse = r.late_minutes > 0 ? getExcuse(r.user_id, r.date, 'late_arrival') : null;
+                    const earlyExcuse = r.early_leave_minutes > 0 ? getExcuse(r.user_id, r.date, 'early_leave') : null;
                     return (
                       <TableRow key={r.id}>
-                        <TableCell className="font-medium text-sm">{profiles?.[r.user_id]?.name || r.user_id.slice(0, 8)}</TableCell>
+                        <TableCell className="font-medium text-sm">{getStaffName(r.user_id)}</TableCell>
                         <TableCell><Badge className={`text-[10px] ${st.class}`}>{st.label}</Badge></TableCell>
                         <TableCell className="text-sm">{r.check_in_time ? format(new Date(r.check_in_time), 'HH:mm') : '--:--'}</TableCell>
                         <TableCell className="text-sm">{r.check_out_time ? format(new Date(r.check_out_time), 'HH:mm') : '--:--'}</TableCell>
                         <TableCell className="text-sm">
                           {r.total_work_minutes > 0 ? `${Math.floor(r.total_work_minutes / 60)}h${r.total_work_minutes % 60}p` : '-'}
                         </TableCell>
-                        <TableCell>{r.late_minutes > 0 ? <span className="text-yellow-600 text-sm">{r.late_minutes}p</span> : '-'}</TableCell>
+                        <TableCell>
+                          {r.late_minutes > 0 ? (
+                            <div className="flex flex-col gap-0.5">
+                              <span className={lateExcuse ? 'text-muted-foreground line-through text-sm' : 'text-yellow-600 text-sm'}>{r.late_minutes}p</span>
+                              {lateExcuse && (
+                                <Badge className="text-[9px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 w-fit" title={lateExcuse.reason}>Có xin phép</Badge>
+                              )}
+                            </div>
+                          ) : '-'}
+                        </TableCell>
                         <TableCell className="text-muted-foreground text-sm">{r.attendance_locations?.name || '-'}</TableCell>
                         <TableCell className="uppercase text-xs text-muted-foreground">{r.check_in_method || '-'}</TableCell>
                         <TableCell>{renderEditBtn(r)}</TableCell>
@@ -320,11 +331,13 @@ export function AttendanceHistoryTab() {
           <div className="md:hidden space-y-2">
             {records.map((r: any) => {
               const st = statusConfig[r.status] || statusConfig.pending;
+              const lateExcuse = r.late_minutes > 0 ? getExcuse(r.user_id, r.date, 'late_arrival') : null;
+              const earlyExcuse = r.early_leave_minutes > 0 ? getExcuse(r.user_id, r.date, 'early_leave') : null;
               return (
                 <Card key={r.id}>
                   <CardContent className="p-3 space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">{profiles?.[r.user_id]?.name || r.user_id.slice(0, 8)}</span>
+                      <span className="font-medium text-sm">{getStaffName(r.user_id)}</span>
                       <div className="flex items-center gap-1">
                         <Badge className={`text-[10px] ${st.class}`}>{st.label}</Badge>
                         {renderEditBtn(r)}
@@ -338,10 +351,20 @@ export function AttendanceHistoryTab() {
                       {r.total_work_minutes > 0 && <span className="font-medium text-foreground">{Math.floor(r.total_work_minutes / 60)}h{r.total_work_minutes % 60}p</span>}
                     </div>
                     <div className="flex items-center gap-2 text-xs flex-wrap">
-                      {r.late_minutes > 0 && <span className="text-yellow-600">Trễ {r.late_minutes}p</span>}
+                      {r.late_minutes > 0 && (
+                        <span className={lateExcuse ? 'text-muted-foreground line-through' : 'text-yellow-600'}>Trễ {r.late_minutes}p</span>
+                      )}
+                      {lateExcuse && (
+                        <Badge className="text-[9px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Có xin phép · không phạt</Badge>
+                      )}
                       {r.attendance_locations?.name && <span className="flex items-center gap-0.5 text-muted-foreground"><MapPin className="h-3 w-3" />{r.attendance_locations.name}</span>}
                       {r.check_in_method && <span className="flex items-center gap-0.5 text-muted-foreground uppercase"><Smartphone className="h-3 w-3" />{r.check_in_method}</span>}
                     </div>
+                    {(lateExcuse || earlyExcuse) && (
+                      <div className="text-[11px] text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30 rounded px-2 py-1">
+                        Lý do xin phép: {(lateExcuse || earlyExcuse).reason}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );
