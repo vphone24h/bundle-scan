@@ -295,11 +295,11 @@ export default function MyAttendancePage() {
     if (statDetail === 'late') return records.filter((r: any) => (r.late_minutes || 0) > 0).sort((a: any, b: any) => a.date.localeCompare(b.date));
     if (statDetail === 'earlyLeave') return records.filter((r: any) => (r.early_leave_minutes || 0) > 0).sort((a: any, b: any) => a.date.localeCompare(b.date));
     if (statDetail === 'absent') {
-      const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd > new Date() ? new Date() : monthEnd });
-      const workDays = daysInMonth.filter(d => !isWeekend(d));
+      const today = new Date();
+      const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd > today ? today : monthEnd });
       const workedDays = new Set((records || []).map((r: any) => r.date));
-      return workDays
-        .filter(d => !workedDays.has(format(d, 'yyyy-MM-dd')) && d <= new Date())
+      return daysInMonth
+        .filter(d => !workedDays.has(format(d, 'yyyy-MM-dd')))
         .map(d => ({ date: format(d, 'yyyy-MM-dd'), _absent: true }));
     }
     return [];
