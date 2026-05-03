@@ -473,6 +473,118 @@ export function CorrectionRequestsTab() {
         title="Xác thực duyệt sửa công"
         description="Nhập mật khẩu bảo mật để duyệt/từ chối yêu cầu sửa công"
       />
+
+      {/* Dialog đối chiếu giờ ca + chọn cách xử lý phạt khi duyệt sửa công */}
+      <Dialog open={!!approveDialog} onOpenChange={(o) => { if (!o) setApproveDialog(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Duyệt sửa công — đối chiếu ca làm</DialogTitle>
+          </DialogHeader>
+          {approveDialog && (
+            <div className="space-y-3 text-xs">
+              <div className="bg-muted/40 rounded p-3 space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Nhân viên:</span>
+                  <strong>{profiles?.[approveDialog.user_id] || approveDialog.user_id.slice(0, 8)}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Ngày:</span>
+                  <strong>{format(new Date(approveDialog.request_date), 'dd/MM/yyyy')}</strong>
+                </div>
+                {approveContext?.shift && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Ca làm:</span>
+                    <strong>{approveContext.shift.name} ({approveContext.shift.start_time}–{approveContext.shift.end_time})</strong>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="border rounded p-2">
+                  <div className="text-[10px] text-muted-foreground mb-1">Giờ admin sửa</div>
+                  <div className="font-mono text-xs">
+                    Vào: <strong>{fmtTimeVN(approveDialog.requested_check_in)}</strong>
+                  </div>
+                  <div className="font-mono text-xs">
+                    Ra: <strong>{fmtTimeVN(approveDialog.requested_check_out)}</strong>
+                  </div>
+                </div>
+                <div className="border rounded p-2">
+                  <div className="text-[10px] text-muted-foreground mb-1">Hiện đang lưu</div>
+                  <div className="font-mono text-xs">
+                    Vào: <strong>{fmtTimeVN(approveContext?.currentRec?.check_in_time)}</strong>
+                  </div>
+                  <div className="font-mono text-xs">
+                    Ra: <strong>{fmtTimeVN(approveContext?.currentRec?.check_out_time)}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-muted-foreground">Lý do NV: <em>{approveDialog.reason}</em></p>
+
+              {needPenaltyChoice ? (
+                <div className="border-2 border-amber-300 bg-amber-50 dark:bg-amber-950/20 rounded p-3 space-y-2">
+                  <div className="font-semibold text-amber-800 dark:text-amber-200">
+                    ⚠️ Sau khi sửa, NV còn {approveContext?.estLate ? `đi trễ ${formatMinutes(approveContext.estLate)}` : `về sớm ${formatMinutes(approveContext?.estEarly || 0)}`}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">Chọn cách xử lý phần thiếu giờ này:</p>
+                </div>
+              ) : (
+                <div className="border border-green-300 bg-green-50 dark:bg-green-950/20 rounded p-3 text-green-800 dark:text-green-300">
+                  ✅ Sau khi sửa: đủ giờ — không phát sinh phạt.
+                </div>
+              )}
+
+              <Textarea
+                placeholder="Ghi chú (tuỳ chọn)..."
+                value={reviewNote}
+                onChange={e => setReviewNote(e.target.value)}
+                className="text-xs"
+                rows={2}
+              />
+            </div>
+          )}
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            {approveDialog && (
+              needPenaltyChoice ? (
+                <>
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700 text-white text-xs h-9"
+                    onClick={() => guardedReview({ id: approveDialog.id, status: 'approved', request: approveDialog, penaltyAction: 'waive' })}
+                    disabled={reviewMutation.isPending}
+                  >
+                    ❌ Không trừ lương (miễn phạt — vd đi giao hàng)
+                  </Button>
+                  <Button
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-white text-xs h-9"
+                    onClick={() => guardedReview({ id: approveDialog.id, status: 'approved', request: approveDialog, penaltyAction: 'deduct_ot' })}
+                    disabled={reviewMutation.isPending}
+                  >
+                    💰 Trừ theo đơn giá tăng ca (việc riêng)
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="w-full text-xs h-9"
+                    onClick={() => guardedReview({ id: approveDialog.id, status: 'approved', request: approveDialog, penaltyAction: 'penalize' })}
+                    disabled={reviewMutation.isPending}
+                  >
+                    ⚠️ Phạt theo cấu hình (nặng — lý do không chính đáng)
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => guardedReview({ id: approveDialog.id, status: 'approved', request: approveDialog })}
+                  disabled={reviewMutation.isPending}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-1" /> Duyệt sửa công
+                </Button>
+              )
+            )}
+            <Button variant="outline" className="w-full" onClick={() => setApproveDialog(null)}>Đóng</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
