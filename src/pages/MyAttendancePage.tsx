@@ -227,6 +227,22 @@ export default function MyAttendancePage() {
     },
   });
 
+  // Absence reviews approved as excused (admin marked "Có phép" cho ngày vắng tự phát hiện)
+  const { data: myAbsenceReviews } = useQuery({
+    queryKey: ['my-absence-reviews', user?.id, startStr, endStr],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('absence_reviews')
+        .select('absence_date, is_excused, review_note')
+        .eq('user_id', user!.id)
+        .eq('is_excused', true)
+        .gte('absence_date', startStr)
+        .lte('absence_date', endStr);
+      return data || [];
+    },
+  });
+
   // Build a Map: `${date}_${type}` -> excuse
   const excuseMap = useMemo(() => {
     const map = new Map<string, any>();
@@ -238,8 +254,16 @@ export default function MyAttendancePage() {
         map.set(`${ds}_${r.request_type}`, r);
       }
     }
+    // Coi absence_reviews đã duyệt "có phép" như là leave full-day có phép
+    for (const r of myAbsenceReviews || []) {
+      const ds = r.absence_date as string;
+      const entry = { reason: r.review_note || 'Đã duyệt có phép', request_type: 'leave' };
+      if (!map.has(`${ds}_leave`)) map.set(`${ds}_leave`, entry);
+      if (!map.has(`${ds}_sick_leave`)) map.set(`${ds}_sick_leave`, entry);
+      if (!map.has(`${ds}_personal_leave`)) map.set(`${ds}_personal_leave`, entry);
+    }
     return map;
-  }, [myExcuses]);
+  }, [myExcuses, myAbsenceReviews]);
 
   const getExcuse = (date: string, kind: 'late_arrival' | 'early_leave' | 'leave' | 'sick_leave' | 'personal_leave') =>
     excuseMap.get(`${date}_${kind}`);
