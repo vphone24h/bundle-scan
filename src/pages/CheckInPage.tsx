@@ -183,16 +183,28 @@ export default function CheckInPage() {
   const { data: todayShift } = useQuery({
     queryKey: ['my-shift-checkin', user?.id, tenantId, today],
     queryFn: async () => {
-      const { data } = await supabase
+      // Ưu tiên ca cụ thể (specific_date) trước; fallback ca cố định theo day_of_week.
+      const { data: specific } = await supabase
         .from('shift_assignments')
         .select('*, work_shifts(name, start_time, end_time, break_minutes, late_threshold_minutes)')
         .eq('user_id', user!.id)
         .eq('tenant_id', tenantId!)
         .eq('is_active', true)
-        .or(`specific_date.eq.${today},and(assignment_type.eq.fixed,day_of_week.eq.${dayOfWeek})`)
+        .eq('specific_date', today)
         .limit(1)
         .maybeSingle();
-      return data;
+      if (specific) return specific;
+      const { data: fixed } = await supabase
+        .from('shift_assignments')
+        .select('*, work_shifts(name, start_time, end_time, break_minutes, late_threshold_minutes)')
+        .eq('user_id', user!.id)
+        .eq('tenant_id', tenantId!)
+        .eq('is_active', true)
+        .eq('assignment_type', 'fixed')
+        .eq('day_of_week', dayOfWeek)
+        .limit(1)
+        .maybeSingle();
+      return fixed;
     },
     enabled: !!user?.id && !!tenantId,
   });
