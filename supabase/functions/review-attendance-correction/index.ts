@@ -56,18 +56,33 @@ async function buildAttendancePayload(supabaseAdmin: ReturnType<typeof createCli
   // dayOfWeek phải tính theo giờ VN
   const dayOfWeek = new Date(baseTime.getTime() + VN_OFFSET_MS).getUTCDay()
 
-  const { data: shift, error: shiftError } = await supabaseAdmin
+  // Ưu tiên ca cụ thể (specific_date) trước; fallback ca cố định theo day_of_week.
+  // Tránh trường hợp NV được xếp ca khác trong ngày nhưng query lấy nhầm ca mặc định.
+  const { data: specificShift, error: specificErr } = await supabaseAdmin
     .from('shift_assignments')
     .select('shift_id, work_shifts(start_time, end_time, late_threshold_minutes)')
     .eq('user_id', request.user_id)
     .eq('tenant_id', request.tenant_id)
     .eq('is_active', true)
-    .or(`specific_date.eq.${request.request_date},and(assignment_type.eq.fixed,day_of_week.eq.${dayOfWeek})`)
+    .eq('specific_date', request.request_date)
     .limit(1)
     .maybeSingle()
+  if (specificErr) throw specificErr
 
-  if (shiftError) {
-    throw shiftError
+  let shift = specificShift
+  if (!shift) {
+    const { data: fixedShift, error: fixedErr } = await supabaseAdmin
+      .from('shift_assignments')
+      .select('shift_id, work_shifts(start_time, end_time, late_threshold_minutes)')
+      .eq('user_id', request.user_id)
+      .eq('tenant_id', request.tenant_id)
+      .eq('is_active', true)
+      .eq('assignment_type', 'fixed')
+      .eq('day_of_week', dayOfWeek)
+      .limit(1)
+      .maybeSingle()
+    if (fixedErr) throw fixedErr
+    shift = fixedShift
   }
 
   let recordStatus = currentRecord?.status || 'on_time'
