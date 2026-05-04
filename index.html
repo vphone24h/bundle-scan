@@ -324,10 +324,7 @@
             setMeta('name', 'twitter:title', name);
             setMeta('name', 'twitter:description', desc || name);
           }
-          if (logo) {
-            setMeta('property', 'og:image', logo);
-            setMeta('name', 'twitter:image', logo);
-          }
+          // Cố ý KHÔNG set og:image / twitter:image — chia sẻ link chỉ hiện text
         }
 
         // Fetch all store data in parallel once we have tenantId
@@ -371,17 +368,14 @@
                 var price = prod.sale_price || prod.price;
                 if (price) pDesc = new Intl.NumberFormat('vi-VN').format(price) + 'đ - ' + pDesc;
                 if (pDesc.length > 200) pDesc = pDesc.substring(0, 197) + '...';
-                var pImg = prod.image_url || storeLogo;
                 document.title = pTitle;
                 setMeta('name', 'description', pDesc);
                 setMeta('property', 'og:title', pTitle);
                 setMeta('property', 'og:description', pDesc);
-                setMeta('property', 'og:image', pImg);
                 setMeta('property', 'og:site_name', storeName);
                 setMeta('property', 'og:type', 'product');
                 setMeta('name', 'twitter:title', pTitle);
                 setMeta('name', 'twitter:description', pDesc);
-                setMeta('name', 'twitter:image', pImg);
               } else {
                 updateOGMeta(settings);
               }
@@ -394,17 +388,14 @@
                 var aTitle = art.title + (storeName ? ' - ' + storeName : '');
                 var aDesc = art.summary || storeDesc || '';
                 if (aDesc.length > 200) aDesc = aDesc.substring(0, 197) + '...';
-                var aImg = art.thumbnail_url || storeLogo;
                 document.title = aTitle;
                 setMeta('name', 'description', aDesc);
                 setMeta('property', 'og:title', aTitle);
                 setMeta('property', 'og:description', aDesc);
-                setMeta('property', 'og:image', aImg);
                 setMeta('property', 'og:site_name', storeName);
                 setMeta('property', 'og:type', 'article');
                 setMeta('name', 'twitter:title', aTitle);
                 setMeta('name', 'twitter:description', aDesc);
-                setMeta('name', 'twitter:image', aImg);
               } else {
                 updateOGMeta(settings);
               }
