@@ -371,8 +371,18 @@ Deno.serve(async (req) => {
 
   // Fallback title/desc — store-level prefers banner image
   if (!title) {
-    title = storeName || "Cùng trãi nghiệm";
-    description = storeDescription || (storeName ? `Truy cập ${storeName} để trải nghiệm ngay` : "Truy cập website để trải nghiệm ngay.");
+    let hostFallback = "";
+    if (redirectUrl) {
+      try { hostFallback = new URL(redirectUrl).hostname.replace(/^www\./, ""); } catch { /* ignore */ }
+    }
+    title = storeName || hostFallback || "Cửa hàng";
+    description =
+      storeDescription ||
+      (storeName
+        ? `Truy cập ${storeName} để trải nghiệm ngay`
+        : hostFallback
+          ? `Truy cập ${hostFallback} để trải nghiệm ngay`
+          : "Truy cập website để trải nghiệm ngay.");
     imageUrl = storeBannerUrl || storeLogoUrl || "";
   } else if (type === "store" && storeBannerUrl) {
     imageUrl = storeBannerUrl;
