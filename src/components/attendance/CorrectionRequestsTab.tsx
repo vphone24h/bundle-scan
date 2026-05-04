@@ -229,14 +229,26 @@ export function CorrectionRequestsTab() {
       if (!approveDialog || !tenantId) return null;
       const baseTime = approveDialog.requested_check_in || approveDialog.requested_check_out;
       const dayOfWeek = baseTime ? new Date(new Date(baseTime).getTime() + 7*60*60*1000).getUTCDay() : 0;
-      const [shiftRes, tenantRes, currentRec] = await Promise.all([
+      // Ưu tiên ca cụ thể (specific_date) trước; nếu không có mới dùng ca cố định theo day_of_week.
+      // Lý do: NV có thể được xếp ca khác nhau từng ngày, không thể default theo fixed schedule.
+      const [specificShift, fixedShift, tenantRes, currentRec] = await Promise.all([
         supabase
           .from('shift_assignments')
           .select('work_shifts(name, start_time, end_time, late_threshold_minutes)')
           .eq('user_id', approveDialog.user_id)
           .eq('tenant_id', tenantId)
           .eq('is_active', true)
-          .or(`specific_date.eq.${approveDialog.request_date},and(assignment_type.eq.fixed,day_of_week.eq.${dayOfWeek})`)
+          .eq('specific_date', approveDialog.request_date)
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('shift_assignments')
+          .select('work_shifts(name, start_time, end_time, late_threshold_minutes)')
+          .eq('user_id', approveDialog.user_id)
+          .eq('tenant_id', tenantId)
+          .eq('is_active', true)
+          .eq('assignment_type', 'fixed')
+          .eq('day_of_week', dayOfWeek)
           .limit(1)
           .maybeSingle(),
         supabase.from('tenants').select('compensation_threshold_minutes').eq('id', tenantId).maybeSingle(),
@@ -248,6 +260,7 @@ export function CorrectionRequestsTab() {
           .eq('date', approveDialog.request_date)
           .maybeSingle(),
       ]);
+      const shiftRes = specificShift.data ? specificShift : fixedShift;
       const ws = (shiftRes.data?.work_shifts as any) || null;
       const rawTh = (tenantRes.data as any)?.compensation_threshold_minutes;
       const compThreshold = rawTh == null ? 0 : Number(rawTh) || 0;

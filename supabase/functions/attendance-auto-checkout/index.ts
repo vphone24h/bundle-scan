@@ -64,12 +64,22 @@ Deno.serve(async (req) => {
     }
 
     // 3. Check for staff who haven't checked in yet today
+    // Ưu tiên ca cụ thể (specific_date) theo từng user; nếu không có mới fallback fixed.
     const dayOfWeek = now.getDay();
-    const { data: todayAssignments } = await supabase
+    const { data: rawAssignments } = await supabase
       .from('shift_assignments')
-      .select('user_id, tenant_id, shift_id, work_shifts(start_time, end_time, name)')
+      .select('user_id, tenant_id, shift_id, assignment_type, specific_date, work_shifts(start_time, end_time, name)')
       .eq('is_active', true)
       .or(`specific_date.eq.${today},and(assignment_type.eq.fixed,day_of_week.eq.${dayOfWeek})`);
+    const byUser = new Map<string, any>();
+    for (const a of (rawAssignments || [])) {
+      const existing = byUser.get(a.user_id);
+      // specific_date thắng fixed
+      if (!existing || (a.specific_date === today && existing.specific_date !== today)) {
+        byUser.set(a.user_id, a);
+      }
+    }
+    const todayAssignments = Array.from(byUser.values());
 
     const { data: todayRecords } = await supabase
       .from('attendance_records')
