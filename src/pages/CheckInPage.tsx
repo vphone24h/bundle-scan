@@ -767,7 +767,7 @@ export default function CheckInPage() {
                   size="lg"
                   className="w-full h-16 text-lg font-bold rounded-2xl gap-2 shadow-lg"
                   disabled={!canCheckIn || checking}
-                  onClick={handleCheckIn}
+                  onClick={() => setConfirmAction('checkin')}
                 >
                   {checking ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-6 w-6" />}
                   CHECK-IN
@@ -794,7 +794,7 @@ export default function CheckInPage() {
                     variant="destructive"
                     className="w-full h-16 text-lg font-bold rounded-2xl gap-2 shadow-lg"
                     disabled={!canCheckOut || checking}
-                    onClick={handleCheckOut}
+                    onClick={() => setConfirmAction('checkout')}
                   >
                     {checking ? <Loader2 className="h-5 w-5 animate-spin" /> : <XCircle className="h-6 w-6" />}
                     CHECK-OUT
