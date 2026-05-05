@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Clock, Smartphone, QrCode, CheckCircle2, XCircle, Loader2, AlertTriangle, Navigation, Signal, Wifi, WifiOff, ArrowLeft, ShieldAlert, Send } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DeviceOtpVerification } from '@/components/attendance/DeviceOtpVerification';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -84,6 +85,9 @@ export default function CheckInPage() {
   const [showRemoteRequest, setShowRemoteRequest] = useState(false);
   const [remoteReason, setRemoteReason] = useState('');
   const [sendingRemote, setSendingRemote] = useState(false);
+
+  // Confirm dialog for check-in/out (prevents double-tap on poor network)
+  const [confirmAction, setConfirmAction] = useState<null | 'checkin' | 'checkout'>(null);
 
   // Clock
   useEffect(() => {
