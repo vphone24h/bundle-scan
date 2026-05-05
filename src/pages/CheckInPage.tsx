@@ -943,6 +943,37 @@ export default function CheckInPage() {
           onOpenChange={setShowOtpVerify}
         />
       )}
+
+      {/* Confirm Check-in / Check-out */}
+      <AlertDialog open={!!confirmAction} onOpenChange={(o) => !o && setConfirmAction(null)}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction === 'checkin' ? 'Xác nhận CHECK-IN?' : 'Xác nhận CHECK-OUT?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction === 'checkin'
+                ? 'Bạn có chắc muốn chấm công vào ca lúc này?'
+                : 'Bạn có chắc muốn chấm công kết thúc ca lúc này?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={checking}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={checking}
+              onClick={async (e) => {
+                e.preventDefault();
+                const action = confirmAction;
+                setConfirmAction(null);
+                if (action === 'checkin') await handleCheckIn();
+                else if (action === 'checkout') await handleCheckOut();
+              }}
+            >
+              {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Xác nhận'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
