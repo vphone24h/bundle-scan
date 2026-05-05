@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Clock, Smartphone, QrCode, CheckCircle2, XCircle, Loader2, AlertTriangle, Navigation, Signal, Wifi, WifiOff, ArrowLeft, ShieldAlert, Send } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DeviceOtpVerification } from '@/components/attendance/DeviceOtpVerification';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -84,6 +85,9 @@ export default function CheckInPage() {
   const [showRemoteRequest, setShowRemoteRequest] = useState(false);
   const [remoteReason, setRemoteReason] = useState('');
   const [sendingRemote, setSendingRemote] = useState(false);
+
+  // Confirm dialog for check-in/out (prevents double-tap on poor network)
+  const [confirmAction, setConfirmAction] = useState<null | 'checkin' | 'checkout'>(null);
 
   // Clock
   useEffect(() => {
@@ -763,7 +767,7 @@ export default function CheckInPage() {
                   size="lg"
                   className="w-full h-16 text-lg font-bold rounded-2xl gap-2 shadow-lg"
                   disabled={!canCheckIn || checking}
-                  onClick={handleCheckIn}
+                  onClick={() => setConfirmAction('checkin')}
                 >
                   {checking ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-6 w-6" />}
                   CHECK-IN
@@ -790,7 +794,7 @@ export default function CheckInPage() {
                     variant="destructive"
                     className="w-full h-16 text-lg font-bold rounded-2xl gap-2 shadow-lg"
                     disabled={!canCheckOut || checking}
-                    onClick={handleCheckOut}
+                    onClick={() => setConfirmAction('checkout')}
                   >
                     {checking ? <Loader2 className="h-5 w-5 animate-spin" /> : <XCircle className="h-6 w-6" />}
                     CHECK-OUT
@@ -939,6 +943,37 @@ export default function CheckInPage() {
           onOpenChange={setShowOtpVerify}
         />
       )}
+
+      {/* Confirm Check-in / Check-out */}
+      <AlertDialog open={!!confirmAction} onOpenChange={(o) => !o && setConfirmAction(null)}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction === 'checkin' ? 'Xác nhận CHECK-IN?' : 'Xác nhận CHECK-OUT?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction === 'checkin'
+                ? 'Bạn có chắc muốn chấm công vào ca lúc này?'
+                : 'Bạn có chắc muốn chấm công kết thúc ca lúc này?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={checking}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={checking}
+              onClick={async (e) => {
+                e.preventDefault();
+                const action = confirmAction;
+                setConfirmAction(null);
+                if (action === 'checkin') await handleCheckIn();
+                else if (action === 'checkout') await handleCheckOut();
+              }}
+            >
+              {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Xác nhận'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
