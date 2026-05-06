@@ -11539,6 +11539,11 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      snapshot_warehouse_values_all_tenants: { Args: never; Returns: number }
+      snapshot_warehouse_values_for_tenant: {
+        Args: { _date?: string; _tid: string }
+        Returns: undefined
+      }
       submit_staff_review: {
         Args: {
           _branch_id: string
