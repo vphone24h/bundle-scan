@@ -298,45 +298,29 @@ Deno.serve(async (req) => {
     }
 
     // Get template sub-configs including overtimes
-    const templateIds = (templatesRes.data || []).map((t: any) => t.id);
-    const [bonusRes, commRes, allowRes, holidayRes, penaltyRes, overtimeRes] = templateIds.length
+    const templateIds = salaryTemplates.map((t: any) => t.id);
+    const [bonusRows, commRows, allowRows, holidayRows, penaltyRows, overtimeRows] = templateIds.length
       ? await Promise.all([
-          supabase.from("salary_template_bonuses").select("*").in("template_id", templateIds),
-          supabase.from("salary_template_commissions").select("*").in("template_id", templateIds),
-          supabase.from("salary_template_allowances").select("*").in("template_id", templateIds),
-          supabase.from("salary_template_holidays").select("*").in("template_id", templateIds),
-          supabase.from("salary_template_penalties").select("*").in("template_id", templateIds),
-          supabase.from("salary_template_overtimes").select("*").in("template_id", templateIds),
+          fetchAllRows<any>("salary_template_bonuses", () => supabase.from("salary_template_bonuses").select("*").in("template_id", templateIds)),
+          fetchAllRows<any>("salary_template_commissions", () => supabase.from("salary_template_commissions").select("*").in("template_id", templateIds)),
+          fetchAllRows<any>("salary_template_allowances", () => supabase.from("salary_template_allowances").select("*").in("template_id", templateIds)),
+          fetchAllRows<any>("salary_template_holidays", () => supabase.from("salary_template_holidays").select("*").in("template_id", templateIds)),
+          fetchAllRows<any>("salary_template_penalties", () => supabase.from("salary_template_penalties").select("*").in("template_id", templateIds)),
+          fetchAllRows<any>("salary_template_overtimes", () => supabase.from("salary_template_overtimes").select("*").in("template_id", templateIds)),
         ])
-      : [
-          { data: [], error: null },
-          { data: [], error: null },
-          { data: [], error: null },
-          { data: [], error: null },
-          { data: [], error: null },
-          { data: [], error: null },
-        ];
+      : [[], [], [], [], [], []];
 
-    [
-      ["salary_template_bonuses", bonusRes],
-      ["salary_template_commissions", commRes],
-      ["salary_template_allowances", allowRes],
-      ["salary_template_holidays", holidayRes],
-      ["salary_template_penalties", penaltyRes],
-      ["salary_template_overtimes", overtimeRes],
-    ].forEach(([label, result]) => throwIfQueryError(label as string, result as { error: any }));
-
-    const bonusesByTemplate = groupBy(bonusRes.data || [], "template_id");
-    const commsByTemplate = groupBy(commRes.data || [], "template_id");
-    const allowsByTemplate = groupBy(allowRes.data || [], "template_id");
-    const holidaysByTemplate = groupBy(holidayRes.data || [], "template_id");
-    const penaltiesByTemplate = groupBy(penaltyRes.data || [], "template_id");
-    const overtimesByTemplate = groupBy(overtimeRes.data || [], "template_id");
+    const bonusesByTemplate = groupBy(bonusRows, "template_id");
+    const commsByTemplate = groupBy(commRows, "template_id");
+    const allowsByTemplate = groupBy(allowRows, "template_id");
+    const holidaysByTemplate = groupBy(holidayRows, "template_id");
+    const penaltiesByTemplate = groupBy(penaltyRows, "template_id");
+    const overtimesByTemplate = groupBy(overtimeRows, "template_id");
 
     // Build employee -> template map
     const empTemplateMap = new Map<string, any>();
     const empConfigMap = new Map<string, any>();
-    for (const ec of (empConfigsRes.data || [])) {
+    for (const ec of employeeSalaryConfigs) {
       if (ec.salary_templates) {
         empTemplateMap.set(ec.user_id, ec.salary_templates);
         empConfigMap.set(ec.user_id, ec);
