@@ -405,6 +405,17 @@ Deno.serve(async (req) => {
     let createdLeaveId: string | null = null
     const finalLate = Number(attendancePayload.updates.late_minutes || 0)
     const finalEarly = Number(attendancePayload.updates.early_leave_minutes || 0)
+    const finalPendingOT = Number(attendancePayload.updates.pending_overtime_minutes || 0)
+
+    await supabaseAdmin
+      .from('leave_requests')
+      .delete()
+      .eq('tenant_id', request.tenant_id)
+      .eq('user_id', request.user_id)
+      .eq('leave_date_from', request.request_date)
+      .eq('leave_date_to', request.request_date)
+      .eq('status', 'pending')
+      .eq('is_auto_detected', true)
 
     if (effectivePenalty && (finalLate > 0 || finalEarly > 0)) {
       const reqType = finalLate > 0 ? 'late_arrival' : 'early_leave'
@@ -448,6 +459,17 @@ Deno.serve(async (req) => {
         createdLeaveId = inserted?.id || null
       }
       // 'penalize' → không tạo phiếu, để payroll áp phạt nặng
+    }
+
+    if (finalPendingOT > 0) {
+      await supabaseAdmin
+        .from('attendance_records')
+        .update({
+          pending_overtime_minutes: finalPendingOT,
+          overtime_status: 'pending',
+          overtime_approved_minutes: 0,
+        })
+        .eq('id', attendanceId)
     }
 
     return ok({ success: true, attendanceId, createdLeaveId, penaltyAction: effectivePenalty })
