@@ -41,7 +41,7 @@ export function usePendingApprovals() {
           .eq('status', 'pending'),
         supabase
           .from('attendance_records')
-          .select('user_id, date, check_in_time, total_work_minutes, overtime_minutes, work_shifts(start_time)')
+          .select('user_id, date, check_in_time, check_out_time, total_work_minutes, overtime_minutes, work_shifts(start_time)')
           .eq('tenant_id', tenantId)
           .gte('date', monthStart)
           .lte('date', monthEnd),
@@ -79,7 +79,7 @@ export function usePendingApprovals() {
       const attendance = attendanceRes.data || [];
       const assignments = shiftRes.data || [];
       for (const att of attendance) {
-        if (!att.check_in_time) continue;
+        if (!att.check_in_time || !(att as any).check_out_time) continue;
         if (hourlyUserIds.has(att.user_id)) continue;
         const dateStr = att.date;
         const dow = new Date(dateStr).getDay();

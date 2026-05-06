@@ -161,7 +161,7 @@ export function OvertimeReviewsTab() {
     const threshold = typeof netThreshold === 'number' ? netThreshold : 15;
 
     for (const att of attendanceRecords) {
-      if (!att.check_in_time) continue;
+      if (!att.check_in_time || !att.check_out_time) continue;
 
       // Check if this is a day-off (not in schedule)
       const dateStr = att.date;
