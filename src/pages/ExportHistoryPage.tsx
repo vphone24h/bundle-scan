@@ -923,6 +923,22 @@ export default function ExportHistoryPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Nguồn khách</Label>
+                  <Select value={customerSourceFilter} onValueChange={setCustomerSourceFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tất cả" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="_all_">Tất cả nguồn khách</SelectItem>
+                      {customerSources.map((src) => (
+                        <SelectItem key={src.id} value={src.name}>
+                          {src.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex items-end">
                   <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full">
                     <X className="h-4 w-4 mr-1" />
