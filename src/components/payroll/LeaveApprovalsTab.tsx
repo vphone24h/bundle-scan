@@ -63,16 +63,16 @@ export function LeaveApprovalsTab() {
   const { data: requests, isLoading } = useQuery({
     queryKey: ['leave-requests-admin', tenantId, filterStatus],
     queryFn: async () => {
-      let q = supabase
-        .from('leave_requests')
-        .select('*')
-        .eq('tenant_id', tenantId!)
-        .order('created_at', { ascending: false })
-        .limit(100);
-      if (filterStatus !== 'all') q = q.eq('status', filterStatus);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data || [];
+      const { fetchAllRows } = await import('@/lib/fetchAllRows');
+      return await fetchAllRows<any>(() => {
+        let q = supabase
+          .from('leave_requests')
+          .select('*')
+          .eq('tenant_id', tenantId!)
+          .order('created_at', { ascending: false });
+        if (filterStatus !== 'all') q = q.eq('status', filterStatus);
+        return q;
+      });
     },
     enabled: !!tenantId,
   });
@@ -276,15 +276,16 @@ export function LeaveApprovalsTab() {
   const { data: absentRecords } = useQuery({
     queryKey: ['merged-absent-records', tenantId, monthStr],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('attendance_records')
-        .select('user_id, date, status')
-        .eq('tenant_id', tenantId!)
-        .gte('date', monthStart)
-        .lte('date', monthEnd)
-        .eq('status', 'absent');
-      if (error) throw error;
-      return data || [];
+      const { fetchAllRows } = await import('@/lib/fetchAllRows');
+      return await fetchAllRows<any>(() =>
+        supabase
+          .from('attendance_records')
+          .select('user_id, date, status')
+          .eq('tenant_id', tenantId!)
+          .gte('date', monthStart)
+          .lte('date', monthEnd)
+          .eq('status', 'absent')
+      );
     },
     enabled: !!tenantId,
   });
@@ -307,14 +308,15 @@ export function LeaveApprovalsTab() {
   const { data: allAttendance } = useQuery({
     queryKey: ['merged-all-attendance', tenantId, monthStr],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('attendance_records')
-        .select('user_id, date')
-        .eq('tenant_id', tenantId!)
-        .gte('date', monthStart)
-        .lte('date', monthEnd);
-      if (error) throw error;
-      return data || [];
+      const { fetchAllRows } = await import('@/lib/fetchAllRows');
+      return await fetchAllRows<any>(() =>
+        supabase
+          .from('attendance_records')
+          .select('user_id, date')
+          .eq('tenant_id', tenantId!)
+          .gte('date', monthStart)
+          .lte('date', monthEnd)
+      );
     },
     enabled: !!tenantId,
   });
@@ -322,14 +324,15 @@ export function LeaveApprovalsTab() {
   const { data: absenceReviews } = useQuery({
     queryKey: ['merged-absence-reviews', tenantId, monthStr],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('absence_reviews')
-        .select('*')
-        .eq('tenant_id', tenantId!)
-        .gte('absence_date', monthStart)
-        .lte('absence_date', monthEnd);
-      if (error) throw error;
-      return data || [];
+      const { fetchAllRows } = await import('@/lib/fetchAllRows');
+      return await fetchAllRows<any>(() =>
+        supabase
+          .from('absence_reviews')
+          .select('*')
+          .eq('tenant_id', tenantId!)
+          .gte('absence_date', monthStart)
+          .lte('absence_date', monthEnd)
+      );
     },
     enabled: !!tenantId,
   });
@@ -338,11 +341,13 @@ export function LeaveApprovalsTab() {
   const { data: hourlyUserIds } = useQuery({
     queryKey: ['hourly-salary-users', tenantId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('employee_salary_configs')
-        .select('user_id, salary_templates(salary_type)')
-        .eq('tenant_id', tenantId!);
-      if (error) throw error;
+      const { fetchAllRows } = await import('@/lib/fetchAllRows');
+      const data = await fetchAllRows<any>(() =>
+        supabase
+          .from('employee_salary_configs')
+          .select('user_id, salary_templates(salary_type)')
+          .eq('tenant_id', tenantId!)
+      );
       return new Set(
         (data || [])
           .filter((c: any) => c.salary_templates?.salary_type === 'hourly')
