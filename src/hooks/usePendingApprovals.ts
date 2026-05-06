@@ -17,18 +17,20 @@ export function usePendingApprovals() {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
 
-      const [correctionsRes, overtimeRes, absencesRes, leaveRes, attendanceRes, shiftRows, hourlyRes, tenantRes] = await Promise.all([
+      const [correctionsRes, overtimeRows, absencesRes, leaveRes, attendanceRows, shiftRows, hourlyRows, tenantRes] = await Promise.all([
         supabase
           .from('attendance_correction_requests')
           .select('id', { count: 'exact', head: true })
           .eq('tenant_id', tenantId)
           .eq('status', 'pending'),
-        supabase
-          .from('overtime_requests')
-          .select('user_id, request_date, request_type, status')
-          .eq('tenant_id', tenantId)
-          .gte('request_date', monthStart)
-          .lte('request_date', monthEnd),
+        fetchAllRows<any>(() =>
+          supabase
+            .from('overtime_requests')
+            .select('user_id, request_date, request_type, status')
+            .eq('tenant_id', tenantId)
+            .gte('request_date', monthStart)
+            .lte('request_date', monthEnd)
+        ),
         supabase
           .from('absence_reviews')
           .select('id', { count: 'exact', head: true })
@@ -40,12 +42,14 @@ export function usePendingApprovals() {
           .select('id', { count: 'exact', head: true })
           .eq('tenant_id', tenantId)
           .eq('status', 'pending'),
-        supabase
-          .from('attendance_records')
-          .select('user_id, date, check_in_time, check_out_time, total_work_minutes, overtime_minutes, work_shifts(start_time)')
-          .eq('tenant_id', tenantId)
-          .gte('date', monthStart)
-          .lte('date', monthEnd),
+        fetchAllRows<any>(() =>
+          supabase
+            .from('attendance_records')
+            .select('user_id, date, check_in_time, check_out_time, total_work_minutes, overtime_minutes, work_shifts(start_time)')
+            .eq('tenant_id', tenantId)
+            .gte('date', monthStart)
+            .lte('date', monthEnd)
+        ),
         fetchAllRows<any>(() =>
           supabase
             .from('shift_assignments')
@@ -53,10 +57,12 @@ export function usePendingApprovals() {
             .eq('tenant_id', tenantId)
             .eq('is_active', true)
         ),
-        supabase
-          .from('employee_salary_configs')
-          .select('user_id, salary_templates(salary_type, enable_overtime)')
-          .eq('tenant_id', tenantId),
+        fetchAllRows<any>(() =>
+          supabase
+            .from('employee_salary_configs')
+            .select('user_id, salary_templates(salary_type, enable_overtime)')
+            .eq('tenant_id', tenantId)
+        ),
         supabase
           .from('tenants')
           .select('compensation_threshold_minutes')
@@ -65,7 +71,7 @@ export function usePendingApprovals() {
       ]);
 
       const skipOvertimeUserIds = new Set(
-        (hourlyRes.data || [])
+        (hourlyRows || [])
           .filter((c: any) => {
             const t = c.salary_templates;
             if (!t) return false;
@@ -79,12 +85,12 @@ export function usePendingApprovals() {
         : 15;
 
       // Đồng bộ logic với OvertimeReviewsTab: pending = OT request status pending + auto-detected
-      const otRows = overtimeRequests_safe(overtimeRes.data);
+      const otRows = overtimeRequests_safe(overtimeRows);
       const existingKeys = new Set(otRows.map(r => `${r.user_id}_${r.request_date}_${r.request_type}`));
       const pendingRequestCount = otRows.filter(r => !r.status || r.status === 'pending').length;
 
       let autoDetected = 0;
-      const attendance = attendanceRes.data || [];
+      const attendance = attendanceRows || [];
       const assignments = shiftRows || [];
       for (const att of attendance) {
         if (!att.check_in_time || !(att as any).check_out_time) continue;
