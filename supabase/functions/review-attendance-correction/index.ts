@@ -418,45 +418,56 @@ Deno.serve(async (req) => {
       .eq('is_auto_detected', true)
 
     if (effectivePenalty && (finalLate > 0 || finalEarly > 0)) {
-      const reqType = finalLate > 0 ? 'late_arrival' : 'early_leave'
-      const mins = finalLate > 0 ? finalLate : finalEarly
-
-      // Xoá mọi phiếu auto-tạo trước đó cho user+ngày+loại để admin đổi quyết định
-      // mà không bị trùng phiếu (vd: trước duyệt waive, giờ đổi sang deduct_ot).
       await supabaseAdmin
         .from('leave_requests')
         .delete()
         .eq('tenant_id', request.tenant_id)
         .eq('user_id', request.user_id)
-        .eq('request_type', reqType)
+        .in('request_type', ['late_arrival', 'early_leave'])
         .eq('leave_date_from', request.request_date)
         .eq('leave_date_to', request.request_date)
         .like('reason', '[Admin sửa công]%')
 
       if (effectivePenalty === 'waive' || effectivePenalty === 'deduct_ot') {
-        const reasonText = effectivePenalty === 'waive'
-          ? `[Admin sửa công] Miễn phạt ${reqType === 'late_arrival' ? 'đi trễ' : 'về sớm'} ${mins}p — ${request.reason}`
-          : `[Admin sửa công] Trừ theo đơn giá tăng ca ${mins}p — ${request.reason}`
-        const { data: inserted, error: leaveErr } = await supabaseAdmin
-          .from('leave_requests')
-          .insert({
+        const inserts: any[] = []
+        if (finalLate > 0) {
+          inserts.push({
             tenant_id: request.tenant_id,
             user_id: request.user_id,
-            request_type: reqType,
+            request_type: 'late_arrival',
             leave_date_from: request.request_date,
             leave_date_to: request.request_date,
-            time_minutes: mins,
-            reason: reasonText,
+            time_minutes: finalLate,
+            reason: `[Admin sửa công] Đi trễ ${finalLate}p • Về sớm ${finalEarly}p — ${request.reason}`,
             status: 'approved',
             deduct_salary: effectivePenalty === 'deduct_ot',
             reviewed_by: caller.id,
             reviewed_at: new Date().toISOString(),
             review_note: reviewNote || (effectivePenalty === 'waive' ? 'Miễn phạt theo quyết định sửa công' : 'Trừ theo đơn giá tăng ca'),
           })
+        }
+        if (finalEarly > 0) {
+          inserts.push({
+            tenant_id: request.tenant_id,
+            user_id: request.user_id,
+            request_type: 'early_leave',
+            leave_date_from: request.request_date,
+            leave_date_to: request.request_date,
+            time_minutes: finalEarly,
+            reason: `[Admin sửa công] Đi trễ ${finalLate}p • Về sớm ${finalEarly}p — ${request.reason}`,
+            status: 'approved',
+            deduct_salary: effectivePenalty === 'deduct_ot',
+            reviewed_by: caller.id,
+            reviewed_at: new Date().toISOString(),
+            review_note: reviewNote || (effectivePenalty === 'waive' ? 'Miễn phạt theo quyết định sửa công' : 'Trừ theo đơn giá tăng ca'),
+          })
+        }
+        const { data: inserted, error: leaveErr } = await supabaseAdmin
+          .from('leave_requests')
+          .insert(inserts)
           .select('id')
-          .single()
         if (leaveErr) throw leaveErr
-        createdLeaveId = inserted?.id || null
+        createdLeaveId = inserted?.[0]?.id || null
       }
       // 'penalize' → không tạo phiếu, để payroll áp phạt nặng
     }
