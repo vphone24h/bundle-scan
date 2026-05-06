@@ -217,12 +217,24 @@ export function useInventory() {
         ? (branchIds && branchIds.length > 0 ? branchIds : (branchId ? [branchId] : null))
         : null;
 
-      const { data, error } = await supabase.rpc('get_inventory_summary', {
-        p_tenant_id: tenant!.id,
-        p_branch_ids: effectiveBranchIds,
-      });
-
-      if (error) throw error;
+      // Paginate to bypass PostgREST default 1000-row limit on RPC results
+      const pageSize = 1000;
+      let from = 0;
+      const allRows: any[] = [];
+      while (true) {
+        const { data, error } = await supabase
+          .rpc('get_inventory_summary', {
+            p_tenant_id: tenant!.id,
+            p_branch_ids: effectiveBranchIds,
+          })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allRows.push(...data);
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+      const data = allRows;
 
       // Map RPC results to InventoryItem format (without products array - loaded on demand)
       return (data || []).map((row: any) => ({
