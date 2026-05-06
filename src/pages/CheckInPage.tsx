@@ -370,37 +370,9 @@ export default function CheckInPage() {
       }]);
       if (error) throw error;
 
-      // Auto-tạo phiếu xin đi trễ nếu vượt ngưỡng và chưa có phiếu nào cho ngày này.
-      // Admin có 3 lựa chọn: duyệt miễn phạt / duyệt trừ theo OT / từ chối → áp phạt cấu hình.
-      if (status === 'late' && lateMinutes > 0) {
-        const { data: existing } = await supabase
-          .from('leave_requests')
-          .select('id')
-          .eq('tenant_id', tenantId)
-          .eq('user_id', user.id)
-          .eq('request_type', 'late_arrival')
-          .eq('leave_date_from', today)
-          .in('status', ['pending', 'approved'])
-          .limit(1)
-          .maybeSingle();
-        if (!existing) {
-          const { error: autoLateError } = await supabase.from('leave_requests').insert({
-            tenant_id: tenantId,
-            user_id: user.id,
-            request_type: 'late_arrival',
-            leave_date_from: today,
-            leave_date_to: today,
-            time_minutes: lateMinutes,
-            reason: `[Tự động] Đi trễ ${lateMinutes}p — chờ admin duyệt`,
-            status: 'pending',
-            is_auto_detected: true,
-          });
-          if (autoLateError) throw autoLateError;
-          qc.invalidateQueries({ queryKey: ['my-leave-requests'] });
-          qc.invalidateQueries({ queryKey: ['leave-requests-admin'] });
-          qc.invalidateQueries({ queryKey: ['pending-approvals-count'] });
-        }
-      }
+      // KHÔNG tạo lệnh duyệt tại check-in. Phải chờ check-out để bù trừ NET (đi trễ + về trễ/sớm)
+      // rồi mới sinh DUY NHẤT 1 lệnh: tăng ca (NET dương) HOẶC xin nghỉ combined (NET âm).
+      // Logic đầy đủ ở handleCheckOut bên dưới.
 
       const waiverLateMin = todayWaivers?.late || 0;
       let msg = 'Check-in thành công!';
@@ -438,6 +410,11 @@ export default function CheckInPage() {
       let earlyLeaveMinutes = 0;
       let extraPendingOT = 0; // OT pending chờ duyệt (vượt ngưỡng net về phía DƯƠNG)
       const earlyArrivalRecorded = (todayRecord as any)?.early_arrival_minutes || 0;
+      const lateMinRecorded = (todayRecord as any)?.late_minutes || 0;
+      let netDiffFromEnd = 0;
+      let lateForRequest = 0;
+      let earlyForRequest = 0;
+      let netTotal = 0;
       if (shiftInfo) {
         const [eh, em] = shiftInfo.end_time.split(':').map(Number);
         const shiftEnd = new Date(); shiftEnd.setHours(eh, em, 0, 0);
@@ -445,21 +422,28 @@ export default function CheckInPage() {
         const waiverEarlyMin = todayWaivers?.early || 0;
         const effectiveEnd = new Date(shiftEnd.getTime() - waiverEarlyMin * 60000);
         const diffFromEnd = Math.round((now.getTime() - effectiveEnd.getTime()) / 60000);
+        netDiffFromEnd = diffFromEnd;
 
-        // BÙ TRỪ 2 CHIỀU TRONG NGÀY:
-        // net = (vào sớm) + (về trễ HOẶC -về sớm) — đã trừ phần xin phép.
-        // VD: vào sớm 30p + về sớm 45p → net = 30 + (-45) = -15p (làm thiếu 15p)
-        //     vào sớm 30p + về sớm 15p → net = 30 + (-15) = +15p (làm dư 15p)
-        //     vào sớm 60p + về sớm 60p → net = 0 (đủ công)
-        // |net| ≤ compThreshold → coi như đủ công, không thưởng/không phạt.
-        // net > compThreshold → phần dư → OT pending chờ admin duyệt.
-        // net < -compThreshold → phần thiếu → tự tạo phiếu xin về sớm chờ admin xử lý.
-        const net = earlyArrivalRecorded + diffFromEnd;
+        // BÙ TRỪ TỔNG TRONG NGÀY (đi trễ ↔ về trễ ↔ vào sớm ↔ về sớm)
+        // NET = vào_sớm − đi_trễ + (về_trễ HOẶC −về_sớm)
+        //     = earlyArrivalRecorded − lateMinRecorded + diffFromEnd
+        // VD ca 10–20h:
+        //   - Trễ 60p, về 21h → NET = 0 − 60 + 60 = 0  → ĐỦ CÔNG, không lệnh
+        //   - Trễ 60p, về 19h → NET = 0 − 60 − 60 = −120 → 1 lệnh xin nghỉ combined (60p trễ + 60p sớm)
+        //   - Đúng giờ, về 22h → NET = +120 → 1 lệnh duyệt tăng ca +2h
+        const net = earlyArrivalRecorded - lateMinRecorded + diffFromEnd;
+        netTotal = net;
 
         if (net > compThreshold) {
-          extraPendingOT = net - compThreshold;
+          // Dư công → tăng ca chờ duyệt (TOÀN BỘ phần NET dương, để admin duyệt thanh toán)
+          extraPendingOT = net;
         } else if (net < -compThreshold) {
-          earlyLeaveMinutes = Math.abs(net) - compThreshold;
+          // Thiếu công → 1 lệnh xin nghỉ tổng. Tách late + early dùng trong record để hiển thị.
+          // Phần thiếu = |net|. Phân bổ: lateForRequest = phần do đi trễ thực tế, earlyForRequest = phần còn lại do về sớm.
+          const deficit = Math.abs(net);
+          lateForRequest = Math.min(deficit, lateMinRecorded);
+          earlyForRequest = Math.max(0, deficit - lateForRequest);
+          earlyLeaveMinutes = earlyForRequest;
         }
       }
 
@@ -483,31 +467,54 @@ export default function CheckInPage() {
       }).eq('id', todayRecord.id);
       if (error) throw error;
 
-      // Auto-tạo phiếu xin về sớm nếu vượt ngưỡng bù trừ và chưa có phiếu nào cho ngày này.
-      if (earlyLeaveMinutes > 0) {
-        const { data: existing } = await supabase
+      // SINH DUY NHẤT 1 LỆNH theo NET tổng:
+      //  - NET âm vượt ngưỡng → 1 lệnh "Xin nghỉ" combined (late + early gộp ở LeaveApprovalsTab)
+      //  - NET dương vượt ngưỡng → đã set pending_overtime_minutes ở trên → OvertimeReviewsTab tự auto-detect
+      if (netTotal < -compThreshold && (lateForRequest > 0 || earlyForRequest > 0)) {
+        const dateStr = (todayRecord as any).date;
+        const tId = (todayRecord as any).tenant_id;
+        const uId = (todayRecord as any).user_id;
+
+        // Xoá các phiếu auto-detect cũ trong ngày để tránh trùng (chỉ pending)
+        await supabase
           .from('leave_requests')
-          .select('id')
-          .eq('tenant_id', (todayRecord as any).tenant_id)
-          .eq('user_id', (todayRecord as any).user_id)
-          .eq('request_type', 'early_leave')
-          .eq('leave_date_from', (todayRecord as any).date)
-          .in('status', ['pending', 'approved'])
-          .limit(1)
-          .maybeSingle();
-        if (!existing) {
-          const { error: autoEarlyError } = await supabase.from('leave_requests').insert({
-            tenant_id: (todayRecord as any).tenant_id,
-            user_id: (todayRecord as any).user_id,
-            request_type: 'early_leave',
-            leave_date_from: (todayRecord as any).date,
-            leave_date_to: (todayRecord as any).date,
-            time_minutes: earlyLeaveMinutes,
-            reason: `[Tự động] Về sớm ${earlyLeaveMinutes}p — chờ admin duyệt`,
+          .delete()
+          .eq('tenant_id', tId)
+          .eq('user_id', uId)
+          .eq('leave_date_from', dateStr)
+          .eq('is_auto_detected', true)
+          .eq('status', 'pending');
+
+        const inserts: any[] = [];
+        if (lateForRequest > 0) {
+          inserts.push({
+            tenant_id: tId,
+            user_id: uId,
+            request_type: 'late_arrival',
+            leave_date_from: dateStr,
+            leave_date_to: dateStr,
+            time_minutes: lateForRequest,
+            reason: `[Tự động] Đi trễ ${lateForRequest}p (NET ngày: ${netTotal}p)`,
             status: 'pending',
             is_auto_detected: true,
           });
-          if (autoEarlyError) throw autoEarlyError;
+        }
+        if (earlyForRequest > 0) {
+          inserts.push({
+            tenant_id: tId,
+            user_id: uId,
+            request_type: 'early_leave',
+            leave_date_from: dateStr,
+            leave_date_to: dateStr,
+            time_minutes: earlyForRequest,
+            reason: `[Tự động] Về sớm ${earlyForRequest}p (NET ngày: ${netTotal}p)`,
+            status: 'pending',
+            is_auto_detected: true,
+          });
+        }
+        if (inserts.length > 0) {
+          const { error: insErr } = await supabase.from('leave_requests').insert(inserts);
+          if (insErr) throw insErr;
           qc.invalidateQueries({ queryKey: ['my-leave-requests'] });
           qc.invalidateQueries({ queryKey: ['leave-requests-admin'] });
           qc.invalidateQueries({ queryKey: ['pending-approvals-count'] });
