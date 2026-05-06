@@ -64,14 +64,15 @@ export function OvertimeReviewsTab() {
   const { data: overtimeRequests, isLoading } = useQuery({
     queryKey: ['overtime-requests', tenantId, monthStr],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('overtime_requests')
-        .select('*')
-        .eq('tenant_id', tenantId!)
-        .gte('request_date', monthStart)
-        .lte('request_date', monthEnd)
-        .order('request_date', { ascending: false });
-      if (error) throw error;
+      const data = await fetchAllRows<any>(() =>
+        supabase
+          .from('overtime_requests')
+          .select('*')
+          .eq('tenant_id', tenantId!)
+          .gte('request_date', monthStart)
+          .lte('request_date', monthEnd)
+          .order('request_date', { ascending: false })
+      );
       return data;
     },
     enabled: !!tenantId,
@@ -81,14 +82,14 @@ export function OvertimeReviewsTab() {
   const { data: attendanceRecords } = useQuery({
     queryKey: ['attendance-overtime', tenantId, monthStr],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('attendance_records')
-        .select('*, work_shifts(name, start_time, end_time)')
-        .eq('tenant_id', tenantId!)
-        .gte('date', monthStart)
-        .lte('date', monthEnd);
-      if (error) throw error;
-      return data;
+      return await fetchAllRows<any>(() =>
+        supabase
+          .from('attendance_records')
+          .select('*, work_shifts(name, start_time, end_time)')
+          .eq('tenant_id', tenantId!)
+          .gte('date', monthStart)
+          .lte('date', monthEnd)
+      );
     },
     enabled: !!tenantId,
   });
@@ -127,11 +128,12 @@ export function OvertimeReviewsTab() {
   const { data: skipOvertimeUserIds } = useQuery({
     queryKey: ['skip-overtime-users', tenantId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('employee_salary_configs')
-        .select('user_id, salary_templates(salary_type, enable_overtime)')
-        .eq('tenant_id', tenantId!);
-      if (error) throw error;
+      const data = await fetchAllRows<any>(() =>
+        supabase
+          .from('employee_salary_configs')
+          .select('user_id, salary_templates(salary_type, enable_overtime)')
+          .eq('tenant_id', tenantId!)
+      );
       return new Set(
         (data || [])
           .filter((c: any) => {
