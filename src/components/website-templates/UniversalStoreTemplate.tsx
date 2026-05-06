@@ -8,7 +8,7 @@ import { buildMetaShareUrl } from '@/lib/shareMetaUrl';
 import { QueryClient } from '@tanstack/react-query';
 import { TenantLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo, HomeSectionItem } from '@/hooks/useTenantLanding';
 import { LandingProduct, LandingProductCategory } from '@/hooks/useLandingProducts';
-import { LandingArticle, LandingArticleCategory } from '@/hooks/useLandingArticles';
+import { LandingArticle, LandingArticleCategory, buildArticleCategoryTree } from '@/hooks/useLandingArticles';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import { ProductDetailPage } from '@/components/landing/ProductDetailPage';
 import { FloatingCartButton } from '@/components/landing/FloatingCartButton';
@@ -141,6 +141,7 @@ export default function UniversalStoreTemplate({
   const [selectedArticle, setSelectedArticle] = useState<LandingArticle | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedArticleCategoryId, setSelectedArticleCategoryId] = useState<string | null>(null);
+  const [expandedNewsCatIds, setExpandedNewsCatIds] = useState<Set<string>>(new Set());
   const [selectedProduct, setSelectedProduct] = useState<LandingProduct | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState('');
