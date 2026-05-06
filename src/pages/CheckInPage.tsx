@@ -470,6 +470,24 @@ export default function CheckInPage() {
       // SINH DUY NHẤT 1 LỆNH theo NET tổng:
       //  - NET âm vượt ngưỡng → 1 lệnh "Xin nghỉ" combined (late + early gộp ở LeaveApprovalsTab)
       //  - NET dương vượt ngưỡng → đã set pending_overtime_minutes ở trên → OvertimeReviewsTab tự auto-detect
+      // Nếu NET ≥ -threshold (đủ công hoặc dư công) → xoá mọi phiếu auto-detect pending cũ
+      // (đề phòng phiên bản cũ đã tạo phiếu late_arrival ngay tại check-in).
+      if (netTotal >= -compThreshold) {
+        const dateStr = (todayRecord as any).date;
+        const tId = (todayRecord as any).tenant_id;
+        const uId = (todayRecord as any).user_id;
+        await supabase
+          .from('leave_requests')
+          .delete()
+          .eq('tenant_id', tId)
+          .eq('user_id', uId)
+          .eq('leave_date_from', dateStr)
+          .eq('is_auto_detected', true)
+          .eq('status', 'pending');
+        qc.invalidateQueries({ queryKey: ['leave-requests-admin'] });
+        qc.invalidateQueries({ queryKey: ['pending-approvals-count'] });
+      }
+
       if (netTotal < -compThreshold && (lateForRequest > 0 || earlyForRequest > 0)) {
         const dateStr = (todayRecord as any).date;
         const tId = (todayRecord as any).tenant_id;
