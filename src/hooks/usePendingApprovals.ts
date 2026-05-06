@@ -16,7 +16,7 @@ export function usePendingApprovals() {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
 
-      const [correctionsRes, overtimeRes, absencesRes, leaveRes, attendanceRes, shiftRes] = await Promise.all([
+      const [correctionsRes, overtimeRes, absencesRes, leaveRes, attendanceRes, shiftRes, hourlyRes] = await Promise.all([
         supabase
           .from('attendance_correction_requests')
           .select('id', { count: 'exact', head: true })
@@ -50,7 +50,17 @@ export function usePendingApprovals() {
           .select('user_id, day_of_week, specific_date, assignment_type')
           .eq('tenant_id', tenantId)
           .eq('is_active', true),
+        supabase
+          .from('employee_salary_configs')
+          .select('user_id, salary_templates(salary_type)')
+          .eq('tenant_id', tenantId),
       ]);
+
+      const hourlyUserIds = new Set(
+        (hourlyRes.data || [])
+          .filter((c: any) => c.salary_templates?.salary_type === 'hourly')
+          .map((c: any) => c.user_id as string),
+      );
 
       // Đồng bộ logic với OvertimeReviewsTab: pending = OT request status pending + auto-detected
       const otRows = overtimeRequests_safe(overtimeRes.data);
@@ -62,6 +72,7 @@ export function usePendingApprovals() {
       const assignments = shiftRes.data || [];
       for (const att of attendance) {
         if (!att.check_in_time) continue;
+        if (hourlyUserIds.has(att.user_id)) continue;
         const dateStr = att.date;
         const dow = new Date(dateStr).getDay();
         const userAssignments = assignments.filter((sa: any) => sa.user_id === att.user_id);

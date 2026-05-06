@@ -333,12 +333,31 @@ export function LeaveApprovalsTab() {
     enabled: !!tenantId,
   });
 
+  // NV lương theo giờ (hourly) → không xếp ca cố định, bỏ qua khỏi auto-detect ngày vắng
+  const { data: hourlyUserIds } = useQuery({
+    queryKey: ['hourly-salary-users', tenantId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('employee_salary_configs')
+        .select('user_id, salary_templates(salary_type)')
+        .eq('tenant_id', tenantId!);
+      if (error) throw error;
+      return new Set(
+        (data || [])
+          .filter((c: any) => c.salary_templates?.salary_type === 'hourly')
+          .map((c: any) => c.user_id),
+      );
+    },
+    enabled: !!tenantId,
+  });
+
   // Build danh sách ngày vắng tự động (chưa duyệt + không có đơn xin nghỉ)
   const autoAbsences = useMemo(() => {
     if (!platformUsers || !shiftAssignments || !allAttendance) return [];
     const userMap = new Map(platformUsers.map(u => [u.user_id, u.display_name || u.email || u.user_id.slice(0, 8)]));
     const reviewMap = new Map((absenceReviews || []).map((r: any) => [`${r.user_id}_${r.absence_date}`, r]));
     const attendanceSet = new Set((allAttendance || []).map(a => `${a.user_id}_${a.date}`));
+    const hourlySet = hourlyUserIds || new Set<string>();
 
     // Loại trừ ngày đã có đơn xin nghỉ (full_day, status != rejected)
     const leaveCovered = new Set<string>();
@@ -357,12 +376,14 @@ export function LeaveApprovalsTab() {
     for (const rec of (absentRecords || [])) {
       const key = `${rec.user_id}_${rec.date}`;
       if (leaveCovered.has(key)) continue;
+      if (hourlySet.has(rec.user_id)) continue;
       result.push({ user_id: rec.user_id, user_name: userMap.get(rec.user_id) || rec.user_id.slice(0, 8), date: rec.date, review: reviewMap.get(key) });
     }
 
     const start = new Date(monthStart);
     const end = new Date(monthEnd);
     for (const u of platformUsers) {
+      if (hourlySet.has(u.user_id)) continue;
       const ua = shiftAssignments.filter(sa => sa.user_id === u.user_id);
       if (!ua.length) continue;
       for (let d = new Date(start); d <= end && d <= today; d.setDate(d.getDate() + 1)) {
@@ -378,7 +399,7 @@ export function LeaveApprovalsTab() {
       }
     }
     return result.sort((a, b) => b.date.localeCompare(a.date) || a.user_name.localeCompare(b.user_name));
-  }, [absentRecords, shiftAssignments, allAttendance, platformUsers, absenceReviews, requests, monthStart, monthEnd]);
+  }, [absentRecords, shiftAssignments, allAttendance, platformUsers, absenceReviews, requests, monthStart, monthEnd, hourlyUserIds]);
 
   const pendingAutoAbsences = useMemo(() => autoAbsences.filter(a => !a.review), [autoAbsences]);
 
