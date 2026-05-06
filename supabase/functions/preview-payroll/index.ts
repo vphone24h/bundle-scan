@@ -354,7 +354,7 @@ Deno.serve(async (req) => {
       const userAttendance = attendance.filter((a: any) => a.user_id === employee.user_id);
       const workDays = userAttendance.filter((a: any) => a.check_in_time && a.status !== "absent").length;
       const totalMinutes = userAttendance.reduce((s: number, a: any) => s + (a.total_work_minutes || 0), 0);
-      const lateRecords = userAttendance.filter((a: any) => a.status === "late" || (a.late_minutes && a.late_minutes > 0));
+      const lateRecords = userAttendance.filter((a: any) => (a.late_minutes || 0) > 0);
       const lateCount = lateRecords.length;
       const lateMinutesTotal = userAttendance.reduce((s: number, a: any) => s + (a.late_minutes || 0), 0);
       const earlyLeaveRecords = userAttendance.filter((a: any) => (a.early_leave_minutes || 0) > 0);
@@ -470,7 +470,9 @@ Deno.serve(async (req) => {
           status: a.status,
           late_minutes: a.late_minutes || 0,
           early_leave_minutes: a.early_leave_minutes || 0,
+          early_arrival_minutes: a.early_arrival_minutes || 0,
           overtime_minutes: a.overtime_minutes || 0,
+          pending_overtime_minutes: a.pending_overtime_minutes || 0,
           total_work_minutes: a.total_work_minutes || 0,
           is_auto_checkout: a.is_auto_checkout || false,
           check_in_method: a.check_in_method,
