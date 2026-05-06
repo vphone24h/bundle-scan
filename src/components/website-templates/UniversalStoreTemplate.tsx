@@ -1452,6 +1452,61 @@ export default function UniversalStoreTemplate({
                         
                         if (newsCatMode === 'vertical') {
                           // Vertical: stacked cards with cover images (same as product categories)
+                          // Build tree so children are hidden until parent is clicked
+                          const newsTree = buildArticleCategoryTree(articleCategories as any);
+                          const renderNewsCatNode = (cat: any, depth: number = 0): JSX.Element => {
+                            const hasChildren = !!(cat.children && cat.children.length > 0);
+                            const isExpanded = expandedNewsCatIds.has(cat.id);
+                            const isSelected = selectedArticleCategoryId === cat.id;
+                            return (
+                              <div key={cat.id}>
+                                <ScrollReveal animation="fade-up" delay={80}>
+                                  <button
+                                    onClick={() => {
+                                      if (hasChildren) {
+                                        setExpandedNewsCatIds(prev => {
+                                          const next = new Set(prev);
+                                          if (next.has(cat.id)) next.delete(cat.id); else next.add(cat.id);
+                                          return next;
+                                        });
+                                      }
+                                      setSelectedArticleCategoryId(isSelected ? null : cat.id);
+                                    }}
+                                    className={`group w-full overflow-hidden relative text-left ${cat.image_url ? 'min-h-[65vh] sm:min-h-[70vh]' : 'min-h-[80px]'} ${isSelected ? 'ring-2' : ''}`}
+                                    style={isSelected ? { '--tw-ring-color': accentColor, paddingLeft: depth * 16 } as any : { paddingLeft: depth * 16 }}
+                                  >
+                                    {cat.image_url ? (
+                                      <>
+                                        <img src={cat.image_url} alt={cat.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                                        <div className="relative z-10 h-full flex flex-col justify-end p-6 min-h-[65vh] sm:min-h-[70vh]">
+                                          <h4 className="text-xl font-bold text-white">{cat.name}</h4>
+                                          <p className="text-sm text-white/80 mt-1">
+                                            {hasChildren ? (isExpanded ? 'Thu gọn ▲' : 'Xem danh mục con ▼') : 'Xem bài viết →'}
+                                          </p>
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <div className="bg-white h-full flex items-center justify-between p-4 border-b border-black/5 group-hover:shadow-lg transition-shadow">
+                                        <div>
+                                          <h4 className="text-base font-bold text-[#1d1d1f]">{cat.name}</h4>
+                                          <p className="text-xs text-[#86868b] mt-0.5">
+                                            {hasChildren ? (isExpanded ? 'Thu gọn ▲' : 'Xem danh mục con ▼') : 'Xem bài viết →'}
+                                          </p>
+                                        </div>
+                                        <Newspaper className="h-6 w-6 text-[#d2d2d7]" />
+                                      </div>
+                                    )}
+                                  </button>
+                                </ScrollReveal>
+                                {hasChildren && isExpanded && (
+                                  <div className="flex flex-col gap-0 bg-[#fafafa]">
+                                    {cat.children.map((child: any) => renderNewsCatNode(child, depth + 1))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          };
                           return (
                             <div key="categoryFilter" className="mb-6">
                               <h3 className="text-lg font-bold tracking-tight mb-4">{config.articleSectionTitle}</h3>
@@ -1470,34 +1525,7 @@ export default function UniversalStoreTemplate({
                                     <Newspaper className="h-6 w-6 text-[#d2d2d7]" />
                                   </div>
                                 </button>
-                                {articleCategories.map((cat: any) => (
-                                  <ScrollReveal key={cat.id} animation="fade-up" delay={80}>
-                                    <button
-                                      onClick={() => setSelectedArticleCategoryId(selectedArticleCategoryId === cat.id ? null : cat.id)}
-                                      className={`group w-full overflow-hidden relative text-left ${cat.image_url ? 'min-h-[65vh] sm:min-h-[70vh]' : 'min-h-[80px]'} ${selectedArticleCategoryId === cat.id ? 'ring-2' : ''}`}
-                                      style={selectedArticleCategoryId === cat.id ? { '--tw-ring-color': accentColor } as any : undefined}
-                                    >
-                                      {cat.image_url ? (
-                                        <>
-                                          <img src={cat.image_url} alt={cat.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                                          <div className="relative z-10 h-full flex flex-col justify-end p-6 min-h-[65vh] sm:min-h-[70vh]">
-                                            <h4 className="text-xl font-bold text-white">{cat.name}</h4>
-                                            <p className="text-sm text-white/80 mt-1">Xem bài viết →</p>
-                                          </div>
-                                        </>
-                                      ) : (
-                                        <div className="bg-white h-full flex items-center justify-between p-4 border-b border-black/5 group-hover:shadow-lg transition-shadow">
-                                          <div>
-                                            <h4 className="text-base font-bold text-[#1d1d1f]">{cat.name}</h4>
-                                            <p className="text-xs text-[#86868b] mt-0.5">Xem bài viết →</p>
-                                          </div>
-                                          <Newspaper className="h-6 w-6 text-[#d2d2d7]" />
-                                        </div>
-                                      )}
-                                    </button>
-                                  </ScrollReveal>
-                                ))}
+                                {newsTree.map((cat: any) => renderNewsCatNode(cat, 0))}
                               </div>
                             </div>
                           );
