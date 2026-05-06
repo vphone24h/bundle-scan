@@ -193,7 +193,7 @@ export default function ImportHistoryPage() {
 
   // Server-side pagination state for products tab
   const [productPage, setProductPage] = useState(1);
-  const [productPageSize, setProductPageSize] = useState(100);
+  const [productPageSize, setProductPageSize] = useState(25);
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
   const { data: branches } = useBranches();
