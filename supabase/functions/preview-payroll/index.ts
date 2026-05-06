@@ -455,7 +455,9 @@ Deno.serve(async (req) => {
         const overtimeOnHoliday = userAttendance.reduce((s: number, a: any) => {
           if (!holidayDatesSet.has(a.date)) return s;
           let mins = 0;
-          if (approvedExtraHoursDates.has(a.date)) mins += (a.overtime_minutes || 0);
+          if (approvedExtraHoursDates.has(a.date)) {
+            mins += approvedExtraHoursMinutes.get(a.date) || a.pending_overtime_minutes || a.overtime_minutes || 0;
+          }
           if (approvedEarlyCheckinMap.has(a.date)) mins += (approvedEarlyCheckinMap.get(a.date) || 0);
           return s + mins;
         }, 0);
