@@ -52,9 +52,31 @@ export function useCreateCategory() {
         .from('categories')
         .insert([{ ...category, tenant_id: tenantId }])
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        // If duplicate (unique violation) or RLS hides return, try to fetch existing one
+        const { data: existing } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .ilike('name', category.name)
+          .limit(1)
+          .maybeSingle();
+        if (existing) return existing;
+        throw error;
+      }
+      if (!data) {
+        const { data: existing } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .ilike('name', category.name)
+          .limit(1)
+          .maybeSingle();
+        if (existing) return existing;
+        throw new Error('Không tạo được danh mục');
+      }
       return data;
     },
     onSuccess: () => {
