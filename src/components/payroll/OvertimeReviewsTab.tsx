@@ -123,6 +123,28 @@ export function OvertimeReviewsTab() {
     enabled: !!tenantId,
   });
 
+  // Danh sách user phải bỏ qua tăng ca: gắn template lương theo giờ HOẶC template tắt tăng ca
+  const { data: skipOvertimeUserIds } = useQuery({
+    queryKey: ['skip-overtime-users', tenantId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('employee_salary_configs')
+        .select('user_id, salary_templates(salary_type, enable_overtime)')
+        .eq('tenant_id', tenantId!);
+      if (error) throw error;
+      return new Set(
+        (data || [])
+          .filter((c: any) => {
+            const t = c.salary_templates;
+            if (!t) return false;
+            return t.salary_type === 'hourly' || t.enable_overtime === false;
+          })
+          .map((c: any) => c.user_id as string),
+      );
+    },
+    enabled: !!tenantId,
+  });
+
   // Fetch profiles for display names
   const userIds = useMemo(() => {
     const ids = new Set<string>();
@@ -160,9 +182,11 @@ export function OvertimeReviewsTab() {
     const existingKeys = new Set((overtimeRequests || []).map(r => `${r.user_id}_${r.request_date}_${r.request_type}`));
     const items: any[] = [];
     const threshold = typeof netThreshold === 'number' ? netThreshold : 15;
+    const skipSet = skipOvertimeUserIds || new Set<string>();
 
     for (const att of attendanceRecords) {
       if (!att.check_in_time || !att.check_out_time) continue;
+      if (skipSet.has(att.user_id)) continue;
 
       // Check if this is a day-off (not in schedule)
       const dateStr = att.date;
@@ -216,7 +240,7 @@ export function OvertimeReviewsTab() {
       }
     }
     return items;
-  }, [attendanceRecords, shiftAssignments, overtimeRequests, netThreshold]);
+  }, [attendanceRecords, shiftAssignments, overtimeRequests, netThreshold, skipOvertimeUserIds]);
 
   // Combine existing requests + auto-detected
   const allItems = useMemo(() => {
