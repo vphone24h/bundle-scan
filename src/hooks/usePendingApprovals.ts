@@ -55,7 +55,7 @@ export function usePendingApprovals() {
         ),
         supabase
           .from('employee_salary_configs')
-          .select('user_id, salary_templates(salary_type)')
+          .select('user_id, salary_templates(salary_type, enable_overtime)')
           .eq('tenant_id', tenantId),
         supabase
           .from('tenants')
@@ -64,9 +64,14 @@ export function usePendingApprovals() {
           .maybeSingle(),
       ]);
 
-      const hourlyUserIds = new Set(
+      const skipOvertimeUserIds = new Set(
         (hourlyRes.data || [])
-          .filter((c: any) => c.salary_templates?.salary_type === 'hourly')
+          .filter((c: any) => {
+            const t = c.salary_templates;
+            if (!t) return false;
+            // Bỏ qua: lương theo giờ HOẶC template tắt tăng ca
+            return t.salary_type === 'hourly' || t.enable_overtime === false;
+          })
           .map((c: any) => c.user_id as string),
       );
       const netThreshold = typeof (tenantRes.data as any)?.compensation_threshold_minutes === 'number'
@@ -83,7 +88,7 @@ export function usePendingApprovals() {
       const assignments = shiftRows || [];
       for (const att of attendance) {
         if (!att.check_in_time || !(att as any).check_out_time) continue;
-        if (hourlyUserIds.has(att.user_id)) continue;
+        if (skipOvertimeUserIds.has(att.user_id)) continue;
         const dateStr = att.date;
         const dow = new Date(dateStr).getDay();
         const userAssignments = assignments.filter((sa: any) => sa.user_id === att.user_id);
