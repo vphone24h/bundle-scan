@@ -117,7 +117,7 @@ export function OvertimeReviewsTab() {
         .eq('id', tenantId!)
         .maybeSingle();
       const v = (data as any)?.compensation_threshold_minutes;
-      return typeof v === 'number' ? v : 5;
+      return typeof v === 'number' ? v : 15;
     },
     enabled: !!tenantId,
   });
@@ -158,7 +158,7 @@ export function OvertimeReviewsTab() {
     if (!attendanceRecords || !shiftAssignments) return [];
     const existingKeys = new Set((overtimeRequests || []).map(r => `${r.user_id}_${r.request_date}_${r.request_type}`));
     const items: any[] = [];
-    const threshold = typeof netThreshold === 'number' ? netThreshold : 5;
+    const threshold = typeof netThreshold === 'number' ? netThreshold : 15;
 
     for (const att of attendanceRecords) {
       if (!att.check_in_time) continue;
