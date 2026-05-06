@@ -104,7 +104,7 @@ export function LeaveApprovalsTab() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('attendance_records')
-        .select('check_in_time, check_out_time, late_minutes, early_leave_minutes, total_work_minutes, work_shifts(name, start_time, end_time)')
+        .select('check_in_time, check_out_time, late_minutes, early_leave_minutes, early_arrival_minutes, pending_overtime_minutes, total_work_minutes, work_shifts(name, start_time, end_time)')
         .eq('tenant_id', tenantId!)
         .eq('user_id', reviewUserId!)
         .eq('date', reviewDate!)
@@ -230,6 +230,11 @@ export function LeaveApprovalsTab() {
         deduct_salary: groupedRequests.some((r: any) => r.deduct_salary === true),
         late_minutes: groupedRequests.find((r: any) => r.request_type === 'late_arrival')?.time_minutes || 0,
         early_leave_minutes: groupedRequests.find((r: any) => r.request_type === 'early_leave')?.time_minutes || 0,
+        net_minutes: groupedRequests.reduce((sum: number, r: any) => {
+          const reason = String(r.reason || '');
+          const match = reason.match(/NET\s(-?\d+)p/);
+          return match ? Number(match[1]) : sum;
+        }, 0),
       };
     }).sort((a: any, b: any) => b.created_at.localeCompare(a.created_at));
   }, [filtered]);
@@ -267,6 +272,13 @@ export function LeaveApprovalsTab() {
   const timeReviewMinutes = isCombinedTimeReview
     ? `${reviewDialog?.late_minutes || 0}p trễ • ${reviewDialog?.early_leave_minutes || 0}p sớm`
     : fmtMins(reviewDialog?.time_minutes || 0);
+  const reviewNetMinutes = isCombinedTimeReview
+    ? Number(reviewDialog?.net_minutes || 0)
+    : reviewDialog?.request_type === 'late_arrival'
+      ? -Number(reviewDialog?.time_minutes || 0)
+      : reviewDialog?.request_type === 'early_leave'
+        ? -Number(reviewDialog?.time_minutes || 0)
+        : 0;
 
   // ==================== AUTO-DETECT VẮNG MẶT (gộp từ AbsenceReviewsTab) ====================
   const monthStr = format(new Date(), 'yyyy-MM');
@@ -637,7 +649,7 @@ export function LeaveApprovalsTab() {
             </TabsList>
             <TabsContent value="auto" className="mt-3 space-y-4">
               <div className="text-xs text-muted-foreground italic">
-                Phiếu do hệ thống tự tạo khi NV check-in trễ / check-out sớm. Nếu NV gửi đơn thủ công cùng ngày + cùng loại, phiếu auto sẽ tự động bị gộp.
+                Phiếu chỉ được hệ thống tự tạo sau khi đã đủ check-in + check-out và tính xong NET cuối ngày. Nếu NV gửi đơn thủ công cùng ngày + cùng loại, phiếu auto sẽ tự động bị gộp.
               </div>
               {renderTable(autoRequests, 'Không có phiếu tự động nào')}
             </TabsContent>
@@ -814,6 +826,18 @@ export function LeaveApprovalsTab() {
                                   <div className="font-medium text-destructive">{fmtMins((reviewAttendance as any).early_leave_minutes || 0)}</div>
                                 </>
                               )}
+                              {isCombinedTimeReview && (reviewAttendance as any)?.early_arrival_minutes != null && (
+                                <>
+                                  <div className="text-muted-foreground">Vào sớm thực tế:</div>
+                                  <div className="font-medium">{fmtMins((reviewAttendance as any).early_arrival_minutes || 0)}</div>
+                                </>
+                              )}
+                              {isCombinedTimeReview && (reviewAttendance as any)?.pending_overtime_minutes != null && (
+                                <>
+                                  <div className="text-muted-foreground">NET / OT pending:</div>
+                                  <div className="font-medium text-primary">{fmtMins((reviewAttendance as any).pending_overtime_minutes || 0)}</div>
+                                </>
+                              )}
                             </div>
                             <div className="border-t pt-1.5 mt-1.5 flex justify-between items-center">
                               <span className="text-muted-foreground">NV xin phép:</span>
@@ -821,6 +845,14 @@ export function LeaveApprovalsTab() {
                                 {timeReviewLabel} {timeReviewMinutes}
                               </span>
                             </div>
+                            {isCombinedTimeReview && (
+                              <div className="border-t pt-1.5 mt-1.5 flex justify-between items-center">
+                                <span className="text-muted-foreground">NET cuối ngày:</span>
+                                <span className="font-bold text-destructive text-sm">
+                                  {reviewNetMinutes > 0 ? '+' : ''}{fmtMins(reviewNetMinutes)}
+                                </span>
+                              </div>
+                            )}
                             {!reviewAttendance && (
                               <p className="text-[11px] text-muted-foreground italic">
                                 Chưa có bản ghi chấm công ngày này — đối chiếu lại sau khi NV check-in/out xong.

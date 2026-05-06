@@ -89,6 +89,8 @@ async function buildAttendancePayload(supabaseAdmin: ReturnType<typeof createCli
   let lateMinutes = 0
   let earlyLeaveMinutes = 0
   let overtimeMinutes = 0
+  let pendingOvertimeMinutes = Number(currentRecord?.pending_overtime_minutes || 0)
+  let overtimeStatus = currentRecord?.overtime_status || 'none'
   let totalMinutes = currentRecord?.total_work_minutes || 0
   let earlyArrivalMinutes = 0
   let lateOutMinutes = 0
@@ -143,6 +145,7 @@ async function buildAttendancePayload(supabaseAdmin: ReturnType<typeof createCli
     }
 
     // 🆕 Bù trừ NET trong ngày: vào sớm bù về sớm, ra trễ bù vào trễ.
+    // Chỉ khi đã có đủ check-in + check-out mới chốt NET và sinh hậu quả payroll/duyệt.
     // Áp ngưỡng compensation_threshold_minutes (NULL = 0, bù trừ tối thiểu).
     const { data: tenantRow } = await supabaseAdmin
       .from('tenants')
@@ -152,33 +155,31 @@ async function buildAttendancePayload(supabaseAdmin: ReturnType<typeof createCli
     const rawTh = (tenantRow as any)?.compensation_threshold_minutes
     const compThreshold = rawTh == null ? 0 : Number(rawTh) || 0
 
-    // net = (vào sớm + ra trễ) - (vào trễ + ra sớm). Dương = dư, âm = thiếu.
-    const netMinutes = (earlyArrivalMinutes + lateOutMinutes) - (lateMinutes + earlyLeaveMinutes)
-    if (netMinutes >= 0) {
-      // Đủ hoặc dư: không tính trễ/sớm. Phần dư vượt ngưỡng bù → OT.
+    // NET = vào_sớm - vào_trễ + (ra_trễ hoặc -ra_sớm)
+    // Dương = dư công, Âm = thiếu công.
+    const rawLateMinutes = lateMinutes
+    const rawEarlyLeaveMinutes = earlyLeaveMinutes
+    const netMinutes = earlyArrivalMinutes - rawLateMinutes + (lateOutMinutes - rawEarlyLeaveMinutes)
+
+    pendingOvertimeMinutes = 0
+    overtimeMinutes = 0
+    overtimeStatus = 'none'
+
+    if (netMinutes > compThreshold) {
       lateMinutes = 0
       earlyLeaveMinutes = 0
-      overtimeMinutes = netMinutes > compThreshold ? (netMinutes - compThreshold) : 0
-      if (recordStatus === 'late') recordStatus = 'on_time'
-    } else {
-      // Thiếu: phân bổ phần thiếu (sau bù) vào late/early theo tỷ lệ gốc.
+      pendingOvertimeMinutes = netMinutes
+      if (recordStatus === 'late' || recordStatus === 'early_leave') recordStatus = 'on_time'
+    } else if (netMinutes < -compThreshold) {
       const deficit = Math.abs(netMinutes)
-      // Thiếu trong ngưỡng → coi như đủ; vượt ngưỡng mới ghi nhận.
-      const effectiveDeficit = deficit > compThreshold ? (deficit - compThreshold) : 0
-      const totalRaw = lateMinutes + earlyLeaveMinutes
-      if (effectiveDeficit === 0) {
-        lateMinutes = 0
-        earlyLeaveMinutes = 0
-        if (recordStatus === 'late') recordStatus = 'on_time'
-      } else if (totalRaw > 0) {
-        const lateShare = Math.round(effectiveDeficit * (lateMinutes / totalRaw))
-        const earlyShare = effectiveDeficit - lateShare
-        lateMinutes = lateShare
-        earlyLeaveMinutes = earlyShare
-        if (lateMinutes > 0) recordStatus = 'late'
-        else if (earlyLeaveMinutes > 0 && recordStatus === 'on_time') recordStatus = 'early_leave'
-      }
-      overtimeMinutes = 0
+      lateMinutes = Math.min(deficit, rawLateMinutes)
+      earlyLeaveMinutes = Math.max(0, deficit - lateMinutes)
+      if (lateMinutes > 0) recordStatus = 'late'
+      else if (earlyLeaveMinutes > 0) recordStatus = 'early_leave'
+    } else {
+      lateMinutes = 0
+      earlyLeaveMinutes = 0
+      if (recordStatus === 'late' || recordStatus === 'early_leave') recordStatus = 'on_time'
     }
   }
 
@@ -195,6 +196,9 @@ async function buildAttendancePayload(supabaseAdmin: ReturnType<typeof createCli
       late_minutes: lateMinutes,
       early_leave_minutes: earlyLeaveMinutes,
       overtime_minutes: overtimeMinutes,
+      pending_overtime_minutes: pendingOvertimeMinutes,
+      overtime_status: overtimeStatus,
+      early_arrival_minutes: earlyArrivalMinutes,
       total_work_minutes: totalMinutes,
     },
   }
@@ -401,49 +405,82 @@ Deno.serve(async (req) => {
     let createdLeaveId: string | null = null
     const finalLate = Number(attendancePayload.updates.late_minutes || 0)
     const finalEarly = Number(attendancePayload.updates.early_leave_minutes || 0)
+    const finalPendingOT = Number(attendancePayload.updates.pending_overtime_minutes || 0)
+
+    await supabaseAdmin
+      .from('leave_requests')
+      .delete()
+      .eq('tenant_id', request.tenant_id)
+      .eq('user_id', request.user_id)
+      .eq('leave_date_from', request.request_date)
+      .eq('leave_date_to', request.request_date)
+      .eq('status', 'pending')
+      .eq('is_auto_detected', true)
 
     if (effectivePenalty && (finalLate > 0 || finalEarly > 0)) {
-      const reqType = finalLate > 0 ? 'late_arrival' : 'early_leave'
-      const mins = finalLate > 0 ? finalLate : finalEarly
-
-      // Xoá mọi phiếu auto-tạo trước đó cho user+ngày+loại để admin đổi quyết định
-      // mà không bị trùng phiếu (vd: trước duyệt waive, giờ đổi sang deduct_ot).
       await supabaseAdmin
         .from('leave_requests')
         .delete()
         .eq('tenant_id', request.tenant_id)
         .eq('user_id', request.user_id)
-        .eq('request_type', reqType)
+        .in('request_type', ['late_arrival', 'early_leave'])
         .eq('leave_date_from', request.request_date)
         .eq('leave_date_to', request.request_date)
         .like('reason', '[Admin sửa công]%')
 
       if (effectivePenalty === 'waive' || effectivePenalty === 'deduct_ot') {
-        const reasonText = effectivePenalty === 'waive'
-          ? `[Admin sửa công] Miễn phạt ${reqType === 'late_arrival' ? 'đi trễ' : 'về sớm'} ${mins}p — ${request.reason}`
-          : `[Admin sửa công] Trừ theo đơn giá tăng ca ${mins}p — ${request.reason}`
-        const { data: inserted, error: leaveErr } = await supabaseAdmin
-          .from('leave_requests')
-          .insert({
+        const inserts: any[] = []
+        if (finalLate > 0) {
+          inserts.push({
             tenant_id: request.tenant_id,
             user_id: request.user_id,
-            request_type: reqType,
+            request_type: 'late_arrival',
             leave_date_from: request.request_date,
             leave_date_to: request.request_date,
-            time_minutes: mins,
-            reason: reasonText,
+            time_minutes: finalLate,
+            reason: `[Admin sửa công] Đi trễ ${finalLate}p • Về sớm ${finalEarly}p — ${request.reason}`,
             status: 'approved',
             deduct_salary: effectivePenalty === 'deduct_ot',
             reviewed_by: caller.id,
             reviewed_at: new Date().toISOString(),
             review_note: reviewNote || (effectivePenalty === 'waive' ? 'Miễn phạt theo quyết định sửa công' : 'Trừ theo đơn giá tăng ca'),
           })
+        }
+        if (finalEarly > 0) {
+          inserts.push({
+            tenant_id: request.tenant_id,
+            user_id: request.user_id,
+            request_type: 'early_leave',
+            leave_date_from: request.request_date,
+            leave_date_to: request.request_date,
+            time_minutes: finalEarly,
+            reason: `[Admin sửa công] Đi trễ ${finalLate}p • Về sớm ${finalEarly}p — ${request.reason}`,
+            status: 'approved',
+            deduct_salary: effectivePenalty === 'deduct_ot',
+            reviewed_by: caller.id,
+            reviewed_at: new Date().toISOString(),
+            review_note: reviewNote || (effectivePenalty === 'waive' ? 'Miễn phạt theo quyết định sửa công' : 'Trừ theo đơn giá tăng ca'),
+          })
+        }
+        const { data: inserted, error: leaveErr } = await supabaseAdmin
+          .from('leave_requests')
+          .insert(inserts)
           .select('id')
-          .single()
         if (leaveErr) throw leaveErr
-        createdLeaveId = inserted?.id || null
+        createdLeaveId = inserted?.[0]?.id || null
       }
       // 'penalize' → không tạo phiếu, để payroll áp phạt nặng
+    }
+
+    if (finalPendingOT > 0) {
+      await supabaseAdmin
+        .from('attendance_records')
+        .update({
+          pending_overtime_minutes: finalPendingOT,
+          overtime_status: 'pending',
+          overtime_approved_minutes: 0,
+        })
+        .eq('id', attendanceId)
     }
 
     return ok({ success: true, attendanceId, createdLeaveId, penaltyAction: effectivePenalty })

@@ -415,6 +415,8 @@ export default function CheckInPage() {
       let lateForRequest = 0;
       let earlyForRequest = 0;
       let netTotal = 0;
+      let actualEarlyLeaveMinutes = 0;
+      let actualLateOutMinutes = 0;
       if (shiftInfo) {
         const [eh, em] = shiftInfo.end_time.split(':').map(Number);
         const shiftEnd = new Date(); shiftEnd.setHours(eh, em, 0, 0);
@@ -423,6 +425,8 @@ export default function CheckInPage() {
         const effectiveEnd = new Date(shiftEnd.getTime() - waiverEarlyMin * 60000);
         const diffFromEnd = Math.round((now.getTime() - effectiveEnd.getTime()) / 60000);
         netDiffFromEnd = diffFromEnd;
+        actualLateOutMinutes = diffFromEnd > 0 ? diffFromEnd : 0;
+        actualEarlyLeaveMinutes = diffFromEnd < 0 ? Math.abs(diffFromEnd) : 0;
 
         // BÙ TRỪ TỔNG TRONG NGÀY (đi trễ ↔ về trễ ↔ vào sớm ↔ về sớm)
         // NET = vào_sớm − đi_trễ + (về_trễ HOẶC −về_sớm)
@@ -448,9 +452,12 @@ export default function CheckInPage() {
       }
 
       const totalPendingOT = extraPendingOT;
+      const finalLateMinutes = netTotal < -compThreshold ? lateForRequest : 0;
+      const finalEarlyLeaveMinutes = netTotal < -compThreshold ? earlyForRequest : 0;
+      const finalStatus = finalLateMinutes > 0 ? 'late' : finalEarlyLeaveMinutes > 0 ? 'early_leave' : 'on_time';
       const newOTStatus = totalPendingOT > 0
         ? ((todayRecord as any)?.overtime_status === 'approved' ? 'approved' : 'pending')
-        : ((todayRecord as any)?.overtime_status || 'none');
+        : 'none';
 
       const { error } = await supabase.from('attendance_records').update({
         check_out_time: now.toISOString(),
@@ -460,8 +467,10 @@ export default function CheckInPage() {
         check_out_device_id: myDevice?.id || null,
         check_out_method: 'gps',
         total_work_minutes: totalMinutes,
+        status: finalStatus,
+        late_minutes: finalLateMinutes,
         overtime_minutes: overtimeMinutes,
-        early_leave_minutes: earlyLeaveMinutes,
+        early_leave_minutes: finalEarlyLeaveMinutes,
         pending_overtime_minutes: totalPendingOT,
         overtime_status: newOTStatus,
       }).eq('id', todayRecord.id);
@@ -512,7 +521,7 @@ export default function CheckInPage() {
             leave_date_from: dateStr,
             leave_date_to: dateStr,
             time_minutes: lateForRequest,
-            reason: `[Tự động] Đi trễ ${lateForRequest}p (NET ngày: ${netTotal}p)`,
+            reason: `[Tự động] Đi trễ ${lateForRequest}p • Về sớm ${earlyForRequest}p • NET ${netTotal}p`,
             status: 'pending',
             is_auto_detected: true,
           });
@@ -525,7 +534,7 @@ export default function CheckInPage() {
             leave_date_from: dateStr,
             leave_date_to: dateStr,
             time_minutes: earlyForRequest,
-            reason: `[Tự động] Về sớm ${earlyForRequest}p (NET ngày: ${netTotal}p)`,
+            reason: `[Tự động] Đi trễ ${lateForRequest}p • Về sớm ${earlyForRequest}p • NET ${netTotal}p`,
             status: 'pending',
             is_auto_detected: true,
           });
@@ -543,7 +552,9 @@ export default function CheckInPage() {
       if (totalPendingOT > 0) {
         msg += ` — ${totalPendingOT}p tăng ca chờ admin duyệt.`;
       } else if (earlyLeaveMinutes > 0) {
-        msg += ` — Về sớm ${earlyLeaveMinutes}p.`;
+        msg += ` — Thiếu NET ${Math.abs(netTotal)}p (trễ ${lateForRequest}p, sớm ${earlyForRequest}p) chờ duyệt.`;
+      } else if (actualLateOutMinutes > 0 || actualEarlyLeaveMinutes > 0 || lateMinRecorded > 0 || earlyArrivalRecorded > 0) {
+        msg += ` — NET ngày ${netTotal > 0 ? '+' : ''}${netTotal}p.`;
       }
       toast.success(msg);
       qc.invalidateQueries({ queryKey: ['my-attendance-today'] });
