@@ -107,6 +107,21 @@ export function OvertimeReviewsTab() {
     enabled: !!tenantId,
   });
 
+  // Ngưỡng NET (phút) cấu hình trong tenant — dùng để bỏ qua auto-detect tăng ca/sớm ca nhỏ hơn ngưỡng
+  const { data: netThreshold } = useQuery({
+    queryKey: ['tenant-comp-threshold-ot', tenantId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('tenants')
+        .select('compensation_threshold_minutes')
+        .eq('id', tenantId!)
+        .maybeSingle();
+      const v = (data as any)?.compensation_threshold_minutes;
+      return typeof v === 'number' ? v : 5;
+    },
+    enabled: !!tenantId,
+  });
+
   // Fetch profiles for display names
   const userIds = useMemo(() => {
     const ids = new Set<string>();
@@ -143,6 +158,7 @@ export function OvertimeReviewsTab() {
     if (!attendanceRecords || !shiftAssignments) return [];
     const existingKeys = new Set((overtimeRequests || []).map(r => `${r.user_id}_${r.request_date}_${r.request_type}`));
     const items: any[] = [];
+    const threshold = typeof netThreshold === 'number' ? netThreshold : 5;
 
     for (const att of attendanceRecords) {
       if (!att.check_in_time) continue;
@@ -167,7 +183,7 @@ export function OvertimeReviewsTab() {
       }
 
       // Check extra hours after shift end (overtime_minutes > 0)
-      if (isScheduled && (att.overtime_minutes || 0) > 0 && !existingKeys.has(`${att.user_id}_${dateStr}_extra_hours`)) {
+      if (isScheduled && (att.overtime_minutes || 0) > threshold && !existingKeys.has(`${att.user_id}_${dateStr}_extra_hours`)) {
         items.push({
           user_id: att.user_id,
           request_date: dateStr,
@@ -186,7 +202,7 @@ export function OvertimeReviewsTab() {
         const shiftStartDate = new Date(checkInDate);
         shiftStartDate.setHours(sh, sm, 0, 0);
         const earlyMinutes = Math.round((shiftStartDate.getTime() - checkInDate.getTime()) / 60000);
-        if (earlyMinutes > 5 && !existingKeys.has(`${att.user_id}_${dateStr}_early_checkin`)) {
+        if (earlyMinutes > threshold && !existingKeys.has(`${att.user_id}_${dateStr}_early_checkin`)) {
           items.push({
             user_id: att.user_id,
             request_date: dateStr,
@@ -199,7 +215,7 @@ export function OvertimeReviewsTab() {
       }
     }
     return items;
-  }, [attendanceRecords, shiftAssignments, overtimeRequests]);
+  }, [attendanceRecords, shiftAssignments, overtimeRequests, netThreshold]);
 
   // Combine existing requests + auto-detected
   const allItems = useMemo(() => {
