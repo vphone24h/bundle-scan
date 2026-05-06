@@ -21,6 +21,7 @@ import { StepSalary } from './steps/StepSalary';
 import { StepAttendanceSetup, type AttendanceSetupData } from './steps/StepAttendanceSetup';
 import { buildRecurringShiftAssignments } from '@/lib/attendanceSchedule';
 import { buildPaidLeaveOverrideRows, getPaidLeaveDaysForMonth, getPaidLeaveMonthKey, mapPaidLeaveOverrideRows } from '@/lib/paidLeaveSchedule';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 import { toast } from 'sonner';
 import type { ScheduleData, SalaryData } from './CreateEmployeeStepper';
 
@@ -92,26 +93,27 @@ export function EmployeeSetupTab() {
   const { data: employeeSetupData, isLoading: setupLoading } = useQuery({
     queryKey: ['employee-setup-configs', tenantId],
     queryFn: async () => {
-      const [shiftsRes, salaryRes] = await Promise.all([
-        supabase
-          .from('shift_assignments')
-          .select('user_id, shift_id')
-          .eq('tenant_id', tenantId!)
-          .eq('is_active', true),
-        supabase
-          .from('employee_salary_configs')
-          .select('user_id, salary_template_id, custom_base_amount')
-          .eq('tenant_id', tenantId!)
-          .eq('is_active', true),
+      // IMPORTANT: paginate — shift_assignments can exceed Supabase's 1000-row default
+      // limit. Without this, employees whose rows fall past row 1000 appear to have
+      // no shift/schedule and their setup progress drops from 100% to 40%.
+      const [shiftAssignments, salaryConfigs] = await Promise.all([
+        fetchAllRows<{ user_id: string; shift_id: string }>(() =>
+          supabase
+            .from('shift_assignments')
+            .select('user_id, shift_id')
+            .eq('tenant_id', tenantId!)
+            .eq('is_active', true)
+        ),
+        fetchAllRows<{ user_id: string; salary_template_id: string | null; custom_base_amount: number | null }>(() =>
+          supabase
+            .from('employee_salary_configs')
+            .select('user_id, salary_template_id, custom_base_amount')
+            .eq('tenant_id', tenantId!)
+            .eq('is_active', true)
+        ),
       ]);
 
-      if (shiftsRes.error) throw shiftsRes.error;
-      if (salaryRes.error) throw salaryRes.error;
-
-      return {
-        shiftAssignments: shiftsRes.data || [],
-        salaryConfigs: salaryRes.data || [],
-      };
+      return { shiftAssignments, salaryConfigs };
     },
     enabled: !!tenantId,
   });
