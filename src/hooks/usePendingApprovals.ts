@@ -16,7 +16,7 @@ export function usePendingApprovals() {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
 
-      const [correctionsRes, overtimeRes, absencesRes, leaveRes, attendanceRes, shiftRes, hourlyRes] = await Promise.all([
+      const [correctionsRes, overtimeRes, absencesRes, leaveRes, attendanceRes, shiftRes, hourlyRes, tenantRes] = await Promise.all([
         supabase
           .from('attendance_correction_requests')
           .select('id', { count: 'exact', head: true })
@@ -54,6 +54,11 @@ export function usePendingApprovals() {
           .from('employee_salary_configs')
           .select('user_id, salary_templates(salary_type)')
           .eq('tenant_id', tenantId),
+        supabase
+          .from('tenants')
+          .select('compensation_threshold_minutes')
+          .eq('id', tenantId)
+          .maybeSingle(),
       ]);
 
       const hourlyUserIds = new Set(
@@ -61,6 +66,9 @@ export function usePendingApprovals() {
           .filter((c: any) => c.salary_templates?.salary_type === 'hourly')
           .map((c: any) => c.user_id as string),
       );
+      const netThreshold = typeof (tenantRes.data as any)?.compensation_threshold_minutes === 'number'
+        ? (tenantRes.data as any).compensation_threshold_minutes
+        : 5;
 
       // Đồng bộ logic với OvertimeReviewsTab: pending = OT request status pending + auto-detected
       const otRows = overtimeRequests_safe(overtimeRes.data);
@@ -80,14 +88,14 @@ export function usePendingApprovals() {
           (sa.assignment_type === 'fixed' && sa.day_of_week === dow) || sa.specific_date === dateStr
         );
         if (!isScheduled && !existingKeys.has(`${att.user_id}_${dateStr}_day_off`)) autoDetected++;
-        if (isScheduled && (att.overtime_minutes || 0) > 0 && !existingKeys.has(`${att.user_id}_${dateStr}_extra_hours`)) autoDetected++;
+        if (isScheduled && (att.overtime_minutes || 0) > netThreshold && !existingKeys.has(`${att.user_id}_${dateStr}_extra_hours`)) autoDetected++;
         const shift = (att as any).work_shifts;
         if (isScheduled && att.check_in_time && shift?.start_time) {
           const [sh, sm] = String(shift.start_time).split(':').map(Number);
           const ci = new Date(att.check_in_time);
           const ss = new Date(ci); ss.setHours(sh, sm, 0, 0);
           const earlyMin = Math.round((ss.getTime() - ci.getTime()) / 60000);
-          if (earlyMin > 5 && !existingKeys.has(`${att.user_id}_${dateStr}_early_checkin`)) autoDetected++;
+          if (earlyMin > netThreshold && !existingKeys.has(`${att.user_id}_${dateStr}_early_checkin`)) autoDetected++;
         }
       }
 
