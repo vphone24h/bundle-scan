@@ -10852,46 +10852,88 @@ export type Database = {
         }
         Returns: Json
       }
-      get_export_receipt_items_paginated: {
-        Args: {
-          _branch_id?: string
-          _category_id?: string
-          _page: number
-          _page_size: number
-          _search?: string
-        }
-        Returns: {
-          branch_name: string
-          category_id: string
-          category_name: string
-          created_at: string
-          customer_name: string
-          customer_phone: string
-          export_date: string
-          export_date_modified: boolean
-          has_more: boolean
-          id: string
-          imei: string
-          note: string
-          product_id: string
-          product_name: string
-          quantity: number
-          receipt_branch_id: string
-          receipt_code: string
-          receipt_created_by: string
-          receipt_customer_id: string
-          receipt_id: string
-          receipt_note: string
-          receipt_sales_staff_id: string
-          receipt_status: string
-          sale_price: number
-          sku: string
-          status: string
-          total_count: number
-          unit: string
-          warranty: string
-        }[]
-      }
+      get_export_receipt_items_paginated:
+        | {
+            Args: {
+              _branch_id?: string
+              _category_id?: string
+              _page: number
+              _page_size: number
+              _search?: string
+            }
+            Returns: {
+              branch_name: string
+              category_id: string
+              category_name: string
+              created_at: string
+              customer_name: string
+              customer_phone: string
+              export_date: string
+              export_date_modified: boolean
+              has_more: boolean
+              id: string
+              imei: string
+              note: string
+              product_id: string
+              product_name: string
+              quantity: number
+              receipt_branch_id: string
+              receipt_code: string
+              receipt_created_by: string
+              receipt_customer_id: string
+              receipt_id: string
+              receipt_note: string
+              receipt_sales_staff_id: string
+              receipt_status: string
+              sale_price: number
+              sku: string
+              status: string
+              total_count: number
+              unit: string
+              warranty: string
+            }[]
+          }
+        | {
+            Args: {
+              _branch_id?: string
+              _category_id?: string
+              _customer_source?: string
+              _page: number
+              _page_size: number
+              _search?: string
+            }
+            Returns: {
+              branch_name: string
+              category_id: string
+              category_name: string
+              created_at: string
+              customer_name: string
+              customer_phone: string
+              export_date: string
+              export_date_modified: boolean
+              has_more: boolean
+              id: string
+              imei: string
+              note: string
+              product_id: string
+              product_name: string
+              quantity: number
+              receipt_branch_id: string
+              receipt_code: string
+              receipt_created_by: string
+              receipt_customer_id: string
+              receipt_id: string
+              receipt_note: string
+              receipt_sales_staff_id: string
+              receipt_status: string
+              sale_price: number
+              sku: string
+              status: string
+              total_count: number
+              unit: string
+              warranty: string
+            }[]
+          }
       get_group_variants: { Args: { p_group_key: string }; Returns: Json }
       get_import_history_stats: {
         Args: {
@@ -11318,44 +11360,84 @@ export type Database = {
           total_spent: number
         }[]
       }
-      search_export_receipts: {
-        Args: {
-          _branch_id?: string
-          _date_from?: string
-          _date_to?: string
-          _page?: number
-          _page_size?: number
-          _search?: string
-          _status?: string
-        }
-        Returns: {
-          branch_id: string
-          branch_name: string
-          code: string
-          created_at: string
-          created_by: string
-          customer_address: string
-          customer_id: string
-          customer_name: string
-          customer_phone: string
-          discount_amount: number
-          export_date: string
-          export_date_modified: boolean
-          final_amount: number
-          has_more: boolean
-          id: string
-          note: string
-          paid_amount: number
-          payment_source: string
-          payment_sources: Json
-          remaining_amount: number
-          sales_staff_id: string
-          status: string
-          tenant_id: string
-          total_amount: number
-          updated_at: string
-        }[]
-      }
+      search_export_receipts:
+        | {
+            Args: {
+              _branch_id?: string
+              _date_from?: string
+              _date_to?: string
+              _page?: number
+              _page_size?: number
+              _search?: string
+              _status?: string
+            }
+            Returns: {
+              branch_id: string
+              branch_name: string
+              code: string
+              created_at: string
+              created_by: string
+              customer_address: string
+              customer_id: string
+              customer_name: string
+              customer_phone: string
+              discount_amount: number
+              export_date: string
+              export_date_modified: boolean
+              final_amount: number
+              has_more: boolean
+              id: string
+              note: string
+              paid_amount: number
+              payment_source: string
+              payment_sources: Json
+              remaining_amount: number
+              sales_staff_id: string
+              status: string
+              tenant_id: string
+              total_amount: number
+              updated_at: string
+            }[]
+          }
+        | {
+            Args: {
+              _branch_id?: string
+              _customer_source?: string
+              _date_from?: string
+              _date_to?: string
+              _page?: number
+              _page_size?: number
+              _search?: string
+              _status?: string
+            }
+            Returns: {
+              branch_id: string
+              branch_name: string
+              code: string
+              created_at: string
+              created_by: string
+              customer_address: string
+              customer_id: string
+              customer_name: string
+              customer_phone: string
+              discount_amount: number
+              export_date: string
+              export_date_modified: boolean
+              final_amount: number
+              has_more: boolean
+              id: string
+              note: string
+              paid_amount: number
+              payment_source: string
+              payment_sources: Json
+              remaining_amount: number
+              sales_staff_id: string
+              status: string
+              tenant_id: string
+              total_amount: number
+              updated_at: string
+            }[]
+          }
       search_import_receipts: {
         Args: {
           _branch_id?: string
