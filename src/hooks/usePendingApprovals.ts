@@ -45,7 +45,7 @@ export function usePendingApprovals() {
         fetchAllRows<any>(() =>
           supabase
             .from('attendance_records')
-            .select('user_id, date, check_in_time, check_out_time, total_work_minutes, overtime_minutes, work_shifts(start_time)')
+            .select('user_id, date, check_in_time, check_out_time, total_work_minutes, overtime_minutes, pending_overtime_minutes, work_shifts(start_time)')
             .eq('tenant_id', tenantId)
             .gte('date', monthStart)
             .lte('date', monthEnd)
@@ -102,7 +102,8 @@ export function usePendingApprovals() {
           (sa.assignment_type === 'fixed' && sa.day_of_week === dow) || sa.specific_date === dateStr
         );
         if (!isScheduled && !existingKeys.has(`${att.user_id}_${dateStr}_day_off`)) autoDetected++;
-        if (isScheduled && (att.overtime_minutes || 0) > netThreshold && !existingKeys.has(`${att.user_id}_${dateStr}_extra_hours`)) autoDetected++;
+        const otCandidate = Math.max(att.pending_overtime_minutes || 0, att.overtime_minutes || 0);
+        if (isScheduled && otCandidate > netThreshold && !existingKeys.has(`${att.user_id}_${dateStr}_extra_hours`)) autoDetected++;
         const shift = (att as any).work_shifts;
         if (isScheduled && att.check_in_time && shift?.start_time) {
           const [sh, sm] = String(shift.start_time).split(':').map(Number);
