@@ -79,7 +79,7 @@ export function usePendingApprovals() {
       const attendance = attendanceRes.data || [];
       const assignments = shiftRes.data || [];
       for (const att of attendance) {
-        if (!att.check_in_time) continue;
+        if (!att.check_in_time || !(att as any).check_out_time) continue;
         if (hourlyUserIds.has(att.user_id)) continue;
         const dateStr = att.date;
         const dow = new Date(dateStr).getDay();
