@@ -292,13 +292,14 @@ export function LeaveApprovalsTab() {
   const { data: shiftAssignments } = useQuery({
     queryKey: ['merged-shift-assignments', tenantId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('shift_assignments')
-        .select('user_id, assignment_type, day_of_week, specific_date')
-        .eq('tenant_id', tenantId!)
-        .eq('is_active', true);
-      if (error) throw error;
-      return data || [];
+      const { fetchAllRows } = await import('@/lib/fetchAllRows');
+      return await fetchAllRows<any>(() =>
+        supabase
+          .from('shift_assignments')
+          .select('user_id, assignment_type, day_of_week, specific_date')
+          .eq('tenant_id', tenantId!)
+          .eq('is_active', true)
+      );
     },
     enabled: !!tenantId,
   });
