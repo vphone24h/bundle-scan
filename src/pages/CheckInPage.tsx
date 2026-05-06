@@ -452,9 +452,12 @@ export default function CheckInPage() {
       }
 
       const totalPendingOT = extraPendingOT;
+      const finalLateMinutes = netTotal < -compThreshold ? lateForRequest : 0;
+      const finalEarlyLeaveMinutes = netTotal < -compThreshold ? earlyForRequest : 0;
+      const finalStatus = finalLateMinutes > 0 ? 'late' : finalEarlyLeaveMinutes > 0 ? 'early_leave' : 'on_time';
       const newOTStatus = totalPendingOT > 0
         ? ((todayRecord as any)?.overtime_status === 'approved' ? 'approved' : 'pending')
-        : ((todayRecord as any)?.overtime_status || 'none');
+        : 'none';
 
       const { error } = await supabase.from('attendance_records').update({
         check_out_time: now.toISOString(),
@@ -464,8 +467,10 @@ export default function CheckInPage() {
         check_out_device_id: myDevice?.id || null,
         check_out_method: 'gps',
         total_work_minutes: totalMinutes,
+        status: finalStatus,
+        late_minutes: finalLateMinutes,
         overtime_minutes: overtimeMinutes,
-        early_leave_minutes: earlyLeaveMinutes,
+        early_leave_minutes: finalEarlyLeaveMinutes,
         pending_overtime_minutes: totalPendingOT,
         overtime_status: newOTStatus,
       }).eq('id', todayRecord.id);
