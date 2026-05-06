@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
       employeeSalaryConfigs,
       salaryTemplates,
       attendance,
-      advancesRes,
+      advances,
       shiftAssignments,
       absenceReviews,
       approvedOvertimeRequests,
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
         .eq("tenant_id", tenant_id)
         .gte("date", period.start_date)
         .lte("date", period.end_date)),
-      supabase.from("salary_advances").select("*").eq("tenant_id", tenant_id).eq("user_id", target_user_id).in("status", ["approved", "paid"]).gte("created_at", period.start_date).lte("created_at", period.end_date + "T23:59:59"),
+      fetchAllRows<any>("salary_advances", () => supabase.from("salary_advances").select("*").eq("tenant_id", tenant_id).eq("user_id", target_user_id).in("status", ["approved", "paid"]).gte("created_at", period.start_date).lte("created_at", period.end_date + "T23:59:59")),
       fetchAllRows<any>("shift_assignments", () => supabase.from("shift_assignments").select("*, work_shifts(name, start_time, end_time)").eq("tenant_id", tenant_id).eq("is_active", true)),
       fetchAllRows<any>("absence_reviews", () => supabase.from("absence_reviews").select("*").eq("tenant_id", tenant_id).gte("absence_date", period.start_date).lte("absence_date", period.end_date)),
       fetchAllRows<any>("overtime_requests", () => supabase.from("overtime_requests").select("*").eq("tenant_id", tenant_id).eq("status", "approved").gte("request_date", period.start_date).lte("request_date", period.end_date)),
@@ -129,8 +129,6 @@ Deno.serve(async (req) => {
         .gte("leave_date_to", period.start_date)),
     ]);
 
-    throwIfQueryError("salary_advances", advancesRes);
-
     const scopedUserIds = [...new Set([
       ...scopedUsers.map((item: any) => item.user_id),
       ...scopedRoles.map((item: any) => item.user_id),
@@ -145,12 +143,12 @@ Deno.serve(async (req) => {
     }
     // Override scopedUserIds for downstream (paid leave queries already used the list, but they're fine)
 
-    const { data: profilesData, error: profilesErr } = await supabase
-      .from("profiles")
-      .select("user_id, display_name, phone")
-      .in("user_id", scopedUserIds);
-
-    if (profilesErr) throw profilesErr;
+    const profilesData = await fetchAllRows<any>("profiles", () =>
+      supabase
+        .from("profiles")
+        .select("user_id, display_name, phone")
+        .in("user_id", scopedUserIds)
+    );
 
     const preferredRoles = new Map<string, any>();
     for (const role of scopedRoles) {
@@ -174,7 +172,6 @@ Deno.serve(async (req) => {
       };
     });
 
-    const advances = advancesRes.data || [];
     const saleReceiptIds = allSales.map((sale: any) => sale.id).filter(Boolean);
     let allSaleItems: any[] = [];
     if (saleReceiptIds.length > 0) {
