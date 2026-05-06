@@ -11,6 +11,25 @@ function throwIfQueryError(label: string, result: { error: any }) {
   }
 }
 
+async function fetchAllRows<T>(label: string, queryBuilder: () => any, pageSize = 1000): Promise<T[]> {
+  const rows: T[] = [];
+  let from = 0;
+
+  while (true) {
+    const result = await queryBuilder().range(from, from + pageSize - 1);
+    throwIfQueryError(label, result);
+
+    const data = (result.data || []) as T[];
+    if (data.length === 0) break;
+
+    rows.push(...data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return rows;
+}
+
 async function persistPayrollResults(supabase: any, periodId: string, tenantId: string, results: any[]) {
   const { error: upsertErr } = await supabase
     .from("payroll_records")
@@ -67,60 +86,45 @@ Deno.serve(async (req) => {
 
     // Parallel fetch all needed data
     const [
-      platformUsersRes,
-      rolesRes,
-      empConfigsRes,
-      templatesRes,
-      attendanceRes,
-      advancesRes,
-      shiftAssignmentsRes,
-      absenceReviewsRes,
-      overtimeRequestsRes,
-      salesRes,
-      leaveRequestsRes,
+      scopedUsers,
+      scopedRoles,
+      employeeSalaryConfigs,
+      salaryTemplates,
+      attendance,
+      advances,
+      shiftAssignments,
+      absenceReviews,
+      approvedOvertimeRequests,
+      allSales,
+      approvedLeaveRequests,
     ] = await Promise.all([
-      supabase.from("platform_users").select("user_id, email, display_name").eq("tenant_id", tenant_id),
-      supabase.from("user_roles").select("user_id, user_role, branch_id, tenant_id").eq("tenant_id", tenant_id),
-      supabase.from("employee_salary_configs").select("*, salary_templates(*)").eq("tenant_id", tenant_id),
-      supabase.from("salary_templates").select("*").eq("tenant_id", tenant_id).eq("is_active", true),
-      supabase.from("attendance_records")
+      fetchAllRows<any>("platform_users", () => supabase.from("platform_users").select("user_id, email, display_name").eq("tenant_id", tenant_id)),
+      fetchAllRows<any>("user_roles", () => supabase.from("user_roles").select("user_id, user_role, branch_id, tenant_id").eq("tenant_id", tenant_id)),
+      fetchAllRows<any>("employee_salary_configs", () => supabase.from("employee_salary_configs").select("*, salary_templates(*)").eq("tenant_id", tenant_id)),
+      fetchAllRows<any>("salary_templates", () => supabase.from("salary_templates").select("*").eq("tenant_id", tenant_id).eq("is_active", true)),
+      fetchAllRows<any>("attendance_records", () => supabase.from("attendance_records")
         .select("*, work_shifts(name, start_time, end_time, break_minutes)")
         .eq("tenant_id", tenant_id)
         .gte("date", period.start_date)
-        .lte("date", period.end_date),
-      supabase.from("salary_advances").select("*").eq("tenant_id", tenant_id).eq("payroll_period_id", period_id).in("status", ["approved", "paid"]),
-      supabase.from("shift_assignments").select("*, work_shifts(name, start_time, end_time)").eq("tenant_id", tenant_id).eq("is_active", true),
-      supabase.from("absence_reviews").select("*").eq("tenant_id", tenant_id).gte("absence_date", period.start_date).lte("absence_date", period.end_date),
-      supabase.from("overtime_requests").select("*").eq("tenant_id", tenant_id).eq("status", "approved").gte("request_date", period.start_date).lte("request_date", period.end_date),
-      supabase.from("export_receipts")
+        .lte("date", period.end_date)),
+      fetchAllRows<any>("salary_advances", () => supabase.from("salary_advances").select("*").eq("tenant_id", tenant_id).eq("payroll_period_id", period_id).in("status", ["approved", "paid"])),
+      fetchAllRows<any>("shift_assignments", () => supabase.from("shift_assignments").select("*, work_shifts(name, start_time, end_time)").eq("tenant_id", tenant_id).eq("is_active", true)),
+      fetchAllRows<any>("absence_reviews", () => supabase.from("absence_reviews").select("*").eq("tenant_id", tenant_id).gte("absence_date", period.start_date).lte("absence_date", period.end_date)),
+      fetchAllRows<any>("overtime_requests", () => supabase.from("overtime_requests").select("*").eq("tenant_id", tenant_id).eq("status", "approved").gte("request_date", period.start_date).lte("request_date", period.end_date)),
+      fetchAllRows<any>("export_receipts", () => supabase.from("export_receipts")
         .select("id, created_by, sales_staff_id, total_amount, branch_id, status, is_self_sold")
         .eq("tenant_id", tenant_id)
         .gte("created_at", period.start_date)
         .lte("created_at", period.end_date + "T23:59:59")
-        .in("status", ["completed", "paid"]),
-      supabase.from("leave_requests")
+        .in("status", ["completed", "paid"])),
+      fetchAllRows<any>("leave_requests", () => supabase.from("leave_requests")
         .select("user_id, leave_date_from, leave_date_to, status, request_type, deduct_salary")
         .eq("tenant_id", tenant_id)
         .eq("status", "approved")
         .lte("leave_date_from", period.end_date)
-        .gte("leave_date_to", period.start_date),
+        .gte("leave_date_to", period.start_date)),
     ]);
 
-    [
-      ["platform_users", platformUsersRes],
-      ["user_roles", rolesRes],
-      ["employee_salary_configs", empConfigsRes],
-      ["salary_templates", templatesRes],
-      ["attendance_records", attendanceRes],
-      ["salary_advances", advancesRes],
-      ["shift_assignments", shiftAssignmentsRes],
-      ["absence_reviews", absenceReviewsRes],
-      ["overtime_requests", overtimeRequestsRes],
-      ["export_receipts", salesRes],
-    ].forEach(([label, result]) => throwIfQueryError(label as string, result as { error: any }));
-
-    const scopedUsers = platformUsersRes.data || [];
-    const scopedRoles = rolesRes.data || [];
     const scopedUserIds = [...new Set([
       ...scopedUsers.map((item: any) => item.user_id),
       ...scopedRoles.map((item: any) => item.user_id),
@@ -132,12 +136,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: profilesData, error: profilesErr } = await supabase
-      .from("profiles")
-      .select("user_id, display_name, phone")
-      .in("user_id", scopedUserIds);
-
-    if (profilesErr) throw profilesErr;
+    const profilesData = await fetchAllRows<any>("profiles", () =>
+      supabase
+        .from("profiles")
+        .select("user_id, display_name, phone")
+        .in("user_id", scopedUserIds)
+    );
 
     const preferredRoles = new Map<string, any>();
     for (const role of scopedRoles) {
@@ -161,42 +165,36 @@ Deno.serve(async (req) => {
       };
     });
 
-    const attendance = attendanceRes.data || [];
-    const advances = advancesRes.data || [];
-    const shiftAssignments = shiftAssignmentsRes.data || [];
-    const absenceReviews = absenceReviewsRes.data || [];
-    const approvedOvertimeRequests = overtimeRequestsRes.data || [];
-    const allSales = salesRes.data || [];
     const saleReceiptIds = allSales.map((sale: any) => sale.id).filter(Boolean);
     let allSaleItems: any[] = [];
     if (saleReceiptIds.length > 0) {
       const salesItemsResults = await Promise.all(
         chunkArray(saleReceiptIds, 100).map((receiptIds) =>
-          supabase
-            .from("export_receipt_items")
-            .select("receipt_id, product_id, product_name, category_id, sale_price, quantity, imei")
-            .in("receipt_id", receiptIds)
-            .neq("status", "returned")
+          fetchAllRows<any>("export_receipt_items", () =>
+            supabase
+              .from("export_receipt_items")
+              .select("receipt_id, product_id, product_name, category_id, sale_price, quantity, imei")
+              .in("receipt_id", receiptIds)
+              .neq("status", "returned")
+          )
         )
       );
-      salesItemsResults.forEach((result) => throwIfQueryError("export_receipt_items", result));
-      allSaleItems = salesItemsResults.flatMap((result) => result.data || []);
+      allSaleItems = salesItemsResults.flat();
     }
-    const approvedLeaveRequests = leaveRequestsRes.data || [];
 
     // Load paid leave default schedules (lặp hàng tháng) + overrides cho period này
     const periodYear = new Date(period.start_date).getFullYear();
     const periodMonth = new Date(period.start_date).getMonth() + 1;
-    const [paidLeaveDefaultsRes, paidLeaveOverridesRes] = await Promise.all([
-      supabase.from("paid_leave_default_dates").select("user_id, days_of_month").eq("tenant_id", tenant_id).in("user_id", scopedUserIds),
-      supabase.from("paid_leave_overrides").select("user_id, leave_dates").eq("tenant_id", tenant_id).eq("year", periodYear).eq("month", periodMonth).in("user_id", scopedUserIds),
+    const [paidLeaveDefaults, paidLeaveOverrides] = await Promise.all([
+      fetchAllRows<any>("paid_leave_default_dates", () => supabase.from("paid_leave_default_dates").select("user_id, days_of_month").eq("tenant_id", tenant_id).in("user_id", scopedUserIds)),
+      fetchAllRows<any>("paid_leave_overrides", () => supabase.from("paid_leave_overrides").select("user_id, leave_dates").eq("tenant_id", tenant_id).eq("year", periodYear).eq("month", periodMonth).in("user_id", scopedUserIds)),
     ]);
     const paidLeaveDefaultMap = new Map<string, number[]>();
-    for (const r of (paidLeaveDefaultsRes.data || [])) {
+    for (const r of paidLeaveDefaults) {
       paidLeaveDefaultMap.set((r as any).user_id, ((r as any).days_of_month as number[]) || []);
     }
     const paidLeaveOverrideMap = new Map<string, string[]>();
-    for (const r of (paidLeaveOverridesRes.data || [])) {
+    for (const r of paidLeaveOverrides) {
       paidLeaveOverrideMap.set((r as any).user_id, ((r as any).leave_dates as string[]) || []);
     }
     /** Trả về Set các ngày (YYYY-MM-DD) là ngày nghỉ có lương cho user trong period */
@@ -221,11 +219,12 @@ Deno.serve(async (req) => {
     const productIdsInSales = [...new Set(allSaleItems.map((it: any) => it.product_id).filter(Boolean))];
     const productInfoMap = new Map<string, { import_price: number; category_id: string | null }>();
     if (productIdsInSales.length > 0) {
-      const { data: prods } = await supabase
-        .from("products")
-        .select("id, import_price, category_id")
-        .in("id", productIdsInSales);
-      for (const p of (prods || [])) {
+      const prods = (await Promise.all(
+        chunkArray(productIdsInSales, 500).map((productIds) =>
+          fetchAllRows<any>("products", () => supabase.from("products").select("id, import_price, category_id").in("id", productIds))
+        )
+      )).flat();
+      for (const p of prods) {
         productInfoMap.set((p as any).id, {
           import_price: Number((p as any).import_price || 0),
           category_id: (p as any).category_id || null,
@@ -266,13 +265,15 @@ Deno.serve(async (req) => {
 
     // Load category hierarchy so commission picked at parent category (e.g. "iPhone")
     // also captures sales tagged with leaf categories (e.g. "iPhone 15", "iPhone 15 Pro").
-    const { data: categoriesData } = await supabase
-      .from("categories")
-      .select("id, parent_id, name")
-      .eq("tenant_id", tenant_id);
+    const categoriesData = await fetchAllRows<any>("categories", () =>
+      supabase
+        .from("categories")
+        .select("id, parent_id, name")
+        .eq("tenant_id", tenant_id)
+    );
     const categoryParentMap = new Map<string, string | null>();
     const categoryNameMap = new Map<string, string>();
-    for (const c of (categoriesData || [])) {
+    for (const c of categoriesData) {
       categoryParentMap.set((c as any).id, (c as any).parent_id || null);
       categoryNameMap.set((c as any).id, String((c as any).name || ""));
     }
@@ -297,45 +298,29 @@ Deno.serve(async (req) => {
     }
 
     // Get template sub-configs including overtimes
-    const templateIds = (templatesRes.data || []).map((t: any) => t.id);
-    const [bonusRes, commRes, allowRes, holidayRes, penaltyRes, overtimeRes] = templateIds.length
+    const templateIds = salaryTemplates.map((t: any) => t.id);
+    const [bonusRows, commRows, allowRows, holidayRows, penaltyRows, overtimeRows] = templateIds.length
       ? await Promise.all([
-          supabase.from("salary_template_bonuses").select("*").in("template_id", templateIds),
-          supabase.from("salary_template_commissions").select("*").in("template_id", templateIds),
-          supabase.from("salary_template_allowances").select("*").in("template_id", templateIds),
-          supabase.from("salary_template_holidays").select("*").in("template_id", templateIds),
-          supabase.from("salary_template_penalties").select("*").in("template_id", templateIds),
-          supabase.from("salary_template_overtimes").select("*").in("template_id", templateIds),
+          fetchAllRows<any>("salary_template_bonuses", () => supabase.from("salary_template_bonuses").select("*").in("template_id", templateIds)),
+          fetchAllRows<any>("salary_template_commissions", () => supabase.from("salary_template_commissions").select("*").in("template_id", templateIds)),
+          fetchAllRows<any>("salary_template_allowances", () => supabase.from("salary_template_allowances").select("*").in("template_id", templateIds)),
+          fetchAllRows<any>("salary_template_holidays", () => supabase.from("salary_template_holidays").select("*").in("template_id", templateIds)),
+          fetchAllRows<any>("salary_template_penalties", () => supabase.from("salary_template_penalties").select("*").in("template_id", templateIds)),
+          fetchAllRows<any>("salary_template_overtimes", () => supabase.from("salary_template_overtimes").select("*").in("template_id", templateIds)),
         ])
-      : [
-          { data: [], error: null },
-          { data: [], error: null },
-          { data: [], error: null },
-          { data: [], error: null },
-          { data: [], error: null },
-          { data: [], error: null },
-        ];
+      : [[], [], [], [], [], []];
 
-    [
-      ["salary_template_bonuses", bonusRes],
-      ["salary_template_commissions", commRes],
-      ["salary_template_allowances", allowRes],
-      ["salary_template_holidays", holidayRes],
-      ["salary_template_penalties", penaltyRes],
-      ["salary_template_overtimes", overtimeRes],
-    ].forEach(([label, result]) => throwIfQueryError(label as string, result as { error: any }));
-
-    const bonusesByTemplate = groupBy(bonusRes.data || [], "template_id");
-    const commsByTemplate = groupBy(commRes.data || [], "template_id");
-    const allowsByTemplate = groupBy(allowRes.data || [], "template_id");
-    const holidaysByTemplate = groupBy(holidayRes.data || [], "template_id");
-    const penaltiesByTemplate = groupBy(penaltyRes.data || [], "template_id");
-    const overtimesByTemplate = groupBy(overtimeRes.data || [], "template_id");
+    const bonusesByTemplate = groupBy(bonusRows, "template_id");
+    const commsByTemplate = groupBy(commRows, "template_id");
+    const allowsByTemplate = groupBy(allowRows, "template_id");
+    const holidaysByTemplate = groupBy(holidayRows, "template_id");
+    const penaltiesByTemplate = groupBy(penaltyRows, "template_id");
+    const overtimesByTemplate = groupBy(overtimeRows, "template_id");
 
     // Build employee -> template map
     const empTemplateMap = new Map<string, any>();
     const empConfigMap = new Map<string, any>();
-    for (const ec of (empConfigsRes.data || [])) {
+    for (const ec of employeeSalaryConfigs) {
       if (ec.salary_templates) {
         empTemplateMap.set(ec.user_id, ec.salary_templates);
         empConfigMap.set(ec.user_id, ec);
