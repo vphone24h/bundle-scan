@@ -34,7 +34,6 @@ function TopNavBar({ navItems, onNavClick, isNavActive, accentColor, activeClass
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const touchStartRef = React.useRef<{ x: number; y: number; scrollLeft: number; time: number } | null>(null);
   const isDraggingRef = React.useRef(false);
-  const suppressClickRef = React.useRef(false);
   const velocityRef = React.useRef(0);
   const lastTouchRef = React.useRef<{ x: number; time: number }>({ x: 0, time: 0 });
   const momentumRef = React.useRef<number>(0);
@@ -66,7 +65,6 @@ function TopNavBar({ navItems, onNavClick, isNavActive, accentColor, activeClass
     };
     lastTouchRef.current = { x: touch.clientX, time: now };
     isDraggingRef.current = false;
-    suppressClickRef.current = false;
     velocityRef.current = 0;
   };
 
@@ -75,7 +73,7 @@ function TopNavBar({ navItems, onNavClick, isNavActive, accentColor, activeClass
     const touch = e.touches[0];
     const dx = touchStartRef.current.x - touch.clientX;
     const dy = Math.abs(touch.clientY - touchStartRef.current.y);
-    if (Math.abs(dx) > 8 && Math.abs(dx) > dy) {
+    if (Math.abs(dx) > 8 || dy > 8) {
       isDraggingRef.current = true;
     }
     if (Math.abs(dx) > dy) {
@@ -91,19 +89,16 @@ function TopNavBar({ navItems, onNavClick, isNavActive, accentColor, activeClass
   };
 
   const handleTouchEnd = () => {
-    suppressClickRef.current = isDraggingRef.current;
     if (isDraggingRef.current && Math.abs(velocityRef.current) > 1) {
       startMomentum();
     }
     touchStartRef.current = null;
-    isDraggingRef.current = false;
   };
 
   const handleButtonClick = (item: HeaderProps['navItems'][number], e: React.MouseEvent) => {
-    if (suppressClickRef.current) {
+    if (isDraggingRef.current) {
       e.preventDefault();
       e.stopPropagation();
-      suppressClickRef.current = false;
       return;
     }
     onNavClick(item);
