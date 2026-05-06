@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 export function usePendingApprovals() {
   const { data: currentTenant } = useCurrentTenant();
@@ -16,7 +17,7 @@ export function usePendingApprovals() {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
 
-      const [correctionsRes, overtimeRes, absencesRes, leaveRes, attendanceRes, shiftRes, hourlyRes, tenantRes] = await Promise.all([
+      const [correctionsRes, overtimeRes, absencesRes, leaveRes, attendanceRes, shiftRows, hourlyRes, tenantRes] = await Promise.all([
         supabase
           .from('attendance_correction_requests')
           .select('id', { count: 'exact', head: true })
@@ -45,11 +46,13 @@ export function usePendingApprovals() {
           .eq('tenant_id', tenantId)
           .gte('date', monthStart)
           .lte('date', monthEnd),
-        supabase
-          .from('shift_assignments')
-          .select('user_id, day_of_week, specific_date, assignment_type')
-          .eq('tenant_id', tenantId)
-          .eq('is_active', true),
+        fetchAllRows<any>(() =>
+          supabase
+            .from('shift_assignments')
+            .select('user_id, day_of_week, specific_date, assignment_type')
+            .eq('tenant_id', tenantId)
+            .eq('is_active', true)
+        ),
         supabase
           .from('employee_salary_configs')
           .select('user_id, salary_templates(salary_type)')
@@ -77,7 +80,7 @@ export function usePendingApprovals() {
 
       let autoDetected = 0;
       const attendance = attendanceRes.data || [];
-      const assignments = shiftRes.data || [];
+      const assignments = shiftRows || [];
       for (const att of attendance) {
         if (!att.check_in_time || !(att as any).check_out_time) continue;
         if (hourlyUserIds.has(att.user_id)) continue;

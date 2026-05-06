@@ -14,6 +14,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
 import { toast } from 'sonner';
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 // Format ISO time → "HH:mm" theo giờ VN (UTC+7).
 // Browser hiển thị theo local nhưng để chắc chắn cho admin nước ngoài, tự offset.
@@ -96,13 +97,13 @@ export function OvertimeReviewsTab() {
   const { data: shiftAssignments } = useQuery({
     queryKey: ['shift-assignments-ot', tenantId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('shift_assignments')
-        .select('*')
-        .eq('tenant_id', tenantId!)
-        .eq('is_active', true);
-      if (error) throw error;
-      return data;
+      return await fetchAllRows<any>(() =>
+        supabase
+          .from('shift_assignments')
+          .select('user_id, day_of_week, specific_date, assignment_type')
+          .eq('tenant_id', tenantId!)
+          .eq('is_active', true)
+      );
     },
     enabled: !!tenantId,
   });
