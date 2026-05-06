@@ -1451,8 +1451,7 @@ export default function UniversalStoreTemplate({
                         const newsCatMode = (section as any).displayMode || 'horizontal';
                         
                         if (newsCatMode === 'vertical') {
-                          // Vertical: stacked cards with cover images (same as product categories)
-                          // Build tree so children are hidden until parent is clicked
+                          // Vertical: clean folder-list look (like vphone.vn). Children hidden until parent clicked.
                           const newsTree = buildArticleCategoryTree(articleCategories as any);
                           const renderNewsCatNode = (cat: any, depth: number = 0): JSX.Element => {
                             const hasChildren = !!(cat.children && cat.children.length > 0);
@@ -1460,47 +1459,36 @@ export default function UniversalStoreTemplate({
                             const isSelected = selectedArticleCategoryId === cat.id;
                             return (
                               <div key={cat.id}>
-                                <ScrollReveal animation="fade-up" delay={80}>
-                                  <button
-                                    onClick={() => {
-                                      if (hasChildren) {
-                                        setExpandedNewsCatIds(prev => {
-                                          const next = new Set(prev);
-                                          if (next.has(cat.id)) next.delete(cat.id); else next.add(cat.id);
-                                          return next;
-                                        });
-                                      }
-                                      setSelectedArticleCategoryId(isSelected ? null : cat.id);
-                                    }}
-                                    className={`group w-full overflow-hidden relative text-left ${cat.image_url ? 'min-h-[65vh] sm:min-h-[70vh]' : 'min-h-[80px]'} ${isSelected ? 'ring-2' : ''}`}
-                                    style={isSelected ? { '--tw-ring-color': accentColor, paddingLeft: depth * 16 } as any : { paddingLeft: depth * 16 }}
+                                <button
+                                  onClick={() => {
+                                    if (hasChildren) {
+                                      setExpandedNewsCatIds(prev => {
+                                        const next = new Set(prev);
+                                        if (next.has(cat.id)) next.delete(cat.id); else next.add(cat.id);
+                                        return next;
+                                      });
+                                    }
+                                    setSelectedArticleCategoryId(isSelected ? null : cat.id);
+                                  }}
+                                  className="w-full flex items-center gap-3 py-2.5 text-left hover:opacity-80 transition-opacity"
+                                  style={{ paddingLeft: depth * 20 }}
+                                >
+                                  <Folder className="h-5 w-5 shrink-0" style={{ color: isSelected ? accentColor : '#86868b' }} />
+                                  <span
+                                    className="text-[15px] font-medium flex-1"
+                                    style={{ color: isSelected ? accentColor : '#1d1d1f' }}
                                   >
-                                    {cat.image_url ? (
-                                      <>
-                                        <img src={cat.image_url} alt={cat.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                                        <div className="relative z-10 h-full flex flex-col justify-end p-6 min-h-[65vh] sm:min-h-[70vh]">
-                                          <h4 className="text-xl font-bold text-white">{cat.name}</h4>
-                                          <p className="text-sm text-white/80 mt-1">
-                                            {hasChildren ? (isExpanded ? 'Thu gọn ▲' : 'Xem danh mục con ▼') : 'Xem bài viết →'}
-                                          </p>
-                                        </div>
-                                      </>
-                                    ) : (
-                                      <div className="bg-white h-full flex items-center justify-between p-4 border-b border-black/5 group-hover:shadow-lg transition-shadow">
-                                        <div>
-                                          <h4 className="text-base font-bold text-[#1d1d1f]">{cat.name}</h4>
-                                          <p className="text-xs text-[#86868b] mt-0.5">
-                                            {hasChildren ? (isExpanded ? 'Thu gọn ▲' : 'Xem danh mục con ▼') : 'Xem bài viết →'}
-                                          </p>
-                                        </div>
-                                        <Newspaper className="h-6 w-6 text-[#d2d2d7]" />
-                                      </div>
-                                    )}
-                                  </button>
-                                </ScrollReveal>
+                                    {cat.name}
+                                  </span>
+                                  {hasChildren && (
+                                    <ChevronDown
+                                      className="h-4 w-4 text-[#86868b] transition-transform"
+                                      style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+                                    />
+                                  )}
+                                </button>
                                 {hasChildren && isExpanded && (
-                                  <div className="flex flex-col gap-0 bg-[#fafafa]">
+                                  <div className="flex flex-col border-l border-black/10 ml-5">
                                     {cat.children.map((child: any) => renderNewsCatNode(child, depth + 1))}
                                   </div>
                                 )}
@@ -1509,22 +1497,8 @@ export default function UniversalStoreTemplate({
                           };
                           return (
                             <div key="categoryFilter" className="mb-6">
-                              <h3 className="text-lg font-bold tracking-tight mb-4">{config.articleSectionTitle}</h3>
-                              <div className="flex flex-col gap-0">
-                                {/* "All" button */}
-                                <button
-                                  onClick={() => setSelectedArticleCategoryId(null)}
-                                  className={`group w-full overflow-hidden relative text-left min-h-[80px] border-b border-black/5 ${!selectedArticleCategoryId ? 'ring-2' : ''}`}
-                                  style={!selectedArticleCategoryId ? { '--tw-ring-color': accentColor } as any : undefined}
-                                >
-                                  <div className="bg-white h-full flex items-center justify-between p-4 group-hover:shadow-lg transition-shadow">
-                                    <div>
-                                      <h4 className="text-base font-bold text-[#1d1d1f]">Tất cả bài viết</h4>
-                                      <p className="text-xs text-[#86868b] mt-0.5">{allArticles.length} bài viết</p>
-                                    </div>
-                                    <Newspaper className="h-6 w-6 text-[#d2d2d7]" />
-                                  </div>
-                                </button>
+                              <h3 className="text-sm font-bold tracking-wider text-[#1d1d1f] mb-3 uppercase">DANH MỤC</h3>
+                              <div className="flex flex-col">
                                 {newsTree.map((cat: any) => renderNewsCatNode(cat, 0))}
                               </div>
                             </div>
