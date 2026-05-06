@@ -99,6 +99,7 @@ export function useExportReceipts(filters?: {
   branchId?: string;
   page?: number;
   pageSize?: number;
+  customerSource?: string;
 }) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
@@ -124,6 +125,7 @@ export function useExportReceipts(filters?: {
         _branch_id: effectiveBranchId || null,
         _page: page,
         _page_size: pageSize,
+        _customer_source: filters?.customerSource || null,
       });
 
       if (error) {
@@ -174,7 +176,7 @@ export function useExportReceiptDetail(receiptId: string | null) {
   });
 }
 
-export function useExportReceiptItems(enabled = true, filters?: { page?: number; pageSize?: number; search?: string; categoryId?: string; branchId?: string }) {
+export function useExportReceiptItems(enabled = true, filters?: { page?: number; pageSize?: number; search?: string; categoryId?: string; branchId?: string; customerSource?: string }) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
@@ -195,6 +197,7 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
         _search: filters?.search?.trim() || null,
         _category_id: (filters?.categoryId && filters.categoryId !== '_all_') ? filters.categoryId : null,
         _branch_id: effectiveBranchId || null,
+        _customer_source: filters?.customerSource || null,
       });
 
       if (error) {

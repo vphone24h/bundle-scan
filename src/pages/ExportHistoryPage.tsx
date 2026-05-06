@@ -80,6 +80,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCategories } from '@/hooks/useCategories';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useCustomerSources } from '@/hooks/useCustomerSources';
 import { ScrollableTableWrapper } from '@/components/ui/scrollable-table-wrapper';
 import { useTranslation } from 'react-i18next';
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
@@ -193,6 +194,7 @@ export default function ExportHistoryPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('_all_');
   const [repairFilter, setRepairFilter] = useState('_all_');
+  const [customerSourceFilter, setCustomerSourceFilter] = useState('_all_');
 
   // Manual search trigger (no debounce)
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -217,7 +219,7 @@ export default function ExportHistoryPage() {
   useEffect(() => {
     setReceiptPage(1);
     setItemPage(1);
-  }, [debouncedSearch, statusFilter, dateFromFilter, dateToFilter, branchFilter, paymentSourceFilter, categoryFilter]);
+  }, [debouncedSearch, statusFilter, dateFromFilter, dateToFilter, branchFilter, paymentSourceFilter, categoryFilter, customerSourceFilter]);
   
   // Detail dialog
   const [selectedReceipt, setSelectedReceipt] = useState<ExportReceipt | null>(null);
@@ -255,12 +257,14 @@ export default function ExportHistoryPage() {
     branchId: branchFilter !== '_all_' ? branchFilter : undefined,
     page: receiptPage,
     pageSize: receiptPageSize,
+    customerSource: customerSourceFilter !== '_all_' ? customerSourceFilter : undefined,
   });
   const { data: items, isLoading: itemsLoading, isFetching: itemsFetching, totalCount: itemsTotalCount } = useExportReceiptItems(activeTab === 'items', {
     search: activeTab === 'items' ? (debouncedSearch || undefined) : undefined,
     categoryId: categoryFilter !== '_all_' ? categoryFilter : undefined,
     page: itemPage,
     pageSize: itemPageSize,
+    customerSource: customerSourceFilter !== '_all_' ? customerSourceFilter : undefined,
   });
   // Stop search spinner when active tab data finishes loading
   const activeTabFetching = activeTab === 'receipts' ? receiptsFetching : (activeTab === 'items' ? itemsFetching : false);
@@ -275,6 +279,7 @@ export default function ExportHistoryPage() {
   const returnProduct = useReturnProduct();
   const { data: permissions } = usePermissions();
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
+  const { data: customerSources = [] } = useCustomerSources();
   const isSuperAdmin = permissions?.canViewAllBranches === true;
 
   // Export history stats
@@ -340,7 +345,7 @@ export default function ExportHistoryPage() {
     return result;
   }, [receipts, paymentSourceFilter, repairFilter]);
 
-  const hasActiveFilters = dateFilter || dateFromFilter || dateToFilter || statusFilter !== '_all_' || branchFilter !== '_all_' || categoryFilter !== '_all_' || paymentSourceFilter !== '_all_' || repairFilter !== '_all_';
+  const hasActiveFilters = dateFilter || dateFromFilter || dateToFilter || statusFilter !== '_all_' || branchFilter !== '_all_' || categoryFilter !== '_all_' || paymentSourceFilter !== '_all_' || repairFilter !== '_all_' || customerSourceFilter !== '_all_';
 
   const clearFilters = () => {
     setDateFilter('');
@@ -351,6 +356,7 @@ export default function ExportHistoryPage() {
     setCategoryFilter('_all_');
     setPaymentSourceFilter('_all_');
     setRepairFilter('_all_');
+    setCustomerSourceFilter('_all_');
   };
 
   // Group non-IMEI items (items are already server-filtered)
@@ -914,6 +920,22 @@ export default function ExportHistoryPage() {
                       <SelectItem value="_all_">Tất cả đơn</SelectItem>
                       <SelectItem value="repair">Đơn sửa chữa</SelectItem>
                       <SelectItem value="normal">Đơn bán hàng</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Nguồn khách</Label>
+                  <Select value={customerSourceFilter} onValueChange={setCustomerSourceFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tất cả" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="_all_">Tất cả nguồn khách</SelectItem>
+                      {customerSources.map((src) => (
+                        <SelectItem key={src.id} value={src.name}>
+                          {src.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
