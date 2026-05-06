@@ -209,13 +209,18 @@ export function OvertimeReviewsTab() {
         });
       }
 
-      // Check extra hours after shift end (overtime_minutes > 0)
-      if (isScheduled && (att.overtime_minutes || 0) > threshold && !existingKeys.has(`${att.user_id}_${dateStr}_extra_hours`)) {
+      // Check extra hours after shift end — ưu tiên pending_overtime_minutes (NET tổng đã bù trừ trong ngày).
+      // Fallback overtime_minutes cho dữ liệu cũ.
+      const otCandidate = Math.max(
+        (att as any).pending_overtime_minutes || 0,
+        att.overtime_minutes || 0,
+      );
+      if (isScheduled && otCandidate > threshold && !existingKeys.has(`${att.user_id}_${dateStr}_extra_hours`)) {
         items.push({
           user_id: att.user_id,
           request_date: dateStr,
           request_type: 'extra_hours',
-          overtime_minutes: att.overtime_minutes || 0,
+          overtime_minutes: otCandidate,
           attendance_id: att.id,
           auto_detected: true,
         });
