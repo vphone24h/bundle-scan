@@ -68,7 +68,7 @@ export function usePendingApprovals() {
       );
       const netThreshold = typeof (tenantRes.data as any)?.compensation_threshold_minutes === 'number'
         ? (tenantRes.data as any).compensation_threshold_minutes
-        : 5;
+        : 15;
 
       // Đồng bộ logic với OvertimeReviewsTab: pending = OT request status pending + auto-detected
       const otRows = overtimeRequests_safe(overtimeRes.data);
