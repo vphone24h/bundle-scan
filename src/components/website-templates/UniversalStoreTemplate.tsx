@@ -35,7 +35,7 @@ import {
   Search, MapPin, Phone, Mail, Shield, CheckCircle, XCircle, Smartphone,
   Loader2, Building2, Headphones, Calendar, Package,
   Clock, Users, Star, Gift, ChevronDown,
-  ShoppingBag, Newspaper, ArrowLeft,
+  ShoppingBag, Newspaper, ArrowLeft, Folder,
   Link2, Menu, X, MessageCircle, ExternalLink,
 } from 'lucide-react';
 import { LayoutHero } from './layouts/HeroVariants';
